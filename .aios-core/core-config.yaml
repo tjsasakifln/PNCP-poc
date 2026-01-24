@@ -1,0 +1,57 @@
+# ============================================
+# AIOS Core Configuration - PNCP POC Project
+# Project: BidIQ Uniformes - POC v0.2
+# Last Updated: 2026-01-24
+# ============================================
+
+markdownExploder: true
+
+project:
+  type: EXISTING_AIOS
+  name: pncp-poc
+  description: "Sistema de busca de licitações de uniformes do PNCP"
+  installedAt: "2026-01-24T00:00:00Z"
+  version: "0.2.0"
+
+# Documentation Paths
+prd:
+  prdFile: PRD.md
+  prdVersion: v0.2
+  prdSharded: false
+
+architecture:
+  architectureFile: docs/architecture.md
+  architectureVersion: v0.2
+  architectureSharded: false
+
+devStoryLocation: docs/stories
+slashPrefix: AIOS
+
+# IDE Configuration
+ide:
+  selected:
+    - claude-code
+  configs:
+    claude-code: true
+
+# Project Status
+projectStatus:
+  enabled: true
+  autoLoadOnAgentActivation: true
+  showInGreeting: true
+  statusFile: .aios/project-status.yaml
+
+# GitHub Integration (disabled for POC)
+github:
+  enabled: false
+
+# Logging
+decisionLogging:
+  enabled: true
+  location: .ai/
+  indexFile: decision-logs-index.md
+
+storyBacklog:
+  enabled: true
+  location: docs/stories/backlog
+  prioritization: value_risk
