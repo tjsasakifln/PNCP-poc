@@ -1,12 +1,11 @@
 """Unit tests for PNCP client with retry logic and rate limiting."""
 import time
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
-import requests
 
 from config import RetryConfig
-from exceptions import PNCPAPIError, PNCPRateLimitError
+from exceptions import PNCPAPIError
 from pncp_client import PNCPClient, calculate_delay
 
 
@@ -190,7 +189,7 @@ class TestFetchPageRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        result = client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31")
 
         assert mock_get.call_count == 2
         assert mock_sleep.called
@@ -312,7 +311,7 @@ class TestFetchPageExceptionRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        result = client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31")
 
         assert mock_get.call_count == 2
 

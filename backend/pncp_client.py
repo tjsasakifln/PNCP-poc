@@ -2,14 +2,14 @@
 import logging
 import random
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from config import RetryConfig
-from exceptions import PNCPAPIError, PNCPRateLimitError
+from exceptions import PNCPAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +231,7 @@ class PNCPClient:
 
         # Should never reach here, but just in case
         raise PNCPAPIError(
-            f"Unexpected: exhausted retries without raising exception"
+            "Unexpected: exhausted retries without raising exception"
         )
 
     def close(self) -> None:
