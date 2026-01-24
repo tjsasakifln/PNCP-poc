@@ -39,13 +39,13 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (0/10 issues concluídas)
+**Status:** 🟢 Iniciado (1/10 issues concluídas)
 
 **Progresso Geral:**
 ```
-[░░░░░░░░░░░░░░░░░░░░] 0% (0/31 issues)
+[██░░░░░░░░░░░░░░░░░░] 3% (1/31 issues)
 
-📦 EPIC 1: Setup             [░░░░░░░░] 0/3
+📦 EPIC 1: Setup             [███░░░░░] 1/3
 🔌 EPIC 2: Cliente PNCP      [░░░░░░░░] 0/3
 🎯 EPIC 3: Filtragem         [░░░░░░░░] 0/3
 📊 EPIC 4: Saídas            [░░░░░░░░] 0/3
