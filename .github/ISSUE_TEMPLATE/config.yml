@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/tjsasakifln/PNCP-poc/blob/master/README.md
+    about: Read the project documentation
+  - name: 🗺️ Roadmap
+    url: https://github.com/tjsasakifln/PNCP-poc/blob/master/ROADMAP.md
+    about: Check the project roadmap and milestones
+  - name: 💬 Discussions
+    url: https://github.com/tjsasakifln/PNCP-poc/discussions
+    about: Ask questions and discuss ideas with the community
