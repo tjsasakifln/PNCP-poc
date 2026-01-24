@@ -29,6 +29,7 @@ jobs:
           echo "✅ PR title format is valid"
 
       - name: Check PR body
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
@@ -56,6 +57,7 @@ jobs:
           echo "✅ PR body includes all required sections"
 
       - name: Check issue link
+        if: github.event.pull_request.user.login != 'dependabot[bot]'
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
@@ -67,6 +69,12 @@ jobs:
           else
             echo "✅ PR links to issue"
           fi
+
+      - name: Dependabot PR detected
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
+        run: |
+          echo "✅ Dependabot PR detected - skipping metadata validation"
+          echo "Dependabot PRs include comprehensive changelogs and are validated by dependency review checks"
 
   file-changes:
     name: Analyze File Changes
