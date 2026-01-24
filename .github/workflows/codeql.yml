@@ -44,18 +44,18 @@ jobs:
 
       - name: Initialize CodeQL
         if: steps.check-files.outputs.has_files == 'true'
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           queries: +security-and-quality
 
       - name: Autobuild
         if: steps.check-files.outputs.has_files == 'true'
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
         if: steps.check-files.outputs.has_files == 'true'
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
 
