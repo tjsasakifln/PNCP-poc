@@ -1,0 +1,15 @@
+{
+  "name": "bidiq-uniformes-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frontend for BidIQ Uniformes POC - Placeholder for Next.js setup in issue #21",
+  "scripts": {
+    "dev": "echo 'Next.js will be configured in issue #21' && exit 0",
+    "build": "echo 'Next.js will be configured in issue #21' && exit 0",
+    "start": "echo 'Next.js will be configured in issue #21' && exit 0",
+    "lint": "echo 'Linting will be configured in issue #21' && exit 0",
+    "test": "echo 'Tests will be configured in issue #27' && exit 0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
