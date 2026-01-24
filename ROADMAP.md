@@ -39,13 +39,13 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟢 Iniciado (2/10 issues concluídas)
+**Status:** 🟢 Em Progresso (3/10 issues concluídas)
 
 **Progresso Geral:**
 ```
-[███░░░░░░░░░░░░░░░░░] 6% (2/31 issues)
+[████░░░░░░░░░░░░░░░░] 10% (3/31 issues)
 
-📦 EPIC 1: Setup             [██████░░░] 2/3
+📦 EPIC 1: Setup             [██████████] 3/3 ✅ CONCLUÍDO
 🔌 EPIC 2: Cliente PNCP      [░░░░░░░░] 0/3
 🎯 EPIC 3: Filtragem         [░░░░░░░░] 0/3
 📊 EPIC 4: Saídas            [░░░░░░░░] 0/3
@@ -62,10 +62,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **Objetivo:** Backend funcional consumindo PNCP e gerando saídas
 
 **Prioridade P0 (Crítico):**
-- [x] #2 - EPIC 1: Setup e Infraestrutura Base
-  - [x] #3 - Estrutura de pastas
-  - [x] #4 - Variáveis de ambiente
-  - [x] #5 - Docker Compose
+- [x] #2 - EPIC 1: Setup e Infraestrutura Base ✅ CONCLUÍDO
+  - [x] #3 - Estrutura de pastas ✅
+  - [x] #4 - Variáveis de ambiente ✅
+  - [x] #5 - Docker Compose ✅ (PR #37 merged)
 - [x] #6 - EPIC 2: Cliente PNCP e Resiliência
   - [x] #7 - Cliente HTTP resiliente
   - [x] #8 - Paginação automática
@@ -152,7 +152,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ### KPIs do POC
 | Métrica | Meta | Status |
 |---------|------|--------|
-| **Issues Concluídas** | 31/31 | 🟡 2/31 (6%) |
+| **Issues Concluídas** | 31/31 | 🟡 3/31 (10%) |
 | **Cobertura de Testes** | >70% | 🔴 N/A |
 | **Tempo de Resposta API** | <10s | 🔴 N/A |
 | **Uptime em Produção** | >95% | 🔴 N/A |
@@ -256,6 +256,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 |------|--------|----------|
 | 2026-01-24 | 1.0 | Roadmap inicial criado com 31 issues mapeadas |
 | 2026-01-24 | 1.1 | Issue #4 concluída (Environment Variables) - PR #36 merged |
+| 2026-01-24 | 1.2 | Issue #5 concluída (Docker Compose) - PR #37 merged - EPIC 1 100% completo |
 
 ---
 
@@ -269,7 +270,7 @@ Este é um POC interno. Para contribuir:
 
 ---
 
-**Última sincronização com issues:** 2026-01-24 21:40
+**Última sincronização com issues:** 2026-01-24 22:40
 **Próxima revisão agendada:** 2026-01-27 (após Milestone 1)
 
 *Este roadmap é sincronizado automaticamente via `/audit-roadmap`*
