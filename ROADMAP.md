@@ -39,13 +39,13 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟢 Iniciado (1/10 issues concluídas)
+**Status:** 🟢 Iniciado (2/10 issues concluídas)
 
 **Progresso Geral:**
 ```
-[██░░░░░░░░░░░░░░░░░░] 3% (1/31 issues)
+[███░░░░░░░░░░░░░░░░░] 6% (2/31 issues)
 
-📦 EPIC 1: Setup             [███░░░░░] 1/3
+📦 EPIC 1: Setup             [██████░░░] 2/3
 🔌 EPIC 2: Cliente PNCP      [░░░░░░░░] 0/3
 🎯 EPIC 3: Filtragem         [░░░░░░░░] 0/3
 📊 EPIC 4: Saídas            [░░░░░░░░] 0/3
@@ -152,7 +152,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ### KPIs do POC
 | Métrica | Meta | Status |
 |---------|------|--------|
-| **Issues Concluídas** | 31/31 | 🔴 0/31 (0%) |
+| **Issues Concluídas** | 31/31 | 🟡 2/31 (6%) |
 | **Cobertura de Testes** | >70% | 🔴 N/A |
 | **Tempo de Resposta API** | <10s | 🔴 N/A |
 | **Uptime em Produção** | >95% | 🔴 N/A |
@@ -255,6 +255,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | Data | Versão | Mudanças |
 |------|--------|----------|
 | 2026-01-24 | 1.0 | Roadmap inicial criado com 31 issues mapeadas |
+| 2026-01-24 | 1.1 | Issue #4 concluída (Environment Variables) - PR #36 merged |
 
 ---
 
@@ -268,7 +269,7 @@ Este é um POC interno. Para contribuir:
 
 ---
 
-**Última sincronização com issues:** 2026-01-24 17:45
+**Última sincronização com issues:** 2026-01-24 21:40
 **Próxima revisão agendada:** 2026-01-27 (após Milestone 1)
 
 *Este roadmap é sincronizado automaticamente via `/audit-roadmap`*
