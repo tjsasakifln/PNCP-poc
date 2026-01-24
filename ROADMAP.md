@@ -39,19 +39,19 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟢 Em Progresso (3/10 issues concluídas)
+**Status:** 🟢 Em Progresso (4/10 issues concluídas)
 
 **Progresso Geral:**
 ```
-[████░░░░░░░░░░░░░░░░] 10% (3/31 issues)
+[█████░░░░░░░░░░░░░░░] 13% (4/31 issues)
 
 📦 EPIC 1: Setup             [██████████] 3/3 ✅ CONCLUÍDO
-🔌 EPIC 2: Cliente PNCP      [░░░░░░░░] 0/3
-🎯 EPIC 3: Filtragem         [░░░░░░░░] 0/3
-📊 EPIC 4: Saídas            [░░░░░░░░] 0/3
-🌐 EPIC 5: API Backend       [░░░░░░░░] 0/4
-🎨 EPIC 6: Frontend          [░░░░░░░░] 0/4
-🚀 EPIC 7: Deploy            [░░░░░░░░] 0/4
+🔌 EPIC 2: Cliente PNCP      [███░░░░░░░] 1/3 🟡 EM PROGRESSO
+🎯 EPIC 3: Filtragem         [░░░░░░░░░░] 0/3
+📊 EPIC 4: Saídas            [░░░░░░░░░░] 0/3
+🌐 EPIC 5: API Backend       [░░░░░░░░░░] 0/4
+🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/4
+🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/4
 ```
 
 ---
@@ -66,10 +66,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #3 - Estrutura de pastas ✅
   - [x] #4 - Variáveis de ambiente ✅
   - [x] #5 - Docker Compose ✅ (PR #37 merged)
-- [x] #6 - EPIC 2: Cliente PNCP e Resiliência
-  - [x] #7 - Cliente HTTP resiliente
-  - [x] #8 - Paginação automática
-  - [x] #28 - Rate limiting
+- [ ] #6 - EPIC 2: Cliente PNCP e Resiliência
+  - [x] #7 - Cliente HTTP resiliente ✅ (PR #38 merged 2026-01-24)
+  - [ ] #8 - Paginação automática
+  - [ ] #28 - Rate limiting
 - [x] #9 - EPIC 3: Motor de Filtragem
   - [x] #10 - Normalização e keywords
   - [x] #11 - Filtros sequenciais
