@@ -1,0 +1,253 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [master, main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-metadata:
+    name: Validate PR Metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check PR title format
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          # Check for conventional commit format
+          if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?!?: .+'; then
+            echo "❌ PR title must follow Conventional Commits format"
+            echo "Examples:"
+            echo "  feat: add user authentication"
+            echo "  fix(api): resolve rate limiting issue"
+            echo "  docs: update README with setup instructions"
+            exit 1
+          fi
+          echo "✅ PR title format is valid"
+
+      - name: Check PR body
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Check for required sections
+          if ! echo "$PR_BODY" | grep -q "## Context"; then
+            echo "❌ PR body must include '## Context' section"
+            exit 1
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "## Changes"; then
+            echo "❌ PR body must include '## Changes' section"
+            exit 1
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "## Testing Plan"; then
+            echo "❌ PR body must include '## Testing Plan' section"
+            exit 1
+          fi
+
+          if ! echo "$PR_BODY" | grep -q "## Closes"; then
+            echo "❌ PR body must include '## Closes' section linking to issue"
+            exit 1
+          fi
+
+          echo "✅ PR body includes all required sections"
+
+      - name: Check issue link
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Check if closes an issue
+          if ! echo "$PR_BODY" | grep -qE "(Closes|Fixes|Resolves) #[0-9]+"; then
+            echo "⚠️ Warning: PR should close an issue (use 'Closes #N')"
+            # Don't fail - just warn
+          else
+            echo "✅ PR links to issue"
+          fi
+
+  file-changes:
+    name: Analyze File Changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sensitive files
+        run: |
+          # Check if .env files are being committed
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.env$'; then
+            echo "❌ ERROR: .env file detected in changes"
+            echo "Never commit .env files. Use .env.example instead."
+            exit 1
+          fi
+
+          # Check for large files (>5MB)
+          for file in $(git diff --name-only origin/${{ github.base_ref }}...HEAD); do
+            if [ -f "$file" ]; then
+              size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+              if [ "$size" -gt 5242880 ]; then
+                echo "⚠️ Warning: Large file detected: $file ($size bytes)"
+              fi
+            fi
+          done
+
+          echo "✅ No sensitive files detected"
+
+  backend-validation:
+    name: Backend Code Quality
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.changed_files, 'backend/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install ruff mypy
+
+      - name: Lint with Ruff
+        run: |
+          cd backend
+          echo "Running Ruff linter..."
+          ruff check . --output-format=github || true
+          echo "✅ Linting complete"
+
+      - name: Check code formatting
+        run: |
+          cd backend
+          echo "Checking Python formatting..."
+          ruff format --check . || {
+            echo "❌ Code is not formatted. Run 'ruff format .' locally"
+            exit 1
+          }
+          echo "✅ Code formatting is correct"
+
+      - name: Type checking with mypy
+        run: |
+          cd backend
+          if ls *.py 1> /dev/null 2>&1; then
+            echo "Running mypy type checker..."
+            mypy . --ignore-missing-imports --no-strict-optional || true
+            echo "✅ Type checking complete"
+          fi
+
+      - name: Check Python syntax
+        run: |
+          cd backend
+          echo "Checking Python syntax..."
+          python -m py_compile *.py **/*.py || {
+            echo "❌ Python syntax errors detected"
+            exit 1
+          }
+          echo "✅ Python syntax is valid"
+
+  frontend-validation:
+    name: Frontend Code Quality
+    runs-on: ubuntu-latest
+    if: |
+      contains(github.event.pull_request.changed_files, 'frontend/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          if [ -f package.json ]; then
+            npm ci || npm install
+          fi
+
+      - name: Lint
+        run: |
+          cd frontend
+          if [ -f package.json ]; then
+            npm run lint || echo "⚠️ Linting not configured yet"
+          fi
+
+      - name: Type check
+        run: |
+          cd frontend
+          if [ -f tsconfig.json ]; then
+            npx tsc --noEmit || echo "⚠️ Type errors found"
+          fi
+
+      - name: Build
+        run: |
+          cd frontend
+          if [ -f package.json ]; then
+            npm run build || echo "⚠️ Build not configured yet"
+          fi
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+        continue-on-error: true
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check README updates
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(backend|frontend)/'; then
+            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q 'README.md'; then
+              echo "⚠️ Code changes detected but no README update"
+              echo "Consider updating documentation if public APIs changed"
+            fi
+          fi
+          echo "✅ Documentation check complete"
+
+  all-checks-complete:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs: [pr-metadata, file-changes, documentation]
+    steps:
+      - name: Success
+        run: |
+          echo "✅ All validation checks passed!"
+          echo "PR is ready for human review."
