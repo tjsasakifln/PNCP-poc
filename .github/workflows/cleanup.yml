@@ -1,0 +1,60 @@
+name: Cleanup
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  delete-old-branches:
+    name: Delete Stale Branches
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete merged branches older than 30 days
+        run: |
+          echo "Finding merged branches older than 30 days..."
+
+          git fetch --all --prune
+
+          # Get all merged branches
+          git branch -r --merged origin/master | \
+            grep -v "HEAD" | \
+            grep -v "master" | \
+            grep -v "main" | \
+            sed 's/origin\///' | \
+            while read branch; do
+              # Get last commit date
+              last_commit=$(git log -1 --format=%ct origin/$branch 2>/dev/null || echo 0)
+              current_time=$(date +%s)
+              days_old=$(( ($current_time - $last_commit) / 86400 ))
+
+              if [ $days_old -gt 30 ]; then
+                echo "Deleting branch $branch (${days_old} days old)"
+                git push origin --delete $branch || echo "Failed to delete $branch"
+              fi
+            done
+
+          echo "✅ Cleanup complete"
+
+  delete-old-workflow-runs:
+    name: Delete Old Workflow Runs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete workflow runs older than 90 days
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 90
+          keep_minimum_runs: 10
