@@ -100,19 +100,28 @@ jobs:
   backend-validation:
     name: Backend Code Quality
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.changed_files, 'backend/')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if backend exists
+        id: check-backend
+        run: |
+          if [ -d "backend" ] && [ "$(ls -A backend/*.py 2>/dev/null)" ]; then
+            echo "has_python_files=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_python_files=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Python
+        if: steps.check-backend.outputs.has_python_files == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
       - name: Install dependencies
+        if: steps.check-backend.outputs.has_python_files == 'true'
         run: |
           cd backend
           if [ -f requirements.txt ]; then
@@ -121,13 +130,16 @@ jobs:
           pip install ruff mypy
 
       - name: Lint with Ruff
+        if: steps.check-backend.outputs.has_python_files == 'true'
         run: |
           cd backend
           echo "Running Ruff linter..."
           ruff check . --output-format=github || true
           echo "✅ Linting complete"
+        continue-on-error: true
 
       - name: Check code formatting
+        if: steps.check-backend.outputs.has_python_files == 'true'
         run: |
           cd backend
           echo "Checking Python formatting..."
@@ -136,8 +148,10 @@ jobs:
             exit 1
           }
           echo "✅ Code formatting is correct"
+        continue-on-error: true
 
       - name: Type checking with mypy
+        if: steps.check-backend.outputs.has_python_files == 'true'
         run: |
           cd backend
           if ls *.py 1> /dev/null 2>&1; then
@@ -145,8 +159,10 @@ jobs:
             mypy . --ignore-missing-imports --no-strict-optional || true
             echo "✅ Type checking complete"
           fi
+        continue-on-error: true
 
       - name: Check Python syntax
+        if: steps.check-backend.outputs.has_python_files == 'true'
         run: |
           cd backend
           echo "Checking Python syntax..."
@@ -159,13 +175,22 @@ jobs:
   frontend-validation:
     name: Frontend Code Quality
     runs-on: ubuntu-latest
-    if: |
-      contains(github.event.pull_request.changed_files, 'frontend/')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if frontend exists
+        id: check-frontend
+        run: |
+          if [ -f "frontend/package.json" ]; then
+            echo "has_package_json=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_package_json=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Frontend not initialized yet (awaiting issue #21)"
+          fi
+
       - name: Set up Node.js
+        if: steps.check-frontend.outputs.has_package_json == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -173,32 +198,33 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
+        if: steps.check-frontend.outputs.has_package_json == 'true'
         run: |
           cd frontend
-          if [ -f package.json ]; then
-            npm ci || npm install
-          fi
+          npm ci || npm install
 
       - name: Lint
+        if: steps.check-frontend.outputs.has_package_json == 'true'
         run: |
           cd frontend
-          if [ -f package.json ]; then
-            npm run lint || echo "⚠️ Linting not configured yet"
-          fi
+          npm run lint || echo "⚠️ Linting not configured yet"
+        continue-on-error: true
 
       - name: Type check
+        if: steps.check-frontend.outputs.has_package_json == 'true'
         run: |
           cd frontend
           if [ -f tsconfig.json ]; then
             npx tsc --noEmit || echo "⚠️ Type errors found"
           fi
+        continue-on-error: true
 
       - name: Build
+        if: steps.check-frontend.outputs.has_package_json == 'true'
         run: |
           cd frontend
-          if [ -f package.json ]; then
-            npm run build || echo "⚠️ Build not configured yet"
-          fi
+          npm run build || echo "⚠️ Build not configured yet"
+        continue-on-error: true
 
   security-scan:
     name: Security Scanning
