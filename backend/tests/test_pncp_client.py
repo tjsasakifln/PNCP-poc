@@ -342,3 +342,313 @@ class TestFetchPageExceptionRetry:
             client.fetch_page("2024-01-01", "2024-01-31")
 
         assert mock_get.call_count == 3
+
+
+class TestFetchAllPagination:
+    """Test fetch_all() automatic pagination functionality."""
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_single_page(self, mock_get):
+        """Test fetch_all with single page returns all items."""
+        # Mock single page response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {"codigoCompra": "001", "uf": "SP"},
+                {"codigoCompra": "002", "uf": "SP"},
+                {"codigoCompra": "003", "uf": "SP"}
+            ],
+            "totalRegistros": 3,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+
+        assert len(results) == 3
+        assert results[0]["codigoCompra"] == "001"
+        assert results[2]["codigoCompra"] == "003"
+        # Should only call API once for single page
+        assert mock_get.call_count == 1
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_multiple_pages(self, mock_get):
+        """Test fetch_all correctly handles multiple pages."""
+        # Mock 3 pages of data
+        page_1 = Mock(status_code=200)
+        page_1.json.return_value = {
+            "data": [{"id": 1}, {"id": 2}],
+            "totalRegistros": 5,
+            "totalPaginas": 3,
+            "paginaAtual": 1,
+            "temProximaPagina": True
+        }
+
+        page_2 = Mock(status_code=200)
+        page_2.json.return_value = {
+            "data": [{"id": 3}, {"id": 4}],
+            "totalRegistros": 5,
+            "totalPaginas": 3,
+            "paginaAtual": 2,
+            "temProximaPagina": True
+        }
+
+        page_3 = Mock(status_code=200)
+        page_3.json.return_value = {
+            "data": [{"id": 5}],
+            "totalRegistros": 5,
+            "totalPaginas": 3,
+            "paginaAtual": 3,
+            "temProximaPagina": False
+        }
+
+        mock_get.side_effect = [page_1, page_2, page_3]
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+
+        # Should fetch all 5 items across 3 pages
+        assert len(results) == 5
+        assert results[0]["id"] == 1
+        assert results[4]["id"] == 5
+        # Should call API 3 times (once per page)
+        assert mock_get.call_count == 3
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_multiple_ufs(self, mock_get):
+        """Test fetch_all handles multiple UFs sequentially."""
+        # Mock responses for SP (2 items) and RJ (1 item)
+        sp_response = Mock(status_code=200)
+        sp_response.json.return_value = {
+            "data": [{"uf": "SP", "id": 1}, {"uf": "SP", "id": 2}],
+            "totalRegistros": 2,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+
+        rj_response = Mock(status_code=200)
+        rj_response.json.return_value = {
+            "data": [{"uf": "RJ", "id": 3}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+
+        mock_get.side_effect = [sp_response, rj_response]
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP", "RJ"]))
+
+        # Should fetch 3 items total (2 from SP, 1 from RJ)
+        assert len(results) == 3
+        assert results[0]["uf"] == "SP"
+        assert results[2]["uf"] == "RJ"
+        # Should call API twice (once per UF)
+        assert mock_get.call_count == 2
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_empty_results(self, mock_get):
+        """Test fetch_all handles empty results gracefully."""
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {
+            "data": [],
+            "totalRegistros": 0,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+
+        assert len(results) == 0
+        assert mock_get.call_count == 1
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_progress_callback(self, mock_get):
+        """Test fetch_all calls progress callback with correct values."""
+        # Mock 2 pages
+        page_1 = Mock(status_code=200)
+        page_1.json.return_value = {
+            "data": [{"id": 1}, {"id": 2}, {"id": 3}],
+            "totalRegistros": 5,
+            "totalPaginas": 2,
+            "paginaAtual": 1,
+            "temProximaPagina": True
+        }
+
+        page_2 = Mock(status_code=200)
+        page_2.json.return_value = {
+            "data": [{"id": 4}, {"id": 5}],
+            "totalRegistros": 5,
+            "totalPaginas": 2,
+            "paginaAtual": 2,
+            "temProximaPagina": False
+        }
+
+        mock_get.side_effect = [page_1, page_2]
+
+        # Track progress callback calls
+        progress_calls = []
+
+        def on_progress(page, total_pages, items_fetched):
+            progress_calls.append((page, total_pages, items_fetched))
+
+        client = PNCPClient()
+        list(client.fetch_all(
+            "2024-01-01",
+            "2024-01-31",
+            ufs=["SP"],
+            on_progress=on_progress
+        ))
+
+        # Should have been called twice (once per page)
+        assert len(progress_calls) == 2
+        # First page: page 1/2, 3 items
+        assert progress_calls[0] == (1, 2, 3)
+        # Second page: page 2/2, 5 items total
+        assert progress_calls[1] == (2, 2, 5)
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_yields_individual_items(self, mock_get):
+        """Test fetch_all is a generator yielding individual items, not lists."""
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {
+            "data": [{"id": 1}, {"id": 2}],
+            "totalRegistros": 2,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        generator = client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"])
+
+        # Should be a generator
+        import types
+        assert isinstance(generator, types.GeneratorType)
+
+        # Should yield individual dictionaries
+        first_item = next(generator)
+        assert isinstance(first_item, dict)
+        assert first_item["id"] == 1
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_all_without_ufs(self, mock_get):
+        """Test fetch_all works without specifying UFs (fetches all)."""
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {
+            "data": [{"uf": "SP", "id": 1}, {"uf": "RJ", "id": 2}],
+            "totalRegistros": 2,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31"))
+
+        assert len(results) == 2
+        # Check that UF parameter was NOT sent
+        call_args = mock_get.call_args
+        assert "uf" not in call_args[1]["params"]
+
+
+class TestFetchByUFHelper:
+    """Test _fetch_by_uf() helper method."""
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_by_uf_stops_when_tem_proxima_false(self, mock_get):
+        """Test _fetch_by_uf stops pagination when temProximaPagina is False."""
+        # First page has temProximaPagina=True
+        page_1 = Mock(status_code=200)
+        page_1.json.return_value = {
+            "data": [{"id": 1}],
+            "totalRegistros": 2,
+            "totalPaginas": 2,
+            "paginaAtual": 1,
+            "temProximaPagina": True
+        }
+
+        # Second page has temProximaPagina=False (last page)
+        page_2 = Mock(status_code=200)
+        page_2.json.return_value = {
+            "data": [{"id": 2}],
+            "totalRegistros": 2,
+            "totalPaginas": 2,
+            "paginaAtual": 2,
+            "temProximaPagina": False
+        }
+
+        mock_get.side_effect = [page_1, page_2]
+
+        client = PNCPClient()
+        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", "SP", None))
+
+        assert len(results) == 2
+        # Should stop after page 2 (not request page 3)
+        assert mock_get.call_count == 2
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_by_uf_correct_page_numbers(self, mock_get):
+        """Test _fetch_by_uf sends correct page numbers (1-indexed)."""
+        # Mock 2 pages
+        page_1 = Mock(status_code=200)
+        page_1.json.return_value = {
+            "data": [{"id": 1}],
+            "totalRegistros": 2,
+            "totalPaginas": 2,
+            "paginaAtual": 1,
+            "temProximaPagina": True
+        }
+
+        page_2 = Mock(status_code=200)
+        page_2.json.return_value = {
+            "data": [{"id": 2}],
+            "totalRegistros": 2,
+            "totalPaginas": 2,
+            "paginaAtual": 2,
+            "temProximaPagina": False
+        }
+
+        mock_get.side_effect = [page_1, page_2]
+
+        client = PNCPClient()
+        list(client._fetch_by_uf("2024-01-01", "2024-01-31", "SP", None))
+
+        # Check page numbers in API calls
+        call_1_params = mock_get.call_args_list[0][1]["params"]
+        call_2_params = mock_get.call_args_list[1][1]["params"]
+
+        assert call_1_params["pagina"] == 1
+        assert call_2_params["pagina"] == 2
+
+    @patch('pncp_client.requests.Session.get')
+    def test_fetch_by_uf_handles_uf_none(self, mock_get):
+        """Test _fetch_by_uf works with uf=None (all UFs)."""
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {
+            "data": [{"id": 1}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", None, None))
+
+        assert len(results) == 1
+        # Check that uf was not in params
+        call_params = mock_get.call_args[1]["params"]
+        assert "uf" not in call_params
