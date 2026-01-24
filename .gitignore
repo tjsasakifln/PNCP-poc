@@ -1,4 +1,6 @@
+# =============================================================================
 # Python
+# =============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,67 +18,323 @@ parts/
 sdist/
 var/
 wheels/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
 venv/
 ENV/
 env/
+.venv/
+env.bak/
+venv.bak/
+pythonenv*/
 
-# Node
+# Python Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+.nox/
+coverage.xml
+*.mo
+*.pot
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+
+# Python Profiling
+*.prof
+*.lprof
+.profiling/
+
+# =============================================================================
+# Node.js / JavaScript / TypeScript
+# =============================================================================
 node_modules/
 .next/
 out/
+build/
+dist/
 .cache/
-*.tsbuildinfo
+.turbo/
+.vercel/
+.nuxt/
+.output/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
 
-# Environment
+# Build Info
+*.tsbuildinfo
+next-env.d.ts
+.eslintcache
+
+# Package Manager Locks (keep yarn.lock and package-lock.json for reproducibility)
+# Uncomment if using pnpm
+# pnpm-lock.yaml
+
+# =============================================================================
+# Environment Variables & Secrets
+# =============================================================================
 .env
+.env.*
+!.env.example
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.production
 
-# IDEs
+# Secrets & Credentials
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+.secrets/
+*.secret
+.credentials
+service-account*.json
+gcp-key*.json
+aws-credentials*
+
+# =============================================================================
+# IDEs & Editors
+# =============================================================================
+# VSCode
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (PyCharm, WebStorm, IntelliJ)
 .idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
 *.swp
 *.swo
 *~
+.vim/
+tags
+.tags
 
-# OS
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Eclipse
+.project
+.classpath
+.settings/
+.loadpath
+
+# Xcode
+xcuserdata/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+
+# =============================================================================
+# Operating System Files
+# =============================================================================
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
 
-# Logs
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# Logs & Debugging
+# =============================================================================
 *.log
 logs/
+*.log.*
+log/
+*.pid
+*.seed
+*.pid.lock
 .aios/audit/
+debug/
+trace/
 
-# Temporary
+# =============================================================================
+# Temporary Files
+# =============================================================================
 temp-*/
 tmp/
 *.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*~
 
-# Output
+# =============================================================================
+# Output & Generated Files
+# =============================================================================
 outputs/minds/
 *.xlsx
 *.csv
 *.xls
+!**/fixtures/**/*.csv
+!**/fixtures/**/*.xlsx
 downloads/
 cache/
+.cache/
+output/
+results/
+reports/
+*.pdf
+!docs/**/*.pdf
 
-# Testing
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+data/local/
+*.sql
+!**/migrations/**/*.sql
+
+# =============================================================================
+# Testing & Quality Assurance
+# =============================================================================
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 *.cover
 .hypothesis/
+.tox/
+.nox/
+coverage/
+.nyc_output/
+lib-cov/
+.grunt/
+.lock-wscript
+.node_repl_history
 
-# Docker
+# =============================================================================
+# Docker & Containers
+# =============================================================================
 docker-compose.override.yml
+docker-compose.*.override.yml
+.dockerignore.local
+*.dockerfile.local
 
-# AIOS (keep config, ignore runtime)
+# =============================================================================
+# CI/CD & Build Artifacts
+# =============================================================================
+.github/workflows/local-*
+.circleci/local-*
+.gitlab-ci-local/
+*.terraform/
+.terraform.lock.hcl
+
+# =============================================================================
+# AIOS Specific
+# =============================================================================
+# Keep configuration, ignore runtime state
 .ai/debug-log.md
 .aios/project-status.yaml
+.aios/qa-reports/*.json
+.aios/qa-reports/*.html
+.aios/qa-status.json
+
+# =============================================================================
+# Project Specific
+# =============================================================================
+# Backend outputs
+backend/outputs/
+backend/logs/
+backend/.env*
+!backend/.env.example
+
+# Frontend outputs
+frontend/.next/
+frontend/out/
+frontend/.env*
+!frontend/.env.example
+
+# Test artifacts
+test-results/
+screenshots/
+videos/
+playwright-report/
+.playwright/
