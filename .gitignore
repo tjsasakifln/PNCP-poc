@@ -317,6 +317,9 @@ docker-compose.*.override.yml
 .aios/qa-reports/*.html
 .aios/qa-status.json
 
+# Claude Code generated documentation
+CLAUDE.md
+
 # =============================================================================
 # Project Specific
 # =============================================================================
@@ -325,7 +328,7 @@ backend/outputs/
 backend/logs/
 backend/.env*
 !backend/.env.example
-
+CLAUDE.md
 # Frontend outputs
 frontend/.next/
 frontend/out/

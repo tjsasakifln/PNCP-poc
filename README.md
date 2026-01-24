@@ -14,13 +14,71 @@ POC para automatizar a busca de oportunidades de licitações de uniformes e far
 
 ## 🚀 Quick Start
 
-### Pré-requisitos
+### Opção 1: Docker (Recomendado)
 
+#### Pré-requisitos
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+- OpenAI API key
+
+#### Instalação
+
+1. Clone o repositório:
+```bash
+git clone <repository-url>
+cd pncp-poc
+```
+
+2. Configure variáveis de ambiente:
+```bash
+cp .env.example .env
+# Edite .env e adicione sua OPENAI_API_KEY
+```
+
+3. Inicie os serviços com Docker Compose:
+```bash
+docker-compose up
+```
+
+4. Acesse os serviços:
+- **Frontend**: http://localhost:3000 (Placeholder - Next.js em breve)
+- **Backend API**: http://localhost:8000/docs (Swagger UI)
+
+#### Comandos Docker Úteis
+
+```bash
+# Iniciar em background (detached)
+docker-compose up -d
+
+# Ver logs em tempo real
+docker-compose logs -f
+
+# Ver logs de um serviço específico
+docker-compose logs -f backend
+
+# Parar serviços
+docker-compose down
+
+# Rebuild após mudanças em dependências
+docker-compose build --no-cache
+
+# Ver status dos containers
+docker-compose ps
+
+# Executar comandos no container
+docker-compose exec backend python -c "print('Hello from container')"
+```
+
+---
+
+### Opção 2: Instalação Manual
+
+#### Pré-requisitos
 - Python 3.11+
 - Node.js 18+
 - OpenAI API key
 
-### Instalação
+#### Instalação
 
 1. Clone o repositório:
 ```bash
@@ -126,15 +184,35 @@ npm test
 
 ## 🚢 Deploy
 
-### Docker (Recomendado)
+### Docker Compose (Desenvolvimento)
+
+O projeto inclui configuração completa do Docker Compose para ambiente de desenvolvimento:
+
+**Características:**
+- ✅ Hot-reload para backend (mudanças de código reiniciam automaticamente)
+- ✅ Health checks para todos os serviços
+- ✅ Volumes montados para desenvolvimento
+- ✅ Network bridge para comunicação inter-serviços
+- ✅ Variáveis de ambiente injetadas de `.env`
+
+**Serviços:**
+- `backend` - FastAPI em Python 3.11 (porta 8000)
+- `frontend` - Placeholder nginx (porta 3000)
 
 ```bash
+# Iniciar ambiente completo
 docker-compose up -d
+
+# Verificar saúde dos serviços
+docker-compose ps
+
+# Ver logs
+docker-compose logs -f
 ```
 
-### Manual
+### Deploy em Produção
 
-Ver [PRD.md](./PRD.md) seção 11 para instruções detalhadas.
+Ver [PRD.md](./PRD.md) seção 11 para instruções detalhadas de deploy em produção (Vercel + Railway).
 
 ## 📝 Variáveis de Ambiente
 
