@@ -1,0 +1,103 @@
+# =============================================================================
+# BidIQ Uniformes POC - Docker Compose Development Environment
+# =============================================================================
+# This file orchestrates backend (FastAPI) and frontend (Next.js placeholder)
+# services for local development with hot-reload capabilities.
+#
+# USAGE:
+#   docker-compose up           # Start all services
+#   docker-compose up -d        # Start in background (detached)
+#   docker-compose logs -f      # Follow logs
+#   docker-compose down         # Stop and remove containers
+#   docker-compose build        # Rebuild images after dependency changes
+#
+# REQUIREMENTS:
+#   - Docker Engine 20.10+
+#   - Docker Compose 2.0+
+#   - .env file (copy from .env.example)
+#
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend Service (FastAPI + Python 3.11)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: bidiq-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # Mount source code for hot-reload
+      - ./backend:/app
+      # Exclude virtual environment from sync (performance)
+      - /app/.pytest_cache
+      - /app/__pycache__
+    environment:
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # Backend Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # PNCP Client Configuration
+      - PNCP_TIMEOUT=${PNCP_TIMEOUT:-30}
+      - PNCP_MAX_RETRIES=${PNCP_MAX_RETRIES:-5}
+      - PNCP_BACKOFF_BASE=${PNCP_BACKOFF_BASE:-2}
+      - PNCP_BACKOFF_MAX=${PNCP_BACKOFF_MAX:-60}
+
+      # LLM Configuration
+      - LLM_MODEL=${LLM_MODEL:-gpt-4.1-nano}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.3}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-500}
+    networks:
+      - bidiq-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Frontend Service (Next.js Placeholder - nginx)
+  # ---------------------------------------------------------------------------
+  # NOTE: This is a placeholder until issue #21 implements actual Next.js app
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bidiq-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - bidiq-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      backend:
+        condition: service_healthy
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  bidiq-network:
+    driver: bridge
+    name: bidiq-network
+
+# =============================================================================
+# Volumes (for future use with databases, etc.)
+# =============================================================================
+# volumes:
+#   postgres_data:
+#   redis_data:
