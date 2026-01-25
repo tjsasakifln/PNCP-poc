@@ -104,8 +104,8 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #22 - Seleção UFs e Date Range ✅ (PR #53 merged 2026-01-25) 🎯 83.58% coverage, 25 tests, 10/10 acceptance criteria
   - [x] #24 - API Routes ✅ (PR #54 merged 2026-01-25) 🎯 88.67% coverage, 18 tests, 4.76:1 test-to-code ratio
   - [x] #23 - Tela de resultados com resumo ✅ (PR #55 merged 2026-01-25) 🎯 96.72% coverage page.tsx, 36 tests, 8/8 ACs, 100% governance score
-  - [ ] #33 - Error Boundaries ⭐ NOVO 🔓 UNBLOCKED
-  - [ ] #34 - Form Validations ⭐ NOVO 🔓 UNBLOCKED
+  - [ ] #56 - Error Boundaries ⭐ CRIADO 2026-01-25
+  - [ ] #57 - Form Validations ⭐ CRIADO 2026-01-25
 
 **Deliverables:**
 - 🟡 API REST completa (FastAPI structure done, endpoints pending)
@@ -279,7 +279,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-24 | 1.2 | Issue #5 concluída (Docker Compose) - PR #37 merged |
 | 2026-01-24 | 1.3 | **AUDIT CRÍTICO:** Correção de 26 estados incorretos - Drift de 83.9% eliminado |
 | 2026-01-24 | 1.4 | Progresso real: 4/31 (12.9%). M2 e M3 corrigidos para 0%. ETA ajustado para 3-4 semanas |
-| 2026-01-24 | 1.5 | **100% PRD COVERAGE:** +3 issues (#32, #33, #34). Total: 34 issues. Progresso: 11.8% (4/34) |
+| 2026-01-24 | 1.5 | **100% PRD COVERAGE:** +3 issues (#32, #56, #57). Total: 34 issues. Progresso: 11.8% (4/34) |
 | 2026-01-25 | 1.6 | Issue #8 concluída (Paginação PNCP) - PR #39 merged. EPIC 2: 67% completo (2/3). Progresso: 14.7% (5/34) |
 | 2026-01-25 | 1.7 | **Issue #10 concluída (Keyword Matching)** - PR #41 merged. EPIC 3: 25% completo (1/4). 100% governance score. Progresso: 17.6% (6/34) |
 | 2026-01-25 | 1.8 | **Issue #11 concluída (Sequential Filtering)** - PR #42 merged. EPIC 3: 50% completo (2/4). 99% coverage, fail-fast optimization. Progresso: 20.6% (7/34) |
@@ -334,7 +334,7 @@ Configurar pytest (backend) e jest (frontend) conforme CLAUDE.md e PRD Seção 9
 
 ---
 
-### ⭐ Issue #33: Frontend Error Boundaries
+### ⭐ Issue #56: Frontend Error Boundaries
 **EPIC:** #20 | **Prioridade:** P1 | **Estimativa:** 2h
 
 Implementar `error.tsx` conforme PRD Seção 7.2 linha 1187.
@@ -352,7 +352,7 @@ Implementar `error.tsx` conforme PRD Seção 7.2 linha 1187.
 
 ---
 
-### ⭐ Issue #34: Frontend Form Validations
+### ⭐ Issue #57: Frontend Form Validations
 **EPIC:** #20 | **Prioridade:** P1 | **Estimativa:** 1h
 
 Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
@@ -504,7 +504,7 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 - **Security:** 0 vulnerabilities (npm audit clean), CodeQL passed, zero secrets detected
 - **Deductions:** -5% (placeholder tests, no CHANGELOG, package-lock diff)
 - **Post-Merge Validation:** 3-layer safety net completed (Backend tests ✅, Frontend tests ✅, Build ✅)
-- **Impact:** Unblocks 5 issues (#22, #23, #24, #33, #34) - entire frontend development now possible
+- **Impact:** Unblocks 5 issues (#22, #23, #24, #56, #57) - entire frontend development now possible
 - **Milestone:** Starts EPIC 6 (Frontend) - 16.7% (1/6 issues), M2 now 30% (3/10 issues)
 - **Files:** 10 files changed (+9096/-7 lines), 8898 lines from package-lock.json
 
