@@ -10,6 +10,7 @@ This API provides endpoints for:
 - Generating Excel reports with formatted data
 - Creating AI-powered executive summaries (GPT-4.1-nano)
 """
+
 import logging
 import os
 from fastapi import FastAPI
@@ -31,7 +32,7 @@ app = FastAPI(
     version="0.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
 # CORS Configuration
@@ -64,9 +65,9 @@ async def root():
             "docs": "/docs",
             "redoc": "/redoc",
             "health": "/health",
-            "openapi": "/openapi.json"
+            "openapi": "/openapi.json",
         },
-        "status": "operational"
+        "status": "operational",
     }
 
 
@@ -106,7 +107,7 @@ async def health():
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "version": app.version
+        "version": app.version,
     }
 
 

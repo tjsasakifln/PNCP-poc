@@ -1,4 +1,5 @@
 """Tests for FastAPI application structure and base endpoints."""
+
 import pytest
 from fastapi.testclient import TestClient
 from main import app
@@ -105,6 +106,7 @@ class TestHealthEndpoint:
     def test_health_timestamp_format(self, client):
         """Health endpoint timestamp should be valid ISO 8601 format."""
         from datetime import datetime
+
         response = client.get("/health")
         data = response.json()
 
@@ -121,6 +123,7 @@ class TestHealthEndpoint:
     def test_health_timestamp_changes(self, client):
         """Health endpoint timestamp should update on each request."""
         import time
+
         response1 = client.get("/health")
         time.sleep(0.01)  # Small delay to ensure timestamp difference
         response2 = client.get("/health")
@@ -140,6 +143,7 @@ class TestHealthEndpoint:
     def test_health_response_time(self, client):
         """Health endpoint should respond quickly (< 100ms)."""
         import time
+
         start = time.time()
         response = client.get("/health")
         elapsed = time.time() - start
@@ -169,17 +173,14 @@ class TestCORSHeaders:
             "/health",
             headers={
                 "Origin": "http://localhost:3000",
-                "Access-Control-Request-Method": "GET"
-            }
+                "Access-Control-Request-Method": "GET",
+            },
         )
         assert response.status_code == 200
 
     def test_cors_headers_present(self, client):
         """CORS headers should be present in responses."""
-        response = client.get(
-            "/health",
-            headers={"Origin": "http://localhost:3000"}
-        )
+        response = client.get("/health", headers={"Origin": "http://localhost:3000"})
 
         # Check for CORS headers (case-insensitive)
         headers_lower = {k.lower(): v for k, v in response.headers.items()}
@@ -187,10 +188,7 @@ class TestCORSHeaders:
 
     def test_cors_allows_all_origins(self, client):
         """CORS should allow all origins (POC configuration)."""
-        response = client.get(
-            "/health",
-            headers={"Origin": "http://example.com"}
-        )
+        response = client.get("/health", headers={"Origin": "http://example.com"})
 
         headers_lower = {k.lower(): v for k, v in response.headers.items()}
         # FastAPI CORS middleware returns the requesting origin or "*"
@@ -202,8 +200,8 @@ class TestCORSHeaders:
             "/health",
             headers={
                 "Origin": "http://localhost:3000",
-                "Access-Control-Request-Method": "POST"
-            }
+                "Access-Control-Request-Method": "POST",
+            },
         )
         assert response.status_code == 200
 
@@ -223,8 +221,8 @@ class TestOpenAPIDocumentation:
         schema = response.json()
 
         assert "openapi" in schema  # OpenAPI version
-        assert "info" in schema     # API metadata
-        assert "paths" in schema    # Endpoints
+        assert "info" in schema  # API metadata
+        assert "paths" in schema  # Endpoints
 
     def test_openapi_info_metadata(self, client):
         """OpenAPI info section should match app configuration."""

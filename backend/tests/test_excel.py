@@ -90,8 +90,12 @@ class TestCreateExcel:
 
             # Verificar formatação do header
             assert ws["A1"].font.bold is True
-            assert ws["A1"].font.color.rgb == "00FFFFFF"  # Branco (openpyxl ARGB format)
-            assert ws["A1"].fill.start_color.rgb == "002E7D32"  # Verde (openpyxl ARGB format)
+            assert (
+                ws["A1"].font.color.rgb == "00FFFFFF"
+            )  # Branco (openpyxl ARGB format)
+            assert (
+                ws["A1"].fill.start_color.rgb == "002E7D32"
+            )  # Verde (openpyxl ARGB format)
 
             # Verificar que não há linha de totais (lista vazia)
             assert ws["F3"].value is None

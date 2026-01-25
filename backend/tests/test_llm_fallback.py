@@ -31,7 +31,7 @@ class TestGerarResumoFallback:
                 "nomeOrgao": "Prefeitura de São Paulo",
                 "uf": "SP",
                 "valorTotalEstimado": 150_000.0,
-                "dataAberturaProposta": "2026-03-01T10:00:00"
+                "dataAberturaProposta": "2026-03-01T10:00:00",
             }
         ]
 
@@ -49,7 +49,7 @@ class TestGerarResumoFallback:
         licitacoes = [
             {"nomeOrgao": "Órgão A", "uf": "SP", "valorTotalEstimado": 100_000.0},
             {"nomeOrgao": "Órgão B", "uf": "RJ", "valorTotalEstimado": 200_000.0},
-            {"nomeOrgao": "Órgão C", "uf": "MG", "valorTotalEstimado": 150_000.0}
+            {"nomeOrgao": "Órgão C", "uf": "MG", "valorTotalEstimado": 150_000.0},
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -63,7 +63,7 @@ class TestGerarResumoFallback:
             {"nomeOrgao": "Menor", "uf": "SP", "valorTotalEstimado": 50_000.0},
             {"nomeOrgao": "Maior", "uf": "RJ", "valorTotalEstimado": 500_000.0},
             {"nomeOrgao": "Médio", "uf": "MG", "valorTotalEstimado": 150_000.0},
-            {"nomeOrgao": "Segundo", "uf": "RS", "valorTotalEstimado": 300_000.0}
+            {"nomeOrgao": "Segundo", "uf": "RS", "valorTotalEstimado": 300_000.0},
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -81,7 +81,7 @@ class TestGerarResumoFallback:
         """Should return only 2 highlights when there are only 2 bids."""
         licitacoes = [
             {"nomeOrgao": "A", "uf": "SP", "valorTotalEstimado": 100_000.0},
-            {"nomeOrgao": "B", "uf": "RJ", "valorTotalEstimado": 200_000.0}
+            {"nomeOrgao": "B", "uf": "RJ", "valorTotalEstimado": 200_000.0},
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -98,7 +98,7 @@ class TestGerarResumoFallback:
                 "nomeOrgao": "Prefeitura Urgente",
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
-                "dataAberturaProposta": data_urgente
+                "dataAberturaProposta": data_urgente,
             }
         ]
 
@@ -118,7 +118,7 @@ class TestGerarResumoFallback:
                 "nomeOrgao": "Prefeitura Normal",
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
-                "dataAberturaProposta": data_futura
+                "dataAberturaProposta": data_futura,
             }
         ]
 
@@ -135,7 +135,7 @@ class TestGerarResumoFallback:
                 "nomeOrgao": "Prefeitura Limite",
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
-                "dataAberturaProposta": data_urgente
+                "dataAberturaProposta": data_urgente,
             }
         ]
 
@@ -149,14 +149,14 @@ class TestGerarResumoFallback:
             {
                 # Missing nomeOrgao, dataAberturaProposta
                 "uf": "SP",
-                "valorTotalEstimado": 100_000.0
+                "valorTotalEstimado": 100_000.0,
             },
             {
                 "nomeOrgao": "Órgão Completo",
                 "uf": "RJ",
                 # Missing valorTotalEstimado - should default to 0
-                "dataAberturaProposta": "2026-05-01T10:00:00"
-            }
+                "dataAberturaProposta": "2026-05-01T10:00:00",
+            },
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -169,7 +169,7 @@ class TestGerarResumoFallback:
         """Should treat None valor as 0 for calculations."""
         licitacoes = [
             {"nomeOrgao": "A", "uf": "SP", "valorTotalEstimado": None},
-            {"nomeOrgao": "B", "uf": "RJ", "valorTotalEstimado": 150_000.0}
+            {"nomeOrgao": "B", "uf": "RJ", "valorTotalEstimado": 150_000.0},
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -183,7 +183,7 @@ class TestGerarResumoFallback:
             {
                 "nomeOrgao": "Órgão Sem UF",
                 # Missing uf field
-                "valorTotalEstimado": 100_000.0
+                "valorTotalEstimado": 100_000.0,
             }
         ]
 
@@ -198,7 +198,7 @@ class TestGerarResumoFallback:
             {
                 "nomeOrgao": "Prefeitura Teste",
                 "uf": "SP",
-                "valorTotalEstimado": 100_000.0
+                "valorTotalEstimado": 100_000.0,
             }
         ]
 
@@ -222,14 +222,14 @@ class TestGerarResumoFallback:
                 "nomeOrgao": "Primeira Urgente",
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
-                "dataAberturaProposta": data_urgente_1
+                "dataAberturaProposta": data_urgente_1,
             },
             {
                 "nomeOrgao": "Segunda Urgente",
                 "uf": "RJ",
                 "valorTotalEstimado": 150_000.0,
-                "dataAberturaProposta": data_urgente_2
-            }
+                "dataAberturaProposta": data_urgente_2,
+            },
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -245,7 +245,7 @@ class TestGerarResumoFallback:
                 "nomeOrgao": "Órgão com Data Inválida",
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
-                "dataAberturaProposta": "invalid-date-format"
+                "dataAberturaProposta": "invalid-date-format",
             }
         ]
 
@@ -260,7 +260,7 @@ class TestGerarResumoFallback:
         """Should generate resumo_executivo in correct format."""
         licitacoes = [
             {"nomeOrgao": "A", "uf": "SP", "valorTotalEstimado": 100_000.0},
-            {"nomeOrgao": "B", "uf": "RJ", "valorTotalEstimado": 200_000.0}
+            {"nomeOrgao": "B", "uf": "RJ", "valorTotalEstimado": 200_000.0},
         ]
 
         resumo = gerar_resumo_fallback(licitacoes)
@@ -279,7 +279,9 @@ class TestGerarResumoFallback:
                 "nomeOrgao": f"Órgão {i}",
                 "uf": ["SP", "RJ", "MG", "RS"][i % 4],
                 "valorTotalEstimado": 50_000.0 + (i * 10_000.0),
-                "dataAberturaProposta": (datetime.now() + timedelta(days=30)).isoformat()
+                "dataAberturaProposta": (
+                    datetime.now() + timedelta(days=30)
+                ).isoformat(),
             }
             for i in range(150)
         ]
@@ -297,11 +299,7 @@ class TestGerarResumoFallback:
         from unittest.mock import patch
 
         licitacoes = [
-            {
-                "nomeOrgao": "Teste Offline",
-                "uf": "SP",
-                "valorTotalEstimado": 100_000.0
-            }
+            {"nomeOrgao": "Teste Offline", "uf": "SP", "valorTotalEstimado": 100_000.0}
         ]
 
         # Mock OpenAI module to ensure no external dependencies

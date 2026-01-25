@@ -1,4 +1,5 @@
 """Keyword matching engine for uniform/apparel procurement filtering."""
+
 import re
 import unicodedata
 from datetime import datetime
@@ -12,7 +13,6 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "uniformes",
     "fardamento",
     "fardamentos",
-
     # Specific pieces
     "jaleco",
     "jalecos",
@@ -42,7 +42,6 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "chapéus",
     "meia",
     "meias",
-
     # Specific contexts
     "uniforme escolar",
     "uniforme hospitalar",
@@ -53,7 +52,6 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "vestuário profissional",
     "vestimenta",
     "vestimentas",
-
     # Common compositions in procurement notices
     "kit uniforme",
     "conjunto uniforme",
@@ -72,7 +70,7 @@ KEYWORDS_EXCLUSAO: Set[str] = {
     "uniformização de procedimento",
     "uniformização de entendimento",
     "uniforme de trânsito",  # traffic signs/signals
-    "padrão uniforme"        # technical/engineering context
+    "padrão uniforme",  # technical/engineering context
 }
 
 
@@ -123,9 +121,7 @@ def normalize_text(text: str) -> str:
 
 
 def match_keywords(
-    objeto: str,
-    keywords: Set[str],
-    exclusions: Set[str] | None = None
+    objeto: str, keywords: Set[str], exclusions: Set[str] | None = None
 ) -> Tuple[bool, List[str]]:
     """
     Check if procurement object description contains uniform-related keywords.
@@ -183,7 +179,7 @@ def filter_licitacao(
     licitacao: dict,
     ufs_selecionadas: Set[str],
     valor_min: float = 50_000.0,
-    valor_max: float = 5_000_000.0
+    valor_max: float = 5_000_000.0,
 ) -> Tuple[bool, Optional[str]]:
     """
     Apply all filters to a single procurement bid (fail-fast sequential filtering).
@@ -235,9 +231,7 @@ def filter_licitacao(
     # 3. Keyword Filter (most expensive - regex matching)
     objeto = licitacao.get("objetoCompra", "")
     match, keywords_found = match_keywords(
-        objeto,
-        KEYWORDS_UNIFORMES,
-        KEYWORDS_EXCLUSAO
+        objeto, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO
     )
 
     if not match:
@@ -265,7 +259,7 @@ def filter_batch(
     licitacoes: List[dict],
     ufs_selecionadas: Set[str],
     valor_min: float = 50_000.0,
-    valor_max: float = 5_000_000.0
+    valor_max: float = 5_000_000.0,
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Filter a batch of procurement bids and return statistics.
@@ -314,13 +308,11 @@ def filter_batch(
         "rejeitadas_valor": 0,
         "rejeitadas_keyword": 0,
         "rejeitadas_prazo": 0,
-        "rejeitadas_outros": 0
+        "rejeitadas_outros": 0,
     }
 
     for lic in licitacoes:
-        aprovada, motivo = filter_licitacao(
-            lic, ufs_selecionadas, valor_min, valor_max
-        )
+        aprovada, motivo = filter_licitacao(lic, ufs_selecionadas, valor_min, valor_max)
 
         if aprovada:
             aprovadas.append(lic)
