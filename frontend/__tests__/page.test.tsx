@@ -305,4 +305,435 @@ describe('HomePage - UF Selection and Date Range', () => {
       });
     });
   });
+
+  describe('Results Display Section (Issue #23)', () => {
+    const mockSuccessResponse = {
+      resumo: {
+        resumo_executivo: 'Encontradas 15 licitações de uniformes totalizando R$ 450.000,00',
+        total_oportunidades: 15,
+        valor_total: 450000,
+        destaques: [
+          'Uniformes escolares - Secretaria de Educação SC - R$ 120.000',
+          'Fardamento militar - PM-PR - R$ 85.000',
+          'Jalecos - Hospital Municipal RS - R$ 45.000'
+        ],
+        distribuicao_uf: { SC: 6, PR: 5, RS: 4 },
+        alerta_urgencia: 'Licitação com prazo em menos de 7 dias: Prefeitura de Florianópolis'
+      },
+      download_id: 'uuid-123-456'
+    };
+
+    beforeEach(() => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => mockSuccessResponse
+      });
+    });
+
+    describe('AC1: Conditional Rendering', () => {
+      it('should NOT render results section when result is null', () => {
+        render(<HomePage />);
+
+        // Check that results-specific elements are NOT present
+        expect(screen.queryByText('Destaques:')).not.toBeInTheDocument();
+        expect(screen.queryByText(/Download Excel/i)).not.toBeInTheDocument();
+        expect(screen.queryByText('valor total')).not.toBeInTheDocument();
+      });
+
+      it('should render results section when result is set', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText(/Encontradas 15 licitações/i)).toBeInTheDocument();
+        });
+      });
+    });
+
+    describe('AC2: Executive Summary Display', () => {
+      it('should display resumo_executivo text', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText('Encontradas 15 licitações de uniformes totalizando R$ 450.000,00')).toBeInTheDocument();
+        });
+      });
+
+      it('should display summary in green bordered card', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const summaryText = screen.getByText(/Encontradas 15 licitações/i);
+          const summaryCard = summaryText.closest('div');
+          expect(summaryCard).toHaveClass('bg-green-50', 'border-green-200');
+        });
+      });
+    });
+
+    describe('AC3: Statistics Display', () => {
+      it('should display total_oportunidades as integer', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const totalElement = screen.getByText('15');
+          expect(totalElement).toHaveClass('text-3xl', 'font-bold', 'text-green-700');
+          expect(screen.getByText('licitações')).toBeInTheDocument();
+        });
+      });
+
+      it('should display valor_total with Brazilian currency formatting', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          // toLocaleString("pt-BR") for 450000 = "450.000"
+          // Find the value element by its label
+          const valorTotalLabel = screen.getByText('valor total');
+          const valueElement = valorTotalLabel.previousElementSibling;
+
+          expect(valueElement).toHaveTextContent(/R\$ 450\.000/i);
+          expect(valueElement).toHaveClass('text-3xl', 'font-bold', 'text-green-700');
+        });
+      });
+
+      it('should format large values correctly', async () => {
+        const largeValueResponse = {
+          ...mockSuccessResponse,
+          resumo: {
+            ...mockSuccessResponse.resumo,
+            valor_total: 1234567.89
+          }
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: async () => largeValueResponse
+        });
+
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          // toLocaleString("pt-BR") for 1234567.89 = "1.234.567,89"
+          expect(screen.getByText(/R\$ 1\.234\.567/i)).toBeInTheDocument();
+        });
+      });
+    });
+
+    describe('AC4: Urgency Alert Conditional', () => {
+      it('should display urgency alert when alerta_urgencia is NOT null', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const alertText = screen.getByText(/Licitação com prazo em menos de 7 dias/i);
+          expect(alertText).toBeInTheDocument();
+
+          const alertBox = alertText.closest('div');
+          expect(alertBox).toHaveClass('bg-yellow-100', 'border-yellow-300', 'text-yellow-800');
+          expect(screen.getByText(/⚠️/)).toBeInTheDocument();
+        });
+      });
+
+      it('should NOT display urgency alert when alerta_urgencia is null', async () => {
+        const noAlertResponse = {
+          ...mockSuccessResponse,
+          resumo: {
+            ...mockSuccessResponse.resumo,
+            alerta_urgencia: null
+          }
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: async () => noAlertResponse
+        });
+
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText(/Encontradas 15 licitações/i)).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText(/Licitação com prazo/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/⚠️/)).not.toBeInTheDocument();
+      });
+    });
+
+    describe('AC5: Highlights List Conditional', () => {
+      it('should display highlights when destaques array has items', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText('Destaques:')).toBeInTheDocument();
+          expect(screen.getByText(/Uniformes escolares - Secretaria de Educação SC/i)).toBeInTheDocument();
+          expect(screen.getByText(/Fardamento militar - PM-PR/i)).toBeInTheDocument();
+          expect(screen.getByText(/Jalecos - Hospital Municipal RS/i)).toBeInTheDocument();
+        });
+      });
+
+      it('should NOT display highlights section when destaques array is empty', async () => {
+        const noHighlightsResponse = {
+          ...mockSuccessResponse,
+          resumo: {
+            ...mockSuccessResponse.resumo,
+            destaques: []
+          }
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: async () => noHighlightsResponse
+        });
+
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText(/Encontradas 15 licitações/i)).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText('Destaques:')).not.toBeInTheDocument();
+      });
+
+      it('should render highlights as bulleted list', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const highlightsList = screen.getByText('Destaques:').nextElementSibling;
+          expect(highlightsList?.tagName).toBe('UL');
+          expect(highlightsList).toHaveClass('list-disc', 'list-inside');
+        });
+      });
+    });
+
+    describe('AC6: Download Button', () => {
+      it('should link to /api/download with correct query param', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const downloadLink = screen.getByText(/Download Excel/i).closest('a');
+          expect(downloadLink).toHaveAttribute('href', '/api/download?id=uuid-123-456');
+        });
+      });
+
+      it('should have download attribute', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const downloadLink = screen.getByText(/Download Excel/i).closest('a');
+          expect(downloadLink).toHaveAttribute('download');
+        });
+      });
+
+      it('should display count in download button text', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText('📥 Download Excel (15 licitações)')).toBeInTheDocument();
+        });
+      });
+
+      it('should use blue styling for download button', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const downloadButton = screen.getByText(/Download Excel/i);
+          expect(downloadButton).toHaveClass('bg-blue-600', 'hover:bg-blue-700');
+        });
+      });
+    });
+
+    describe('AC7: Styling Compliance', () => {
+      it('should use green theme for summary card', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const summaryText = screen.getByText(/Encontradas 15 licitações/i);
+          const summaryCard = summaryText.closest('div');
+          expect(summaryCard).toHaveClass('p-4', 'bg-green-50', 'border', 'border-green-200', 'rounded');
+        });
+      });
+
+      it('should use yellow theme for urgency alert', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const alertBox = screen.getByText(/Licitação com prazo/i).closest('div');
+          expect(alertBox).toHaveClass('bg-yellow-100', 'border-yellow-300', 'text-yellow-800');
+        });
+      });
+
+      it('should use blue theme for download button', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const downloadButton = screen.getByText(/Download Excel/i);
+          expect(downloadButton).toHaveClass('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+        });
+      });
+    });
+
+    describe('AC8: Responsive Layout', () => {
+      it('should use responsive spacing classes', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const resultsContainer = screen.getByText(/Encontradas 15 licitações/i).closest('div')?.parentElement;
+          expect(resultsContainer).toHaveClass('mt-6', 'space-y-4');
+        });
+      });
+
+      it('should use flexbox for statistics layout', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          const statsContainer = screen.getByText('15').closest('div')?.parentElement;
+          expect(statsContainer).toHaveClass('flex', 'gap-6');
+        });
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('should handle zero opportunities', async () => {
+        const zeroResponse = {
+          resumo: {
+            resumo_executivo: 'Nenhuma licitação encontrada',
+            total_oportunidades: 0,
+            valor_total: 0,
+            destaques: [],
+            distribuicao_uf: {},
+            alerta_urgencia: null
+          },
+          download_id: 'empty-id'
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: async () => zeroResponse
+        });
+
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText('Nenhuma licitação encontrada')).toBeInTheDocument();
+          expect(screen.getByText('0')).toBeInTheDocument();
+          expect(screen.getByText('R$ 0')).toBeInTheDocument();
+        });
+      });
+
+      it('should handle API error gracefully', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: false,
+          json: async () => ({ message: 'Backend unavailable' })
+        });
+
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText(/Download Excel/i)).not.toBeInTheDocument();
+      });
+
+      it('should clear previous results on new search', async () => {
+        render(<HomePage />);
+
+        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+
+        // First search
+        fireEvent.click(submitButton);
+        await waitFor(() => {
+          expect(screen.getByText(/Encontradas 15 licitações/i)).toBeInTheDocument();
+        });
+
+        // Second search
+        const newResponse = {
+          resumo: {
+            resumo_executivo: 'Encontradas 3 licitações',
+            total_oportunidades: 3,
+            valor_total: 50000,
+            destaques: [],
+            distribuicao_uf: { SP: 3 },
+            alerta_urgencia: null
+          },
+          download_id: 'new-id'
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+          ok: true,
+          json: async () => newResponse
+        });
+
+        fireEvent.click(submitButton);
+
+        await waitFor(() => {
+          expect(screen.getByText('Encontradas 3 licitações')).toBeInTheDocument();
+          expect(screen.queryByText(/Encontradas 15 licitações/i)).not.toBeInTheDocument();
+        });
+      });
+    });
+  });
 });
