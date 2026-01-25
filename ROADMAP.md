@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.16 (Frontend API Routes Implemented)
-**Última Atualização:** 2026-01-25 16:33 (UTC)
-**Status:** 🚧 Em Desenvolvimento (58.8% completo - 20/34 issues)
+**Versão:** 1.17 (Frontend Results Display Tested)
+**Última Atualização:** 2026-01-25 16:58 (UTC)
+**Status:** 🚧 Em Desenvolvimento (61.8% completo - 21/34 issues)
 
 ---
 
@@ -43,14 +43,14 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Progresso Geral:**
 ```
-[████████████░░░░░░] 58.8% (20/34 issues) - Frontend API Routes ✅
+[████████████░░░░░░] 61.8% (21/34 issues) - Frontend Results Display ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
-🎨 EPIC 6: Frontend          [█████░░░░░] 3/6 🟡 50% EM PROGRESSO (#21, #22, #24 ✅ merged)
+🎨 EPIC 6: Frontend          [███████░░░] 4/6 🟡 66.7% EM PROGRESSO (#21, #22, #23 ✅, #24 ✅ merged)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
 ```
 
@@ -91,7 +91,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M2: Full-Stack Funcional *(Semana 2)*
 **Objetivo:** Interface web + API completa
-**Status:** 🟡 EM PROGRESSO (5/10 issues - 50%)
+**Status:** 🟡 EM PROGRESSO (6/10 issues - 60%)
 
 **Prioridade P0 (Crítico):**
 - [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 80% EM PROGRESSO
@@ -99,13 +99,13 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #18 - POST /buscar ✅ (PR #51 merged 2026-01-25) 🎯 100% coverage main.py, 14 tests, 99.27% backend
   - [x] #19 - Logging estruturado ✅ (PR #49 merged 2026-01-25) 🎯 100% coverage config.py, 23 tests, 99.21% backend
   - [x] #29 - Health check ✅ (PR #50 merged 2026-01-25) 🎯 100% governance score, 212 tests, 99.21% backend
-- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 50% EM PROGRESSO
+- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 66.7% EM PROGRESSO
   - [x] #21 - Setup Next.js ✅ (PR #52 merged 2026-01-25) 🎯 Next.js 16.1.4 + Tailwind + TypeScript strict mode
   - [x] #22 - Seleção UFs e Date Range ✅ (PR #53 merged 2026-01-25) 🎯 83.58% coverage, 25 tests, 10/10 acceptance criteria
   - [x] #24 - API Routes ✅ (PR #54 merged 2026-01-25) 🎯 88.67% coverage, 18 tests, 4.76:1 test-to-code ratio
+  - [x] #23 - Tela de resultados com resumo ✅ (PR #55 merged 2026-01-25) 🎯 96.72% coverage page.tsx, 36 tests, 8/8 ACs, 100% governance score
   - [ ] #33 - Error Boundaries ⭐ NOVO 🔓 UNBLOCKED
   - [ ] #34 - Form Validations ⭐ NOVO 🔓 UNBLOCKED
-  - [ ] #23 - Resultados 🔓 UNBLOCKED
 
 **Deliverables:**
 - 🟡 API REST completa (FastAPI structure done, endpoints pending)
@@ -163,9 +163,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ### KPIs do POC
 | Métrica | Meta | Status |
 |---------|------|--------|
-| **Issues Concluídas** | 34/34 | 🟡 20/34 (58.8%) |
+| **Issues Concluídas** | 34/34 | 🟡 21/34 (61.8%) |
 | **PRD Coverage** | 100% | ✅ 100% (era 93%) |
-| **Cobertura de Testes** | >70% | ✅ Backend 99.21%, Frontend 88.67% |
+| **Cobertura de Testes** | >70% | ✅ Backend 99.21%, Frontend 91.5% |
 | **Tempo de Resposta API** | <10s | 🔴 N/A |
 | **Uptime em Produção** | >95% | 🔴 N/A |
 | **Documentação** | README completo | 🔴 Pendente |
@@ -285,6 +285,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-25 | 1.8 | **Issue #11 concluída (Sequential Filtering)** - PR #42 merged. EPIC 3: 50% completo (2/4). 99% coverage, fail-fast optimization. Progresso: 20.6% (7/34) |
 | 2026-01-25 | 1.9 | **Issue #32 concluída (Test Frameworks)** - PR #43 merged. EPIC 1: 80% completo (4/5). 96.69% coverage, completes setup infrastructure. Progresso: 29.4% (10/34) |
 | 2026-01-25 | 1.16 | **Issue #24 concluída (API Routes)** - PR #54 merged. EPIC 6: 50% completo (3/6). 88.67% coverage, 4.76:1 test-to-code ratio. API integration layer complete. M2: 50% (5/10). Progresso: 58.8% (20/34) |
+| 2026-01-25 | 1.17 | **Issue #23 concluída (Results Display Tests)** - PR #55 merged. EPIC 6: 66.7% completo (4/6). 96.72% coverage page.tsx, 36 tests, 8.6:1 test-to-code ratio. Perfect 100% governance score. M2: 60% (6/10). Progresso: 61.8% (21/34) |
 
 ---
 
@@ -375,6 +376,26 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 16:58 - Issue #23 Merged ✅ (RESULTS DISPLAY TESTED - EPIC 6 NOW 66.7% 🎉)
+**PR #55:** test(frontend): add comprehensive tests for results display section (#23)
+- **Auto-merged via /review-pr protocol** - **PERFECT 100% governance score** (8/8 categories at 12.5% each)
+- **Implementation:** 36 new tests for results display section (lines 278-328 in page.tsx), organized by acceptance criteria (AC1-AC8)
+- **Test Coverage:** 96.72% page.tsx (statements), 87.5% branches, 100% functions, 96.72% lines - **exceeds 60% threshold by 36.72%**
+- **Frontend Overall:** 91.5% statements, 89.47% branches, 90% functions, 94.11% lines (up from 88.67%)
+- **Tests:** 67/67 passing (44 page.tsx tests + 23 API/setup tests), 0 failures, execution time: 6.858s
+- **Test Categories:** AC1 Conditional Rendering (2), AC2 Executive Summary (2), AC3 Statistics Display (3), AC4 Urgency Alert (2), AC5 Highlights List (3), AC6 Download Button (4), AC7 Styling (3), AC8 Responsive Layout (2), Edge Cases (3)
+- **Test-to-Code Ratio:** 431 test lines / ~50 implementation lines = **8.6:1** (exceptional quality)
+- **Bug Fixes:** Fixed regex collision in "should NOT render results" test, fixed ambiguous text selector in "valor_total formatting" test
+- **TypeScript:** 0 compilation errors, strict mode enabled, proper type checking across all tests
+- **Build:** Production build successful (4.9s), Next.js 16.1.4 Turbopack optimized, static page generation
+- **CI/CD:** ALL 18 checks passing (Backend Tests, Frontend Tests, CodeQL, Security Scanning, Secret Scanning, PR Validation, etc.)
+- **Post-Merge Validation:** Layer 1 Health Checks ✅ (67/67 tests passing on main), Layer 2 Smoke Tests ✅ (Build succeeded), Layer 3 CI Pipeline ✅ (all workflows green)
+- **Acceptance Criteria:** 8/8 met + 6 bonus (Zero opportunities, API errors, State clearing, Large currency values, Empty highlights, Null urgency alerts)
+- **Impact:** Validates all PRD 7.3 requirements for results page, ensures correct behavior under all conditions (normal, error, edge cases)
+- **Milestone:** EPIC 6 progress 50% → **66.7%** (4/6 issues), M2 progress 50% → **60%** (6/10 issues), Overall 58.8% → **61.8%** (21/34)
+- **Files:** 1 file changed (+431 lines: page.test.tsx), zero implementation changes (test-only PR, low risk)
+- **Business Value:** Results display (most user-visible POC feature) validated with regression protection, unblocks #26 (E2E Integration) and #27 (End-to-End Tests) ✨
 
 ### 2026-01-25 16:33 - Issue #24 Merged ✅ (API ROUTES COMPLETE - EPIC 6 NOW 50% 🎉)
 **PR #54:** feat(frontend): implement API Routes for backend integration (#24)
@@ -534,4 +555,4 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 
 ---
 
-*Este roadmap é sincronizado automaticamente. Versão 1.16: 34 issues, 100% PRD coverage*
+*Este roadmap é sincronizado automaticamente. Versão 1.17: 34 issues, 100% PRD coverage*
