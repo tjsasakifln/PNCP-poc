@@ -1,6 +1,8 @@
 """Configuration models for PNCP client."""
 from dataclasses import dataclass, field
 from typing import Tuple, Type
+import logging
+import sys
 
 
 @dataclass
@@ -26,3 +28,36 @@ class RetryConfig:
             TimeoutError,
         )
     )
+
+
+def setup_logging(level: str = "INFO") -> None:
+    """Configure structured logging for the application.
+
+    Sets up a consistent logging format across all modules with proper
+    level filtering and suppression of verbose third-party libraries.
+
+    Args:
+        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+               Defaults to INFO.
+
+    Example:
+        >>> setup_logging("DEBUG")
+        >>> logger = logging.getLogger(__name__)
+        >>> logger.info("Application started")
+        2026-01-25 23:00:00 | INFO     | __main__ | Application started
+    """
+    formatter = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, level.upper()))
+    root_logger.addHandler(handler)
+
+    # Silence verbose logs from third-party libraries
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
