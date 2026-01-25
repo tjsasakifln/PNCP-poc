@@ -39,3 +39,20 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Run with hot-reload for development
 # Note: --reload watches for file changes and auto-restarts
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# Stage 3: Production
+FROM base as production
+
+# Copy application code
+COPY . .
+
+# Expose FastAPI default port
+EXPOSE 8000
+
+# Health check (production uses Railway's PORT env var)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+# Run with multiple workers for production (no hot-reload)
+# Railway injects $PORT, but we default to 8000
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2
