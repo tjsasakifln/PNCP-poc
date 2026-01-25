@@ -24,6 +24,7 @@ from schemas import ResumoLicitacoes
 # 1. Empty Input Tests
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def test_gerar_resumo_empty_input():
     """Should return empty summary when no bids provided."""
     resumo = gerar_resumo([])
@@ -40,6 +41,7 @@ def test_gerar_resumo_empty_input():
 # 2. API Key Validation Tests
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def test_gerar_resumo_missing_api_key():
     """Should raise ValueError when OPENAI_API_KEY is not set."""
     licitacoes = [
@@ -48,7 +50,7 @@ def test_gerar_resumo_missing_api_key():
             "nomeOrgao": "Prefeitura SP",
             "uf": "SP",
             "valorTotalEstimado": 100000.0,
-            "dataAberturaProposta": "2025-02-15T10:00:00"
+            "dataAberturaProposta": "2025-02-15T10:00:00",
         }
     ]
 
@@ -61,6 +63,7 @@ def test_gerar_resumo_missing_api_key():
 # 3. Valid Input Tests (Mocked OpenAI API)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key-12345"})
 @patch("llm.OpenAI")
 def test_gerar_resumo_single_bid(mock_openai):
@@ -71,7 +74,7 @@ def test_gerar_resumo_single_bid(mock_openai):
         total_oportunidades=1,
         valor_total=100000.0,
         destaques=["Prefeitura SP: R$ 100.000,00"],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     mock_client = Mock()
@@ -87,7 +90,7 @@ def test_gerar_resumo_single_bid(mock_openai):
             "uf": "SP",
             "municipio": "São Paulo",
             "valorTotalEstimado": 100000.0,
-            "dataAberturaProposta": "2025-02-15T10:00:00"
+            "dataAberturaProposta": "2025-02-15T10:00:00",
         }
     ]
 
@@ -115,7 +118,7 @@ def test_gerar_resumo_50_bids_limit(mock_openai):
         total_oportunidades=50,
         valor_total=5000000.0,
         destaques=["Top 3 valores"],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     mock_client = Mock()
@@ -132,7 +135,7 @@ def test_gerar_resumo_50_bids_limit(mock_openai):
             "uf": "SP",
             "municipio": "São Paulo",
             "valorTotalEstimado": 100000.0,
-            "dataAberturaProposta": "2025-02-15T10:00:00"
+            "dataAberturaProposta": "2025-02-15T10:00:00",
         }
         for i in range(100)
     ]
@@ -158,7 +161,7 @@ def test_gerar_resumo_truncates_objeto_compra(mock_openai):
         total_oportunidades=1,
         valor_total=100000.0,
         destaques=[],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     mock_client = Mock()
@@ -176,7 +179,7 @@ def test_gerar_resumo_truncates_objeto_compra(mock_openai):
             "uf": "SP",
             "municipio": "São Paulo",
             "valorTotalEstimado": 100000.0,
-            "dataAberturaProposta": "2025-02-15T10:00:00"
+            "dataAberturaProposta": "2025-02-15T10:00:00",
         }
     ]
 
@@ -201,7 +204,7 @@ def test_gerar_resumo_handles_none_values(mock_openai):
         total_oportunidades=1,
         valor_total=0.0,
         destaques=[],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     mock_client = Mock()
@@ -218,7 +221,7 @@ def test_gerar_resumo_handles_none_values(mock_openai):
             "uf": None,
             "municipio": None,
             "valorTotalEstimado": None,
-            "dataAberturaProposta": None
+            "dataAberturaProposta": None,
         }
     ]
 
@@ -234,6 +237,7 @@ def test_gerar_resumo_handles_none_values(mock_openai):
 # 4. API Error Scenarios
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key-12345"})
 @patch("llm.OpenAI")
 def test_gerar_resumo_api_error(mock_openai):
@@ -248,7 +252,7 @@ def test_gerar_resumo_api_error(mock_openai):
             "nomeOrgao": "Prefeitura",
             "uf": "SP",
             "valorTotalEstimado": 100000.0,
-            "dataAberturaProposta": "2025-02-15T10:00:00"
+            "dataAberturaProposta": "2025-02-15T10:00:00",
         }
     ]
 
@@ -272,7 +276,7 @@ def test_gerar_resumo_empty_api_response(mock_openai):
             "nomeOrgao": "Prefeitura",
             "uf": "SP",
             "valorTotalEstimado": 100000.0,
-            "dataAberturaProposta": "2025-02-15T10:00:00"
+            "dataAberturaProposta": "2025-02-15T10:00:00",
         }
     ]
 
@@ -284,6 +288,7 @@ def test_gerar_resumo_empty_api_response(mock_openai):
 # 5. HTML Formatting Tests
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def test_format_resumo_html_basic():
     """Should format basic summary as HTML."""
     resumo = ResumoLicitacoes(
@@ -291,7 +296,7 @@ def test_format_resumo_html_basic():
         total_oportunidades=15,
         valor_total=2300000.00,
         destaques=["3 urgentes", "Maior valor: R$ 500k"],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     html = format_resumo_html(resumo)
@@ -311,7 +316,7 @@ def test_format_resumo_html_with_alerta():
         total_oportunidades=5,
         valor_total=100000.0,
         destaques=[],
-        alerta_urgencia="⚠️ 5 licitações encerram em 24 horas"
+        alerta_urgencia="⚠️ 5 licitações encerram em 24 horas",
     )
 
     html = format_resumo_html(resumo)
@@ -327,7 +332,7 @@ def test_format_resumo_html_empty_destaques():
         total_oportunidades=0,
         valor_total=0.0,
         destaques=[],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     html = format_resumo_html(resumo)
@@ -345,7 +350,7 @@ def test_format_resumo_html_no_alerta():
         total_oportunidades=10,
         valor_total=500000.0,
         destaques=["Destaque 1"],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     html = format_resumo_html(resumo)
@@ -358,6 +363,7 @@ def test_format_resumo_html_no_alerta():
 # 6. Integration Tests (with Real Schema Validation)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 def test_resumo_schema_validation():
     """Should validate ResumoLicitacoes schema constraints."""
     # Valid resumo
@@ -366,7 +372,7 @@ def test_resumo_schema_validation():
         total_oportunidades=10,
         valor_total=1000000.0,
         destaques=["Destaque 1", "Destaque 2"],
-        alerta_urgencia="Alert"
+        alerta_urgencia="Alert",
     )
 
     assert resumo.total_oportunidades >= 0
@@ -381,7 +387,7 @@ def test_resumo_schema_validation_negative_values():
             total_oportunidades=-5,  # Invalid: negative
             valor_total=100000.0,
             destaques=[],
-            alerta_urgencia=None
+            alerta_urgencia=None,
         )
 
     with pytest.raises(Exception):  # Pydantic ValidationError
@@ -390,13 +396,14 @@ def test_resumo_schema_validation_negative_values():
             total_oportunidades=10,
             valor_total=-500.0,  # Invalid: negative
             destaques=[],
-            alerta_urgencia=None
+            alerta_urgencia=None,
         )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 7. Edge Cases
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key-12345"})
 @patch("llm.OpenAI")
@@ -407,7 +414,7 @@ def test_gerar_resumo_missing_optional_fields(mock_openai):
         total_oportunidades=1,
         valor_total=0.0,
         destaques=[],
-        alerta_urgencia=None
+        alerta_urgencia=None,
     )
 
     mock_client = Mock()

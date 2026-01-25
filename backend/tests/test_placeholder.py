@@ -5,7 +5,6 @@ Real tests will be implemented in issue #27.
 """
 
 
-
 def test_placeholder():
     """Placeholder test - always passes."""
     assert True

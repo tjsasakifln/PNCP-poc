@@ -74,7 +74,7 @@ def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
             total_oportunidades=0,
             valor_total=0.0,
             destaques=[],
-            alerta_urgencia=None
+            alerta_urgencia=None,
         )
 
     # Validate API key
@@ -88,14 +88,18 @@ def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     # Prepare data for LLM (limit to 50 bids to avoid token overflow)
     dados_resumidos = []
     for lic in licitacoes[:50]:
-        dados_resumidos.append({
-            "objeto": (lic.get("objetoCompra") or "")[:200],  # Truncate to 200 chars
-            "orgao": lic.get("nomeOrgao") or "",
-            "uf": lic.get("uf") or "",
-            "municipio": lic.get("municipio") or "",
-            "valor": lic.get("valorTotalEstimado") or 0,
-            "abertura": lic.get("dataAberturaProposta") or ""
-        })
+        dados_resumidos.append(
+            {
+                "objeto": (lic.get("objetoCompra") or "")[
+                    :200
+                ],  # Truncate to 200 chars
+                "orgao": lic.get("nomeOrgao") or "",
+                "uf": lic.get("uf") or "",
+                "municipio": lic.get("municipio") or "",
+                "valor": lic.get("valorTotalEstimado") or 0,
+                "abertura": lic.get("dataAberturaProposta") or "",
+            }
+        )
 
     # Initialize OpenAI client
     client = OpenAI(api_key=api_key)
@@ -126,11 +130,11 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
         model="gpt-4o-mini",  # Using gpt-4o-mini as gpt-4.1-nano doesn't exist
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ],
         response_format=ResumoLicitacoes,
         temperature=0.3,
-        max_tokens=500
+        max_tokens=500,
     )
 
     # Extract parsed response
@@ -271,7 +275,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
             total_oportunidades=0,
             valor_total=0.0,
             destaques=[],
-            alerta_urgencia=None
+            alerta_urgencia=None,
         )
 
     # Calculate basic statistics
@@ -286,9 +290,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
 
     # Find top 3 bids by value
     top_valor = sorted(
-        licitacoes,
-        key=lambda x: x.get("valorTotalEstimado", 0) or 0,
-        reverse=True
+        licitacoes, key=lambda x: x.get("valorTotalEstimado", 0) or 0, reverse=True
     )[:3]
 
     destaques = [
@@ -320,5 +322,5 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
         total_oportunidades=total,
         valor_total=valor_total,
         destaques=destaques,
-        alerta_urgencia=alerta
+        alerta_urgencia=alerta,
     )

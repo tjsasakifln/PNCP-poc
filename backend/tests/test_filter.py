@@ -1,4 +1,5 @@
 """Unit tests for keyword matching engine (filter.py)."""
+
 from datetime import datetime, timezone, timedelta
 from filter import (
     normalize_text,
@@ -6,7 +7,7 @@ from filter import (
     filter_licitacao,
     filter_batch,
     KEYWORDS_UNIFORMES,
-    KEYWORDS_EXCLUSAO
+    KEYWORDS_EXCLUSAO,
 )
 
 
@@ -66,8 +67,7 @@ class TestMatchKeywords:
     def test_simple_match(self):
         """Should match simple uniform keywords."""
         matched, keywords = match_keywords(
-            "Aquisição de uniformes escolares",
-            KEYWORDS_UNIFORMES
+            "Aquisição de uniformes escolares", KEYWORDS_UNIFORMES
         )
         assert matched is True
         assert "uniformes" in keywords
@@ -75,8 +75,7 @@ class TestMatchKeywords:
     def test_no_match(self):
         """Should return False when no keywords match."""
         matched, keywords = match_keywords(
-            "Aquisição de software de gestão",
-            KEYWORDS_UNIFORMES
+            "Aquisição de software de gestão", KEYWORDS_UNIFORMES
         )
         assert matched is False
         assert keywords == []
@@ -108,16 +107,12 @@ class TestMatchKeywords:
 
         # "uniformemente" should NOT match (partial word)
         matched, _ = match_keywords(
-            "Distribuição uniformemente espaçada",
-            KEYWORDS_UNIFORMES
+            "Distribuição uniformemente espaçada", KEYWORDS_UNIFORMES
         )
         assert matched is False
 
         # "uniformização" should NOT match (partial word)
-        matched, _ = match_keywords(
-            "Uniformização de processos",
-            KEYWORDS_UNIFORMES
-        )
+        matched, _ = match_keywords("Uniformização de processos", KEYWORDS_UNIFORMES)
         assert matched is False
 
     def test_exclusion_keywords_prevent_match(self):
@@ -126,16 +121,14 @@ class TestMatchKeywords:
         matched, keywords = match_keywords(
             "Uniformização de procedimento padrão",
             KEYWORDS_UNIFORMES,
-            KEYWORDS_EXCLUSAO
+            KEYWORDS_EXCLUSAO,
         )
         assert matched is False
         assert keywords == []
 
         # Another exclusion case
         matched, keywords = match_keywords(
-            "Padrão uniforme de qualidade",
-            KEYWORDS_UNIFORMES,
-            KEYWORDS_EXCLUSAO
+            "Padrão uniforme de qualidade", KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO
         )
         assert matched is False
         assert keywords == []
@@ -143,8 +136,7 @@ class TestMatchKeywords:
     def test_multiple_keyword_matches(self):
         """Should return all matched keywords."""
         matched, keywords = match_keywords(
-            "Fornecimento de jaleco e avental para hospital",
-            KEYWORDS_UNIFORMES
+            "Fornecimento de jaleco e avental para hospital", KEYWORDS_UNIFORMES
         )
         assert matched is True
         assert "jaleco" in keywords
@@ -154,8 +146,7 @@ class TestMatchKeywords:
     def test_compound_keyword_matching(self):
         """Should match multi-word keywords."""
         matched, keywords = match_keywords(
-            "Aquisição de uniforme escolar",
-            KEYWORDS_UNIFORMES
+            "Aquisição de uniforme escolar", KEYWORDS_UNIFORMES
         )
         assert matched is True
         assert "uniforme escolar" in keywords or "uniforme" in keywords
@@ -180,9 +171,7 @@ class TestMatchKeywords:
     def test_exclusions_none_parameter(self):
         """Should work correctly when exclusions=None."""
         matched, keywords = match_keywords(
-            "Compra de uniformes",
-            KEYWORDS_UNIFORMES,
-            exclusions=None
+            "Compra de uniformes", KEYWORDS_UNIFORMES, exclusions=None
         )
         assert matched is True
         assert len(keywords) > 0
@@ -257,7 +246,7 @@ class TestFilterLicitacao:
         licitacao = {
             "uf": "RJ",
             "valorTotalEstimado": 100_000.0,
-            "objetoCompra": "Aquisição de uniformes escolares"
+            "objetoCompra": "Aquisição de uniformes escolares",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP", "MG"})
         assert aprovada is False
@@ -270,7 +259,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Aquisição de uniformes escolares",
-            "dataAberturaProposta": future_date
+            "dataAberturaProposta": future_date,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP", "RJ"})
         assert aprovada is True
@@ -278,10 +267,7 @@ class TestFilterLicitacao:
 
     def test_rejects_valor_none(self):
         """Should reject bid when valorTotalEstimado is missing."""
-        licitacao = {
-            "uf": "SP",
-            "objetoCompra": "Uniformes"
-        }
+        licitacao = {"uf": "SP", "objetoCompra": "Uniformes"}
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is False
         assert "Valor não informado" in motivo
@@ -291,7 +277,7 @@ class TestFilterLicitacao:
         licitacao = {
             "uf": "SP",
             "valorTotalEstimado": 30_000.0,  # Below 50k default
-            "objetoCompra": "Uniformes escolares"
+            "objetoCompra": "Uniformes escolares",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is False
@@ -303,7 +289,7 @@ class TestFilterLicitacao:
         licitacao = {
             "uf": "SP",
             "valorTotalEstimado": 6_000_000.0,  # Above 5M default
-            "objetoCompra": "Uniformes escolares"
+            "objetoCompra": "Uniformes escolares",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is False
@@ -317,7 +303,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 150_000.0,  # Within 50k-5M range
             "objetoCompra": "Uniformes escolares",
-            "dataAberturaProposta": future_date
+            "dataAberturaProposta": future_date,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is True
@@ -330,7 +316,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 75_000.0,
             "objetoCompra": "Uniformes",
-            "dataAberturaProposta": future_date
+            "dataAberturaProposta": future_date,
         }
         # Custom range: 100k-200k (should reject 75k)
         aprovada, _ = filter_licitacao(
@@ -343,7 +329,7 @@ class TestFilterLicitacao:
         licitacao = {
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
-            "objetoCompra": "Aquisição de notebooks e impressoras"
+            "objetoCompra": "Aquisição de notebooks e impressoras",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is False
@@ -356,7 +342,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Aquisição de uniformes escolares",
-            "dataAberturaProposta": future_date
+            "dataAberturaProposta": future_date,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is True
@@ -369,7 +355,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Uniformes",
-            "dataAberturaProposta": past_date
+            "dataAberturaProposta": past_date,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is False
@@ -382,7 +368,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Uniformes escolares",
-            "dataAberturaProposta": future_date
+            "dataAberturaProposta": future_date,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is True
@@ -393,7 +379,7 @@ class TestFilterLicitacao:
         licitacao = {
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
-            "objetoCompra": "Uniformes"
+            "objetoCompra": "Uniformes",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is True  # Missing date doesn't fail the filter
@@ -405,7 +391,7 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Uniformes",
-            "dataAberturaProposta": "invalid-date-format"
+            "dataAberturaProposta": "invalid-date-format",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is True  # Malformed date doesn't fail the filter
@@ -417,7 +403,7 @@ class TestFilterLicitacao:
         licitacao_wrong_uf = {
             "uf": "RJ",
             "valorTotalEstimado": 30_000.0,  # Also wrong value
-            "objetoCompra": "Software"  # Also wrong keywords
+            "objetoCompra": "Software",  # Also wrong keywords
         }
         aprovada, motivo = filter_licitacao(licitacao_wrong_uf, {"SP"})
         assert aprovada is False
@@ -432,10 +418,10 @@ class TestFilterLicitacao:
             "uf": "SP",
             "valorTotalEstimado": 287_500.0,
             "objetoCompra": "PREGÃO ELETRÔNICO - Aquisição de uniformes escolares "
-                           "para alunos da rede municipal de ensino",
+            "para alunos da rede municipal de ensino",
             "dataAberturaProposta": future_date,
             "codigoCompra": "12345678",
-            "nomeOrgao": "Prefeitura Municipal de São Paulo"
+            "nomeOrgao": "Prefeitura Municipal de São Paulo",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP", "RJ", "MG"})
         assert aprovada is True
@@ -443,14 +429,14 @@ class TestFilterLicitacao:
 
     def test_handles_z_suffix_in_iso_datetime(self):
         """Should correctly parse ISO datetime with 'Z' suffix."""
-        future_date = (datetime.now(timezone.utc) + timedelta(days=30))
+        future_date = datetime.now(timezone.utc) + timedelta(days=30)
         future_date_z = future_date.strftime("%Y-%m-%dT%H:%M:%SZ")  # Z format
 
         licitacao = {
             "uf": "SP",
             "valorTotalEstimado": 100_000.0,
             "objetoCompra": "Uniformes",
-            "dataAberturaProposta": future_date_z
+            "dataAberturaProposta": future_date_z,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is True
@@ -475,7 +461,7 @@ class TestFilterBatch:
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes escolares",
-                "dataAberturaProposta": future_date
+                "dataAberturaProposta": future_date,
             }
         ]
         aprovadas, stats = filter_batch(licitacoes, {"SP"})
@@ -494,22 +480,22 @@ class TestFilterBatch:
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": future_date
+                "dataAberturaProposta": future_date,
             },
             # Rejected: wrong UF
             {
                 "uf": "RJ",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": future_date
+                "dataAberturaProposta": future_date,
             },
             # Approved
             {
                 "uf": "MG",
                 "valorTotalEstimado": 150_000.0,
                 "objetoCompra": "Jalecos hospitalares",
-                "dataAberturaProposta": future_date
-            }
+                "dataAberturaProposta": future_date,
+            },
         ]
         aprovadas, stats = filter_batch(licitacoes, {"SP", "MG"})
 
@@ -535,15 +521,15 @@ class TestFilterBatch:
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": past_date
+                "dataAberturaProposta": past_date,
             },
             # Approved
             {
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": future_date
-            }
+                "dataAberturaProposta": future_date,
+            },
         ]
 
         aprovadas, stats = filter_batch(licitacoes, {"SP"})
@@ -568,7 +554,7 @@ class TestFilterBatch:
             "rejeitadas_valor",
             "rejeitadas_keyword",
             "rejeitadas_prazo",
-            "rejeitadas_outros"
+            "rejeitadas_outros",
         }
         assert set(stats.keys()) == required_keys
 
@@ -581,22 +567,22 @@ class TestFilterBatch:
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": future_date
+                "dataAberturaProposta": future_date,
             },
             # Below custom min
             {
                 "uf": "SP",
                 "valorTotalEstimado": 60_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": future_date
+                "dataAberturaProposta": future_date,
             },
             # Above custom max
             {
                 "uf": "SP",
                 "valorTotalEstimado": 150_000.0,
                 "objetoCompra": "Uniformes",
-                "dataAberturaProposta": future_date
-            }
+                "dataAberturaProposta": future_date,
+            },
         ]
 
         aprovadas, stats = filter_batch(
@@ -617,7 +603,7 @@ class TestFilterBatch:
             "dataAberturaProposta": future_date,
             "codigoCompra": "ABC123",
             "nomeOrgao": "Prefeitura XYZ",
-            "municipio": "São Paulo"
+            "municipio": "São Paulo",
         }
 
         aprovadas, _ = filter_batch([original_bid], {"SP"})
@@ -638,7 +624,7 @@ class TestFilterBatch:
                 "valorTotalEstimado": 100_000.0 + (i * 1000),
                 "objetoCompra": f"Uniformes lote {i}",
                 "dataAberturaProposta": future_date,
-                "id": i
+                "id": i,
             }
             for i in range(1000)
         ]

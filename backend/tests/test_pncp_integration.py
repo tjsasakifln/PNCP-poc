@@ -6,6 +6,7 @@ Run with: pytest -m integration
 
 WARNING: These tests make real API calls and may be rate-limited.
 """
+
 import pytest
 from datetime import datetime, timedelta
 
@@ -27,7 +28,7 @@ def test_real_pncp_api_call():
             data_inicial=start_date.strftime("%Y-%m-%d"),
             data_final=end_date.strftime("%Y-%m-%d"),
             pagina=1,
-            tamanho=10
+            tamanho=10,
         )
 
         # Validate response structure
@@ -56,7 +57,7 @@ def test_real_pncp_api_with_uf_filter():
             data_final=end_date.strftime("%Y-%m-%d"),
             uf="SP",
             pagina=1,
-            tamanho=5
+            tamanho=5,
         )
 
         assert "data" in result
