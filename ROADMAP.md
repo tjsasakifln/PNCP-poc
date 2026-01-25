@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.19 (Integration Documentation Complete)
-**Última Atualização:** 2026-01-25 18:06 (UTC)
-**Status:** 🚧 Em Desenvolvimento (67.6% completo - 23/34 issues)
+**Versão:** 1.20 (E2E Tests Implemented)
+**Última Atualização:** 2026-01-25 19:30 (UTC)
+**Status:** 🚧 Em Desenvolvimento (70.6% completo - 24/34 issues)
 
 ---
 
@@ -43,7 +43,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Progresso Geral:**
 ```
-[█████████████░░░░░] 67.6% (23/34 issues) - Integration Documentation ✅
+[█████████████░░░░░] 70.6% (24/34 issues) - E2E Tests Complete ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [██████████] 3/3 ✅ 100% COMPLETO (#7, #8, #28 ✅)
@@ -51,7 +51,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
 🎨 EPIC 6: Frontend          [████████░░] 5/6 🟡 83.3% EM PROGRESSO (#21, #22, #23, #24, #56 ✅ merged)
-🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
+🚀 EPIC 7: Deploy            [████░░░░░░] 2/5 🟡 40% EM PROGRESSO (#26, #27 ✅)
 ```
 
 ---
@@ -117,19 +117,19 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M3: POC em Produção *(Semana 3-4)*
 **Objetivo:** POC deployado e documentado
-**Status:** 🟡 EM PROGRESSO (1/5 issues - 20%)
+**Status:** 🟡 EM PROGRESSO (2/5 issues - 40%)
 
 **Prioridade P0 (Crítico):**
-- [ ] #25 - EPIC 7: Integração e Deploy
+- [ ] #25 - EPIC 7: Integração e Deploy 🟡 40% EM PROGRESSO
   - [x] #26 - Integração frontend ↔ backend ✅ (PR #59 merged 2026-01-25) 🎯 Integration documentation + health check script
-  - [ ] #27 - Testes end-to-end
+  - [x] #27 - Testes end-to-end ✅ (PR #60 merged 2026-01-25) 🎯 25 E2E tests com Playwright, Issue #61 para orchestration fix
   - [ ] #1 - Documentação (README.md)
   - [ ] #31 - Deploy inicial
 
 **Deliverables:**
 - 🔴 POC em produção (Vercel + Railway) - não iniciado
 - 🟡 README completo - parcialmente atualizado (Quick Start section)
-- 🟡 Testes E2E passando - manual E2E guide disponível
+- 🟢 Testes E2E implementados - 25 testes automatizados (4 suites: happy path, LLM fallback, validation, error handling) ✅
 - 🔴 Monitoramento básico - não iniciado
 
 ---
@@ -163,9 +163,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ### KPIs do POC
 | Métrica | Meta | Status |
 |---------|------|--------|
-| **Issues Concluídas** | 34/34 | 🟡 21/34 (61.8%) |
-| **PRD Coverage** | 100% | ✅ 100% (era 93%) |
-| **Cobertura de Testes** | >70% | ✅ Backend 99.21%, Frontend 91.5% |
+| **Issues Concluídas** | 34/34 | 🟡 24/34 (70.6%) |
+| **PRD Coverage** | 100% | ✅ 100% |
+| **Cobertura de Testes** | >70% | ✅ Backend 99.21%, Frontend 91.5%, E2E: 25 tests |
 | **Tempo de Resposta API** | <10s | 🔴 N/A |
 | **Uptime em Produção** | >95% | 🔴 N/A |
 | **Documentação** | README completo | 🔴 Pendente |
@@ -287,6 +287,8 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-25 | 1.16 | **Issue #24 concluída (API Routes)** - PR #54 merged. EPIC 6: 50% completo (3/6). 88.67% coverage, 4.76:1 test-to-code ratio. API integration layer complete. M2: 50% (5/10). Progresso: 58.8% (20/34) |
 | 2026-01-25 | 1.17 | **Issue #23 concluída (Results Display Tests)** - PR #55 merged. EPIC 6: 66.7% completo (4/6). 96.72% coverage page.tsx, 36 tests, 8.6:1 test-to-code ratio. Perfect 100% governance score. M2: 60% (6/10). Progresso: 61.8% (21/34) |
 | 2026-01-25 | 1.18 | **Issue #56 concluída (Error Boundaries)** - PR #58 auto-merged via /review-pr. EPIC 6: 83.3% completo (5/6). 100% coverage error.tsx, 27 tests, 99% governance score, 3.09:1 test-to-code ratio. Production-ready error handling. M2: 70% (7/10). Progresso: 64.7% (22/34) |
+| 2026-01-25 | 1.19 | **Issue #26 concluída (Integration Documentation)** - PR #59 merged. EPIC 7: 20% completo (1/5). Comprehensive integration guide (270+ lines), health check script, manual E2E testing procedures. M3: 20% (1/5). Progresso: 67.6% (23/34) |
+| 2026-01-25 | 1.20 | **Issue #27 concluída (E2E Tests)** - PR #60 merged. EPIC 7: 40% completo (2/5). 25 E2E tests com Playwright (happy path, LLM fallback, validation, error handling). CodeQL + linting fixes. Issue #61 criada para orchestration. M3: 40% (2/5). Progresso: 70.6% (24/34) |
 
 ---
 
