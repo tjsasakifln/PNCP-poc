@@ -21,9 +21,7 @@ def test_real_pncp_api_call():
     end_date = datetime.now()
     start_date = end_date - timedelta(days=7)
 
-    client = PNCPClient()
-
-    try:
+    with PNCPClient() as client:
         result = client.fetch_page(
             data_inicial=start_date.strftime("%Y-%m-%d"),
             data_final=end_date.strftime("%Y-%m-%d"),
@@ -39,9 +37,6 @@ def test_real_pncp_api_call():
 
         print(f"✅ Fetched {len(result['data'])} records")
         print(f"   Total: {result['totalRegistros']} records")
-
-    finally:
-        client.close()
 
 
 @pytest.mark.integration
