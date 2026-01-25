@@ -51,7 +51,7 @@ const customJestConfig = {
   ],
 
   // Coverage thresholds (60% minimum per CLAUDE.md)
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 60,
       functions: 60,
