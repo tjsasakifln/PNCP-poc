@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
 **Versão:** 1.11 (100% PRD Coverage)
-**Última Atualização:** 2026-01-25 21:45 (UTC)
-**Status:** 🚧 Em Desenvolvimento (38.2% completo - 13/34 issues)
+**Última Atualização:** 2026-01-25 22:30 (UTC)
+**Status:** 🚧 Em Desenvolvimento (41.2% completo - 14/34 issues)
 
 ---
 
@@ -39,16 +39,16 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (13/31 issues concluídas - 41.9%)
+**Status:** 🟡 Em Progresso (14/31 issues concluídas - 45.2%)
 
 **Progresso Geral:**
 ```
-[████████░░░░░░░░░░] 38.2% (13/34 issues) - 100% PRD Coverage ✅
+[████████░░░░░░░░░░] 41.2% (14/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
-📊 EPIC 4: Saídas            [██████░░░░] 2/3 🟡 67% EM PROGRESSO (#13, #14 ✅ merged)
+📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [██░░░░░░░░] 1/5 🟡 20% EM PROGRESSO (#17 ✅ merged)
 🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
@@ -75,16 +75,17 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #10 - Normalização e keywords ✅ (PR #41 merged 2026-01-25)
   - [x] #11 - Filtros sequenciais ✅ (PR #42 merged 2026-01-25) 🎯 99% coverage, 48 tests
   - [ ] #30 - Estatísticas (UNBLOCKED - uses filter_batch stats)
-- [ ] #12 - EPIC 4: Geração de Saídas 🟡 67% EM PROGRESSO
+- [x] #12 - EPIC 4: Geração de Saídas ✅ 100% COMPLETO
   - [x] #13 - Excel formatado ✅ (PR #44 merged 2026-01-25) 🎯 100% coverage, 20 tests
   - [x] #14 - GPT-4.1-nano ✅ (PR #46 merged 2026-01-25) 🎯 100% coverage llm.py, 15 tests, 99.12% backend
-  - [ ] #15 - Fallback sem LLM (UNBLOCKED by #13, #14)
+  - [x] #15 - Fallback sem LLM ✅ (PR #48 merged 2026-01-25) 🎯 100% coverage, 17 tests, 99.19% backend
 
 **Deliverables:**
 - 🟡 Backend executando via Docker (estrutura criada, módulos core pendentes)
 - 🟢 Integração PNCP funcional (cliente resiliente + paginação implementados)
 - 🟢 Excel sendo gerado (módulo implementado com 100% coverage) ✅
 - 🟢 Resumo LLM funcionando (módulo implementado com 100% coverage) ✅
+- 🟢 Fallback offline para LLM (resilience garantida, 100% coverage) ✅
 
 ---
 
@@ -373,6 +374,22 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 22:30 - Issue #15 Merged ✅ (EPIC 4 NOW 100% COMPLETE 🎉)
+**PR #48:** feat(backend): implement LLM fallback for offline summary generation
+- **Auto-merged via /review-pr protocol** - Perfect 100% governance score (8/8 categories)
+- **Implementation:** gerar_resumo_fallback() pure Python statistical summary generator (no OpenAI dependency)
+- **Features:** Total/value calculation, UF distribution, top 3 bids by value, urgency detection (< 7 days), offline operation
+- **Resilience:** Handles None values, missing fields, malformed dates gracefully (no crashes)
+- **Schema Compatibility:** Returns same ResumoLicitacoes structure as gerar_resumo() for seamless fallback integration
+- **Tests:** 17/17 passing, 100% code coverage on new function (60/60 statements), large batch validated (150+ bids)
+- **Overall Coverage:** 99.19% backend (↑0.07% from 99.12%), 185 tests passing, 2 skipped
+- **Test Categories:** Empty input, statistics (3), top-N sorting (2), urgency detection (3), error handling (5), schema validation (1), performance (1), offline capability (1)
+- **Post-Merge Validation:** 3-layer safety net completed (Health ✅, Smoke ✅, CI ✅)
+- **Impact:** Completes EPIC 4 (Geração de Saídas) - 100% (3/3 issues), unblocks #18 (POST /buscar with fallback capability)
+- **Milestone:** EPIC 4 progress 67% → 100% ✅ (3/3 issues COMPLETE), M1 progress 41.9% → 45.2% (14/31 issues)
+- **Files:** 2 files changed (+426 lines: llm.py +112, test_llm_fallback.py +314), test-to-code ratio: 2.86:1
+- **Business Value:** Production resilience - system never fails on OpenAI outage, zero external dependencies for fallback
 
 ### 2026-01-25 23:15 - Issue #40 Merged ✅ (INFRASTRUCTURE - CI/CD)
 **PR #47:** fix(ci): resolve TruffleHog BASE==HEAD error on main branch pushes
