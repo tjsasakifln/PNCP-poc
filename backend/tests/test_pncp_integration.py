@@ -10,7 +10,6 @@ import pytest
 from datetime import datetime, timedelta
 
 from pncp_client import PNCPClient
-from exceptions import PNCPAPIError
 
 
 @pytest.mark.integration
