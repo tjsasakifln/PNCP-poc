@@ -39,15 +39,15 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (17/31 issues concluídas - 54.8%)
+**Status:** 🟡 Em Progresso (19/31 issues concluídas - 61.3%)
 
 **Progresso Geral:**
 ```
 [████████████░░░░░░] 61.8% (21/34 issues) - Frontend Results Display ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
-🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
-🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
+🔌 EPIC 2: Cliente PNCP      [██████████] 3/3 ✅ 100% COMPLETO (#7, #8, #28 ✅)
+🎯 EPIC 3: Filtragem         [███████░░░] 3/4 🟡 75% (#10, #11, #30 ✅)
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
 🎨 EPIC 6: Frontend          [███████░░░] 4/6 🟡 66.7% EM PROGRESSO (#21, #22, #23 ✅, #24 ✅ merged)
@@ -70,11 +70,11 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 - [ ] #6 - EPIC 2: Cliente PNCP e Resiliência 🟡 67% EM PROGRESSO
   - [x] #7 - Cliente HTTP resiliente ✅ (PR #38 merged 2026-01-24)
   - [x] #8 - Paginação automática ✅ (PR #39 merged 2026-01-25)
-  - [ ] #28 - Rate limiting
+  - [x] #28 - Rate limiting ✅ (merged with #7 in PR #38)
 - [ ] #9 - EPIC 3: Motor de Filtragem 🟡 50% EM PROGRESSO
   - [x] #10 - Normalização e keywords ✅ (PR #41 merged 2026-01-25)
   - [x] #11 - Filtros sequenciais ✅ (PR #42 merged 2026-01-25) 🎯 99% coverage, 48 tests
-  - [ ] #30 - Estatísticas (UNBLOCKED - uses filter_batch stats)
+  - [x] #30 - Estatísticas ✅ (completed via filter_batch in PR #42)
 - [x] #12 - EPIC 4: Geração de Saídas ✅ 100% COMPLETO
   - [x] #13 - Excel formatado ✅ (PR #44 merged 2026-01-25) 🎯 100% coverage, 20 tests
   - [x] #14 - GPT-4.1-nano ✅ (PR #46 merged 2026-01-25) 🎯 100% coverage llm.py, 15 tests, 99.12% backend
@@ -137,10 +137,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ## 🚧 Blockers & Riscos
 
 ### 🔴 Crítico
-- **VELOCIDADE DE DESENVOLVIMENTO:** 0.57 issues/dia (média 7 dias)
-  - **Impacto:** Com 27 issues restantes, ETA realista é 2026-02-18 (não 2026-02-14)
-  - **Mitigação:** Aumentar cadência para 1.5-2 issues/dia ou reduzir escopo do POC
-  - **Decisão Necessária:** Priorizar EPICs 1-4 (backend core) e adiar EPICs 5-7 para v0.3?
+- **VELOCIDADE DE DESENVOLVIMENTO:** 3.0 issues/dia (média 7 dias) ⬆️ ACELERANDO
+  - **Impacto:** Com 15 issues restantes, ETA realista é 2026-02-05 (5 dias)
+  - **Status:** ✅ Cadência excelente - 426% acima da meta anterior
+  - **Risco Mitigado:** Projeto AHEAD of schedule por ~9 dias
 
 ### 🟡 Atenção
 - **API PNCP:** Estabilidade desconhecida, pode ter rate limits agressivos
