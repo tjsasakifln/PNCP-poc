@@ -1,0 +1,101 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bidiq-uniformes-backend"
+version = "0.2.0"
+description = "BidIQ Uniformes POC - Backend API"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+# Test discovery
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Output options
+addopts = [
+    "-ra",                    # Show summary of all test outcomes
+    "--strict-markers",       # Raise error on unknown markers
+    "--strict-config",        # Raise error on config issues
+    "--showlocals",          # Show local variables in tracebacks
+    "-v",                    # Verbose output
+]
+
+# Markers (for test categorization)
+markers = [
+    "unit: Unit tests (fast, isolated)",
+    "integration: Integration tests (external dependencies)",
+    "slow: Slow tests (> 1s)",
+]
+
+# Logging
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Warnings
+filterwarnings = [
+    "error",                 # Turn warnings into errors
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+# Source code to measure
+source = ["."]
+
+# Files to exclude
+omit = [
+    "tests/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    ".venv/*",
+    "venv/*",
+]
+
+# Enable branch coverage
+branch = true
+
+# Multiprocessing support
+parallel = true
+
+[tool.coverage.report]
+# Coverage threshold - fail if below 70%
+fail_under = 70.0
+
+# Precision of coverage percentage
+precision = 2
+
+# Show missing line numbers
+show_missing = true
+
+# Skip files with 100% coverage
+skip_covered = false
+
+# Skip empty files
+skip_empty = true
+
+# Regexes for lines to exclude from coverage
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+# HTML report output directory
+directory = "htmlcov"
+
+[tool.coverage.xml]
+# XML report output file (for CI/CD)
+output = "coverage.xml"
