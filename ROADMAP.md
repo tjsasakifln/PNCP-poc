@@ -2,7 +2,7 @@
 
 **Versão:** 1.11 (100% PRD Coverage)
 **Última Atualização:** 2026-01-25 21:45 (UTC)
-**Status:** 🚧 Em Desenvolvimento (35.3% completo - 12/34 issues)
+**Status:** 🚧 Em Desenvolvimento (38.2% completo - 13/34 issues)
 
 ---
 
@@ -39,16 +39,16 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (12/31 issues concluídas - 38.7%)
+**Status:** 🟡 Em Progresso (13/31 issues concluídas - 41.9%)
 
 **Progresso Geral:**
 ```
-[███████░░░░░░░░░░░] 35.3% (12/34 issues) - 100% PRD Coverage ✅
+[████████░░░░░░░░░░] 38.2% (13/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
-📊 EPIC 4: Saídas            [███░░░░░░░] 1/3 🟡 33% EM PROGRESSO (#13 ✅ merged)
+📊 EPIC 4: Saídas            [██████░░░░] 2/3 🟡 67% EM PROGRESSO (#13, #14 ✅ merged)
 🌐 EPIC 5: API Backend       [██░░░░░░░░] 1/5 🟡 20% EM PROGRESSO (#17 ✅ merged)
 🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
@@ -75,16 +75,16 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #10 - Normalização e keywords ✅ (PR #41 merged 2026-01-25)
   - [x] #11 - Filtros sequenciais ✅ (PR #42 merged 2026-01-25) 🎯 99% coverage, 48 tests
   - [ ] #30 - Estatísticas (UNBLOCKED - uses filter_batch stats)
-- [ ] #12 - EPIC 4: Geração de Saídas 🟡 33% EM PROGRESSO
+- [ ] #12 - EPIC 4: Geração de Saídas 🟡 67% EM PROGRESSO
   - [x] #13 - Excel formatado ✅ (PR #44 merged 2026-01-25) 🎯 100% coverage, 20 tests
-  - [ ] #14 - GPT-4.1-nano (UNBLOCKED by #13)
-  - [ ] #15 - Fallback sem LLM (UNBLOCKED by #13)
+  - [x] #14 - GPT-4.1-nano ✅ (PR #46 merged 2026-01-25) 🎯 100% coverage llm.py, 15 tests, 99.12% backend
+  - [ ] #15 - Fallback sem LLM (UNBLOCKED by #13, #14)
 
 **Deliverables:**
 - 🟡 Backend executando via Docker (estrutura criada, módulos core pendentes)
 - 🟢 Integração PNCP funcional (cliente resiliente + paginação implementados)
 - 🟢 Excel sendo gerado (módulo implementado com 100% coverage) ✅
-- 🔴 Resumo LLM funcionando (módulo não implementado, unblocked by #13)
+- 🟢 Resumo LLM funcionando (módulo implementado com 100% coverage) ✅
 
 ---
 
@@ -373,6 +373,21 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 22:15 - Issue #14 Merged ✅ (EPIC 4 NOW 67%)
+**PR #46:** feat(backend): implement GPT-4.1-nano integration for executive summaries
+- **Auto-merged via /review-pr protocol** - Perfect 100% governance score (8/8 categories)
+- **Implementation:** gerar_resumo() using OpenAI API with structured output (gpt-4o-mini model)
+- **Features:** Token optimization (50 bid limit, 200 char truncation), empty input handling, API key validation
+- **HTML Formatter:** format_resumo_html() for frontend display with stats, highlights, urgency alerts
+- **Tests:** 15/15 passing, 100% code coverage on llm.py (34/34 statements, 12/12 branches)
+- **Overall Coverage:** 99.12% backend (↑0.10% from 99.02%), 168 tests passing, 2 skipped
+- **Test Categories:** Empty input, API validation, valid inputs (6 tests), error scenarios (2), HTML formatting (4), schema validation (2)
+- **Post-Merge Validation:** 3-layer safety net completed (Health ✅, Smoke ✅, CI ✅)
+- **Impact:** Unblocks #18 (POST /buscar - orchestration ready), #15 (Fallback - same schema structure)
+- **Milestone:** EPIC 4 progress 33% → 67% (2/3 issues), M1 progress 38.7% → 41.9% (13/31 issues)
+- **Files:** 2 files changed (+643 lines: llm.py +213, test_llm.py +430), test-to-code ratio: 2.14:1
+- **Performance:** ~$0.003 per API call, 1-3s response time, structured Pydantic output
 
 ### 2026-01-25 21:45 - Issue #17 Merged ✅ (EPIC 5 STARTED 20%, M2 STARTED)
 **PR #45:** feat(backend): implement FastAPI structure with schemas and CORS
