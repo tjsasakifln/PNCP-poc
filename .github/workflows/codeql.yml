@@ -8,6 +8,7 @@ on:
   schedule:
     # Run every Monday at 00:00 UTC
     - cron: '0 0 * * 1'
+  workflow_dispatch: # Allow manual triggering
 
 jobs:
   analyze:
@@ -62,6 +63,9 @@ jobs:
   secret-scanning:
     name: Secret Scanning
     runs-on: ubuntu-latest
+    # Skip on push to main to avoid BASE==HEAD error
+    # TruffleHog scans PR diffs, and scheduled scans cover full history
+    if: github.event_name != 'push' || github.ref != 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
