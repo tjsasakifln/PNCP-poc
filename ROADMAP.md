@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.14 (100% PRD Coverage + Frontend Initialized)
-**Última Atualização:** 2026-01-25 15:45 (UTC)
-**Status:** 🚧 Em Desenvolvimento (52.9% completo - 18/34 issues)
+**Versão:** 1.15 (Frontend UF Selector Implemented)
+**Última Atualização:** 2026-01-25 16:15 (UTC)
+**Status:** 🚧 Em Desenvolvimento (55.9% completo - 19/34 issues)
 
 ---
 
@@ -43,14 +43,14 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Progresso Geral:**
 ```
-[██████████░░░░░░░░] 52.9% (18/34 issues) - Frontend Initialized ✅
+[███████████░░░░░░░] 55.9% (19/34 issues) - Frontend UF Selector ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
-🎨 EPIC 6: Frontend          [█░░░░░░░░░] 1/6 🟡 16.7% EM PROGRESSO (#21 ✅ merged 2026-01-25)
+🎨 EPIC 6: Frontend          [███░░░░░░░] 2/6 🟡 33.3% EM PROGRESSO (#21, #22 ✅ merged 2026-01-25)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
 ```
 
@@ -91,7 +91,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M2: Full-Stack Funcional *(Semana 2)*
 **Objetivo:** Interface web + API completa
-**Status:** 🟡 EM PROGRESSO (3/10 issues - 30%)
+**Status:** 🟡 EM PROGRESSO (4/10 issues - 40%)
 
 **Prioridade P0 (Crítico):**
 - [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 80% EM PROGRESSO
@@ -99,9 +99,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #18 - POST /buscar ✅ (PR #51 merged 2026-01-25) 🎯 100% coverage main.py, 14 tests, 99.27% backend
   - [x] #19 - Logging estruturado ✅ (PR #49 merged 2026-01-25) 🎯 100% coverage config.py, 23 tests, 99.21% backend
   - [x] #29 - Health check ✅ (PR #50 merged 2026-01-25) 🎯 100% governance score, 212 tests, 99.21% backend
-- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 16.7% EM PROGRESSO
+- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 33.3% EM PROGRESSO
   - [x] #21 - Setup Next.js ✅ (PR #52 merged 2026-01-25) 🎯 Next.js 16.1.4 + Tailwind + TypeScript strict mode
-  - [ ] #22 - Seleção UFs (validações enriquecidas) 🔓 UNBLOCKED
+  - [x] #22 - Seleção UFs e Date Range ✅ (PR #53 merged 2026-01-25) 🎯 83.58% coverage, 25 tests, 10/10 acceptance criteria
   - [ ] #33 - Error Boundaries ⭐ NOVO 🔓 UNBLOCKED
   - [ ] #34 - Form Validations ⭐ NOVO 🔓 UNBLOCKED
   - [ ] #23 - Resultados 🔓 UNBLOCKED
@@ -374,6 +374,25 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 16:15 - Issue #22 Merged ✅ (FIRST INTERACTIVE UI 🎨)
+**PR #53:** feat(frontend): implement UF selection and date range with validations (#22)
+- **Auto-merged via /review-pr protocol** - Perfect 100% governance score (8/8 categories)
+- **Implementation:** Multi-select UF grid (27 states), date range picker with 7-day defaults, real-time validation engine
+- **Features:** Toggle UF selection, Select All/Clear buttons, inline error messages, responsive flexbox layout, disabled submit when invalid
+- **Validation Rules (PRD 7.3):** Min 1 UF, data_final >= data_inicial, max 30-day range with dynamic day count display
+- **Tests:** 25/25 passing (20 new component tests + 5 existing), comprehensive coverage of all user interactions
+- **Coverage:** 83.58% statements, 75% branches, 93.75% functions, 86.15% lines (exceeds 60% threshold by 23.58%)
+- **Test Categories:** UF selection (6), date range (2), validation (5), error messages (2), submit states (2), layout (1), type safety (1), API integration (1)
+- **TypeScript:** 0 compilation errors, 0 `any` types, strict mode enabled, proper interfaces in types.ts
+- **Security:** 0 vulnerabilities (npm audit clean), proper input sanitization, no injection risks
+- **Build:** Production build successful (4.2s), Next.js 16.1.4 Turbopack optimized
+- **Post-Merge Validation:** Layer 1 Health Checks ✅ (Build + Tests passing on main)
+- **Acceptance Criteria:** 10/10 met (UF grid, toggles, defaults, validations, errors, disabled button, responsive, TypeScript)
+- **Impact:** First interactive UI component, unblocks #23 (Results Page), #24 (API Routes), #26 (Integration)
+- **Milestone:** EPIC 6 progress 16.7% → 33.3% (2/6 issues), M2 progress 30% → 40% (4/10 issues), Overall 52.9% → 55.9% (19/34)
+- **Files:** 5 files changed (+684 lines: page.tsx +324, types.ts +43, page.test.tsx +308, config fixes +9)
+- **Business Value:** User can now search across multiple states with intelligent date defaults, validates input before API calls ✨
 
 ### 2026-01-25 22:30 - Issue #15 Merged ✅ (EPIC 4 NOW 100% COMPLETE 🎉)
 **PR #48:** feat(backend): implement LLM fallback for offline summary generation
