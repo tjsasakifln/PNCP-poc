@@ -23,11 +23,16 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   /* Reporter to use */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['list'],
-    ...(process.env.CI ? [['junit', { outputFile: 'test-results/junit.xml' }]] : [])
-  ],
+  reporter: process.env.CI
+    ? [
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
+        ['list'],
+        ['junit', { outputFile: 'test-results/junit.xml' }],
+      ]
+    : [
+        ['html', { outputFolder: 'playwright-report', open: 'never' }],
+        ['list'],
+      ],
 
   /* Shared settings for all the projects below */
   use: {
