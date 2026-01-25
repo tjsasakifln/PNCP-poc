@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.11 (100% PRD Coverage)
-**Última Atualização:** 2026-01-25 22:30 (UTC)
-**Status:** 🚧 Em Desenvolvimento (41.2% completo - 14/34 issues)
+**Versão:** 1.12 (100% PRD Coverage)
+**Última Atualização:** 2026-01-25 13:50 (UTC)
+**Status:** 🚧 Em Desenvolvimento (44.1% completo - 15/34 issues)
 
 ---
 
@@ -39,17 +39,17 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (14/31 issues concluídas - 45.2%)
+**Status:** 🟡 Em Progresso (15/31 issues concluídas - 48.4%)
 
 **Progresso Geral:**
 ```
-[████████░░░░░░░░░░] 41.2% (14/34 issues) - 100% PRD Coverage ✅
+[████████░░░░░░░░░░] 44.1% (15/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
-🌐 EPIC 5: API Backend       [██░░░░░░░░] 1/5 🟡 20% EM PROGRESSO (#17 ✅ merged)
+🌐 EPIC 5: API Backend       [████░░░░░░] 2/5 🟡 40% EM PROGRESSO (#17, #19 ✅ merged)
 🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
 ```
@@ -94,10 +94,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **Status:** 🟡 EM PROGRESSO (1/10 issues - 10%)
 
 **Prioridade P0 (Crítico):**
-- [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 20% EM PROGRESSO
+- [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 40% EM PROGRESSO
   - [x] #17 - Estrutura base ✅ (PR #45 merged 2026-01-25) 🎯 100% coverage, 51 tests
   - [ ] #18 - POST /buscar (UNBLOCKED by #17)
-  - [ ] #19 - Logging (UNBLOCKED by #17)
+  - [x] #19 - Logging estruturado ✅ (PR #49 merged 2026-01-25) 🎯 100% coverage config.py, 23 tests, 99.21% backend
   - [ ] #29 - Health check (UNBLOCKED by #17, basic implementation done)
 - [ ] #20 - EPIC 6: Frontend (Next.js)
   - [ ] #21 - Setup Next.js
