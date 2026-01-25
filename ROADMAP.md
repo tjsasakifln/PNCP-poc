@@ -374,6 +374,19 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 
 ## 📰 Recent Updates
 
+### 2026-01-25 23:15 - Issue #40 Merged ✅ (INFRASTRUCTURE - CI/CD)
+**PR #47:** fix(ci): resolve TruffleHog BASE==HEAD error on main branch pushes
+- **Auto-merged via /review-pr protocol** - Perfect 100% governance score (8/8 categories)
+- **Problem:** TruffleHog GitHub Action failing on all push events to main (BASE==HEAD error)
+- **Root Cause:** Both BASE (default_branch) and HEAD resolve to same commit on main pushes
+- **Solution:** Conditional skip for secret-scanning on push to main: `if: github.event_name != 'push' || github.ref != 'refs/heads/main'`
+- **Security Coverage Maintained:** (1) All PRs scanned before merge, (2) Weekly scheduled scans, (3) Manual triggers via workflow_dispatch
+- **Changes:** .github/workflows/codeql.yml (+4 lines), .github/SECURITY-WORKFLOWS.md (+97 lines NEW)
+- **Documentation:** Comprehensive 97-line security workflows guide (triggers, limitations, best practices, troubleshooting)
+- **Post-Merge Validation:** 3-layer safety net completed (Health ✅, Smoke ✅, CI 🔄 in_progress)
+- **Impact:** Eliminates false CI failures on main branch, improves developer experience
+- **Files:** 2 files changed (+101 lines), infrastructure only (no code changes)
+
 ### 2026-01-25 22:15 - Issue #14 Merged ✅ (EPIC 4 NOW 67%)
 **PR #46:** feat(backend): implement GPT-4.1-nano integration for executive summaries
 - **Auto-merged via /review-pr protocol** - Perfect 100% governance score (8/8 categories)
