@@ -11,14 +11,13 @@ This API provides endpoints for:
 - Creating AI-powered executive summaries (GPT-4.1-nano)
 """
 import logging
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from config import setup_logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# Configure structured logging
+setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI application
@@ -92,5 +91,4 @@ async def health():
 
 # Additional endpoints will be implemented in subsequent issues:
 # - POST /buscar (Issue #18) - Main search endpoint
-# - Structured logging (Issue #19) - Enhanced logging middleware
 # - Extended health checks (Issue #29) - Database/API connectivity checks

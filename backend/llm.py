@@ -23,7 +23,6 @@ import json
 import os
 
 from openai import OpenAI
-from pydantic import ValidationError
 
 from schemas import ResumoLicitacoes
 from excel import parse_datetime
