@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.10 (100% PRD Coverage)
-**Última Atualização:** 2026-01-25 19:20 (UTC)
-**Status:** 🚧 Em Desenvolvimento (32.4% completo - 11/34 issues)
+**Versão:** 1.11 (100% PRD Coverage)
+**Última Atualização:** 2026-01-25 21:45 (UTC)
+**Status:** 🚧 Em Desenvolvimento (35.3% completo - 12/34 issues)
 
 ---
 
@@ -39,17 +39,17 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (11/31 issues concluídas - 35.5%)
+**Status:** 🟡 Em Progresso (12/31 issues concluídas - 38.7%)
 
 **Progresso Geral:**
 ```
-[███████░░░░░░░░░░░] 32.4% (11/34 issues) - 100% PRD Coverage ✅
+[███████░░░░░░░░░░░] 35.3% (12/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
 📊 EPIC 4: Saídas            [███░░░░░░░] 1/3 🟡 33% EM PROGRESSO (#13 ✅ merged)
-🌐 EPIC 5: API Backend       [░░░░░░░░░░] 0/5 🔴 Não iniciado
+🌐 EPIC 5: API Backend       [██░░░░░░░░] 1/5 🟡 20% EM PROGRESSO (#17 ✅ merged)
 🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
 ```
@@ -90,14 +90,14 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M2: Full-Stack Funcional *(Semana 2)*
 **Objetivo:** Interface web + API completa
-**Status:** 🔴 NÃO INICIADO (0/9 issues - 0%)
+**Status:** 🟡 EM PROGRESSO (1/10 issues - 10%)
 
 **Prioridade P0 (Crítico):**
-- [ ] #16 - EPIC 5: API Backend (FastAPI)
-  - [ ] #17 - Estrutura base
-  - [ ] #18 - POST /buscar
-  - [ ] #19 - Logging
-  - [ ] #29 - Health check
+- [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 20% EM PROGRESSO
+  - [x] #17 - Estrutura base ✅ (PR #45 merged 2026-01-25) 🎯 100% coverage, 51 tests
+  - [ ] #18 - POST /buscar (UNBLOCKED by #17)
+  - [ ] #19 - Logging (UNBLOCKED by #17)
+  - [ ] #29 - Health check (UNBLOCKED by #17, basic implementation done)
 - [ ] #20 - EPIC 6: Frontend (Next.js)
   - [ ] #21 - Setup Next.js
   - [ ] #22 - Seleção UFs (validações enriquecidas)
@@ -107,7 +107,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [ ] #24 - API Routes
 
 **Deliverables:**
-- 🔴 API REST completa (não iniciado)
+- 🟡 API REST completa (FastAPI structure done, endpoints pending)
 - 🔴 Interface web responsiva (não iniciado)
 - 🔴 Fluxo end-to-end funcional (não iniciado)
 - 🔴 Docker Compose full-stack (não iniciado)
@@ -162,9 +162,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ### KPIs do POC
 | Métrica | Meta | Status |
 |---------|------|--------|
-| **Issues Concluídas** | 34/34 | 🟡 10/34 (29.4%) |
+| **Issues Concluídas** | 34/34 | 🟡 12/34 (35.3%) |
 | **PRD Coverage** | 100% | ✅ 100% (era 93%) |
-| **Cobertura de Testes** | >70% | ✅ 96.69% backend (exceeds threshold by 26.69%) |
+| **Cobertura de Testes** | >70% | ✅ 99.02% backend (exceeds threshold by 29.02%) |
 | **Tempo de Resposta API** | <10s | 🔴 N/A |
 | **Uptime em Produção** | >95% | 🔴 N/A |
 | **Documentação** | README completo | 🔴 Pendente |
@@ -373,6 +373,19 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 21:45 - Issue #17 Merged ✅ (EPIC 5 STARTED 20%, M2 STARTED)
+**PR #45:** feat(backend): implement FastAPI structure with schemas and CORS
+- **Auto-merged via /review-pr protocol** - Governance score: 98.4% (100% with justified size waiver)
+- **Implementation:** FastAPI app initialization, CORS middleware, Pydantic schemas (BuscaRequest, BuscaResponse, ResumoLicitacoes)
+- **Endpoints:** / (root), /health, /docs, /redoc, /openapi.json
+- **Schemas:** Field validation (min_length, date patterns, ranges), OpenAPI examples
+- **Tests:** 51/51 passing, 100% code coverage (main.py: 14/14, schemas.py: 23/23)
+- **Overall Coverage:** 99.02% backend (↑1.41% from 97.61%)
+- **Post-Merge Validation:** 3-layer safety net completed (Health ✅, Smoke ✅, CI ✅)
+- **Impact:** Unblocks #18 (POST /buscar), #19 (Logging), #29 (Enhanced health checks)
+- **Milestone:** Starts EPIC 5 (API Backend) - 20% (1/5 issues), M2 now in progress (10%)
+- **Files:** 4 files changed (+797/-9 lines), test-to-code ratio: 4.28:1
 
 ### 2026-01-25 19:20 - Issue #13 Merged ✅ (EPIC 4 STARTED 33%)
 **PR #44:** feat(backend): implement Excel generator with professional formatting
