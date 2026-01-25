@@ -4,7 +4,6 @@ This file ensures CI pipeline passes during initial setup.
 Real tests will be implemented in issue #27.
 """
 
-import pytest
 
 
 def test_placeholder():
