@@ -6,7 +6,6 @@ without OpenAI API access. It ensures the system remains functional during
 network issues, rate limits, or missing API keys.
 """
 
-import pytest
 from datetime import datetime, timedelta
 from schemas import ResumoLicitacoes
 from llm import gerar_resumo_fallback
