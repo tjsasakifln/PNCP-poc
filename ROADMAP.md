@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.6 (100% PRD Coverage)
-**Última Atualização:** 2026-01-25 01:53
-**Status:** 🚧 Em Desenvolvimento (14.7% completo - 5/34 issues)
+**Versão:** 1.8 (100% PRD Coverage)
+**Última Atualização:** 2026-01-25 11:30
+**Status:** 🚧 Em Desenvolvimento (20.6% completo - 7/34 issues)
 
 ---
 
@@ -39,15 +39,15 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (5/31 issues concluídas - 16.1%)
+**Status:** 🟡 Em Progresso (7/31 issues concluídas - 22.6%)
 
 **Progresso Geral:**
 ```
-[████░░░░░░░░░░░░░░░] 14.7% (5/34 issues) - 100% PRD Coverage ✅
+[█████░░░░░░░░░░░░░░] 20.6% (7/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [███████░░░] 3/5 🟡 60% (issues #2, #32 abertas)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
-🎯 EPIC 3: Filtragem         [░░░░░░░░░░] 0/4 🔴 Não iniciado
+🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
 📊 EPIC 4: Saídas            [░░░░░░░░░░] 0/3 🔴 Não iniciado
 🌐 EPIC 5: API Backend       [░░░░░░░░░░] 0/5 🔴 Não iniciado
 🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
@@ -71,10 +71,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #7 - Cliente HTTP resiliente ✅ (PR #38 merged 2026-01-24)
   - [x] #8 - Paginação automática ✅ (PR #39 merged 2026-01-25)
   - [ ] #28 - Rate limiting
-- [ ] #9 - EPIC 3: Motor de Filtragem 🔴 NÃO INICIADO
-  - [ ] #10 - Normalização e keywords
-  - [ ] #11 - Filtros sequenciais
-  - [ ] #30 - Estatísticas
+- [ ] #9 - EPIC 3: Motor de Filtragem 🟡 50% EM PROGRESSO
+  - [x] #10 - Normalização e keywords ✅ (PR #41 merged 2026-01-25)
+  - [x] #11 - Filtros sequenciais ✅ (PR #42 merged 2026-01-25) 🎯 99% coverage, 48 tests
+  - [ ] #30 - Estatísticas (UNBLOCKED - uses filter_batch stats)
 - [ ] #12 - EPIC 4: Geração de Saídas 🔴 NÃO INICIADO
   - [ ] #13 - Excel formatado
   - [ ] #14 - GPT-4.1-nano
@@ -280,6 +280,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-24 | 1.4 | Progresso real: 4/31 (12.9%). M2 e M3 corrigidos para 0%. ETA ajustado para 3-4 semanas |
 | 2026-01-24 | 1.5 | **100% PRD COVERAGE:** +3 issues (#32, #33, #34). Total: 34 issues. Progresso: 11.8% (4/34) |
 | 2026-01-25 | 1.6 | Issue #8 concluída (Paginação PNCP) - PR #39 merged. EPIC 2: 67% completo (2/3). Progresso: 14.7% (5/34) |
+| 2026-01-25 | 1.7 | **Issue #10 concluída (Keyword Matching)** - PR #41 merged. EPIC 3: 25% completo (1/4). 100% governance score. Progresso: 17.6% (6/34) |
 
 ---
 
@@ -290,9 +291,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **AÇÃO TOMADA:** Sincronização completa realizada via `/audit-roadmap`
 
 **Status Validado:**
-- ✅ Issues fechadas: #3, #4, #5, #7, #8 (5 issues)
-- ⚠️ Issues abertas: Todas as demais (29 issues)
-- 📊 Progresso real: 14.7% (5/34)
+- ✅ Issues fechadas: #3, #4, #5, #7, #8, #10 (6 issues)
+- ⚠️ Issues abertas: Todas as demais (28 issues)
+- 📊 Progresso real: 17.6% (6/34)
 
 ---
 
@@ -364,7 +365,34 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 
 ---
 
-**Última sincronização com issues:** 2026-01-25 01:53 (Issue #8 merged via PR #39)
+**Última sincronização com issues:** 2026-01-25 11:30 (Issue #11 merged via PR #42)
 **Próxima revisão agendada:** 2026-01-27 (após progresso em M1)
 
-*Este roadmap é sincronizado automaticamente. Versão 1.6: 34 issues, 100% PRD coverage*
+---
+
+## 📰 Recent Updates
+
+### 2026-01-25 11:30 - Issue #11 Merged ✅
+**PR #42:** feat(backend): implement sequential fail-fast filtering
+- **Auto-merged via /review-pr protocol** - Perfect 100% governance score
+- **Implementation:** filter_licitacao() + filter_batch() with fail-fast optimization
+- **Tests:** 48/48 passing, 99% code coverage (71/71 statements)
+- **Performance:** 1000 bids processed in 0.68s
+- **Impact:** Unblocks #30 (Statistics), #13 (Excel), #18 (API endpoint)
+- **Files:** backend/filter.py (+166 lines), backend/tests/test_filter.py (+405 lines)
+
+### 2026-01-25 09:00 - Issue #10 Merged ✅
+**PR #41:** feat(backend): implement keyword matching engine
+- Keyword normalization with Unicode NFD and word boundary matching
+- 50+ uniform keywords + exclusion list (false positive prevention)
+- 24 comprehensive tests, 98% coverage
+
+### 2026-01-25 08:30 - Issue #8 Merged ✅
+**PR #39:** feat(backend): implement automatic PNCP pagination
+- Generator-based pagination (fetch_all with yield)
+- Handles 500 items/page (PNCP API max)
+- Memory-efficient for large datasets
+
+---
+
+*Este roadmap é sincronizado automaticamente. Versão 1.8: 34 issues, 100% PRD coverage*
