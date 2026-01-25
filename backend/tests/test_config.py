@@ -1,4 +1,5 @@
 """Tests for configuration module, including logging setup."""
+
 import logging
 import sys
 from config import setup_logging, RetryConfig
@@ -16,7 +17,7 @@ class TestSetupLogging:
             handler.close()
 
         # Reset all loggers to default state
-        for logger_name in ['urllib3', 'httpx', 'test_logger']:
+        for logger_name in ["urllib3", "httpx", "test_logger"]:
             logger = logging.getLogger(logger_name)
             logger.setLevel(logging.NOTSET)
             logger.propagate = True
@@ -63,20 +64,24 @@ class TestSetupLogging:
         root_logger = logging.getLogger()
 
         # Find our StreamHandler (pytest may add its own handler)
-        stream_handlers = [h for h in root_logger.handlers if isinstance(h, logging.StreamHandler)]
+        stream_handlers = [
+            h for h in root_logger.handlers if isinstance(h, logging.StreamHandler)
+        ]
         assert len(stream_handlers) > 0
 
         # Get our handler (the one that outputs to stdout)
         handler = None
         for h in stream_handlers:
-            if hasattr(h, 'stream') and h.stream == sys.stdout:
+            if hasattr(h, "stream") and h.stream == sys.stdout:
                 handler = h
                 break
 
         assert handler is not None, "StreamHandler with stdout not found"
         formatter = handler.formatter
 
-        assert formatter._fmt == "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+        assert (
+            formatter._fmt == "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+        )
 
     def test_formatter_datefmt(self):
         """Test that formatter uses correct date format."""
@@ -84,10 +89,12 @@ class TestSetupLogging:
         root_logger = logging.getLogger()
 
         # Find our StreamHandler
-        stream_handlers = [h for h in root_logger.handlers if isinstance(h, logging.StreamHandler)]
+        stream_handlers = [
+            h for h in root_logger.handlers if isinstance(h, logging.StreamHandler)
+        ]
         handler = None
         for h in stream_handlers:
-            if hasattr(h, 'stream') and h.stream == sys.stdout:
+            if hasattr(h, "stream") and h.stream == sys.stdout:
                 handler = h
                 break
 
@@ -102,7 +109,9 @@ class TestSetupLogging:
         root_logger = logging.getLogger()
 
         # Check that at least one StreamHandler exists
-        stream_handlers = [h for h in root_logger.handlers if isinstance(h, logging.StreamHandler)]
+        stream_handlers = [
+            h for h in root_logger.handlers if isinstance(h, logging.StreamHandler)
+        ]
         assert len(stream_handlers) > 0
 
     def test_handler_outputs_to_stdout(self):
@@ -111,8 +120,13 @@ class TestSetupLogging:
         root_logger = logging.getLogger()
 
         # Find handler that outputs to stdout
-        stdout_handlers = [h for h in root_logger.handlers
-                          if isinstance(h, logging.StreamHandler) and hasattr(h, 'stream') and h.stream == sys.stdout]
+        stdout_handlers = [
+            h
+            for h in root_logger.handlers
+            if isinstance(h, logging.StreamHandler)
+            and hasattr(h, "stream")
+            and h.stream == sys.stdout
+        ]
 
         assert len(stdout_handlers) > 0, "No StreamHandler outputting to stdout found"
 
@@ -255,7 +269,7 @@ class TestRetryConfig:
             max_delay=30.0,
             exponential_base=3,
             jitter=False,
-            timeout=60
+            timeout=60,
         )
 
         assert config.max_retries == 10

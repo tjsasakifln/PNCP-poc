@@ -1,4 +1,5 @@
 """Unit tests for PNCP client with retry logic and rate limiting."""
+
 import time
 from unittest.mock import Mock, patch
 
@@ -25,10 +26,7 @@ class TestCalculateDelay:
     def test_max_delay_cap(self):
         """Test delay is capped at max_delay."""
         config = RetryConfig(
-            base_delay=2.0,
-            exponential_base=2,
-            max_delay=60.0,
-            jitter=False
+            base_delay=2.0, exponential_base=2, max_delay=60.0, jitter=False
         )
 
         # 2^6 = 64, should be capped at 60
@@ -118,7 +116,7 @@ class TestRateLimiting:
 class TestFetchPageSuccess:
     """Test successful fetch_page scenarios."""
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_page_success(self, mock_get):
         """Test successful page fetch returns correct data."""
         # Mock successful response
@@ -129,7 +127,7 @@ class TestFetchPageSuccess:
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
         mock_get.return_value = mock_response
 
@@ -140,7 +138,7 @@ class TestFetchPageSuccess:
         assert result["totalRegistros"] == 2
         assert mock_get.called
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_page_with_uf_parameter(self, mock_get):
         """Test fetch_page includes UF parameter when provided."""
         mock_response = Mock()
@@ -155,7 +153,7 @@ class TestFetchPageSuccess:
         call_args = mock_get.call_args
         assert call_args[1]["params"]["uf"] == "SP"
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_page_pagination_parameters(self, mock_get):
         """Test fetch_page sends correct pagination parameters."""
         mock_response = Mock()
@@ -175,14 +173,14 @@ class TestFetchPageSuccess:
 class TestFetchPageRetry:
     """Test retry logic for transient failures."""
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')  # Mock sleep to speed up tests
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")  # Mock sleep to speed up tests
     def test_retry_on_500_server_error(self, mock_sleep, mock_get):
         """Test client retries on 500 server error."""
         # First call fails with 500, second succeeds
         mock_responses = [
             Mock(status_code=500, text="Internal Server Error"),
-            Mock(status_code=200)
+            Mock(status_code=200),
         ]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
@@ -194,13 +192,13 @@ class TestFetchPageRetry:
         assert mock_get.call_count == 2
         assert mock_sleep.called
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_retry_on_503_unavailable(self, mock_sleep, mock_get):
         """Test client retries on 503 service unavailable."""
         mock_responses = [
             Mock(status_code=503, text="Service Unavailable"),
-            Mock(status_code=200)
+            Mock(status_code=200),
         ]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
@@ -211,8 +209,8 @@ class TestFetchPageRetry:
 
         assert mock_get.call_count == 2
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_max_retries_exceeded_raises_error(self, mock_sleep, mock_get):
         """Test error is raised after max retries exceeded."""
         # Always return 500
@@ -231,13 +229,13 @@ class TestFetchPageRetry:
 class TestFetchPageRateLimiting:
     """Test rate limit (429) handling."""
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_429_respects_retry_after_header(self, mock_sleep, mock_get):
         """Test 429 response respects Retry-After header."""
         mock_responses = [
             Mock(status_code=429, headers={"Retry-After": "5"}),
-            Mock(status_code=200)
+            Mock(status_code=200),
         ]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
@@ -249,14 +247,11 @@ class TestFetchPageRateLimiting:
         sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
         assert 5 in sleep_calls  # Should sleep for 5 seconds
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_429_uses_default_wait_without_retry_after(self, mock_sleep, mock_get):
         """Test 429 uses default 60s wait when Retry-After header missing."""
-        mock_responses = [
-            Mock(status_code=429, headers={}),
-            Mock(status_code=200)
-        ]
+        mock_responses = [Mock(status_code=429, headers={}), Mock(status_code=200)]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
 
@@ -271,7 +266,7 @@ class TestFetchPageRateLimiting:
 class TestFetchPageNonRetryableErrors:
     """Test immediate failure for non-retryable errors."""
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_400_bad_request_fails_immediately(self, mock_get):
         """Test 400 Bad Request fails immediately without retry."""
         mock_get.return_value = Mock(status_code=400, text="Bad Request")
@@ -284,7 +279,7 @@ class TestFetchPageNonRetryableErrors:
         # Should only try once (no retries)
         assert mock_get.call_count == 1
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_404_not_found_fails_immediately(self, mock_get):
         """Test 404 Not Found fails immediately without retry."""
         mock_get.return_value = Mock(status_code=404, text="Not Found")
@@ -300,8 +295,8 @@ class TestFetchPageNonRetryableErrors:
 class TestFetchPageExceptionRetry:
     """Test retry logic for network exceptions."""
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_retry_on_connection_error(self, mock_sleep, mock_get):
         """Test client retries on ConnectionError."""
         # First call raises ConnectionError, second succeeds
@@ -315,8 +310,8 @@ class TestFetchPageExceptionRetry:
 
         assert mock_get.call_count == 2
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_retry_on_timeout_error(self, mock_sleep, mock_get):
         """Test client retries on TimeoutError."""
         mock_response = Mock(status_code=200)
@@ -329,8 +324,8 @@ class TestFetchPageExceptionRetry:
 
         assert mock_get.call_count == 2
 
-    @patch('pncp_client.requests.Session.get')
-    @patch('time.sleep')
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
     def test_exception_after_max_retries_raises_error(self, mock_sleep, mock_get):
         """Test exception is raised after max retries for network errors."""
         mock_get.side_effect = ConnectionError("Network error")
@@ -347,7 +342,7 @@ class TestFetchPageExceptionRetry:
 class TestFetchAllPagination:
     """Test fetch_all() automatic pagination functionality."""
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_single_page(self, mock_get):
         """Test fetch_all with single page returns all items."""
         # Mock single page response
@@ -357,12 +352,12 @@ class TestFetchAllPagination:
             "data": [
                 {"codigoCompra": "001", "uf": "SP"},
                 {"codigoCompra": "002", "uf": "SP"},
-                {"codigoCompra": "003", "uf": "SP"}
+                {"codigoCompra": "003", "uf": "SP"},
             ],
             "totalRegistros": 3,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
         mock_get.return_value = mock_response
 
@@ -375,7 +370,7 @@ class TestFetchAllPagination:
         # Should only call API once for single page
         assert mock_get.call_count == 1
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_multiple_pages(self, mock_get):
         """Test fetch_all correctly handles multiple pages."""
         # Mock 3 pages of data
@@ -385,7 +380,7 @@ class TestFetchAllPagination:
             "totalRegistros": 5,
             "totalPaginas": 3,
             "paginaAtual": 1,
-            "temProximaPagina": True
+            "temProximaPagina": True,
         }
 
         page_2 = Mock(status_code=200)
@@ -394,7 +389,7 @@ class TestFetchAllPagination:
             "totalRegistros": 5,
             "totalPaginas": 3,
             "paginaAtual": 2,
-            "temProximaPagina": True
+            "temProximaPagina": True,
         }
 
         page_3 = Mock(status_code=200)
@@ -403,7 +398,7 @@ class TestFetchAllPagination:
             "totalRegistros": 5,
             "totalPaginas": 3,
             "paginaAtual": 3,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
 
         mock_get.side_effect = [page_1, page_2, page_3]
@@ -418,7 +413,7 @@ class TestFetchAllPagination:
         # Should call API 3 times (once per page)
         assert mock_get.call_count == 3
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_multiple_ufs(self, mock_get):
         """Test fetch_all handles multiple UFs sequentially."""
         # Mock responses for SP (2 items) and RJ (1 item)
@@ -428,7 +423,7 @@ class TestFetchAllPagination:
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
 
         rj_response = Mock(status_code=200)
@@ -437,7 +432,7 @@ class TestFetchAllPagination:
             "totalRegistros": 1,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
 
         mock_get.side_effect = [sp_response, rj_response]
@@ -452,7 +447,7 @@ class TestFetchAllPagination:
         # Should call API twice (once per UF)
         assert mock_get.call_count == 2
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_empty_results(self, mock_get):
         """Test fetch_all handles empty results gracefully."""
         mock_response = Mock(status_code=200)
@@ -461,7 +456,7 @@ class TestFetchAllPagination:
             "totalRegistros": 0,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
         mock_get.return_value = mock_response
 
@@ -471,7 +466,7 @@ class TestFetchAllPagination:
         assert len(results) == 0
         assert mock_get.call_count == 1
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_progress_callback(self, mock_get):
         """Test fetch_all calls progress callback with correct values."""
         # Mock 2 pages
@@ -481,7 +476,7 @@ class TestFetchAllPagination:
             "totalRegistros": 5,
             "totalPaginas": 2,
             "paginaAtual": 1,
-            "temProximaPagina": True
+            "temProximaPagina": True,
         }
 
         page_2 = Mock(status_code=200)
@@ -490,7 +485,7 @@ class TestFetchAllPagination:
             "totalRegistros": 5,
             "totalPaginas": 2,
             "paginaAtual": 2,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
 
         mock_get.side_effect = [page_1, page_2]
@@ -502,12 +497,11 @@ class TestFetchAllPagination:
             progress_calls.append((page, total_pages, items_fetched))
 
         client = PNCPClient()
-        list(client.fetch_all(
-            "2024-01-01",
-            "2024-01-31",
-            ufs=["SP"],
-            on_progress=on_progress
-        ))
+        list(
+            client.fetch_all(
+                "2024-01-01", "2024-01-31", ufs=["SP"], on_progress=on_progress
+            )
+        )
 
         # Should have been called twice (once per page)
         assert len(progress_calls) == 2
@@ -516,7 +510,7 @@ class TestFetchAllPagination:
         # Second page: page 2/2, 5 items total
         assert progress_calls[1] == (2, 2, 5)
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_yields_individual_items(self, mock_get):
         """Test fetch_all is a generator yielding individual items, not lists."""
         mock_response = Mock(status_code=200)
@@ -525,7 +519,7 @@ class TestFetchAllPagination:
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
         mock_get.return_value = mock_response
 
@@ -534,6 +528,7 @@ class TestFetchAllPagination:
 
         # Should be a generator
         import types
+
         assert isinstance(generator, types.GeneratorType)
 
         # Should yield individual dictionaries
@@ -541,7 +536,7 @@ class TestFetchAllPagination:
         assert isinstance(first_item, dict)
         assert first_item["id"] == 1
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_all_without_ufs(self, mock_get):
         """Test fetch_all works without specifying UFs (fetches all)."""
         mock_response = Mock(status_code=200)
@@ -550,7 +545,7 @@ class TestFetchAllPagination:
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
         mock_get.return_value = mock_response
 
@@ -566,7 +561,7 @@ class TestFetchAllPagination:
 class TestFetchByUFHelper:
     """Test _fetch_by_uf() helper method."""
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_by_uf_stops_when_tem_proxima_false(self, mock_get):
         """Test _fetch_by_uf stops pagination when temProximaPagina is False."""
         # First page has temProximaPagina=True
@@ -576,7 +571,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 1,
-            "temProximaPagina": True
+            "temProximaPagina": True,
         }
 
         # Second page has temProximaPagina=False (last page)
@@ -586,7 +581,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 2,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
 
         mock_get.side_effect = [page_1, page_2]
@@ -598,7 +593,7 @@ class TestFetchByUFHelper:
         # Should stop after page 2 (not request page 3)
         assert mock_get.call_count == 2
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_by_uf_correct_page_numbers(self, mock_get):
         """Test _fetch_by_uf sends correct page numbers (1-indexed)."""
         # Mock 2 pages
@@ -608,7 +603,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 1,
-            "temProximaPagina": True
+            "temProximaPagina": True,
         }
 
         page_2 = Mock(status_code=200)
@@ -617,7 +612,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 2,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
 
         mock_get.side_effect = [page_1, page_2]
@@ -632,7 +627,7 @@ class TestFetchByUFHelper:
         assert call_1_params["pagina"] == 1
         assert call_2_params["pagina"] == 2
 
-    @patch('pncp_client.requests.Session.get')
+    @patch("pncp_client.requests.Session.get")
     def test_fetch_by_uf_handles_uf_none(self, mock_get):
         """Test _fetch_by_uf works with uf=None (all UFs)."""
         mock_response = Mock(status_code=200)
@@ -641,7 +636,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 1,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False
+            "temProximaPagina": False,
         }
         mock_get.return_value = mock_response
 

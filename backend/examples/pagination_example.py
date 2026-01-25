@@ -4,18 +4,18 @@ Example demonstrating automatic pagination with fetch_all().
 This script shows how to use the new pagination features to fetch
 all procurement records across multiple pages.
 """
+
 import logging
 import sys
 
 # Add parent directory to path for imports
-sys.path.insert(0, '..')
+sys.path.insert(0, "..")
 
 from pncp_client import PNCPClient
 
 # Configure logging to see pagination progress
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)-8s | %(message)s"
 )
 
 
@@ -28,9 +28,7 @@ def example_basic_pagination():
     # Fetch all records for São Paulo in January 2025
     bids = []
     for bid in client.fetch_all(
-        data_inicial="2025-01-01",
-        data_final="2025-01-31",
-        ufs=["SP"]
+        data_inicial="2025-01-01", data_final="2025-01-31", ufs=["SP"]
     ):
         bids.append(bid)
 
@@ -52,9 +50,7 @@ def example_multiple_ufs():
     bids_by_uf = {}
 
     for bid in client.fetch_all(
-        data_inicial="2025-01-01",
-        data_final="2025-01-31",
-        ufs=["SP", "RJ", "MG"]
+        data_inicial="2025-01-01", data_final="2025-01-31", ufs=["SP", "RJ", "MG"]
     ):
         uf = bid.get("uf", "UNKNOWN")
         bids_by_uf[uf] = bids_by_uf.get(uf, 0) + 1
@@ -76,12 +72,14 @@ def example_with_progress_callback():
 
     client = PNCPClient()
 
-    bids = list(client.fetch_all(
-        data_inicial="2025-01-01",
-        data_final="2025-01-07",  # Shorter range
-        ufs=["SP"],
-        on_progress=show_progress
-    ))
+    bids = list(
+        client.fetch_all(
+            data_inicial="2025-01-01",
+            data_final="2025-01-07",  # Shorter range
+            ufs=["SP"],
+            on_progress=show_progress,
+        )
+    )
 
     print(f"\nFinal total: {len(bids)} bids")
 
@@ -99,9 +97,7 @@ def example_generator_usage():
     high_value_count = 0
 
     for bid in client.fetch_all(
-        data_inicial="2025-01-01",
-        data_final="2025-01-31",
-        ufs=["SP"]
+        data_inicial="2025-01-01", data_final="2025-01-31", ufs=["SP"]
     ):
         count += 1
 

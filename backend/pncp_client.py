@@ -1,4 +1,5 @@
 """Resilient HTTP client for PNCP API."""
+
 import logging
 import random
 import time
@@ -35,8 +36,7 @@ def calculate_delay(attempt: int, config: RetryConfig) -> float:
         - Attempt 5: 60s (capped)
     """
     delay = min(
-        config.base_delay * (config.exponential_base ** attempt),
-        config.max_delay
+        config.base_delay * (config.exponential_base**attempt), config.max_delay
     )
 
     if config.jitter:
@@ -78,7 +78,7 @@ class PNCPClient:
             backoff_factor=self.config.base_delay,
             status_forcelist=self.config.retryable_status_codes,
             allowed_methods=["GET"],
-            raise_on_status=False  # We'll handle status codes manually
+            raise_on_status=False,  # We'll handle status codes manually
         )
 
         adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -86,10 +86,9 @@ class PNCPClient:
         session.mount("http://", adapter)
 
         # Set default headers
-        session.headers.update({
-            "User-Agent": "BidIQ-POC/0.2",
-            "Accept": "application/json"
-        })
+        session.headers.update(
+            {"User-Agent": "BidIQ-POC/0.2", "Accept": "application/json"}
+        )
 
         return session
 
@@ -116,7 +115,7 @@ class PNCPClient:
         data_final: str,
         uf: str | None = None,
         pagina: int = 1,
-        tamanho: int = 500
+        tamanho: int = 500,
     ) -> Dict[str, Any]:
         """
         Fetch a single page of procurement data from PNCP API.
@@ -146,7 +145,7 @@ class PNCPClient:
             "dataInicial": data_inicial,
             "dataFinal": data_final,
             "pagina": pagina,
-            "tamanhoPagina": tamanho
+            "tamanhoPagina": tamanho,
         }
 
         if uf:
@@ -162,9 +161,7 @@ class PNCPClient:
                 )
 
                 response = self.session.get(
-                    url,
-                    params=params,
-                    timeout=self.config.timeout
+                    url, params=params, timeout=self.config.timeout
                 )
 
                 # Handle rate limiting specifically
@@ -230,16 +227,14 @@ class PNCPClient:
                     raise PNCPAPIError(error_msg) from e
 
         # Should never reach here, but just in case
-        raise PNCPAPIError(
-            "Unexpected: exhausted retries without raising exception"
-        )
+        raise PNCPAPIError("Unexpected: exhausted retries without raising exception")
 
     def fetch_all(
         self,
         data_inicial: str,
         data_final: str,
         ufs: list[str] | None = None,
-        on_progress: Callable[[int, int, int], None] | None = None
+        on_progress: Callable[[int, int, int], None] | None = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all procurement records with automatic pagination.
@@ -283,22 +278,18 @@ class PNCPClient:
         if ufs:
             for uf in ufs:
                 logger.info(f"Fetching all pages for UF={uf}")
-                yield from self._fetch_by_uf(
-                    data_inicial, data_final, uf, on_progress
-                )
+                yield from self._fetch_by_uf(data_inicial, data_final, uf, on_progress)
         else:
             # Fetch all UFs together (no UF filter)
             logger.info("Fetching all pages (all UFs)")
-            yield from self._fetch_by_uf(
-                data_inicial, data_final, None, on_progress
-            )
+            yield from self._fetch_by_uf(data_inicial, data_final, None, on_progress)
 
     def _fetch_by_uf(
         self,
         data_inicial: str,
         data_final: str,
         uf: str | None,
-        on_progress: Callable[[int, int, int], None] | None
+        on_progress: Callable[[int, int, int], None] | None,
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all pages for a specific UF (or all UFs if uf=None).
@@ -327,10 +318,7 @@ class PNCPClient:
             )
 
             response = self.fetch_page(
-                data_inicial=data_inicial,
-                data_final=data_final,
-                uf=uf,
-                pagina=pagina
+                data_inicial=data_inicial, data_final=data_final, uf=uf, pagina=pagina
             )
 
             # Extract pagination metadata
