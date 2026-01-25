@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.13 (100% PRD Coverage)
-**Última Atualização:** 2026-01-25 14:30 (UTC)
-**Status:** 🚧 Em Desenvolvimento (50.0% completo - 17/34 issues)
+**Versão:** 1.14 (100% PRD Coverage + Frontend Initialized)
+**Última Atualização:** 2026-01-25 15:45 (UTC)
+**Status:** 🚧 Em Desenvolvimento (52.9% completo - 18/34 issues)
 
 ---
 
@@ -43,14 +43,14 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Progresso Geral:**
 ```
-[██████████░░░░░░░░] 50.0% (17/34 issues) - 100% PRD Coverage ✅
+[██████████░░░░░░░░] 52.9% (18/34 issues) - Frontend Initialized ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
-🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
+🎨 EPIC 6: Frontend          [█░░░░░░░░░] 1/6 🟡 16.7% EM PROGRESSO (#21 ✅ merged 2026-01-25)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
 ```
 
@@ -91,7 +91,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M2: Full-Stack Funcional *(Semana 2)*
 **Objetivo:** Interface web + API completa
-**Status:** 🟡 EM PROGRESSO (2/10 issues - 20%)
+**Status:** 🟡 EM PROGRESSO (3/10 issues - 30%)
 
 **Prioridade P0 (Crítico):**
 - [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 80% EM PROGRESSO
@@ -99,17 +99,17 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #18 - POST /buscar ✅ (PR #51 merged 2026-01-25) 🎯 100% coverage main.py, 14 tests, 99.27% backend
   - [x] #19 - Logging estruturado ✅ (PR #49 merged 2026-01-25) 🎯 100% coverage config.py, 23 tests, 99.21% backend
   - [x] #29 - Health check ✅ (PR #50 merged 2026-01-25) 🎯 100% governance score, 212 tests, 99.21% backend
-- [ ] #20 - EPIC 6: Frontend (Next.js)
-  - [ ] #21 - Setup Next.js
-  - [ ] #22 - Seleção UFs (validações enriquecidas)
-  - [ ] #33 - Error Boundaries ⭐ NOVO
-  - [ ] #34 - Form Validations ⭐ NOVO
-  - [ ] #23 - Resultados
-  - [ ] #24 - API Routes
+- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 16.7% EM PROGRESSO
+  - [x] #21 - Setup Next.js ✅ (PR #52 merged 2026-01-25) 🎯 Next.js 16.1.4 + Tailwind + TypeScript strict mode
+  - [ ] #22 - Seleção UFs (validações enriquecidas) 🔓 UNBLOCKED
+  - [ ] #33 - Error Boundaries ⭐ NOVO 🔓 UNBLOCKED
+  - [ ] #34 - Form Validations ⭐ NOVO 🔓 UNBLOCKED
+  - [ ] #23 - Resultados 🔓 UNBLOCKED
+  - [ ] #24 - API Routes 🔓 UNBLOCKED
 
 **Deliverables:**
 - 🟡 API REST completa (FastAPI structure done, endpoints pending)
-- 🔴 Interface web responsiva (não iniciado)
+- 🟡 Interface web responsiva (Next.js setup done, components pending) ✅
 - 🔴 Fluxo end-to-end funcional (não iniciado)
 - 🔴 Docker Compose full-stack (não iniciado)
 
@@ -431,6 +431,20 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 - **Impact:** Unblocks #18 (POST /buscar), #19 (Logging), #29 (Enhanced health checks)
 - **Milestone:** Starts EPIC 5 (API Backend) - 20% (1/5 issues), M2 now in progress (10%)
 - **Files:** 4 files changed (+797/-9 lines), test-to-code ratio: 4.28:1
+
+### 2026-01-25 20:45 - Issue #21 Merged ✅ (EPIC 6 STARTED 16.7%, M2 30%)
+**PR #52:** feat(frontend): setup Next.js 14 with App Router and Tailwind CSS (#21)
+- **Manual merge via /review-pr protocol** - 95% governance score (contextual approval)
+- **Implementation:** Next.js 16.1.4 + React 18.3.1 + TypeScript 5.9.3 + Tailwind 3.4.19
+- **Configuration:** App Router, strict mode TypeScript, PostCSS + Autoprefixer, path aliases
+- **Build:** 4.2s production build, static page generation, standalone output for Docker
+- **Tests:** 5/5 passing (placeholder config tests), Jest configured with 60% threshold
+- **Security:** 0 vulnerabilities (npm audit clean), CodeQL passed, zero secrets detected
+- **Deductions:** -5% (placeholder tests, no CHANGELOG, package-lock diff)
+- **Post-Merge Validation:** 3-layer safety net completed (Backend tests ✅, Frontend tests ✅, Build ✅)
+- **Impact:** Unblocks 5 issues (#22, #23, #24, #33, #34) - entire frontend development now possible
+- **Milestone:** Starts EPIC 6 (Frontend) - 16.7% (1/6 issues), M2 now 30% (3/10 issues)
+- **Files:** 10 files changed (+9096/-7 lines), 8898 lines from package-lock.json
 
 ### 2026-01-25 19:20 - Issue #13 Merged ✅ (EPIC 4 STARTED 33%)
 **PR #44:** feat(backend): implement Excel generator with professional formatting
