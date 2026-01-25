@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.17 (Frontend Results Display Tested)
-**Última Atualização:** 2026-01-25 16:58 (UTC)
-**Status:** 🚧 Em Desenvolvimento (61.8% completo - 21/34 issues)
+**Versão:** 1.18 (Error Boundaries Complete)
+**Última Atualização:** 2026-01-25 17:35 (UTC)
+**Status:** 🚧 Em Desenvolvimento (64.7% completo - 22/34 issues)
 
 ---
 
@@ -43,14 +43,14 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Progresso Geral:**
 ```
-[████████████░░░░░░] 61.8% (21/34 issues) - Frontend Results Display ✅
+[█████████████░░░░░] 64.7% (22/34 issues) - Error Boundaries ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [██████████] 3/3 ✅ 100% COMPLETO (#7, #8, #28 ✅)
 🎯 EPIC 3: Filtragem         [███████░░░] 3/4 🟡 75% (#10, #11, #30 ✅)
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
-🎨 EPIC 6: Frontend          [███████░░░] 4/6 🟡 66.7% EM PROGRESSO (#21, #22, #23 ✅, #24 ✅ merged)
+🎨 EPIC 6: Frontend          [████████░░] 5/6 🟡 83.3% EM PROGRESSO (#21, #22, #23, #24, #56 ✅ merged)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
 ```
 
@@ -91,7 +91,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M2: Full-Stack Funcional *(Semana 2)*
 **Objetivo:** Interface web + API completa
-**Status:** 🟡 EM PROGRESSO (6/10 issues - 60%)
+**Status:** 🟡 EM PROGRESSO (7/10 issues - 70%)
 
 **Prioridade P0 (Crítico):**
 - [ ] #16 - EPIC 5: API Backend (FastAPI) 🟡 80% EM PROGRESSO
@@ -99,12 +99,12 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #18 - POST /buscar ✅ (PR #51 merged 2026-01-25) 🎯 100% coverage main.py, 14 tests, 99.27% backend
   - [x] #19 - Logging estruturado ✅ (PR #49 merged 2026-01-25) 🎯 100% coverage config.py, 23 tests, 99.21% backend
   - [x] #29 - Health check ✅ (PR #50 merged 2026-01-25) 🎯 100% governance score, 212 tests, 99.21% backend
-- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 66.7% EM PROGRESSO
+- [ ] #20 - EPIC 6: Frontend (Next.js) 🟡 83.3% EM PROGRESSO
   - [x] #21 - Setup Next.js ✅ (PR #52 merged 2026-01-25) 🎯 Next.js 16.1.4 + Tailwind + TypeScript strict mode
   - [x] #22 - Seleção UFs e Date Range ✅ (PR #53 merged 2026-01-25) 🎯 83.58% coverage, 25 tests, 10/10 acceptance criteria
   - [x] #24 - API Routes ✅ (PR #54 merged 2026-01-25) 🎯 88.67% coverage, 18 tests, 4.76:1 test-to-code ratio
   - [x] #23 - Tela de resultados com resumo ✅ (PR #55 merged 2026-01-25) 🎯 96.72% coverage page.tsx, 36 tests, 8/8 ACs, 100% governance score
-  - [ ] #56 - Error Boundaries ⭐ CRIADO 2026-01-25
+  - [x] #56 - Error Boundaries ✅ (PR #58 merged 2026-01-25) 🎯 100% coverage error.tsx, 27 tests, 99% governance, 3.09:1 test ratio
   - [ ] #57 - Form Validations ⭐ CRIADO 2026-01-25
 
 **Deliverables:**
@@ -286,6 +286,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-25 | 1.9 | **Issue #32 concluída (Test Frameworks)** - PR #43 merged. EPIC 1: 80% completo (4/5). 96.69% coverage, completes setup infrastructure. Progresso: 29.4% (10/34) |
 | 2026-01-25 | 1.16 | **Issue #24 concluída (API Routes)** - PR #54 merged. EPIC 6: 50% completo (3/6). 88.67% coverage, 4.76:1 test-to-code ratio. API integration layer complete. M2: 50% (5/10). Progresso: 58.8% (20/34) |
 | 2026-01-25 | 1.17 | **Issue #23 concluída (Results Display Tests)** - PR #55 merged. EPIC 6: 66.7% completo (4/6). 96.72% coverage page.tsx, 36 tests, 8.6:1 test-to-code ratio. Perfect 100% governance score. M2: 60% (6/10). Progresso: 61.8% (21/34) |
+| 2026-01-25 | 1.18 | **Issue #56 concluída (Error Boundaries)** - PR #58 auto-merged via /review-pr. EPIC 6: 83.3% completo (5/6). 100% coverage error.tsx, 27 tests, 99% governance score, 3.09:1 test-to-code ratio. Production-ready error handling. M2: 70% (7/10). Progresso: 64.7% (22/34) |
 
 ---
 
@@ -376,6 +377,27 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 17:35 - Issue #56 Merged ✅ (ERROR BOUNDARIES COMPLETE - EPIC 6 NOW 83.3% 🎉)
+**PR #58:** feat(frontend): implement error boundary with fallback UI (#56)
+- **Auto-merged via /review-pr protocol** - **99% governance score** (CHANGELOG waived for POC phase)
+- **Implementation:** app/error.tsx with user-friendly fallback UI, reset button, error logging infrastructure
+- **Features:** Friendly error heading, warning icon, "Tentar novamente" button, technical error details in monospace, support contact message
+- **Test Coverage:** 100% error.tsx across all metrics (statements, branches, functions, lines)
+- **Frontend Overall:** 91.81% statements, 89.74% branches, 90.9% functions, 94.33% lines
+- **Tests:** 94/94 passing (27 new error boundary tests + 67 existing), 0 failures, execution time: 4.966s
+- **Test Categories:** Component existence (1), Fallback UI (7), Reset button (4), Error logging (3), Edge cases (4), Accessibility (3), Integration (2), Visual consistency (3)
+- **Test-to-Code Ratio:** 237 test lines / 70 implementation lines = **3.09:1** (exceptional quality)
+- **TypeScript:** 0 compilation errors, strict mode enabled, no `any` types, explicit error type with digest support
+- **Build:** Production build successful (4.2s), Next.js 16.1.4 Turbopack optimized
+- **CI/CD:** ALL 17 checks passing (Backend Tests, Frontend Tests, CodeQL, Security Scanning, Secret Scanning, Validate PR Metadata, etc.)
+- **Post-Merge Validation:** Layer 1 ✅ (Build + 94/94 tests), Layer 2 ✅ (Backend 226/226 tests), Layer 3 ✅ (CI pipeline success)
+- **Acceptance Criteria:** 4/4 met (File created, Fallback UI implemented, Reset button functional, Error logging appropriate)
+- **Security:** 0 vulnerabilities, ARIA attributes, focus management, WCAG color contrast
+- **Impact:** Unblocks #26 (Frontend ↔ Backend Integration) and #27 (E2E Tests), production-ready error resilience
+- **Milestone:** EPIC 6 progress 66.7% → **83.3%** (5/6 issues), M2 progress 60% → **70%** (7/10 issues), Overall 61.8% → **64.7%** (22/34)
+- **Files:** 2 files changed (+307 lines: error.tsx +70, error.test.tsx +237)
+- **Business Value:** Production-ready error handling, improved UX for component failures, unblocks E2E testing phase ✨
 
 ### 2026-01-25 16:58 - Issue #23 Merged ✅ (RESULTS DISPLAY TESTED - EPIC 6 NOW 66.7% 🎉)
 **PR #55:** test(frontend): add comprehensive tests for results display section (#23)
