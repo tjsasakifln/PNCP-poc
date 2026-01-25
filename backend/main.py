@@ -241,7 +241,7 @@ async def buscar_licitacoes(request: BuscaRequest):
             detail=f"Error communicating with PNCP API: {str(e)}",
         )
 
-    except Exception as e:
+    except Exception:
         logger.exception("Internal server error during procurement search")
         # Sanitize error message (don't expose internal details)
         raise HTTPException(
