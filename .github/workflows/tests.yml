@@ -154,11 +154,6 @@ jobs:
       FRONTEND_URL: http://localhost:3000
       BACKEND_URL: http://localhost:8000
 
-    services:
-      backend:
-        image: python:3.11
-        options: --health-cmd "curl -f http://localhost:8000/health || exit 1" --health-interval 10s
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -180,26 +175,39 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
-        continue-on-error: false
 
       - name: Install frontend dependencies
         run: |
           cd frontend
           npm ci
-        continue-on-error: false
 
       - name: Install Playwright browsers
         run: |
           cd frontend
           npx playwright install chromium --with-deps
-        continue-on-error: false
 
       - name: Start backend server
         run: |
           cd backend
-          uvicorn main:app --host 0.0.0.0 --port 8000 &
-          sleep 5
-          curl -f http://localhost:8000/health || exit 1
+          uvicorn main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "Backend PID: $BACKEND_PID"
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+
+          # Wait for backend to be ready (max 30 seconds)
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 1
+          done
+
+          echo "❌ Backend failed to start within 30 seconds"
+          echo "Backend logs:"
+          cat backend.log
+          exit 1
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-fallback' }}
 
@@ -207,9 +215,25 @@ jobs:
         run: |
           cd frontend
           npm run build
-          npm run start &
-          sleep 10
-          curl -f http://localhost:3000 || exit 1
+          npm run start > frontend.log 2>&1 &
+          FRONTEND_PID=$!
+          echo "Frontend PID: $FRONTEND_PID"
+          echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
+
+          # Wait for frontend to be ready (max 60 seconds)
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Frontend is ready"
+              exit 0
+            fi
+            echo "Waiting for frontend... ($i/60)"
+            sleep 1
+          done
+
+          echo "❌ Frontend failed to start within 60 seconds"
+          echo "Frontend logs:"
+          cat frontend.log
+          exit 1
 
       - name: Run E2E tests
         run: |
@@ -219,6 +243,35 @@ jobs:
           CI: true
           FRONTEND_URL: http://localhost:3000
           BACKEND_URL: http://localhost:8000
+
+      - name: Stop services
+        if: always()
+        run: |
+          echo "Stopping backend and frontend servers..."
+          if [ -n "$BACKEND_PID" ]; then
+            kill $BACKEND_PID || true
+            echo "Backend stopped (PID: $BACKEND_PID)"
+          fi
+          if [ -n "$FRONTEND_PID" ]; then
+            kill $FRONTEND_PID || true
+            echo "Frontend stopped (PID: $FRONTEND_PID)"
+          fi
+
+      - name: Upload backend logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-logs
+          path: backend/backend.log
+          retention-days: 7
+
+      - name: Upload frontend logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-logs
+          path: frontend/frontend.log
+          retention-days: 7
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -239,7 +292,9 @@ jobs:
       - name: Comment PR with E2E results
         uses: actions/github-script@v7
         if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const reportPath = 'frontend/test-results/junit.xml';
@@ -253,9 +308,13 @@ jobs:
               message += '⚠️ E2E test report not found.\n';
             }
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: message
-            });
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } catch (error) {
+              console.log('Failed to post comment:', error.message);
+            }
