@@ -1,5 +1,4 @@
 """Unit tests for keyword matching engine (filter.py)."""
-import pytest
 from datetime import datetime, timezone, timedelta
 from filter import (
     normalize_text,
