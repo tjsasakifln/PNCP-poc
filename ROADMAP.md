@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.5 (100% PRD Coverage)
-**Última Atualização:** 2026-01-24 23:45
-**Status:** 🚧 Em Desenvolvimento (11.8% completo - 4/34 issues)
+**Versão:** 1.6 (100% PRD Coverage)
+**Última Atualização:** 2026-01-25 01:53
+**Status:** 🚧 Em Desenvolvimento (14.7% completo - 5/34 issues)
 
 ---
 
@@ -39,14 +39,14 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (4/31 issues concluídas - 12.9%)
+**Status:** 🟡 Em Progresso (5/31 issues concluídas - 16.1%)
 
 **Progresso Geral:**
 ```
-[███░░░░░░░░░░░░░░░░] 11.8% (4/34 issues) - 100% PRD Coverage ✅
+[████░░░░░░░░░░░░░░░] 14.7% (5/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [███████░░░] 3/5 🟡 60% (issues #2, #32 abertas)
-🔌 EPIC 2: Cliente PNCP      [███░░░░░░░] 1/3 🟡 33% EM PROGRESSO
+🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [░░░░░░░░░░] 0/4 🔴 Não iniciado
 📊 EPIC 4: Saídas            [░░░░░░░░░░] 0/3 🔴 Não iniciado
 🌐 EPIC 5: API Backend       [░░░░░░░░░░] 0/5 🔴 Não iniciado
@@ -67,9 +67,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #4 - Variáveis de ambiente ✅
   - [x] #5 - Docker Compose ✅ (PR #37 merged)
   - [ ] #32 - Setup Test Frameworks (pytest + jest) ⭐ NOVO
-- [ ] #6 - EPIC 2: Cliente PNCP e Resiliência 🟡 33% EM PROGRESSO
+- [ ] #6 - EPIC 2: Cliente PNCP e Resiliência 🟡 67% EM PROGRESSO
   - [x] #7 - Cliente HTTP resiliente ✅ (PR #38 merged 2026-01-24)
-  - [ ] #8 - Paginação automática
+  - [x] #8 - Paginação automática ✅ (PR #39 merged 2026-01-25)
   - [ ] #28 - Rate limiting
 - [ ] #9 - EPIC 3: Motor de Filtragem 🔴 NÃO INICIADO
   - [ ] #10 - Normalização e keywords
@@ -279,6 +279,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-24 | 1.3 | **AUDIT CRÍTICO:** Correção de 26 estados incorretos - Drift de 83.9% eliminado |
 | 2026-01-24 | 1.4 | Progresso real: 4/31 (12.9%). M2 e M3 corrigidos para 0%. ETA ajustado para 3-4 semanas |
 | 2026-01-24 | 1.5 | **100% PRD COVERAGE:** +3 issues (#32, #33, #34). Total: 34 issues. Progresso: 11.8% (4/34) |
+| 2026-01-25 | 1.6 | Issue #8 concluída (Paginação PNCP) - PR #39 merged. EPIC 2: 67% completo (2/3). Progresso: 14.7% (5/34) |
 
 ---
 
@@ -289,9 +290,9 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **AÇÃO TOMADA:** Sincronização completa realizada via `/audit-roadmap`
 
 **Status Validado:**
-- ✅ Issues fechadas: #3, #4, #5, #7 (4 issues)
-- ⚠️ Issues abertas: Todas as demais (27 issues)
-- 📊 Progresso real: 12.9% (4/31)
+- ✅ Issues fechadas: #3, #4, #5, #7, #8 (5 issues)
+- ⚠️ Issues abertas: Todas as demais (29 issues)
+- 📊 Progresso real: 14.7% (5/34)
 
 ---
 
@@ -363,7 +364,7 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 
 ---
 
-**Última sincronização com issues:** 2026-01-24 23:45 (via AIOS Master - 100% PRD Coverage)
+**Última sincronização com issues:** 2026-01-25 01:53 (Issue #8 merged via PR #39)
 **Próxima revisão agendada:** 2026-01-27 (após progresso em M1)
 
-*Este roadmap é sincronizado automaticamente. Versão 1.5: 34 issues, 100% PRD coverage*
+*Este roadmap é sincronizado automaticamente. Versão 1.6: 34 issues, 100% PRD coverage*
