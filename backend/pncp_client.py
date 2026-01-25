@@ -2,7 +2,7 @@
 import logging
 import random
 import time
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Generator
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -233,6 +233,137 @@ class PNCPClient:
         raise PNCPAPIError(
             "Unexpected: exhausted retries without raising exception"
         )
+
+    def fetch_all(
+        self,
+        data_inicial: str,
+        data_final: str,
+        ufs: list[str] | None = None,
+        on_progress: Callable[[int, int, int], None] | None = None
+    ) -> Generator[Dict[str, Any], None, None]:
+        """
+        Fetch all procurement records with automatic pagination.
+
+        This generator yields individual procurement records across all pages,
+        handling pagination automatically. If specific UFs are provided, it
+        fetches data for each UF separately (more efficient for PNCP API).
+
+        Args:
+            data_inicial: Start date in YYYY-MM-DD format
+            data_final: End date in YYYY-MM-DD format
+            ufs: Optional list of state codes (e.g., ["SP", "RJ"])
+                 If None, fetches all UFs
+            on_progress: Optional callback(current_page, total_pages, items_fetched)
+                         Called after each page is fetched
+
+        Yields:
+            Dict[str, Any]: Individual procurement record
+
+        Example:
+            ```python
+            client = PNCPClient()
+
+            # Fetch all records for SP and RJ
+            for bid in client.fetch_all("2025-01-01", "2025-01-31", ufs=["SP", "RJ"]):
+                print(bid["codigoCompra"])
+
+            # With progress callback
+            def show_progress(page, total, items):
+                print(f"Page {page}/{total}: {items} items fetched")
+
+            bids = list(client.fetch_all(
+                "2025-01-01",
+                "2025-01-31",
+                ufs=["SP"],
+                on_progress=show_progress
+            ))
+            ```
+        """
+        # If specific UFs provided, fetch each separately
+        if ufs:
+            for uf in ufs:
+                logger.info(f"Fetching all pages for UF={uf}")
+                yield from self._fetch_by_uf(
+                    data_inicial, data_final, uf, on_progress
+                )
+        else:
+            # Fetch all UFs together (no UF filter)
+            logger.info("Fetching all pages (all UFs)")
+            yield from self._fetch_by_uf(
+                data_inicial, data_final, None, on_progress
+            )
+
+    def _fetch_by_uf(
+        self,
+        data_inicial: str,
+        data_final: str,
+        uf: str | None,
+        on_progress: Callable[[int, int, int], None] | None
+    ) -> Generator[Dict[str, Any], None, None]:
+        """
+        Fetch all pages for a specific UF (or all UFs if uf=None).
+
+        This helper method handles pagination for a single UF by following
+        the API's `temProximaPagina` flag. It continues fetching pages
+        until no more pages are available.
+
+        Args:
+            data_inicial: Start date in YYYY-MM-DD format
+            data_final: End date in YYYY-MM-DD format
+            uf: State code (e.g., "SP") or None for all states
+            on_progress: Optional progress callback
+
+        Yields:
+            Dict[str, Any]: Individual procurement record
+        """
+        pagina = 1
+        items_fetched = 0
+        total_pages = None
+
+        while True:
+            logger.debug(
+                f"Fetching page {pagina} for UF={uf or 'ALL'} "
+                f"(date range: {data_inicial} to {data_final})"
+            )
+
+            response = self.fetch_page(
+                data_inicial=data_inicial,
+                data_final=data_final,
+                uf=uf,
+                pagina=pagina
+            )
+
+            # Extract pagination metadata
+            data = response.get("data", [])
+            total_pages = response.get("totalPaginas", 1)
+            total_registros = response.get("totalRegistros", 0)
+            tem_proxima = response.get("temProximaPagina", False)
+
+            # Log page info
+            logger.info(
+                f"Page {pagina}/{total_pages}: {len(data)} items "
+                f"(total records: {total_registros})"
+            )
+
+            # Call progress callback if provided
+            if on_progress:
+                on_progress(pagina, total_pages, items_fetched + len(data))
+
+            # Yield individual items
+            for item in data:
+                yield item
+                items_fetched += 1
+
+            # Check if there are more pages
+            if not tem_proxima:
+                logger.info(
+                    f"Finished fetching UF={uf or 'ALL'}: "
+                    f"{items_fetched} total items across {pagina} pages"
+                )
+                break
+
+            # Move to next page
+            pagina += 1
 
     def close(self) -> None:
         """Close the HTTP session and cleanup resources."""

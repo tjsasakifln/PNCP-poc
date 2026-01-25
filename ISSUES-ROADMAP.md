@@ -15,8 +15,9 @@
 | #3 | Inicializar repositório e estrutura de pastas | infrastructure, setup |
 | #4 | Configurar ambientes e variáveis | infrastructure, configuration |
 | #5 | Setup Docker Compose | infrastructure, docker |
+| #32 | Setup Test Frameworks (pytest + jest) | infrastructure, testing, setup |
 
-**Referência PRD:** Seções 10, 11
+**Referência PRD:** Seções 9, 10, 11, CLAUDE.md
 
 ---
 
@@ -85,6 +86,8 @@
 |---|-------|--------|
 | #21 | Setup Next.js 14 + Tailwind | frontend, setup |
 | #22 | Interface seleção UFs e período | frontend, feature |
+| #33 | Frontend Error Boundaries | frontend, feature, error-handling |
+| #34 | Frontend Form Validations | frontend, feature, validation |
 | #23 | Tela de resultados com resumo | frontend, feature |
 | #24 | API Routes Next.js | frontend, feature |
 
@@ -136,12 +139,12 @@
 
 ## 📊 Estatísticas
 
-- **Total de Issues:** 31
+- **Total de Issues:** 34
 - **Épicos:** 7
-- **Issues de Implementação:** 24
+- **Issues de Implementação:** 27
 - **Backend:** 17 issues
-- **Frontend:** 4 issues
-- **Infraestrutura:** 5 issues
+- **Frontend:** 6 issues
+- **Infraestrutura:** 6 issues
 - **Integração/Deploy:** 5 issues
 
 ---
@@ -154,4 +157,43 @@
 
 ---
 
-*Gerado automaticamente pelo AIOS Master em 2026-01-24*
+---
+
+## 📝 Novas Issues (100% PRD Coverage)
+
+### Issue #32: Setup Test Frameworks (pytest + jest)
+**EPIC:** #2 | **Labels:** infrastructure, testing, setup | **Estimativa:** 2h
+
+Configurar frameworks de teste para backend (pytest) e frontend (jest).
+
+**Acceptance Criteria:**
+- pytest configurado com coverage (70%+ threshold)
+- jest configurado para frontend
+- Scripts de teste funcionando
+- Documentação atualizada
+
+### Issue #33: Frontend Error Boundaries
+**EPIC:** #20 | **Labels:** frontend, feature, error-handling | **Estimativa:** 2h
+
+Implementar `error.tsx` conforme PRD Seção 7.2.
+
+**Acceptance Criteria:**
+- Error boundary component implementado
+- Fallback UI amigável
+- Botão "Tentar novamente"
+- Erros logados
+
+### Issue #34: Frontend Form Validations
+**EPIC:** #20 | **Labels:** frontend, feature, validation | **Estimativa:** 1h
+
+Validações client-side para formulário de busca (PRD 7.3).
+
+**Acceptance Criteria:**
+- Min 1 UF selecionada
+- Validação de range de datas (≤30 dias)
+- Mensagens de erro inline
+- Campos inválidos destacados
+
+---
+
+*Atualizado pelo AIOS Master em 2026-01-24 para 100% cobertura PRD*
