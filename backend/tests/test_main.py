@@ -87,18 +87,50 @@ class TestHealthEndpoint:
         assert response.status_code == 200
 
     def test_health_response_structure(self, client):
-        """Health endpoint should return status and version."""
+        """Health endpoint should return status, timestamp, and version."""
         response = client.get("/health")
         data = response.json()
 
+        # Verify all required fields are present
         assert "status" in data
+        assert "timestamp" in data
         assert "version" in data
 
-    def test_health_status_ok(self, client):
-        """Health endpoint should report 'ok' status."""
+    def test_health_status_healthy(self, client):
+        """Health endpoint should report 'healthy' status."""
         response = client.get("/health")
         data = response.json()
-        assert data["status"] == "ok"
+        assert data["status"] == "healthy"
+
+    def test_health_timestamp_format(self, client):
+        """Health endpoint timestamp should be valid ISO 8601 format."""
+        from datetime import datetime
+        response = client.get("/health")
+        data = response.json()
+
+        timestamp = data["timestamp"]
+        # Verify ISO 8601 format by parsing it
+        parsed = datetime.fromisoformat(timestamp)
+        assert isinstance(parsed, datetime)
+
+        # Timestamp should be recent (within last 5 seconds)
+        import time
+        now = datetime.utcnow()
+        delta = (now - parsed).total_seconds()
+        assert abs(delta) < 5, f"Timestamp {timestamp} is not recent (delta: {delta}s)"
+
+    def test_health_timestamp_changes(self, client):
+        """Health endpoint timestamp should update on each request."""
+        import time
+        response1 = client.get("/health")
+        time.sleep(0.01)  # Small delay to ensure timestamp difference
+        response2 = client.get("/health")
+
+        timestamp1 = response1.json()["timestamp"]
+        timestamp2 = response2.json()["timestamp"]
+
+        # Timestamps should be different (not cached)
+        assert timestamp1 != timestamp2
 
     def test_health_version_matches(self, client):
         """Health endpoint version should match app version."""
@@ -115,6 +147,18 @@ class TestHealthEndpoint:
 
         assert response.status_code == 200
         assert elapsed < 0.1  # 100ms threshold
+
+    def test_health_no_authentication_required(self, client):
+        """Health endpoint should be publicly accessible (no auth)."""
+        # No authentication headers provided
+        response = client.get("/health")
+        # Should still succeed
+        assert response.status_code == 200
+
+    def test_health_json_content_type(self, client):
+        """Health endpoint should return JSON content type."""
+        response = client.get("/health")
+        assert "application/json" in response.headers["content-type"]
 
 
 class TestCORSHeaders:
