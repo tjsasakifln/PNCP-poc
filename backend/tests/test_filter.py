@@ -1,8 +1,11 @@
 """Unit tests for keyword matching engine (filter.py)."""
 import pytest
+from datetime import datetime, timezone, timedelta
 from filter import (
     normalize_text,
     match_keywords,
+    filter_licitacao,
+    filter_batch,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO
 )
@@ -245,3 +248,405 @@ class TestKeywordConstants:
 
         expected_exclusions = {"uniformização de procedimento", "padrão uniforme"}
         assert expected_exclusions.issubset(KEYWORDS_EXCLUSAO)
+
+
+class TestFilterLicitacao:
+    """Tests for filter_licitacao() function (sequential filtering)."""
+
+    def test_rejects_uf_not_selected(self):
+        """Should reject bid when UF is not in selected set."""
+        licitacao = {
+            "uf": "RJ",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Aquisição de uniformes escolares"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP", "MG"})
+        assert aprovada is False
+        assert "UF 'RJ' não selecionada" in motivo
+
+    def test_accepts_uf_in_selected_set(self):
+        """Should accept bid when UF is in selected set."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Aquisição de uniformes escolares",
+            "dataAberturaProposta": future_date
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP", "RJ"})
+        assert aprovada is True
+        assert motivo is None
+
+    def test_rejects_valor_none(self):
+        """Should reject bid when valorTotalEstimado is missing."""
+        licitacao = {
+            "uf": "SP",
+            "objetoCompra": "Uniformes"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is False
+        assert "Valor não informado" in motivo
+
+    def test_rejects_valor_below_min(self):
+        """Should reject bid when value is below minimum threshold."""
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 30_000.0,  # Below 50k default
+            "objetoCompra": "Uniformes escolares"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is False
+        assert "Valor" in motivo
+        assert "fora da faixa" in motivo
+
+    def test_rejects_valor_above_max(self):
+        """Should reject bid when value is above maximum threshold."""
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 6_000_000.0,  # Above 5M default
+            "objetoCompra": "Uniformes escolares"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is False
+        assert "Valor" in motivo
+        assert "fora da faixa" in motivo
+
+    def test_accepts_valor_within_range(self):
+        """Should accept bid when value is within range."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 150_000.0,  # Within 50k-5M range
+            "objetoCompra": "Uniformes escolares",
+            "dataAberturaProposta": future_date
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True
+        assert motivo is None
+
+    def test_accepts_custom_valor_range(self):
+        """Should respect custom valor_min and valor_max parameters."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 75_000.0,
+            "objetoCompra": "Uniformes",
+            "dataAberturaProposta": future_date
+        }
+        # Custom range: 100k-200k (should reject 75k)
+        aprovada, _ = filter_licitacao(
+            licitacao, {"SP"}, valor_min=100_000, valor_max=200_000
+        )
+        assert aprovada is False
+
+    def test_rejects_missing_keywords(self):
+        """Should reject bid without uniform keywords."""
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Aquisição de notebooks e impressoras"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is False
+        assert "keywords" in motivo.lower()
+
+    def test_accepts_with_uniform_keywords(self):
+        """Should accept bid with uniform keywords."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Aquisição de uniformes escolares",
+            "dataAberturaProposta": future_date
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True
+        assert motivo is None
+
+    def test_rejects_past_deadline(self):
+        """Should reject bid when deadline (dataAberturaProposta) is past."""
+        past_date = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Uniformes",
+            "dataAberturaProposta": past_date
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is False
+        assert "Prazo encerrado" in motivo
+
+    def test_accepts_future_deadline(self):
+        """Should accept bid when deadline is in the future."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Uniformes escolares",
+            "dataAberturaProposta": future_date
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True
+        assert motivo is None
+
+    def test_accepts_missing_deadline(self):
+        """Should accept bid when dataAberturaProposta is missing (skip filter)."""
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Uniformes"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True  # Missing date doesn't fail the filter
+        assert motivo is None
+
+    def test_accepts_malformed_deadline(self):
+        """Should accept bid when date is malformed (skip filter gracefully)."""
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Uniformes",
+            "dataAberturaProposta": "invalid-date-format"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True  # Malformed date doesn't fail the filter
+        assert motivo is None
+
+    def test_filter_order_is_fail_fast(self):
+        """Should stop at first filter failure (fail-fast optimization)."""
+        # UF filter should fail before value check
+        licitacao_wrong_uf = {
+            "uf": "RJ",
+            "valorTotalEstimado": 30_000.0,  # Also wrong value
+            "objetoCompra": "Software"  # Also wrong keywords
+        }
+        aprovada, motivo = filter_licitacao(licitacao_wrong_uf, {"SP"})
+        assert aprovada is False
+        # Should fail on UF (first check), not mention value or keywords
+        assert "UF" in motivo
+        assert "RJ" in motivo
+
+    def test_real_world_valid_bid(self):
+        """Should accept realistic valid procurement bid."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=15)).isoformat()
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 287_500.0,
+            "objetoCompra": "PREGÃO ELETRÔNICO - Aquisição de uniformes escolares "
+                           "para alunos da rede municipal de ensino",
+            "dataAberturaProposta": future_date,
+            "codigoCompra": "12345678",
+            "nomeOrgao": "Prefeitura Municipal de São Paulo"
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP", "RJ", "MG"})
+        assert aprovada is True
+        assert motivo is None
+
+    def test_handles_z_suffix_in_iso_datetime(self):
+        """Should correctly parse ISO datetime with 'Z' suffix."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30))
+        future_date_z = future_date.strftime("%Y-%m-%dT%H:%M:%SZ")  # Z format
+
+        licitacao = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Uniformes",
+            "dataAberturaProposta": future_date_z
+        }
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True
+        assert motivo is None
+
+
+class TestFilterBatch:
+    """Tests for filter_batch() function (batch filtering with statistics)."""
+
+    def test_empty_batch_returns_empty_list(self):
+        """Should handle empty batch gracefully."""
+        aprovadas, stats = filter_batch([], {"SP"})
+        assert aprovadas == []
+        assert stats["total"] == 0
+        assert stats["aprovadas"] == 0
+
+    def test_single_approved_bid(self):
+        """Should correctly filter single approved bid."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacoes = [
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes escolares",
+                "dataAberturaProposta": future_date
+            }
+        ]
+        aprovadas, stats = filter_batch(licitacoes, {"SP"})
+
+        assert len(aprovadas) == 1
+        assert stats["total"] == 1
+        assert stats["aprovadas"] == 1
+        assert stats["rejeitadas_uf"] == 0
+
+    def test_batch_with_mixed_results(self):
+        """Should correctly separate approved and rejected bids."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacoes = [
+            # Approved
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": future_date
+            },
+            # Rejected: wrong UF
+            {
+                "uf": "RJ",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": future_date
+            },
+            # Approved
+            {
+                "uf": "MG",
+                "valorTotalEstimado": 150_000.0,
+                "objetoCompra": "Jalecos hospitalares",
+                "dataAberturaProposta": future_date
+            }
+        ]
+        aprovadas, stats = filter_batch(licitacoes, {"SP", "MG"})
+
+        assert len(aprovadas) == 2
+        assert stats["total"] == 3
+        assert stats["aprovadas"] == 2
+        assert stats["rejeitadas_uf"] == 1
+
+    def test_rejection_statistics_accuracy(self):
+        """Should accurately count rejections by category."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        past_date = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
+
+        licitacoes = [
+            # Rejected: UF
+            {"uf": "RJ", "valorTotalEstimado": 100_000.0, "objetoCompra": "Uniformes"},
+            # Rejected: Valor (too low)
+            {"uf": "SP", "valorTotalEstimado": 30_000.0, "objetoCompra": "Uniformes"},
+            # Rejected: Keywords
+            {"uf": "SP", "valorTotalEstimado": 100_000.0, "objetoCompra": "Notebooks"},
+            # Rejected: Prazo
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": past_date
+            },
+            # Approved
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": future_date
+            }
+        ]
+
+        aprovadas, stats = filter_batch(licitacoes, {"SP"})
+
+        assert len(aprovadas) == 1
+        assert stats["total"] == 5
+        assert stats["aprovadas"] == 1
+        assert stats["rejeitadas_uf"] == 1
+        assert stats["rejeitadas_valor"] == 1
+        assert stats["rejeitadas_keyword"] == 1
+        assert stats["rejeitadas_prazo"] == 1
+        assert stats["rejeitadas_outros"] == 0
+
+    def test_all_statistics_keys_present(self):
+        """Should return all expected statistics keys."""
+        aprovadas, stats = filter_batch([], {"SP"})
+
+        required_keys = {
+            "total",
+            "aprovadas",
+            "rejeitadas_uf",
+            "rejeitadas_valor",
+            "rejeitadas_keyword",
+            "rejeitadas_prazo",
+            "rejeitadas_outros"
+        }
+        assert set(stats.keys()) == required_keys
+
+    def test_custom_valor_range_in_batch(self):
+        """Should respect custom valor range in batch filtering."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        licitacoes = [
+            # Within custom range: 80k-120k
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": future_date
+            },
+            # Below custom min
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 60_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": future_date
+            },
+            # Above custom max
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 150_000.0,
+                "objetoCompra": "Uniformes",
+                "dataAberturaProposta": future_date
+            }
+        ]
+
+        aprovadas, stats = filter_batch(
+            licitacoes, {"SP"}, valor_min=80_000, valor_max=120_000
+        )
+
+        assert len(aprovadas) == 1
+        assert stats["aprovadas"] == 1
+        assert stats["rejeitadas_valor"] == 2
+
+    def test_preserves_original_bid_structure(self):
+        """Should return approved bids with all original fields intact."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        original_bid = {
+            "uf": "SP",
+            "valorTotalEstimado": 100_000.0,
+            "objetoCompra": "Uniformes escolares",
+            "dataAberturaProposta": future_date,
+            "codigoCompra": "ABC123",
+            "nomeOrgao": "Prefeitura XYZ",
+            "municipio": "São Paulo"
+        }
+
+        aprovadas, _ = filter_batch([original_bid], {"SP"})
+
+        assert len(aprovadas) == 1
+        assert aprovadas[0] == original_bid
+        assert aprovadas[0]["codigoCompra"] == "ABC123"
+        assert aprovadas[0]["municipio"] == "São Paulo"
+
+    def test_large_batch_performance(self):
+        """Should handle large batches efficiently."""
+        future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+
+        # Create 1000 bids
+        licitacoes = [
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0 + (i * 1000),
+                "objetoCompra": f"Uniformes lote {i}",
+                "dataAberturaProposta": future_date,
+                "id": i
+            }
+            for i in range(1000)
+        ]
+
+        aprovadas, stats = filter_batch(licitacoes, {"SP"})
+
+        # All should be approved (all meet criteria)
+        assert len(aprovadas) == 1000
+        assert stats["total"] == 1000
+        assert stats["aprovadas"] == 1000
