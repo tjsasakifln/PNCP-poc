@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.9 (100% PRD Coverage)
-**Última Atualização:** 2026-01-25 13:45
-**Status:** 🚧 Em Desenvolvimento (29.4% completo - 10/34 issues)
+**Versão:** 1.10 (100% PRD Coverage)
+**Última Atualização:** 2026-01-25 19:20 (UTC)
+**Status:** 🚧 Em Desenvolvimento (32.4% completo - 11/34 issues)
 
 ---
 
@@ -39,16 +39,16 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 **Meta:** Backend funcional com integração PNCP completa
 **Prazo:** Semana 1 (24/01 - 31/01)
-**Status:** 🟡 Em Progresso (10/31 issues concluídas - 32.3%)
+**Status:** 🟡 Em Progresso (11/31 issues concluídas - 35.5%)
 
 **Progresso Geral:**
 ```
-[███████░░░░░░░░░░░] 29.4% (10/34 issues) - 100% PRD Coverage ✅
+[███████░░░░░░░░░░░] 32.4% (11/34 issues) - 100% PRD Coverage ✅
 
 📦 EPIC 1: Setup             [████████░░] 4/5 🟡 80% (issue #2 aberta)
 🔌 EPIC 2: Cliente PNCP      [███████░░░] 2/3 🟡 67% EM PROGRESSO (#8 ✅)
 🎯 EPIC 3: Filtragem         [██████░░░░] 2/4 🟡 50% (#10, #11 ✅ merged)
-📊 EPIC 4: Saídas            [░░░░░░░░░░] 0/3 🔴 Não iniciado
+📊 EPIC 4: Saídas            [███░░░░░░░] 1/3 🟡 33% EM PROGRESSO (#13 ✅ merged)
 🌐 EPIC 5: API Backend       [░░░░░░░░░░] 0/5 🔴 Não iniciado
 🎨 EPIC 6: Frontend          [░░░░░░░░░░] 0/6 🔴 Não iniciado (issues #33, #34 adicionadas)
 🚀 EPIC 7: Deploy            [░░░░░░░░░░] 0/5 🔴 Não iniciado
@@ -75,16 +75,16 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #10 - Normalização e keywords ✅ (PR #41 merged 2026-01-25)
   - [x] #11 - Filtros sequenciais ✅ (PR #42 merged 2026-01-25) 🎯 99% coverage, 48 tests
   - [ ] #30 - Estatísticas (UNBLOCKED - uses filter_batch stats)
-- [ ] #12 - EPIC 4: Geração de Saídas 🔴 NÃO INICIADO
-  - [ ] #13 - Excel formatado
-  - [ ] #14 - GPT-4.1-nano
-  - [ ] #15 - Fallback sem LLM
+- [ ] #12 - EPIC 4: Geração de Saídas 🟡 33% EM PROGRESSO
+  - [x] #13 - Excel formatado ✅ (PR #44 merged 2026-01-25) 🎯 100% coverage, 20 tests
+  - [ ] #14 - GPT-4.1-nano (UNBLOCKED by #13)
+  - [ ] #15 - Fallback sem LLM (UNBLOCKED by #13)
 
 **Deliverables:**
 - 🟡 Backend executando via Docker (estrutura criada, módulos core pendentes)
-- 🟡 Integração PNCP funcional (cliente base implementado, paginação pendente)
-- 🔴 Excel sendo gerado (módulo não implementado)
-- 🔴 Resumo LLM funcionando (módulo não implementado)
+- 🟢 Integração PNCP funcional (cliente resiliente + paginação implementados)
+- 🟢 Excel sendo gerado (módulo implementado com 100% coverage) ✅
+- 🔴 Resumo LLM funcionando (módulo não implementado, unblocked by #13)
 
 ---
 
@@ -373,6 +373,19 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 19:20 - Issue #13 Merged ✅ (EPIC 4 STARTED 33%)
+**PR #44:** feat(backend): implement Excel generator with professional formatting
+- **Auto-merged via /review-pr protocol** - Perfect 100% governance score
+- **Implementation:** create_excel() with openpyxl, parse_datetime() with multi-format support
+- **Formatting:** Green header (#2E7D32), 11 columns, currency/date formatting, hyperlinks
+- **Features:** Metadata sheet, total row with SUM formula, frozen header, BytesIO buffer
+- **Tests:** 20/20 passing, 100% code coverage (88/88 statements, 16/16 branches)
+- **Overall Coverage:** 97.61% backend (↑0.92% from 96.69%)
+- **Post-Merge Validation:** 3-layer safety net completed (Health ✅, Smoke ✅, CI ⏳)
+- **Impact:** Unblocks #14 (GPT-4.1-nano), #15 (LLM Fallback), #18 (POST /buscar)
+- **Milestone:** Starts EPIC 4 (Saídas) - 33% (1/3 issues)
+- **Files:** backend/excel.py (+222), backend/tests/test_excel.py (+321), 3 auto-fixes
 
 ### 2026-01-25 13:45 - Issue #32 Merged ✅ (EPIC 1 COMPLETE 80%)
 **PR #43:** feat(testing): setup test frameworks with coverage enforcement
