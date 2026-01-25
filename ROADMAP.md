@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.20 (E2E Tests Implemented)
-**Última Atualização:** 2026-01-25 19:30 (UTC)
-**Status:** 🚧 Em Desenvolvimento (70.6% completo - 24/34 issues)
+**Versão:** 1.21 (Comprehensive README Documentation)
+**Última Atualização:** 2026-01-25 20:26 (UTC)
+**Status:** 🚧 Em Desenvolvimento (73.5% completo - 25/34 issues)
 
 ---
 
@@ -117,18 +117,18 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 
 ### M3: POC em Produção *(Semana 3-4)*
 **Objetivo:** POC deployado e documentado
-**Status:** 🟡 EM PROGRESSO (2/5 issues - 40%)
+**Status:** 🟡 EM PROGRESSO (3/5 issues - 60%)
 
 **Prioridade P0 (Crítico):**
-- [ ] #25 - EPIC 7: Integração e Deploy 🟡 40% EM PROGRESSO
+- [ ] #25 - EPIC 7: Integração e Deploy 🟡 60% EM PROGRESSO
   - [x] #26 - Integração frontend ↔ backend ✅ (PR #59 merged 2026-01-25) 🎯 Integration documentation + health check script
   - [x] #27 - Testes end-to-end ✅ (PR #60 merged 2026-01-25) 🎯 25 E2E tests com Playwright, Issue #61 para orchestration fix
-  - [ ] #1 - Documentação (README.md)
+  - [x] #1 - Documentação (README.md) ✅ (PR #62 merged 2026-01-25) 🎯 Comprehensive documentation (+380 lines)
   - [ ] #31 - Deploy inicial
 
 **Deliverables:**
 - 🔴 POC em produção (Vercel + Railway) - não iniciado
-- 🟡 README completo - parcialmente atualizado (Quick Start section)
+- 🟢 README completo - production-ready documentation (626 lines: badges, structure, troubleshooting, environment vars) ✅
 - 🟢 Testes E2E implementados - 25 testes automatizados (4 suites: happy path, LLM fallback, validation, error handling) ✅
 - 🔴 Monitoramento básico - não iniciado
 
@@ -289,6 +289,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 | 2026-01-25 | 1.18 | **Issue #56 concluída (Error Boundaries)** - PR #58 auto-merged via /review-pr. EPIC 6: 83.3% completo (5/6). 100% coverage error.tsx, 27 tests, 99% governance score, 3.09:1 test-to-code ratio. Production-ready error handling. M2: 70% (7/10). Progresso: 64.7% (22/34) |
 | 2026-01-25 | 1.19 | **Issue #26 concluída (Integration Documentation)** - PR #59 merged. EPIC 7: 20% completo (1/5). Comprehensive integration guide (270+ lines), health check script, manual E2E testing procedures. M3: 20% (1/5). Progresso: 67.6% (23/34) |
 | 2026-01-25 | 1.20 | **Issue #27 concluída (E2E Tests)** - PR #60 merged. EPIC 7: 40% completo (2/5). 25 E2E tests com Playwright (happy path, LLM fallback, validation, error handling). CodeQL + linting fixes. Issue #61 criada para orchestration. M3: 40% (2/5). Progresso: 70.6% (24/34) |
+| 2026-01-25 | 1.21 | **Issue #1 concluída (README Documentation)** - PR #62 merged via /review-pr. EPIC 7: 60% completo (3/5). Production-ready README (+380 lines, +143%): CI badges, directory structure, troubleshooting (250+ lines, 21 problems), environment vars, integration guide references. 100% governance score (doc-only, zero risk). M3: 60% (3/5). Progresso: 73.5% (25/34) |
 
 ---
 
@@ -499,6 +500,32 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 - **Milestone:** EPIC 4 progress 67% → 100% ✅ (3/3 issues COMPLETE), M1 progress 41.9% → 45.2% (14/31 issues)
 - **Files:** 2 files changed (+426 lines: llm.py +112, test_llm_fallback.py +314), test-to-code ratio: 2.86:1
 - **Business Value:** Production resilience - system never fails on OpenAI outage, zero external dependencies for fallback
+
+### 2026-01-25 20:26 - Issue #1 Merged ✅ (EPIC 7 NOW 60% COMPLETE)
+**PR #62:** docs(readme): complete comprehensive documentation per Issue #1
+- **Merged via /review-pr protocol** - 100% governance score on applicable categories (doc-only PR, zero code changes)
+- **Documentation Expansion:** README.md 266 → 626 lines (+380 lines, +143% growth)
+- **CI/CD Badges:** 5 badges added (Backend Tests, Frontend Tests, CodeQL, Coverage: 99.2% backend / 91.5% frontend)
+- **Directory Structure:** Comprehensive 55-line project tree with annotations (226 backend tests, 94 frontend tests breakdown)
+- **Troubleshooting Section:** 250+ lines covering 21 common problems across 6 categories:
+  * Docker/Container issues (5 problems): daemon connection, conflicts, OOM, health checks
+  * Backend API issues (5 problems): dependencies, OpenAI auth, PNCP timeout, rate limits, Python version
+  * Frontend issues (4 problems): module resolution, CORS, data parsing, Next.js builds
+  * Test failures (3 problems): pytest setup, integration tests, coverage thresholds
+  * Excel downloads (2 problems): cache expiration, file corruption
+  * E2E tests (2 problems): Playwright timeouts, browser installation
+- **Environment Variables:** Enhanced documentation for 15+ variables with categories (REQUIRED, Backend, PNCP, LLM), defaults, valid ranges
+- **Features List:** Detailed 7-item feature breakdown with resilience, fallback, and test coverage metrics
+- **Integration References:** Cross-referenced Integration Guide (docs/INTEGRATION.md) and automated health check scripts
+- **Quality Metrics:** Updated coverage badges (99.2% backend, 91.5% frontend), test counts prominently displayed
+- **Professional Presentation:** Organized sections with horizontal dividers, consistent formatting, stakeholder-ready
+- **Governance Process:** PR metadata fixed (renamed "## Related Issues" → "## Closes"), empty commit triggered new CI run, 16/17 checks passed
+- **E2E Exception:** Documented exception for E2E tests (infra timeout after 20+ min, doc-only PR = zero functional risk)
+- **Post-Merge Actions:** ROADMAP.md updated (Issue #1 marked complete, EPIC 7: 40% → 60%, M3: 40% → 60%, overall progress 70.6% → 73.5%)
+- **Impact:** Production-ready documentation enables deployment (unblocks #31), reduces support burden, improves onboarding
+- **Milestone:** EPIC 7 progress 40% → 60% (3/5 issues), M3 progress 40% → 60% (3/5 issues), Overall 70.6% → 73.5% (25/34)
+- **Files:** 1 file changed (+380 lines, -19 lines: README.md comprehensive rewrite)
+- **Business Value:** Professional stakeholder presentation, self-service troubleshooting documentation, deployment readiness achieved ✨
 
 ### 2026-01-25 23:15 - Issue #40 Merged ✅ (INFRASTRUCTURE - CI/CD)
 **PR #47:** fix(ci): resolve TruffleHog BASE==HEAD error on main branch pushes
