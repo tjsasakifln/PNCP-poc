@@ -8,9 +8,10 @@ This document provides step-by-step instructions for validating the integration 
 2. [Environment Setup](#environment-setup)
 3. [Starting the Application](#starting-the-application)
 4. [Manual End-to-End Testing](#manual-end-to-end-testing)
-5. [Error Scenario Testing](#error-scenario-testing)
-6. [Troubleshooting](#troubleshooting)
-7. [Architecture Overview](#architecture-overview)
+5. [Automated E2E Testing](#automated-e2e-testing) ⭐ NEW
+6. [Error Scenario Testing](#error-scenario-testing)
+7. [Troubleshooting](#troubleshooting)
+8. [Architecture Overview](#architecture-overview)
 
 ---
 
@@ -223,6 +224,277 @@ Open the downloaded file in Excel/LibreOffice:
 - ✅ Generation timestamp
 - ✅ Filter statistics (total raw, total filtered, rejection reasons)
 - ✅ Query parameters (UFs, date range)
+
+---
+
+## Automated E2E Testing
+
+### Overview
+
+Automated end-to-end tests validate the complete user journey using Playwright, ensuring system reliability and preventing regressions.
+
+**Test Coverage:**
+- ✅ Happy path user journey (AC1: 7 tests)
+- ✅ LLM fallback scenarios (AC2: 4 tests)
+- ✅ Form validation errors (AC3: 7 tests)
+- ✅ Error handling (AC4: 7 tests)
+- ✅ **Total: 25 E2E test cases**
+
+**Performance Target:** Full suite completes in < 5 minutes (AC7)
+
+### Quick Start
+
+#### Option 1: Using NPM Scripts (Recommended)
+
+```bash
+cd frontend
+
+# Run all E2E tests (headless)
+npm run test:e2e
+
+# Run with visible browser (debug)
+npm run test:e2e:headed
+
+# Run in interactive UI mode
+npm run test:e2e:ui
+
+# View last test report
+npm run test:e2e:report
+```
+
+#### Option 2: Using Shell Script
+
+```bash
+# From project root
+./scripts/run-e2e-tests.sh
+
+# With options
+./scripts/run-e2e-tests.sh --headed --report
+
+# Against Docker Compose stack
+./scripts/run-e2e-tests.sh --docker
+
+# Show all options
+./scripts/run-e2e-tests.sh --help
+```
+
+### Test Files
+
+| File | Tests | Purpose |
+|------|-------|---------|
+| `01-happy-path.spec.ts` | 7 | Complete user journey validation |
+| `02-llm-fallback.spec.ts` | 4 | Offline/fallback summary generation |
+| `03-validation-errors.spec.ts` | 7 | Client-side form validations |
+| `04-error-handling.spec.ts` | 7 | Network errors, API failures |
+
+### Running Specific Test Suites
+
+```bash
+# Run only happy path tests
+npx playwright test 01-happy-path
+
+# Run validation tests in debug mode
+npx playwright test 03-validation --debug
+
+# Run error handling with trace
+npx playwright test 04-error --trace on
+```
+
+### CI/CD Integration
+
+E2E tests run automatically on every pull request via GitHub Actions:
+
+**Workflow:** `.github/workflows/e2e-tests.yml`
+
+**When tests run:**
+- On push to `main` branch
+- On pull request creation/update
+- Manual workflow dispatch
+
+**Artifacts:**
+- HTML test report (playwright-report/)
+- Screenshots of failures
+- Video recordings (on failure)
+- Execution traces (on first retry)
+
+### Test Reports
+
+#### HTML Report (Interactive)
+
+```bash
+# Generate and view report
+npm run test:e2e:report
+
+# Or after any test run
+npx playwright show-report
+```
+
+**Report includes:**
+- Pass/fail status for each test
+- Execution time
+- Screenshots of failures
+- Video playback
+- Network logs
+- Console output
+
+#### JUnit XML (CI Integration)
+
+Location: `frontend/test-results/junit.xml`
+
+Used by GitHub Actions to display test results in PR checks.
+
+### Environment Variables
+
+E2E tests respect these environment variables:
+
+```bash
+# Frontend URL (default: http://localhost:3000)
+export FRONTEND_URL=http://localhost:3000
+
+# Backend URL (default: http://localhost:8000)
+export BACKEND_URL=http://localhost:8000
+
+# Run in CI mode (enables retries)
+export CI=true
+```
+
+### Debugging Failed Tests
+
+#### 1. Run in Headed Mode
+
+```bash
+npm run test:e2e:headed
+```
+
+Sees the browser during test execution.
+
+#### 2. Use Debug Mode
+
+```bash
+npm run test:e2e:debug
+```
+
+Opens Playwright Inspector for step-by-step debugging.
+
+#### 3. Check Screenshots
+
+After a failed run:
+```bash
+ls -la frontend/test-results/
+```
+
+Screenshots saved with names like `test-name-chromium-failure.png`
+
+#### 4. View Trace
+
+```bash
+npx playwright show-trace frontend/test-results/trace.zip
+```
+
+Interactive timeline of test execution with DOM snapshots.
+
+### Writing New E2E Tests
+
+#### Test Template
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Feature Name', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('AC#.#: should do something', async ({ page }) => {
+    // Arrange
+    await page.getByRole('button', { name: 'SP' }).click();
+
+    // Act
+    await page.getByRole('button', { name: /Buscar/i }).click();
+
+    // Assert
+    await expect(page.getByText(/Resumo/i)).toBeVisible();
+  });
+});
+```
+
+#### Best Practices
+
+1. **Use Semantic Selectors:**
+   - ✅ `page.getByRole('button', { name: 'Submit' })`
+   - ❌ `page.locator('#btn-123')`
+
+2. **Wait for Elements:**
+   - ✅ `await expect(element).toBeVisible()`
+   - ❌ `await page.waitForTimeout(5000)`
+
+3. **Handle Async:**
+   - ✅ `await page.waitForSelector('text=/Ready/i')`
+   - ❌ Implicit wait assumptions
+
+4. **Cleanup State:**
+   - Use `test.beforeEach()` for fresh state
+   - Avoid test interdependencies
+
+5. **Descriptive Names:**
+   - ✅ `AC3.1: should show error when no UFs selected`
+   - ❌ `test 1`
+
+### Performance Optimization
+
+**Current Performance (as of Issue #27):**
+
+- Average test duration: ~8-12s per test
+- Full suite: ~4 minutes (25 tests)
+- Parallelization: Disabled for E2E stability
+- Retries: 0 (local), 2 (CI)
+
+**Future Optimizations:**
+
+- Mock PNCP API for faster tests
+- Parallel execution with test isolation
+- Visual regression testing
+- Accessibility testing with @axe-core/playwright
+
+### Troubleshooting E2E Tests
+
+#### Tests Timeout
+
+**Symptom:** Tests fail with "Timeout 60000ms exceeded"
+
+**Solutions:**
+- Increase timeout in `playwright.config.ts`
+- Check if services are running (`docker-compose ps`)
+- Verify network connectivity to PNCP API
+
+#### Browser Not Installed
+
+**Symptom:** "Executable doesn't exist at ..."
+
+**Solution:**
+```bash
+npx playwright install chromium
+```
+
+#### Port Already in Use
+
+**Symptom:** "Error: listen EADDRINUSE: address already in use :::3000"
+
+**Solutions:**
+```bash
+# Find and kill process
+lsof -ti:3000 | xargs kill -9
+
+# Or use different port
+export FRONTEND_URL=http://localhost:3001
+```
+
+#### Flaky Tests
+
+**Solutions:**
+- Add explicit waits: `await page.waitForLoadState('networkidle')`
+- Use `test.retry(2)` for unstable external APIs
+- Check race conditions in application code
 
 ---
 
