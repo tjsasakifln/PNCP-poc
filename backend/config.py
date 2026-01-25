@@ -1,4 +1,5 @@
 """Configuration models for PNCP client."""
+
 from dataclasses import dataclass, field
 from typing import Tuple, Type
 import logging
@@ -48,7 +49,7 @@ def setup_logging(level: str = "INFO") -> None:
     """
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     handler = logging.StreamHandler(sys.stdout)

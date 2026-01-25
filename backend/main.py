@@ -10,6 +10,7 @@ This API provides endpoints for:
 - Generating Excel reports with formatted data
 - Creating AI-powered executive summaries (GPT-4.1-nano)
 """
+
 import logging
 import os
 from fastapi import FastAPI
@@ -31,7 +32,7 @@ app = FastAPI(
     version="0.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
 # CORS Configuration
@@ -64,9 +65,9 @@ async def root():
             "docs": "/docs",
             "redoc": "/redoc",
             "health": "/health",
-            "openapi": "/openapi.json"
+            "openapi": "/openapi.json",
         },
-        "status": "operational"
+        "status": "operational",
     }
 
 
@@ -75,17 +76,38 @@ async def health():
     """
     Health check endpoint for monitoring and load balancers.
 
+    Provides lightweight service health verification without triggering
+    heavy operations (PNCP API calls, LLM processing, etc.). Designed
+    for use by orchestrators (Docker, Kubernetes), load balancers, and
+    uptime monitoring tools.
+
     Returns:
-        dict: Service health status
+        dict: Service health status with timestamp and version
+
+    Response Schema:
+        - status (str): "healthy" when service is operational
+        - timestamp (str): Current server time in ISO 8601 format
+        - version (str): API version from app configuration
 
     Example:
         >>> response = await health()
         >>> response
-        {'status': 'ok', 'version': '0.2.0'}
+        {
+            'status': 'healthy',
+            'timestamp': '2026-01-25T23:15:42.123456',
+            'version': '0.2.0'
+        }
+
+    HTTP Status Codes:
+        - 200: Service is healthy and operational
+        - 503: Service is degraded (future: dependency checks fail)
     """
+    from datetime import datetime
+
     return {
-        "status": "ok",
-        "version": "0.2.0"
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": app.version,
     }
 
 
