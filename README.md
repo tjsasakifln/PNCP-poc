@@ -41,8 +41,21 @@ docker-compose up
 ```
 
 4. Acesse os serviços:
-- **Frontend**: http://localhost:3000 (Placeholder - Next.js em breve)
+- **Frontend**: http://localhost:3000 (Aplicação Next.js)
 - **Backend API**: http://localhost:8000/docs (Swagger UI)
+
+**📖 Guia completo de integração:** [docs/INTEGRATION.md](docs/INTEGRATION.md)
+
+#### Testando a Aplicação
+
+1. Abra http://localhost:3000 no navegador
+2. Selecione 3 estados (ex: SC, PR, RS)
+3. Use o período padrão (últimos 7 dias)
+4. Clique em "🔍 Buscar Licitações de Uniformes"
+5. Aguarde os resultados (5-30s)
+6. Faça download do Excel gerado
+
+**Detalhes completos:** Veja [Manual de Validação E2E](docs/INTEGRATION.md#manual-end-to-end-testing)
 
 #### Comandos Docker Úteis
 
