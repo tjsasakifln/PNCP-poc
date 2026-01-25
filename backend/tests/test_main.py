@@ -114,7 +114,6 @@ class TestHealthEndpoint:
         assert isinstance(parsed, datetime)
 
         # Timestamp should be recent (within last 5 seconds)
-        import time
         now = datetime.utcnow()
         delta = (now - parsed).total_seconds()
         assert abs(delta) < 5, f"Timestamp {timestamp} is not recent (delta: {delta}s)"
