@@ -336,7 +336,6 @@ class TestBuscarEndpoint:
     def test_buscar_success_response_structure(self, client, valid_request, mock_licitacao, monkeypatch):
         """Successful request should return all required fields."""
         from unittest.mock import Mock
-        import base64
 
         # Mock PNCP client
         mock_client_instance = Mock()
@@ -613,7 +612,7 @@ class TestBuscarEndpoint:
         monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
 
         with caplog.at_level("INFO"):
-            response = client.post("/buscar", json=valid_request)
+            _response = client.post("/buscar", json=valid_request)
 
         # Verify key log messages
         log_messages = " ".join([record.message for record in caplog.records])
