@@ -1,8 +1,6 @@
 """Tests for configuration module, including logging setup."""
 import logging
 import sys
-import pytest
-from io import StringIO
 from config import setup_logging, RetryConfig
 
 
