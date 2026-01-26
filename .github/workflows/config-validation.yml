@@ -1,0 +1,245 @@
+# =============================================================================
+# Configuration Validation Workflow
+# =============================================================================
+# Purpose: Validate deployment configuration files (YAML, TOML, JSON, Dockerfile)
+# Trigger: Pull requests modifying configuration files
+# Use Case: Config-only PRs that don't require E2E application tests
+#
+# This workflow is designed for PRs like #64 that contain ONLY infrastructure
+# configuration and documentation, not application logic changes.
+# =============================================================================
+
+name: Config Validation
+
+on:
+  pull_request:
+    paths:
+      - '**.toml'
+      - '**.json'
+      - '**.yml'
+      - '**.yaml'
+      - 'backend/Dockerfile'
+      - 'docs/DEPLOYMENT.md'
+      - '.env.example'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Validate Syntax
+  # ---------------------------------------------------------------------------
+  validate-syntax:
+    name: Validate Configuration Syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install validation tools
+        run: |
+          pip install toml pyyaml jsonschema
+
+      - name: Validate railway.toml
+        if: hashFiles('railway.toml') != ''
+        run: |
+          echo "Validating railway.toml syntax..."
+          python -c "import toml; toml.load('railway.toml')"
+          echo "✅ railway.toml is valid TOML"
+
+      - name: Validate vercel.json
+        if: hashFiles('vercel.json') != ''
+        run: |
+          echo "Validating vercel.json syntax..."
+          python -c "import json; json.load(open('vercel.json'))"
+          echo "✅ vercel.json is valid JSON"
+
+      - name: Validate YAML files
+        run: |
+          echo "Validating YAML files..."
+          python -c "
+          import yaml
+          import os
+          from pathlib import Path
+
+          yaml_files = list(Path('.').rglob('*.yml')) + list(Path('.').rglob('*.yaml'))
+          yaml_files = [f for f in yaml_files if '.github/workflows' in str(f) or '.aios-core' in str(f)]
+
+          for file in yaml_files:
+              print(f'Validating {file}...')
+              with open(file) as f:
+                  yaml.safe_load(f)
+              print(f'✅ {file} is valid YAML')
+          "
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Validate Dockerfile
+  # ---------------------------------------------------------------------------
+  validate-dockerfile:
+    name: Validate Dockerfile Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production stage
+        run: |
+          echo "Building Dockerfile production stage..."
+          docker build --target production -t test-backend:prod backend/
+          echo "✅ Dockerfile production stage builds successfully"
+
+      - name: Verify production stage health check
+        run: |
+          echo "Verifying health check configuration..."
+          docker inspect test-backend:prod | grep -q "HEALTHCHECK"
+          echo "✅ Health check configured in production stage"
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Validate Documentation
+  # ---------------------------------------------------------------------------
+  validate-documentation:
+    name: Validate Documentation Completeness
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check DEPLOYMENT.md completeness
+        if: hashFiles('docs/DEPLOYMENT.md') != ''
+        run: |
+          echo "Checking DEPLOYMENT.md completeness..."
+
+          # Required sections
+          grep -q "Phase 1: Backend Deployment" docs/DEPLOYMENT.md || \
+            (echo "❌ Missing: Phase 1: Backend Deployment" && exit 1)
+          grep -q "Phase 2: Frontend Deployment" docs/DEPLOYMENT.md || \
+            (echo "❌ Missing: Phase 2: Frontend Deployment" && exit 1)
+          grep -q "Phase 3: Integration" docs/DEPLOYMENT.md || \
+            (echo "❌ Missing: Phase 3: Integration" && exit 1)
+          grep -q "Troubleshooting" docs/DEPLOYMENT.md || \
+            (echo "❌ Missing: Troubleshooting" && exit 1)
+          grep -q "Rollback" docs/DEPLOYMENT.md || \
+            (echo "❌ Missing: Rollback Procedures" && exit 1)
+          grep -q "Cost Estimates" docs/DEPLOYMENT.md || \
+            (echo "❌ Missing: Cost Estimates" && exit 1)
+
+          echo "✅ DEPLOYMENT.md contains all required sections"
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for hardcoded secrets..."
+
+          # Check for common secret patterns
+          ! grep -rE "(sk-proj-|sk-test-|ghp_|gho_)" \
+            --include="*.toml" --include="*.json" --include="*.yml" \
+            --include="*.yaml" --include="*.md" --include=".env.example" \
+            --exclude-dir=".git" --exclude-dir="node_modules" . \
+            || (echo "❌ Found potential hardcoded secrets!" && exit 1)
+
+          echo "✅ No hardcoded secrets detected"
+
+      - name: Validate .env.example
+        if: hashFiles('.env.example') != ''
+        run: |
+          echo "Validating .env.example..."
+
+          # Check for production section
+          grep -q "Production Deployment Configuration" .env.example || \
+            (echo "❌ Missing: Production Deployment Configuration section" && exit 1)
+
+          # Ensure no actual secrets
+          ! grep -E "^[A-Z_]+=sk-proj-" .env.example || \
+            (echo "❌ Found actual API key in .env.example!" && exit 1)
+          ! grep -E "^[A-Z_]+=ghp_" .env.example || \
+            (echo "❌ Found actual GitHub token in .env.example!" && exit 1)
+
+          echo "✅ .env.example is properly documented"
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Security Scan
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security Scan Configuration Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for path traversal in configs
+        run: |
+          echo "Checking for path traversal patterns..."
+
+          # Check for suspicious path patterns in config files
+          ! grep -rE "\\.\\./|\\.\\.\\\\|%2e%2e|%252e" \
+            --include="*.toml" --include="*.json" --include="*.yml" \
+            --include="*.yaml" --exclude-dir=".git" . \
+            || (echo "❌ Found suspicious path traversal patterns!" && exit 1)
+
+          echo "✅ No path traversal patterns detected"
+
+      - name: Validate environment variable naming
+        run: |
+          echo "Validating environment variable naming conventions..."
+
+          # Check for suspicious env var names in configs
+          python -c "
+          import re
+          from pathlib import Path
+
+          suspicious_patterns = [
+              r'PASSWORD.*=.*[^#]',  # Hardcoded passwords
+              r'SECRET.*=.*[^#]',    # Hardcoded secrets
+              r'TOKEN.*=.*[^#]',     # Hardcoded tokens
+          ]
+
+          config_files = list(Path('.').rglob('*.toml')) + \
+                        list(Path('.').rglob('*.json')) + \
+                        list(Path('.').rglob('*.yml'))
+
+          for file in config_files:
+              if '.git' in str(file) or 'node_modules' in str(file):
+                  continue
+
+              with open(file) as f:
+                  content = f.read()
+                  for pattern in suspicious_patterns:
+                      if re.search(pattern, content, re.IGNORECASE):
+                          print(f'⚠️  Warning: Suspicious pattern in {file}')
+                          # Don't fail, just warn
+
+          print('✅ Environment variable naming check complete')
+          "
+
+  # ---------------------------------------------------------------------------
+  # Job 5: All Checks Summary
+  # ---------------------------------------------------------------------------
+  all-checks-passed:
+    name: All Configuration Checks Passed
+    runs-on: ubuntu-latest
+    needs:
+      - validate-syntax
+      - validate-dockerfile
+      - validate-documentation
+      - security-scan
+
+    steps:
+      - name: Summary
+        run: |
+          echo "✅ All configuration validation checks passed!"
+          echo ""
+          echo "Validated:"
+          echo "  - YAML/TOML/JSON syntax"
+          echo "  - Dockerfile build (production stage)"
+          echo "  - Documentation completeness"
+          echo "  - Security (no hardcoded secrets, no path traversal)"
+          echo ""
+          echo "This PR is ready for merge (config-only changes)."
