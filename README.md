@@ -320,7 +320,30 @@ docker-compose logs -f
 
 ### Deploy em Produção
 
-Ver [PRD.md](./PRD.md) seção 11 para instruções detalhadas de deploy em produção (Vercel + Railway).
+**🌐 Live URLs:**
+- **Frontend:** https://bidiq-uniformes.vercel.app _(após deploy)_
+- **Backend API:** https://bidiq-backend-production.up.railway.app _(após deploy)_
+- **API Docs:** https://bidiq-backend-production.up.railway.app/docs _(após deploy)_
+
+**Plataformas:**
+- **Frontend:** Vercel (Next.js otimizado)
+- **Backend:** Railway (FastAPI containerizado)
+
+**📖 Guia Completo:** Ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) para instruções passo a passo de deployment.
+
+**Quick Deploy:**
+```bash
+# 1. Backend (Railway)
+npm install -g @railway/cli
+railway login
+cd backend && railway up
+
+# 2. Frontend (Vercel)
+npm install -g vercel
+cd frontend && vercel --prod
+```
+
+**💰 Custo Estimado:** $5-10/mês (Railway Hobby + Vercel Free tier)
 
 ## 📝 Variáveis de Ambiente
 
