@@ -50,6 +50,11 @@ export default defineConfig({
 
     /* Viewport */
     viewport: { width: 1280, height: 720 },
+
+    /* Expect timeout for assertions (default was 5s, too short for CI latency) */
+    expect: {
+      timeout: 10000, // 10s for expect() assertions (handles backend API + render time)
+    },
   },
 
   /* Configure projects for major browsers */
