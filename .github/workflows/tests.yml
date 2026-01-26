@@ -235,6 +235,8 @@ jobs:
           echo "Frontend logs:"
           cat frontend.log
           exit 1
+        env:
+          NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
 
       - name: Run E2E tests
         run: |
