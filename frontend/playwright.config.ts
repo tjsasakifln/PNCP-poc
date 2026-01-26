@@ -22,6 +22,11 @@ export default defineConfig({
   /* Opt out of parallel tests on CI */
   workers: process.env.CI ? 1 : undefined,
 
+  /* Expect timeout for assertions (default was 5s, too short for CI latency) */
+  expect: {
+    timeout: 10000, // 10s for expect() assertions (handles backend API + render time)
+  },
+
   /* Reporter to use */
   reporter: process.env.CI
     ? [
@@ -50,11 +55,6 @@ export default defineConfig({
 
     /* Viewport */
     viewport: { width: 1280, height: 720 },
-
-    /* Expect timeout for assertions (default was 5s, too short for CI latency) */
-    expect: {
-      timeout: 10000, // 10s for expect() assertions (handles backend API + render time)
-    },
   },
 
   /* Configure projects for major browsers */
