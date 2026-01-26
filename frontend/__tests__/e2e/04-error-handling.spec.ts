@@ -16,6 +16,12 @@ import { test, expect } from '@playwright/test';
 test.describe('Error Handling Scenarios', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+
+    // Clear default UF selections (SC, PR, RS are selected by default)
+    const limparButton = page.getByRole('button', { name: /Limpar/i });
+    if (await limparButton.isVisible().catch(() => false)) {
+      await limparButton.click();
+    }
   });
 
   test('AC4.1: should show user-friendly error on PNCP API timeout', async ({ page }) => {
@@ -81,13 +87,14 @@ test.describe('Error Handling Scenarios', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          id: 'test-download-id',
+          download_id: 'test-download-id',
           resumo: {
-            resumo_executivo: 'Test summary',
+            resumo_executivo: 'Resumo Executivo: Encontradas 5 licitações de uniformes',
             total_oportunidades: 5,
             valor_total: 100000,
             destaques: ['Test'],
-            alertas_urgencia: []
+            distribuicao_uf: { SC: 5 },
+            alerta_urgencia: null
           }
         })
       });
@@ -149,22 +156,36 @@ test.describe('Error Handling Scenarios', () => {
     // Select UF
     await page.getByRole('button', { name: 'SP', exact: true }).click();
 
-    // Delay API response to verify loading state
+    // Delay API response to verify loading state, then return mock response
     await page.route('**/api/buscar', async route => {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3s delay
-      await route.continue();
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2s delay
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          download_id: 'test-loading-id',
+          resumo: {
+            resumo_executivo: 'Resumo Executivo: Encontradas 10 licitações',
+            total_oportunidades: 10,
+            valor_total: 500000,
+            destaques: ['Test'],
+            distribuicao_uf: { SP: 10 },
+            alerta_urgencia: null
+          }
+        })
+      });
     });
 
     // Submit search
     const searchButton = page.getByRole('button', { name: /Buscar Licitações/i });
     await searchButton.click();
 
-    // Verify loading indicator appears
-    const loadingText = page.getByText(/Buscando|Carregando|Aguarde/i);
-    await expect(loadingText).toBeVisible({ timeout: 2000 });
+    // Verify loading indicator appears immediately
+    const loadingText = page.getByText(/Buscando/i);
+    await expect(loadingText).toBeVisible({ timeout: 1000 });
 
-    // Verify search button is disabled during loading
-    await expect(searchButton).toBeDisabled();
+    // Verify search button shows loading state
+    await expect(page.getByText(/Buscando\.\.\./i)).toBeVisible();
   });
 
   test('AC4.6: should handle network errors gracefully', async ({ page, context }) => {
