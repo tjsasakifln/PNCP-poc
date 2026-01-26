@@ -156,7 +156,7 @@ export default function HomePage() {
       {/* UF Selection Section */}
       <section className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <label className="font-medium">Estados de interesse:</label>
+          <label className="font-medium">Selecione os Estados (UFs):</label>
           <div className="space-x-2">
             <button
               onClick={selecionarTodos}
@@ -263,7 +263,7 @@ export default function HomePage() {
             </div>
           </div>
           <p className="text-sm text-gray-500 mt-2">
-            Consultando API do PNCP... isso pode levar alguns segundos.
+            Buscando licitações...
           </p>
         </div>
       )}
@@ -316,14 +316,13 @@ export default function HomePage() {
           </div>
 
           {/* Download Button */}
-          <a
-            href={`/api/download?id=${result.download_id}`}
-            download
-            className="block w-full text-center bg-blue-600 text-white py-3 rounded
+          <button
+            onClick={() => window.location.href = `/api/download?id=${result.download_id}`}
+            className="w-full bg-blue-600 text-white py-3 rounded
                        font-medium hover:bg-blue-700 transition-colors"
           >
-            📥 Download Excel ({result.resumo.total_oportunidades} licitações)
-          </a>
+            📥 Baixar Excel ({result.resumo.total_oportunidades} licitações)
+          </button>
         </div>
       )}
     </main>
