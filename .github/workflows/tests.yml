@@ -291,7 +291,7 @@ jobs:
           retention-days: 30
 
       - name: Comment PR with E2E results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: always() && github.event_name == 'pull_request'
         continue-on-error: true
         with:
