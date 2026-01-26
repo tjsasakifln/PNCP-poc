@@ -1,48 +1,33 @@
 # =============================================================================
-# BidIQ Uniformes - Railway Deployment Configuration
+# BidIQ Uniformes - Railway Monorepo Configuration
 # =============================================================================
-# This file configures Railway deployment for the FastAPI backend service.
+# Este projeto usa configuração monorepo com 2 services:
 #
-# PLATFORM: Railway (https://railway.app)
-# SERVICE: bidiq-backend
-# FRAMEWORK: FastAPI + Python 3.11
+# SERVICES:
+#   1. backend/  - FastAPI Python API
+#   2. frontend/ - Next.js React App
 #
-# DEPLOYMENT INSTRUCTIONS:
-# 1. Install Railway CLI: npm i -g @railway/cli
-# 2. Login: railway login
-# 3. Initialize project: railway init
-# 4. Configure environment variables in Railway dashboard (see .env.example)
-# 5. Deploy: railway up
+# DEPLOYMENT:
+#   Cada pasta tem seu próprio railway.toml e Dockerfile.
+#   Use o Railway Dashboard para criar 2 services no mesmo projeto.
 #
-# EXPECTED OUTPUT: https://bidiq-backend-production.up.railway.app
-# =============================================================================
-
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "backend/Dockerfile"
-
-[deploy]
-# Use production target from multi-stage Dockerfile
-startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
-healthcheckPath = "/health"
-healthcheckTimeout = 30
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
-
-# =============================================================================
-# Environment Variables (Set in Railway Dashboard)
-# =============================================================================
-# REQUIRED:
-#   - OPENAI_API_KEY (Get from https://platform.openai.com/api-keys)
-#   - PORT (Auto-injected by Railway, typically 8000)
+# SETUP STEPS:
+#   1. railway login
+#   2. railway init (criar novo projeto)
+#   3. Criar 2 services no Dashboard:
+#      - bidiq-backend (root directory: /backend)
+#      - bidiq-frontend (root directory: /frontend)
+#   4. Configurar variáveis de ambiente para cada service
+#   5. Conectar repositório GitHub para auto-deploy
 #
-# OPTIONAL (with defaults):
-#   - LOG_LEVEL=INFO
-#   - PNCP_TIMEOUT=30
-#   - PNCP_MAX_RETRIES=5
-#   - PNCP_BACKOFF_BASE=2
-#   - PNCP_BACKOFF_MAX=60
-#   - LLM_MODEL=gpt-4o-mini
-#   - LLM_TEMPERATURE=0.3
-#   - LLM_MAX_TOKENS=500
+# ENVIRONMENT VARIABLES:
+#
+#   Backend (bidiq-backend):
+#     - OPENAI_API_KEY (required)
+#     - LOG_LEVEL=INFO
+#     - PNCP_TIMEOUT=30
+#
+#   Frontend (bidiq-frontend):
+#     - NEXT_PUBLIC_BACKEND_URL=${{bidiq-backend.RAILWAY_PUBLIC_DOMAIN}}
+#
 # =============================================================================
