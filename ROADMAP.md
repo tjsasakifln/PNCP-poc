@@ -124,12 +124,12 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #26 - Integração frontend ↔ backend ✅ (PR #59 merged 2026-01-25) 🎯 Integration documentation + health check script
   - [x] #27 - Testes end-to-end ✅ (PR #60 merged 2026-01-25) 🎯 25 E2E tests com Playwright, Issue #61 para orchestration fix
   - [x] #1 - Documentação (README.md) ✅ (PR #62 merged 2026-01-25) 🎯 Comprehensive documentation (+380 lines)
-  - [ ] #31 - Deploy inicial
+  - [ ] #31 - Deploy inicial ⚠️ BLOQUEADO por E2E failures (PR #63, #64 closed → Issue #66 investigation)
 
 **Deliverables:**
-- 🔴 POC em produção (Vercel + Railway) - não iniciado
+- 🔴 POC em produção (Vercel + Railway) - BLOQUEADO por E2E failures (18/25 testes falhando com timeout 32s)
 - 🟢 README completo - production-ready documentation (626 lines: badges, structure, troubleshooting, environment vars) ✅
-- 🟢 Testes E2E implementados - 25 testes automatizados (4 suites: happy path, LLM fallback, validation, error handling) ✅
+- 🟡 Testes E2E implementados - 25 testes automatizados (7/25 passing, 72% failure rate → Issue #66 investigation)
 - 🔴 Monitoramento básico - não iniciado
 
 ---
@@ -380,6 +380,22 @@ Validações client-side para formulário (PRD 7.3 linhas 1259-1262).
 ---
 
 ## 📰 Recent Updates
+
+### 2026-01-25 23:45 - PRs #63 & #64 Closed, Issue #66 Created (E2E INVESTIGATION)
+**Strategic Decision:** Close both deployment PRs pending E2E test resolution
+- **PR #63 Closed:** feat(deploy) production deployment configuration (Railway/Vercel)
+  - **Status at Closure:** 18/25 E2E tests failing (72% failure rate), 32-second timeouts
+  - **Fix Attempts:** (1) Commit ef12f66: Added NEXT_PUBLIC_BACKEND_URL to CI (AC1.1 fixed: 1/25 → 7/25 passing), (2) Commit 4d05046: UI text alignment fixes (created new timeout issues)
+  - **Root Cause:** Button element change from `<a>` to `<button>` appears to have broken onClick handlers
+- **PR #64 Closed:** Config-only split from PR #63
+  - **Reason:** Has 5 new CI failures (YAML syntax, PR metadata, security scan false positives, Dockerfile, path traversal)
+  - **Decision:** Better to resolve E2E comprehensively than split concerns across multiple PRs
+- **Issue #66 Created:** "E2E Tests Investigation: Fix timeout and UI interaction failures"
+  - **Investigation Plan:** 3-phase approach (local reproduction, code review, targeted fix)
+  - **Hypotheses:** (1) Button handler breakage, (2) State management issues, (3) Async operation blocking
+  - **Acceptance Criteria:** 25/25 E2E tests passing, no timeouts, all user journeys validated
+- **Impact:** Issue #31 (Deploy inicial) remains blocked until E2E resolution
+- **Next Steps:** Investigate root cause per Issue #66, submit new PR once all tests passing
 
 ### 2026-01-25 18:06 - Issue #26 Merged ✅ (INTEGRATION DOCUMENTATION COMPLETE - M3 NOW 20% 🎉)
 **PR #59:** docs(integration): add comprehensive E2E validation guide (#26)
