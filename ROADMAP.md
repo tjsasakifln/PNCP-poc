@@ -51,7 +51,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 📊 EPIC 4: Saídas            [██████████] 3/3 ✅ 100% COMPLETO (#13, #14, #15 ✅)
 🌐 EPIC 5: API Backend       [████████░░] 4/5 🟡 80% EM PROGRESSO (#17, #18 ✅, #19, #29 ✅ merged)
 🎨 EPIC 6: Frontend          [████████░░] 5/6 🟡 83.3% EM PROGRESSO (#21, #22, #23, #24, #56 ✅ merged)
-🚀 EPIC 7: Deploy            [████░░░░░░] 2/5 🟡 40% EM PROGRESSO (#26, #27 ✅)
+🚀 EPIC 7: Deploy            [██████░░░░] 3/5 🟡 60% EM PROGRESSO (#26, #27, #1 ✅, #31 ⚠️ PARTIAL)
 ```
 
 ---
@@ -124,10 +124,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
   - [x] #26 - Integração frontend ↔ backend ✅ (PR #59 merged 2026-01-25) 🎯 Integration documentation + health check script
   - [x] #27 - Testes end-to-end ✅ (PR #60 merged 2026-01-25) 🎯 25 E2E tests com Playwright, Issue #61 para orchestration fix
   - [x] #1 - Documentação (README.md) ✅ (PR #62 merged 2026-01-25) 🎯 Comprehensive documentation (+380 lines)
-  - [ ] #31 - Deploy inicial
+  - [ ] #31 - Deploy inicial ⚠️ PARTIAL (PR #64 config complete, deployment blocked by Issue #21)
 
 **Deliverables:**
-- 🔴 POC em produção (Vercel + Railway) - não iniciado
+- 🟡 POC em produção (Vercel + Railway) - config completo (PR #64), deployment bloqueado por Issue #21
 - 🟢 README completo - production-ready documentation (626 lines: badges, structure, troubleshooting, environment vars) ✅
 - 🟢 Testes E2E implementados - 25 testes automatizados (4 suites: happy path, LLM fallback, validation, error handling) ✅
 - 🔴 Monitoramento básico - não iniciado
