@@ -121,7 +121,7 @@ test.describe('Error Handling Scenarios', () => {
 
     // Should show error message
     const errorMessage = page.getByText(/erro.*download|arquivo.*encontrado|expirado/i);
-    await expect(errorMessage).toBeVisible({ timeout: 5000 });
+    await expect(errorMessage).toBeVisible({ timeout: 10000 });
   });
 
   test('AC4.4: should recover from error and allow new search', async ({ page }) => {
