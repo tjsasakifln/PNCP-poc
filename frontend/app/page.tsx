@@ -39,6 +39,7 @@ export default function HomePage() {
   // API state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [result, setResult] = useState<BuscaResult | null>(null);
 
   // Validation state
@@ -141,6 +142,40 @@ export default function HomePage() {
       setError(e instanceof Error ? e.message : "Erro desconhecido");
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Handle Excel download with error handling
+   */
+  const handleDownload = async () => {
+    if (!result) return;
+
+    setDownloadError(null);
+
+    try {
+      const downloadUrl = `/api/download?id=${result.download_id}`;
+
+      // Check if file exists by making a HEAD request first
+      const headResponse = await fetch(downloadUrl, { method: 'HEAD' });
+
+      if (!headResponse.ok) {
+        if (headResponse.status === 404) {
+          throw new Error('Arquivo não encontrado ou expirado');
+        }
+        throw new Error(`Erro ao fazer download: ${headResponse.statusText}`);
+      }
+
+      // Proceed with download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `licitacoes_${result.download_id}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Erro ao fazer download do Excel';
+      setDownloadError(`Erro no download: ${errorMessage}`);
     }
   };
 
@@ -317,20 +352,19 @@ export default function HomePage() {
 
           {/* Download Button */}
           <button
-            onClick={() => {
-              // Create a temporary anchor element to trigger download without page navigation
-              const link = document.createElement('a');
-              link.href = `/api/download?id=${result.download_id}`;
-              link.download = `licitacoes_${result.download_id}.xlsx`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
+            onClick={handleDownload}
             className="w-full bg-blue-600 text-white py-3 rounded
                        font-medium hover:bg-blue-700 transition-colors"
           >
             📥 Baixar Excel ({result.resumo.total_oportunidades} licitações)
           </button>
+
+          {/* Download Error Display */}
+          {downloadError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
+              {downloadError}
+            </div>
+          )}
         </div>
       )}
     </main>
