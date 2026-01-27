@@ -37,9 +37,8 @@ class DevContextLoader {
     const startTime = Date.now();
 
     // Load core config to get devLoadAlwaysFiles list
-    // TD-6: Handle null/undefined coreConfig gracefully
     const coreConfig = await this.loadCoreConfig();
-    const fileList = (coreConfig && coreConfig.devLoadAlwaysFiles) || [];
+    const fileList = coreConfig.devLoadAlwaysFiles || [];
 
     if (fileList.length === 0) {
       return {
@@ -61,7 +60,7 @@ class DevContextLoader {
       files,
       filesCount: files.length,
       totalLines: files.reduce((sum, f) => sum + (f.linesCount || 0), 0),
-      cacheHits: files.filter((f) => f.cached).length,
+      cacheHits: files.filter(f => f.cached).length,
     };
   }
 
@@ -164,7 +163,9 @@ class DevContextLoader {
     const fileName = path.basename(filePath);
 
     // Extract key sections (h1, h2 headers)
-    const headers = lines.filter((line) => line.match(/^#{1,2}\s+/)).slice(0, 20); // First 20 headers
+    const headers = lines
+      .filter(line => line.match(/^#{1,2}\s+/))
+      .slice(0, 20); // First 20 headers
 
     // First 100 lines
     const preview = lines.slice(0, 100);
@@ -173,7 +174,7 @@ class DevContextLoader {
       `📄 ${fileName} (${lines.length} lines)`,
       '',
       '## Key Sections:',
-      ...headers.map((h) => `- ${h.replace(/^#+\s*/, '')}`),
+      ...headers.map(h => `- ${h.replace(/^#+\s*/, '')}`),
       '',
       '## Preview (first 100 lines):',
       '```',
@@ -258,7 +259,7 @@ class DevContextLoader {
   async clearCache() {
     try {
       const files = await fs.readdir(this.cacheDir);
-      const devContextFiles = files.filter((f) => f.startsWith('devcontext_'));
+      const devContextFiles = files.filter(f => f.startsWith('devcontext_'));
 
       for (const file of devContextFiles) {
         await fs.unlink(path.join(this.cacheDir, file));
@@ -287,7 +288,7 @@ if (require.main === module) {
       const result = await loader.load({ fullLoad: false });
       console.log(JSON.stringify(result, null, 2));
     }
-  })().catch((error) => {
+  })().catch(error => {
     console.error('❌ Error:', error.message);
     process.exit(1);
   });

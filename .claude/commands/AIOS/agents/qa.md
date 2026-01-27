@@ -310,5 +310,3 @@ Type `*help` to see all commands.
 - **CodeRabbit** - Automated pre-review
 
 ---
----
-*AIOS Agent - Synced from .aios-core/development/agents/qa.md*
