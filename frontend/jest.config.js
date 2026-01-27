@@ -67,6 +67,7 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
+    '/__tests__/e2e/', // E2E tests run via Playwright, not Jest
   ],
 
   // Transform files
