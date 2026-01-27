@@ -14,6 +14,13 @@ test.describe('Happy Path User Journey', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the application
     await page.goto('/');
+
+    // Clear default UF selections (SC, PR, RS are selected by default)
+    // This ensures tests start from a clean state
+    const limparButton = page.getByRole('button', { name: /Limpar/i });
+    if (await limparButton.isVisible().catch(() => false)) {
+      await limparButton.click();
+    }
   });
 
   test('AC1.1: should load homepage with all expected UI elements', async ({ page }) => {

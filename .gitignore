@@ -232,7 +232,7 @@ debug/
 trace/
 
 # =============================================================================
-# Temporary Files
+# Temporary Files & Local Artifacts
 # =============================================================================
 temp-*/
 tmp/
@@ -243,6 +243,16 @@ tmp/
 *.old
 *.orig
 *~
+*-OLD.*
+*-TEMP.*
+*-LOCAL.*
+*_local.*
+
+# Local development/testing files (not part of project)
+.pr-*-review-*.md
+.review-*.md
+.local/
+local-*
 
 # =============================================================================
 # Output & Generated Files
@@ -341,3 +351,21 @@ screenshots/
 videos/
 playwright-report/
 .playwright/
+
+# Environment & Secrets (AIOS)
+.env.*.local
+
+# Dependencies (AIOS)
+node_modules
+
+# AIOS Local (AIOS)
+.aios-core/local/
+.claude/settings.local.json
+.claude/settings.*.json
+.aios/install-log.txt
+
+# Local Configuration Files
+.mcp.json
+.env.local.json
+*.local.json
+local.config.*

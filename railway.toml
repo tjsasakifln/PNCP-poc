@@ -1,0 +1,33 @@
+# =============================================================================
+# BidIQ Uniformes - Railway Monorepo Configuration
+# =============================================================================
+# Este projeto usa configuração monorepo com 2 services:
+#
+# SERVICES:
+#   1. backend/  - FastAPI Python API
+#   2. frontend/ - Next.js React App
+#
+# DEPLOYMENT:
+#   Cada pasta tem seu próprio railway.toml e Dockerfile.
+#   Use o Railway Dashboard para criar 2 services no mesmo projeto.
+#
+# SETUP STEPS:
+#   1. railway login
+#   2. railway init (criar novo projeto)
+#   3. Criar 2 services no Dashboard:
+#      - bidiq-backend (root directory: /backend)
+#      - bidiq-frontend (root directory: /frontend)
+#   4. Configurar variáveis de ambiente para cada service
+#   5. Conectar repositório GitHub para auto-deploy
+#
+# ENVIRONMENT VARIABLES:
+#
+#   Backend (bidiq-backend):
+#     - OPENAI_API_KEY (required)
+#     - LOG_LEVEL=INFO
+#     - PNCP_TIMEOUT=30
+#
+#   Frontend (bidiq-frontend):
+#     - NEXT_PUBLIC_BACKEND_URL=${{bidiq-backend.RAILWAY_PUBLIC_DOMAIN}}
+#
+# =============================================================================

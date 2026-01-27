@@ -1,16 +1,15 @@
 # =============================================================================
-# BidIQ Uniformes - Backend Dockerfile (Development)
+# BidIQ Uniformes - Backend Dockerfile
 # =============================================================================
-# Multi-stage build for production-ready Python FastAPI application
+# Production-ready Python FastAPI application for Railway deployment
 # Base: Python 3.11 slim for smaller image size
 
-# Stage 1: Base dependencies
-FROM python:3.11-slim as base
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (if needed for future dependencies)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     gcc \
@@ -23,19 +22,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Stage 2: Development
-FROM base as development
-
 # Copy application code
 COPY . .
 
-# Expose FastAPI default port
+# Expose port (Railway injects PORT env var)
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Run with hot-reload for development
-# Note: --reload watches for file changes and auto-restarts
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run with uvicorn - Railway will inject $PORT
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

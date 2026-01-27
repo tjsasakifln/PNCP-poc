@@ -24,6 +24,12 @@ test.describe('LLM Fallback Scenario', () => {
 
     await page.goto('/');
 
+    // Clear default UF selections (SC, PR, RS are selected by default)
+    const limparButton = page.getByRole('button', { name: /Limpar/i });
+    if (await limparButton.isVisible().catch(() => false)) {
+      await limparButton.click();
+    }
+
     // Select UF
     await page.getByRole('button', { name: 'SC', exact: true }).click();
 
@@ -48,6 +54,12 @@ test.describe('LLM Fallback Scenario', () => {
 
   test('AC2.2: should display fallback summary with statistical indicators', async ({ page }) => {
     await page.goto('/');
+
+    // Clear default UF selections (SC, PR, RS are selected by default)
+    const limparButton = page.getByRole('button', { name: /Limpar/i });
+    if (await limparButton.isVisible().catch(() => false)) {
+      await limparButton.click();
+    }
 
     // Select UF
     await page.getByRole('button', { name: 'SP', exact: true }).click();
@@ -87,6 +99,12 @@ test.describe('LLM Fallback Scenario', () => {
 
     await page.goto('/');
 
+    // Clear default UF selections (SC, PR, RS are selected by default)
+    const limparButton = page.getByRole('button', { name: /Limpar/i });
+    if (await limparButton.isVisible().catch(() => false)) {
+      await limparButton.click();
+    }
+
     // Perform search
     await page.getByRole('button', { name: 'SC', exact: true }).click();
     await page.getByRole('button', { name: /Buscar Licitações/i }).click();
@@ -104,6 +122,12 @@ test.describe('LLM Fallback Scenario', () => {
 
   test('AC2.4: should handle zero results gracefully in fallback mode', async ({ page }) => {
     await page.goto('/');
+
+    // Clear default UF selections (SC, PR, RS are selected by default)
+    const limparButton = page.getByRole('button', { name: /Limpar/i });
+    if (await limparButton.isVisible().catch(() => false)) {
+      await limparButton.click();
+    }
 
     // Select UF unlikely to have uniform procurement (use very specific dates)
     await page.getByRole('button', { name: 'AC', exact: true }).click(); // Acre (smaller state)
