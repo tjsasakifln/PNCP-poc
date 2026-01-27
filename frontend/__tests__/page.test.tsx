@@ -336,7 +336,7 @@ describe('HomePage - UF Selection and Date Range', () => {
 
         // Check that results-specific elements are NOT present
         expect(screen.queryByText('Destaques:')).not.toBeInTheDocument();
-        expect(screen.queryByText(/Download Excel/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Baixar Excel/i)).not.toBeInTheDocument();
         expect(screen.queryByText('valor total')).not.toBeInTheDocument();
       });
 
@@ -543,8 +543,8 @@ describe('HomePage - UF Selection and Date Range', () => {
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          const downloadLink = screen.getByText(/Download Excel/i).closest('a');
-          expect(downloadLink).toHaveAttribute('href', '/api/download?id=uuid-123-456');
+          const downloadButton = screen.getByRole('button', { name: /Baixar Excel/i });
+          expect(downloadButton).toBeInTheDocument();
         });
       });
 
@@ -555,8 +555,8 @@ describe('HomePage - UF Selection and Date Range', () => {
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          const downloadLink = screen.getByText(/Download Excel/i).closest('a');
-          expect(downloadLink).toHaveAttribute('download');
+          const downloadButton = screen.getByRole('button', { name: /Baixar Excel/i });
+          expect(downloadButton).toBeEnabled();
         });
       });
 
@@ -567,7 +567,7 @@ describe('HomePage - UF Selection and Date Range', () => {
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          expect(screen.getByText('📥 Download Excel (15 licitações)')).toBeInTheDocument();
+          expect(screen.getByText('📥 Baixar Excel (15 licitações)')).toBeInTheDocument();
         });
       });
 
@@ -578,7 +578,7 @@ describe('HomePage - UF Selection and Date Range', () => {
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          const downloadButton = screen.getByText(/Download Excel/i);
+          const downloadButton = screen.getByRole('button', { name: /Baixar Excel/i });
           expect(downloadButton).toHaveClass('bg-blue-600', 'hover:bg-blue-700');
         });
       });
@@ -617,7 +617,7 @@ describe('HomePage - UF Selection and Date Range', () => {
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          const downloadButton = screen.getByText(/Download Excel/i);
+          const downloadButton = screen.getByRole('button', { name: /Baixar Excel/i });
           expect(downloadButton).toHaveClass('bg-blue-600', 'text-white', 'hover:bg-blue-700');
         });
       });
@@ -695,7 +695,7 @@ describe('HomePage - UF Selection and Date Range', () => {
           expect(screen.getByText('Backend unavailable')).toBeInTheDocument();
         });
 
-        expect(screen.queryByText(/Download Excel/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Baixar Excel/i)).not.toBeInTheDocument();
       });
 
       it('should clear previous results on new search', async () => {

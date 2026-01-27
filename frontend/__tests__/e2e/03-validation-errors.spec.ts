@@ -26,7 +26,7 @@ test.describe('Form Validation Errors', () => {
     }
 
     // Verify error message appears
-    const errorMessage = page.getByText(/Selecione pelo menos 1 UF/i);
+    const errorMessage = page.getByText(/Selecione pelo menos um estado/i);
     await expect(errorMessage).toBeVisible();
 
     // Verify search button is disabled
@@ -102,7 +102,7 @@ test.describe('Form Validation Errors', () => {
     }
 
     // Verify error exists
-    const errorMessage = page.getByText(/Selecione pelo menos 1 UF/i);
+    const errorMessage = page.getByText(/Selecione pelo menos um estado/i);
     await expect(errorMessage).toBeVisible();
 
     // Fix the error by selecting a UF
@@ -139,7 +139,7 @@ test.describe('Form Validation Errors', () => {
     await page.waitForTimeout(500);
 
     // Should show both UF error and date range error
-    const ufError = page.getByText(/Selecione pelo menos 1 UF/i);
+    const ufError = page.getByText(/Selecione pelo menos um estado/i);
     const dateError = page.getByText(/máximo.*30 dias/i);
 
     await expect(ufError).toBeVisible();
@@ -166,7 +166,7 @@ test.describe('Form Validation Errors', () => {
     await expect(searchButton).toBeDisabled();
 
     // Verify error message is shown to guide user
-    const errorMessage = page.getByText(/Selecione pelo menos 1 UF/i);
+    const errorMessage = page.getByText(/Selecione pelo menos um estado/i);
     await expect(errorMessage).toBeVisible();
   });
 

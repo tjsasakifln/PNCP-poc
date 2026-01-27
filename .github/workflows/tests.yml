@@ -212,10 +212,14 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-fallback' }}
 
-      - name: Start frontend server
+      - name: Build frontend
         run: |
           cd frontend
           npm run build
+
+      - name: Start frontend server
+        run: |
+          cd frontend
           npm run start > frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "Frontend PID: $FRONTEND_PID"
@@ -235,6 +239,16 @@ jobs:
           echo "Frontend logs:"
           cat frontend.log
           exit 1
+
+      - name: Verify services are responding
+        run: |
+          echo "Checking backend health..."
+          curl -v http://localhost:8000/health || exit 1
+          echo ""
+          echo "Checking frontend health..."
+          curl -v http://localhost:3000 || exit 1
+          echo ""
+          echo "✅ Both services are responding"
 
       - name: Run E2E tests
         run: |

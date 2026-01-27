@@ -1,46 +1,65 @@
 # =============================================================================
-# BidIQ Uniformes - Frontend Dockerfile (Placeholder)
+# BidIQ Uniformes - Frontend Dockerfile (Production)
 # =============================================================================
-# This is a placeholder until issue #21 (Setup Next.js) is implemented
-# Serves a simple "Coming Soon" page via nginx
+# Multi-stage build for Next.js with standalone output
+# Optimized for Railway deployment
 
-FROM nginx:alpine
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy package files
+COPY package.json package-lock.json* ./
 
-# Create simple placeholder HTML
-RUN echo '<!DOCTYPE html>' > /usr/share/nginx/html/index.html && \
-    echo '<html lang="pt-BR">' >> /usr/share/nginx/html/index.html && \
-    echo '<head>' >> /usr/share/nginx/html/index.html && \
-    echo '    <meta charset="UTF-8">' >> /usr/share/nginx/html/index.html && \
-    echo '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' >> /usr/share/nginx/html/index.html && \
-    echo '    <title>BidIQ Uniformes - Coming Soon</title>' >> /usr/share/nginx/html/index.html && \
-    echo '    <style>' >> /usr/share/nginx/html/index.html && \
-    echo '        body { font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }' >> /usr/share/nginx/html/index.html && \
-    echo '        .container { text-align: center; padding: 2rem; }' >> /usr/share/nginx/html/index.html && \
-    echo '        h1 { font-size: 3rem; margin-bottom: 1rem; }' >> /usr/share/nginx/html/index.html && \
-    echo '        p { font-size: 1.2rem; opacity: 0.9; }' >> /usr/share/nginx/html/index.html && \
-    echo '        .status { background: rgba(255,255,255,0.2); padding: 1rem; border-radius: 8px; margin-top: 2rem; }' >> /usr/share/nginx/html/index.html && \
-    echo '        a { color: #ffd700; text-decoration: none; }' >> /usr/share/nginx/html/index.html && \
-    echo '    </style>' >> /usr/share/nginx/html/index.html && \
-    echo '</head>' >> /usr/share/nginx/html/index.html && \
-    echo '<body>' >> /usr/share/nginx/html/index.html && \
-    echo '    <div class="container">' >> /usr/share/nginx/html/index.html && \
-    echo '        <h1>🎯 BidIQ Uniformes</h1>' >> /usr/share/nginx/html/index.html && \
-    echo '        <p>POC - Automação de Descoberta de Licitações PNCP</p>' >> /usr/share/nginx/html/index.html && \
-    echo '        <div class="status">' >> /usr/share/nginx/html/index.html && \
-    echo '            <p><strong>Frontend: Coming Soon</strong></p>' >> /usr/share/nginx/html/index.html && \
-    echo '            <p>Next.js interface will be implemented in <a href="https://github.com/tjsasakifln/PNCP-poc/issues/21" target="_blank">Issue #21</a></p>' >> /usr/share/nginx/html/index.html && \
-    echo '            <p style="margin-top: 1rem;">Backend API available at: <a href="http://localhost:8000/docs">http://localhost:8000/docs</a></p>' >> /usr/share/nginx/html/index.html && \
-    echo '        </div>' >> /usr/share/nginx/html/index.html && \
-    echo '    </div>' >> /usr/share/nginx/html/index.html && \
-    echo '</body>' >> /usr/share/nginx/html/index.html && \
-    echo '</html>' >> /usr/share/nginx/html/index.html
+# Install dependencies
+RUN npm ci --only=production=false
 
-# Expose port 3000 (non-standard for nginx, but matches frontend convention)
+# Stage 2: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Set build-time environment variables
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build the application
+RUN npm run build
+
+# Stage 3: Production
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy necessary files from builder
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port (Railway will inject PORT env var)
 EXPOSE 3000
 
+# Set default port
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Start the application
+CMD ["node", "server.js"]

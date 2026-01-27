@@ -39,6 +39,7 @@ export default function HomePage() {
   // API state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [result, setResult] = useState<BuscaResult | null>(null);
 
   // Validation state
@@ -144,6 +145,40 @@ export default function HomePage() {
     }
   };
 
+  /**
+   * Handle Excel download with error handling
+   */
+  const handleDownload = async () => {
+    if (!result) return;
+
+    setDownloadError(null);
+
+    try {
+      const downloadUrl = `/api/download?id=${result.download_id}`;
+
+      // Check if file exists by making a HEAD request first
+      const headResponse = await fetch(downloadUrl, { method: 'HEAD' });
+
+      if (!headResponse.ok) {
+        if (headResponse.status === 404) {
+          throw new Error('Arquivo não encontrado ou expirado');
+        }
+        throw new Error(`Erro ao fazer download: ${headResponse.statusText}`);
+      }
+
+      // Proceed with download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `licitacoes_${result.download_id}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Erro ao fazer download do Excel';
+      setDownloadError(`Erro no download: ${errorMessage}`);
+    }
+  };
+
   // Check if form is valid
   const isFormValid = Object.keys(validationErrors).length === 0;
 
@@ -156,7 +191,7 @@ export default function HomePage() {
       {/* UF Selection Section */}
       <section className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <label className="font-medium">Estados de interesse:</label>
+          <label className="font-medium">Selecione os Estados (UFs):</label>
           <div className="space-x-2">
             <button
               onClick={selecionarTodos}
@@ -263,7 +298,7 @@ export default function HomePage() {
             </div>
           </div>
           <p className="text-sm text-gray-500 mt-2">
-            Consultando API do PNCP... isso pode levar alguns segundos.
+            Buscando licitações...
           </p>
         </div>
       )}
@@ -316,14 +351,20 @@ export default function HomePage() {
           </div>
 
           {/* Download Button */}
-          <a
-            href={`/api/download?id=${result.download_id}`}
-            download
-            className="block w-full text-center bg-blue-600 text-white py-3 rounded
+          <button
+            onClick={handleDownload}
+            className="w-full bg-blue-600 text-white py-3 rounded
                        font-medium hover:bg-blue-700 transition-colors"
           >
-            📥 Download Excel ({result.resumo.total_oportunidades} licitações)
-          </a>
+            📥 Baixar Excel ({result.resumo.total_oportunidades} licitações)
+          </button>
+
+          {/* Download Error Display */}
+          {downloadError && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
+              {downloadError}
+            </div>
+          )}
         </div>
       )}
     </main>
