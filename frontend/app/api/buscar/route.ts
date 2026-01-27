@@ -25,12 +25,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Chamar backend Python
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-    const response = await fetch(`${backendUrl}/buscar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ufs, data_inicial, data_final })
-    });
+    // Use BACKEND_URL (set via env var in CI) instead of NEXT_PUBLIC_BACKEND_URL (build-time)
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+
+    let response: Response;
+    try {
+      response = await fetch(`${backendUrl}/buscar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ufs, data_inicial, data_final })
+      });
+    } catch (error) {
+      console.error(`Erro ao conectar com backend em ${backendUrl}:`, error);
+      return NextResponse.json(
+        { message: `Backend indisponível em ${backendUrl}: ${error instanceof Error ? error.message : 'conexão recusada'}` },
+        { status: 503 }
+      );
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
