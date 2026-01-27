@@ -216,8 +216,6 @@ jobs:
         run: |
           cd frontend
           npm run build
-        env:
-          NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
 
       - name: Start frontend server
         run: |
@@ -241,6 +239,16 @@ jobs:
           echo "Frontend logs:"
           cat frontend.log
           exit 1
+
+      - name: Verify services are responding
+        run: |
+          echo "Checking backend health..."
+          curl -v http://localhost:8000/health || exit 1
+          echo ""
+          echo "Checking frontend health..."
+          curl -v http://localhost:3000 || exit 1
+          echo ""
+          echo "✅ Both services are responding"
 
       - name: Run E2E tests
         run: |
