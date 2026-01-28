@@ -132,8 +132,12 @@ git pull origin main
 
 ### Step 1.3: Deploy Backend
 
-1. **Deploy from Local:**
+1. **Deploy from Local (Monorepo):**
    ```bash
+   # From the repository root — sends only the backend/ folder
+   railway up backend --path-as-root --service bidiq-backend
+
+   # Or from the backend directory
    cd backend
    railway up
    ```
@@ -142,6 +146,11 @@ git pull origin main
    ```bash
    git push origin main  # Triggers automatic deployment
    ```
+
+   **⚠️ Monorepo Note:** When using GitHub auto-deploy, configure each
+   service's **Root Directory** in the Railway Dashboard:
+   - `bidiq-backend` → Root Directory: `/backend`
+   - `bidiq-frontend` → Root Directory: `/frontend`
 
 2. **Monitor Deployment:**
    - Watch logs in Railway dashboard under "Deployments" tab
@@ -196,10 +205,16 @@ open $BACKEND_URL/docs
    vercel login
    ```
 
-2. **Deploy:**
+2. **Deploy to Vercel:**
    ```bash
    cd frontend
    vercel --prod
+   ```
+
+   **Alternative — Deploy frontend to Railway (instead of Vercel):**
+   ```bash
+   # From the repository root
+   railway up frontend --path-as-root --service bidiq-frontend
    ```
 
    - Select "Link to existing project" or "Create new project"
