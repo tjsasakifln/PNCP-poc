@@ -28,9 +28,8 @@ COPY . .
 # Expose port (Railway injects PORT env var)
 EXPOSE 8000
 
-# Health check - uses $PORT for compatibility with Railway's port injection
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.environ.get(\"PORT\", \"8000\")}/health')" || exit 1
+# NOTE: Railway handles healthcheck via railway.toml (healthcheckPath = "/health")
+# Do NOT add HEALTHCHECK instruction here - it conflicts with Railway's system
 
 # Run with uvicorn - Railway will inject $PORT
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
