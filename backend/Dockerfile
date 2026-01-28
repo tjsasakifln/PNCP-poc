@@ -6,24 +6,26 @@
 
 FROM python:3.11-slim
 
+# CACHE BUST - This label forces Railway to rebuild when changed
+# Update timestamp to invalidate all cached layers: 2026-01-28T09:18:00
+LABEL build.timestamp="2026-01-28T09:18:00"
+ARG CACHEBUST=20260128v4
+
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies (invalidated by ARG above)
+RUN echo "Build: ${CACHEBUST}" && apt-get update && apt-get install -y \
     --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better layer caching
+# Copy requirements first
 COPY requirements.txt .
 
-# Cache bust - change this value to force complete rebuild
-ARG CACHE_BUST=2026-01-28-v3-fix-port
-
-# Install Python dependencies (force reinstall with pinned versions)
+# Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --force-reinstall -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
