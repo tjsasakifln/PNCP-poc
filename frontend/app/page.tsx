@@ -79,10 +79,6 @@ export default function HomePage() {
     if (dataFinal < dataInicial) {
       errors.date_range = "Data final deve ser maior ou igual à data inicial";
     }
-    const rangeDays = dateDiffInDays(dataInicial, dataFinal);
-    if (rangeDays > 30) {
-      errors.date_range = `Período máximo de 30 dias (selecionado: ${rangeDays} dias)`;
-    }
     return errors;
   }
 
@@ -203,7 +199,7 @@ export default function HomePage() {
     <main className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl sm:text-3xl font-bold font-display text-gray-900 dark:text-gray-100">
           BidIQ
         </h1>
         <ThemeToggle />
@@ -218,9 +214,9 @@ export default function HomePage() {
           id="setor"
           value={setorId}
           onChange={e => setSetorId(e.target.value)}
-          className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base
+          className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
+                     focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
                      transition-colors"
         >
           {setores.map(s => (
@@ -264,10 +260,10 @@ export default function HomePage() {
               onClick={() => toggleUf(uf)}
               type="button"
               aria-pressed={ufsSelecionadas.has(uf)}
-              className={`px-2 py-2 sm:px-4 rounded-lg border-2 text-sm sm:text-base font-medium transition-all duration-150 ${
+              className={`px-2 py-2 sm:px-4 rounded-lg border text-sm sm:text-base font-medium transition-all duration-150 ${
                 ufsSelecionadas.has(uf)
-                  ? "bg-green-600 text-white border-green-600 shadow-sm hover:bg-green-700"
-                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
+                  ? "bg-green-600 text-white border-green-600 hover:bg-green-700"
+                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200/60 dark:border-gray-700/40 hover:border-green-500/50 hover:bg-green-50 dark:hover:bg-green-900/20"
               }`}
             >
               {uf}
@@ -298,9 +294,9 @@ export default function HomePage() {
               type="date"
               value={dataInicial}
               onChange={e => setDataInicial(e.target.value)}
-              className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base
+              className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
                          bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
+                         focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
                          transition-colors"
             />
           </div>
@@ -313,9 +309,9 @@ export default function HomePage() {
               type="date"
               value={dataFinal}
               onChange={e => setDataFinal(e.target.value)}
-              className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base
+              className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
                          bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
+                         focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
                          transition-colors"
             />
           </div>
@@ -334,10 +330,10 @@ export default function HomePage() {
         disabled={loading || !isFormValid}
         type="button"
         aria-busy={loading}
-        className="w-full bg-green-600 text-white py-3.5 sm:py-4 rounded-lg text-base sm:text-lg font-semibold
-                   hover:bg-green-700 active:bg-green-800
+        className="w-full bg-emerald-700 text-white py-3.5 sm:py-4 rounded-md text-base sm:text-lg font-semibold
+                   hover:bg-emerald-800 active:bg-emerald-900
                    disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
-                   shadow-md hover:shadow-lg transition-all duration-150"
+                   transition-all duration-150"
       >
         {loading ? "Buscando..." : `Buscar ${sectorName}`}
       </button>
@@ -355,7 +351,7 @@ export default function HomePage() {
 
       {/* Error Display */}
       {error && (
-        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border border-red-500/20 dark:border-red-400/20 rounded-lg" role="alert">
           <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
@@ -373,20 +369,20 @@ export default function HomePage() {
       {result && result.resumo.total_oportunidades > 0 && (
         <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
           {/* Summary Card */}
-          <div className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+          <div className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/20 border border-green-500/20 dark:border-green-400/20 rounded-xl">
             <p className="text-base sm:text-lg leading-relaxed text-gray-800 dark:text-gray-200">
               {result.resumo.resumo_executivo}
             </p>
 
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 mt-4 sm:mt-6">
               <div>
-                <span className="text-3xl sm:text-4xl font-bold text-green-700 dark:text-green-400">
+                <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-green-700 dark:text-green-400">
                   {result.resumo.total_oportunidades}
                 </span>
                 <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 block mt-1">licitações</span>
               </div>
               <div>
-                <span className="text-3xl sm:text-4xl font-bold text-green-700 dark:text-green-400">
+                <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-green-700 dark:text-green-400">
                   R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
                 </span>
                 <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 block mt-1">valor total</span>
@@ -394,7 +390,7 @@ export default function HomePage() {
             </div>
 
             {result.resumo.alerta_urgencia && (
-              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-700 rounded-lg" role="alert">
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500/20 dark:border-yellow-400/20 rounded-lg" role="alert">
                 <p className="text-sm sm:text-base font-medium text-yellow-800 dark:text-yellow-200">
                   <span aria-hidden="true">Atenção: </span>
                   {result.resumo.alerta_urgencia}
@@ -404,7 +400,7 @@ export default function HomePage() {
 
             {result.resumo.destaques.length > 0 && (
               <div className="mt-4 sm:mt-6">
-                <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 sm:mb-3">Destaques:</h4>
+                <h4 className="text-base sm:text-lg font-semibold font-display text-gray-800 dark:text-gray-200 mb-2 sm:mb-3">Destaques:</h4>
                 <ul className="list-disc list-inside text-sm sm:text-base space-y-1.5 sm:space-y-2 text-gray-700 dark:text-gray-300">
                   {result.resumo.destaques.map((d, i) => (
                     <li key={i}>{d}</li>
@@ -419,10 +415,10 @@ export default function HomePage() {
             onClick={handleDownload}
             disabled={downloadLoading}
             aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
-            className="w-full bg-green-600 text-white py-3.5 sm:py-4 rounded-lg text-base sm:text-lg font-semibold
-                       hover:bg-green-700 active:bg-green-800
+            className="w-full bg-emerald-700 text-white py-3.5 sm:py-4 rounded-md text-base sm:text-lg font-semibold
+                       hover:bg-emerald-800 active:bg-emerald-900
                        disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
-                       shadow-md hover:shadow-lg transition-all duration-150
+                       transition-all duration-150
                        flex items-center justify-center gap-3"
           >
             {downloadLoading ? (
@@ -445,7 +441,7 @@ export default function HomePage() {
 
           {/* Download Error */}
           {downloadError && (
-            <div className="p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
+            <div className="p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border border-red-500/20 dark:border-red-400/20 rounded-lg" role="alert">
               <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300">{downloadError}</p>
             </div>
           )}

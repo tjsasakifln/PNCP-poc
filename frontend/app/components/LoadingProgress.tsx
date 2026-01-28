@@ -202,7 +202,7 @@ export function LoadingProgress({
       </div>
 
       {/* Curiosity Card */}
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200/60 dark:border-gray-700/40">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
             <svg

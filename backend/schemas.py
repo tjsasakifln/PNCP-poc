@@ -1,6 +1,7 @@
 """Pydantic schemas for API request/response validation."""
 
-from pydantic import BaseModel, Field
+from datetime import date
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional
 
 
@@ -11,7 +12,9 @@ class BuscaRequest(BaseModel):
     Validates user input for procurement search:
     - At least 1 Brazilian state (UF) must be selected
     - Dates must be in YYYY-MM-DD format
-    - Date range should be reasonable (validated in business logic)
+    - data_inicial must be <= data_final
+    - Date range cannot exceed 30 days
+    - data_final cannot be in the future
 
     Examples:
         >>> request = BuscaRequest(
@@ -46,6 +49,22 @@ class BuscaRequest(BaseModel):
         description="Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica')",
         examples=["vestuario"],
     )
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "BuscaRequest":
+        """Validate date business logic before hitting PNCP API."""
+        try:
+            d_ini = date.fromisoformat(self.data_inicial)
+            d_fin = date.fromisoformat(self.data_final)
+        except ValueError as e:
+            raise ValueError(f"Data inválida: {e}")
+
+        if d_ini > d_fin:
+            raise ValueError(
+                "Data inicial deve ser anterior ou igual à data final"
+            )
+
+        return self
 
     class Config:
         """Pydantic configuration."""

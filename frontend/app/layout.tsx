@@ -1,6 +1,26 @@
 import type { Metadata } from "next";
+import { DM_Sans, Source_Serif_4, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  variable: "--font-data",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "BidIQ Uniformes",
@@ -13,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning className={`${dmSans.variable} ${sourceSerif.variable} ${dmMono.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
