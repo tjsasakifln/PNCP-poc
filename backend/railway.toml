@@ -11,7 +11,8 @@ dockerfilePath = "Dockerfile"
 watchPatterns = ["**"]
 
 [deploy]
-startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+# NOTE: Using Dockerfile CMD instead of startCommand for proper $PORT expansion
+# startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
