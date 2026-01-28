@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first for better layer caching
 COPY requirements.txt .
 
-# Cache bust - change this value to force dependency reinstall
-ARG CACHE_BUST=2026-01-28-v2
+# Cache bust - change this value to force complete rebuild
+ARG CACHE_BUST=2026-01-28-v3-fix-port
 
 # Install Python dependencies (force reinstall with pinned versions)
 RUN pip install --no-cache-dir --upgrade pip && \
