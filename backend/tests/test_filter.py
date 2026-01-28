@@ -348,8 +348,18 @@ class TestFilterLicitacao:
         assert aprovada is True
         assert motivo is None
 
-    def test_rejects_past_deadline(self):
-        """Should reject bid when deadline (dataAberturaProposta) is past."""
+    def test_accepts_past_deadline(self):
+        """
+        Should ACCEPT bid even when dataAberturaProposta is in the past.
+
+        Rationale (Investigation 2026-01-28):
+        - dataAberturaProposta is the proposal OPENING date, not the deadline
+        - Historical bids are valid for analysis, planning, and recurring opportunity identification
+        - Filtering by deadline should use dataFimReceberPropostas when available
+        - Previous behavior rejected 100% of historical searches, causing zero results
+
+        Reference: docs/investigations/2026-01-28-zero-results-analysis.md
+        """
         past_date = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
         licitacao = {
             "uf": "SP",
@@ -358,8 +368,8 @@ class TestFilterLicitacao:
             "dataAberturaProposta": past_date,
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
-        assert aprovada is False
-        assert "Prazo encerrado" in motivo
+        assert aprovada is True  # Now accepts historical bids
+        assert motivo is None
 
     def test_accepts_future_deadline(self):
         """Should accept bid when deadline is in the future."""
@@ -410,6 +420,72 @@ class TestFilterLicitacao:
         # Should fail on UF (first check), not mention value or keywords
         assert "UF" in motivo
         assert "RJ" in motivo
+
+    def test_historical_search_accepts_all_valid_bids(self):
+        """
+        Should accept ALL valid bids in historical searches regardless of date.
+
+        This test simulates the common use case of searching for bids from the
+        past week/month. ALL bids matching UF, value range, and keywords should
+        be accepted, even if their dataAberturaProposta is in the past.
+
+        Reference: Investigation 2026-01-28 - Zero results bug fix
+        """
+        # Simulate historical search: bids from last 7 days (all dates in past)
+        historical_bids = [
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 150_000.0,
+                "objetoCompra": "Aquisição de uniformes escolares",
+                "dataAberturaProposta": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+            },
+            {
+                "uf": "RJ",
+                "valorTotalEstimado": 75_000.0,
+                "objetoCompra": "Pregão eletrônico para aquisição de jalecos hospitalares",
+                "dataAberturaProposta": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(),
+            },
+            {
+                "uf": "MG",
+                "valorTotalEstimado": 200_000.0,
+                "objetoCompra": "Contratação de empresa para fornecimento de fardamento",
+                "dataAberturaProposta": (datetime.now(timezone.utc) - timedelta(days=7)).isoformat(),
+            },
+        ]
+
+        # All should be accepted
+        for i, bid in enumerate(historical_bids):
+            aprovada, motivo = filter_licitacao(bid, {"SP", "RJ", "MG"})
+            assert aprovada is True, f"Bid {i+1} should be accepted, but got: {motivo}"
+            assert motivo is None
+
+    def test_batch_filter_accepts_historical_bids(self):
+        """
+        Batch filter should accept historical bids and track stats correctly.
+
+        After the deadline filter removal (Investigation 2026-01-28), the
+        rejeitadas_prazo counter should always be 0.
+        """
+        historical_bids = [
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 100_000.0,
+                "objetoCompra": "Uniformes escolares",
+                "dataAberturaProposta": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat(),
+            },
+            {
+                "uf": "SP",
+                "valorTotalEstimado": 200_000.0,
+                "objetoCompra": "Jalecos médicos",
+                "dataAberturaProposta": (datetime.now(timezone.utc) - timedelta(days=10)).isoformat(),
+            },
+        ]
+
+        aprovadas, stats = filter_batch(historical_bids, {"SP"})
+
+        assert len(aprovadas) == 2, "Both historical bids should be accepted"
+        assert stats["aprovadas"] == 2
+        assert stats["rejeitadas_prazo"] == 0, "No bids should be rejected due to deadline"
 
     def test_real_world_valid_bid(self):
         """Should accept realistic valid procurement bid."""
@@ -505,7 +581,13 @@ class TestFilterBatch:
         assert stats["rejeitadas_uf"] == 1
 
     def test_rejection_statistics_accuracy(self):
-        """Should accurately count rejections by category."""
+        """
+        Should accurately count rejections by category.
+
+        Note (Investigation 2026-01-28): Prazo filter was removed, so both
+        past_date and future_date bids are now approved. The rejeitadas_prazo
+        counter should always be 0.
+        """
         future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         past_date = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
 
@@ -516,14 +598,14 @@ class TestFilterBatch:
             {"uf": "SP", "valorTotalEstimado": 30_000.0, "objetoCompra": "Uniformes"},
             # Rejected: Keywords
             {"uf": "SP", "valorTotalEstimado": 100_000.0, "objetoCompra": "Notebooks"},
-            # Rejected: Prazo
+            # Approved (past date - deadline filter removed)
             {
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
                 "dataAberturaProposta": past_date,
             },
-            # Approved
+            # Approved (future date)
             {
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
@@ -534,13 +616,14 @@ class TestFilterBatch:
 
         aprovadas, stats = filter_batch(licitacoes, {"SP"})
 
-        assert len(aprovadas) == 1
+        # Both past and future date bids should now be approved
+        assert len(aprovadas) == 2
         assert stats["total"] == 5
-        assert stats["aprovadas"] == 1
+        assert stats["aprovadas"] == 2
         assert stats["rejeitadas_uf"] == 1
         assert stats["rejeitadas_valor"] == 1
         assert stats["rejeitadas_keyword"] == 1
-        assert stats["rejeitadas_prazo"] == 1
+        assert stats["rejeitadas_prazo"] == 0  # No deadline rejections after fix
         assert stats["rejeitadas_outros"] == 0
 
     def test_all_statistics_keys_present(self):

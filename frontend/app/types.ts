@@ -32,6 +32,8 @@ export interface Resumo {
 export interface BuscaResult {
   resumo: Resumo;
   download_id: string;
+  total_raw: number;
+  total_filtrado: number;
 }
 
 /** Form validation errors */
