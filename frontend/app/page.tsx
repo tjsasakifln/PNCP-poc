@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import type { BuscaResult, ValidationErrors } from "./types";
+import { LoadingProgress } from "./components/LoadingProgress";
+import { EmptyState } from "./components/EmptyState";
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
@@ -38,9 +40,12 @@ export default function HomePage() {
 
   // API state
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadLoading, setDownloadLoading] = useState(false);
   const [result, setResult] = useState<BuscaResult | null>(null);
+  const [rawCount, setRawCount] = useState(0);
 
   // Validation state
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -105,7 +110,7 @@ export default function HomePage() {
   };
 
   /**
-   * Submit search request
+   * Submit search request with step tracking
    */
   const buscar = async () => {
     // Final validation check
@@ -116,10 +121,18 @@ export default function HomePage() {
     }
 
     setLoading(true);
+    setLoadingStep(1); // Consultando PNCP
     setError(null);
     setResult(null);
+    setRawCount(0);
 
     try {
+      // Simulate step progression for better UX
+      // In future, use SSE for real-time updates
+      const stepTimeout = setTimeout(() => setLoadingStep(2), 8000); // ~8s for PNCP
+      const stepTimeout2 = setTimeout(() => setLoadingStep(3), 12000); // ~12s for filter + LLM start
+      const stepTimeout3 = setTimeout(() => setLoadingStep(4), 18000); // ~18s for Excel
+
       const response = await fetch("/api/buscar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -130,28 +143,36 @@ export default function HomePage() {
         })
       });
 
+      // Clear timeouts as we got response
+      clearTimeout(stepTimeout);
+      clearTimeout(stepTimeout2);
+      clearTimeout(stepTimeout3);
+
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || "Erro ao buscar licitações");
+        throw new Error(err.message || "Erro ao buscar licitacoes");
       }
 
       const data: BuscaResult = await response.json();
       setResult(data);
+      setRawCount(data.total_raw || 0);
 
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro desconhecido");
     } finally {
       setLoading(false);
+      setLoadingStep(1);
     }
   };
 
   /**
-   * Handle Excel download with error handling
+   * Handle Excel download with error handling and loading state
    */
   const handleDownload = async () => {
     if (!result) return;
 
     setDownloadError(null);
+    setDownloadLoading(true);
 
     try {
       const downloadUrl = `/api/download?id=${result.download_id}`;
@@ -161,7 +182,7 @@ export default function HomePage() {
 
       if (!headResponse.ok) {
         if (headResponse.status === 404) {
-          throw new Error('Arquivo não encontrado ou expirado');
+          throw new Error('Arquivo nao encontrado ou expirado. Faca uma nova busca.');
         }
         throw new Error(`Erro ao fazer download: ${headResponse.statusText}`);
       }
@@ -169,13 +190,15 @@ export default function HomePage() {
       // Proceed with download
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `licitacoes_${result.download_id}.xlsx`;
+      link.download = `bidiq_uniformes_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : 'Erro ao fazer download do Excel';
       setDownloadError(`Erro no download: ${errorMessage}`);
+    } finally {
+      setDownloadLoading(false);
     }
   };
 
@@ -299,18 +322,14 @@ export default function HomePage() {
         {loading ? "Buscando..." : "Buscar Licitacoes de Uniformes"}
       </button>
 
-      {/* Loading State */}
+      {/* Loading State with Progress and Curiosities */}
       {loading && (
-        <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg" aria-live="polite">
-          <div className="animate-pulse flex space-x-4">
-            <div className="flex-1 space-y-4">
-              <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-              <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-            </div>
-          </div>
-          <p className="text-base text-gray-600 dark:text-gray-400 mt-4">
-            Buscando licitacoes...
-          </p>
+        <div aria-live="polite">
+          <LoadingProgress
+            currentStep={loadingStep}
+            estimatedTime={45}
+            stateCount={ufsSelecionadas.size}
+          />
         </div>
       )}
 
@@ -321,8 +340,17 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Result Display */}
-      {result && (
+      {/* Empty State - When search returns 0 filtered results */}
+      {result && result.resumo.total_oportunidades === 0 && (
+        <EmptyState
+          onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          rawCount={rawCount}
+          stateCount={ufsSelecionadas.size}
+        />
+      )}
+
+      {/* Result Display - When search returns results */}
+      {result && result.resumo.total_oportunidades > 0 && (
         <div className="mt-8 space-y-6">
           {/* Resumo LLM */}
           <div className="p-6 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
@@ -366,15 +394,33 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Download Button */}
+          {/* Download Button with Loading State */}
           <button
             onClick={handleDownload}
+            disabled={downloadLoading}
             aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitacoes`}
             className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-semibold
                        hover:bg-green-700 active:bg-green-800
-                       shadow-md hover:shadow-lg transition-all duration-150"
+                       disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
+                       shadow-md hover:shadow-lg transition-all duration-150
+                       flex items-center justify-center gap-3"
           >
-            Baixar Excel ({result.resumo.total_oportunidades} licitacoes)
+            {downloadLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Preparando download...
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Baixar Excel ({result.resumo.total_oportunidades} licitacoes)
+              </>
+            )}
           </button>
 
           {/* Download Error Display */}
@@ -383,6 +429,16 @@ export default function HomePage() {
               <p className="text-base font-medium text-red-700 dark:text-red-300">{downloadError}</p>
             </div>
           )}
+
+          {/* Search Stats */}
+          <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            {rawCount > 0 && (
+              <p>
+                Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitacoes
+                ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% relacionadas a uniformes)
+              </p>
+            )}
+          </div>
         </div>
       )}
     </main>

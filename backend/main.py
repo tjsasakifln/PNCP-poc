@@ -176,18 +176,32 @@ async def buscar_licitacoes(request: BuscaRequest):
         )
         logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP")
 
-        # Step 2: Apply filtering (fail-fast sequential: UF → value → keywords → status)
+        # Step 2: Apply filtering (fail-fast sequential: UF → value → keywords)
+        # Value range expanded to capture more opportunities:
+        # - R$ 10k min: Include smaller municipal contracts
+        # - R$ 10M max: Include larger state/federal contracts
+        # Reference: Investigation 2026-01-28 - docs/investigations/
         logger.info("Applying filters to raw bids")
         licitacoes_filtradas, stats = filter_batch(
             licitacoes_raw,
             ufs_selecionadas=set(request.ufs),
-            valor_min=50_000.0,  # PRD Section 1.2: R$ 50k minimum
-            valor_max=5_000_000.0,  # PRD Section 1.2: R$ 5M maximum
+            valor_min=10_000.0,   # Expanded from R$ 50k to capture more opportunities
+            valor_max=10_000_000.0,  # Expanded from R$ 5M to capture larger contracts
         )
+
+        # Detailed logging for debugging and monitoring
         logger.info(
-            f"Filtering complete: {len(licitacoes_filtradas)}/{len(licitacoes_raw)} bids passed",
-            extra={"rejection_stats": stats},
+            f"Filtering complete: {len(licitacoes_filtradas)}/{len(licitacoes_raw)} bids passed"
         )
+        # Use .get() with defaults for robustness (e.g., in tests with mocked stats)
+        if stats:
+            logger.info(f"  - Total processadas: {stats.get('total', len(licitacoes_raw))}")
+            logger.info(f"  - Aprovadas: {stats.get('aprovadas', len(licitacoes_filtradas))}")
+            logger.info(f"  - Rejeitadas (UF): {stats.get('rejeitadas_uf', 0)}")
+            logger.info(f"  - Rejeitadas (Valor): {stats.get('rejeitadas_valor', 0)}")
+            logger.info(f"  - Rejeitadas (Keyword): {stats.get('rejeitadas_keyword', 0)}")
+            logger.info(f"  - Rejeitadas (Prazo): {stats.get('rejeitadas_prazo', 0)}")
+            logger.info(f"  - Rejeitadas (Outros): {stats.get('rejeitadas_outros', 0)}")
 
         # Step 3: Generate executive summary via LLM (with automatic fallback)
         logger.info("Generating executive summary")
