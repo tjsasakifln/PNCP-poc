@@ -7,7 +7,7 @@ const downloadCache = new Map<string, Buffer>();
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ufs, data_inicial, data_final } = body;
+    const { ufs, data_inicial, data_final, setor_id } = body;
 
     // Validações
     if (!ufs || !Array.isArray(ufs) || ufs.length === 0) {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       response = await fetch(`${backendUrl}/buscar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ufs, data_inicial, data_final })
+        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario" })
       });
     } catch (error) {
       console.error(`Erro ao conectar com backend em ${backendUrl}:`, error);
@@ -62,7 +62,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       resumo: data.resumo,
-      download_id: downloadId
+      download_id: downloadId,
+      total_raw: data.total_raw || 0,
+      total_filtrado: data.total_filtrado || 0,
     });
 
   } catch (error) {

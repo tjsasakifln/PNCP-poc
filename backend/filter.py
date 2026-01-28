@@ -13,6 +13,29 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "uniformes",
     "fardamento",
     "fardamentos",
+    "farda",
+    "fardas",
+    # General apparel terms
+    "vestuario",
+    "vestimenta",
+    "vestimentas",
+    "indumentaria",
+    "roupa",
+    "roupas",
+    "roupa profissional",
+    "vestuario profissional",
+    # Textile / manufacturing
+    "confecção",
+    "confecções",
+    "confeccao",
+    "confeccoes",
+    "textil",
+    "tecido",
+    "tecidos",
+    "malha",
+    "malhas",
+    "costura",
+    "alfaiataria",
     # Specific pieces
     "jaleco",
     "jalecos",
@@ -24,8 +47,12 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "coletes",
     "camiseta",
     "camisetas",
+    "camisa",
+    "camisas",
     "camisa polo",
     "camisas polo",
+    "blusa",
+    "blusas",
     "calça",
     "calças",
     "bermuda",
@@ -36,32 +63,40 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "agasalhos",
     "jaqueta",
     "jaquetas",
+    "macacão",
+    "macacoes",
+    "jardineira",
+    "jardineiras",
+    "gandola",
+    "gandolas",
     "boné",
     "bonés",
     "chapéu",
     "chapéus",
     "meia",
     "meias",
+    "bota",
+    "botas",
+    "sapato",
+    "sapatos",
     # Specific contexts
     "uniforme escolar",
     "uniforme hospitalar",
     "uniforme administrativo",
     "fardamento militar",
     "fardamento escolar",
-    "roupa profissional",
-    "vestuário profissional",
-    "vestimenta",
-    "vestimentas",
+    "epi vestuario",
+    "epi vestimenta",
     # Common compositions in procurement notices
     "kit uniforme",
     "conjunto uniforme",
     "confecção de uniforme",
     "aquisição de uniforme",
     "fornecimento de uniforme",
-    "bota",
-    "botas",
-    "sapato",
-    "sapatos",
+    "aquisição de vestuario",
+    "fornecimento de vestuario",
+    "aquisição de fardamento",
+    "fornecimento de fardamento",
 }
 
 
@@ -180,6 +215,8 @@ def filter_licitacao(
     ufs_selecionadas: Set[str],
     valor_min: float = 50_000.0,
     valor_max: float = 5_000_000.0,
+    keywords: Set[str] | None = None,
+    exclusions: Set[str] | None = None,
 ) -> Tuple[bool, Optional[str]]:
     """
     Apply all filters to a single procurement bid (fail-fast sequential filtering).
@@ -229,13 +266,13 @@ def filter_licitacao(
         return False, f"Valor R$ {valor:,.2f} fora da faixa"
 
     # 3. Keyword Filter (most expensive - regex matching)
+    kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
+    exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
     objeto = licitacao.get("objetoCompra", "")
-    match, keywords_found = match_keywords(
-        objeto, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO
-    )
+    match, keywords_found = match_keywords(objeto, kw, exc)
 
     if not match:
-        return False, "Não contém keywords de uniformes"
+        return False, "Não contém keywords do setor"
 
     # 4. Deadline Filter - DESABILITADO
     # O campo dataAberturaProposta representa a data de ABERTURA das propostas,
@@ -262,6 +299,8 @@ def filter_batch(
     ufs_selecionadas: Set[str],
     valor_min: float = 50_000.0,
     valor_max: float = 5_000_000.0,
+    keywords: Set[str] | None = None,
+    exclusions: Set[str] | None = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Filter a batch of procurement bids and return statistics.
@@ -314,7 +353,7 @@ def filter_batch(
     }
 
     for lic in licitacoes:
-        aprovada, motivo = filter_licitacao(lic, ufs_selecionadas, valor_min, valor_max)
+        aprovada, motivo = filter_licitacao(lic, ufs_selecionadas, valor_min, valor_max, keywords, exclusions)
 
         if aprovada:
             aprovadas.append(lic)

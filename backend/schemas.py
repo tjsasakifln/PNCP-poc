@@ -41,6 +41,11 @@ class BuscaRequest(BaseModel):
         description="End date in YYYY-MM-DD format",
         examples=["2025-01-31"],
     )
+    setor_id: str = Field(
+        default="vestuario",
+        description="Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica')",
+        examples=["vestuario"],
+    )
 
     class Config:
         """Pydantic configuration."""

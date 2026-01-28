@@ -333,7 +333,7 @@ class TestFilterLicitacao:
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
         assert aprovada is False
-        assert "keywords" in motivo.lower()
+        assert "keywords" in motivo.lower() or "setor" in motivo.lower()
 
     def test_accepts_with_uniform_keywords(self):
         """Should accept bid with uniform keywords."""

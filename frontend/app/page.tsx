@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { BuscaResult, ValidationErrors } from "./types";
+import type { BuscaResult, ValidationErrors, Setor } from "./types";
 import { LoadingProgress } from "./components/LoadingProgress";
 import { EmptyState } from "./components/EmptyState";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { RegionSelector } from "./components/RegionSelector";
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
@@ -11,9 +13,6 @@ const UFS = [
   "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 ];
 
-/**
- * Calculate date difference in days
- */
 function dateDiffInDays(date1: string, date2: string): number {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
@@ -21,13 +20,14 @@ function dateDiffInDays(date1: string, date2: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-/**
- * Main search form page
- */
 export default function HomePage() {
+  // Sector state
+  const [setores, setSetores] = useState<Setor[]>([]);
+  const [setorId, setSetorId] = useState("vestuario");
+
   // Form state
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
-    new Set(["SC", "PR", "RS"]) // Default: Sul region
+    new Set(["SC", "PR", "RS"])
   );
   const [dataInicial, setDataInicial] = useState(() => {
     const d = new Date();
@@ -50,41 +50,46 @@ export default function HomePage() {
   // Validation state
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  /**
-   * Validate form inputs (PRD Section 7.3 lines 1259-1262)
-   */
+  // Fetch sectors on mount
+  useEffect(() => {
+    fetch("/api/setores")
+      .then(res => res.json())
+      .then(data => {
+        if (data.setores) setSetores(data.setores);
+      })
+      .catch(() => {
+        // Fallback: use default sector list
+        setSetores([
+          { id: "vestuario", name: "Vestuário e Uniformes", description: "" },
+          { id: "alimentos", name: "Alimentos e Merenda", description: "" },
+          { id: "informatica", name: "Informática e Tecnologia", description: "" },
+          { id: "limpeza", name: "Produtos de Limpeza", description: "" },
+          { id: "mobiliario", name: "Mobiliário", description: "" },
+          { id: "papelaria", name: "Papelaria e Material de Escritório", description: "" },
+          { id: "engenharia", name: "Engenharia e Construção", description: "" },
+        ]);
+      });
+  }, []);
+
   function validateForm(): ValidationErrors {
     const errors: ValidationErrors = {};
-
-    // Rule 1: Min 1 UF selected
     if (ufsSelecionadas.size === 0) {
       errors.ufs = "Selecione pelo menos um estado";
     }
-
-    // Rule 2: data_final >= data_inicial
     if (dataFinal < dataInicial) {
       errors.date_range = "Data final deve ser maior ou igual à data inicial";
     }
-
-    // Rule 3: Max range 30 days (PRD Section 1.2)
     const rangeDays = dateDiffInDays(dataInicial, dataFinal);
     if (rangeDays > 30) {
       errors.date_range = `Período máximo de 30 dias (selecionado: ${rangeDays} dias)`;
     }
-
     return errors;
   }
 
-  /**
-   * Validate on every form change
-   */
   useEffect(() => {
     setValidationErrors(validateForm());
   }, [ufsSelecionadas, dataInicial, dataFinal]);
 
-  /**
-   * Toggle UF selection
-   */
   const toggleUf = (uf: string) => {
     const newSet = new Set(ufsSelecionadas);
     if (newSet.has(uf)) {
@@ -95,25 +100,23 @@ export default function HomePage() {
     setUfsSelecionadas(newSet);
   };
 
-  /**
-   * Select all UFs
-   */
-  const selecionarTodos = () => {
-    setUfsSelecionadas(new Set(UFS));
+  const toggleRegion = (regionUfs: string[]) => {
+    const allSelected = regionUfs.every(uf => ufsSelecionadas.has(uf));
+    const newSet = new Set(ufsSelecionadas);
+    if (allSelected) {
+      regionUfs.forEach(uf => newSet.delete(uf));
+    } else {
+      regionUfs.forEach(uf => newSet.add(uf));
+    }
+    setUfsSelecionadas(newSet);
   };
 
-  /**
-   * Clear UF selection
-   */
-  const limparSelecao = () => {
-    setUfsSelecionadas(new Set());
-  };
+  const selecionarTodos = () => setUfsSelecionadas(new Set(UFS));
+  const limparSelecao = () => setUfsSelecionadas(new Set());
 
-  /**
-   * Submit search request with step tracking
-   */
+  const sectorName = setores.find(s => s.id === setorId)?.name || "Licitações";
+
   const buscar = async () => {
-    // Final validation check
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -121,17 +124,15 @@ export default function HomePage() {
     }
 
     setLoading(true);
-    setLoadingStep(1); // Consultando PNCP
+    setLoadingStep(1);
     setError(null);
     setResult(null);
     setRawCount(0);
 
     try {
-      // Simulate step progression for better UX
-      // In future, use SSE for real-time updates
-      const stepTimeout = setTimeout(() => setLoadingStep(2), 8000); // ~8s for PNCP
-      const stepTimeout2 = setTimeout(() => setLoadingStep(3), 12000); // ~12s for filter + LLM start
-      const stepTimeout3 = setTimeout(() => setLoadingStep(4), 18000); // ~18s for Excel
+      const stepTimeout = setTimeout(() => setLoadingStep(2), 8000);
+      const stepTimeout2 = setTimeout(() => setLoadingStep(3), 12000);
+      const stepTimeout3 = setTimeout(() => setLoadingStep(4), 18000);
 
       const response = await fetch("/api/buscar", {
         method: "POST",
@@ -139,18 +140,18 @@ export default function HomePage() {
         body: JSON.stringify({
           ufs: Array.from(ufsSelecionadas),
           data_inicial: dataInicial,
-          data_final: dataFinal
+          data_final: dataFinal,
+          setor_id: setorId,
         })
       });
 
-      // Clear timeouts as we got response
       clearTimeout(stepTimeout);
       clearTimeout(stepTimeout2);
       clearTimeout(stepTimeout3);
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || "Erro ao buscar licitacoes");
+        throw new Error(err.message || "Erro ao buscar licitações");
       }
 
       const data: BuscaResult = await response.json();
@@ -165,32 +166,26 @@ export default function HomePage() {
     }
   };
 
-  /**
-   * Handle Excel download with error handling and loading state
-   */
   const handleDownload = async () => {
     if (!result) return;
-
     setDownloadError(null);
     setDownloadLoading(true);
 
     try {
       const downloadUrl = `/api/download?id=${result.download_id}`;
-
-      // Check if file exists by making a HEAD request first
       const headResponse = await fetch(downloadUrl, { method: 'HEAD' });
 
       if (!headResponse.ok) {
         if (headResponse.status === 404) {
-          throw new Error('Arquivo nao encontrado ou expirado. Faca uma nova busca.');
+          throw new Error('Arquivo não encontrado ou expirado. Faça uma nova busca.');
         }
         throw new Error(`Erro ao fazer download: ${headResponse.statusText}`);
       }
 
-      // Proceed with download
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `bidiq_uniformes_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const setorLabel = setorId.replace(/[^a-z]/g, '_');
+      link.download = `bidiq_${setorLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -202,32 +197,55 @@ export default function HomePage() {
     }
   };
 
-  // Check if form is valid
   const isFormValid = Object.keys(validationErrors).length === 0;
 
   return (
-    <main className="max-w-4xl mx-auto p-6 sm:p-8">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">
-        BidIQ Uniformes
-      </h1>
+    <main className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+          BidIQ
+        </h1>
+        <ThemeToggle />
+      </div>
+
+      {/* Sector Selection */}
+      <section className="mb-6">
+        <label htmlFor="setor" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
+          Setor:
+        </label>
+        <select
+          id="setor"
+          value={setorId}
+          onChange={e => setSetorId(e.target.value)}
+          className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base
+                     bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
+                     transition-colors"
+        >
+          {setores.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </section>
 
       {/* UF Selection Section */}
-      <section className="mb-8">
-        <div className="flex justify-between items-center mb-3">
-          <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Selecione os Estados (UFs):
+      <section className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+          <label className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200">
+            Estados (UFs):
           </label>
-          <div className="space-x-3">
+          <div className="flex gap-3">
             <button
               onClick={selecionarTodos}
-              className="text-base font-medium text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline transition-colors"
+              className="text-sm sm:text-base font-medium text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline transition-colors"
               type="button"
             >
               Selecionar todos
             </button>
             <button
               onClick={limparSelecao}
-              className="text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:underline transition-colors"
+              className="text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:underline transition-colors"
               type="button"
             >
               Limpar
@@ -235,14 +253,18 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Region quick-select */}
+        <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
+
+        {/* UF Grid */}
+        <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5 sm:gap-2">
           {UFS.map(uf => (
             <button
               key={uf}
               onClick={() => toggleUf(uf)}
               type="button"
               aria-pressed={ufsSelecionadas.has(uf)}
-              className={`px-4 py-2 rounded-lg border-2 font-medium transition-all duration-150 ${
+              className={`px-2 py-2 sm:px-4 rounded-lg border-2 text-sm sm:text-base font-medium transition-all duration-150 ${
                 ufsSelecionadas.has(uf)
                   ? "bg-green-600 text-white border-green-600 shadow-sm hover:bg-green-700"
                   : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
@@ -253,22 +275,21 @@ export default function HomePage() {
           ))}
         </div>
 
-        <p className="text-base text-gray-600 dark:text-gray-400 mt-3">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
           {ufsSelecionadas.size} estado(s) selecionado(s)
         </p>
 
-        {/* Inline UF error */}
         {validationErrors.ufs && (
-          <p className="text-base text-red-600 dark:text-red-400 mt-2 font-medium" role="alert">
+          <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mt-2 font-medium" role="alert">
             {validationErrors.ufs}
           </p>
         )}
       </section>
 
       {/* Date Range Section */}
-      <section className="mb-8">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
+      <section className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <label htmlFor="data-inicial" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
               Data inicial:
             </label>
@@ -283,7 +304,7 @@ export default function HomePage() {
                          transition-colors"
             />
           </div>
-          <div className="flex-1">
+          <div>
             <label htmlFor="data-final" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
               Data final:
             </label>
@@ -300,9 +321,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Inline date range error */}
         {validationErrors.date_range && (
-          <p className="text-base text-red-600 dark:text-red-400 mt-3 font-medium" role="alert">
+          <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mt-3 font-medium" role="alert">
             {validationErrors.date_range}
           </p>
         )}
@@ -314,15 +334,15 @@ export default function HomePage() {
         disabled={loading || !isFormValid}
         type="button"
         aria-busy={loading}
-        className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-semibold
+        className="w-full bg-green-600 text-white py-3.5 sm:py-4 rounded-lg text-base sm:text-lg font-semibold
                    hover:bg-green-700 active:bg-green-800
                    disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
                    shadow-md hover:shadow-lg transition-all duration-150"
       >
-        {loading ? "Buscando..." : "Buscar Licitacoes de Uniformes"}
+        {loading ? "Buscando..." : `Buscar ${sectorName}`}
       </button>
 
-      {/* Loading State with Progress and Curiosities */}
+      {/* Loading State */}
       {loading && (
         <div aria-live="polite">
           <LoadingProgress
@@ -335,12 +355,12 @@ export default function HomePage() {
 
       {/* Error Display */}
       {error && (
-        <div className="mt-8 p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
-          <p className="text-base font-medium text-red-700 dark:text-red-300">{error}</p>
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
+          <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      {/* Empty State - When search returns 0 filtered results */}
+      {/* Empty State */}
       {result && result.resumo.total_oportunidades === 0 && (
         <EmptyState
           onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -349,43 +369,43 @@ export default function HomePage() {
         />
       )}
 
-      {/* Result Display - When search returns results */}
+      {/* Result Display */}
       {result && result.resumo.total_oportunidades > 0 && (
-        <div className="mt-8 space-y-6">
-          {/* Resumo LLM */}
-          <div className="p-6 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
-            <p className="text-lg leading-relaxed text-gray-800 dark:text-gray-200">
+        <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
+          {/* Summary Card */}
+          <div className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+            <p className="text-base sm:text-lg leading-relaxed text-gray-800 dark:text-gray-200">
               {result.resumo.resumo_executivo}
             </p>
 
-            <div className="flex flex-wrap gap-8 mt-6">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 mt-4 sm:mt-6">
               <div>
-                <span className="text-4xl font-bold text-green-700 dark:text-green-400">
+                <span className="text-3xl sm:text-4xl font-bold text-green-700 dark:text-green-400">
                   {result.resumo.total_oportunidades}
                 </span>
-                <span className="text-base text-gray-700 dark:text-gray-300 block mt-1">licitacoes</span>
+                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 block mt-1">licitações</span>
               </div>
               <div>
-                <span className="text-4xl font-bold text-green-700 dark:text-green-400">
+                <span className="text-3xl sm:text-4xl font-bold text-green-700 dark:text-green-400">
                   R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
                 </span>
-                <span className="text-base text-gray-700 dark:text-gray-300 block mt-1">valor total</span>
+                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 block mt-1">valor total</span>
               </div>
             </div>
 
             {result.resumo.alerta_urgencia && (
-              <div className="mt-6 p-4 bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-700 rounded-lg" role="alert">
-                <p className="text-base font-medium text-yellow-800 dark:text-yellow-200">
-                  <span aria-hidden="true">Atencao: </span>
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-700 rounded-lg" role="alert">
+                <p className="text-sm sm:text-base font-medium text-yellow-800 dark:text-yellow-200">
+                  <span aria-hidden="true">Atenção: </span>
                   {result.resumo.alerta_urgencia}
                 </p>
               </div>
             )}
 
             {result.resumo.destaques.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Destaques:</h4>
-                <ul className="list-disc list-inside text-base space-y-2 text-gray-700 dark:text-gray-300">
+              <div className="mt-4 sm:mt-6">
+                <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 sm:mb-3">Destaques:</h4>
+                <ul className="list-disc list-inside text-sm sm:text-base space-y-1.5 sm:space-y-2 text-gray-700 dark:text-gray-300">
                   {result.resumo.destaques.map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
@@ -394,12 +414,12 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Download Button with Loading State */}
+          {/* Download Button */}
           <button
             onClick={handleDownload}
             disabled={downloadLoading}
-            aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitacoes`}
-            className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-semibold
+            aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
+            className="w-full bg-green-600 text-white py-3.5 sm:py-4 rounded-lg text-base sm:text-lg font-semibold
                        hover:bg-green-700 active:bg-green-800
                        disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
                        shadow-md hover:shadow-lg transition-all duration-150
@@ -418,24 +438,24 @@ export default function HomePage() {
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                Baixar Excel ({result.resumo.total_oportunidades} licitacoes)
+                Baixar Excel ({result.resumo.total_oportunidades} licitações)
               </>
             )}
           </button>
 
-          {/* Download Error Display */}
+          {/* Download Error */}
           {downloadError && (
-            <div className="p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
-              <p className="text-base font-medium text-red-700 dark:text-red-300">{downloadError}</p>
+            <div className="p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
+              <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300">{downloadError}</p>
             </div>
           )}
 
-          {/* Search Stats */}
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
+          {/* Stats */}
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">
             {rawCount > 0 && (
               <p>
-                Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitacoes
-                ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% relacionadas a uniformes)
+                Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitações
+                ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% do setor {sectorName.toLowerCase()})
               </p>
             )}
           </div>
