@@ -126,9 +126,11 @@ export default function HomePage() {
     setRawCount(0);
 
     try {
-      const stepTimeout = setTimeout(() => setLoadingStep(2), 8000);
-      const stepTimeout2 = setTimeout(() => setLoadingStep(3), 12000);
-      const stepTimeout3 = setTimeout(() => setLoadingStep(4), 18000);
+      // Timings proporcionais ao número de estados (PNCP é o gargalo)
+      const baseDelay = Math.max(10, ufsSelecionadas.size * 4); // ~4s por estado
+      const stepTimeout = setTimeout(() => setLoadingStep(2), baseDelay * 1000);
+      const stepTimeout2 = setTimeout(() => setLoadingStep(3), (baseDelay + 8) * 1000);
+      const stepTimeout3 = setTimeout(() => setLoadingStep(4), (baseDelay + 15) * 1000);
 
       const response = await fetch("/api/buscar", {
         method: "POST",
@@ -343,7 +345,7 @@ export default function HomePage() {
         <div aria-live="polite">
           <LoadingProgress
             currentStep={loadingStep}
-            estimatedTime={45}
+            estimatedTime={Math.max(30, ufsSelecionadas.size * 6)}
             stateCount={ufsSelecionadas.size}
           />
         </div>
