@@ -35,4 +35,5 @@ EXPOSE 8000
 # Do NOT add HEALTHCHECK instruction here - it conflicts with Railway's system
 
 # Run with uvicorn - Railway will inject $PORT
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Using shell form for guaranteed variable expansion
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
