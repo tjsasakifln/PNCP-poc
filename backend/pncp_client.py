@@ -116,7 +116,7 @@ class PNCPClient:
         modalidade: int,
         uf: str | None = None,
         pagina: int = 1,
-        tamanho: int = 500,
+        tamanho: int = 20,
     ) -> Dict[str, Any]:
         """
         Fetch a single page of procurement data from PNCP API.
@@ -127,7 +127,7 @@ class PNCPClient:
             modalidade: Modality code (codigoModalidadeContratacao), e.g., 6 for Pregão Eletrônico
             uf: Optional state code (e.g., "SP", "RJ")
             pagina: Page number (1-indexed)
-            tamanho: Page size (max 500)
+            tamanho: Page size (default 20, PNCP API limit)
 
         Returns:
             API response as dictionary containing:
@@ -143,9 +143,13 @@ class PNCPClient:
         """
         self._rate_limit()
 
+        # Convert dates from YYYY-MM-DD to yyyyMMdd (PNCP API format)
+        data_inicial_fmt = data_inicial.replace("-", "")
+        data_final_fmt = data_final.replace("-", "")
+
         params = {
-            "dataInicial": data_inicial,
-            "dataFinal": data_final,
+            "dataInicial": data_inicial_fmt,
+            "dataFinal": data_final_fmt,
             "codigoModalidadeContratacao": modalidade,
             "pagina": pagina,
             "tamanhoPagina": tamanho,
