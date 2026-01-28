@@ -84,7 +84,7 @@ test.describe('Form Validation Errors', () => {
     await page.waitForTimeout(500);
 
     // Verify error message appears
-    const errorMessage = page.getByText(/data final.*anterior.*data inicial/i);
+    const errorMessage = page.getByText(/Data final deve ser maior ou igual/i);
     await expect(errorMessage).toBeVisible();
 
     // Verify search button is disabled
