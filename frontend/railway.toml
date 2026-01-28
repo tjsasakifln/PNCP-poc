@@ -20,6 +20,6 @@ restartPolicyMaxRetries = 3
 # Environment Variables (Set in Railway Dashboard)
 # =============================================================================
 # REQUIRED:
-#   - NEXT_PUBLIC_BACKEND_URL (URL do backend service)
+#   - BACKEND_URL (Runtime URL of backend service, e.g. https://bidiq-backend.up.railway.app)
 #   - PORT (Auto-injected by Railway)
 # =============================================================================

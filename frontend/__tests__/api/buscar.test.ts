@@ -151,8 +151,8 @@ describe("POST /api/buscar", () => {
     const response = await POST(request);
     const data = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(data.message).toBe("Erro interno do servidor");
+    expect(response.status).toBe(503);
+    expect(data.message).toContain("Backend indisponível");
   });
 
   it("should cache Excel buffer with download ID", async () => {
@@ -232,9 +232,9 @@ describe("POST /api/buscar", () => {
     setTimeoutSpy.mockRestore();
   });
 
-  it("should use NEXT_PUBLIC_BACKEND_URL from environment", async () => {
-    const originalEnv = process.env.NEXT_PUBLIC_BACKEND_URL;
-    process.env.NEXT_PUBLIC_BACKEND_URL = "http://custom:9000";
+  it("should use BACKEND_URL from environment", async () => {
+    const originalEnv = process.env.BACKEND_URL;
+    process.env.BACKEND_URL = "http://custom:9000";
 
     const mockBackendResponse = {
       resumo: {
@@ -270,7 +270,7 @@ describe("POST /api/buscar", () => {
     );
 
     // Restore
-    process.env.NEXT_PUBLIC_BACKEND_URL = originalEnv;
+    process.env.BACKEND_URL = originalEnv;
   });
 
   it("should handle invalid UFs type", async () => {
