@@ -189,6 +189,17 @@ class PNCPClient:
                     )
                     return response.json()
 
+                # No content - empty results (valid response)
+                if response.status_code == 204:
+                    logger.debug(f"No content (204) for page {pagina} - no results")
+                    return {
+                        "data": [],
+                        "totalRegistros": 0,
+                        "totalPaginas": 0,
+                        "paginaAtual": pagina,
+                        "temProximaPagina": False,
+                    }
+
                 # Non-retryable errors - fail immediately
                 if response.status_code not in self.config.retryable_status_codes:
                     error_msg = (
