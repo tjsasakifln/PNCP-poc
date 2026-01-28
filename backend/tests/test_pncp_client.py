@@ -5,9 +5,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from config import RetryConfig
+from config import RetryConfig, DEFAULT_MODALIDADES
 from exceptions import PNCPAPIError
 from pncp_client import PNCPClient, calculate_delay
+
+# Default modalidade for tests (Pregão Eletrônico)
+DEFAULT_MODALIDADE = 6
 
 
 class TestCalculateDelay:
@@ -132,7 +135,7 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        result = client.fetch_page("2024-01-01", "2024-01-31")
+        result = client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert result["data"] == [{"id": 1}, {"id": 2}]
         assert result["totalRegistros"] == 2
@@ -147,11 +150,26 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", uf="SP")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE, uf="SP")
 
         # Check UF was included in params
         call_args = mock_get.call_args
         assert call_args[1]["params"]["uf"] == "SP"
+
+    @patch("pncp_client.requests.Session.get")
+    def test_fetch_page_modalidade_parameter(self, mock_get):
+        """Test fetch_page includes modalidade parameter."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": []}
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=6)
+
+        # Check modalidade was included in params
+        call_args = mock_get.call_args
+        assert call_args[1]["params"]["codigoModalidadeContratacao"] == 6
 
     @patch("pncp_client.requests.Session.get")
     def test_fetch_page_pagination_parameters(self, mock_get):
@@ -162,7 +180,7 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", pagina=3, tamanho=100)
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE, pagina=3, tamanho=100)
 
         call_args = mock_get.call_args
         params = call_args[1]["params"]
@@ -187,7 +205,7 @@ class TestFetchPageRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
         assert mock_sleep.called
@@ -205,7 +223,7 @@ class TestFetchPageRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
 
@@ -220,7 +238,7 @@ class TestFetchPageRetry:
         client = PNCPClient(config=config)
 
         with pytest.raises(PNCPAPIError, match="Failed after 3 attempts"):
-            client.fetch_page("2024-01-01", "2024-01-31")
+            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         # Should try 3 times total (initial + 2 retries)
         assert mock_get.call_count == 3
@@ -241,7 +259,7 @@ class TestFetchPageRateLimiting:
         mock_get.side_effect = mock_responses
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         # Check that sleep was called with the Retry-After value
         sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
@@ -256,7 +274,7 @@ class TestFetchPageRateLimiting:
         mock_get.side_effect = mock_responses
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         # Should use default 60 second wait
         sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
@@ -274,7 +292,7 @@ class TestFetchPageNonRetryableErrors:
         client = PNCPClient()
 
         with pytest.raises(PNCPAPIError, match="non-retryable status 400"):
-            client.fetch_page("2024-01-01", "2024-01-31")
+            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         # Should only try once (no retries)
         assert mock_get.call_count == 1
@@ -287,7 +305,7 @@ class TestFetchPageNonRetryableErrors:
         client = PNCPClient()
 
         with pytest.raises(PNCPAPIError, match="non-retryable status 404"):
-            client.fetch_page("2024-01-01", "2024-01-31")
+            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 1
 
@@ -306,7 +324,7 @@ class TestFetchPageExceptionRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
 
@@ -320,7 +338,7 @@ class TestFetchPageExceptionRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31")
+        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
 
@@ -334,7 +352,7 @@ class TestFetchPageExceptionRetry:
         client = PNCPClient(config=config)
 
         with pytest.raises(PNCPAPIError, match="Failed after 3 attempts"):
-            client.fetch_page("2024-01-01", "2024-01-31")
+            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 3
 
@@ -343,8 +361,8 @@ class TestFetchAllPagination:
     """Test fetch_all() automatic pagination functionality."""
 
     @patch("pncp_client.requests.Session.get")
-    def test_fetch_all_single_page(self, mock_get):
-        """Test fetch_all with single page returns all items."""
+    def test_fetch_all_single_page_single_modalidade(self, mock_get):
+        """Test fetch_all with single page and single modalidade returns all items."""
         # Mock single page response
         mock_response = Mock()
         mock_response.status_code = 200
@@ -362,12 +380,13 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+        # Test with single modalidade to simplify test
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6]))
 
         assert len(results) == 3
         assert results[0]["codigoCompra"] == "001"
         assert results[2]["codigoCompra"] == "003"
-        # Should only call API once for single page
+        # Should only call API once for single page, single modalidade
         assert mock_get.call_count == 1
 
     @patch("pncp_client.requests.Session.get")
@@ -376,7 +395,7 @@ class TestFetchAllPagination:
         # Mock 3 pages of data
         page_1 = Mock(status_code=200)
         page_1.json.return_value = {
-            "data": [{"id": 1}, {"id": 2}],
+            "data": [{"codigoCompra": "1"}, {"codigoCompra": "2"}],
             "totalRegistros": 5,
             "totalPaginas": 3,
             "paginaAtual": 1,
@@ -385,7 +404,7 @@ class TestFetchAllPagination:
 
         page_2 = Mock(status_code=200)
         page_2.json.return_value = {
-            "data": [{"id": 3}, {"id": 4}],
+            "data": [{"codigoCompra": "3"}, {"codigoCompra": "4"}],
             "totalRegistros": 5,
             "totalPaginas": 3,
             "paginaAtual": 2,
@@ -394,7 +413,7 @@ class TestFetchAllPagination:
 
         page_3 = Mock(status_code=200)
         page_3.json.return_value = {
-            "data": [{"id": 5}],
+            "data": [{"codigoCompra": "5"}],
             "totalRegistros": 5,
             "totalPaginas": 3,
             "paginaAtual": 3,
@@ -404,12 +423,12 @@ class TestFetchAllPagination:
         mock_get.side_effect = [page_1, page_2, page_3]
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6]))
 
         # Should fetch all 5 items across 3 pages
         assert len(results) == 5
-        assert results[0]["id"] == 1
-        assert results[4]["id"] == 5
+        assert results[0]["codigoCompra"] == "1"
+        assert results[4]["codigoCompra"] == "5"
         # Should call API 3 times (once per page)
         assert mock_get.call_count == 3
 
@@ -419,7 +438,7 @@ class TestFetchAllPagination:
         # Mock responses for SP (2 items) and RJ (1 item)
         sp_response = Mock(status_code=200)
         sp_response.json.return_value = {
-            "data": [{"uf": "SP", "id": 1}, {"uf": "SP", "id": 2}],
+            "data": [{"uf": "SP", "codigoCompra": "1"}, {"uf": "SP", "codigoCompra": "2"}],
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
@@ -428,7 +447,7 @@ class TestFetchAllPagination:
 
         rj_response = Mock(status_code=200)
         rj_response.json.return_value = {
-            "data": [{"uf": "RJ", "id": 3}],
+            "data": [{"uf": "RJ", "codigoCompra": "3"}],
             "totalRegistros": 1,
             "totalPaginas": 1,
             "paginaAtual": 1,
@@ -438,7 +457,7 @@ class TestFetchAllPagination:
         mock_get.side_effect = [sp_response, rj_response]
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP", "RJ"]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP", "RJ"], modalidades=[6]))
 
         # Should fetch 3 items total (2 from SP, 1 from RJ)
         assert len(results) == 3
@@ -446,6 +465,72 @@ class TestFetchAllPagination:
         assert results[2]["uf"] == "RJ"
         # Should call API twice (once per UF)
         assert mock_get.call_count == 2
+
+    @patch("pncp_client.requests.Session.get")
+    def test_fetch_all_multiple_modalidades(self, mock_get):
+        """Test fetch_all iterates over multiple modalidades."""
+        # Mock responses for modalidade 6 and 7
+        mod_6_response = Mock(status_code=200)
+        mod_6_response.json.return_value = {
+            "data": [{"codigoCompra": "001", "modalidade": 6}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False,
+        }
+
+        mod_7_response = Mock(status_code=200)
+        mod_7_response.json.return_value = {
+            "data": [{"codigoCompra": "002", "modalidade": 7}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False,
+        }
+
+        mock_get.side_effect = [mod_6_response, mod_7_response]
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6, 7]))
+
+        # Should fetch items from both modalidades
+        assert len(results) == 2
+        # Should call API twice (once per modalidade)
+        assert mock_get.call_count == 2
+
+    @patch("pncp_client.requests.Session.get")
+    def test_fetch_all_deduplicates_by_codigo_compra(self, mock_get):
+        """Test fetch_all removes duplicates based on codigoCompra."""
+        # Mock responses with duplicate codigoCompra across modalidades
+        mod_6_response = Mock(status_code=200)
+        mod_6_response.json.return_value = {
+            "data": [{"codigoCompra": "001"}, {"codigoCompra": "002"}],
+            "totalRegistros": 2,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False,
+        }
+
+        mod_7_response = Mock(status_code=200)
+        mod_7_response.json.return_value = {
+            "data": [{"codigoCompra": "001"}, {"codigoCompra": "003"}],  # 001 is duplicate
+            "totalRegistros": 2,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False,
+        }
+
+        mock_get.side_effect = [mod_6_response, mod_7_response]
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6, 7]))
+
+        # Should have 3 unique items (001 deduplicated)
+        assert len(results) == 3
+        codigo_compras = [r["codigoCompra"] for r in results]
+        assert "001" in codigo_compras
+        assert "002" in codigo_compras
+        assert "003" in codigo_compras
 
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_empty_results(self, mock_get):
@@ -461,7 +546,7 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6]))
 
         assert len(results) == 0
         assert mock_get.call_count == 1
@@ -472,7 +557,7 @@ class TestFetchAllPagination:
         # Mock 2 pages
         page_1 = Mock(status_code=200)
         page_1.json.return_value = {
-            "data": [{"id": 1}, {"id": 2}, {"id": 3}],
+            "data": [{"codigoCompra": "1"}, {"codigoCompra": "2"}, {"codigoCompra": "3"}],
             "totalRegistros": 5,
             "totalPaginas": 2,
             "paginaAtual": 1,
@@ -481,7 +566,7 @@ class TestFetchAllPagination:
 
         page_2 = Mock(status_code=200)
         page_2.json.return_value = {
-            "data": [{"id": 4}, {"id": 5}],
+            "data": [{"codigoCompra": "4"}, {"codigoCompra": "5"}],
             "totalRegistros": 5,
             "totalPaginas": 2,
             "paginaAtual": 2,
@@ -499,7 +584,7 @@ class TestFetchAllPagination:
         client = PNCPClient()
         list(
             client.fetch_all(
-                "2024-01-01", "2024-01-31", ufs=["SP"], on_progress=on_progress
+                "2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6], on_progress=on_progress
             )
         )
 
@@ -515,7 +600,7 @@ class TestFetchAllPagination:
         """Test fetch_all is a generator yielding individual items, not lists."""
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = {
-            "data": [{"id": 1}, {"id": 2}],
+            "data": [{"codigoCompra": "1"}, {"codigoCompra": "2"}],
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
@@ -524,7 +609,7 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        generator = client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"])
+        generator = client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6])
 
         # Should be a generator
         import types
@@ -534,14 +619,14 @@ class TestFetchAllPagination:
         # Should yield individual dictionaries
         first_item = next(generator)
         assert isinstance(first_item, dict)
-        assert first_item["id"] == 1
+        assert first_item["codigoCompra"] == "1"
 
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_without_ufs(self, mock_get):
         """Test fetch_all works without specifying UFs (fetches all)."""
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = {
-            "data": [{"uf": "SP", "id": 1}, {"uf": "RJ", "id": 2}],
+            "data": [{"uf": "SP", "codigoCompra": "1"}, {"uf": "RJ", "codigoCompra": "2"}],
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
@@ -550,12 +635,31 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31"))
+        results = list(client.fetch_all("2024-01-01", "2024-01-31", modalidades=[6]))
 
         assert len(results) == 2
         # Check that UF parameter was NOT sent
         call_args = mock_get.call_args
         assert "uf" not in call_args[1]["params"]
+
+    @patch("pncp_client.requests.Session.get")
+    def test_fetch_all_uses_default_modalidades(self, mock_get):
+        """Test fetch_all uses DEFAULT_MODALIDADES when none specified."""
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {
+            "data": [],
+            "totalRegistros": 0,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False,
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+
+        # Should call API once for each default modalidade
+        assert mock_get.call_count == len(DEFAULT_MODALIDADES)
 
 
 class TestFetchByUFHelper:
@@ -587,7 +691,7 @@ class TestFetchByUFHelper:
         mock_get.side_effect = [page_1, page_2]
 
         client = PNCPClient()
-        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", "SP", None))
+        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", DEFAULT_MODALIDADE, "SP", None))
 
         assert len(results) == 2
         # Should stop after page 2 (not request page 3)
@@ -618,7 +722,7 @@ class TestFetchByUFHelper:
         mock_get.side_effect = [page_1, page_2]
 
         client = PNCPClient()
-        list(client._fetch_by_uf("2024-01-01", "2024-01-31", "SP", None))
+        list(client._fetch_by_uf("2024-01-01", "2024-01-31", DEFAULT_MODALIDADE, "SP", None))
 
         # Check page numbers in API calls
         call_1_params = mock_get.call_args_list[0][1]["params"]
@@ -641,9 +745,29 @@ class TestFetchByUFHelper:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", None, None))
+        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", DEFAULT_MODALIDADE, None, None))
 
         assert len(results) == 1
         # Check that uf was not in params
         call_params = mock_get.call_args[1]["params"]
         assert "uf" not in call_params
+
+    @patch("pncp_client.requests.Session.get")
+    def test_fetch_by_uf_includes_modalidade(self, mock_get):
+        """Test _fetch_by_uf includes modalidade in API calls."""
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = {
+            "data": [{"id": 1}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginaAtual": 1,
+            "temProximaPagina": False,
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        list(client._fetch_by_uf("2024-01-01", "2024-01-31", 6, "SP", None))
+
+        # Check that modalidade was in params
+        call_params = mock_get.call_args[1]["params"]
+        assert call_params["codigoModalidadeContratacao"] == 6

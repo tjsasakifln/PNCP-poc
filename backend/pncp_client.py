@@ -9,7 +9,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from config import RetryConfig
+from config import RetryConfig, DEFAULT_MODALIDADES
 from exceptions import PNCPAPIError
 
 logger = logging.getLogger(__name__)
@@ -113,6 +113,7 @@ class PNCPClient:
         self,
         data_inicial: str,
         data_final: str,
+        modalidade: int,
         uf: str | None = None,
         pagina: int = 1,
         tamanho: int = 500,
@@ -123,6 +124,7 @@ class PNCPClient:
         Args:
             data_inicial: Start date in YYYY-MM-DD format
             data_final: End date in YYYY-MM-DD format
+            modalidade: Modality code (codigoModalidadeContratacao), e.g., 6 for Pregão Eletrônico
             uf: Optional state code (e.g., "SP", "RJ")
             pagina: Page number (1-indexed)
             tamanho: Page size (max 500)
@@ -144,6 +146,7 @@ class PNCPClient:
         params = {
             "dataInicial": data_inicial,
             "dataFinal": data_final,
+            "codigoModalidadeContratacao": modalidade,
             "pagina": pagina,
             "tamanhoPagina": tamanho,
         }
@@ -234,20 +237,23 @@ class PNCPClient:
         data_inicial: str,
         data_final: str,
         ufs: list[str] | None = None,
+        modalidades: list[int] | None = None,
         on_progress: Callable[[int, int, int], None] | None = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all procurement records with automatic pagination.
 
         This generator yields individual procurement records across all pages,
-        handling pagination automatically. If specific UFs are provided, it
-        fetches data for each UF separately (more efficient for PNCP API).
+        handling pagination automatically. Iterates over all specified modalities
+        and UFs to fetch complete data.
 
         Args:
             data_inicial: Start date in YYYY-MM-DD format
             data_final: End date in YYYY-MM-DD format
             ufs: Optional list of state codes (e.g., ["SP", "RJ"])
                  If None, fetches all UFs
+            modalidades: Optional list of modality codes (e.g., [4, 5, 6, 7, 8])
+                        If None, uses DEFAULT_MODALIDADES from config
             on_progress: Optional callback(current_page, total_pages, items_fetched)
                          Called after each page is fetched
 
@@ -258,49 +264,73 @@ class PNCPClient:
             ```python
             client = PNCPClient()
 
-            # Fetch all records for SP and RJ
+            # Fetch all records for SP and RJ (default modalities)
             for bid in client.fetch_all("2025-01-01", "2025-01-31", ufs=["SP", "RJ"]):
                 print(bid["codigoCompra"])
 
-            # With progress callback
-            def show_progress(page, total, items):
-                print(f"Page {page}/{total}: {items} items fetched")
-
-            bids = list(client.fetch_all(
-                "2025-01-01",
-                "2025-01-31",
+            # Fetch only Pregão Eletrônico (modalidade 6)
+            for bid in client.fetch_all(
+                "2025-01-01", "2025-01-31",
                 ufs=["SP"],
-                on_progress=show_progress
-            ))
+                modalidades=[6]
+            ):
+                print(bid["codigoCompra"])
             ```
         """
-        # If specific UFs provided, fetch each separately
-        if ufs:
-            for uf in ufs:
-                logger.info(f"Fetching all pages for UF={uf}")
-                yield from self._fetch_by_uf(data_inicial, data_final, uf, on_progress)
-        else:
-            # Fetch all UFs together (no UF filter)
-            logger.info("Fetching all pages (all UFs)")
-            yield from self._fetch_by_uf(data_inicial, data_final, None, on_progress)
+        # Use default modalities if not specified
+        modalidades_to_fetch = modalidades or DEFAULT_MODALIDADES
+
+        # Track unique IDs to avoid duplicates across modalities
+        seen_ids: set[str] = set()
+
+        for modalidade in modalidades_to_fetch:
+            logger.info(f"Fetching modality {modalidade}")
+
+            # If specific UFs provided, fetch each separately
+            if ufs:
+                for uf in ufs:
+                    logger.info(f"Fetching modalidade={modalidade}, UF={uf}")
+                    for item in self._fetch_by_uf(
+                        data_inicial, data_final, modalidade, uf, on_progress
+                    ):
+                        # Deduplicate by codigoCompra
+                        item_id = item.get("codigoCompra", "")
+                        if item_id and item_id not in seen_ids:
+                            seen_ids.add(item_id)
+                            yield item
+            else:
+                # Fetch all UFs together (no UF filter)
+                logger.info(f"Fetching modalidade={modalidade}, all UFs")
+                for item in self._fetch_by_uf(
+                    data_inicial, data_final, modalidade, None, on_progress
+                ):
+                    # Deduplicate by codigoCompra
+                    item_id = item.get("codigoCompra", "")
+                    if item_id and item_id not in seen_ids:
+                        seen_ids.add(item_id)
+                        yield item
+
+        logger.info(f"Fetch complete: {len(seen_ids)} unique records across {len(modalidades_to_fetch)} modalities")
 
     def _fetch_by_uf(
         self,
         data_inicial: str,
         data_final: str,
+        modalidade: int,
         uf: str | None,
         on_progress: Callable[[int, int, int], None] | None,
     ) -> Generator[Dict[str, Any], None, None]:
         """
-        Fetch all pages for a specific UF (or all UFs if uf=None).
+        Fetch all pages for a specific modality and UF combination.
 
-        This helper method handles pagination for a single UF by following
+        This helper method handles pagination for a single modality/UF by following
         the API's `temProximaPagina` flag. It continues fetching pages
         until no more pages are available.
 
         Args:
             data_inicial: Start date in YYYY-MM-DD format
             data_final: End date in YYYY-MM-DD format
+            modalidade: Modality code (codigoModalidadeContratacao)
             uf: State code (e.g., "SP") or None for all states
             on_progress: Optional progress callback
 
@@ -313,12 +343,16 @@ class PNCPClient:
 
         while True:
             logger.debug(
-                f"Fetching page {pagina} for UF={uf or 'ALL'} "
+                f"Fetching page {pagina} for modalidade={modalidade}, UF={uf or 'ALL'} "
                 f"(date range: {data_inicial} to {data_final})"
             )
 
             response = self.fetch_page(
-                data_inicial=data_inicial, data_final=data_final, uf=uf, pagina=pagina
+                data_inicial=data_inicial,
+                data_final=data_final,
+                modalidade=modalidade,
+                uf=uf,
+                pagina=pagina,
             )
 
             # Extract pagination metadata
@@ -345,7 +379,7 @@ class PNCPClient:
             # Check if there are more pages
             if not tem_proxima:
                 logger.info(
-                    f"Finished fetching UF={uf or 'ALL'}: "
+                    f"Finished fetching modalidade={modalidade}, UF={uf or 'ALL'}: "
                     f"{items_fetched} total items across {pagina} pages"
                 )
                 break
