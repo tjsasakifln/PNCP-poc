@@ -30,16 +30,27 @@ export async function POST(request: NextRequest) {
 
     let response: Response;
     try {
+      // Timeout de 5 minutos — consultas com muitos estados podem demorar
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
       response = await fetch(`${backendUrl}/buscar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario" })
+        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario" }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
     } catch (error) {
+      const isTimeout = error instanceof DOMException && error.name === "AbortError";
+      const message = isTimeout
+        ? "A consulta excedeu o tempo limite (5 min). Tente com menos estados ou um período menor."
+        : `Backend indisponível em ${backendUrl}: ${error instanceof Error ? error.message : 'conexão recusada'}`;
       console.error(`Erro ao conectar com backend em ${backendUrl}:`, error);
       return NextResponse.json(
-        { message: `Backend indisponível em ${backendUrl}: ${error instanceof Error ? error.message : 'conexão recusada'}` },
-        { status: 503 }
+        { message },
+        { status: isTimeout ? 504 : 503 }
       );
     }
 
