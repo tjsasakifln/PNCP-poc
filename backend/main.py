@@ -23,6 +23,7 @@ from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import filter_batch
 from excel import create_excel
 from llm import gerar_resumo, gerar_resumo_fallback
+from sectors import get_sector, list_sectors
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -121,6 +122,12 @@ async def health():
     }
 
 
+@app.get("/setores")
+async def listar_setores():
+    """Return available procurement sectors for frontend dropdown."""
+    return {"setores": list_sectors()}
+
+
 @app.post("/buscar", response_model=BuscaResponse)
 async def buscar_licitacoes(request: BuscaRequest):
     """
@@ -160,10 +167,19 @@ async def buscar_licitacoes(request: BuscaRequest):
             "ufs": request.ufs,
             "data_inicial": request.data_inicial,
             "data_final": request.data_final,
+            "setor_id": request.setor_id,
         },
     )
 
     try:
+        # Load sector configuration
+        try:
+            sector = get_sector(request.setor_id)
+        except KeyError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        logger.info(f"Using sector: {sector.name} ({len(sector.keywords)} keywords)")
+
         # Step 1: Fetch from PNCP (generator → list for reusability in filter + LLM)
         logger.info("Fetching bids from PNCP API")
         client = PNCPClient()
@@ -187,6 +203,8 @@ async def buscar_licitacoes(request: BuscaRequest):
             ufs_selecionadas=set(request.ufs),
             valor_min=10_000.0,   # Expanded from R$ 50k to capture more opportunities
             valor_max=10_000_000.0,  # Expanded from R$ 5M to capture larger contracts
+            keywords=sector.keywords,
+            exclusions=sector.exclusions,
         )
 
         # Detailed logging for debugging and monitoring
@@ -203,17 +221,31 @@ async def buscar_licitacoes(request: BuscaRequest):
             logger.info(f"  - Rejeitadas (Prazo): {stats.get('rejeitadas_prazo', 0)}")
             logger.info(f"  - Rejeitadas (Outros): {stats.get('rejeitadas_outros', 0)}")
 
+        # Diagnostic: sample of keyword-rejected items for debugging
+        if stats.get('rejeitadas_keyword', 0) > 0:
+            keyword_rejected_sample = []
+            for lic in licitacoes_raw[:200]:
+                obj = lic.get("objetoCompra", "")
+                from filter import match_keywords, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO
+                matched, _ = match_keywords(obj, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
+                if not matched:
+                    keyword_rejected_sample.append(obj[:120])
+                    if len(keyword_rejected_sample) >= 3:
+                        break
+            if keyword_rejected_sample:
+                logger.debug(f"  - Sample keyword-rejected objects: {keyword_rejected_sample}")
+
         # Step 3: Generate executive summary via LLM (with automatic fallback)
         logger.info("Generating executive summary")
         try:
-            resumo = gerar_resumo(licitacoes_filtradas)
+            resumo = gerar_resumo(licitacoes_filtradas, sector_name=sector.name)
             logger.info("LLM summary generated successfully")
         except Exception as e:
             logger.warning(
                 f"LLM generation failed, using fallback mechanism: {e}",
                 exc_info=True,
             )
-            resumo = gerar_resumo_fallback(licitacoes_filtradas)
+            resumo = gerar_resumo_fallback(licitacoes_filtradas, sector_name=sector.name)
             logger.info("Fallback summary generated successfully")
 
         # Step 4: Generate Excel report

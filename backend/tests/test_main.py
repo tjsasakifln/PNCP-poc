@@ -357,7 +357,7 @@ class TestBuscarEndpoint:
             return buffer
 
         # Mock gerar_resumo to return valid summary
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="1 licitação encontrada",
@@ -395,7 +395,7 @@ class TestBuscarEndpoint:
         monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="Test summary",
@@ -432,7 +432,7 @@ class TestBuscarEndpoint:
         excel_content = b"PK\x03\x04fake-excel-header"
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(excel_content))
 
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="Test",
@@ -463,11 +463,11 @@ class TestBuscarEndpoint:
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         # Mock gerar_resumo to raise exception
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             raise Exception("OpenAI API error")
 
         # Mock fallback to return valid summary
-        def mock_gerar_resumo_fallback(bids):
+        def mock_gerar_resumo_fallback(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="Fallback summary",
@@ -542,7 +542,7 @@ class TestBuscarEndpoint:
         monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([], {}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"empty-excel"))
 
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="Nenhuma licitação encontrada",
@@ -574,7 +574,7 @@ class TestBuscarEndpoint:
         monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: (mock_licitacoes_filtradas, {}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="3 licitações",
@@ -601,7 +601,7 @@ class TestBuscarEndpoint:
         monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo="Test",
@@ -650,7 +650,7 @@ class TestBuscarIntegration:
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
 
         # Mock only LLM to avoid API calls
-        def mock_gerar_resumo(bids):
+        def mock_gerar_resumo(bids, **kwargs):
             from schemas import ResumoLicitacoes
             return ResumoLicitacoes(
                 resumo_executivo=f"{len(bids)} licitação encontrada",

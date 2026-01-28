@@ -28,7 +28,7 @@ from schemas import ResumoLicitacoes
 from excel import parse_datetime
 
 
-def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
+def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes e fardamentos") -> ResumoLicitacoes:
     """
     Generate AI-powered executive summary of procurement bids using GPT-4.1-nano.
 
@@ -105,7 +105,7 @@ def gerar_resumo(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
     client = OpenAI(api_key=api_key)
 
     # System prompt with expert persona and rules
-    system_prompt = """Você é um analista de licitações especializado em uniformes e fardamentos.
+    system_prompt = f"""Você é um analista de licitações especializado em {sector_name}.
 Analise as licitações fornecidas e gere um resumo executivo.
 
 REGRAS:
@@ -118,7 +118,7 @@ REGRAS:
 """
 
     # User prompt with context
-    user_prompt = f"""Analise estas {len(licitacoes)} licitações de uniformes/fardamentos e gere um resumo:
+    user_prompt = f"""Analise estas {len(licitacoes)} licitações de {sector_name} e gere um resumo:
 
 {json.dumps(dados_resumidos, ensure_ascii=False, indent=2)}
 
@@ -217,7 +217,7 @@ def format_resumo_html(resumo: ResumoLicitacoes) -> str:
     return html
 
 
-def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
+def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes") -> ResumoLicitacoes:
     """
     Generate basic executive summary without using LLM (fallback for OpenAI failures).
 
@@ -316,7 +316,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]]) -> ResumoLicitacoes:
 
     return ResumoLicitacoes(
         resumo_executivo=(
-            f"Encontradas {total} licitações de uniformes "
+            f"Encontradas {total} licitações de {sector_name} "
             f"totalizando R$ {valor_total:,.2f}."
         ),
         total_oportunidades=total,

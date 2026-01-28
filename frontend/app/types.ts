@@ -16,6 +16,14 @@ export interface SearchParams {
   ufs: string[];
   data_inicial: string; // YYYY-MM-DD format
   data_final: string;   // YYYY-MM-DD format
+  setor_id: string;     // Sector ID (e.g., "vestuario")
+}
+
+/** Available procurement sector */
+export interface Setor {
+  id: string;
+  name: string;
+  description: string;
 }
 
 /** Executive summary from GPT-4.1-nano */
