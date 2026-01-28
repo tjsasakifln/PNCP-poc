@@ -18,9 +18,12 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first for better layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Cache bust - change this value to force dependency reinstall
+ARG CACHE_BUST=2026-01-28-v2
+
+# Install Python dependencies (force reinstall with pinned versions)
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --force-reinstall -r requirements.txt
 
 # Copy application code
 COPY . .
