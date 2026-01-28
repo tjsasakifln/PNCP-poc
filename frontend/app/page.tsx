@@ -183,26 +183,28 @@ export default function HomePage() {
   const isFormValid = Object.keys(validationErrors).length === 0;
 
   return (
-    <main className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">
+    <main className="max-w-4xl mx-auto p-6 sm:p-8">
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-gray-100">
         BidIQ Uniformes
       </h1>
 
       {/* UF Selection Section */}
-      <section className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <label className="font-medium">Selecione os Estados (UFs):</label>
-          <div className="space-x-2">
+      <section className="mb-8">
+        <div className="flex justify-between items-center mb-3">
+          <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+            Selecione os Estados (UFs):
+          </label>
+          <div className="space-x-3">
             <button
               onClick={selecionarTodos}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-base font-medium text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline transition-colors"
               type="button"
             >
               Selecionar todos
             </button>
             <button
               onClick={limparSelecao}
-              className="text-sm text-gray-600 hover:underline"
+              className="text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:underline transition-colors"
               type="button"
             >
               Limpar
@@ -216,10 +218,11 @@ export default function HomePage() {
               key={uf}
               onClick={() => toggleUf(uf)}
               type="button"
-              className={`px-3 py-1 rounded border transition-colors ${
+              aria-pressed={ufsSelecionadas.has(uf)}
+              className={`px-4 py-2 rounded-lg border-2 font-medium transition-all duration-150 ${
                 ufsSelecionadas.has(uf)
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-700 border-gray-300 hover:border-green-400"
+                  ? "bg-green-600 text-white border-green-600 shadow-sm hover:bg-green-700"
+                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
               }`}
             >
               {uf}
@@ -227,23 +230,23 @@ export default function HomePage() {
           ))}
         </div>
 
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-base text-gray-600 dark:text-gray-400 mt-3">
           {ufsSelecionadas.size} estado(s) selecionado(s)
         </p>
 
         {/* Inline UF error */}
         {validationErrors.ufs && (
-          <p className="text-sm text-red-600 mt-1">
+          <p className="text-base text-red-600 dark:text-red-400 mt-2 font-medium" role="alert">
             {validationErrors.ufs}
           </p>
         )}
       </section>
 
       {/* Date Range Section */}
-      <section className="mb-6">
+      <section className="mb-8">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
-            <label htmlFor="data-inicial" className="block text-sm font-medium mb-1">
+            <label htmlFor="data-inicial" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
               Data inicial:
             </label>
             <input
@@ -251,11 +254,14 @@ export default function HomePage() {
               type="date"
               value={dataInicial}
               onChange={e => setDataInicial(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base
+                         bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
+                         transition-colors"
             />
           </div>
           <div className="flex-1">
-            <label htmlFor="data-final" className="block text-sm font-medium mb-1">
+            <label htmlFor="data-final" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
               Data final:
             </label>
             <input
@@ -263,14 +269,17 @@ export default function HomePage() {
               type="date"
               value={dataFinal}
               onChange={e => setDataFinal(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base
+                         bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
+                         transition-colors"
             />
           </div>
         </div>
 
         {/* Inline date range error */}
         {validationErrors.date_range && (
-          <p className="text-sm text-red-600 mt-2">
+          <p className="text-base text-red-600 dark:text-red-400 mt-3 font-medium" role="alert">
             {validationErrors.date_range}
           </p>
         )}
@@ -281,67 +290,74 @@ export default function HomePage() {
         onClick={buscar}
         disabled={loading || !isFormValid}
         type="button"
-        className="w-full bg-green-600 text-white py-3 rounded font-medium
-                   hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed
-                   transition-colors"
+        aria-busy={loading}
+        className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-semibold
+                   hover:bg-green-700 active:bg-green-800
+                   disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
+                   shadow-md hover:shadow-lg transition-all duration-150"
       >
-        {loading ? "Buscando..." : "🔍 Buscar Licitações de Uniformes"}
+        {loading ? "Buscando..." : "Buscar Licitacoes de Uniformes"}
       </button>
 
       {/* Loading State */}
       {loading && (
-        <div className="mt-6 p-4 bg-gray-50 rounded">
+        <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg" aria-live="polite">
           <div className="animate-pulse flex space-x-4">
             <div className="flex-1 space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+              <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Buscando licitações...
+          <p className="text-base text-gray-600 dark:text-gray-400 mt-4">
+            Buscando licitacoes...
           </p>
         </div>
       )}
 
       {/* Error Display */}
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded text-red-700">
-          {error}
+        <div className="mt-8 p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
+          <p className="text-base font-medium text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      {/* Result Display (placeholder for #23) */}
+      {/* Result Display */}
       {result && (
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-6">
           {/* Resumo LLM */}
-          <div className="p-4 bg-green-50 border border-green-200 rounded">
-            <p className="text-lg">{result.resumo.resumo_executivo}</p>
+          <div className="p-6 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl">
+            <p className="text-lg leading-relaxed text-gray-800 dark:text-gray-200">
+              {result.resumo.resumo_executivo}
+            </p>
 
-            <div className="flex gap-6 mt-4">
+            <div className="flex flex-wrap gap-8 mt-6">
               <div>
-                <span className="text-3xl font-bold text-green-700">
+                <span className="text-4xl font-bold text-green-700 dark:text-green-400">
                   {result.resumo.total_oportunidades}
                 </span>
-                <span className="text-sm text-gray-600 block">licitações</span>
+                <span className="text-base text-gray-700 dark:text-gray-300 block mt-1">licitacoes</span>
               </div>
               <div>
-                <span className="text-3xl font-bold text-green-700">
+                <span className="text-4xl font-bold text-green-700 dark:text-green-400">
                   R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
                 </span>
-                <span className="text-sm text-gray-600 block">valor total</span>
+                <span className="text-base text-gray-700 dark:text-gray-300 block mt-1">valor total</span>
               </div>
             </div>
 
             {result.resumo.alerta_urgencia && (
-              <div className="mt-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-yellow-800">
-                ⚠️ {result.resumo.alerta_urgencia}
+              <div className="mt-6 p-4 bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-700 rounded-lg" role="alert">
+                <p className="text-base font-medium text-yellow-800 dark:text-yellow-200">
+                  <span aria-hidden="true">Atencao: </span>
+                  {result.resumo.alerta_urgencia}
+                </p>
               </div>
             )}
 
             {result.resumo.destaques.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium mb-2">Destaques:</h4>
-                <ul className="list-disc list-inside text-sm space-y-1">
+              <div className="mt-6">
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Destaques:</h4>
+                <ul className="list-disc list-inside text-base space-y-2 text-gray-700 dark:text-gray-300">
                   {result.resumo.destaques.map((d, i) => (
                     <li key={i}>{d}</li>
                   ))}
@@ -353,16 +369,18 @@ export default function HomePage() {
           {/* Download Button */}
           <button
             onClick={handleDownload}
-            className="w-full bg-blue-600 text-white py-3 rounded
-                       font-medium hover:bg-blue-700 transition-colors"
+            aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitacoes`}
+            className="w-full bg-green-600 text-white py-4 rounded-lg text-lg font-semibold
+                       hover:bg-green-700 active:bg-green-800
+                       shadow-md hover:shadow-lg transition-all duration-150"
           >
-            📥 Baixar Excel ({result.resumo.total_oportunidades} licitações)
+            Baixar Excel ({result.resumo.total_oportunidades} licitacoes)
           </button>
 
           {/* Download Error Display */}
           {downloadError && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
-              {downloadError}
+            <div className="p-5 bg-red-50 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg" role="alert">
+              <p className="text-base font-medium text-red-700 dark:text-red-300">{downloadError}</p>
             </div>
           )}
         </div>
