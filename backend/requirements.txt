@@ -1,27 +1,32 @@
-# Core dependencies
-fastapi>=0.110.0
-uvicorn[standard]>=0.27.0
-pydantic>=2.6.0
-pydantic-settings>=2.1.0
+# =============================================================================
+# Core dependencies - PINNED for Railway compatibility
+# =============================================================================
+fastapi==0.115.9
+uvicorn[standard]==0.34.3
+pydantic==2.11.7
+pydantic-settings==2.10.1
+starlette==0.45.3
 
 # HTTP client
-httpx>=0.26.0
-requests>=2.31.0
-urllib3>=2.0.0
+httpx==0.28.1
+requests==2.32.3
+urllib3==2.3.0
 
-# Excel generation (for future use)
-openpyxl>=3.1.0
+# Excel generation
+openpyxl==3.1.5
 
-# LLM integration (for future use)
-openai>=1.10.0
+# LLM integration
+openai==1.91.0
 
-# Development dependencies
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
-pytest-cov>=4.1.0
-pytest-benchmark>=5.0.0
-faker>=20.0.0
+# =============================================================================
+# Development dependencies (not needed in production but included for simplicity)
+# =============================================================================
+pytest==8.3.5
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0
+pytest-benchmark==5.1.0
+faker==37.1.0
 
 # Code quality
-ruff>=0.2.0
-mypy>=1.8.0
+ruff==0.9.6
+mypy==1.15.0
