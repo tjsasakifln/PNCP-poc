@@ -148,7 +148,6 @@ jobs:
     name: End-to-End Tests
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests] # Run E2E only if unit tests pass
-    continue-on-error: true # Temporary: E2E service orchestration issues (see Issue #61)
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-fallback-key' }}
