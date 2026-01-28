@@ -4,6 +4,9 @@
 # Multi-stage build for Next.js with standalone output
 # Optimized for Railway deployment
 
+# CACHE BUST - forces Railway rebuild
+ARG CACHEBUST=20260128v1
+
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
