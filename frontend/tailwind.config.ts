@@ -21,6 +21,11 @@ const config: Config = {
         warning: "var(--warning)",
         "warning-bg": "var(--warning-bg)",
       },
+      fontFamily: {
+        body: ["var(--font-body)", "sans-serif"],
+        display: ["var(--font-display)", "serif"],
+        data: ["var(--font-data)", "monospace"],
+      },
       fontSize: {
         base: ["1rem", { lineHeight: "1.6" }],
       },

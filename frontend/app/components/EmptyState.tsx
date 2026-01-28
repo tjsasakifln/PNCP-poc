@@ -52,7 +52,7 @@ export function EmptyState({
       </div>
 
       {/* Title */}
-      <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+      <h3 className="text-xl font-semibold font-display text-gray-800 dark:text-gray-200 mb-2">
         Nenhuma licitacao de uniformes encontrada
       </h3>
 
@@ -122,7 +122,7 @@ export function EmptyState({
       {/* Action Button */}
       <button
         onClick={handleAdjust}
-        className="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 active:bg-green-800 transition-colors shadow-md hover:shadow-lg"
+        className="px-6 py-3 bg-emerald-700 text-white rounded-md font-semibold hover:bg-emerald-800 active:bg-emerald-900 transition-colors"
       >
         Ajustar criterios de busca
       </button>
