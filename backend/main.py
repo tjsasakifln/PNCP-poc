@@ -53,7 +53,10 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers for development
 )
 
-logger.info("FastAPI application initialized with CORS middleware")
+logger.info(
+    "FastAPI application initialized — PORT=%s",
+    os.getenv("PORT", "8000"),
+)
 
 
 @app.get("/")
