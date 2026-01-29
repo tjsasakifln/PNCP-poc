@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       response = await fetch(`${backendUrl}/buscar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario", termos_busca: termos_busca || null }),
+        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario", termos_busca: termos_busca || undefined }),
         signal: controller.signal,
       });
 

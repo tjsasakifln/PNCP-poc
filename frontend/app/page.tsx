@@ -35,18 +35,21 @@ function dateDiffInDays(date1: string, date2: string): number {
 export default function HomePage() {
   const [setores, setSetores] = useState<Setor[]>([]);
   const [setorId, setSetorId] = useState("vestuario");
-  const [termosBusca, setTermosBusca] = useState("");
+  const [searchMode, setSearchMode] = useState<"setor" | "termos">("setor");
+  const [termosArray, setTermosArray] = useState<string[]>([]);
+  const [termoInput, setTermoInput] = useState("");
 
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
     new Set(["SC", "PR", "RS"])
   );
   const [dataInicial, setDataInicial] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split("T")[0];
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    now.setDate(now.getDate() - 7);
+    return now.toISOString().split("T")[0];
   });
   const [dataFinal, setDataFinal] = useState(() => {
-    return new Date().toISOString().split("T")[0];
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    return now.toISOString().split("T")[0];
   });
 
   const [loading, setLoading] = useState(false);
@@ -88,6 +91,9 @@ export default function HomePage() {
     return errors;
   }
 
+  const canSearch = Object.keys(validateForm()).length === 0
+    && (searchMode === "setor" || termosArray.length > 0);
+
   useEffect(() => {
     setValidationErrors(validateForm());
   }, [ufsSelecionadas, dataInicial, dataFinal]);
@@ -118,7 +124,15 @@ export default function HomePage() {
   const selecionarTodos = () => { setUfsSelecionadas(new Set(UFS)); setResult(null); };
   const limparSelecao = () => { setUfsSelecionadas(new Set()); setResult(null); };
 
-  const sectorName = setores.find(s => s.id === setorId)?.name || "Licitações";
+  const sectorName = searchMode === "setor"
+    ? (setores.find(s => s.id === setorId)?.name || "Licitações")
+    : "Licitações";
+
+  const searchLabel = searchMode === "setor"
+    ? sectorName
+    : termosArray.length > 0
+      ? `"${termosArray.join('", "')}"`
+      : "Licitações";
 
   const buscar = async () => {
     const errors = validateForm();
@@ -141,8 +155,8 @@ export default function HomePage() {
           ufs: Array.from(ufsSelecionadas),
           data_inicial: dataInicial,
           data_final: dataFinal,
-          setor_id: setorId,
-          termos_busca: termosBusca.trim() || null,
+          setor_id: searchMode === "setor" ? setorId : null,
+          termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
         })
       });
 
@@ -234,50 +248,134 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Sector Selection */}
+        {/* Search Mode Toggle */}
         <section className="mb-6 animate-fade-in-up stagger-1">
-          <label htmlFor="setor" className="block text-base font-semibold text-ink mb-2">
-            Setor:
+          <label className="block text-base font-semibold text-ink mb-3">
+            Buscar por:
           </label>
-          <select
-            id="setor"
-            value={setorId}
-            onChange={e => { setSetorId(e.target.value); setResult(null); }}
-            className="w-full border border-strong rounded-input px-4 py-3 text-base
-                       bg-surface-0 text-ink
-                       focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
-                       transition-colors"
-          >
-            {setores.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </section>
+          <div className="flex rounded-button border border-strong overflow-hidden mb-4">
+            <button
+              type="button"
+              onClick={() => { setSearchMode("setor"); setResult(null); }}
+              className={`flex-1 py-2.5 text-sm sm:text-base font-medium transition-all duration-200 ${
+                searchMode === "setor"
+                  ? "bg-brand-navy text-white"
+                  : "bg-surface-0 text-ink-secondary hover:bg-surface-1"
+              }`}
+            >
+              Setor
+            </button>
+            <button
+              type="button"
+              onClick={() => { setSearchMode("termos"); setResult(null); }}
+              className={`flex-1 py-2.5 text-sm sm:text-base font-medium transition-all duration-200 ${
+                searchMode === "termos"
+                  ? "bg-brand-navy text-white"
+                  : "bg-surface-0 text-ink-secondary hover:bg-surface-1"
+              }`}
+            >
+              Termos Específicos
+            </button>
+          </div>
 
-        {/* Custom Search Terms */}
-        <section className="mb-6 animate-fade-in-up stagger-1">
-          <label htmlFor="termos-busca" className="block text-base font-semibold text-ink mb-2">
-            Termos adicionais de busca <span className="font-normal text-ink-muted">(opcional)</span>:
-          </label>
-          <input
-            id="termos-busca"
-            type="text"
-            value={termosBusca}
-            onChange={e => { setTermosBusca(e.target.value); setResult(null); }}
-            placeholder="Ex: jaleco avental camiseta (separados por espaço)"
-            className="w-full border border-strong rounded-input px-4 py-3 text-base
-                       bg-surface-0 text-ink placeholder:text-ink-faint
-                       focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
-                       transition-colors"
-          />
-          <p className="text-sm text-ink-muted mt-1.5">
-            Cada palavra separada por espaço será tratada como um termo adicional de busca.
-            {termosBusca.trim() && (
-              <span className="text-brand-blue font-medium">
-                {" "}{termosBusca.trim().split(/\s+/).length} termo{termosBusca.trim().split(/\s+/).length > 1 ? "s" : ""} adicional{termosBusca.trim().split(/\s+/).length > 1 ? "is" : ""}
-              </span>
-            )}
-          </p>
+          {/* Sector Selector */}
+          {searchMode === "setor" && (
+            <div>
+              <select
+                id="setor"
+                value={setorId}
+                onChange={e => { setSetorId(e.target.value); setResult(null); }}
+                className="w-full border border-strong rounded-input px-4 py-3 text-base
+                           bg-surface-0 text-ink
+                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                           transition-colors"
+              >
+                {setores.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Custom Terms Input with Tags */}
+          {searchMode === "termos" && (
+            <div>
+              <div className="border border-strong rounded-input bg-surface-0 px-3 py-2 flex flex-wrap gap-2 items-center
+                              focus-within:ring-2 focus-within:ring-brand-blue focus-within:border-brand-blue
+                              transition-colors min-h-[48px]">
+                {termosArray.map((termo, i) => (
+                  <span
+                    key={`${termo}-${i}`}
+                    className="inline-flex items-center gap-1 bg-brand-blue-subtle text-brand-navy
+                               px-2.5 py-1 rounded-full text-sm font-medium border border-brand-blue/20
+                               animate-fade-in-up"
+                  >
+                    {termo}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTermosArray(prev => prev.filter((_, idx) => idx !== i));
+                        setResult(null);
+                      }}
+                      className="ml-0.5 hover:text-error transition-colors"
+                      aria-label={`Remover termo ${termo}`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+                <input
+                  id="termos-busca"
+                  type="text"
+                  value={termoInput}
+                  onChange={e => {
+                    const val = e.target.value;
+                    // When user types a space, commit the word as a tag
+                    if (val.endsWith(" ")) {
+                      const word = val.trim().toLowerCase();
+                      if (word && !termosArray.includes(word)) {
+                        setTermosArray(prev => [...prev, word]);
+                        setResult(null);
+                      }
+                      setTermoInput("");
+                    } else {
+                      setTermoInput(val);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    // Backspace on empty input removes last tag
+                    if (e.key === "Backspace" && termoInput === "" && termosArray.length > 0) {
+                      setTermosArray(prev => prev.slice(0, -1));
+                      setResult(null);
+                    }
+                    // Enter also commits the current word
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const word = termoInput.trim().toLowerCase();
+                      if (word && !termosArray.includes(word)) {
+                        setTermosArray(prev => [...prev, word]);
+                        setResult(null);
+                      }
+                      setTermoInput("");
+                    }
+                  }}
+                  placeholder={termosArray.length === 0 ? "Digite um termo e pressione espaço..." : "Adicionar mais..."}
+                  className="flex-1 min-w-[120px] outline-none bg-transparent text-base text-ink
+                             placeholder:text-ink-faint py-1"
+                />
+              </div>
+              <p className="text-sm text-ink-muted mt-1.5">
+                Digite cada termo e pressione <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">espaço</kbd> para confirmar.
+                {termosArray.length > 0 && (
+                  <span className="text-brand-blue font-medium">
+                    {" "}{termosArray.length} termo{termosArray.length > 1 ? "s" : ""} selecionado{termosArray.length > 1 ? "s" : ""}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
         </section>
 
         {/* UF Selection Section */}
@@ -383,7 +481,7 @@ export default function HomePage() {
         {/* Search Button */}
         <button
           onClick={buscar}
-          disabled={loading || !isFormValid}
+          disabled={loading || !canSearch}
           type="button"
           aria-busy={loading}
           className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
@@ -391,7 +489,7 @@ export default function HomePage() {
                      disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
                      transition-all duration-200"
         >
-          {loading ? "Buscando..." : `Buscar ${sectorName}`}
+          {loading ? "Buscando..." : `Buscar ${searchLabel}`}
         </button>
 
         {/* Loading State */}
