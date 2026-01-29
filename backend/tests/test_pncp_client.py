@@ -130,7 +130,7 @@ class TestFetchPageSuccess:
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -368,14 +368,13 @@ class TestFetchAllPagination:
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "data": [
-                {"codigoCompra": "001", "uf": "SP"},
-                {"codigoCompra": "002", "uf": "SP"},
-                {"codigoCompra": "003", "uf": "SP"},
+                {"numeroControlePNCP": "001", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                {"numeroControlePNCP": "002", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                {"numeroControlePNCP": "003", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
             ],
             "totalRegistros": 3,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -395,29 +394,26 @@ class TestFetchAllPagination:
         # Mock 3 pages of data
         page_1 = Mock(status_code=200)
         page_1.json.return_value = {
-            "data": [{"codigoCompra": "1"}, {"codigoCompra": "2"}],
+            "data": [{"numeroControlePNCP": "1"}, {"numeroControlePNCP": "2"}],
             "totalRegistros": 5,
             "totalPaginas": 3,
-            "paginaAtual": 1,
-            "temProximaPagina": True,
+            "paginasRestantes": 2,
         }
 
         page_2 = Mock(status_code=200)
         page_2.json.return_value = {
-            "data": [{"codigoCompra": "3"}, {"codigoCompra": "4"}],
+            "data": [{"numeroControlePNCP": "3"}, {"numeroControlePNCP": "4"}],
             "totalRegistros": 5,
             "totalPaginas": 3,
-            "paginaAtual": 2,
-            "temProximaPagina": True,
+            "paginasRestantes": 1,
         }
 
         page_3 = Mock(status_code=200)
         page_3.json.return_value = {
-            "data": [{"codigoCompra": "5"}],
+            "data": [{"numeroControlePNCP": "5"}],
             "totalRegistros": 5,
             "totalPaginas": 3,
-            "paginaAtual": 3,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [page_1, page_2, page_3]
@@ -438,20 +434,21 @@ class TestFetchAllPagination:
         # Mock responses for SP (2 items) and RJ (1 item)
         sp_response = Mock(status_code=200)
         sp_response.json.return_value = {
-            "data": [{"uf": "SP", "codigoCompra": "1"}, {"uf": "SP", "codigoCompra": "2"}],
+            "data": [
+                {"numeroControlePNCP": "1", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                {"numeroControlePNCP": "2", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+            ],
             "totalRegistros": 2,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         rj_response = Mock(status_code=200)
         rj_response.json.return_value = {
-            "data": [{"uf": "RJ", "codigoCompra": "3"}],
+            "data": [{"numeroControlePNCP": "3", "unidadeOrgao": {"ufSigla": "RJ", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}}],
             "totalRegistros": 1,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [sp_response, rj_response]
@@ -472,20 +469,18 @@ class TestFetchAllPagination:
         # Mock responses for modalidade 6 and 7
         mod_6_response = Mock(status_code=200)
         mod_6_response.json.return_value = {
-            "data": [{"codigoCompra": "001", "modalidade": 6}],
+            "data": [{"numeroControlePNCP": "001", "modalidade": 6}],
             "totalRegistros": 1,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mod_7_response = Mock(status_code=200)
         mod_7_response.json.return_value = {
-            "data": [{"codigoCompra": "002", "modalidade": 7}],
+            "data": [{"numeroControlePNCP": "002", "modalidade": 7}],
             "totalRegistros": 1,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [mod_6_response, mod_7_response]
@@ -501,23 +496,21 @@ class TestFetchAllPagination:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_deduplicates_by_codigo_compra(self, mock_get):
         """Test fetch_all removes duplicates based on codigoCompra."""
-        # Mock responses with duplicate codigoCompra across modalidades
+        # Mock responses with duplicate numeroControlePNCP across modalidades
         mod_6_response = Mock(status_code=200)
         mod_6_response.json.return_value = {
-            "data": [{"codigoCompra": "001"}, {"codigoCompra": "002"}],
+            "data": [{"numeroControlePNCP": "001"}, {"numeroControlePNCP": "002"}],
             "totalRegistros": 2,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mod_7_response = Mock(status_code=200)
         mod_7_response.json.return_value = {
-            "data": [{"codigoCompra": "001"}, {"codigoCompra": "003"}],  # 001 is duplicate
+            "data": [{"numeroControlePNCP": "001"}, {"numeroControlePNCP": "003"}],  # 001 is duplicate
             "totalRegistros": 2,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [mod_6_response, mod_7_response]
@@ -540,8 +533,7 @@ class TestFetchAllPagination:
             "data": [],
             "totalRegistros": 0,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -557,20 +549,18 @@ class TestFetchAllPagination:
         # Mock 2 pages
         page_1 = Mock(status_code=200)
         page_1.json.return_value = {
-            "data": [{"codigoCompra": "1"}, {"codigoCompra": "2"}, {"codigoCompra": "3"}],
+            "data": [{"numeroControlePNCP": "1"}, {"numeroControlePNCP": "2"}, {"numeroControlePNCP": "3"}],
             "totalRegistros": 5,
             "totalPaginas": 2,
-            "paginaAtual": 1,
-            "temProximaPagina": True,
+            "paginasRestantes": 1,
         }
 
         page_2 = Mock(status_code=200)
         page_2.json.return_value = {
-            "data": [{"codigoCompra": "4"}, {"codigoCompra": "5"}],
+            "data": [{"numeroControlePNCP": "4"}, {"numeroControlePNCP": "5"}],
             "totalRegistros": 5,
             "totalPaginas": 2,
-            "paginaAtual": 2,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [page_1, page_2]
@@ -600,11 +590,10 @@ class TestFetchAllPagination:
         """Test fetch_all is a generator yielding individual items, not lists."""
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = {
-            "data": [{"codigoCompra": "1"}, {"codigoCompra": "2"}],
+            "data": [{"numeroControlePNCP": "1"}, {"numeroControlePNCP": "2"}],
             "totalRegistros": 2,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -626,11 +615,13 @@ class TestFetchAllPagination:
         """Test fetch_all works without specifying UFs (fetches all)."""
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = {
-            "data": [{"uf": "SP", "codigoCompra": "1"}, {"uf": "RJ", "codigoCompra": "2"}],
+            "data": [
+                {"numeroControlePNCP": "1", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                {"numeroControlePNCP": "2", "unidadeOrgao": {"ufSigla": "RJ", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+            ],
             "totalRegistros": 2,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -650,8 +641,7 @@ class TestFetchAllPagination:
             "data": [],
             "totalRegistros": 0,
             "totalPaginas": 1,
-            "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -675,7 +665,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 1,
-            "temProximaPagina": True,
+            "paginasRestantes": 1,
         }
 
         # Second page has temProximaPagina=False (last page)
@@ -685,7 +675,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 2,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [page_1, page_2]
@@ -707,7 +697,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 1,
-            "temProximaPagina": True,
+            "paginasRestantes": 1,
         }
 
         page_2 = Mock(status_code=200)
@@ -716,7 +706,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 2,
             "totalPaginas": 2,
             "paginaAtual": 2,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
 
         mock_get.side_effect = [page_1, page_2]
@@ -740,7 +730,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 1,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
@@ -761,7 +751,7 @@ class TestFetchByUFHelper:
             "totalRegistros": 1,
             "totalPaginas": 1,
             "paginaAtual": 1,
-            "temProximaPagina": False,
+            "paginasRestantes": 0,
         }
         mock_get.return_value = mock_response
 
