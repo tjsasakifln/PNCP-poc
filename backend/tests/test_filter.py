@@ -203,6 +203,57 @@ class TestMatchKeywords:
             matched, _ = match_keywords(caso, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
             assert matched is False, f"Should NOT match: {caso}"
 
+    def test_epi_keywords_match(self):
+        """Should match EPI (Equipamento de Proteção Individual) procurement.
+
+        Audit 2026-01-29: EPIs were the main source of false negatives.
+        EPIs frequently include apparel items (jalecos, aventais, botas).
+        """
+        epi_cases = [
+            "AQUISIÇÕES FUTURAS E PARCELADAS DE EQUIPAMENTOS DE PROTEÇÃO INDIVIDUAL - EPI",
+            "Registro de preços para aquisição de EPIs para colaboradores",
+            "REGISTRO DE PREÇOS PARA AQUISIÇÃO FUTURA E PARCELADA DE MATERIAIS DE EPI'S",
+            "Aquisição de Materiais de Proteção Individual EPIS",
+        ]
+        for caso in epi_cases:
+            matched, kw = match_keywords(caso, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
+            assert matched is True, f"Should match EPI case: {caso}"
+
+    def test_real_world_exclusions_from_audit(self):
+        """Should correctly exclude non-clothing items found in audit.
+
+        Audit 2026-01-29: These real PNCP descriptions were correctly
+        excluded or should be excluded.
+        """
+        exclusion_cases = [
+            # confecção in non-clothing context (real from audit)
+            "Contratação de serviço de confecção de carimbos, através do Sistema de Registro de Preços",
+            "Contratação de Empresa Especializada para Confecção e Instalação de Cortinas Sob Medida",
+            # roupa de cama / enxoval (preventive exclusion)
+            "Aquisição de roupa de cama para unidades de saúde",
+            "Prestação de serviços de lavanderia hospitalar com locação de enxoval hospitalar",
+            # colete non-apparel
+            "Aquisição de colete salva vidas para defesa civil",
+            "Fornecimento de colete balístico para polícia militar",
+        ]
+        for caso in exclusion_cases:
+            matched, _ = match_keywords(caso, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
+            assert matched is False, f"Should NOT match: {caso}"
+
+    def test_real_world_approved_from_audit(self):
+        """Should approve real procurement descriptions found in audit.
+
+        Audit 2026-01-29: These are actual approved items from PNCP data.
+        """
+        approved_cases = [
+            "Registro de Preços para aquisição de vestuário íntimo (infantil e adulto)",
+            "Aquisição de Uniformes Escolares Infantis",
+            "REGISTRO DE PREÇOS PARA EVENTUAL AQUISIÇÃO DE UNIFORMES ESPORTIVOS E ACESSÓRIOS PERSONALIZADOS",
+        ]
+        for caso in approved_cases:
+            matched, _ = match_keywords(caso, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
+            assert matched is True, f"Should match: {caso}"
+
 
 class TestKeywordConstants:
     """Tests for keyword constant definitions."""
