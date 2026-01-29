@@ -17,7 +17,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging
-from schemas import BuscaRequest, BuscaResponse, ResumoLicitacoes
+from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import filter_batch
@@ -235,6 +235,15 @@ async def buscar_licitacoes(request: BuscaRequest):
             if keyword_rejected_sample:
                 logger.debug(f"  - Sample keyword-rejected objects: {keyword_rejected_sample}")
 
+        # Build filter stats for frontend
+        fs = FilterStats(
+            rejeitadas_uf=stats.get("rejeitadas_uf", 0),
+            rejeitadas_valor=stats.get("rejeitadas_valor", 0),
+            rejeitadas_keyword=stats.get("rejeitadas_keyword", 0),
+            rejeitadas_prazo=stats.get("rejeitadas_prazo", 0),
+            rejeitadas_outros=stats.get("rejeitadas_outros", 0),
+        )
+
         # Early return if no results passed filters — skip LLM and Excel
         if not licitacoes_filtradas:
             logger.info("No bids passed filters — skipping LLM and Excel generation")
@@ -253,6 +262,7 @@ async def buscar_licitacoes(request: BuscaRequest):
                 excel_base64="",
                 total_raw=len(licitacoes_raw),
                 total_filtrado=0,
+                filter_stats=fs,
             )
             logger.info(
                 "Search completed with 0 results",
@@ -285,6 +295,7 @@ async def buscar_licitacoes(request: BuscaRequest):
             excel_base64=excel_base64,
             total_raw=len(licitacoes_raw),
             total_filtrado=len(licitacoes_filtradas),
+            filter_stats=fs,
         )
 
         logger.info(
@@ -304,7 +315,10 @@ async def buscar_licitacoes(request: BuscaRequest):
         retry_after = getattr(e, "retry_after", 60)  # Default 60s if not provided
         raise HTTPException(
             status_code=503,
-            detail=f"PNCP API rate limit exceeded. Retry after {retry_after} seconds.",
+            detail=(
+                f"O PNCP está limitando requisições. "
+                f"Aguarde {retry_after} segundos e tente novamente."
+            ),
             headers={"Retry-After": str(retry_after)},
         )
 
@@ -312,13 +326,16 @@ async def buscar_licitacoes(request: BuscaRequest):
         logger.error(f"PNCP API error: {e}", exc_info=True)
         raise HTTPException(
             status_code=502,
-            detail=f"Error communicating with PNCP API: {str(e)}",
+            detail=(
+                "O Portal Nacional de Contratações (PNCP) está temporariamente "
+                "indisponível ou retornou um erro. Tente novamente em alguns "
+                "instantes ou reduza o número de estados selecionados."
+            ),
         )
 
     except Exception:
         logger.exception("Internal server error during procurement search")
-        # Sanitize error message (don't expose internal details)
         raise HTTPException(
             status_code=500,
-            detail="Internal server error. Please try again later.",
+            detail="Erro interno do servidor. Tente novamente em alguns instantes.",
         )

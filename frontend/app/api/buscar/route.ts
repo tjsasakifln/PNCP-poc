@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       download_id: downloadId,
       total_raw: data.total_raw || 0,
       total_filtrado: data.total_filtrado || 0,
+      filter_stats: data.filter_stats || null,
     });
 
   } catch (error) {

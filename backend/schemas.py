@@ -135,6 +135,16 @@ class ResumoLicitacoes(BaseModel):
         }
 
 
+class FilterStats(BaseModel):
+    """Statistics about filter rejection reasons."""
+
+    rejeitadas_uf: int = Field(default=0, description="Rejected by UF filter")
+    rejeitadas_valor: int = Field(default=0, description="Rejected by value range")
+    rejeitadas_keyword: int = Field(default=0, description="Rejected by keyword match")
+    rejeitadas_prazo: int = Field(default=0, description="Rejected by deadline")
+    rejeitadas_outros: int = Field(default=0, description="Rejected by other reasons")
+
+
 class BuscaResponse(BaseModel):
     """
     Response schema for /buscar endpoint.
@@ -160,6 +170,9 @@ class BuscaResponse(BaseModel):
         ...,
         ge=0,
         description="Records after applying filters (UF, value, keywords, deadline)",
+    )
+    filter_stats: Optional[FilterStats] = Field(
+        default=None, description="Breakdown of filter rejection reasons"
     )
 
     class Config:

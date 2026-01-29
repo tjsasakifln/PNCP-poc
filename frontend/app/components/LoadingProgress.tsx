@@ -202,16 +202,10 @@ const CURIOSIDADES = [
   },
 ];
 
-interface ProgressStep {
-  id: string;
-  label: string;
-  status: "pending" | "active" | "completed";
-}
-
 interface LoadingProgressProps {
-  /** Current step (1-4) */
+  /** Current step (unused, kept for API compat) */
   currentStep?: number;
-  /** Estimated total time in seconds */
+  /** Estimated total time in seconds (unused) */
   estimatedTime?: number;
   /** Number of states being searched */
   stateCount?: number;
@@ -250,75 +244,33 @@ export function LoadingProgress({
     return () => clearInterval(interval);
   }, []);
 
-  // Single honest step — all processing happens server-side in one request.
-  // We don't fake sub-steps we can't observe.
-  const steps: ProgressStep[] = [
-    {
-      id: "fetch",
-      label: "Consultando PNCP e processando resultados",
-      status: "active",
-    },
-  ];
-
-  // Indeterminate progress based on elapsed time vs estimate
-  const progressPercent = Math.min((elapsedTime / estimatedTime) * 90, 95);
-
   const curiosidade = CURIOSIDADES[curiosidadeIndex];
+
+  // Contextual status message based on elapsed time
+  const statusMessage =
+    elapsedTime < 10
+      ? "Conectando ao PNCP..."
+      : elapsedTime < 30
+        ? `Consultando ${stateCount} estado${stateCount > 1 ? "s" : ""} no PNCP...`
+        : elapsedTime < 60
+          ? "Filtrando e analisando licitações..."
+          : "Processando grande volume de dados...";
 
   return (
     <div className="mt-8 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-      {/* Progress Bar */}
+      {/* Indeterminate Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Progresso
+          <span className="text-sm font-medium text-green-700 dark:text-green-400">
+            {statusMessage}
           </span>
-          <span className="text-sm font-medium text-green-600 dark:text-green-400">
-            {Math.round(progressPercent)}%
+          <span className="text-sm tabular-nums text-gray-500 dark:text-gray-400">
+            {elapsedTime}s
           </span>
         </div>
-        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          />
+        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-full w-1/3 bg-gradient-to-r from-green-500 to-green-600 rounded-full animate-[slide_1.5s_ease-in-out_infinite]" />
         </div>
-      </div>
-
-      {/* Steps */}
-      <div className="space-y-3 mb-6">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center gap-3">
-            {/* Status indicator */}
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
-                ${step.status === "completed" ? "bg-green-600 text-white" : ""}
-                ${step.status === "active" ? "bg-green-600 text-white animate-pulse ring-4 ring-green-200 dark:ring-green-900" : ""}
-                ${step.status === "pending" ? "bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500" : ""}
-              `}
-            >
-              {step.status === "completed" ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                index + 1
-              )}
-            </div>
-
-            {/* Label */}
-            <span
-              className={`text-base transition-colors duration-300
-                ${step.status === "active" ? "font-semibold text-green-700 dark:text-green-400" : ""}
-                ${step.status === "completed" ? "text-gray-500 dark:text-gray-400 line-through" : ""}
-                ${step.status === "pending" ? "text-gray-400 dark:text-gray-500" : ""}
-              `}
-            >
-              {step.label}
-              {step.status === "active" && "..."}
-            </span>
-          </div>
-        ))}
       </div>
 
       {/* Curiosity Card */}
@@ -353,15 +305,10 @@ export function LoadingProgress({
         </div>
       </div>
 
-      {/* Time Info */}
-      <div className="mt-4 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-        <span>
-          Buscando em {stateCount} estado{stateCount > 1 ? "s" : ""}
-        </span>
-        <span>
-          {elapsedTime}s / ~{estimatedTime}s
-        </span>
-      </div>
+      {/* Context Info */}
+      <p className="mt-4 text-xs text-center text-gray-400 dark:text-gray-500">
+        Buscando em {stateCount} estado{stateCount > 1 ? "s" : ""} com 5 modalidades de contratação
+      </p>
     </div>
   );
 }

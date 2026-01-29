@@ -527,7 +527,7 @@ class TestBuscarEndpoint:
         response = client.post("/buscar", json=valid_request)
         assert response.status_code == 500
         # Should NOT expose internal error details
-        assert "Internal server error" in response.json()["detail"]
+        assert "Erro interno do servidor" in response.json()["detail"]
         assert "sensitive data" not in response.json()["detail"]
 
     def test_buscar_empty_results(self, client, valid_request, monkeypatch):
