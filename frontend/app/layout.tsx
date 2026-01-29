@@ -41,6 +41,7 @@ export default function RootLayout({
             __html: `
               try {
                 const theme = localStorage.getItem('descomplicita-theme');
+                if (!theme) return;
                 if (theme === 'dark' || theme === 'dim') {
                   document.documentElement.classList.add('dark');
                 }
