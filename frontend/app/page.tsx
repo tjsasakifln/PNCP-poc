@@ -13,6 +13,16 @@ const UFS = [
   "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 ];
 
+const UF_NAMES: Record<string, string> = {
+  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia",
+  CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás",
+  MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais",
+  PA: "Pará", PB: "Paraíba", PR: "Paraná", PE: "Pernambuco", PI: "Piauí",
+  RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
+  RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo",
+  SE: "Sergipe", TO: "Tocantins",
+};
+
 function dateDiffInDays(date1: string, date2: string): number {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
@@ -94,6 +104,7 @@ export default function HomePage() {
       newSet.add(uf);
     }
     setUfsSelecionadas(newSet);
+    setResult(null);
   };
 
   const toggleRegion = (regionUfs: string[]) => {
@@ -105,10 +116,11 @@ export default function HomePage() {
       regionUfs.forEach(uf => newSet.add(uf));
     }
     setUfsSelecionadas(newSet);
+    setResult(null);
   };
 
-  const selecionarTodos = () => setUfsSelecionadas(new Set(UFS));
-  const limparSelecao = () => setUfsSelecionadas(new Set());
+  const selecionarTodos = () => { setUfsSelecionadas(new Set(UFS)); setResult(null); };
+  const limparSelecao = () => { setUfsSelecionadas(new Set()); setResult(null); };
 
   const sectorName = setores.find(s => s.id === setorId)?.name || "Licitações";
 
@@ -209,7 +221,7 @@ export default function HomePage() {
         <select
           id="setor"
           value={setorId}
-          onChange={e => setSetorId(e.target.value)}
+          onChange={e => { setSetorId(e.target.value); setResult(null); }}
           className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
                      bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                      focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
@@ -255,6 +267,7 @@ export default function HomePage() {
               key={uf}
               onClick={() => toggleUf(uf)}
               type="button"
+              title={UF_NAMES[uf]}
               aria-pressed={ufsSelecionadas.has(uf)}
               className={`px-2 py-2 sm:px-4 rounded-lg border text-sm sm:text-base font-medium transition-all duration-150 ${
                 ufsSelecionadas.has(uf)
@@ -268,7 +281,7 @@ export default function HomePage() {
         </div>
 
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-          {ufsSelecionadas.size} estado(s) selecionado(s)
+          {ufsSelecionadas.size === 1 ? '1 estado selecionado' : `${ufsSelecionadas.size} estados selecionados`}
         </p>
 
         {validationErrors.ufs && (
@@ -289,7 +302,7 @@ export default function HomePage() {
               id="data-inicial"
               type="date"
               value={dataInicial}
-              onChange={e => setDataInicial(e.target.value)}
+              onChange={e => { setDataInicial(e.target.value); setResult(null); }}
               className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
                          bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
@@ -304,7 +317,7 @@ export default function HomePage() {
               id="data-final"
               type="date"
               value={dataFinal}
-              onChange={e => setDataFinal(e.target.value)}
+              onChange={e => { setDataFinal(e.target.value); setResult(null); }}
               className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
                          bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                          focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600

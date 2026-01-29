@@ -87,9 +87,10 @@ class PNCPClient:
         session.mount("http://", adapter)
 
         # Set default headers
-        session.headers.update(
-            {"User-Agent": "BidIQ-POC/0.2", "Accept": "application/json"}
-        )
+        session.headers.update({
+            "User-Agent": "BidIQ/1.0 (procurement-search; contact@bidiq.com.br)",
+            "Accept": "application/json",
+        })
 
         return session
 
@@ -203,11 +204,15 @@ class PNCPClient:
 
                 # Non-retryable errors - fail immediately
                 if response.status_code not in self.config.retryable_status_codes:
+                    logger.error(
+                        f"PNCP API error: status={response.status_code} "
+                        f"url={url} params={params} "
+                        f"body={response.text[:500]}"
+                    )
                     error_msg = (
                         f"API returned non-retryable status {response.status_code}: "
                         f"{response.text[:200]}"
                     )
-                    logger.error(error_msg)
                     raise PNCPAPIError(error_msg)
 
                 # Retryable errors - wait and retry
