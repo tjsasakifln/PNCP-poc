@@ -7,10 +7,12 @@ from typing import Set, Tuple, List, Dict, Optional
 
 
 # Primary keywords for uniform/apparel procurement (PRD Section 4.1)
-# IMPORTANT: Only include terms that unambiguously refer to clothing/apparel.
-# Generic manufacturing terms ("confecção", "tecido", "malha") were removed
-# because they match non-clothing procurement (road paving, signage, dental
-# prosthetics, graphic material, metalwork, etc.).
+#
+# Strategy: keep ALL clothing-related terms (including ambiguous ones like
+# "camisa", "boné", "avental", "colete", "confecção") to avoid false
+# negatives, but rely on an extensive KEYWORDS_EXCLUSAO set to filter out
+# non-clothing contexts. This ensures we catch "Aquisição de camisas polo
+# para guardas" while excluding "confecção de placas de sinalização".
 KEYWORDS_UNIFORMES: Set[str] = {
     # Primary terms (high precision)
     "uniforme",
@@ -28,13 +30,25 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "roupas",
     "roupa profissional",
     "vestuario profissional",
-    # Specific clothing pieces (unambiguous)
+    # Textile / manufacturing (ambiguous — guarded by exclusions)
+    "confecção",
+    "confecções",
+    "confeccao",
+    "confeccoes",
+    "costura",
+    # Specific clothing pieces
     "jaleco",
     "jalecos",
     "guarda-pó",
     "guarda-pós",
+    "avental",
+    "aventais",
+    "colete",
+    "coletes",
     "camiseta",
     "camisetas",
+    "camisa",
+    "camisas",
     "camisa polo",
     "camisas polo",
     "blusa",
@@ -55,6 +69,14 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "jardineiras",
     "gandola",
     "gandolas",
+    "boné",
+    "bonés",
+    "meia",
+    "meias",
+    "bota",
+    "botas",
+    "sapato",
+    "sapatos",
     # Specific contexts
     "uniforme escolar",
     "uniforme hospitalar",
@@ -91,84 +113,148 @@ KEYWORDS_UNIFORMES: Set[str] = {
 # Exclusion keywords (prevent false positives - PRD Section 4.1)
 # Matches are checked FIRST; if any exclusion matches, the bid is rejected
 # even if a primary keyword also matches.
+#
+# This list MUST be comprehensive because we keep ambiguous keywords
+# (confecção, costura, camisa, colete, avental, boné, bota, meia, etc.)
+# to avoid false negatives. Each exclusion blocks a known non-clothing
+# context for those ambiguous terms.
 KEYWORDS_EXCLUSAO: Set[str] = {
-    # "uniform" in non-clothing context
+    # --- "uniforme/uniformização" in non-clothing context ---
     "uniformização de procedimento",
     "uniformização de entendimento",
     "uniformização de jurisprudência",
+    "uniformização de jurisprudencia",
     "uniforme de trânsito",
+    "uniforme de transito",
     "padrão uniforme",
-    # "confecção" in non-clothing context (manufacturing/fabrication)
+    "padrao uniforme",
+    "padronização de uniforme escolar",  # software platforms, not clothing
+    "padronizacao de uniforme escolar",
+
+    # --- "confecção" in non-clothing context (manufacturing/fabrication) ---
     "confecção de placa",
     "confecção de placas",
+    "confeccao de placa",
+    "confeccao de placas",
     "confecção de grade",
     "confecção de grades",
+    "confeccao de grade",
+    "confeccao de grades",
     "confecção de protese",
     "confecção de prótese",
     "confecção de proteses",
     "confecção de próteses",
+    "confeccao de protese",
+    "confeccao de proteses",
     "confecção de merenda",
+    "confeccao de merenda",
     "confecção de material grafico",
     "confecção de material gráfico",
     "confecção de materiais graficos",
     "confecção de materiais gráficos",
+    "confeccao de material grafico",
     "confecção de peças",
+    "confeccao de pecas",
     "confecção de chave",
     "confecção de chaves",
+    "confeccao de chave",
+    "confeccao de chaves",
     "confecção de carimbo",
     "confecção de carimbos",
     "confecção de letras",
+    "confeccao de letras",
     "confecção de plotagem",
     "confecção de plotagens",
+    "confeccao de plotagem",
     "confecção de tampa",
     "confecção de tampas",
+    "confeccao de tampa",
     "confecção de embalagem",
     "confecção de embalagens",
+    "confeccao de embalagem",
     "confecção de mochilas",
+    "confeccao de mochilas",
     "confecção e impressão",
+    "confeccao e impressao",
     "confecção e instalação",
+    "confeccao e instalacao",
     "confecção e fornecimento de placa",
     "confecção e fornecimento de placas",
-    "confeccao de placa",
-    "confeccao de placas",
-    # Software / digital
-    "software de uniforme",
-    "plataforma de uniforme",
-    "solução de software",
-    # Specific non-clothing items
-    "malha viaria",
-    "malha viária",
-    "malha rodoviaria",
-    "malha rodoviária",
-    "malha tensionada",
-    "avental plumbifero",
-    "avental plumbífero",
-    "chapéu pensador",
-    "chapeu pensador",
-    "amor à camisa",
-    "amor a camisa",
-    # Courses / training (not procurement of goods)
+    "confecção de portão",
+    "confecção de portões",
+    "confeccao de portao",
+    "confeccao de portoes",
+    "confecção de peças de ferro",
+    "confeccao de pecas de ferro",
+
+    # --- "costura" in non-procurement context (courses/training) ---
     "curso de corte",
     "oficina de corte",
     "aula de corte",
     "instrutor de corte",
     "instrutor de costura",
-    # Decoration / events
+    "curso de costura",
+    "oficina de costura",
+    "aula de costura",
+
+    # --- "malha" in non-textile context ---
+    "malha viaria",
+    "malha viária",
+    "malha rodoviaria",
+    "malha rodoviária",
+    "malha tensionada",
+    "malha de fibra optica",
+    "malha de fibra óptica",
+
+    # --- "avental" in non-clothing context ---
+    "avental plumbifero",
+    "avental plumbífero",
+
+    # --- "chapéu/boné" in non-clothing context ---
+    "chapéu pensador",
+    "chapeu pensador",
+
+    # --- "camisa" in non-clothing context ---
+    "amor à camisa",
+    "amor a camisa",
+
+    # --- "bota" in non-footwear context ---
+    "bota de concreto",
+    "bota de cimento",
+
+    # --- "meia" in non-clothing context ---
+    "meia entrada",
+
+    # --- Software / digital ---
+    "software de uniforme",
+    "plataforma de uniforme",
+    "solução de software",
+    "solucao de software",
+    "plataforma web",
+
+    # --- Decoration / events / costumes ---
     "decoração",
     "decoracao",
     "fantasia",
     "fantasias",
     "traje oficial",
     "trajes oficiais",
-    # Non-apparel manufacturing
-    "confecção de portão",
-    "confecção de portões",
-    "confecção de portao",
-    "confecção de portoes",
+
+    # --- Non-apparel manufacturing ---
     "tapeçaria",
     "tapecaria",
     "forração",
     "forracao",
+
+    # --- Construction / infrastructure that matches "bota", "colete" etc. ---
+    "material de construção",
+    "material de construcao",
+    "materiais de construção",
+    "materiais de construcao",
+    "sinalização",
+    "sinalizacao",
+    "sinalização visual",
+    "sinalizacao visual",
 }
 
 
