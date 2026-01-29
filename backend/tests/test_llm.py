@@ -104,7 +104,7 @@ def test_gerar_resumo_single_bid(mock_openai):
     # Verify API was called
     mock_client.beta.chat.completions.parse.assert_called_once()
     call_args = mock_client.beta.chat.completions.parse.call_args
-    assert call_args.kwargs["model"] == "gpt-4o-mini"
+    assert call_args.kwargs["model"] == "gpt-4.1-nano"
     assert call_args.kwargs["temperature"] == 0.3
     assert call_args.kwargs["max_tokens"] == 500
 
