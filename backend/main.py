@@ -318,6 +318,21 @@ async def buscar_licitacoes(request: BuscaRequest):
             resumo = gerar_resumo_fallback(licitacoes_filtradas, sector_name=sector.name)
             logger.info("Fallback summary generated successfully")
 
+        # CRITICAL: Override LLM-generated counts with actual computed values.
+        # The LLM may hallucinate total_oportunidades (often returning 0),
+        # which causes the frontend to show "no results found".
+        actual_total = len(licitacoes_filtradas)
+        actual_valor = sum(
+            lic.get("valorTotalEstimado", 0) or 0 for lic in licitacoes_filtradas
+        )
+        if resumo.total_oportunidades != actual_total:
+            logger.warning(
+                f"LLM returned total_oportunidades={resumo.total_oportunidades}, "
+                f"overriding with actual count={actual_total}"
+            )
+        resumo.total_oportunidades = actual_total
+        resumo.valor_total = actual_valor
+
         # Step 4: Generate Excel report
         logger.info("Generating Excel report")
         excel_buffer = create_excel(licitacoes_filtradas)

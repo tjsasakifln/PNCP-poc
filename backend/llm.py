@@ -127,7 +127,7 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
 
     # Call OpenAI API with structured output
     response = client.beta.chat.completions.parse(
-        model="gpt-4o-mini",  # Using gpt-4o-mini as gpt-4.1-nano doesn't exist
+        model="gpt-4.1-nano",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
