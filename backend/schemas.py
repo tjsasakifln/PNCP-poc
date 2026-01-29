@@ -49,6 +49,12 @@ class BuscaRequest(BaseModel):
         description="Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica')",
         examples=["vestuario"],
     )
+    termos_busca: Optional[str] = Field(
+        default=None,
+        description="Custom search terms separated by spaces (e.g., 'jaleco avental'). "
+                    "Each space-separated word is treated as an additional keyword.",
+        examples=["jaleco avental"],
+    )
 
     @model_validator(mode="after")
     def validate_dates(self) -> "BuscaRequest":

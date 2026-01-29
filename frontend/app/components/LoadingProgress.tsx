@@ -31,6 +31,13 @@ interface LoadingProgressProps {
   stateCount?: number;
 }
 
+const STEPS = [
+  { label: "Conectando ao PNCP", icon: "globe" },
+  { label: "Consultando licitações", icon: "search" },
+  { label: "Filtrando resultados", icon: "filter" },
+  { label: "Gerando relatório", icon: "doc" },
+];
+
 export function LoadingProgress({
   currentStep = 1,
   estimatedTime = 45,
@@ -55,30 +62,101 @@ export function LoadingProgress({
 
   const curiosidade = CURIOSIDADES[curiosidadeIndex];
 
+  // Determine active step based on elapsed time and state count
+  const fetchTime = Math.max(15, stateCount * 5);
+  const activeStep =
+    elapsedTime < 5 ? 0
+    : elapsedTime < fetchTime ? 1
+    : elapsedTime < fetchTime + 10 ? 2
+    : 3;
+
+  // Estimated progress percentage (asymptotic — never reaches 100%)
+  const rawProgress = Math.min(95, (elapsedTime / estimatedTime) * 85);
+  const progress = Math.round(rawProgress);
+
   const statusMessage =
-    elapsedTime < 10
+    elapsedTime < 5
       ? "Conectando ao PNCP..."
-      : elapsedTime < 30
+      : elapsedTime < fetchTime
         ? `Consultando ${stateCount} estado${stateCount > 1 ? "s" : ""} no PNCP...`
-        : elapsedTime < 60
+        : elapsedTime < fetchTime + 10
           ? "Filtrando e analisando licitações..."
-          : "Processando grande volume de dados...";
+          : "Gerando relatório e resumo executivo...";
+
+  // Format elapsed time
+  const minutes = Math.floor(elapsedTime / 60);
+  const seconds = elapsedTime % 60;
+  const timeDisplay = minutes > 0
+    ? `${minutes}min ${seconds.toString().padStart(2, "0")}s`
+    : `${seconds}s`;
+
+  // Remaining estimate
+  const remaining = Math.max(0, estimatedTime - elapsedTime);
+  const remainingMin = Math.floor(remaining / 60);
+  const remainingSec = remaining % 60;
+  const remainingDisplay = remaining > 0
+    ? remainingMin > 0
+      ? `~${remainingMin}min ${remainingSec}s restantes`
+      : `~${remainingSec}s restantes`
+    : "Finalizando...";
 
   return (
     <div className="mt-8 p-6 bg-surface-1 rounded-card border animate-fade-in-up">
-      {/* Indeterminate Progress Bar */}
-      <div className="mb-6">
+      {/* Progress Header */}
+      <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-brand-blue">
             {statusMessage}
           </span>
           <span className="text-sm tabular-nums font-data text-ink-muted">
-            {elapsedTime}s
+            {timeDisplay}
           </span>
         </div>
-        <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
-          <div className="h-full w-1/3 bg-gradient-to-r from-brand-blue to-brand-navy rounded-full animate-[slide_1.5s_ease-in-out_infinite]" />
+
+        {/* Progress Bar */}
+        <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-brand-blue to-brand-navy rounded-full transition-all duration-1000 ease-out"
+            style={{ width: `${Math.max(progress, 3)}%` }}
+          />
         </div>
+        <div className="flex justify-between items-center mt-1.5">
+          <span className="text-xs text-ink-muted">{remainingDisplay}</span>
+          <span className="text-xs tabular-nums font-data text-ink-muted">{progress}%</span>
+        </div>
+      </div>
+
+      {/* Step Indicators */}
+      <div className="flex items-center justify-between mb-6 px-2">
+        {STEPS.map((step, i) => (
+          <div key={step.label} className="flex items-center gap-1.5">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+              i < activeStep
+                ? "bg-brand-navy text-white"
+                : i === activeStep
+                  ? "bg-brand-blue text-white animate-pulse"
+                  : "bg-surface-2 text-ink-muted"
+            }`}>
+              {i < activeStep ? (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                i + 1
+              )}
+            </div>
+            <span className={`text-xs hidden sm:inline ${
+              i <= activeStep ? "text-ink font-medium" : "text-ink-muted"
+            }`}>
+              {step.label}
+            </span>
+            {i < STEPS.length - 1 && (
+              <div className={`w-4 sm:w-8 h-0.5 mx-1 ${
+                i < activeStep ? "bg-brand-navy" : "bg-surface-2"
+              }`} />
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Curiosity Card */}
