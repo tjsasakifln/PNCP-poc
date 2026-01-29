@@ -126,12 +126,7 @@ export default function HomePage() {
     setRawCount(0);
 
     try {
-      // Timings proporcionais ao número de estados (PNCP é o gargalo)
-      const baseDelay = Math.max(10, ufsSelecionadas.size * 4); // ~4s por estado
-      const stepTimeout = setTimeout(() => setLoadingStep(2), baseDelay * 1000);
-      const stepTimeout2 = setTimeout(() => setLoadingStep(3), (baseDelay + 8) * 1000);
-      const stepTimeout3 = setTimeout(() => setLoadingStep(4), (baseDelay + 15) * 1000);
-
+      // Step 1 = "Consultando PNCP" (real — waiting for backend)
       const response = await fetch("/api/buscar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,10 +137,6 @@ export default function HomePage() {
           setor_id: setorId,
         })
       });
-
-      clearTimeout(stepTimeout);
-      clearTimeout(stepTimeout2);
-      clearTimeout(stepTimeout3);
 
       if (!response.ok) {
         const err = await response.json();

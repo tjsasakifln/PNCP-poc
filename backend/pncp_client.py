@@ -3,6 +3,7 @@
 import logging
 import random
 import time
+from datetime import date, timedelta
 from typing import Any, Callable, Dict, Generator
 
 import requests
@@ -247,6 +248,37 @@ class PNCPClient:
         # Should never reach here, but just in case
         raise PNCPAPIError("Unexpected: exhausted retries without raising exception")
 
+    @staticmethod
+    def _chunk_date_range(
+        data_inicial: str, data_final: str, max_days: int = 30
+    ) -> list[tuple[str, str]]:
+        """
+        Split a date range into chunks of max_days.
+
+        The PNCP API may return incomplete results for large date ranges.
+        This method splits the range into smaller windows to ensure
+        complete data retrieval.
+
+        Args:
+            data_inicial: Start date YYYY-MM-DD
+            data_final: End date YYYY-MM-DD
+            max_days: Maximum days per chunk (default 30)
+
+        Returns:
+            List of (start, end) date string tuples
+        """
+        d_start = date.fromisoformat(data_inicial)
+        d_end = date.fromisoformat(data_final)
+        chunks: list[tuple[str, str]] = []
+
+        current = d_start
+        while current <= d_end:
+            chunk_end = min(current + timedelta(days=max_days - 1), d_end)
+            chunks.append((current.isoformat(), chunk_end.isoformat()))
+            current = chunk_end + timedelta(days=1)
+
+        return chunks
+
     def fetch_all(
         self,
         data_inicial: str,
@@ -256,76 +288,70 @@ class PNCPClient:
         on_progress: Callable[[int, int, int], None] | None = None,
     ) -> Generator[Dict[str, Any], None, None]:
         """
-        Fetch all procurement records with automatic pagination.
+        Fetch all procurement records with automatic pagination and date chunking.
 
-        This generator yields individual procurement records across all pages,
-        handling pagination automatically. Iterates over all specified modalities
-        and UFs to fetch complete data.
+        Automatically splits date ranges > 30 days into 30-day chunks to avoid
+        PNCP API limitations with large ranges.
 
         Args:
             data_inicial: Start date in YYYY-MM-DD format
             data_final: End date in YYYY-MM-DD format
             ufs: Optional list of state codes (e.g., ["SP", "RJ"])
-                 If None, fetches all UFs
-            modalidades: Optional list of modality codes (e.g., [4, 5, 6, 7, 8])
-                        If None, uses DEFAULT_MODALIDADES from config
+            modalidades: Optional list of modality codes
             on_progress: Optional callback(current_page, total_pages, items_fetched)
-                         Called after each page is fetched
 
         Yields:
             Dict[str, Any]: Individual procurement record
-
-        Example:
-            ```python
-            client = PNCPClient()
-
-            # Fetch all records for SP and RJ (default modalities)
-            for bid in client.fetch_all("2025-01-01", "2025-01-31", ufs=["SP", "RJ"]):
-                print(bid["codigoCompra"])
-
-            # Fetch only Pregão Eletrônico (modalidade 6)
-            for bid in client.fetch_all(
-                "2025-01-01", "2025-01-31",
-                ufs=["SP"],
-                modalidades=[6]
-            ):
-                print(bid["codigoCompra"])
-            ```
         """
+        # Split large date ranges into 30-day chunks
+        date_chunks = self._chunk_date_range(data_inicial, data_final)
+        if len(date_chunks) > 1:
+            logger.info(
+                f"Date range {data_inicial} to {data_final} split into "
+                f"{len(date_chunks)} chunks of up to 30 days"
+            )
+
         # Use default modalities if not specified
         modalidades_to_fetch = modalidades or DEFAULT_MODALIDADES
 
-        # Track unique IDs to avoid duplicates across modalities
+        # Track unique IDs to avoid duplicates across modalities and chunks
         seen_ids: set[str] = set()
 
-        for modalidade in modalidades_to_fetch:
-            logger.info(f"Fetching modality {modalidade}")
+        for chunk_idx, (chunk_start, chunk_end) in enumerate(date_chunks):
+            if len(date_chunks) > 1:
+                logger.info(
+                    f"Processing date chunk {chunk_idx + 1}/{len(date_chunks)}: "
+                    f"{chunk_start} to {chunk_end}"
+                )
 
-            # If specific UFs provided, fetch each separately
-            if ufs:
-                for uf in ufs:
-                    logger.info(f"Fetching modalidade={modalidade}, UF={uf}")
+            for modalidade in modalidades_to_fetch:
+                logger.info(f"Fetching modality {modalidade}")
+
+                # If specific UFs provided, fetch each separately
+                if ufs:
+                    for uf in ufs:
+                        logger.info(f"Fetching modalidade={modalidade}, UF={uf}")
+                        for item in self._fetch_by_uf(
+                            chunk_start, chunk_end, modalidade, uf, on_progress
+                        ):
+                            item_id = item.get("codigoCompra", "")
+                            if item_id and item_id not in seen_ids:
+                                seen_ids.add(item_id)
+                                yield item
+                else:
+                    logger.info(f"Fetching modalidade={modalidade}, all UFs")
                     for item in self._fetch_by_uf(
-                        data_inicial, data_final, modalidade, uf, on_progress
+                        chunk_start, chunk_end, modalidade, None, on_progress
                     ):
-                        # Deduplicate by codigoCompra
                         item_id = item.get("codigoCompra", "")
                         if item_id and item_id not in seen_ids:
                             seen_ids.add(item_id)
                             yield item
-            else:
-                # Fetch all UFs together (no UF filter)
-                logger.info(f"Fetching modalidade={modalidade}, all UFs")
-                for item in self._fetch_by_uf(
-                    data_inicial, data_final, modalidade, None, on_progress
-                ):
-                    # Deduplicate by codigoCompra
-                    item_id = item.get("codigoCompra", "")
-                    if item_id and item_id not in seen_ids:
-                        seen_ids.add(item_id)
-                        yield item
 
-        logger.info(f"Fetch complete: {len(seen_ids)} unique records across {len(modalidades_to_fetch)} modalities")
+        logger.info(
+            f"Fetch complete: {len(seen_ids)} unique records across "
+            f"{len(modalidades_to_fetch)} modalities and {len(date_chunks)} date chunks"
+        )
 
     def _fetch_by_uf(
         self,

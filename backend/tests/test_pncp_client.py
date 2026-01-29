@@ -135,7 +135,7 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        result = client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        result = client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert result["data"] == [{"id": 1}, {"id": 2}]
         assert result["totalRegistros"] == 2
@@ -150,7 +150,7 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE, uf="SP")
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE, uf="SP")
 
         # Check UF was included in params
         call_args = mock_get.call_args
@@ -165,7 +165,7 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=6)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=6)
 
         # Check modalidade was included in params
         call_args = mock_get.call_args
@@ -180,7 +180,7 @@ class TestFetchPageSuccess:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE, pagina=3, tamanho=100)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE, pagina=3, tamanho=100)
 
         call_args = mock_get.call_args
         params = call_args[1]["params"]
@@ -205,7 +205,7 @@ class TestFetchPageRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
         assert mock_sleep.called
@@ -223,7 +223,7 @@ class TestFetchPageRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
 
@@ -238,7 +238,7 @@ class TestFetchPageRetry:
         client = PNCPClient(config=config)
 
         with pytest.raises(PNCPAPIError, match="Failed after 3 attempts"):
-            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+            client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         # Should try 3 times total (initial + 2 retries)
         assert mock_get.call_count == 3
@@ -259,7 +259,7 @@ class TestFetchPageRateLimiting:
         mock_get.side_effect = mock_responses
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         # Check that sleep was called with the Retry-After value
         sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
@@ -274,7 +274,7 @@ class TestFetchPageRateLimiting:
         mock_get.side_effect = mock_responses
 
         client = PNCPClient()
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         # Should use default 60 second wait
         sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
@@ -292,7 +292,7 @@ class TestFetchPageNonRetryableErrors:
         client = PNCPClient()
 
         with pytest.raises(PNCPAPIError, match="non-retryable status 400"):
-            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+            client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         # Should only try once (no retries)
         assert mock_get.call_count == 1
@@ -305,7 +305,7 @@ class TestFetchPageNonRetryableErrors:
         client = PNCPClient()
 
         with pytest.raises(PNCPAPIError, match="non-retryable status 404"):
-            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+            client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 1
 
@@ -324,7 +324,7 @@ class TestFetchPageExceptionRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
 
@@ -338,7 +338,7 @@ class TestFetchPageExceptionRetry:
 
         config = RetryConfig(max_retries=2)
         client = PNCPClient(config=config)
-        client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+        client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 2
 
@@ -352,7 +352,7 @@ class TestFetchPageExceptionRetry:
         client = PNCPClient(config=config)
 
         with pytest.raises(PNCPAPIError, match="Failed after 3 attempts"):
-            client.fetch_page("2024-01-01", "2024-01-31", modalidade=DEFAULT_MODALIDADE)
+            client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
 
         assert mock_get.call_count == 3
 
@@ -381,7 +381,7 @@ class TestFetchAllPagination:
 
         client = PNCPClient()
         # Test with single modalidade to simplify test
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6]))
 
         assert len(results) == 3
         assert results[0]["codigoCompra"] == "001"
@@ -423,7 +423,7 @@ class TestFetchAllPagination:
         mock_get.side_effect = [page_1, page_2, page_3]
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6]))
 
         # Should fetch all 5 items across 3 pages
         assert len(results) == 5
@@ -457,7 +457,7 @@ class TestFetchAllPagination:
         mock_get.side_effect = [sp_response, rj_response]
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP", "RJ"], modalidades=[6]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP", "RJ"], modalidades=[6]))
 
         # Should fetch 3 items total (2 from SP, 1 from RJ)
         assert len(results) == 3
@@ -491,7 +491,7 @@ class TestFetchAllPagination:
         mock_get.side_effect = [mod_6_response, mod_7_response]
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6, 7]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6, 7]))
 
         # Should fetch items from both modalidades
         assert len(results) == 2
@@ -523,7 +523,7 @@ class TestFetchAllPagination:
         mock_get.side_effect = [mod_6_response, mod_7_response]
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6, 7]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6, 7]))
 
         # Should have 3 unique items (001 deduplicated)
         assert len(results) == 3
@@ -546,7 +546,7 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6]))
 
         assert len(results) == 0
         assert mock_get.call_count == 1
@@ -584,7 +584,7 @@ class TestFetchAllPagination:
         client = PNCPClient()
         list(
             client.fetch_all(
-                "2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6], on_progress=on_progress
+                "2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6], on_progress=on_progress
             )
         )
 
@@ -609,7 +609,7 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        generator = client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"], modalidades=[6])
+        generator = client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6])
 
         # Should be a generator
         import types
@@ -635,7 +635,7 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client.fetch_all("2024-01-01", "2024-01-31", modalidades=[6]))
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", modalidades=[6]))
 
         assert len(results) == 2
         # Check that UF parameter was NOT sent
@@ -656,7 +656,7 @@ class TestFetchAllPagination:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        list(client.fetch_all("2024-01-01", "2024-01-31", ufs=["SP"]))
+        list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"]))
 
         # Should call API once for each default modalidade
         assert mock_get.call_count == len(DEFAULT_MODALIDADES)
@@ -691,7 +691,7 @@ class TestFetchByUFHelper:
         mock_get.side_effect = [page_1, page_2]
 
         client = PNCPClient()
-        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", DEFAULT_MODALIDADE, "SP", None))
+        results = list(client._fetch_by_uf("2024-01-01", "2024-01-30", DEFAULT_MODALIDADE, "SP", None))
 
         assert len(results) == 2
         # Should stop after page 2 (not request page 3)
@@ -722,7 +722,7 @@ class TestFetchByUFHelper:
         mock_get.side_effect = [page_1, page_2]
 
         client = PNCPClient()
-        list(client._fetch_by_uf("2024-01-01", "2024-01-31", DEFAULT_MODALIDADE, "SP", None))
+        list(client._fetch_by_uf("2024-01-01", "2024-01-30", DEFAULT_MODALIDADE, "SP", None))
 
         # Check page numbers in API calls
         call_1_params = mock_get.call_args_list[0][1]["params"]
@@ -745,7 +745,7 @@ class TestFetchByUFHelper:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        results = list(client._fetch_by_uf("2024-01-01", "2024-01-31", DEFAULT_MODALIDADE, None, None))
+        results = list(client._fetch_by_uf("2024-01-01", "2024-01-30", DEFAULT_MODALIDADE, None, None))
 
         assert len(results) == 1
         # Check that uf was not in params
@@ -766,8 +766,47 @@ class TestFetchByUFHelper:
         mock_get.return_value = mock_response
 
         client = PNCPClient()
-        list(client._fetch_by_uf("2024-01-01", "2024-01-31", 6, "SP", None))
+        list(client._fetch_by_uf("2024-01-01", "2024-01-30", 6, "SP", None))
 
         # Check that modalidade was in params
         call_params = mock_get.call_args[1]["params"]
         assert call_params["codigoModalidadeContratacao"] == 6
+
+
+class TestDateRangeChunking:
+    """Test _chunk_date_range() date splitting logic."""
+
+    def test_short_range_single_chunk(self):
+        """A range <= 30 days should produce a single chunk."""
+        chunks = PNCPClient._chunk_date_range("2024-01-01", "2024-01-30")
+        assert len(chunks) == 1
+        assert chunks[0] == ("2024-01-01", "2024-01-30")
+
+    def test_31_days_produces_two_chunks(self):
+        """A 31-day range should split into 2 chunks."""
+        chunks = PNCPClient._chunk_date_range("2024-01-01", "2024-01-31")
+        assert len(chunks) == 2
+        assert chunks[0] == ("2024-01-01", "2024-01-30")
+        assert chunks[1] == ("2024-01-31", "2024-01-31")
+
+    def test_six_month_range(self):
+        """A 6-month range (~180 days) should produce ~6 chunks."""
+        chunks = PNCPClient._chunk_date_range("2025-08-01", "2026-01-28")
+        # 181 days / 30 = ~7 chunks
+        assert len(chunks) >= 6
+        # First chunk starts at start date
+        assert chunks[0][0] == "2025-08-01"
+        # Last chunk ends at end date
+        assert chunks[-1][1] == "2026-01-28"
+        # No gaps between chunks
+        from datetime import date, timedelta
+        for i in range(len(chunks) - 1):
+            end = date.fromisoformat(chunks[i][1])
+            next_start = date.fromisoformat(chunks[i + 1][0])
+            assert next_start - end == timedelta(days=1)
+
+    def test_single_day_range(self):
+        """A single-day range should produce exactly one chunk."""
+        chunks = PNCPClient._chunk_date_range("2024-06-15", "2024-06-15")
+        assert len(chunks) == 1
+        assert chunks[0] == ("2024-06-15", "2024-06-15")
