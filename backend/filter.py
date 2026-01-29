@@ -7,6 +7,10 @@ from typing import Set, Tuple, List, Dict, Optional
 
 
 # Primary keywords for uniform/apparel procurement (PRD Section 4.1)
+# IMPORTANT: Only include terms that unambiguously refer to clothing/apparel.
+# Generic manufacturing terms ("confecção", "tecido", "malha") were removed
+# because they match non-clothing procurement (road paving, signage, dental
+# prosthetics, graphic material, metalwork, etc.).
 KEYWORDS_UNIFORMES: Set[str] = {
     # Primary terms (high precision)
     "uniforme",
@@ -24,31 +28,13 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "roupas",
     "roupa profissional",
     "vestuario profissional",
-    # Textile / manufacturing
-    "confecção",
-    "confecções",
-    "confeccao",
-    "confeccoes",
-    "textil",
-    "tecido",
-    "tecidos",
-    "malha",
-    "malhas",
-    "costura",
-    "alfaiataria",
-    # Specific pieces
+    # Specific clothing pieces (unambiguous)
     "jaleco",
     "jalecos",
     "guarda-pó",
     "guarda-pós",
-    "avental",
-    "aventais",
-    "colete",
-    "coletes",
     "camiseta",
     "camisetas",
-    "camisa",
-    "camisas",
     "camisa polo",
     "camisas polo",
     "blusa",
@@ -69,20 +55,13 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "jardineiras",
     "gandola",
     "gandolas",
-    "boné",
-    "bonés",
-    "chapéu",
-    "chapéus",
-    "meia",
-    "meias",
-    "bota",
-    "botas",
-    "sapato",
-    "sapatos",
     # Specific contexts
     "uniforme escolar",
     "uniforme hospitalar",
     "uniforme administrativo",
+    "uniforme esportivo",
+    "uniformes esportivos",
+    "uniforme profissional",
     "fardamento militar",
     "fardamento escolar",
     "epi vestuario",
@@ -91,8 +70,17 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "kit uniforme",
     "conjunto uniforme",
     "confecção de uniforme",
+    "confecção de uniformes",
+    "confeccao de uniforme",
+    "confeccao de uniformes",
+    "confecção de camiseta",
+    "confecção de camisetas",
+    "confeccao de camiseta",
+    "confeccao de camisetas",
     "aquisição de uniforme",
+    "aquisição de uniformes",
     "fornecimento de uniforme",
+    "fornecimento de uniformes",
     "aquisição de vestuario",
     "fornecimento de vestuario",
     "aquisição de fardamento",
@@ -101,11 +89,86 @@ KEYWORDS_UNIFORMES: Set[str] = {
 
 
 # Exclusion keywords (prevent false positives - PRD Section 4.1)
+# Matches are checked FIRST; if any exclusion matches, the bid is rejected
+# even if a primary keyword also matches.
 KEYWORDS_EXCLUSAO: Set[str] = {
+    # "uniform" in non-clothing context
     "uniformização de procedimento",
     "uniformização de entendimento",
-    "uniforme de trânsito",  # traffic signs/signals
-    "padrão uniforme",  # technical/engineering context
+    "uniformização de jurisprudência",
+    "uniforme de trânsito",
+    "padrão uniforme",
+    # "confecção" in non-clothing context (manufacturing/fabrication)
+    "confecção de placa",
+    "confecção de placas",
+    "confecção de grade",
+    "confecção de grades",
+    "confecção de protese",
+    "confecção de prótese",
+    "confecção de proteses",
+    "confecção de próteses",
+    "confecção de merenda",
+    "confecção de material grafico",
+    "confecção de material gráfico",
+    "confecção de materiais graficos",
+    "confecção de materiais gráficos",
+    "confecção de peças",
+    "confecção de chave",
+    "confecção de chaves",
+    "confecção de carimbo",
+    "confecção de carimbos",
+    "confecção de letras",
+    "confecção de plotagem",
+    "confecção de plotagens",
+    "confecção de tampa",
+    "confecção de tampas",
+    "confecção de embalagem",
+    "confecção de embalagens",
+    "confecção de mochilas",
+    "confecção e impressão",
+    "confecção e instalação",
+    "confecção e fornecimento de placa",
+    "confecção e fornecimento de placas",
+    "confeccao de placa",
+    "confeccao de placas",
+    # Software / digital
+    "software de uniforme",
+    "plataforma de uniforme",
+    "solução de software",
+    # Specific non-clothing items
+    "malha viaria",
+    "malha viária",
+    "malha rodoviaria",
+    "malha rodoviária",
+    "malha tensionada",
+    "avental plumbifero",
+    "avental plumbífero",
+    "chapéu pensador",
+    "chapeu pensador",
+    "amor à camisa",
+    "amor a camisa",
+    # Courses / training (not procurement of goods)
+    "curso de corte",
+    "oficina de corte",
+    "aula de corte",
+    "instrutor de corte",
+    "instrutor de costura",
+    # Decoration / events
+    "decoração",
+    "decoracao",
+    "fantasia",
+    "fantasias",
+    "traje oficial",
+    "trajes oficiais",
+    # Non-apparel manufacturing
+    "confecção de portão",
+    "confecção de portões",
+    "confecção de portao",
+    "confecção de portoes",
+    "tapeçaria",
+    "tapecaria",
+    "forração",
+    "forracao",
 }
 
 
