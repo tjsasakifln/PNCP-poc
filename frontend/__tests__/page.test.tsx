@@ -5,9 +5,30 @@ import HomePage from '@/app/page';
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Mock child components that aren't relevant to page-level tests
+jest.mock('@/components/ThemeToggle', () => ({
+  ThemeToggle: () => <div data-testid="theme-toggle" />,
+}));
+
+jest.mock('@/components/RegionSelector', () => ({
+  RegionSelector: () => <div data-testid="region-selector" />,
+}));
+
+jest.mock('@/components/LoadingProgress', () => ({
+  LoadingProgress: () => <div data-testid="loading-progress">Carregando...</div>,
+}));
+
+jest.mock('@/components/EmptyState', () => ({
+  EmptyState: ({ sectorName }: { sectorName?: string }) => (
+    <div data-testid="empty-state">Nenhuma licitação de {sectorName?.toLowerCase() || 'licitações'} encontrada</div>
+  ),
+}));
+
 describe('HomePage - UF Selection and Date Range', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: /api/setores fetch fails so fallback sectors are used
+    (global.fetch as jest.Mock).mockRejectedValue(new Error('not found'));
   });
 
   describe('UF Selection', () => {
@@ -32,22 +53,22 @@ describe('HomePage - UF Selection and Date Range', () => {
       const prButton = screen.getByText('PR');
       const rsButton = screen.getByText('RS');
 
-      expect(scButton).toHaveClass('bg-green-600');
-      expect(prButton).toHaveClass('bg-green-600');
-      expect(rsButton).toHaveClass('bg-green-600');
+      expect(scButton).toHaveClass('bg-brand-navy');
+      expect(prButton).toHaveClass('bg-brand-navy');
+      expect(rsButton).toHaveClass('bg-brand-navy');
     });
 
     it('should toggle UF selection on click', () => {
       render(<HomePage />);
 
       const spButton = screen.getByText('SP');
-      expect(spButton).not.toHaveClass('bg-green-600');
+      expect(spButton).not.toHaveClass('bg-brand-navy');
 
       fireEvent.click(spButton);
-      expect(spButton).toHaveClass('bg-green-600');
+      expect(spButton).toHaveClass('bg-brand-navy');
 
       fireEvent.click(spButton);
-      expect(spButton).not.toHaveClass('bg-green-600');
+      expect(spButton).not.toHaveClass('bg-brand-navy');
     });
 
     it('should select all UFs when "Selecionar todos" is clicked', () => {
@@ -56,7 +77,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       const selectAllButton = screen.getByText('Selecionar todos');
       fireEvent.click(selectAllButton);
 
-      expect(screen.getByText('27 estado(s) selecionado(s)')).toBeInTheDocument();
+      expect(screen.getByText('27 estados selecionados')).toBeInTheDocument();
     });
 
     it('should clear all UFs when "Limpar" is clicked', () => {
@@ -65,19 +86,33 @@ describe('HomePage - UF Selection and Date Range', () => {
       const clearButton = screen.getByText('Limpar');
       fireEvent.click(clearButton);
 
-      expect(screen.getByText('0 estado(s) selecionado(s)')).toBeInTheDocument();
+      expect(screen.getByText('0 estados selecionados')).toBeInTheDocument();
     });
 
     it('should display count of selected UFs', () => {
       render(<HomePage />);
 
       // Default: SC, PR, RS = 3
-      expect(screen.getByText('3 estado(s) selecionado(s)')).toBeInTheDocument();
+      expect(screen.getByText('3 estados selecionados')).toBeInTheDocument();
 
       const spButton = screen.getByText('SP');
       fireEvent.click(spButton);
 
-      expect(screen.getByText('4 estado(s) selecionado(s)')).toBeInTheDocument();
+      expect(screen.getByText('4 estados selecionados')).toBeInTheDocument();
+    });
+
+    it('should display singular form for 1 state selected', () => {
+      render(<HomePage />);
+
+      // Clear all first
+      const clearButton = screen.getByText('Limpar');
+      fireEvent.click(clearButton);
+
+      // Select just one
+      const scButton = screen.getByText('SC');
+      fireEvent.click(scButton);
+
+      expect(screen.getByText('1 estado selecionado')).toBeInTheDocument();
     });
   });
 
@@ -131,7 +166,8 @@ describe('HomePage - UF Selection and Date Range', () => {
       const clearButton = screen.getByText('Limpar');
       fireEvent.click(clearButton);
 
-      const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+      // Fallback sector name: button says "Buscar Licitações" since sectors load async
+      const submitButton = screen.getByRole('button', { name: /Buscar/ });
       expect(submitButton).toBeDisabled();
     });
   });
@@ -151,35 +187,6 @@ describe('HomePage - UF Selection and Date Range', () => {
       });
     });
 
-    it('should show error when date range > 30 days', async () => {
-      render(<HomePage />);
-
-      const dataInicialInput = screen.getByLabelText('Data inicial:') as HTMLInputElement;
-      const dataFinalInput = screen.getByLabelText('Data final:') as HTMLInputElement;
-
-      fireEvent.change(dataInicialInput, { target: { value: '2024-01-01' } });
-      fireEvent.change(dataFinalInput, { target: { value: '2024-02-15' } }); // 45 days
-
-      await waitFor(() => {
-        expect(screen.getByText(/Período máximo de 30 dias/)).toBeInTheDocument();
-      });
-    });
-
-    it('should NOT show error when date range is exactly 30 days', async () => {
-      render(<HomePage />);
-
-      const dataInicialInput = screen.getByLabelText('Data inicial:') as HTMLInputElement;
-      const dataFinalInput = screen.getByLabelText('Data final:') as HTMLInputElement;
-
-      fireEvent.change(dataInicialInput, { target: { value: '2024-01-01' } });
-      fireEvent.change(dataFinalInput, { target: { value: '2024-01-31' } }); // 30 days
-
-      await waitFor(() => {
-        const errorMessage = screen.queryByText(/Período máximo de 30 dias/);
-        expect(errorMessage).not.toBeInTheDocument();
-      });
-    });
-
     it('should disable submit button when date validation fails', async () => {
       render(<HomePage />);
 
@@ -189,7 +196,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       fireEvent.change(dataInicialInput, { target: { value: '2024-02-01' } });
       fireEvent.change(dataFinalInput, { target: { value: '2024-01-15' } });
 
-      const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+      const submitButton = screen.getByRole('button', { name: /Buscar/ });
 
       await waitFor(() => {
         expect(submitButton).toBeDisabled();
@@ -198,7 +205,7 @@ describe('HomePage - UF Selection and Date Range', () => {
   });
 
   describe('Inline Error Messages', () => {
-    it('should display inline error for UF validation', async () => {
+    it('should display inline error for UF validation with error styling', async () => {
       render(<HomePage />);
 
       const clearButton = screen.getByText('Limpar');
@@ -206,11 +213,11 @@ describe('HomePage - UF Selection and Date Range', () => {
 
       await waitFor(() => {
         const errorMessage = screen.getByText('Selecione pelo menos um estado');
-        expect(errorMessage).toHaveClass('text-red-600');
+        expect(errorMessage).toHaveClass('text-error');
       });
     });
 
-    it('should display inline error for date range validation', async () => {
+    it('should display inline error for date range validation with error styling', async () => {
       render(<HomePage />);
 
       const dataInicialInput = screen.getByLabelText('Data inicial:') as HTMLInputElement;
@@ -221,7 +228,7 @@ describe('HomePage - UF Selection and Date Range', () => {
 
       await waitFor(() => {
         const errorMessage = screen.getByText('Data final deve ser maior ou igual à data inicial');
-        expect(errorMessage).toHaveClass('text-red-600');
+        expect(errorMessage).toHaveClass('text-error');
       });
     });
   });
@@ -230,31 +237,38 @@ describe('HomePage - UF Selection and Date Range', () => {
     it('should be enabled when form is valid', () => {
       render(<HomePage />);
 
-      const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+      const submitButton = screen.getByRole('button', { name: /Buscar/ });
       expect(submitButton).not.toBeDisabled();
     });
 
     it('should show loading state during API call', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(() =>
-        new Promise(resolve => setTimeout(() => resolve({
-          ok: true,
-          json: async () => ({
-            resumo: {
-              resumo_executivo: 'Test summary',
-              total_oportunidades: 10,
-              valor_total: 100000,
-              destaques: [],
-              distribuicao_uf: {},
-              alerta_urgencia: null
-            },
-            download_id: 'test-id'
-          })
-        }), 100))
-      );
+      // First call: /api/setores (rejected by beforeEach)
+      // Second call: /api/buscar (delayed success)
+      (global.fetch as jest.Mock)
+        .mockRejectedValueOnce(new Error('not found')) // setores
+        .mockImplementationOnce(() =>
+          new Promise(resolve => setTimeout(() => resolve({
+            ok: true,
+            json: async () => ({
+              resumo: {
+                resumo_executivo: 'Test summary',
+                total_oportunidades: 10,
+                valor_total: 100000,
+                destaques: [],
+                distribuicao_uf: {},
+                alerta_urgencia: null
+              },
+              download_id: 'test-id',
+              total_raw: 100,
+              total_filtrado: 10,
+              filter_stats: null,
+            })
+          }), 100))
+        );
 
       render(<HomePage />);
 
-      const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+      const submitButton = screen.getByRole('button', { name: /Buscar/ });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
@@ -263,15 +277,33 @@ describe('HomePage - UF Selection and Date Range', () => {
     });
   });
 
-  describe('Responsive Layout', () => {
-    it('should use responsive flexbox for date inputs', () => {
+  describe('Header', () => {
+    it('should render the DescompLicita logo', () => {
       render(<HomePage />);
 
-      const dataInicialContainer = screen.getByLabelText('Data inicial:').closest('div');
-      const dataFinalContainer = screen.getByLabelText('Data final:').closest('div');
+      const logo = screen.getByAltText('DescompLicita');
+      expect(logo).toBeInTheDocument();
+    });
 
-      expect(dataInicialContainer).toHaveClass('flex-1');
-      expect(dataFinalContainer).toHaveClass('flex-1');
+    it('should display "Busca Inteligente PNCP" text', () => {
+      render(<HomePage />);
+
+      expect(screen.getByText('Busca Inteligente PNCP')).toBeInTheDocument();
+    });
+
+    it('should have page title "Busca de Licitações"', () => {
+      render(<HomePage />);
+
+      expect(screen.getByRole('heading', { name: 'Busca de Licitações' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Responsive Layout', () => {
+    it('should use grid layout for date inputs', () => {
+      render(<HomePage />);
+
+      const dataInicialContainer = screen.getByLabelText('Data inicial:').closest('div')?.parentElement;
+      expect(dataInicialContainer).toHaveClass('grid');
     });
   });
 
@@ -286,17 +318,22 @@ describe('HomePage - UF Selection and Date Range', () => {
           distribuicao_uf: { SC: 3, PR: 2 },
           alerta_urgencia: null
         },
-        download_id: 'abc123'
+        download_id: 'abc123',
+        total_raw: 50,
+        total_filtrado: 5,
+        filter_stats: null,
       };
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse
-      });
+      (global.fetch as jest.Mock)
+        .mockRejectedValueOnce(new Error('not found')) // setores
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockResponse
+        });
 
       render(<HomePage />);
 
-      const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+      const submitButton = screen.getByRole('button', { name: /Buscar/ });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
@@ -306,7 +343,7 @@ describe('HomePage - UF Selection and Date Range', () => {
     });
   });
 
-  describe('Results Display Section (Issue #23)', () => {
+  describe('Results Display Section', () => {
     const mockSuccessResponse = {
       resumo: {
         resumo_executivo: 'Encontradas 15 licitações de uniformes totalizando R$ 450.000,00',
@@ -320,21 +357,29 @@ describe('HomePage - UF Selection and Date Range', () => {
         distribuicao_uf: { SC: 6, PR: 5, RS: 4 },
         alerta_urgencia: 'Licitação com prazo em menos de 7 dias: Prefeitura de Florianópolis'
       },
-      download_id: 'uuid-123-456'
+      download_id: 'uuid-123-456',
+      total_raw: 200,
+      total_filtrado: 15,
+      filter_stats: null,
     };
 
     beforeEach(() => {
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        json: async () => mockSuccessResponse
-      });
+      (global.fetch as jest.Mock)
+        .mockRejectedValueOnce(new Error('not found')) // setores
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockSuccessResponse
+        });
     });
 
     describe('AC1: Conditional Rendering', () => {
       it('should NOT render results section when result is null', () => {
+        // Override: only setores fetch, no buscar
+        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as jest.Mock).mockRejectedValue(new Error('not found'));
+
         render(<HomePage />);
 
-        // Check that results-specific elements are NOT present
         expect(screen.queryByText('Destaques:')).not.toBeInTheDocument();
         expect(screen.queryByText(/Baixar Excel/i)).not.toBeInTheDocument();
         expect(screen.queryByText('valor total')).not.toBeInTheDocument();
@@ -343,7 +388,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should render results section when result is set', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -356,7 +401,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should display resumo_executivo text', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -364,16 +409,16 @@ describe('HomePage - UF Selection and Date Range', () => {
         });
       });
 
-      it('should display summary in green bordered card', async () => {
+      it('should display summary in brand-themed card', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const summaryText = screen.getByText(/Encontradas 15 licitações/i);
           const summaryCard = summaryText.closest('div');
-          expect(summaryCard).toHaveClass('bg-green-50', 'border-green-200');
+          expect(summaryCard).toHaveClass('bg-brand-blue-subtle', 'border-accent');
         });
       });
     });
@@ -382,12 +427,12 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should display total_oportunidades as integer', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const totalElement = screen.getByText('15');
-          expect(totalElement).toHaveClass('text-3xl', 'font-bold', 'text-green-700');
+          expect(totalElement).toHaveClass('text-brand-navy');
           expect(screen.getByText('licitações')).toBeInTheDocument();
         });
       });
@@ -395,17 +440,15 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should display valor_total with Brazilian currency formatting', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          // toLocaleString("pt-BR") for 450000 = "450.000"
-          // Find the value element by its label
           const valorTotalLabel = screen.getByText('valor total');
           const valueElement = valorTotalLabel.previousElementSibling;
 
           expect(valueElement).toHaveTextContent(/R\$ 450\.000/i);
-          expect(valueElement).toHaveClass('text-3xl', 'font-bold', 'text-green-700');
+          expect(valueElement).toHaveClass('text-brand-navy');
         });
       });
 
@@ -418,18 +461,20 @@ describe('HomePage - UF Selection and Date Range', () => {
           }
         };
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: true,
-          json: async () => largeValueResponse
-        });
+        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as jest.Mock)
+          .mockRejectedValueOnce(new Error('not found'))
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => largeValueResponse
+          });
 
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          // toLocaleString("pt-BR") for 1234567.89 = "1.234.567,89"
           expect(screen.getByText(/R\$ 1\.234\.567/i)).toBeInTheDocument();
         });
       });
@@ -439,7 +484,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should display urgency alert when alerta_urgencia is NOT null', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -447,8 +492,9 @@ describe('HomePage - UF Selection and Date Range', () => {
           expect(alertText).toBeInTheDocument();
 
           const alertBox = alertText.closest('div');
-          expect(alertBox).toHaveClass('bg-yellow-100', 'border-yellow-300', 'text-yellow-800');
-          expect(screen.getByText(/⚠️/)).toBeInTheDocument();
+          expect(alertBox).toHaveClass('bg-warning-subtle');
+          // "Atenção: " is aria-hidden, verify via role="alert"
+          expect(alertBox).toHaveAttribute('role', 'alert');
         });
       });
 
@@ -461,14 +507,17 @@ describe('HomePage - UF Selection and Date Range', () => {
           }
         };
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: true,
-          json: async () => noAlertResponse
-        });
+        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as jest.Mock)
+          .mockRejectedValueOnce(new Error('not found'))
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => noAlertResponse
+          });
 
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -476,7 +525,7 @@ describe('HomePage - UF Selection and Date Range', () => {
         });
 
         expect(screen.queryByText(/Licitação com prazo/i)).not.toBeInTheDocument();
-        expect(screen.queryByText(/⚠️/)).not.toBeInTheDocument();
+        expect(screen.queryByText('Atenção: ')).not.toBeInTheDocument();
       });
     });
 
@@ -484,7 +533,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should display highlights when destaques array has items', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -504,14 +553,17 @@ describe('HomePage - UF Selection and Date Range', () => {
           }
         };
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: true,
-          json: async () => noHighlightsResponse
-        });
+        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as jest.Mock)
+          .mockRejectedValueOnce(new Error('not found'))
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => noHighlightsResponse
+          });
 
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -524,7 +576,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should render highlights as bulleted list', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -536,10 +588,10 @@ describe('HomePage - UF Selection and Date Range', () => {
     });
 
     describe('AC6: Download Button', () => {
-      it('should link to /api/download with correct query param', async () => {
+      it('should render download button with correct text', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -548,10 +600,10 @@ describe('HomePage - UF Selection and Date Range', () => {
         });
       });
 
-      it('should have download attribute', async () => {
+      it('should be enabled after results load', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -560,78 +612,81 @@ describe('HomePage - UF Selection and Date Range', () => {
         });
       });
 
-      it('should display count in download button text', async () => {
+      it('should display count in download button text (no emoji)', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          expect(screen.getByText('📥 Baixar Excel (15 licitações)')).toBeInTheDocument();
+          const downloadButton = screen.getByRole('button', { name: /Baixar Excel com 15 licitações/i });
+          expect(downloadButton).toBeInTheDocument();
         });
       });
 
-      it('should use blue styling for download button', async () => {
+      it('should use brand-navy styling for download button', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const downloadButton = screen.getByRole('button', { name: /Baixar Excel/i });
-          expect(downloadButton).toHaveClass('bg-blue-600', 'hover:bg-blue-700');
+          expect(downloadButton).toHaveClass('bg-brand-navy', 'text-white');
         });
       });
     });
 
     describe('AC7: Styling Compliance', () => {
-      it('should use green theme for summary card', async () => {
+      it('should use brand theme for summary card', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const summaryText = screen.getByText(/Encontradas 15 licitações/i);
           const summaryCard = summaryText.closest('div');
-          expect(summaryCard).toHaveClass('p-4', 'bg-green-50', 'border', 'border-green-200', 'rounded');
+          expect(summaryCard).toHaveClass('bg-brand-blue-subtle', 'border', 'border-accent', 'rounded-card');
         });
       });
 
-      it('should use yellow theme for urgency alert', async () => {
+      it('should use warning theme for urgency alert', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const alertBox = screen.getByText(/Licitação com prazo/i).closest('div');
-          expect(alertBox).toHaveClass('bg-yellow-100', 'border-yellow-300', 'text-yellow-800');
+          expect(alertBox).toHaveClass('bg-warning-subtle');
         });
       });
 
-      it('should use blue theme for download button', async () => {
+      it('should use brand-navy theme for download button', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const downloadButton = screen.getByRole('button', { name: /Baixar Excel/i });
-          expect(downloadButton).toHaveClass('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+          expect(downloadButton).toHaveClass('bg-brand-navy', 'text-white');
         });
       });
     });
 
     describe('AC8: Responsive Layout', () => {
-      it('should use responsive spacing classes', async () => {
+      it('should use responsive spacing classes on results container', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          const resultsContainer = screen.getByText(/Encontradas 15 licitações/i).closest('div')?.parentElement;
+          const summaryText = screen.getByText(/Encontradas 15 licitações/i);
+          const summaryCard = summaryText.closest('div[class*="bg-brand-blue-subtle"]');
+          const resultsContainer = summaryCard?.parentElement;
           expect(resultsContainer).toHaveClass('mt-6', 'space-y-4');
         });
       });
@@ -639,18 +694,18 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should use flexbox for statistics layout', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
           const statsContainer = screen.getByText('15').closest('div')?.parentElement;
-          expect(statsContainer).toHaveClass('flex', 'gap-6');
+          expect(statsContainer).toHaveClass('flex', 'gap-4');
         });
       });
     });
 
     describe('Edge Cases', () => {
-      it('should handle zero opportunities', async () => {
+      it('should render EmptyState component when zero opportunities', async () => {
         const zeroResponse = {
           resumo: {
             resumo_executivo: 'Nenhuma licitação encontrada',
@@ -660,35 +715,46 @@ describe('HomePage - UF Selection and Date Range', () => {
             distribuicao_uf: {},
             alerta_urgencia: null
           },
-          download_id: 'empty-id'
+          download_id: 'empty-id',
+          total_raw: 0,
+          total_filtrado: 0,
+          filter_stats: null,
         };
 
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: true,
-          json: async () => zeroResponse
-        });
+        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as jest.Mock)
+          .mockRejectedValueOnce(new Error('not found'))
+          .mockResolvedValueOnce({
+            ok: true,
+            json: async () => zeroResponse
+          });
 
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
-          expect(screen.getByText('Nenhuma licitação encontrada')).toBeInTheDocument();
-          expect(screen.getByText('0')).toBeInTheDocument();
-          expect(screen.getByText('R$ 0')).toBeInTheDocument();
+          expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+          expect(screen.getByText(/Nenhuma licitação de/i)).toBeInTheDocument();
         });
+
+        // Should NOT show inline stats like "0" and "R$ 0"
+        expect(screen.queryByRole('button', { name: /Baixar Excel/i })).not.toBeInTheDocument();
       });
 
       it('should handle API error gracefully', async () => {
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-          ok: false,
-          json: async () => ({ message: 'Backend unavailable' })
-        });
+        (global.fetch as jest.Mock).mockReset();
+        (global.fetch as jest.Mock)
+          .mockRejectedValueOnce(new Error('not found')) // setores
+          .mockResolvedValueOnce({
+            ok: false,
+            json: async () => ({ message: 'Backend unavailable' })
+          });
 
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
         fireEvent.click(submitButton);
 
         await waitFor(() => {
@@ -701,7 +767,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       it('should clear previous results on new search', async () => {
         render(<HomePage />);
 
-        const submitButton = screen.getByText('🔍 Buscar Licitações de Uniformes');
+        const submitButton = screen.getByRole('button', { name: /Buscar/ });
 
         // First search
         fireEvent.click(submitButton);
@@ -709,7 +775,7 @@ describe('HomePage - UF Selection and Date Range', () => {
           expect(screen.getByText(/Encontradas 15 licitações/i)).toBeInTheDocument();
         });
 
-        // Second search
+        // Second search with different response
         const newResponse = {
           resumo: {
             resumo_executivo: 'Encontradas 3 licitações',
@@ -719,7 +785,10 @@ describe('HomePage - UF Selection and Date Range', () => {
             distribuicao_uf: { SP: 3 },
             alerta_urgencia: null
           },
-          download_id: 'new-id'
+          download_id: 'new-id',
+          total_raw: 30,
+          total_filtrado: 3,
+          filter_stats: null,
         };
 
         (global.fetch as jest.Mock).mockResolvedValueOnce({

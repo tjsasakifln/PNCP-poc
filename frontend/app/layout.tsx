@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Source_Serif_4, DM_Mono } from "next/font/google";
+import { DM_Sans, Fahkwang, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 
@@ -9,7 +9,8 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-const sourceSerif = Source_Serif_4({
+const fahkwang = Fahkwang({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
@@ -23,8 +24,8 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BidIQ",
-  description: "Busca inteligente de licitações no PNCP",
+  title: "DescompLicita",
+  description: "Licitações e Contratos de Forma Descomplicada — Busca inteligente no PNCP",
 };
 
 export default function RootLayout({
@@ -33,26 +34,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning className={`${dmSans.variable} ${sourceSerif.variable} ${dmMono.variable}`}>
+    <html lang="pt-BR" suppressHydrationWarning className={`${dmSans.variable} ${fahkwang.variable} ${dmMono.variable}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = localStorage.getItem('bidiq-theme');
+                const theme = localStorage.getItem('descomplicita-theme');
                 if (theme === 'dark' || theme === 'dim') {
                   document.documentElement.classList.add('dark');
                 }
                 if (theme === 'paperwhite') {
-                  document.documentElement.style.setProperty('--background', '#F5F0E8');
+                  document.documentElement.style.setProperty('--canvas', '#F5F0E8');
                 } else if (theme === 'sepia') {
-                  document.documentElement.style.setProperty('--background', '#EDE0CC');
+                  document.documentElement.style.setProperty('--canvas', '#EDE0CC');
                 } else if (theme === 'dim') {
-                  document.documentElement.style.setProperty('--background', '#2A2A2E');
-                  document.documentElement.style.setProperty('--foreground', '#e0e0e0');
+                  document.documentElement.style.setProperty('--canvas', '#2A2A2E');
+                  document.documentElement.style.setProperty('--ink', '#e0e0e0');
                 } else if (theme === 'dark') {
-                  document.documentElement.style.setProperty('--background', '#121212');
-                  document.documentElement.style.setProperty('--foreground', '#e0e0e0');
+                  document.documentElement.style.setProperty('--canvas', '#121212');
+                  document.documentElement.style.setProperty('--ink', '#e0e0e0');
                 }
               } catch(e) {}
             `,

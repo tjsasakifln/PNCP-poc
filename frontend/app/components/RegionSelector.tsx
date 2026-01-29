@@ -33,12 +33,12 @@ export function RegionSelector({ selected, onToggleRegion }: RegionSelectorProps
             onClick={() => onToggleRegion(region.ufs)}
             type="button"
             aria-label={`Selecionar região ${region.label}`}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 border ${
+            className={`px-3 py-1 rounded-button text-sm font-medium transition-all duration-200 border ${
               full
-                ? "bg-emerald-700 text-white border-emerald-700"
+                ? "bg-brand-navy text-white border-brand-navy"
                 : partial
-                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-500/30 dark:border-green-400/30"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200/60 dark:border-gray-700/40 hover:border-green-500/50"
+                  ? "bg-brand-blue-subtle text-brand-blue border-accent"
+                  : "bg-surface-1 text-ink-secondary border-transparent hover:border-accent hover:text-brand-blue"
             }`}
           >
             {region.label}

@@ -2,34 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Default light theme variables — overridden dynamically by ThemeProvider */
+/* Descomplicita Design System — Navy/Blue institutional palette */
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
-  --muted: #6b7280;
-  --muted-foreground: #4b5563;
+  /* Canvas & Ink */
+  --canvas: #ffffff;
+  --ink: #1e2d3b;
+  --ink-secondary: #3d5975;
+  --ink-muted: #808f9f;
+  --ink-faint: #c0d2e5;
+
+  /* Brand */
+  --brand-navy: #0a1e3f;
+  --brand-blue: #116dff;
+  --brand-blue-hover: #0d5ad4;
+  --brand-blue-subtle: #e8f0ff;
+
+  /* Surfaces */
+  --surface-0: #ffffff;
+  --surface-1: #f7f8fa;
+  --surface-2: #f0f2f5;
+  --surface-elevated: #ffffff;
+
+  /* Semantic */
   --success: #16a34a;
-  --success-bg: #f0fdf4;
+  --success-subtle: #f0fdf4;
   --error: #dc2626;
-  --error-bg: #fef2f2;
+  --error-subtle: #fef2f2;
   --warning: #ca8a04;
-  --warning-bg: #fefce8;
+  --warning-subtle: #fefce8;
+
+  /* Borders */
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-accent: rgba(17, 109, 255, 0.3);
+
+  /* Focus */
+  --ring: #116dff;
+}
+
+/* Dark mode overrides */
+.dark {
+  --canvas: #121212;
+  --ink: #e8eaed;
+  --ink-secondary: #a8b4c0;
+  --ink-muted: #6b7a8a;
+  --ink-faint: #3a4555;
+
+  --brand-blue-subtle: rgba(17, 109, 255, 0.12);
+
+  --surface-0: #121212;
+  --surface-1: #1a1d22;
+  --surface-2: #242830;
+  --surface-elevated: #1e2128;
+
+  --success: #22c55e;
+  --success-subtle: #052e16;
+  --error: #f87171;
+  --error-subtle: #450a0a;
+  --warning: #facc15;
+  --warning-subtle: #422006;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-accent: rgba(17, 109, 255, 0.4);
+
+  --ring: #3b8bff;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--ink);
+  background: var(--canvas);
   font-family: var(--font-body), sans-serif;
   font-size: clamp(14px, 1vw + 10px, 16px);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Subtle background texture — document/official aesthetic */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 20% 50%, var(--brand-blue-subtle) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, var(--brand-blue-subtle) 0%, transparent 40%);
+  opacity: 0.4;
 }
 
 /* Improved focus states for accessibility */
 :focus-visible {
-  outline: 2px solid var(--success);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
@@ -51,20 +117,53 @@ select {
   100% { transform: translateX(300%); }
 }
 
+/* Staggered entrance animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 
-  .text-muted {
-    color: var(--muted);
-  }
-
-  .text-muted-foreground {
-    color: var(--muted-foreground);
-  }
-
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s ease-out both;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out both;
+  }
+
+  /* Stagger delays for lists */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
