@@ -7,6 +7,8 @@ import { EmptyState } from "./components/EmptyState";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { RegionSelector } from "./components/RegionSelector";
 
+const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fad0f461ff9565~mv2.png/v1/crop/x_0,y_301,w_5000,h_2398/fill/w_198,h_95,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Descomplicita%20-%20Azul.png";
+
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
   "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
@@ -31,11 +33,9 @@ function dateDiffInDays(date1: string, date2: string): number {
 }
 
 export default function HomePage() {
-  // Sector state
   const [setores, setSetores] = useState<Setor[]>([]);
   const [setorId, setSetorId] = useState("vestuario");
 
-  // Form state
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
     new Set(["SC", "PR", "RS"])
   );
@@ -48,7 +48,6 @@ export default function HomePage() {
     return new Date().toISOString().split("T")[0];
   });
 
-  // API state
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +55,8 @@ export default function HomePage() {
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [result, setResult] = useState<BuscaResult | null>(null);
   const [rawCount, setRawCount] = useState(0);
-
-  // Validation state
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  // Fetch sectors on mount
   useEffect(() => {
     fetch("/api/setores")
       .then(res => res.json())
@@ -68,7 +64,6 @@ export default function HomePage() {
         if (data.setores) setSetores(data.setores);
       })
       .catch(() => {
-        // Fallback: use default sector list
         setSetores([
           { id: "vestuario", name: "Vestuário e Uniformes", description: "" },
           { id: "alimentos", name: "Alimentos e Merenda", description: "" },
@@ -138,7 +133,6 @@ export default function HomePage() {
     setRawCount(0);
 
     try {
-      // Step 1 = "Consultando PNCP" (real — waiting for backend)
       const response = await fetch("/api/buscar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -188,7 +182,7 @@ export default function HomePage() {
       const link = document.createElement('a');
       link.href = url;
       const setorLabel = sectorName.replace(/\s+/g, '_');
-      link.download = `BidIQ_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
+      link.download = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -204,277 +198,310 @@ export default function HomePage() {
   const isFormValid = Object.keys(validationErrors).length === 0;
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold font-display text-gray-900 dark:text-gray-100">
-          BidIQ
-        </h1>
-        <ThemeToggle />
-      </div>
+    <div className="min-h-screen">
+      {/* Navigation Header */}
+      <header className="border-b border-strong bg-surface-0 sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={LOGO_URL}
+              alt="DescompLicita"
+              width={140}
+              height={67}
+              className="h-10 w-auto"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="hidden sm:block text-xs text-ink-muted font-medium">
+              Busca Inteligente PNCP
+            </span>
+            <ThemeToggle />
+          </div>
+        </div>
+      </header>
 
-      {/* Sector Selection */}
-      <section className="mb-6">
-        <label htmlFor="setor" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
-          Setor:
-        </label>
-        <select
-          id="setor"
-          value={setorId}
-          onChange={e => { setSetorId(e.target.value); setResult(null); }}
-          className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
-                     bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                     focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
-                     transition-colors"
-        >
-          {setores.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-      </section>
+      <main className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+        {/* Page Title */}
+        <div className="mb-8 animate-fade-in-up">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">
+            Busca de Licitações
+          </h1>
+          <p className="text-ink-secondary mt-1 text-sm sm:text-base">
+            Encontre oportunidades de contratação pública no Portal Nacional (PNCP)
+          </p>
+        </div>
 
-      {/* UF Selection Section */}
-      <section className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-          <label className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Estados (UFs):
+        {/* Sector Selection */}
+        <section className="mb-6 animate-fade-in-up stagger-1">
+          <label htmlFor="setor" className="block text-base font-semibold text-ink mb-2">
+            Setor:
           </label>
-          <div className="flex gap-3">
-            <button
-              onClick={selecionarTodos}
-              className="text-sm sm:text-base font-medium text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 hover:underline transition-colors"
-              type="button"
-            >
-              Selecionar todos
-            </button>
-            <button
-              onClick={limparSelecao}
-              className="text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:underline transition-colors"
-              type="button"
-            >
-              Limpar
-            </button>
-          </div>
-        </div>
-
-        {/* Region quick-select */}
-        <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
-
-        {/* UF Grid */}
-        <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5 sm:gap-2">
-          {UFS.map(uf => (
-            <button
-              key={uf}
-              onClick={() => toggleUf(uf)}
-              type="button"
-              title={UF_NAMES[uf]}
-              aria-pressed={ufsSelecionadas.has(uf)}
-              className={`px-2 py-2 sm:px-4 rounded-lg border text-sm sm:text-base font-medium transition-all duration-150 ${
-                ufsSelecionadas.has(uf)
-                  ? "bg-green-600 text-white border-green-600 hover:bg-green-700"
-                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200/60 dark:border-gray-700/40 hover:border-green-500/50 hover:bg-green-50 dark:hover:bg-green-900/20"
-              }`}
-            >
-              {uf}
-            </button>
-          ))}
-        </div>
-
-        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-          {ufsSelecionadas.size === 1 ? '1 estado selecionado' : `${ufsSelecionadas.size} estados selecionados`}
-        </p>
-
-        {validationErrors.ufs && (
-          <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mt-2 font-medium" role="alert">
-            {validationErrors.ufs}
-          </p>
-        )}
-      </section>
-
-      {/* Date Range Section */}
-      <section className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="data-inicial" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
-              Data inicial:
-            </label>
-            <input
-              id="data-inicial"
-              type="date"
-              value={dataInicial}
-              onChange={e => { setDataInicial(e.target.value); setResult(null); }}
-              className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
-                         bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
-                         transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="data-final" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
-              Data final:
-            </label>
-            <input
-              id="data-final"
-              type="date"
-              value={dataFinal}
-              onChange={e => { setDataFinal(e.target.value); setResult(null); }}
-              className="w-full border border-gray-300/80 dark:border-gray-600/60 rounded-lg px-4 py-3 text-base
-                         bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                         focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600
-                         transition-colors"
-            />
-          </div>
-        </div>
-
-        {validationErrors.date_range && (
-          <p className="text-sm sm:text-base text-red-600 dark:text-red-400 mt-3 font-medium" role="alert">
-            {validationErrors.date_range}
-          </p>
-        )}
-      </section>
-
-      {/* Search Button */}
-      <button
-        onClick={buscar}
-        disabled={loading || !isFormValid}
-        type="button"
-        aria-busy={loading}
-        className="w-full bg-emerald-700 text-white py-3.5 sm:py-4 rounded-md text-base sm:text-lg font-semibold
-                   hover:bg-emerald-800 active:bg-emerald-900
-                   disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
-                   transition-all duration-150"
-      >
-        {loading ? "Buscando..." : `Buscar ${sectorName}`}
-      </button>
-
-      {/* Loading State */}
-      {loading && (
-        <div aria-live="polite">
-          <LoadingProgress
-            currentStep={loadingStep}
-            estimatedTime={Math.max(30, ufsSelecionadas.size * 6)}
-            stateCount={ufsSelecionadas.size}
-          />
-        </div>
-      )}
-
-      {/* Error Display with Retry */}
-      {error && (
-        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border border-red-500/20 dark:border-red-400/20 rounded-lg" role="alert">
-          <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300 mb-3">{error}</p>
-          <button
-            onClick={buscar}
-            disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+          <select
+            id="setor"
+            value={setorId}
+            onChange={e => { setSetorId(e.target.value); setResult(null); }}
+            className="w-full border border-strong rounded-input px-4 py-3 text-base
+                       bg-surface-0 text-ink
+                       focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                       transition-colors"
           >
-            Tentar novamente
-          </button>
-        </div>
-      )}
+            {setores.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </section>
 
-      {/* Empty State */}
-      {result && result.resumo.total_oportunidades === 0 && (
-        <EmptyState
-          onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          rawCount={rawCount}
-          stateCount={ufsSelecionadas.size}
-          filterStats={result.filter_stats}
-          sectorName={sectorName}
-        />
-      )}
+        {/* UF Selection Section */}
+        <section className="mb-6 animate-fade-in-up stagger-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+            <label className="text-base sm:text-lg font-semibold text-ink">
+              Estados (UFs):
+            </label>
+            <div className="flex gap-3">
+              <button
+                onClick={selecionarTodos}
+                className="text-sm sm:text-base font-medium text-brand-blue hover:text-brand-blue-hover hover:underline transition-colors"
+                type="button"
+              >
+                Selecionar todos
+              </button>
+              <button
+                onClick={limparSelecao}
+                className="text-sm sm:text-base font-medium text-ink-muted hover:text-ink transition-colors"
+                type="button"
+              >
+                Limpar
+              </button>
+            </div>
+          </div>
 
-      {/* Result Display */}
-      {result && result.resumo.total_oportunidades > 0 && (
-        <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
-          {/* Summary Card */}
-          <div className="p-4 sm:p-6 bg-green-50 dark:bg-green-900/20 border border-green-500/20 dark:border-green-400/20 rounded-xl">
-            <p className="text-base sm:text-lg leading-relaxed text-gray-800 dark:text-gray-200">
-              {result.resumo.resumo_executivo}
+          {/* Region quick-select */}
+          <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
+
+          {/* UF Grid */}
+          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-2">
+            {UFS.map(uf => (
+              <button
+                key={uf}
+                onClick={() => toggleUf(uf)}
+                type="button"
+                title={UF_NAMES[uf]}
+                aria-pressed={ufsSelecionadas.has(uf)}
+                className={`px-2 py-2 sm:px-4 rounded-button border text-sm sm:text-base font-medium transition-all duration-200 ${
+                  ufsSelecionadas.has(uf)
+                    ? "bg-brand-navy text-white border-brand-navy hover:bg-brand-blue-hover"
+                    : "bg-surface-0 text-ink-secondary border hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
+                }`}
+              >
+                {uf}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-sm sm:text-base text-ink-muted mt-2">
+            {ufsSelecionadas.size === 1 ? '1 estado selecionado' : `${ufsSelecionadas.size} estados selecionados`}
+          </p>
+
+          {validationErrors.ufs && (
+            <p className="text-sm sm:text-base text-error mt-2 font-medium" role="alert">
+              {validationErrors.ufs}
             </p>
-
-            <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 mt-4 sm:mt-6">
-              <div>
-                <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-green-700 dark:text-green-400">
-                  {result.resumo.total_oportunidades}
-                </span>
-                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 block mt-1">licitações</span>
-              </div>
-              <div>
-                <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-green-700 dark:text-green-400">
-                  R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
-                </span>
-                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 block mt-1">valor total</span>
-              </div>
-            </div>
-
-            {result.resumo.alerta_urgencia && (
-              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500/20 dark:border-yellow-400/20 rounded-lg" role="alert">
-                <p className="text-sm sm:text-base font-medium text-yellow-800 dark:text-yellow-200">
-                  <span aria-hidden="true">Atenção: </span>
-                  {result.resumo.alerta_urgencia}
-                </p>
-              </div>
-            )}
-
-            {result.resumo.destaques.length > 0 && (
-              <div className="mt-4 sm:mt-6">
-                <h4 className="text-base sm:text-lg font-semibold font-display text-gray-800 dark:text-gray-200 mb-2 sm:mb-3">Destaques:</h4>
-                <ul className="list-disc list-inside text-sm sm:text-base space-y-1.5 sm:space-y-2 text-gray-700 dark:text-gray-300">
-                  {result.resumo.destaques.map((d, i) => (
-                    <li key={i}>{d}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Download Button */}
-          <button
-            onClick={handleDownload}
-            disabled={downloadLoading}
-            aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
-            className="w-full bg-emerald-700 text-white py-3.5 sm:py-4 rounded-md text-base sm:text-lg font-semibold
-                       hover:bg-emerald-800 active:bg-emerald-900
-                       disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed
-                       transition-all duration-150
-                       flex items-center justify-center gap-3"
-          >
-            {downloadLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Preparando download...
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Baixar Excel ({result.resumo.total_oportunidades} licitações)
-              </>
-            )}
-          </button>
-
-          {/* Download Error */}
-          {downloadError && (
-            <div className="p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border border-red-500/20 dark:border-red-400/20 rounded-lg" role="alert">
-              <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300">{downloadError}</p>
-            </div>
           )}
+        </section>
 
-          {/* Stats */}
-          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center">
-            {rawCount > 0 && (
-              <p>
-                Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitações
-                ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% do setor {sectorName.toLowerCase()})
-              </p>
-            )}
+        {/* Date Range Section */}
+        <section className="mb-6 animate-fade-in-up stagger-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="data-inicial" className="block text-base font-semibold text-ink mb-2">
+                Data inicial:
+              </label>
+              <input
+                id="data-inicial"
+                type="date"
+                value={dataInicial}
+                onChange={e => { setDataInicial(e.target.value); setResult(null); }}
+                className="w-full border border-strong rounded-input px-4 py-3 text-base
+                           bg-surface-0 text-ink
+                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                           transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="data-final" className="block text-base font-semibold text-ink mb-2">
+                Data final:
+              </label>
+              <input
+                id="data-final"
+                type="date"
+                value={dataFinal}
+                onChange={e => { setDataFinal(e.target.value); setResult(null); }}
+                className="w-full border border-strong rounded-input px-4 py-3 text-base
+                           bg-surface-0 text-ink
+                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                           transition-colors"
+              />
+            </div>
           </div>
+
+          {validationErrors.date_range && (
+            <p className="text-sm sm:text-base text-error mt-3 font-medium" role="alert">
+              {validationErrors.date_range}
+            </p>
+          )}
+        </section>
+
+        {/* Search Button */}
+        <button
+          onClick={buscar}
+          disabled={loading || !isFormValid}
+          type="button"
+          aria-busy={loading}
+          className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                     hover:bg-brand-blue-hover active:bg-brand-blue
+                     disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                     transition-all duration-200"
+        >
+          {loading ? "Buscando..." : `Buscar ${sectorName}`}
+        </button>
+
+        {/* Loading State */}
+        {loading && (
+          <div aria-live="polite">
+            <LoadingProgress
+              currentStep={loadingStep}
+              estimatedTime={Math.max(30, ufsSelecionadas.size * 6)}
+              stateCount={ufsSelecionadas.size}
+            />
+          </div>
+        )}
+
+        {/* Error Display with Retry */}
+        {error && (
+          <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
+            <p className="text-sm sm:text-base font-medium text-error mb-3">{error}</p>
+            <button
+              onClick={buscar}
+              disabled={loading}
+              className="px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {result && result.resumo.total_oportunidades === 0 && (
+          <EmptyState
+            onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            rawCount={rawCount}
+            stateCount={ufsSelecionadas.size}
+            filterStats={result.filter_stats}
+            sectorName={sectorName}
+          />
+        )}
+
+        {/* Result Display */}
+        {result && result.resumo.total_oportunidades > 0 && (
+          <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in-up">
+            {/* Summary Card */}
+            <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card">
+              <p className="text-base sm:text-lg leading-relaxed text-ink">
+                {result.resumo.resumo_executivo}
+              </p>
+
+              <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 mt-4 sm:mt-6">
+                <div>
+                  <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
+                    {result.resumo.total_oportunidades}
+                  </span>
+                  <span className="text-sm sm:text-base text-ink-secondary block mt-1">licitações</span>
+                </div>
+                <div>
+                  <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
+                    R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
+                  </span>
+                  <span className="text-sm sm:text-base text-ink-secondary block mt-1">valor total</span>
+                </div>
+              </div>
+
+              {result.resumo.alerta_urgencia && (
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
+                  <p className="text-sm sm:text-base font-medium text-warning">
+                    <span aria-hidden="true">Atenção: </span>
+                    {result.resumo.alerta_urgencia}
+                  </p>
+                </div>
+              )}
+
+              {result.resumo.destaques.length > 0 && (
+                <div className="mt-4 sm:mt-6">
+                  <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-2 sm:mb-3">Destaques:</h4>
+                  <ul className="list-disc list-inside text-sm sm:text-base space-y-2 text-ink-secondary">
+                    {result.resumo.destaques.map((d, i) => (
+                      <li key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>{d}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Download Button */}
+            <button
+              onClick={handleDownload}
+              disabled={downloadLoading}
+              aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
+              className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                         hover:bg-brand-blue-hover active:bg-brand-blue
+                         disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                         transition-all duration-200
+                         flex items-center justify-center gap-3"
+            >
+              {downloadLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Preparando download...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Baixar Excel ({result.resumo.total_oportunidades} licitações)
+                </>
+              )}
+            </button>
+
+            {/* Download Error */}
+            {downloadError && (
+              <div className="p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card" role="alert">
+                <p className="text-sm sm:text-base font-medium text-error">{downloadError}</p>
+              </div>
+            )}
+
+            {/* Stats */}
+            <div className="text-xs sm:text-sm text-ink-muted text-center">
+              {rawCount > 0 && (
+                <p>
+                  Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitações
+                  ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% do setor {sectorName.toLowerCase()})
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t mt-12 py-6 text-center text-xs text-ink-muted">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          DescompLicita &mdash; Licitações e Contratos de Forma Descomplicada
         </div>
-      )}
-    </main>
+      </footer>
+    </div>
   );
 }
