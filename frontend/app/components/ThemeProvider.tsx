@@ -96,7 +96,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("descomplicita-theme") as ThemeId | null;
-    const initial = stored && THEMES.some(t => t.id === stored) ? stored : getSystemTheme();
+    const initial = stored && THEMES.some(t => t.id === stored) ? stored : "light";
     setThemeState(initial);
     applyTheme(initial);
     setMounted(true);
