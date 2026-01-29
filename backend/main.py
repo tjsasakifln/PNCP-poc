@@ -215,6 +215,15 @@ async def buscar_licitacoes(request: BuscaRequest):
 
         logger.info(f"Using sector: {sector.name} ({len(sector.keywords)} keywords)")
 
+        # Merge custom search terms with sector keywords
+        active_keywords = set(sector.keywords)
+        custom_terms: list[str] = []
+        if request.termos_busca and request.termos_busca.strip():
+            custom_terms = [t.strip().lower() for t in request.termos_busca.strip().split() if t.strip()]
+            if custom_terms:
+                active_keywords.update(custom_terms)
+                logger.info(f"Added {len(custom_terms)} custom search terms: {custom_terms}")
+
         # Step 1: Fetch from PNCP (generator → list for reusability in filter + LLM)
         logger.info("Fetching bids from PNCP API")
         client = PNCPClient()
@@ -238,7 +247,7 @@ async def buscar_licitacoes(request: BuscaRequest):
             ufs_selecionadas=set(request.ufs),
             valor_min=10_000.0,   # Expanded from R$ 50k to capture more opportunities
             valor_max=10_000_000.0,  # Expanded from R$ 5M to capture larger contracts
-            keywords=sector.keywords,
+            keywords=active_keywords,
             exclusions=sector.exclusions,
         )
 

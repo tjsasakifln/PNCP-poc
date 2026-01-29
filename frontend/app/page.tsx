@@ -35,6 +35,7 @@ function dateDiffInDays(date1: string, date2: string): number {
 export default function HomePage() {
   const [setores, setSetores] = useState<Setor[]>([]);
   const [setorId, setSetorId] = useState("vestuario");
+  const [termosBusca, setTermosBusca] = useState("");
 
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
     new Set(["SC", "PR", "RS"])
@@ -141,6 +142,7 @@ export default function HomePage() {
           data_inicial: dataInicial,
           data_final: dataFinal,
           setor_id: setorId,
+          termos_busca: termosBusca.trim() || null,
         })
       });
 
@@ -250,6 +252,32 @@ export default function HomePage() {
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+        </section>
+
+        {/* Custom Search Terms */}
+        <section className="mb-6 animate-fade-in-up stagger-1">
+          <label htmlFor="termos-busca" className="block text-base font-semibold text-ink mb-2">
+            Termos adicionais de busca <span className="font-normal text-ink-muted">(opcional)</span>:
+          </label>
+          <input
+            id="termos-busca"
+            type="text"
+            value={termosBusca}
+            onChange={e => { setTermosBusca(e.target.value); setResult(null); }}
+            placeholder="Ex: jaleco avental camiseta (separados por espaço)"
+            className="w-full border border-strong rounded-input px-4 py-3 text-base
+                       bg-surface-0 text-ink placeholder:text-ink-faint
+                       focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                       transition-colors"
+          />
+          <p className="text-sm text-ink-muted mt-1.5">
+            Cada palavra separada por espaço será tratada como um termo adicional de busca.
+            {termosBusca.trim() && (
+              <span className="text-brand-blue font-medium">
+                {" "}{termosBusca.trim().split(/\s+/).length} termo{termosBusca.trim().split(/\s+/).length > 1 ? "s" : ""} adicional{termosBusca.trim().split(/\s+/).length > 1 ? "is" : ""}
+              </span>
+            )}
+          </p>
         </section>
 
         {/* UF Selection Section */}

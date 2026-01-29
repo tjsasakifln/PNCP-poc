@@ -53,7 +53,7 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
     header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
     cell_alignment = Alignment(vertical="top", wrap_text=True)
-    currency_format = "R$ #,##0.00"
+    currency_format = '[$R$-416] #.##0,00'
     date_format = "DD/MM/YYYY"
     datetime_format = "DD/MM/YYYY HH:MM"
 

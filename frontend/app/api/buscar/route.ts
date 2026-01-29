@@ -7,7 +7,7 @@ const downloadCache = new Map<string, Buffer>();
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ufs, data_inicial, data_final, setor_id } = body;
+    const { ufs, data_inicial, data_final, setor_id, termos_busca } = body;
 
     // Validações
     if (!ufs || !Array.isArray(ufs) || ufs.length === 0) {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       response = await fetch(`${backendUrl}/buscar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario" }),
+        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario", termos_busca: termos_busca || null }),
         signal: controller.signal,
       });
 
