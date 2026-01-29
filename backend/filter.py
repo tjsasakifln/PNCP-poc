@@ -88,6 +88,11 @@ KEYWORDS_UNIFORMES: Set[str] = {
     "fardamento escolar",
     "epi vestuario",
     "epi vestimenta",
+    # EPI (Equipamento de Proteção Individual) — often includes apparel
+    "epi",
+    "epis",
+    "equipamento de protecao individual",
+    "equipamentos de protecao individual",
     # Common compositions in procurement notices
     "kit uniforme",
     "conjunto uniforme",
@@ -245,6 +250,23 @@ KEYWORDS_EXCLUSAO: Set[str] = {
     "tapecaria",
     "forração",
     "forracao",
+
+    # --- "roupa" in non-clothing context (bed/table linens) ---
+    "roupa de cama",
+    "roupa de mesa",
+    "roupa de banho",
+    "cama mesa e banho",
+    "enxoval hospitalar",
+    "enxoval hospital",
+
+    # --- "colete" in non-apparel context ---
+    "colete salva vidas",
+    "colete salva vida",
+    "colete balistico",
+    "colete balístico",
+
+    # --- "bota" in non-footwear context (expanded) ---
+    "bota de borracha para construcao",
 
     # --- Construction / infrastructure that matches "bota", "colete" etc. ---
     "material de construção",

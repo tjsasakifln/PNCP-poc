@@ -120,14 +120,24 @@ SECTORS: Dict[str, SectorConfig] = {
         },
         exclusions={
             "informática educativa",
-            # "servidor" in non-IT context
+            # "servidor" in non-IT context (people, not machines)
             "servidor público", "servidor publico",
-            "servidor municipal",
-            "servidor efetivo",
-            "servidor estadual",
-            "servidor federal",
-            "servidor comissionado",
+            "servidores públicos", "servidores publicos",
+            "servidor municipal", "servidores municipais",
+            "servidor efetivo", "servidores efetivos",
+            "servidor estadual", "servidores estaduais",
+            "servidor federal", "servidores federais",
+            "servidor comissionado", "servidores comissionados",
             "servidor temporário", "servidor temporario",
+            "servidores temporários", "servidores temporarios",
+            "servidor ativo", "servidores ativos",
+            "servidor inativo", "servidores inativos",
+            "remuneração dos servidores", "remuneracao dos servidores",
+            "salário dos servidores", "salario dos servidores",
+            "pagamento dos servidores",
+            "folha de pagamento dos servidores",
+            "servidores e colaboradores",
+            "proteção dos servidores", "protecao dos servidores",
             # "monitor" in non-IT context
             "monitor de aluno", "monitor de alunos",
             "monitor de pátio", "monitor de patio",
@@ -176,13 +186,27 @@ SECTORS: Dict[str, SectorConfig] = {
         },
         exclusions={
             "limpeza de dados",
-            "limpeza de terreno",
-            "limpeza de fossa",
+            "limpeza de terreno", "limpeza de terrenos",
+            "limpeza de fossa", "limpeza de fossas",
             "limpeza de código", "limpeza de codigo",
+            # "limpeza" in environmental/infrastructure context
+            "limpeza de rio", "limpeza de lagoa", "limpeza de canal",
+            "limpeza de córrego", "limpeza de corrego",
+            "limpeza de bueiro", "limpeza de bueiros",
+            "limpeza de galeria", "limpeza de galerias",
+            "desassoreamento",
+            "escavadeira",
+            # "limpeza" in automotive context
+            "limpeza pesada para veículos", "limpeza pesada para veiculos",
+            "limpeza automotiva",
+            # "inseticida" in pest control services (not cleaning product)
+            "nebulização", "nebulizacao",
+            "desinsetização", "desinsetizacao",
+            "controle de pragas",
+            "controle de vetores",
             # "cera" in non-cleaning context
             "cera perdida",  # lost-wax casting
             "cera ortodôntica", "cera ortodontica",
-            # "balde" in non-cleaning context (unlikely)
             # "higiene" in non-product context
             "higiene ocupacional",
             "higiene do trabalho",
@@ -223,6 +247,15 @@ SECTORS: Dict[str, SectorConfig] = {
             "mesa redonda",
             "mesa de cirurgia",
             "mesa de bilhar",
+            # "mesa" in non-furniture context (bed/bath linen)
+            "roupa de cama mesa e banho",
+            "cama mesa e banho",
+            "roupa de mesa",
+            # "móveis/móvel" in non-furniture context (portable/mobile)
+            "equipamentos móveis", "equipamentos moveis",
+            "equipamento móvel", "equipamento movel",
+            "unidade móvel", "unidade movel",
+            "telefonia móvel", "telefonia movel",
             # "banco" in non-furniture context
             "banco de dados",
             "banco central",
@@ -231,6 +264,8 @@ SECTORS: Dict[str, SectorConfig] = {
             "banco de leite",
             "banco de horas",
             "banco de talentos",
+            "estabelecimento bancário", "estabelecimento bancario",
+            "instituição bancária", "instituicao bancaria",
             # "arquivo" in non-furniture context
             "arquivo morto",
             "arquivo digital",
@@ -283,6 +318,10 @@ SECTORS: Dict[str, SectorConfig] = {
             "borracha natural",
             "borracha de vedação", "borracha de vedacao",
             "pneu",
+            # "clipe" in non-stationery context (medical)
+            "clipe de aneurisma", "clipes de aneurisma",
+            "clipes de aneurismas",
+            "opme",  # Órteses, Próteses e Materiais Especiais
             # "cola" in non-stationery context
             "coca cola",
             "cola cirúrgica", "cola cirurgica",
@@ -357,19 +396,42 @@ SECTORS: Dict[str, SectorConfig] = {
             "restauração de dados",
             "restauração de arquivo",
             "restauração de backup",
-            # "infraestrutura" in IT context
+            # "infraestrutura" in IT/telecom context
             "infraestrutura de ti",
             "infraestrutura de rede",
             "infraestrutura de dados",
-            "infraestrutura como serviço",
+            "infraestrutura como serviço", "infraestrutura como servico",
+            "infraestrutura de comunicação", "infraestrutura de comunicacao",
+            "infraestrutura de telecomunicação", "infraestrutura de telecomunicacao",
+            "infraestrutura de telefonia",
+            # "infraestrutura" in events/temporary context
+            "infraestrutura temporária", "infraestrutura temporaria",
+            "infraestrutura para evento", "infraestrutura para eventos",
+            # "infraestrutura" as department name (not construction)
+            "secretaria de infraestrutura",
+            "secretaria da infraestrutura",
+            "secretaria municipal de infraestrutura",
+            "secretaria municipal da infraestrutura",
+            "diretoria de infraestrutura",
+            # "obra" in non-construction context (keep specific, avoid blocking legit civil works)
+            # NOTE: "mão de obra" removed — too aggressive, blocks legit civil works
+            # like "fornecimento de material e mão de obra para reforma"
+            # "construção" in non-civil context
+            "construção de cenário", "construcao de cenario",
+            "construção de cenários", "construcao de cenarios",
+            "cenários cenográficos", "cenarios cenograficos",
+            # "madeira" in non-construction context
+            "carroceria de madeira",
             # "cobertura" in non-construction context
             "cobertura de seguro",
             "cobertura jornalística", "cobertura jornalistica",
             "cobertura vacinal",
             # "ferro" in non-construction context
             "ferro de passar",
-            # "madeira" in non-construction context (unlikely)
-            # "elevador" — generally construction, no exclusion needed
+            # Automotive services that mention "infraestrutura"
+            "serviços de borracharia", "servicos de borracharia",
+            # Sports context matching "areia" (sand courts)
+            "arbitragem",
         },
     ),
 }
