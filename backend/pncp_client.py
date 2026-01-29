@@ -340,10 +340,11 @@ class PNCPClient:
                             for item in self._fetch_by_uf(
                                 chunk_start, chunk_end, modalidade, uf, on_progress
                             ):
-                                item_id = item.get("codigoCompra", "")
+                                normalized = self._normalize_item(item)
+                                item_id = normalized.get("numeroControlePNCP", "")
                                 if item_id and item_id not in seen_ids:
                                     seen_ids.add(item_id)
-                                    yield item
+                                    yield normalized
                         except PNCPAPIError as e:
                             logger.warning(
                                 f"Skipping modalidade={modalidade}, UF={uf}: {e}"
@@ -355,10 +356,11 @@ class PNCPClient:
                         for item in self._fetch_by_uf(
                             chunk_start, chunk_end, modalidade, None, on_progress
                         ):
-                            item_id = item.get("codigoCompra", "")
+                            normalized = self._normalize_item(item)
+                            item_id = normalized.get("numeroControlePNCP", "")
                             if item_id and item_id not in seen_ids:
                                 seen_ids.add(item_id)
-                                yield item
+                                yield normalized
                     except PNCPAPIError as e:
                         logger.warning(
                             f"Skipping modalidade={modalidade}, all UFs: {e}"
@@ -369,6 +371,26 @@ class PNCPClient:
             f"Fetch complete: {len(seen_ids)} unique records across "
             f"{len(modalidades_to_fetch)} modalities and {len(date_chunks)} date chunks"
         )
+
+    @staticmethod
+    def _normalize_item(item: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Flatten nested PNCP API response into the flat format expected by
+        filter.py, excel.py and llm.py.
+
+        The PNCP API nests org/location data inside ``orgaoEntidade`` and
+        ``unidadeOrgao`` objects.  The rest of the codebase expects flat
+        top-level keys: ``uf``, ``municipio``, ``nomeOrgao``, ``codigoCompra``.
+        """
+        unidade = item.get("unidadeOrgao") or {}
+        orgao = item.get("orgaoEntidade") or {}
+
+        item["uf"] = unidade.get("ufSigla", "")
+        item["municipio"] = unidade.get("municipioNome", "")
+        item["nomeOrgao"] = orgao.get("razaoSocial", "") or unidade.get("nomeUnidade", "")
+        item["codigoCompra"] = item.get("numeroControlePNCP", "")
+
+        return item
 
     def _fetch_by_uf(
         self,
@@ -414,10 +436,12 @@ class PNCPClient:
             )
 
             # Extract pagination metadata
+            # PNCP API uses: numeroPagina, totalPaginas, paginasRestantes, empty
             data = response.get("data", [])
             total_pages = response.get("totalPaginas", 1)
             total_registros = response.get("totalRegistros", 0)
-            tem_proxima = response.get("temProximaPagina", False)
+            paginas_restantes = response.get("paginasRestantes", 0)
+            tem_proxima = paginas_restantes > 0
 
             # Log page info
             logger.info(
