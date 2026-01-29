@@ -156,31 +156,34 @@ export default function HomePage() {
   };
 
   const handleDownload = async () => {
-    if (!result) return;
+    if (!result?.download_id) return;
     setDownloadError(null);
     setDownloadLoading(true);
 
     try {
       const downloadUrl = `/api/download?id=${result.download_id}`;
-      const headResponse = await fetch(downloadUrl, { method: 'HEAD' });
+      const response = await fetch(downloadUrl);
 
-      if (!headResponse.ok) {
-        if (headResponse.status === 404) {
-          throw new Error('Arquivo não encontrado ou expirado. Faça uma nova busca.');
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Arquivo expirado. Faça uma nova busca para gerar o Excel.');
         }
-        throw new Error(`Erro ao fazer download: ${headResponse.statusText}`);
+        throw new Error('Não foi possível baixar o arquivo. Tente novamente.');
       }
 
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
-      const setorLabel = setorId.replace(/[^a-z]/g, '_');
-      link.download = `bidiq_${setorLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.href = url;
+      const setorLabel = sectorName.replace(/\s+/g, '_');
+      link.download = `BidIQ_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Erro ao fazer download do Excel';
-      setDownloadError(`Erro no download: ${errorMessage}`);
+      const errorMessage = e instanceof Error ? e.message : 'Não foi possível baixar o arquivo.';
+      setDownloadError(errorMessage);
     } finally {
       setDownloadLoading(false);
     }
@@ -342,10 +345,17 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Error Display */}
+      {/* Error Display with Retry */}
       {error && (
         <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-red-50 dark:bg-red-900/30 border border-red-500/20 dark:border-red-400/20 rounded-lg" role="alert">
-          <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300">{error}</p>
+          <p className="text-sm sm:text-base font-medium text-red-700 dark:text-red-300 mb-3">{error}</p>
+          <button
+            onClick={buscar}
+            disabled={loading}
+            className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            Tentar novamente
+          </button>
         </div>
       )}
 
@@ -355,6 +365,8 @@ export default function HomePage() {
           onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           rawCount={rawCount}
           stateCount={ufsSelecionadas.size}
+          filterStats={result.filter_stats}
+          sectorName={sectorName}
         />
       )}
 

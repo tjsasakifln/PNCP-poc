@@ -331,22 +331,34 @@ class PNCPClient:
                 if ufs:
                     for uf in ufs:
                         logger.info(f"Fetching modalidade={modalidade}, UF={uf}")
+                        try:
+                            for item in self._fetch_by_uf(
+                                chunk_start, chunk_end, modalidade, uf, on_progress
+                            ):
+                                item_id = item.get("codigoCompra", "")
+                                if item_id and item_id not in seen_ids:
+                                    seen_ids.add(item_id)
+                                    yield item
+                        except PNCPAPIError as e:
+                            logger.warning(
+                                f"Skipping modalidade={modalidade}, UF={uf}: {e}"
+                            )
+                            continue
+                else:
+                    logger.info(f"Fetching modalidade={modalidade}, all UFs")
+                    try:
                         for item in self._fetch_by_uf(
-                            chunk_start, chunk_end, modalidade, uf, on_progress
+                            chunk_start, chunk_end, modalidade, None, on_progress
                         ):
                             item_id = item.get("codigoCompra", "")
                             if item_id and item_id not in seen_ids:
                                 seen_ids.add(item_id)
                                 yield item
-                else:
-                    logger.info(f"Fetching modalidade={modalidade}, all UFs")
-                    for item in self._fetch_by_uf(
-                        chunk_start, chunk_end, modalidade, None, on_progress
-                    ):
-                        item_id = item.get("codigoCompra", "")
-                        if item_id and item_id not in seen_ids:
-                            seen_ids.add(item_id)
-                            yield item
+                    except PNCPAPIError as e:
+                        logger.warning(
+                            f"Skipping modalidade={modalidade}, all UFs: {e}"
+                        )
+                        continue
 
         logger.info(
             f"Fetch complete: {len(seen_ids)} unique records across "

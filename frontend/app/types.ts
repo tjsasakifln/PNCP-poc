@@ -36,12 +36,22 @@ export interface Resumo {
   alerta_urgencia: string | null;
 }
 
+/** Breakdown of filter rejection reasons */
+export interface FilterStats {
+  rejeitadas_uf: number;
+  rejeitadas_valor: number;
+  rejeitadas_keyword: number;
+  rejeitadas_prazo: number;
+  rejeitadas_outros: number;
+}
+
 /** API response from POST /api/buscar */
 export interface BuscaResult {
   resumo: Resumo;
   download_id: string;
   total_raw: number;
   total_filtrado: number;
+  filter_stats: FilterStats | null;
 }
 
 /** Form validation errors */
