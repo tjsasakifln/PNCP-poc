@@ -136,11 +136,11 @@ class TestMatchKeywords:
     def test_multiple_keyword_matches(self):
         """Should return all matched keywords."""
         matched, keywords = match_keywords(
-            "Fornecimento de jaleco e avental para hospital", KEYWORDS_UNIFORMES
+            "Fornecimento de jaleco e camiseta para hospital", KEYWORDS_UNIFORMES
         )
         assert matched is True
         assert "jaleco" in keywords
-        assert "avental" in keywords
+        assert "camiseta" in keywords
         assert len(keywords) >= 2
 
     def test_compound_keyword_matching(self):
