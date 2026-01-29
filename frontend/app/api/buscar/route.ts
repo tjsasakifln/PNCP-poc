@@ -64,12 +64,14 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    // Cachear Excel para download
-    const downloadId = randomUUID();
-    downloadCache.set(downloadId, Buffer.from(data.excel_base64, "base64"));
-
-    // Limpar cache após 10 minutos
-    setTimeout(() => downloadCache.delete(downloadId), 10 * 60 * 1000);
+    // Only cache Excel if there are actual results
+    let downloadId: string | null = null;
+    if (data.excel_base64) {
+      downloadId = randomUUID();
+      downloadCache.set(downloadId, Buffer.from(data.excel_base64, "base64"));
+      // Limpar cache após 10 minutos
+      setTimeout(() => downloadCache.delete(downloadId!), 10 * 60 * 1000);
+    }
 
     return NextResponse.json({
       resumo: data.resumo,

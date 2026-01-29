@@ -250,31 +250,18 @@ export function LoadingProgress({
     return () => clearInterval(interval);
   }, []);
 
+  // Single honest step — all processing happens server-side in one request.
+  // We don't fake sub-steps we can't observe.
   const steps: ProgressStep[] = [
     {
       id: "fetch",
-      label: "Consultando PNCP",
-      status: currentStep > 1 ? "completed" : currentStep === 1 ? "active" : "pending",
-    },
-    {
-      id: "filter",
-      label: "Filtrando resultados",
-      status: currentStep > 2 ? "completed" : currentStep === 2 ? "active" : "pending",
-    },
-    {
-      id: "llm",
-      label: "Gerando resumo com IA",
-      status: currentStep > 3 ? "completed" : currentStep === 3 ? "active" : "pending",
-    },
-    {
-      id: "excel",
-      label: "Preparando Excel",
-      status: currentStep > 4 ? "completed" : currentStep === 4 ? "active" : "pending",
+      label: "Consultando PNCP e processando resultados",
+      status: "active",
     },
   ];
 
-  // Calculate progress percentage based on step
-  const progressPercent = Math.min(((currentStep - 1) / 4) * 100 + 12.5, 100);
+  // Indeterminate progress based on elapsed time vs estimate
+  const progressPercent = Math.min((elapsedTime / estimatedTime) * 90, 95);
 
   const curiosidade = CURIOSIDADES[curiosidadeIndex];
 

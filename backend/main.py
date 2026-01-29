@@ -17,7 +17,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging
-from schemas import BuscaRequest, BuscaResponse
+from schemas import BuscaRequest, BuscaResponse, ResumoLicitacoes
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import filter_batch
@@ -234,6 +234,31 @@ async def buscar_licitacoes(request: BuscaRequest):
                         break
             if keyword_rejected_sample:
                 logger.debug(f"  - Sample keyword-rejected objects: {keyword_rejected_sample}")
+
+        # Early return if no results passed filters — skip LLM and Excel
+        if not licitacoes_filtradas:
+            logger.info("No bids passed filters — skipping LLM and Excel generation")
+            resumo = ResumoLicitacoes(
+                resumo_executivo=(
+                    f"Nenhuma licitação de {sector.name.lower()} encontrada "
+                    f"nos estados selecionados para o período informado."
+                ),
+                total_oportunidades=0,
+                valor_total=0.0,
+                destaques=[],
+                alerta_urgencia=None,
+            )
+            response = BuscaResponse(
+                resumo=resumo,
+                excel_base64="",
+                total_raw=len(licitacoes_raw),
+                total_filtrado=0,
+            )
+            logger.info(
+                "Search completed with 0 results",
+                extra={"total_raw": len(licitacoes_raw), "total_filtrado": 0},
+            )
+            return response
 
         # Step 3: Generate executive summary via LLM (with automatic fallback)
         logger.info("Generating executive summary")
