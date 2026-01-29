@@ -23,7 +23,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BidIQ Uniformes",
+  title: "BidIQ",
   description: "Busca inteligente de licitações no PNCP",
 };
 

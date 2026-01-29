@@ -9,195 +9,195 @@ import { useState, useEffect } from "react";
 const CURIOSIDADES = [
   // === Lei 14.133/2021 — Fundamentos ===
   {
-    texto: "A Lei 14.133/2021 substituiu a Lei 8.666/93 apos 28 anos de vigencia, modernizando as contratacoes publicas.",
-    fonte: "Nova Lei de Licitacoes",
+    texto: "A Lei 14.133/2021 substituiu a Lei 8.666/93 após 28 anos de vigência, modernizando as contratações públicas.",
+    fonte: "Nova Lei de Licitações",
   },
   {
-    texto: "A Nova Lei de Licitacoes trouxe o dialogo competitivo como nova modalidade de contratacao.",
+    texto: "A Nova Lei de Licitações trouxe o diálogo competitivo como nova modalidade de contratação.",
     fonte: "Lei 14.133/2021, Art. 32",
   },
   {
-    texto: "A fase de habilitacao agora pode ocorrer apos o julgamento das propostas na Nova Lei.",
+    texto: "A fase de habilitação agora pode ocorrer após o julgamento das propostas na Nova Lei.",
     fonte: "Lei 14.133/2021, Art. 17",
   },
   {
-    texto: "A garantia contratual pode ser exigida em ate 5% do valor do contrato, ou 10% para obras de grande vulto.",
+    texto: "A garantia contratual pode ser exigida em até 5% do valor do contrato, ou 10% para obras de grande vulto.",
     fonte: "Lei 14.133/2021, Art. 96",
   },
   {
-    texto: "A Nova Lei permite o uso de seguro-garantia com clausula de retomada, protegendo a Administracao em obras.",
+    texto: "A Nova Lei permite o uso de seguro-garantia com cláusula de retomada, protegendo a Administração em obras.",
     fonte: "Lei 14.133/2021, Art. 102",
   },
   {
-    texto: "O criterio de julgamento por maior desconto substitui o antigo menor preco global em muitos casos.",
+    texto: "O critério de julgamento por maior desconto substitui o antigo menor preço global em muitos casos.",
     fonte: "Lei 14.133/2021, Art. 33",
   },
   {
-    texto: "A Lei 14.133 exige que todo processo licitatorio tenha um agente de contratacao designado.",
+    texto: "A Lei 14.133 exige que todo processo licitatório tenha um agente de contratação designado.",
     fonte: "Lei 14.133/2021, Art. 8",
   },
   {
-    texto: "A nova lei criou o Portal Nacional de Contratacoes Publicas (PNCP) como fonte unica de publicidade oficial.",
+    texto: "A nova lei criou o Portal Nacional de Contratações Públicas (PNCP) como fonte única de publicidade oficial.",
     fonte: "Lei 14.133/2021, Art. 174",
   },
   {
-    texto: "Contratos podem ser prorrogados por ate 10 anos para servicos continuados, sem necessidade de nova licitacao.",
+    texto: "Contratos podem ser prorrogados por até 10 anos para serviços continuados, sem necessidade de nova licitação.",
     fonte: "Lei 14.133/2021, Art. 107",
   },
   {
-    texto: "A Lei 14.133 preve sancoes como multa, impedimento e declaracao de inidoneidade para licitantes.",
+    texto: "A Lei 14.133 prevê sanções como multa, impedimento e declaração de inidoneidade para licitantes.",
     fonte: "Lei 14.133/2021, Art. 155",
   },
 
-  // === PNCP e Transparencia ===
+  // === PNCP e Transparência ===
   {
-    texto: "O PNCP centraliza todas as licitacoes do Brasil desde 2023, abrangendo Uniao, estados e municipios.",
+    texto: "O PNCP centraliza todas as licitações do Brasil desde 2023, abrangendo União, estados e municípios.",
     fonte: "Governo Federal",
   },
   {
-    texto: "Qualquer cidadao pode consultar licitacoes em andamento no PNCP sem necessidade de cadastro.",
+    texto: "Qualquer cidadão pode consultar licitações em andamento no PNCP sem necessidade de cadastro.",
     fonte: "Portal PNCP",
   },
   {
-    texto: "O PNCP disponibiliza uma API publica que permite consultas automatizadas de contratacoes.",
+    texto: "O PNCP disponibiliza uma API pública que permite consultas automatizadas de contratações.",
     fonte: "PNCP API Docs",
   },
   {
-    texto: "Ate 2025, o PNCP ja acumulou mais de 3 milhoes de publicacoes de contratacoes de todo o Brasil.",
-    fonte: "Estatisticas PNCP",
+    texto: "Até 2025, o PNCP já acumulou mais de 3 milhões de publicações de contratações de todo o Brasil.",
+    fonte: "Estatísticas PNCP",
   },
   {
-    texto: "Municipios com ate 20 mil habitantes ganharam prazo estendido para adesao obrigatoria ao PNCP.",
+    texto: "Municípios com até 20 mil habitantes ganharam prazo estendido para adesão obrigatória ao PNCP.",
     fonte: "Decreto 11.430/2023",
   },
 
-  // === Mercado de Licitacoes ===
+  // === Mercado de Licitações ===
   {
-    texto: "O Brasil realiza mais de 40 mil licitacoes por mes, movimentando bilhoes em contratacoes publicas.",
+    texto: "O Brasil realiza mais de 40 mil licitações por mês, movimentando bilhões em contratações públicas.",
     fonte: "Portal de Compras do Governo",
   },
   {
-    texto: "O pregao eletronico representa cerca de 80% de todas as licitacoes realizadas no pais.",
-    fonte: "Estatisticas PNCP",
+    texto: "O pregão eletrônico representa cerca de 80% de todas as licitações realizadas no país.",
+    fonte: "Estatísticas PNCP",
   },
   {
-    texto: "Compras publicas representam aproximadamente 12% do PIB brasileiro.",
+    texto: "Compras públicas representam aproximadamente 12% do PIB brasileiro.",
     fonte: "OCDE / Governo Federal",
   },
   {
-    texto: "O governo federal gastou mais de R$ 80 bilhoes em compras publicas em 2024.",
+    texto: "O governo federal gastou mais de R$ 80 bilhões em compras públicas em 2024.",
     fonte: "Painel de Compras Gov.br",
   },
   {
-    texto: "Mais de 300 mil fornecedores estao cadastrados no SICAF para participar de licitacoes federais.",
+    texto: "Mais de 300 mil fornecedores estão cadastrados no SICAF para participar de licitações federais.",
     fonte: "Governo Federal",
   },
 
-  // === Uniformes e Vestuario ===
+  // === Uniformes e Vestuário ===
   {
-    texto: "Uniformes escolares movimentam cerca de R$ 2 bilhoes por ano em licitacoes publicas.",
+    texto: "Uniformes escolares movimentam cerca de R$ 2 bilhões por ano em licitações públicas.",
     fonte: "Estimativa de Mercado",
   },
   {
-    texto: "O setor de vestuario profissional cresce cerca de 5% ao ano no mercado de licitacoes.",
-    fonte: "Analise de Mercado",
+    texto: "O setor de vestuário profissional cresce cerca de 5% ao ano no mercado de licitações.",
+    fonte: "Análise de Mercado",
   },
   {
-    texto: "Estados e municipios respondem por 70% do volume de licitacoes de uniformes no Brasil.",
+    texto: "Estados e municípios respondem por 70% do volume de licitações de uniformes no Brasil.",
     fonte: "Dados PNCP",
   },
   {
-    texto: "Fardamentos militares e de seguranca publica representam a segunda maior categoria de uniformes licitados.",
-    fonte: "Analise de Mercado",
+    texto: "Fardamentos militares e de segurança pública representam a segunda maior categoria de uniformes licitados.",
+    fonte: "Análise de Mercado",
   },
   {
-    texto: "Licitacoes de jalecos e EPIs hospitalares cresceram 40% apos a pandemia de COVID-19.",
+    texto: "Licitações de jalecos e EPIs hospitalares cresceram 40% após a pandemia de COVID-19.",
     fonte: "Dados PNCP 2022-2024",
   },
   {
-    texto: "Uniformes com tecido anti-UV e tecnologia de secagem rapida ja aparecem em editais de 2024.",
+    texto: "Uniformes com tecido anti-UV e tecnologia de secagem rápida já aparecem em editais de 2024.",
     fonte: "Editais PNCP",
   },
   {
-    texto: "Prefeituras do Nordeste lideram em volume de licitacoes para uniformes escolares.",
+    texto: "Prefeituras do Nordeste lideram em volume de licitações para uniformes escolares.",
     fonte: "Dados PNCP",
   },
 
   // === MEI, ME e EPP ===
   {
-    texto: "Microempresas e EPPs tem tratamento diferenciado com preferencia em licitacoes ate R$ 80 mil.",
+    texto: "Microempresas e EPPs têm tratamento diferenciado com preferência em licitações até R$ 80 mil.",
     fonte: "LC 123/2006, Art. 47-49",
   },
   {
-    texto: "Em caso de empate ficto, MEs e EPPs podem apresentar proposta ate 5% superior ao melhor preco.",
+    texto: "Em caso de empate ficto, MEs e EPPs podem apresentar proposta até 5% superior ao melhor preço.",
     fonte: "LC 123/2006, Art. 44",
   },
   {
-    texto: "Licitacoes exclusivas para ME/EPP sao obrigatorias em itens ate R$ 80 mil desde a LC 123.",
+    texto: "Licitações exclusivas para ME/EPP são obrigatórias em itens até R$ 80 mil desde a LC 123.",
     fonte: "LC 123/2006",
   },
   {
-    texto: "Cooperativas de costureiras se enquadram como ME/EPP e podem participar de licitacoes com beneficios.",
+    texto: "Cooperativas de costureiras se enquadram como ME/EPP e podem participar de licitações com benefícios.",
     fonte: "LC 123/2006",
   },
 
   // === Modalidades e Procedimentos ===
   {
-    texto: "Orgaos publicos devem publicar seus editais com antecedencia minima de 8 dias uteis para pregao.",
+    texto: "Órgãos públicos devem publicar seus editais com antecedência mínima de 8 dias úteis para pregão.",
     fonte: "Lei 14.133/2021, Art. 55",
   },
   {
-    texto: "A margem de preferencia para produtos nacionais pode chegar a 25% em licitacoes federais.",
+    texto: "A margem de preferência para produtos nacionais pode chegar a 25% em licitações federais.",
     fonte: "Lei 14.133/2021, Art. 26",
   },
   {
-    texto: "O SICAF facilita a participacao em licitacoes federais, eliminando a necessidade de documentacao repetida.",
+    texto: "O SICAF facilita a participação em licitações federais, eliminando a necessidade de documentação repetida.",
     fonte: "Governo Federal",
   },
   {
-    texto: "O Sistema de Registro de Precos (SRP) permite que orgaos registrem precos sem obrigacao imediata de compra.",
+    texto: "O Sistema de Registro de Preços (SRP) permite que órgãos registrem preços sem obrigação imediata de compra.",
     fonte: "Lei 14.133/2021, Art. 82",
   },
   {
-    texto: "Atas de Registro de Precos tem validade maxima de 1 ano, prorrogavel por mais 1 ano.",
+    texto: "Atas de Registro de Preços têm validade máxima de 1 ano, prorrogável por mais 1 ano.",
     fonte: "Lei 14.133/2021, Art. 84",
   },
   {
-    texto: "A concorrencia e obrigatoria para contratos acima de R$ 3,3 milhoes em compras e servicos.",
+    texto: "A concorrência é obrigatória para contratos acima de R$ 3,3 milhões em compras e serviços.",
     fonte: "Decreto 11.317/2022",
   },
   {
-    texto: "A dispensa de licitacao por valor foi atualizada para ate R$ 59.906,02 em compras (2024).",
-    fonte: "Decreto de atualizacao anual",
+    texto: "A dispensa de licitação por valor foi atualizada para até R$ 59.906,02 em compras (2024).",
+    fonte: "Decreto de atualização anual",
   },
   {
-    texto: "Carona em ata de registro de precos permite que outros orgaos utilizem precos ja registrados.",
+    texto: "Carona em ata de registro de preços permite que outros órgãos utilizem preços já registrados.",
     fonte: "Lei 14.133/2021, Art. 86",
   },
 
-  // === Estrategia e Dicas ===
+  // === Estratégia e Dicas ===
   {
-    texto: "Monitorar licitacoes diariamente aumenta em ate 3x as chances de encontrar oportunidades relevantes.",
-    fonte: "Melhores Praticas de Mercado",
+    texto: "Monitorar licitações diariamente aumenta em até 3x as chances de encontrar oportunidades relevantes.",
+    fonte: "Melhores Práticas de Mercado",
   },
   {
-    texto: "Empresas que participam de licitacoes eletronicas vencem em media 23% mais processos que nas presenciais.",
+    texto: "Empresas que participam de licitações eletrônicas vencem em média 23% mais processos que nas presenciais.",
     fonte: "Estudo ComprasNet",
   },
   {
-    texto: "A apresentacao de amostras pode ser exigida como clausula eliminatoria em licitacoes de uniformes.",
+    texto: "A apresentação de amostras pode ser exigida como cláusula eliminatória em licitações de uniformes.",
     fonte: "Lei 14.133/2021, Art. 42",
   },
   {
-    texto: "Editais de uniformes frequentemente exigem certificacao do tecido pelo INMETRO ou laudos tecnicos.",
+    texto: "Editais de uniformes frequentemente exigem certificação do tecido pelo INMETRO ou laudos técnicos.",
     fonte: "Editais PNCP",
   },
   {
-    texto: "O prazo medio entre a publicacao do edital e a sessao de pregao e de 10 a 15 dias uteis.",
-    fonte: "Analise PNCP",
+    texto: "O prazo médio entre a publicação do edital e a sessão de pregão é de 10 a 15 dias úteis.",
+    fonte: "Análise PNCP",
   },
   {
-    texto: "Recursos administrativos em licitacoes devem ser interpostos em ate 3 dias uteis apos o resultado.",
+    texto: "Recursos administrativos em licitações devem ser interpostos em até 3 dias úteis após o resultado.",
     fonte: "Lei 14.133/2021, Art. 165",
   },
 ];
@@ -293,7 +293,7 @@ export function LoadingProgress({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Voce sabia?
+              Você sabia?
             </p>
             <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed">
               {curiosidade.texto}

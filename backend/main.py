@@ -128,6 +128,41 @@ async def listar_setores():
     return {"setores": list_sectors()}
 
 
+@app.get("/debug/pncp-test")
+async def debug_pncp_test():
+    """Diagnostic: test if PNCP API is reachable from this server."""
+    import time as t
+    from datetime import date, timedelta
+
+    start = t.time()
+    try:
+        client = PNCPClient()
+        hoje = date.today()
+        tres_dias = hoje - timedelta(days=3)
+        response = client.fetch_page(
+            data_inicial=tres_dias.strftime("%Y-%m-%d"),
+            data_final=hoje.strftime("%Y-%m-%d"),
+            modalidade=6,
+            pagina=1,
+            tamanho=10,
+        )
+        elapsed = int((t.time() - start) * 1000)
+        return {
+            "success": True,
+            "total_registros": response.get("totalRegistros", 0),
+            "items_returned": len(response.get("data", [])),
+            "elapsed_ms": elapsed,
+        }
+    except Exception as e:
+        elapsed = int((t.time() - start) * 1000)
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "elapsed_ms": elapsed,
+        }
+
+
 @app.post("/buscar", response_model=BuscaResponse)
 async def buscar_licitacoes(request: BuscaRequest):
     """
