@@ -1,8 +1,14 @@
 # 🚀 BidIQ Uniformes - Production Deployment Guide
 
-**Version:** 1.0
-**Last Updated:** 2026-01-25
+**Version:** 1.1
+**Last Updated:** 2026-01-28
 **Target Platforms:** Vercel (Frontend) + Railway (Backend)
+**Deployment Status:** ✅ **DEPLOYED TO PRODUCTION**
+
+**Live URLs:**
+- **Frontend:** https://bidiq-uniformes.vercel.app ✅ LIVE
+- **Backend:** https://bidiq-backend-production.up.railway.app ✅ LIVE
+- **API Docs:** https://bidiq-backend-production.up.railway.app/docs ✅ LIVE
 
 ---
 

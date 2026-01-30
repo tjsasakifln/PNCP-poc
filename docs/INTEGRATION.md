@@ -97,6 +97,13 @@ bidiq-frontend  | 2026-01-25 10:00:01 | ready - started server on 0.0.0.0:3000
 ```
 
 **Services Available:**
+
+**Production:**
+- 🌐 **Frontend**: https://bidiq-uniformes.vercel.app ✅ **LIVE**
+- ⚙️ **Backend API**: https://bidiq-backend-production.up.railway.app ✅ **LIVE**
+- 📚 **API Docs**: https://bidiq-backend-production.up.railway.app/docs ✅ **LIVE**
+
+**Local Development:**
 - 🌐 **Frontend**: http://localhost:3000
 - ⚙️ **Backend API**: http://localhost:8000
 - 📚 **API Docs**: http://localhost:8000/docs (Swagger UI)
@@ -130,7 +137,9 @@ Follow these steps to validate the complete integration:
 
 #### 1. Open the Application
 
-Navigate to http://localhost:3000 in your browser.
+**Production:** Navigate to https://bidiq-uniformes.vercel.app in your browser.
+
+**Local Development:** Navigate to http://localhost:3000 in your browser.
 
 **Expected UI:**
 - Header: "BidIQ Uniformes"
@@ -778,8 +787,14 @@ Frontend (page.tsx)
 - External access via host ports (localhost:3000, localhost:8000)
 
 **Environment Variables:**
+
+**Production:**
+- Frontend: `NEXT_PUBLIC_BACKEND_URL=https://bidiq-backend-production.up.railway.app`
+- Backend: `OPENAI_API_KEY` for LLM integration (set in Railway dashboard)
+
+**Local Development:**
 - Frontend: `NEXT_PUBLIC_BACKEND_URL=http://localhost:8000` (from host browser perspective)
-- Backend: `OPENAI_API_KEY` for LLM integration
+- Backend: `OPENAI_API_KEY` for LLM integration (from .env file)
 
 **Health Checks:**
 - Backend: `python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"`

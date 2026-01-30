@@ -58,6 +58,15 @@ docker-compose up
 
 #### Testando a Aplicação
 
+**Opção 1: Production (Recommended)**
+1. Abra https://bidiq-uniformes.vercel.app no navegador
+2. Selecione 3 estados (ex: SC, PR, RS)
+3. Use o período padrão (últimos 7 dias)
+4. Clique em "🔍 Buscar Licitações de Uniformes"
+5. Aguarde os resultados (5-30s)
+6. Faça download do Excel gerado
+
+**Opção 2: Local Development**
 1. Abra http://localhost:3000 no navegador
 2. Selecione 3 estados (ex: SC, PR, RS)
 3. Use o período padrão (últimos 7 dias)
@@ -320,10 +329,12 @@ docker-compose logs -f
 
 ### Deploy em Produção
 
-**🌐 Live URLs:**
-- **Frontend:** https://bidiq-uniformes.vercel.app _(após deploy)_
-- **Backend API:** https://bidiq-backend-production.up.railway.app _(após deploy)_
-- **API Docs:** https://bidiq-backend-production.up.railway.app/docs _(após deploy)_
+**🌐 Production URLs:**
+- **Frontend:** https://bidiq-uniformes.vercel.app ✅ **LIVE**
+- **Backend API:** https://bidiq-backend-production.up.railway.app ✅ **LIVE**
+- **API Docs:** https://bidiq-backend-production.up.railway.app/docs ✅ **LIVE**
+
+**Deployment Status:** ✅ **DEPLOYED TO PRODUCTION** (2026-01-28)
 
 **Plataformas:**
 - **Frontend:** Vercel (Next.js otimizado)
@@ -347,6 +358,8 @@ cd frontend && vercel --prod
 
 ## 📝 Variáveis de Ambiente
 
+### Local Development
+
 Configure as variáveis abaixo no arquivo `.env` (copie de `.env.example`):
 
 ```env
@@ -369,6 +382,17 @@ LLM_TEMPERATURE=0.3                # Temperatura do modelo (0.0-2.0, default: 0.
 LLM_MAX_TOKENS=500                 # Máximo de tokens na resposta (default: 500)
 ```
 
+### Production Environment
+
+Production environment variables are configured in:
+- **Railway (Backend):** Set in Railway dashboard under project settings
+  - `OPENAI_API_KEY` (required)
+  - `PORT` (auto-injected by Railway)
+  - Optional: `LOG_LEVEL`, `PNCP_TIMEOUT`, `PNCP_MAX_RETRIES`, `LLM_MODEL`
+
+- **Vercel (Frontend):** Set in Vercel dashboard under project settings → Environment Variables
+  - `NEXT_PUBLIC_BACKEND_URL=https://bidiq-backend-production.up.railway.app`
+
 **Detalhes completos:** Ver [.env.example](.env.example) com documentação inline de todas as 15+ variáveis disponíveis.
 
 ---
@@ -376,6 +400,57 @@ LLM_MAX_TOKENS=500                 # Máximo de tokens na resposta (default: 500
 ## 🔧 Troubleshooting
 
 ### Problemas Comuns e Soluções
+
+#### 0. Production Issues
+
+**Problema:** Frontend não consegue conectar ao backend em produção
+
+**Solução:**
+1. Verifique se backend está online:
+   ```bash
+   curl https://bidiq-backend-production.up.railway.app/health
+   # Deve retornar: {"status":"healthy"}
+   ```
+
+2. Verifique variável de ambiente no Vercel:
+   - Acesse Vercel dashboard → Project Settings → Environment Variables
+   - Confirme: `NEXT_PUBLIC_BACKEND_URL=https://bidiq-backend-production.up.railway.app`
+
+3. Verifique CORS no backend:
+   - Backend deve permitir origem do Vercel
+   - Ver `backend/main.py` linha ~48 para configuração CORS
+
+**Problema:** "Service Unavailable" ou "502 Bad Gateway" na API
+
+**Solução:**
+1. Verifique logs do Railway:
+   ```bash
+   railway logs
+   ```
+
+2. Causas comuns:
+   - Backend em cold start (primeiro request após inatividade) - aguarde 30s
+   - OpenAI API key inválida - verifique no Railway dashboard
+   - Memória insuficiente - verifique métricas no Railway
+   - Build falhou - verifique deploy logs
+
+**Problema:** Frontend mostra erro de CORS em produção
+
+**Solução:**
+Atualizar lista de origens permitidas em `backend/main.py`:
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://bidiq-uniformes.vercel.app",  # Production frontend
+        "http://localhost:3000"  # Local development
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+---
 
 #### 1. Docker / Container Issues
 

@@ -3,6 +3,12 @@
 **Versão:** 0.2
 **Data:** Janeiro 2026
 **Tipo:** Especificação técnica de implementação
+**Status:** ✅ **DEPLOYED TO PRODUCTION** (2026-01-28)
+
+**Production URLs:**
+- Frontend: https://bidiq-uniformes.vercel.app ✅ LIVE
+- Backend API: https://bidiq-backend-production.up.railway.app ✅ LIVE
+- API Docs: https://bidiq-backend-production.up.railway.app/docs ✅ LIVE
 
 ---
 

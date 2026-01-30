@@ -55,9 +55,10 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ```
 
 **🚀 Production URLs:**
-- Frontend: Deployed on Vercel
-- Backend: Deployed on Railway
-- E2E Tests: 25/25 passing ✅
+- **Frontend:** https://bidiq-uniformes.vercel.app ✅ **LIVE**
+- **Backend:** https://bidiq-backend-production.up.railway.app ✅ **LIVE**
+- **API Docs:** https://bidiq-backend-production.up.railway.app/docs ✅ **LIVE**
+- **E2E Tests:** 25/25 passing ✅
 
 ---
 
