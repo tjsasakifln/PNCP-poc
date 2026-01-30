@@ -167,3 +167,113 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==================================
+   Shepherd.js Custom Styling - BidIQ Theme
+   Feature #3 - Interactive Onboarding
+   ================================== */
+
+.shepherd-modal-overlay-container {
+  z-index: 9998;
+}
+
+.shepherd-element {
+  z-index: 9999;
+  max-width: 500px;
+}
+
+.shepherd-theme-custom {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700;
+}
+
+.shepherd-theme-custom .shepherd-header {
+  @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-lg;
+}
+
+.shepherd-theme-custom .shepherd-title {
+  @apply text-xl font-bold font-sans;
+}
+
+.shepherd-theme-custom .shepherd-text {
+  @apply px-6 py-4 text-gray-700 dark:text-gray-200 text-base leading-relaxed;
+}
+
+.shepherd-theme-custom .shepherd-text p {
+  @apply mb-3 last:mb-0;
+}
+
+.shepherd-theme-custom .shepherd-text ul {
+  @apply space-y-2 text-sm;
+}
+
+.shepherd-theme-custom .shepherd-text ul li {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.shepherd-theme-custom .shepherd-footer {
+  @apply px-6 py-4 bg-gray-50 dark:bg-gray-900 rounded-b-lg border-t border-gray-200 dark:border-gray-700 flex justify-between items-center gap-3;
+}
+
+.shepherd-theme-custom .shepherd-button {
+  @apply px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.shepherd-theme-custom .shepherd-button-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+}
+
+.shepherd-theme-custom .shepherd-button-secondary {
+  @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-500;
+}
+
+.shepherd-theme-custom .shepherd-cancel-icon {
+  @apply text-white hover:text-gray-200 transition-colors;
+}
+
+/* Arrow styling */
+.shepherd-theme-custom .shepherd-arrow {
+  @apply hidden;
+}
+
+/* Animation for shepherd elements */
+.shepherd-element {
+  animation: shepherdFadeIn 0.3s ease-out;
+}
+
+@keyframes shepherdFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark mode modal overlay */
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  @apply bg-black/60;
+}
+
+/* Highlight target element */
+.shepherd-target {
+  @apply ring-4 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 transition-all duration-300;
+}
+
+/* Progress indicator in footer */
+.shepherd-progress {
+  @apply flex items-center gap-1.5;
+}
+
+.shepherd-progress-dot {
+  @apply w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 transition-all duration-200;
+}
+
+.shepherd-progress-dot.active {
+  @apply bg-blue-600 w-3 h-3;
+}
+
+.shepherd-progress-dot.completed {
+  @apply bg-blue-400;
+}
