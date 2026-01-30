@@ -330,9 +330,9 @@ docker-compose logs -f
 ### Deploy em Produção
 
 **🌐 Production URLs:**
-- **Frontend:** https://bidiq-uniformes.vercel.app ✅ **LIVE**
-- **Backend API:** https://bidiq-backend-production.up.railway.app ✅ **LIVE**
-- **API Docs:** https://bidiq-backend-production.up.railway.app/docs ✅ **LIVE**
+- **Frontend:** https://bidiq-frontend-production.up.railway.app ✅ **LIVE**
+- **Backend API:** https://bidiq-uniformes-production.up.railway.app ✅ **LIVE**
+- **API Docs:** https://bidiq-uniformes-production.up.railway.app/docs ✅ **LIVE**
 
 **Deployment Status:** ✅ **DEPLOYED TO PRODUCTION** (2026-01-28)
 
@@ -390,8 +390,8 @@ Production environment variables are configured in:
   - `PORT` (auto-injected by Railway)
   - Optional: `LOG_LEVEL`, `PNCP_TIMEOUT`, `PNCP_MAX_RETRIES`, `LLM_MODEL`
 
-- **Vercel (Frontend):** Set in Vercel dashboard under project settings → Environment Variables
-  - `NEXT_PUBLIC_BACKEND_URL=https://bidiq-backend-production.up.railway.app`
+- **Railway (Frontend):** Set in Railway dashboard under project settings → Environment Variables
+  - `BACKEND_URL=https://bidiq-uniformes-production.up.railway.app`
 
 **Detalhes completos:** Ver [.env.example](.env.example) com documentação inline de todas as 15+ variáveis disponíveis.
 
@@ -408,16 +408,16 @@ Production environment variables are configured in:
 **Solução:**
 1. Verifique se backend está online:
    ```bash
-   curl https://bidiq-backend-production.up.railway.app/health
+   curl https://bidiq-uniformes-production.up.railway.app/health
    # Deve retornar: {"status":"healthy"}
    ```
 
-2. Verifique variável de ambiente no Vercel:
-   - Acesse Vercel dashboard → Project Settings → Environment Variables
-   - Confirme: `NEXT_PUBLIC_BACKEND_URL=https://bidiq-backend-production.up.railway.app`
+2. Verifique variável de ambiente no Railway:
+   - Acesse Railway dashboard → Project Settings → Environment Variables
+   - Confirme: `BACKEND_URL=https://bidiq-uniformes-production.up.railway.app`
 
 3. Verifique CORS no backend:
-   - Backend deve permitir origem do Vercel
+   - Backend deve permitir origem do Railway frontend
    - Ver `backend/main.py` linha ~48 para configuração CORS
 
 **Problema:** "Service Unavailable" ou "502 Bad Gateway" na API
