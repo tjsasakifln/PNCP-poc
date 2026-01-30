@@ -369,3 +369,4 @@ node_modules
 .env.local.json
 *.local.json
 local.config.*
+nul

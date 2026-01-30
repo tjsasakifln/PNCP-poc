@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-
-// Cache temporário para downloads (em produção usar Redis)
-const downloadCache = new Map<string, Buffer>();
+import { writeFile } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,13 +64,33 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    // Only cache Excel if there are actual results
+    // Only save Excel to filesystem if there are actual results
     let downloadId: string | null = null;
     if (data.excel_base64) {
       downloadId = randomUUID();
-      downloadCache.set(downloadId, Buffer.from(data.excel_base64, "base64"));
-      // Limpar cache após 10 minutos
-      setTimeout(() => downloadCache.delete(downloadId!), 10 * 60 * 1000);
+      const buffer = Buffer.from(data.excel_base64, "base64");
+      const tmpDir = tmpdir();
+      const filePath = join(tmpDir, `bidiq_${downloadId}.xlsx`);
+
+      try {
+        await writeFile(filePath, buffer);
+        console.log(`✅ Excel saved to: ${filePath}`);
+
+        // Limpar arquivo após 10 minutos
+        setTimeout(async () => {
+          try {
+            const { unlink } = await import("fs/promises");
+            await unlink(filePath);
+            console.log(`🗑️ Cleaned up expired download: ${downloadId}`);
+          } catch (error) {
+            console.error(`Failed to clean up ${downloadId}:`, error);
+          }
+        }, 10 * 60 * 1000);
+      } catch (error) {
+        console.error("Failed to save Excel to filesystem:", error);
+        // Continue without download_id (user will see error when trying to download)
+        downloadId = null;
+      }
     }
 
     return NextResponse.json({
@@ -89,6 +109,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Export downloadCache for download route
-export { downloadCache };

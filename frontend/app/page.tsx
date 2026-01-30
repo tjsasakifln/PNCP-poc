@@ -6,6 +6,10 @@ import { LoadingProgress } from "./components/LoadingProgress";
 import { EmptyState } from "./components/EmptyState";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { RegionSelector } from "./components/RegionSelector";
+import { SavedSearchesDropdown } from "./components/SavedSearchesDropdown";
+import { useAnalytics } from "../hooks/useAnalytics";
+import { useSavedSearches } from "../hooks/useSavedSearches";
+import type { SavedSearch } from "../lib/savedSearches";
 
 const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fad0f461ff9565~mv2.png/v1/crop/x_0,y_301,w_5000,h_2398/fill/w_198,h_95,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Descomplicita%20-%20Azul.png";
 
@@ -33,6 +37,15 @@ function dateDiffInDays(date1: string, date2: string): number {
 }
 
 export default function HomePage() {
+  // Analytics tracking
+  const { trackEvent } = useAnalytics();
+
+  // Saved searches
+  const { saveNewSearch, isMaxCapacity } = useSavedSearches();
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveSearchName, setSaveSearchName] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const [setores, setSetores] = useState<Setor[]>([]);
   const [setorId, setSetorId] = useState("vestuario");
   const [searchMode, setSearchMode] = useState<"setor" | "termos">("setor");
@@ -147,6 +160,23 @@ export default function HomePage() {
     setResult(null);
     setRawCount(0);
 
+    const searchStartTime = Date.now();
+
+    // Track search_started event
+    trackEvent('search_started', {
+      ufs: Array.from(ufsSelecionadas),
+      uf_count: ufsSelecionadas.size,
+      date_range: {
+        inicial: dataInicial,
+        final: dataFinal,
+        days: dateDiffInDays(dataInicial, dataFinal),
+      },
+      search_mode: searchMode,
+      setor_id: searchMode === "setor" ? setorId : null,
+      termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
+      termos_count: termosArray.length,
+    });
+
     try {
       const response = await fetch("/api/buscar", {
         method: "POST",
@@ -169,8 +199,38 @@ export default function HomePage() {
       setResult(data);
       setRawCount(data.total_raw || 0);
 
+      const searchEndTime = Date.now();
+      const timeElapsed = searchEndTime - searchStartTime;
+
+      // Track search_completed event
+      trackEvent('search_completed', {
+        time_elapsed_ms: timeElapsed,
+        time_elapsed_readable: `${Math.floor(timeElapsed / 1000)}s`,
+        total_raw: data.total_raw || 0,
+        total_filtered: data.total_filtrado || 0,
+        filter_ratio: data.total_raw > 0
+          ? ((data.total_filtrado / data.total_raw) * 100).toFixed(1) + '%'
+          : '0%',
+        valor_total: data.resumo?.valor_total || 0,
+        has_summary: !!data.resumo?.resumo_executivo,
+        ufs: Array.from(ufsSelecionadas),
+        uf_count: ufsSelecionadas.size,
+        search_mode: searchMode,
+      });
+
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro desconhecido");
+      const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
+      setError(errorMessage);
+
+      // Track search_failed event
+      trackEvent('search_failed', {
+        error_message: errorMessage,
+        error_type: e instanceof Error ? e.constructor.name : 'unknown',
+        time_elapsed_ms: Date.now() - searchStartTime,
+        ufs: Array.from(ufsSelecionadas),
+        uf_count: ufsSelecionadas.size,
+        search_mode: searchMode,
+      });
     } finally {
       setLoading(false);
       setLoadingStep(1);
@@ -181,6 +241,18 @@ export default function HomePage() {
     if (!result?.download_id) return;
     setDownloadError(null);
     setDownloadLoading(true);
+
+    const downloadStartTime = Date.now();
+
+    // Track download_started event
+    trackEvent('download_started', {
+      download_id: result.download_id,
+      total_filtered: result.total_filtrado || 0,
+      valor_total: result.resumo?.valor_total || 0,
+      search_mode: searchMode,
+      ufs: Array.from(ufsSelecionadas),
+      uf_count: ufsSelecionadas.size,
+    });
 
     try {
       const downloadUrl = `/api/download?id=${result.download_id}`;
@@ -198,17 +270,102 @@ export default function HomePage() {
       const link = document.createElement('a');
       link.href = url;
       const setorLabel = sectorName.replace(/\s+/g, '_');
-      link.download = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
+      const filename = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      const downloadEndTime = Date.now();
+      const timeElapsed = downloadEndTime - downloadStartTime;
+
+      // Track download_completed event
+      trackEvent('download_completed', {
+        download_id: result.download_id,
+        time_elapsed_ms: timeElapsed,
+        time_elapsed_readable: `${Math.floor(timeElapsed / 1000)}s`,
+        file_size_bytes: blob.size,
+        file_size_readable: `${(blob.size / 1024).toFixed(2)} KB`,
+        filename: filename,
+        total_filtered: result.total_filtrado || 0,
+        valor_total: result.resumo?.valor_total || 0,
+      });
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : 'Não foi possível baixar o arquivo.';
       setDownloadError(errorMessage);
+
+      // Track download_failed event
+      trackEvent('download_failed', {
+        download_id: result.download_id,
+        error_message: errorMessage,
+        error_type: e instanceof Error ? e.constructor.name : 'unknown',
+        time_elapsed_ms: Date.now() - downloadStartTime,
+        total_filtered: result.total_filtrado || 0,
+      });
     } finally {
       setDownloadLoading(false);
     }
+  };
+
+  const handleSaveSearch = () => {
+    if (!result) return;
+
+    const defaultName = searchMode === "setor"
+      ? (setores.find(s => s.id === setorId)?.name || "Busca personalizada")
+      : termosArray.length > 0
+        ? `Busca: "${termosArray.join(', ')}"`
+        : "Busca personalizada";
+
+    setSaveSearchName(defaultName);
+    setSaveError(null);
+    setShowSaveDialog(true);
+  };
+
+  const confirmSaveSearch = () => {
+    try {
+      saveNewSearch(saveSearchName || "Busca sem nome", {
+        ufs: Array.from(ufsSelecionadas),
+        dataInicial,
+        dataFinal,
+        searchMode,
+        setorId: searchMode === "setor" ? setorId : undefined,
+        termosBusca: searchMode === "termos" ? termosArray.join(" ") : undefined,
+      });
+
+      // Track analytics
+      trackEvent('saved_search_created', {
+        search_name: saveSearchName,
+        search_mode: searchMode,
+        ufs: Array.from(ufsSelecionadas),
+        uf_count: ufsSelecionadas.size,
+        setor_id: searchMode === "setor" ? setorId : null,
+        termos_count: termosArray.length,
+      });
+
+      setShowSaveDialog(false);
+      setSaveSearchName("");
+      setSaveError(null);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Erro ao salvar busca");
+    }
+  };
+
+  const handleLoadSearch = (search: SavedSearch) => {
+    // Load search parameters into form
+    setUfsSelecionadas(new Set(search.searchParams.ufs));
+    setDataInicial(search.searchParams.dataInicial);
+    setDataFinal(search.searchParams.dataFinal);
+    setSearchMode(search.searchParams.searchMode);
+
+    if (search.searchParams.searchMode === "setor" && search.searchParams.setorId) {
+      setSetorId(search.searchParams.setorId);
+    } else if (search.searchParams.searchMode === "termos" && search.searchParams.termosBusca) {
+      setTermosArray(search.searchParams.termosBusca.split(" "));
+    }
+
+    // Clear current result to show updated form
+    setResult(null);
   };
 
   const isFormValid = Object.keys(validationErrors).length === 0;
@@ -232,6 +389,10 @@ export default function HomePage() {
             <span className="hidden sm:block text-xs text-ink-muted font-medium">
               Busca Inteligente PNCP
             </span>
+            <SavedSearchesDropdown
+              onLoadSearch={handleLoadSearch}
+              onAnalyticsEvent={trackEvent}
+            />
             <ThemeToggle />
           </div>
         </div>
@@ -478,19 +639,41 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* Search Button */}
-        <button
-          onClick={buscar}
-          disabled={loading || !canSearch}
-          type="button"
-          aria-busy={loading}
-          className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
-                     hover:bg-brand-blue-hover active:bg-brand-blue
-                     disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
-                     transition-all duration-200"
-        >
-          {loading ? "Buscando..." : `Buscar ${searchLabel}`}
-        </button>
+        {/* Search Buttons */}
+        <div className="space-y-3">
+          <button
+            onClick={buscar}
+            disabled={loading || !canSearch}
+            type="button"
+            aria-busy={loading}
+            className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                       hover:bg-brand-blue-hover active:bg-brand-blue
+                       disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                       transition-all duration-200"
+          >
+            {loading ? "Buscando..." : `Buscar ${searchLabel}`}
+          </button>
+
+          {/* Save Search Button - Only show if there's a result */}
+          {result && result.resumo.total_oportunidades > 0 && (
+            <button
+              onClick={handleSaveSearch}
+              disabled={isMaxCapacity}
+              type="button"
+              className="w-full bg-surface-0 text-brand-navy py-2.5 sm:py-3 rounded-button text-sm sm:text-base font-medium
+                         border border-brand-navy hover:bg-brand-blue-subtle
+                         disabled:bg-surface-0 disabled:text-ink-muted disabled:border-ink-faint disabled:cursor-not-allowed
+                         transition-all duration-200 flex items-center justify-center gap-2"
+              title={isMaxCapacity ? "Máximo de 10 buscas salvas atingido" : "Salvar esta busca"}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              {isMaxCapacity ? "Limite de buscas atingido" : "Salvar Busca"}
+            </button>
+          )}
+        </div>
 
         {/* Loading State */}
         {loading && (
@@ -621,6 +804,68 @@ export default function HomePage() {
           </div>
         )}
       </main>
+
+      {/* Save Search Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div className="bg-surface-0 rounded-card shadow-xl max-w-md w-full p-6 animate-fade-in-up">
+            <h3 className="text-lg font-semibold text-ink mb-4">Salvar Busca</h3>
+
+            <div className="mb-4">
+              <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">
+                Nome da busca:
+              </label>
+              <input
+                id="save-search-name"
+                type="text"
+                value={saveSearchName}
+                onChange={(e) => setSaveSearchName(e.target.value)}
+                placeholder="Ex: Uniformes Sul do Brasil"
+                className="w-full border border-strong rounded-input px-4 py-2.5 text-base
+                           bg-surface-0 text-ink
+                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                           transition-colors"
+                maxLength={50}
+                autoFocus
+              />
+              <p className="text-xs text-ink-muted mt-1">
+                {saveSearchName.length}/50 caracteres
+              </p>
+            </div>
+
+            {saveError && (
+              <div className="mb-4 p-3 bg-error-subtle border border-error/20 rounded text-sm text-error" role="alert">
+                {saveError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowSaveDialog(false);
+                  setSaveSearchName("");
+                  setSaveError(null);
+                }}
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-ink-secondary hover:text-ink
+                           hover:bg-surface-1 rounded-button transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmSaveSearch}
+                disabled={!saveSearchName.trim()}
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-white bg-brand-navy
+                           hover:bg-brand-blue-hover rounded-button transition-colors
+                           disabled:bg-ink-faint disabled:cursor-not-allowed"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t mt-12 py-6 text-center text-xs text-ink-muted">
