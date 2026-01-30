@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { BuscaResult, ValidationErrors, Setor } from "./types";
-import { LoadingProgress } from "./components/LoadingProgress";
+import { EnhancedLoadingProgress } from "../components/EnhancedLoadingProgress";
 import { EmptyState } from "./components/EmptyState";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { RegionSelector } from "./components/RegionSelector";
@@ -675,13 +675,21 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Loading State */}
+        {/* Loading State - Enhanced with 5-stage progress (Feature #2) */}
         {loading && (
           <div aria-live="polite">
-            <LoadingProgress
+            <EnhancedLoadingProgress
               currentStep={loadingStep}
               estimatedTime={Math.max(30, ufsSelecionadas.size * 6)}
               stateCount={ufsSelecionadas.size}
+              onStageChange={(stage) => {
+                // Track stage changes for analytics
+                trackEvent('search_progress_stage', {
+                  stage: stage,
+                  ufs: Array.from(ufsSelecionadas),
+                  uf_count: ufsSelecionadas.size,
+                });
+              }}
             />
           </div>
         )}
