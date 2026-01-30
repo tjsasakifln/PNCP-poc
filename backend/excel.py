@@ -131,13 +131,40 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
 
         # K: Link (hyperlink)
         # Prioridade: linkSistemaOrigem (URL real do edital) > linkProcessoEletronico > fallback PNCP
-        link = (
-            lic.get("linkSistemaOrigem")
-            or lic.get("linkProcessoEletronico")
-            or f"https://pncp.gov.br/app/editais?numeroControlePNCP={lic.get('numeroControlePNCP', '')}"
-        )
+        link = lic.get("linkSistemaOrigem") or lic.get("linkProcessoEletronico")
+
+        # Fallback: construir URL do PNCP a partir do numeroControlePNCP
+        # Formato numeroControlePNCP: {CNPJ}-{TIPO}-{SEQUENCIAL}/{ANO}
+        # Formato URL PNCP: /editais/{CNPJ}/{ANO}/{SEQUENCIAL_SEM_ZEROS}
+        if not link:
+            numero_controle = lic.get("numeroControlePNCP", "")
+            if numero_controle:
+                try:
+                    # Parse: "67366310000103-1-000189/2025" -> cnpj=67366310000103, ano=2025, seq=189
+                    partes = numero_controle.split("/")
+                    if len(partes) != 2:
+                        raise ValueError("Formato inválido: esperado 'xxx/ano'")
+
+                    ano = partes[1]
+                    cnpj_tipo_seq = partes[0].split("-")
+
+                    if len(cnpj_tipo_seq) < 3:
+                        raise ValueError("Formato inválido: esperado 'cnpj-tipo-seq'")
+
+                    cnpj = cnpj_tipo_seq[0]
+                    sequencial = cnpj_tipo_seq[2].lstrip("0")
+
+                    if cnpj and ano and sequencial:
+                        link = f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{sequencial}"
+                    else:
+                        raise ValueError("Componentes vazios após parsing")
+
+                except (IndexError, AttributeError, ValueError):
+                    # Se parsing falhar, usar busca genérica
+                    link = f"https://pncp.gov.br/app/editais?q={numero_controle}"
+
         link_cell = ws.cell(row=row_idx, column=11, value="Abrir")
-        link_cell.hyperlink = link
+        link_cell.hyperlink = link or "https://pncp.gov.br/app/editais"
         link_cell.font = Font(color="0563C1", underline="single")
 
         # Aplicar bordas e alinhamento em todas as células da linha
