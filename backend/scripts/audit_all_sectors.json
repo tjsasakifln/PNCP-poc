@@ -1,0 +1,1124 @@
+[
+  {
+    "sector_id": "vestuario",
+    "sector_name": "Vestuário e Uniformes",
+    "total_items": 400,
+    "approved_count": 8,
+    "rejected_keyword_count": 205,
+    "blocked_by_exclusion_count": 4,
+    "approved_sample": [
+      {
+        "objeto": "Aquisição de coletes retrorrefletivos, através de Ata de Registro de Preços, a serem utilizados pelos servidores e colaboradores do Departamento de Estradas de Rodagem do Estado de São Paulo – DER/SP",
+        "valor": 503550.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "coletes"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS para eventual e futura aquisição de equipamentos de proteção individual EPIs",
+        "valor": 208590.8,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "epis",
+          "equipamentos de protecao individual"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "PREGÃO ELETRÔNICO Nº 002/2026 -REGISTRO DE PREÇOS PARA FUTURA AQUISIÇÃO DE EQUIPAMENTOS DE PROTEÇÃO INDIVIDUAL (EPI), PARA USO DOS FUNCIONÁRIOS DAS UNIDADES DA PREFEITURA MUNICIPAL DA ESTÁNCIA TURÍSTICA DE GUARATINGUETÁ",
+        "valor": 4090438.54,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "equipamentos de protecao individual",
+          "epi"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇO PARA AQUISIÇÃO EVENTUAL E FUTURA DE EPI, CONFORME ESPECIFICAÇÕES CONSTANTES NO TERMO DE REFERÊNCIA.",
+        "valor": 396258.57,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "epi"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇO PARA AQUISIÇÃO EVENTUAL E FUTURA DE EPI, CONFORME ESPECIFICAÇÕES CONSTANTES NO TERMO DE REFERÊNCIA.",
+        "valor": 396258.58,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "epi"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de UNIFORMES, AVIAMENTOS, BANDEIRAS, FLÂMULAS E INSÍGNIAS.",
+        "valor": 367256.5,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "uniformes",
+          "aquisição de uniformes"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Registro de preços para aquisição de Equipamentos de Proteção Individual (EPIs), destinados à proteção dos servidores públicos da Prefeitura Municipal de Várzea Paulista",
+        "valor": 2097486.64,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "epis",
+          "equipamentos de protecao individual"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA AQUISIÇÃO DE EPIS",
+        "valor": 69529.15,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "epis"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": [
+      {
+        "objeto": "Contratação de empresa especializada na confecção de próteses dentárias, para fornecimento aos pacientes atendidos pelo consultório odontológico do Município de Icém/SP, conforme especificações, quantidades e demais informações constantes do Anexo I ",
+        "valor": 383718.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "confecção",
+          "confeccao"
+        ]
+      },
+      {
+        "objeto": "Aquisição de material de roupa de cama, mesa e banho.",
+        "valor": 403887.7,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "roupa"
+        ]
+      },
+      {
+        "objeto": "CONTRATAÇÃO DE EMPRESA PRESTADORA DE SERVIÇOS GRÁFICOS ESPECIALIZADOS EM CONFECÇÃO E IMPRESSÃO DE CARNÊS COM SELO DE CERTIFICAÇÃO FLORESTAL PARA PAGAMENTOS DOS CRÉDITOS TRIBUTÁRIOS PARA O EXERCÍCIO DE 2026.",
+        "valor": 199430.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "confecção",
+          "confeccao"
+        ]
+      },
+      {
+        "objeto": "CONTRATAÇÃO DE EMPRESA PRESTADORA DE SERVIÇOS GRÁFICOS ESPECIALIZADOS EM CONFECÇÃO E IMPRESSÃO DE CARNÊS COM SELO DE CERTIFICAÇÃO FLORESTAL PARA PAGAMENTOS DOS CRÉDITOS TRIBUTÁRIOS PARA O EXERCÍCIO DE 2026",
+        "valor": 199430.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "confecção",
+          "confeccao"
+        ]
+      }
+    ]
+  },
+  {
+    "sector_id": "alimentos",
+    "sector_name": "Alimentos e Merenda",
+    "total_items": 400,
+    "approved_count": 6,
+    "rejected_keyword_count": 211,
+    "blocked_by_exclusion_count": 0,
+    "approved_sample": [
+      {
+        "objeto": "Gêneros Alimentícios Remanescentes",
+        "valor": 188615.8,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "gêneros alimentícios",
+          "generos alimenticios"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA AQUISIÇÃO DE GENÊROS ALIMENTÍCIOS, PARA ATENDER A MERENDA ESCOLAR, CRECHE JOANNA D’ANGELIS, APAE,  PROJETO GURI, ASSITÊNCIA SOCIAL, BOLSA FAMÍLIA, CCI (CENTRO DE CONVIVÊNCIA DOS IDOSOS), CRAS (CENTRO DE REFERÊNCIA DE ASSISTÊNC",
+        "valor": 1329693.09,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "merenda escolar",
+          "merenda",
+          "gêneros alimentícios",
+          "generos alimenticios"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de gêneros alimentícios a serem utilizados na alimentação escolar oferecida aos alunos matriculados na Rede Estadual e Municipal de ensino do Município de Murutinga do Sul.",
+        "valor": 933836.1,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "gêneros alimentícios",
+          "generos alimenticios"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS para aquisição fracionada de GÊNEROS ALIMENTÍCIOS (Produtos NÃO PERECÍVEIS e PERECÍVEIS) destinados a merenda escolar do município.",
+        "valor": 1501366.5,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "merenda escolar",
+          "merenda",
+          "gêneros alimentícios",
+          "generos alimenticios"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "AQUISIÇÃO PARCELADA DE CAFÉ PARA O ANO DE 2026",
+        "valor": 107172.25,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "café",
+          "cafe"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Fornecimento de Gêneros Alimentícios",
+        "valor": 871673.7,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "gêneros alimentícios",
+          "generos alimenticios"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": []
+  },
+  {
+    "sector_id": "informatica",
+    "sector_name": "Informática e Tecnologia",
+    "total_items": 400,
+    "approved_count": 9,
+    "rejected_keyword_count": 204,
+    "blocked_by_exclusion_count": 4,
+    "approved_sample": [
+      {
+        "objeto": "Registro de Preços para aquisição de notebooks para a FIPASE, entidade gestora do SUPERA Parque de Inovação e Tecnologia de Ribeirão Preto, conforme condições estabelecidas neste instrumento. ",
+        "valor": 152073.9,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "notebooks"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇO PARA AQUISIÇÃO DE RECARGAS DE CARTUCHOS DE TONERS ",
+        "valor": 202545.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "cartuchos",
+          "toners"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de materiais de expediente, papelaria e suprimentos de informática.",
+        "valor": 582486.34,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "informatica",
+          "informática"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação de serviço especializado em atendimento presencial de informática, contemplando apenas serviços presenciais nos pontos públicos da Prefeitura Municipal de Jacupiranga com serviços de manutenção corretiva e preventiva de computadores e per",
+        "valor": 158400.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "computadores",
+          "informatica",
+          "informática"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "AQUISIÇÃO DE ESTAÇÕES DE TRABALHO (DESKTOPS), EQUIPAMENTOS MÓVEIS (NOTEBOOKS) E MONITORES",
+        "valor": 1244858.53,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "desktops",
+          "notebooks",
+          "monitores"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇO PARA AQUISIÇÃO EVENTUAL E FUTURA DE EQUIPAMENTOS DE INFORMATICA, CONFORME TERMO DE REFERÊNCIA E DEMAIS ANEXOS DO EDITAL",
+        "valor": 1244858.53,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "informatica",
+          "informática"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de equipamentos e componentes de informática, com prazo de entrega em até 20 (vinte) dias.",
+        "valor": 548560.91,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "informatica",
+          "informática"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação de empresa especializada em locação de Registrador Eletrônico de Ponto (REP), com reconhecimento facial, incluindo software de controle e sua licença, implantação, instalação e treinamento, conforme especificações e quantidades descritos ",
+        "valor": 1651692.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "software"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação(ões) de pessoa(s) jurídica(s) para fornecimento de móveis, eletrodomésticos e equipamentos de informática para a Secretaria Municipal de Assistência e Desenvolvimento Social e a entidade lar doce lar de Pedreira/SP.",
+        "valor": 92407.36,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "informatica",
+          "informática"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": [
+      {
+        "objeto": "Aquisição de coletes retrorrefletivos, através de Ata de Registro de Preços, a serem utilizados pelos servidores e colaboradores do Departamento de Estradas de Rodagem do Estado de São Paulo – DER/SP",
+        "valor": 503550.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "servidores"
+        ]
+      },
+      {
+        "objeto": "O OBJETO DA PRESENTE LICITAÇÃO É A CONTRATAÇÃO DE ESTABELECIMENTO BANCÁRIO PARA CENTRALIZAÇÃO DOS SERVIÇOS DE PAGAMENTOS DAS REMUNERAÇÕES E SALÁRIOS DOS SERVIDORES ATIVOS, INATIVOS E AGENTES POLÍTICOS DA PREFEITURA DO MUNICÍPIO DE BURI SP",
+        "valor": 1000000.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "servidores"
+        ]
+      },
+      {
+        "objeto": "Registro de preços para aquisição de Equipamentos de Proteção Individual (EPIs), destinados à proteção dos servidores públicos da Prefeitura Municipal de Várzea Paulista",
+        "valor": 2097486.64,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "servidores"
+        ]
+      },
+      {
+        "objeto": "Contratação de instituição bancária para operar os serviços de processamento e\r\ngerenciamento de créditos provenientes da folha de pagamento dos servidores da Prefeitura\r\nMunicipal de Ipaussu,em carater de exclusividade.\r",
+        "valor": 492764.38,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "servidores"
+        ]
+      }
+    ]
+  },
+  {
+    "sector_id": "limpeza",
+    "sector_name": "Produtos de Limpeza",
+    "total_items": 400,
+    "approved_count": 10,
+    "rejected_keyword_count": 204,
+    "blocked_by_exclusion_count": 3,
+    "approved_sample": [
+      {
+        "objeto": "Registro de Preços para eventual aquisição de materiais de higiene, limpeza, descartáveis e cozinha.",
+        "valor": 712135.7,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "descartaveis",
+          "limpeza",
+          "descartáveis",
+          "higiene"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS DA CLASSE “DESCARTÁVEIS” PARA ATENDIMENTO DA DEMANDA DAS UNIDADES DE SAÚDE",
+        "valor": 440003.11,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "descartaveis",
+          "descartáveis"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA A AQUISIÇÃO FUTURA DE DIVERSOS MATERIAIS DE LIMPEZA PARA ATENDER AS SECRETARIAS E DEPARTAMENTOS.",
+        "valor": 2603459.35,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "limpeza",
+          "materiais de limpeza"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "AQUISICAO DE SACO DE LIXO ",
+        "valor": 106412.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "saco de lixo"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA A EVENTUAL CONTRATAÇÃO DE EMPRESA ESPECIALIZADA EM: SERVIÇOS DE INSTALAÇÃO, MANUTENÇÃO PREVENTIVA E CORRETIVA DE BOMBAS SUBMERSA, REPARO E CONFIGURAÇÃO DE QUADRO ELÉTRICO DE BOMBAS BIFÁSICA, TRIFÁSICA, LIMPEZA E DESINFECÇÃO DE",
+        "valor": 248439.11,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "limpeza"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS DE HIGIENE E LIMPEZA E DESCARTÁVEIS, PARA ATENDER A DEMANDA DA PREFEITURA MUNICIPAL DE BIRIGUI PELO PERÍODO DE 12 MESES – SECRETARIA DE ADMINISTRAÇÃO, PELO PERÍODO DE 12 MESES.",
+        "valor": 3581477.84,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "descartaveis",
+          "limpeza",
+          "descartáveis",
+          "higiene"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "“Registro de Preços para futura e eventual aquisição de materiais de limpeza para atendimento de todos os setores da municipalidade, conforme especificações e condições estabelecidas no Termo de Referência, Anexo I deste Edital”.",
+        "valor": 1057497.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "limpeza",
+          "materiais de limpeza"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS PARA LIMPEZA, COM ENTREGA PARCELADA, PARA ATENDER OS DIVERSOS SETORES DA MUNICIPALIDADE, PELO PERÍODO DE 12 (DOZE) MESES, PODENDO SER PRORROGADO, CONFORME ESPECIFICAÇÕES CONSTANTES NESTE EDITAL E SEUS AN",
+        "valor": 759820.18,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "limpeza"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação de Serviços de Limpeza, Asseio e Conservação Predial para a Delegacia de Polícia do Município de Taquarituba.",
+        "valor": 253178.7,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "limpeza"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Prestação de serviço de limpeza, asseio e conservação predial para a Delegacia de Defesa da Mulher e Delegacia Seccional de Polícia de Registro.",
+        "valor": 405849.3,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "servico de limpeza",
+          "limpeza",
+          "serviço de limpeza"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": [
+      {
+        "objeto": "Aquisição de escavadeira hidráulica anfíbia nova, zero hora, destinada às atividades de limpeza, desassoreamento e manejo da lagoa de captação, do canal principal do Rio Batalha e em seus afluentes, conforme condições, quantidades e exigências estabe",
+        "valor": 2949000.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "limpeza"
+        ]
+      },
+      {
+        "objeto": "Registro de preços de serviços de nebulização costal \"casa a casa\" em quantidade estimada de 800 (oitocentas) quadras do Município de Brotas-SP, com inseticida especificamente fornecido pela SUCEN (Superintendência de Controles de Endemias) para comb",
+        "valor": 688000.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "inseticida"
+        ]
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA EVENTUAL, FUTURA E PARCELADA AQUISIÇÃO DE LUBRIFICANTES E PRODUTOS DE LIMPEZA PESADA PARA VEICULOS EM GERAL E MÁQUINAS DO MUNICÍPIO, PELO PERÍODO DE 12 MESES",
+        "valor": 565756.6,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "limpeza",
+          "produtos de limpeza"
+        ]
+      }
+    ]
+  },
+  {
+    "sector_id": "mobiliario",
+    "sector_name": "Mobiliário",
+    "total_items": 400,
+    "approved_count": 3,
+    "rejected_keyword_count": 212,
+    "blocked_by_exclusion_count": 2,
+    "approved_sample": [
+      {
+        "objeto": "Aquisição eventual de 80 mesas de reunião (78 unidades de 1,40 m x 0,70 m x 0,74 m e 02 unidades de 0,70 m x 0,70 m x 0,74 m), com prazo de validade da Ata de Registro de Preços de 12 (doze) meses, prorrogáveis pelo mesmo período.",
+        "valor": 179785.02,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "mesas"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação(ões) de pessoa(s) jurídica(s) para fornecimento de móveis, eletrodomésticos e equipamentos de informática para a Secretaria Municipal de Assistência e Desenvolvimento Social e a entidade lar doce lar de Pedreira/SP.",
+        "valor": 92407.36,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "moveis",
+          "móveis"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de material permanente (armário vestiário de aço), por intermédio do Sistema de Registro de Preços",
+        "valor": 58600.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "armario",
+          "armário"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": [
+      {
+        "objeto": "AQUISIÇÃO DE ESTAÇÕES DE TRABALHO (DESKTOPS), EQUIPAMENTOS MÓVEIS (NOTEBOOKS) E MONITORES",
+        "valor": 1244858.53,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "moveis",
+          "móveis"
+        ]
+      },
+      {
+        "objeto": "Aquisição de material de roupa de cama, mesa e banho.",
+        "valor": 403887.7,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "mesa"
+        ]
+      }
+    ]
+  },
+  {
+    "sector_id": "papelaria",
+    "sector_name": "Papelaria e Material de Escritório",
+    "total_items": 400,
+    "approved_count": 7,
+    "rejected_keyword_count": 209,
+    "blocked_by_exclusion_count": 1,
+    "approved_sample": [
+      {
+        "objeto": "Adesão à Ata de Registro de Preços do FDE para eventual aquisição de Kit de Material Escolar – Educação Infantil, Ensino Fundamental I (1º ao 5º anos), II (6º ao 9º anos), em atendimento as Unidades Escolares da Rede Municipal de Ensino de Aparecida ",
+        "valor": 222674.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "material escolar"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de materiais de expediente, papelaria e suprimentos de informática.",
+        "valor": 582486.34,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "expediente",
+          "papelaria"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Abertura de Ata de Registro de Preços para futura e eventual aquisição de Papel Sulfite para o atendimento à demanda da Secretaria Municipal do Desenvolvimento Social e suas Unidades, pelo período de 12 meses.",
+        "valor": 753141.48,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "papel",
+          "papel sulfite"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS para aquisição eventual de MATERIAIS DE EXPEDIENTE, ESCRITÓRIO E PAPEL SULFITE, por um período de 12 (doze) meses, conforme condições, quantidades e exigências estabelecidas no Termo de Referência – Anexo I.",
+        "valor": 428912.13,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "papel",
+          "expediente",
+          "papel sulfite"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Seleção de propostas para REGISTRO DE PREÇOS visando ao fornecimento de material de consumo (papel sulfite A4, reciclado), para a Secretaria Municipal de Finanças e Gestão – SEFIN, a fim de atender às necessidades das unidades administrativas da Pref",
+        "valor": 1522500.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "papel",
+          "papel sulfite"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": " Registro de preço para aquisição de material de papelaria para atender os estudantes regularmente matriculados no sistema municipal de Ubatuba.",
+        "valor": 4035217.36,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "papelaria"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "“Aquisição de kits de material escolar, destinados aos alunos da Rede Municipal de Ensino de Iacanga, de acordo com as especificações dos Anexos do presente Edital”.",
+        "valor": 169075.79,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "material escolar"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": [
+      {
+        "objeto": "Aquisição de Material de Consumo, OPME Clipes de Aneurismas ",
+        "valor": 404626.2,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "clipes"
+        ]
+      }
+    ]
+  },
+  {
+    "sector_id": "engenharia",
+    "sector_name": "Engenharia e Construção",
+    "total_items": 400,
+    "approved_count": 18,
+    "rejected_keyword_count": 188,
+    "blocked_by_exclusion_count": 11,
+    "approved_sample": [
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA AQUISIÇÃO DE AR-CONDICIONADO PARA ATENDIMENTO DA SECRETARIA MUNICIPAL DE SAÚDE E UBS.",
+        "valor": 317289.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "ar condicionado"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "aquisição de materiais de construção destinados ao atendimento de famílias em situação de vulnerabilidade social, em conformidade com a Lei Municipal nº 3.074 de 07 de maio de 2021, que autoriza o Poder Executivo a adquirir e doar materiais de constr",
+        "valor": 101835.1,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "construcao",
+          "construção"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratacao de empresa especializada para fornecimento de postos de trabalho continuados de auxiliar de servicos gerais   Secretaria Municipal da Infraestrutura e Servicos.",
+        "valor": 626754.8,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "infraestrutura"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO DIVERSOS PARA ATENDIMENTO DAS NECESSIDADES DA PREFEITURA MUNICIPAL DE INÚBIA PAULISTA- ENTREGA PARCELADA.",
+        "valor": 789311.95,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "construcao",
+          "construção"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS DE SONDAGEM GEOTÉCNICA DO TIPO SPT (SONDAGEM À PERCUSSÃO) SECRETARIA MUNICIPAL DE OBRAS, CONFORME ESPECIFICAÇÕES DOS ANEXOS I E II TERMO DE REFERÊNCIA. ",
+        "valor": 400000.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "obras"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação de serviços de engenharia de manutenção preventiva e corretiva dos grupos moto geradores (GMG) localizados no edifício sede do Tribunal Regional Federal da 3ª Região, incluindo o fornecimento de peças para substituição.",
+        "valor": 220149.67,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "engenharia"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS para eventual aquisição de concreto destinado à Secretaria de Obras",
+        "valor": 956287.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "concreto",
+          "obras"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA A EVENTUAL CONTRATAÇÃO DE EMPRESA ESPECIALIZADA EM: SERVIÇOS DE INSTALAÇÃO, MANUTENÇÃO PREVENTIVA E CORRETIVA DE BOMBAS SUBMERSA, REPARO E CONFIGURAÇÃO DE QUADRO ELÉTRICO DE BOMBAS BIFÁSICA, TRIFÁSICA, LIMPEZA E DESINFECÇÃO DE",
+        "valor": 248439.11,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "infraestrutura"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇO PARA AQUISIÇÃO DE TAMPÃO, VÁLVULAS DE GAVETAS E CONEXÕES EM FERRO FUNDIDO.",
+        "valor": 2026954.1,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "ferro"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação de Empresa especializada em Serviços de Arbitragem, compreendendo a escalação e\r\nfornecimento de árbitros, auxiliares, mesários e anotadores, para atuarem em jogos, torneios, copas e\r\ncampeonatos e amistosos que acontecerão na cidade: Gin",
+        "valor": 106305.2,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "areia"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS para eventual e futura aquisição de materiais para construção",
+        "valor": 661032.08,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "construcao",
+          "construção"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Aquisição de materiais metalúrgicos em aço inox.",
+        "valor": 74591.94,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "aço",
+          "aco"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Registro de preços para fornecimento de materiais hidráulicos em PVC, PEAD, CPVC, PVC-U e em Ferro Fundido, para manutenção dos sistemas de água e esgoto, conforme especificações constantes neste edital e em seu Anexo I – Termo de Referência.",
+        "valor": 802577.67,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "ferro"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "Contratação de empresa especializada para a execução dos serviços de engenharia de\r\nsegurança e medicina do trabalho, para atender as demandas da Prefeitura de Municipal de Garça, pelo período de 12 (doze) meses, de acordo com as Especificações conti",
+        "valor": 258000.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "engenharia"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      },
+      {
+        "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA A AQUISIÇÃO DE SERVIÇOS DE CAMINHÃO PRANCHA PARA SER UTILIZADO PELA DIRETORIA DE OBRAS DO MUNICIPIO DE JUNQUEIRÓPOLIS NA REALIZAÇÃO DE SEUS SERVIÇOS DURANTE O EXERCÍCIO DE 2026.",
+        "valor": 84000.0,
+        "uf": "SP",
+        "approved": true,
+        "reason": null,
+        "keywords_found": [
+          "obras"
+        ],
+        "blocked_by_exclusion": false,
+        "kw_without_exc": []
+      }
+    ],
+    "blocked_by_exclusion": [
+      {
+        "objeto": "Locação de caminhão toco com cabine suplementar e carroceria de madeira, sem motorista",
+        "valor": 120000.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "madeira"
+        ]
+      },
+      {
+        "objeto": "Contratação de empresa especializada para prestação de serviços de montagem, operação, manutenção e desmontagem de infraestrutura temporária para eventos, com disponibilização dos equipamentos e estruturas necessárias, incluindo, conforme lote adjudi",
+        "valor": 129258.34,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "infraestrutura"
+        ]
+      },
+      {
+        "objeto": "Contratação de empresa especializada para a prestação de serviços de telecomunicações e fornecimento de equipamentos, visando modernizar e ampliar a infraestrutura de comunicação da Prefeitura Municipal de Ilhabela.",
+        "valor": 2291793.34,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "infraestrutura"
+        ]
+      },
+      {
+        "objeto": "REGISTRO DE PREÇOS PARA CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS TÉCNICOS AUTOMOTIVOS ESPECIALIZADOS EM MANUTENÇÃO PREVENTIVA E CORRETIVA, ATRAVÉS DE SERVIÇOS MECÂNICOS, ELÉTRICOS, FUNILARIA, PINTURA, TAPEÇARIA, VIDRAÇARIA, ALI",
+        "valor": 2124000.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "obra",
+          "ar condicionado"
+        ]
+      },
+      {
+        "objeto": "Abertura de pregão eletrônico visando o registo de preços para contratação de empresa especializada nos serviços de borracharia com materiais inclusos, de caráter preventivo, preditivo e corretivo de todos os pneus de veículos, máquinas tratores e eq",
+        "valor": 554594.5,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "infraestrutura"
+        ]
+      },
+      {
+        "objeto": "CONTRATAÇÃO DE EQUIPAMENTO DE SONORIZAÇÃO E ILUMINAÇÃO COM MÃO DE OBRA INCLUSO , PARA DESFILE DAS ESCOLAS DE SAMBA , CARNAVAL 2026 - CONFORME ESPECIFICAÇÕES CONTIDAS NO TERMO DE REFERENCIA\r\n\r\n11/02/2026 : INÍCIO DAS MONTAGENS\r\n13/02/2026 : FINALIZAÇÃ",
+        "valor": 200000.0,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "obra"
+        ]
+      },
+      {
+        "objeto": "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA A CONCEPÇÃO, CONSTRUÇÃO, MONTAGEM, MANUTENÇÃO E DESMONTAGEM DE CENÁRIOS CENOGRÁFICOS DESTINADOS À ENCENAÇÃO DA PAIXÃO DE CRISTO – EDIÇÃO 2026",
+        "valor": 671226.65,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "construcao",
+          "construção"
+        ]
+      },
+      {
+        "objeto": "[LICITANET] - A presente contratação tem por objeto a seleção de empresa especializada para prestação de serviços de gerenciamento eletrônico e integrado da frota municipal de Altinópolis, abrangendo a gestão e execução de serviços de manutenção prev",
+        "valor": 3035997.19,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "obra"
+        ]
+      },
+      {
+        "objeto": "Contratação de empresa especializada para o fornecimento de material, equipamentos e mão-de-obra para adequação do sistema elétrico com a finalidade da Climatização das escolas municipais Emeb Ivani Cotobias Pimentel Maranho e a Creche Vereador Joaqu",
+        "valor": 109898.12,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "obra",
+          "climatização",
+          "climatizacao"
+        ]
+      },
+      {
+        "objeto": "CONTRATACAO DE EMPRESA ESPECIALIZADA COM FORNECIMENTO DE MATERIAL E MAO DE OBRA PARA A  REVITALIZACAO DA PRACA ESPORTIVA NO CONJUNTO HABITACIONAL BARROS MUNHOZ .",
+        "valor": 504816.22,
+        "uf": "SP",
+        "approved": false,
+        "reason": "Não contém keywords do setor",
+        "keywords_found": [],
+        "blocked_by_exclusion": true,
+        "kw_without_exc": [
+          "obra"
+        ]
+      }
+    ]
+  }
+]

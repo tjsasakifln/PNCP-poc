@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Fahkwang, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { AnalyticsProvider } from "./components/AnalyticsProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -62,7 +63,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );
