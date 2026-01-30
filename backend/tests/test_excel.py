@@ -104,6 +104,7 @@ class TestCreateExcel:
         """Deve gerar Excel com um item e linha de totais."""
         licitacao = {
             "codigoCompra": "12345",
+            "numeroControlePNCP": "12345678000100-1-000123/2024",
             "objetoCompra": "Aquisição de uniformes escolares",
             "nomeOrgao": "Prefeitura Municipal",
             "uf": "SP",
@@ -113,7 +114,7 @@ class TestCreateExcel:
             "dataPublicacaoPncp": "2024-01-20T08:00:00Z",
             "dataAberturaProposta": "2024-02-01T10:00:00Z",
             "situacaoCompraNome": "Em Disputa",
-            "linkPncp": "https://pncp.gov.br/app/editais/12345",
+            "linkSistemaOrigem": "https://sistema.compras.gov.br/edital/12345",
         }
 
         buffer = create_excel([licitacao])
@@ -134,9 +135,9 @@ class TestCreateExcel:
             # Verificar formatação de moeda
             assert "R$" in ws["F2"].number_format
 
-            # Verificar hyperlink (coluna K)
+            # Verificar hyperlink (coluna K) - agora usando linkSistemaOrigem
             assert ws["K2"].value == "Abrir"
-            assert ws["K2"].hyperlink.target == "https://pncp.gov.br/app/editais/12345"
+            assert ws["K2"].hyperlink.target == "https://sistema.compras.gov.br/edital/12345"
             assert ws["K2"].font.color.rgb == "000563C1"  # Azul (openpyxl ARGB format)
             assert ws["K2"].font.underline == "single"
 
@@ -204,17 +205,51 @@ class TestCreateExcel:
         assert ws["H2"].value is None
         assert ws["I2"].value is None
 
-    def test_create_excel_with_missing_link(self):
-        """Deve gerar link padrão se linkPncp não existir."""
-        licitacao = {"codigoCompra": "ABC123"}
+    def test_create_excel_with_link_sistema_origem(self):
+        """Deve usar linkSistemaOrigem quando disponível (prioridade 1)."""
+        licitacao = {
+            "numeroControlePNCP": "12345678000100-1-000001/2025",
+            "linkSistemaOrigem": "https://sistema.compras.gov.br/edital/123",
+            "linkProcessoEletronico": "https://processo.gov.br/456",
+        }
 
         buffer = create_excel([licitacao])
 
         with open_workbook(buffer) as wb:
             ws = wb["Licitações Uniformes"]
 
-        # Verificar link gerado automaticamente
-        assert ws["K2"].hyperlink.target == "https://pncp.gov.br/app/editais/ABC123"
+        # Deve usar linkSistemaOrigem (prioridade)
+        assert ws["K2"].hyperlink.target == "https://sistema.compras.gov.br/edital/123"
+
+    def test_create_excel_with_link_processo_eletronico(self):
+        """Deve usar linkProcessoEletronico quando linkSistemaOrigem não existe (prioridade 2)."""
+        licitacao = {
+            "numeroControlePNCP": "12345678000100-1-000001/2025",
+            "linkProcessoEletronico": "https://processo.gov.br/456",
+        }
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Deve usar linkProcessoEletronico (segunda prioridade)
+        assert ws["K2"].hyperlink.target == "https://processo.gov.br/456"
+
+    def test_create_excel_with_fallback_link(self):
+        """Deve gerar link padrão PNCP quando nenhum link específico existe."""
+        licitacao = {"numeroControlePNCP": "12345678000100-1-000001/2025"}
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Deve usar fallback com numeroControlePNCP
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais?numeroControlePNCP=12345678000100-1-000001/2025"
+        )
 
     def test_create_excel_frozen_panes(self):
         """Deve congelar a primeira linha (headers)."""

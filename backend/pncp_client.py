@@ -381,6 +381,9 @@ class PNCPClient:
         The PNCP API nests org/location data inside ``orgaoEntidade`` and
         ``unidadeOrgao`` objects.  The rest of the codebase expects flat
         top-level keys: ``uf``, ``municipio``, ``nomeOrgao``, ``codigoCompra``.
+
+        Also ensures linkSistemaOrigem and linkProcessoEletronico are preserved
+        for Excel hyperlinks.
         """
         unidade = item.get("unidadeOrgao") or {}
         orgao = item.get("orgaoEntidade") or {}
@@ -389,6 +392,9 @@ class PNCPClient:
         item["municipio"] = unidade.get("municipioNome", "")
         item["nomeOrgao"] = orgao.get("razaoSocial", "") or unidade.get("nomeUnidade", "")
         item["codigoCompra"] = item.get("numeroControlePNCP", "")
+
+        # Preserve link fields for Excel generation (already in root level from API)
+        # No mapping needed - linkSistemaOrigem and linkProcessoEletronico are already at root
 
         return item
 
