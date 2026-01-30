@@ -183,6 +183,15 @@ describe('Analytics - useAnalytics Hook', () => {
 });
 
 describe('Analytics - AnalyticsProvider Component', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_MIXPANEL_TOKEN = 'test_token_12345';
+  });
+
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+  });
+
   // Note: These tests require React Testing Library and @testing-library/jest-dom
   // They test the AnalyticsProvider component behavior
 
@@ -200,6 +209,15 @@ describe('Analytics - AnalyticsProvider Component', () => {
 });
 
 describe('Analytics - Real-World Event Scenarios', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_MIXPANEL_TOKEN = 'test_token_12345';
+  });
+
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+  });
+
   describe('TC-ANALYTICS-EVENT-003: search_started event', () => {
     it('should track search_started with correct properties', () => {
       const { result } = renderHook(() => useAnalytics());
@@ -384,6 +402,15 @@ describe('Analytics - Real-World Event Scenarios', () => {
 });
 
 describe('Analytics - Coverage Verification', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_MIXPANEL_TOKEN = 'test_token_12345';
+  });
+
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+  });
+
   it('should achieve target coverage for useAnalytics hook', () => {
     // This test ensures all main code paths are covered
     // Target: 85%+ coverage for hooks/useAnalytics.ts
