@@ -237,7 +237,7 @@ class TestCreateExcel:
         assert ws["K2"].hyperlink.target == "https://processo.gov.br/456"
 
     def test_create_excel_with_fallback_link(self):
-        """Deve gerar link padrão PNCP quando nenhum link específico existe."""
+        """Deve gerar link padrão PNCP parseando numeroControlePNCP quando nenhum link específico existe."""
         licitacao = {"numeroControlePNCP": "12345678000100-1-000001/2025"}
 
         buffer = create_excel([licitacao])
@@ -245,10 +245,41 @@ class TestCreateExcel:
         with open_workbook(buffer) as wb:
             ws = wb["Licitações Uniformes"]
 
-        # Deve usar fallback com numeroControlePNCP
+        # Deve usar fallback parseando numeroControlePNCP: CNPJ/ANO/SEQUENCIAL
+        # "12345678000100-1-000001/2025" -> /editais/12345678000100/2025/1
         assert (
             ws["K2"].hyperlink.target
-            == "https://pncp.gov.br/app/editais?numeroControlePNCP=12345678000100-1-000001/2025"
+            == "https://pncp.gov.br/app/editais/12345678000100/2025/1"
+        )
+
+    def test_create_excel_with_fallback_link_real_example(self):
+        """Deve gerar link correto com exemplo real da API PNCP."""
+        licitacao = {"numeroControlePNCP": "67366310000103-1-000189/2025"}
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Exemplo real: "67366310000103-1-000189/2025" -> /editais/67366310000103/2025/189
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais/67366310000103/2025/189"
+        )
+
+    def test_create_excel_with_invalid_numero_controle(self):
+        """Deve usar busca genérica quando numeroControlePNCP tem formato inválido."""
+        licitacao = {"numeroControlePNCP": "formato-invalido"}
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Formato inválido -> busca genérica
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais?q=formato-invalido"
         )
 
     def test_create_excel_frozen_panes(self):
