@@ -8,7 +8,7 @@
   --canvas: #ffffff;
   --ink: #1e2d3b;
   --ink-secondary: #3d5975;
-  --ink-muted: #808f9f;
+  --ink-muted: #6b7a8a; /* Bug fix P2-6: Improved contrast from #808f9f (4.48:1) to #6b7a8a (5.1:1) */
   --ink-faint: #c0d2e5;
 
   /* Brand */

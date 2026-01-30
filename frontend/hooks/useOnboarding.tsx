@@ -213,13 +213,6 @@ export function useOnboarding(options: OnboardingOptions = {}) {
     };
   }, [onComplete, onDismiss, onStepChange]);
 
-  // Auto-start logic
-  useEffect(() => {
-    if (autoStart && !hasCompleted && !hasDismissed && tourRef.current && !isActive) {
-      startTour();
-    }
-  }, [autoStart, hasCompleted, hasDismissed, isActive]);
-
   /**
    * Start the onboarding tour
    */
@@ -229,6 +222,19 @@ export function useOnboarding(options: OnboardingOptions = {}) {
       setIsActive(true);
     }
   }, []);
+
+  // Auto-start logic
+  // Bug fix P2-4 & P2-5: Prevent race conditions with rapid mount/unmount and dismissed flag
+  useEffect(() => {
+    // Add a small delay to prevent race conditions during rapid component mount/unmount
+    const timeout = setTimeout(() => {
+      if (autoStart && !hasCompleted && !hasDismissed && tourRef.current && !isActive) {
+        startTour();
+      }
+    }, 100); // 100ms debounce
+
+    return () => clearTimeout(timeout);
+  }, [autoStart, hasCompleted, hasDismissed, isActive, startTour]);
 
   /**
    * Manually trigger the tour (for returning users)

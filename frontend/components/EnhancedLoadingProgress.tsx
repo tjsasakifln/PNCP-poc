@@ -74,12 +74,15 @@ export function EnhancedLoadingProgress({
   useEffect(() => {
     const startTime = Date.now();
 
+    // Bug fix P2-1: Prevent flicker for very short time (<1s) by using minimum 2s
+    const safeEstimatedTime = Math.max(2, estimatedTime);
+
     const interval = setInterval(() => {
       const elapsed = (Date.now() - startTime) / 1000; // seconds
       setElapsedTime(Math.floor(elapsed));
 
-      // Calculate progress: 0-100% based on estimatedTime
-      const calculatedProgress = Math.min(100, (elapsed / estimatedTime) * 100);
+      // Calculate progress: 0-100% based on safeEstimatedTime
+      const calculatedProgress = Math.min(100, (elapsed / safeEstimatedTime) * 100);
       setProgress(calculatedProgress);
 
       // Determine current stage based on progress
@@ -150,7 +153,14 @@ export function EnhancedLoadingProgress({
             {Math.floor(progressPercentage)}%
           </p>
           <p className="text-xs text-ink-muted">
-            {elapsedTime}s / {estimatedTime}s
+            {/* Bug fix P2-2: Handle very long time (>5min) with proper formatting */}
+            {elapsedTime >= 300
+              ? `${Math.floor(elapsedTime / 60)}m ${elapsedTime % 60}s`
+              : `${elapsedTime}s`}
+            {' / '}
+            {estimatedTime >= 300
+              ? `${Math.floor(estimatedTime / 60)}m ${estimatedTime % 60}s`
+              : `${estimatedTime}s`}
           </p>
         </div>
       </div>
@@ -218,11 +228,17 @@ export function EnhancedLoadingProgress({
       {/* Meta information */}
       <div className="flex justify-between text-xs text-ink-secondary pt-3 border-t border-strong">
         <span>
-          Processando {stateCount} {stateCount === 1 ? 'estado' : 'estados'}
+          {/* Bug fix P2-3: Display "Nenhum estado" instead of "0 estados" */}
+          Processando{' '}
+          {stateCount === 0
+            ? 'nenhum estado'
+            : `${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`}
         </span>
         <span>
           {elapsedTime < estimatedTime
-            ? `~${estimatedTime - elapsedTime}s restantes`
+            ? estimatedTime - elapsedTime >= 60
+              ? `~${Math.floor((estimatedTime - elapsedTime) / 60)}m restantes`
+              : `~${estimatedTime - elapsedTime}s restantes`
             : 'Finalizando...'}
         </span>
       </div>
