@@ -9,6 +9,7 @@ import { RegionSelector } from "./components/RegionSelector";
 import { SavedSearchesDropdown } from "./components/SavedSearchesDropdown";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useSavedSearches } from "../hooks/useSavedSearches";
+import { useOnboarding } from "../hooks/useOnboarding";
 import type { SavedSearch } from "../lib/savedSearches";
 
 const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fad0f461ff9565~mv2.png/v1/crop/x_0,y_301,w_5000,h_2398/fill/w_198,h_95,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Descomplicita%20-%20Azul.png";
@@ -45,6 +46,27 @@ export default function HomePage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveSearchName, setSaveSearchName] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Interactive onboarding (Feature #3)
+  const { shouldShowOnboarding, restartTour } = useOnboarding({
+    autoStart: true,
+    onComplete: () => {
+      trackEvent('onboarding_completed', {
+        completion_time: Date.now(),
+      });
+    },
+    onDismiss: () => {
+      trackEvent('onboarding_dismissed', {
+        dismissed_at: Date.now(),
+      });
+    },
+    onStepChange: (stepId, stepIndex) => {
+      trackEvent('onboarding_step', {
+        step_id: stepId,
+        step_index: stepIndex,
+      });
+    },
+  });
 
   const [setores, setSetores] = useState<Setor[]>([]);
   const [setorId, setSetorId] = useState("vestuario");
@@ -389,6 +411,21 @@ export default function HomePage() {
             <span className="hidden sm:block text-xs text-ink-muted font-medium">
               Busca Inteligente PNCP
             </span>
+
+            {/* Re-trigger Onboarding Button */}
+            {!shouldShowOnboarding && (
+              <button
+                onClick={restartTour}
+                className="text-xs text-ink-muted hover:text-brand-blue transition-colors"
+                title="Ver tutorial novamente"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+            )}
+
             <SavedSearchesDropdown
               onLoadSearch={handleLoadSearch}
               onAnalyticsEvent={trackEvent}
