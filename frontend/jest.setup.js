@@ -4,6 +4,12 @@
  * This file imports custom matchers and configurations needed for testing.
  */
 
+// Mock uuid module FIRST (before any imports)
+// This must be at the top level for Jest hoisting to work properly
+jest.mock('uuid', () => ({
+  v4: () => 'test-uuid-12345',
+}));
+
 // Polyfill for Next.js 14+ compatibility
 import { TextEncoder, TextDecoder } from 'util'
 
