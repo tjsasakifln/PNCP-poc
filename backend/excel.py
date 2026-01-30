@@ -130,8 +130,11 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
         ws.cell(row=row_idx, column=10, value=lic.get("situacaoCompraNome", ""))
 
         # K: Link (hyperlink)
-        link = lic.get("linkPncp") or (
-            f"https://pncp.gov.br/app/editais/{lic.get('codigoCompra', '')}"
+        # Prioridade: linkSistemaOrigem (URL real do edital) > linkProcessoEletronico > fallback PNCP
+        link = (
+            lic.get("linkSistemaOrigem")
+            or lic.get("linkProcessoEletronico")
+            or f"https://pncp.gov.br/app/editais?numeroControlePNCP={lic.get('numeroControlePNCP', '')}"
         )
         link_cell = ws.cell(row=row_idx, column=11, value="Abrir")
         link_cell.hyperlink = link

@@ -27,6 +27,9 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "DescompLicita",
   description: "Licitações e Contratos de Forma Descomplicada — Busca inteligente no PNCP",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
