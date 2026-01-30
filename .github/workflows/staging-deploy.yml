@@ -1,0 +1,345 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, feature/**]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - backend
+          - frontend
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed paths
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            case "${{ github.event.inputs.service }}" in
+              all)
+                echo "backend=true" >> $GITHUB_OUTPUT
+                echo "frontend=true" >> $GITHUB_OUTPUT
+                ;;
+              backend)
+                echo "backend=true" >> $GITHUB_OUTPUT
+                echo "frontend=false" >> $GITHUB_OUTPUT
+                ;;
+              frontend)
+                echo "backend=false" >> $GITHUB_OUTPUT
+                echo "frontend=true" >> $GITHUB_OUTPUT
+                ;;
+            esac
+          else
+            if git diff --name-only HEAD~1 HEAD | grep -q '^backend/'; then
+              echo "backend=true" >> $GITHUB_OUTPUT
+            else
+              echo "backend=false" >> $GITHUB_OUTPUT
+            fi
+            if git diff --name-only HEAD~1 HEAD | grep -q '^frontend/'; then
+              echo "frontend=true" >> $GITHUB_OUTPUT
+            else
+              echo "frontend=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  deploy-backend-staging:
+    name: Deploy Backend (Staging)
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          pytest --cov --cov-report=json --cov-fail-under=70
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway Staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        run: railway up --service bidiq-backend-staging --detach
+        working-directory: backend
+
+      - name: Wait for deployment
+        run: sleep 45
+
+      - name: Health check
+        env:
+          STAGING_BACKEND_URL: ${{ vars.STAGING_BACKEND_URL }}
+        run: |
+          for i in 1 2 3 4 5; do
+            if curl -sf "${STAGING_BACKEND_URL}/health" > /dev/null 2>&1; then
+              echo "✅ Staging backend health check passed"
+              exit 0
+            fi
+            echo "⏳ Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
+          echo "❌ Staging backend health check failed after 5 attempts"
+          exit 1
+
+  deploy-frontend-staging:
+    name: Deploy Frontend (Staging)
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-backend-staging]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.frontend == 'true' &&
+      (needs.deploy-backend-staging.result == 'success' || needs.deploy-backend-staging.result == 'skipped')
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm run test:ci
+
+      - name: Check frontend coverage
+        run: |
+          cd frontend
+          COVERAGE=$(npm run test:coverage --silent 2>&1 | grep -E "All files" | awk '{print $4}' | sed 's/%//')
+          if [ "$COVERAGE" -lt 60 ]; then
+            echo "❌ Frontend coverage is $COVERAGE%, minimum is 60%"
+            exit 1
+          fi
+          echo "✅ Frontend coverage is $COVERAGE%"
+
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_BACKEND_URL: ${{ vars.STAGING_BACKEND_URL }}
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway Staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        run: railway up --service bidiq-frontend-staging --detach
+        working-directory: frontend
+
+      - name: Wait for deployment
+        run: sleep 60
+
+      - name: Health check
+        env:
+          STAGING_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+        run: |
+          for i in 1 2 3 4 5; do
+            if curl -sf "${STAGING_FRONTEND_URL}" > /dev/null 2>&1; then
+              echo "✅ Staging frontend health check passed"
+              exit 0
+            fi
+            echo "⏳ Attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
+          echo "❌ Staging frontend health check failed after 5 attempts"
+          exit 1
+
+  smoke-tests-staging:
+    name: Staging Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-backend-staging, deploy-frontend-staging]
+    if: |
+      always() &&
+      (needs.deploy-backend-staging.result == 'success' || needs.deploy-backend-staging.result == 'skipped') &&
+      (needs.deploy-frontend-staging.result == 'success' || needs.deploy-frontend-staging.result == 'skipped') &&
+      !(needs.deploy-backend-staging.result == 'skipped' && needs.deploy-frontend-staging.result == 'skipped')
+
+    steps:
+      - name: Backend API smoke test
+        if: needs.deploy-backend-staging.result == 'success'
+        env:
+          STAGING_BACKEND_URL: ${{ vars.STAGING_BACKEND_URL }}
+        run: |
+          echo "=== Backend Smoke Tests (Staging) ==="
+
+          echo "1. Health check..."
+          curl -sf "${STAGING_BACKEND_URL}/health" | python3 -m json.tool
+
+          echo "2. Root endpoint..."
+          curl -sf "${STAGING_BACKEND_URL}/" | python3 -m json.tool
+
+          echo "3. OpenAPI docs accessible..."
+          curl -sf -o /dev/null -w "%{http_code}" "${STAGING_BACKEND_URL}/docs" | grep -q 200
+
+          echo "✅ All backend smoke tests passed (Staging)"
+
+      - name: Frontend smoke test
+        if: needs.deploy-frontend-staging.result == 'success'
+        env:
+          STAGING_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+        run: |
+          echo "=== Frontend Smoke Tests (Staging) ==="
+
+          echo "1. Page loads..."
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "${STAGING_FRONTEND_URL}")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Frontend returned $STATUS"
+            exit 1
+          fi
+
+          echo "2. Contains expected content..."
+          curl -sf "${STAGING_FRONTEND_URL}" | grep -q "BidIQ"
+
+          echo "✅ All frontend smoke tests passed (Staging)"
+
+      - name: Integration smoke test
+        if: needs.deploy-backend-staging.result == 'success' && needs.deploy-frontend-staging.result == 'success'
+        env:
+          STAGING_BACKEND_URL: ${{ vars.STAGING_BACKEND_URL }}
+        run: |
+          echo "=== Integration Smoke Tests (Staging) ==="
+
+          echo "1. POST /buscar with minimal payload..."
+          RESPONSE=$(curl -sf -X POST "${STAGING_BACKEND_URL}/buscar" \
+            -H "Content-Type: application/json" \
+            -d '{"ufs":["SP"],"data_inicial":"2026-01-20","data_final":"2026-01-27"}' \
+            -w "\n%{http_code}" 2>&1 || true)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          echo "Response code: $HTTP_CODE"
+
+          # Accept 200 (success) or 404/422 (no results/validation) - just not 500/503
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "❌ Integration test failed with server error"
+            exit 1
+          fi
+
+          echo "✅ Integration smoke test passed (Staging)"
+
+  lighthouse-ci-staging:
+    name: Lighthouse CI (Staging)
+    runs-on: ubuntu-latest
+    needs: deploy-frontend-staging
+    if: needs.deploy-frontend-staging.result == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+
+      - name: Run Lighthouse CI
+        env:
+          STAGING_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+        run: |
+          lhci autorun \
+            --collect.url="${STAGING_FRONTEND_URL}" \
+            --collect.numberOfRuns=3 \
+            --upload.target=temporary-public-storage \
+            --assert.preset=lighthouse:recommended \
+            --assert.assertions.performance=0.7 \
+            --assert.assertions.accessibility=0.9 \
+            --assert.assertions.best-practices=0.8 \
+            --assert.assertions.seo=0.7
+
+      - name: Upload Lighthouse report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report-staging
+          path: .lighthouseci/
+
+  comment-pr:
+    name: Comment on PR
+    runs-on: ubuntu-latest
+    needs: [smoke-tests-staging, lighthouse-ci-staging]
+    if: github.event_name == 'pull_request' && always()
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Comment deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const statusEmoji = {
+              success: '✅',
+              failure: '❌',
+              skipped: '⏭️'
+            };
+
+            const smokeTests = '${{ needs.smoke-tests-staging.result }}';
+            const lighthouseCI = '${{ needs.lighthouse-ci-staging.result }}';
+
+            const comment = `
+            ## 🚀 Staging Deployment Status
+
+            | Check | Status |
+            |-------|--------|
+            | Smoke Tests | ${statusEmoji[smokeTests] || '❓'} ${smokeTests} |
+            | Lighthouse CI | ${statusEmoji[lighthouseCI] || '❓'} ${lighthouseCI} |
+
+            **Staging URLs:**
+            - Backend: ${{ vars.STAGING_BACKEND_URL }}
+            - Frontend: ${{ vars.STAGING_FRONTEND_URL }}
+
+            _Deployed from commit ${context.sha.substring(0, 7)}_
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

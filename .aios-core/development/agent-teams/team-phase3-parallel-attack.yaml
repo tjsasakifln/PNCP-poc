@@ -1,0 +1,230 @@
+# Phase 3 Parallel Attack Squad - Issue #96
+# Full-force multi-agent team for simultaneous implementation + testing
+
+name: team-phase3-parallel-attack
+description: |
+  Squad de força total para atacar Issue #96 (Phase 3) em frentes paralelas.
+  Coordenação de 6 agentes especializados executando tasks simultâneas.
+
+agents:
+  # FRENTE 1: Implementação (Features #2 e #3)
+  - role: dev
+    primary_responsibility: |
+      - Finalizar Feature #2 (EnhancedLoadingProgress)
+      - Implementar Feature #3 (Interactive Onboarding com Shepherd.js)
+      - Corrigir bugs P0/P1 identificados por @qa
+    parallel_tasks:
+      - task_id: feature2_completion
+        description: Complete EnhancedLoadingProgress integration
+        estimated_sp: 4
+      - task_id: feature3_onboarding
+        description: Implement 3-step Shepherd.js wizard
+        estimated_sp: 8
+      - task_id: bugfixes_p0_p1
+        description: Fix critical bugs from QA
+        estimated_sp: 3
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+      - Grep
+      - Glob
+    handoff_to:
+      - qa (for testing)
+      - pm (for code review)
+
+  # FRENTE 2: Quality Assurance (4 frentes de teste paralelas)
+  - role: qa
+    primary_responsibility: |
+      - Functional Testing (Analytics, Saved Searches, Performance, Onboarding)
+      - Usability Testing (Nielsen heuristics, mobile, cross-browser)
+      - Regression Testing (existing features, performance benchmarks)
+      - Accessibility Testing (WCAG 2.1 AA, keyboard nav, screen readers)
+      - Test Report + Sign-off
+    parallel_tasks:
+      - task_id: functional_testing
+        description: Test all new features (8 events, saved searches, progress bar, onboarding)
+        estimated_sp: 2
+      - task_id: usability_testing
+        description: Nielsen heuristics + mobile + cross-browser
+        estimated_sp: 1
+      - task_id: regression_testing
+        description: Validate existing features still work
+        estimated_sp: 1
+      - task_id: accessibility_testing
+        description: WCAG 2.1 AA compliance validation
+        estimated_sp: 1
+      - task_id: test_report
+        description: Document bugs (P0/P1/P2) and sign-off
+        estimated_sp: 0.5
+    tools:
+      - mcp__browser__puppeteer_navigate
+      - mcp__browser__puppeteer_screenshot
+      - mcp__browser__puppeteer_click
+      - Bash
+      - Read
+      - Write
+    handoff_to:
+      - dev (for bugfixes)
+      - pm (for sign-off)
+
+  # FRENTE 3: DevOps (CI/CD + Staging)
+  - role: devops
+    primary_responsibility: |
+      - Preparar CI/CD pipeline (staging setup, deployment scripts, monitoring)
+      - Executar Staging Deployment (deploy + smoke tests + Lighthouse CI)
+    parallel_tasks:
+      - task_id: cicd_preparation
+        description: Setup staging env, deployment scripts, rollback procedure
+        estimated_sp: 1
+      - task_id: staging_deployment
+        description: Deploy to staging + smoke tests + Lighthouse CI
+        estimated_sp: 1
+    tools:
+      - Bash
+      - Read
+      - Write
+      - mcp__github__create_pull_request
+      - mcp__github__merge_pull_request
+    handoff_to:
+      - qa (for smoke testing)
+      - pm (for deployment approval)
+
+  # FRENTE 4: Project Management (Coordenação + Quality Gates)
+  - role: pm
+    primary_responsibility: |
+      - Revisar PRs e aplicar quality gates (coverage ≥70% backend, ≥60% frontend)
+      - Velocity tracking + burn-down chart
+      - Coordenar bugfix priorities com @dev e @qa
+    parallel_tasks:
+      - task_id: code_review
+        description: Review all PRs for MUST HAVE features
+        estimated_sp: 1
+      - task_id: velocity_tracking
+        description: Update burn-down chart, assess velocity
+        estimated_sp: 0.5
+    tools:
+      - Read
+      - Bash
+      - mcp__github__get_pull_request
+      - mcp__github__create_pull_request_review
+    handoff_to:
+      - dev (for PR fixes)
+      - sm (for velocity adjustments)
+
+  # FRENTE 5: Architect (Technical Decisions + Code Review)
+  - role: architect
+    primary_responsibility: |
+      - Validar decisões técnicas (Shepherd.js vs Intro.js)
+      - Revisar arquitetura do onboarding (hook design, localStorage strategy)
+      - Code review para qualidade de código
+    parallel_tasks:
+      - task_id: technical_validation
+        description: Validate Shepherd.js implementation approach
+        estimated_sp: 0.5
+      - task_id: architecture_review
+        description: Review onboarding hook design + localStorage strategy
+        estimated_sp: 0.5
+    tools:
+      - Read
+      - Grep
+      - Glob
+    handoff_to:
+      - dev (for implementation guidance)
+      - pm (for sign-off)
+
+  # FRENTE 6: Scrum Master (Coordenação + Impedimentos)
+  - role: sm
+    primary_responsibility: |
+      - Dailies (9am, 15min)
+      - Impediment log management
+      - Bug triage meetings (se >10 bugs)
+      - Facilitar QA sign-off
+    parallel_tasks:
+      - task_id: daily_coordination
+        description: Run daily standups and track impediments
+        estimated_sp: 0.5
+      - task_id: bug_triage
+        description: Facilitate bug triage meetings if needed
+        estimated_sp: 0.5
+    tools:
+      - Read
+      - Write
+    handoff_to:
+      - All agents (for impediment resolution)
+
+# Coordination Strategy
+coordination:
+  mode: parallel_execution
+  synchronization_points:
+    - milestone: feature2_complete
+      trigger: dev completes Feature #2
+      action: qa starts functional testing for Feature #2
+    - milestone: feature3_complete
+      trigger: dev completes Feature #3
+      action: qa starts functional testing for onboarding
+    - milestone: all_features_complete
+      trigger: dev completes all features
+      action: qa starts regression testing
+    - milestone: qa_bugs_reported
+      trigger: qa reports P0/P1 bugs
+      action: dev prioritizes bugfixes
+    - milestone: staging_ready
+      trigger: devops prepares staging env
+      action: devops deploys to staging
+    - milestone: qa_signoff
+      trigger: qa completes all tests + sign-off
+      action: pm approves for Phase 4
+
+# Success Metrics
+success_criteria:
+  - metric: all_must_have_features_implemented
+    threshold: 100%
+  - metric: test_coverage_backend
+    threshold: 70%
+  - metric: test_coverage_frontend
+    threshold: 60%
+  - metric: p0_bugs_fixed
+    threshold: 100%
+  - metric: p1_bugs_triaged
+    threshold: 100%
+  - metric: qa_signoff_obtained
+    threshold: true
+  - metric: staging_deployment_successful
+    threshold: true
+
+# Estimated Timeline
+timeline:
+  day_8:
+    - dev: Start Feature #3 onboarding (8 SP)
+    - dev: Finish Feature #2 (4 SP remaining)
+    - qa: Start functional testing on completed features (Analytics, Saved Searches)
+    - devops: Start CI/CD preparation (1 SP)
+    - pm: Code review for Phase 2 PRs (1 SP)
+    - architect: Technical validation for Shepherd.js (0.5 SP)
+  day_9:
+    - dev: Continue Feature #3 onboarding
+    - dev: Bugfixes P0/P1 from qa (2-3 SP)
+    - qa: Usability + Regression testing (2 SP)
+    - devops: Complete CI/CD preparation
+    - pm: Velocity tracking (0.5 SP)
+    - sm: Bug triage meeting if needed
+  day_10:
+    - dev: Complete Feature #3 onboarding
+    - dev: Final bugfixes
+    - qa: Accessibility testing (1 SP)
+    - qa: Test report + sign-off (0.5 SP)
+    - devops: Staging deployment (1 SP)
+    - pm: Final PR reviews
+    - sm: Coordinate QA sign-off
+
+# References
+references:
+  - issue: "#96"
+    title: "[Value Sprint] Phase 3: Implementation Wave 2 & Testing (Day 8-10)"
+  - dependencies:
+      - "#95 (Phase 2 must complete before Phase 3 starts)"
+  - workflows:
+      - ".aios-core/development/workflows/bidiq-feature-e2e.yaml"
+      - ".aios-core/development/workflows/bidiq-performance-audit.yaml"
