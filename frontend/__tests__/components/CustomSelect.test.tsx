@@ -179,8 +179,8 @@ describe('CustomSelect Component', () => {
 
       const options = screen.getAllByRole('option');
       const option2 = options[1]; // Second option
-      expect(option2).toHaveClass('bg-surface-1');
-      expect(option2).toHaveClass('font-medium');
+      expect(option2).toHaveClass('bg-brand-blue-subtle');
+      expect(option2).toHaveClass('text-brand-navy');
     });
   });
 
