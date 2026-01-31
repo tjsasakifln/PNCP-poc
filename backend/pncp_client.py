@@ -405,13 +405,14 @@ class PNCPClient:
         modalidade: int,
         uf: str | None,
         on_progress: Callable[[int, int, int], None] | None,
+        max_pages: int = 10,  # Limit to prevent timeouts (10 pages = 200 records)
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all pages for a specific modality and UF combination.
 
         This helper method handles pagination for a single modality/UF by following
         the API's `temProximaPagina` flag. It continues fetching pages
-        until no more pages are available.
+        until no more pages are available OR max_pages is reached.
 
         Args:
             data_inicial: Start date in YYYY-MM-DD format
@@ -419,6 +420,7 @@ class PNCPClient:
             modalidade: Modality code (codigoModalidadeContratacao)
             uf: State code (e.g., "SP") or None for all states
             on_progress: Optional progress callback
+            max_pages: Maximum number of pages to fetch (prevents timeouts, default 10)
 
         Yields:
             Dict[str, Any]: Individual procurement record
@@ -427,7 +429,7 @@ class PNCPClient:
         items_fetched = 0
         total_pages = None
 
-        while True:
+        while pagina <= max_pages:
             logger.debug(
                 f"Fetching page {pagina} for modalidade={modalidade}, UF={uf or 'ALL'} "
                 f"(date range: {data_inicial} to {data_final})"
@@ -469,6 +471,15 @@ class PNCPClient:
                 logger.info(
                     f"Finished fetching modalidade={modalidade}, UF={uf or 'ALL'}: "
                     f"{items_fetched} total items across {pagina} pages"
+                )
+                break
+
+            # Check if we've reached max_pages limit
+            if pagina >= max_pages:
+                logger.warning(
+                    f"Reached max_pages limit ({max_pages}) for modalidade={modalidade}, UF={uf or 'ALL'}. "
+                    f"Fetched {items_fetched} items out of {total_registros} total. "
+                    f"Remaining pages: {paginas_restantes}"
                 )
                 break
 
