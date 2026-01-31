@@ -319,3 +319,134 @@ class TestSoftwareSector:
     def test_allows_sistema_licitacao(self):
         ok, _ = self._match("Contratação de sistema de licitação e compras eletrônicas")
         assert ok is True
+
+    # False Positive Prevention Tests (Issue #FESTIVAL-FP)
+
+    def test_excludes_agua_mineral(self):
+        """Water should NOT match software sector."""
+        ok, _ = self._match("Aquisição de água mineral, por sistema de registro de preços")
+        assert ok is False
+
+    def test_excludes_plotagem_paineis(self):
+        """Physical signage/panels should NOT match software."""
+        ok, _ = self._match(
+            "Contratação de empresa especializada no serviço de confecção de plotagens e painéis em chapa"
+        )
+        assert ok is False
+
+    def test_excludes_sistema_climatizacao(self):
+        """HVAC systems should NOT match software."""
+        ok, _ = self._match(
+            "Contratação de empresa para locação de sistema de climatização evaporativa para os pavilhões"
+        )
+        assert ok is False
+
+    def test_excludes_sistema_sonorizacao(self):
+        """Audio systems should NOT match software."""
+        ok, _ = self._match(
+            "PRESTAÇÃO DE SERVIÇO TÉCNICO PARA A MANUTENÇÃO PREVENTIVA E CORRETIVA DE INTRUMENTOS MUSICAIS, SISTEMAS DE SONORIZAÇÃO E ILUNAÇÃO CÊNICA"
+        )
+        assert ok is False
+
+    def test_excludes_balanca_gado(self):
+        """Livestock scales should NOT match software."""
+        ok, _ = self._match(
+            "fornecimento de balança para pesagem de gado composta por plataforma 4×2,5 m em madeira cumaru com estrutura metálica reforçada, sistema de pesagem manual"
+        )
+        assert ok is False
+
+    def test_excludes_primeiros_socorros(self):
+        """First aid supplies should NOT match software."""
+        ok, _ = self._match(
+            "Aquisição de itens de primeiros socorros, higiene pessoal, proteção individual e apoio à assistência básica"
+        )
+        assert ok is False
+
+    def test_excludes_ferramentas_manuais(self):
+        """Hand tools should NOT match software."""
+        ok, _ = self._match("Aquisição de ferramentas manuais e acessórios por meio de Sistema de Registro de Preços")
+        assert ok is False
+
+    def test_excludes_sistema_videomonitoramento(self):
+        """Video surveillance hardware should NOT match software."""
+        ok, _ = self._match(
+            "Serviços de manutenção preventiva e corretiva do sistema de videomonitoramento urbano do Município"
+        )
+        assert ok is False
+
+    def test_excludes_moto_bombas(self):
+        """Water pumps should NOT match software."""
+        ok, _ = self._match(
+            "AQUISIÇÃO DE MOTO BOMBAS SUBMERSAS, CABOS DE PRIMEIRA QUALIDADE, CONTRATAÇÃO DE MÃO DE OBRA ESPECIALIZADA"
+        )
+        assert ok is False
+
+    def test_excludes_oxigenio_medicinal(self):
+        """Medical oxygen should NOT match software."""
+        ok, _ = self._match(
+            "AQUISIÇÃO CONTÍNUA E PARCELADA DE OXIGÊNIO MEDICINAL, DEVIDAMENTE COMPRIMIDO E ACONDICIONADO EM CILINDROS"
+        )
+        assert ok is False
+
+    def test_excludes_caminhao_plataforma(self):
+        """Trucks should NOT match software."""
+        ok, _ = self._match(
+            "Aquisição de Equipamento Rodoviário sendo um CAMINHÃO PLATAFORMA FIXA SOBRE CHASSI 6x4"
+        )
+        assert ok is False
+
+    def test_excludes_kit_lanche(self):
+        """Food kits should NOT match software."""
+        ok, _ = self._match(
+            "Registro de preços para a aquisição de kits de lanche matinal para os usuário do sistema único de saúde"
+        )
+        assert ok is False
+
+    def test_excludes_sondagem_geologica(self):
+        """Geological surveying should NOT match software."""
+        ok, _ = self._match(
+            "Contratação de empresa especializada por meio do Sistema de Registro de Preços para execução de serviços de Sondagens - Tipo SPT"
+        )
+        assert ok is False
+
+    def test_excludes_curso_corte_costura(self):
+        """Sewing classes should NOT match software."""
+        ok, _ = self._match(
+            "Contratacao de instrutor de corte costura e artesanato com reconhecimento pelo SICAB"
+        )
+        assert ok is False
+
+    def test_excludes_escavadeira_hidraulica(self):
+        """Excavators should NOT match software."""
+        ok, _ = self._match(
+            "CONTRATAÇÃO DE EMPRESA PARA PRESTAÇÃO DE SERVIÇOS DE HORAS MÁQUINA DE ESCAVADEIRA HIDRÁULICA"
+        )
+        assert ok is False
+
+    def test_excludes_iluminacao_publica(self):
+        """Public lighting should NOT match software."""
+        ok, _ = self._match(
+            "CONTRATAÇÃO DE EMPRESAS PARA FORNECIMENTO DE MATERIAIS PARA MANUTENÇÃO DA ILUMINAÇÃO PÚBLICA"
+        )
+        assert ok is False
+
+    def test_excludes_maquiagem_cabelo(self):
+        """Beauty services should NOT match software."""
+        ok, _ = self._match(
+            "contratação de empresa especializada em cuidados com beleza para suprir a necessidade de serviço de maquiagem e cabelo"
+        )
+        assert ok is False
+
+    def test_excludes_sistema_gradeamento(self):
+        """Mechanical grating systems should NOT match software."""
+        ok, _ = self._match(
+            "Contratação de empresa especializada na prestação de serviços de manutenção preventiva e corretiva, com fornecimento de peças, de sistemas de gradeamento mecanizado"
+        )
+        assert ok is False
+
+    def test_excludes_sistema_energia_solar(self):
+        """Solar panels should NOT match software."""
+        ok, _ = self._match(
+            "Contratação de empresa especializada para fornecimento e instalação de sistema de microgeração de energia solar fotovoltaica"
+        )
+        assert ok is False
