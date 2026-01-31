@@ -917,10 +917,13 @@ class TestBuscarIntegration:
     """Integration tests using real modules (not fully mocked)."""
 
     @pytest.mark.integration
-    @pytest.mark.skip(reason="Filter correctly rejects bids with future deadlines (>7 days)")
     def test_buscar_with_real_filter_and_excel(self, client, monkeypatch):
         """Test with real filter and excel modules (mock only PNCP and LLM)."""
         from unittest.mock import Mock
+        from datetime import datetime, timedelta
+
+        # Use a deadline within 7 days to pass the filter
+        future_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%dT10:00:00")
 
         mock_licitacao = {
             "codigoCompra": "TEST123",
@@ -929,7 +932,7 @@ class TestBuscarIntegration:
             "uf": "SP",
             "municipio": "São Paulo",
             "valorTotalEstimado": 200000.00,
-            "dataAberturaProposta": "2025-02-15T10:00:00",  # Future date > 7 days ahead
+            "dataAberturaProposta": future_date,  # Future date within 7 days
             "linkSistemaOrigem": "https://pncp.gov.br/test",
         }
 
@@ -959,7 +962,7 @@ class TestBuscarIntegration:
         assert response.status_code == 200
 
         data = response.json()
-        # Filter should pass the uniform keyword
+        # Filter should pass the uniform keyword and date validation
         assert data["total_filtrado"] >= 1
         # Excel should be generated (non-empty base64)
         assert len(data["excel_base64"]) > 100
