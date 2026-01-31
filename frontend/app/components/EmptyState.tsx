@@ -54,7 +54,8 @@ export function EmptyState({
     <div className="mt-8 p-8 bg-surface-1 rounded-card border text-center animate-fade-in-up">
       {/* Icon */}
       <div className="w-20 h-20 mx-auto mb-6 bg-surface-2 rounded-full flex items-center justify-center">
-        <svg className="w-10 h-10 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-10 h-10 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Nenhum documento encontrado">
+          <title>Nenhum documento encontrado</title>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       </div>
@@ -97,7 +98,7 @@ export function EmptyState({
       {/* Suggestions */}
       <div className="text-left max-w-sm mx-auto mb-6 p-4 bg-surface-0 rounded-card border">
         <p className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
-          <svg className="w-4 h-4 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
           Sugestões para encontrar resultados:
