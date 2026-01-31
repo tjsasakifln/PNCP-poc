@@ -31,6 +31,8 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/app/$1',
     '^@/components/(.*)$': '<rootDir>/app/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    // Fix relative imports from hooks/ to lib/
+    '^\\.\\./lib/(.*)$': '<rootDir>/lib/$1',
   },
 
   // Test file patterns
