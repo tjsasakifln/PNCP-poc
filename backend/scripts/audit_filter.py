@@ -13,7 +13,6 @@ Outputs:
 
 import json
 import sys
-import os
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -174,7 +173,7 @@ def find_suspicious_approvals(approved_items: list[dict]) -> list[dict]:
 
         # Flag 2: keyword matched but object is very generic
         if len(obj_norm) < 30 and kw:
-            item["fp_reason"] = f"very short description with keyword match"
+            item["fp_reason"] = "very short description with keyword match"
             if item not in suspicious:
                 suspicious.append(item)
 
@@ -199,8 +198,8 @@ def generate_report(results: dict, false_negatives: list, false_positives: list)
         "",
         "## Resumo",
         "",
-        f"| Métrica | Valor |",
-        f"|---------|-------|",
+        "| Métrica | Valor |",
+        "|---------|-------|",
         f"| Total de itens analisados | {total} |",
         f"| Aprovados pelo filtro | {n_approved} ({100*n_approved/max(total,1):.1f}%) |",
         f"| Rejeitados por keyword | {n_rej_kw} ({100*n_rej_kw/max(total,1):.1f}%) |",
@@ -306,7 +305,7 @@ def main():
     # Summary
     total = sum(len(v) for v in results.values())
     print(f"\n{'='*60}")
-    print(f"  RESUMO")
+    print("  RESUMO")
     print(f"{'='*60}")
     print(f"  Total analisados:           {total}")
     print(f"  Aprovados:                  {len(results['approved'])}")
