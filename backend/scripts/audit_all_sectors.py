@@ -9,16 +9,14 @@ Usage:
 
 import json
 import sys
-import os
 from datetime import date, timedelta
 from pathlib import Path
-from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config import RetryConfig, setup_logging
 from pncp_client import PNCPClient
-from filter import normalize_text, match_keywords, filter_licitacao
+from filter import match_keywords, filter_licitacao
 from sectors import SECTORS, SectorConfig
 
 setup_logging("INFO")
@@ -232,7 +230,7 @@ def main():
     with open(output_dir / "audit_all_sectors_report.md", "w", encoding="utf-8") as f:
         f.write(report)
 
-    print(f"\nResultados salvos em scripts/audit_all_sectors_report.md")
+    print("\nResultados salvos em scripts/audit_all_sectors_report.md")
 
     # Summary table
     print(f"\n{'='*60}")

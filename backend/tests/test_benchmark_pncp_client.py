@@ -9,10 +9,8 @@ Measures:
 Run with: pytest tests/test_benchmark_pncp_client.py --benchmark-only
 """
 import pytest
-from unittest.mock import Mock, AsyncMock
 from pncp_client import PNCPClient
 from datetime import datetime, timedelta
-import asyncio
 
 
 # ============================================================================
