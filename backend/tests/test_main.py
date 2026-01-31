@@ -793,7 +793,6 @@ class TestBuscarValidationExtended:
     def test_buscar_with_empty_custom_search_terms(self, client, monkeypatch):
         """Request with empty/whitespace-only custom terms should use sector keywords."""
         from unittest.mock import Mock
-        from io import BytesIO
 
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.return_value = iter([])
@@ -818,7 +817,6 @@ class TestBuscarDiagnosticLogging:
     def test_buscar_logs_keyword_rejection_sample(self, client, monkeypatch, caplog):
         """Should log sample of keyword-rejected bids when rejections occur."""
         from unittest.mock import Mock
-        from io import BytesIO
 
         # Create bids that will be keyword-rejected
         rejected_bids = [

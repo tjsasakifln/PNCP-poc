@@ -20,7 +20,6 @@ Run in CI:
 """
 
 import random
-import time
 from datetime import datetime, timedelta
 from locust import HttpUser, task, between, events
 from locust.runners import MasterRunner, WorkerRunner
@@ -90,7 +89,7 @@ def on_test_stop(environment, **kwargs):
     print("=" * 80)
 
     if search_times:
-        print(f"\n📊 Search Endpoint (/api/buscar):")
+        print("\n📊 Search Endpoint (/api/buscar):")
         print(f"   Requests: {len(search_times)}")
         print(f"   Avg: {sum(search_times) / len(search_times):.0f}ms")
         print(f"   Min: {min(search_times):.0f}ms")
@@ -98,14 +97,14 @@ def on_test_stop(environment, **kwargs):
         print(f"   P95: {sorted(search_times)[int(len(search_times) * 0.95)]:.0f}ms")
 
     if download_times:
-        print(f"\n📦 Download Endpoint (/api/download):")
+        print("\n📦 Download Endpoint (/api/download):")
         print(f"   Requests: {len(download_times)}")
         print(f"   Avg: {sum(download_times) / len(download_times):.0f}ms")
         print(f"   Min: {min(download_times):.0f}ms")
         print(f"   Max: {max(download_times):.0f}ms")
 
     if health_check_times:
-        print(f"\n💚 Health Check (/health):")
+        print("\n💚 Health Check (/health):")
         print(f"   Requests: {len(health_check_times)}")
         print(f"   Avg: {sum(health_check_times) / len(health_check_times):.0f}ms")
 

@@ -2,7 +2,6 @@
 
 import re
 import unicodedata
-from datetime import datetime
 from typing import Set, Tuple, List, Dict, Optional
 
 
