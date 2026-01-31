@@ -1,19 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { DayPicker } from "react-day-picker";
+import { format, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import "react-day-picker/dist/style.css";
 
 /**
  * CustomDateInput Component
  *
- * Accessible custom date input to replace native date inputs
- * Issue #89 feat(frontend): substituir native form controls por custom
+ * Accessible custom date input with mobile-optimized date picker
+ * Issue #118: Mobile-optimized date picker using react-day-picker
+ * Issue #89: Replace native form controls with custom components
  *
  * Features:
+ * - Desktop: Native date input (familiar, fast)
+ * - Mobile: Visual calendar picker (touch-optimized)
  * - Styled date input with calendar icon
  * - Full keyboard accessibility
  * - ARIA compliant
  * - Visual consistency with design system
- * - Maintains native date picker functionality
+ * - Responsive modal for mobile date selection
  */
 
 export interface CustomDateInputProps {
@@ -39,11 +46,40 @@ export function CustomDateInput({
 }: CustomDateInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+
+  // Detect mobile device (Issue #118)
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleCalendarClick = () => {
-    if (!disabled && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.showPicker?.();
+    if (disabled) return;
+
+    if (isMobile) {
+      // Mobile: Open visual picker modal
+      setShowPicker(true);
+    } else {
+      // Desktop: Use native picker
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.showPicker?.();
+      }
+    }
+  };
+
+  const handleDaySelect = (day: Date | undefined) => {
+    if (day) {
+      const formatted = format(day, "yyyy-MM-dd");
+      onChange(formatted);
+      setShowPicker(false);
     }
   };
 
@@ -123,6 +159,58 @@ export function CustomDateInput({
           </button>
         </div>
       </div>
+
+      {/* Mobile Date Picker Modal - Issue #118 */}
+      {isMobile && showPicker && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 animate-fade-in"
+          onClick={() => setShowPicker(false)}
+        >
+          <div
+            className="bg-surface-0 rounded-t-card sm:rounded-card shadow-xl w-full sm:max-w-md p-6 animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-ink">
+                {label || 'Selecionar Data'}
+              </h3>
+              <button
+                onClick={() => setShowPicker(false)}
+                type="button"
+                className="text-ink-muted hover:text-ink transition-colors"
+                aria-label="Fechar seletor de data"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mobile-date-picker">
+              <DayPicker
+                mode="single"
+                selected={value ? parse(value, "yyyy-MM-dd", new Date()) : undefined}
+                onSelect={handleDaySelect}
+                locale={ptBR}
+                disabled={disabled}
+                fromDate={min ? parse(min, "yyyy-MM-dd", new Date()) : undefined}
+                toDate={max ? parse(max, "yyyy-MM-dd", new Date()) : undefined}
+                defaultMonth={value ? parse(value, "yyyy-MM-dd", new Date()) : new Date()}
+                className="mx-auto"
+              />
+            </div>
+
+            <button
+              onClick={() => setShowPicker(false)}
+              type="button"
+              className="mt-4 w-full px-4 py-2 text-sm font-medium text-white bg-brand-navy
+                         hover:bg-brand-blue-hover rounded-button transition-colors"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
