@@ -14,7 +14,7 @@ class TestSectorConfig:
     def test_all_sectors_exist(self):
         sectors = list_sectors()
         ids = {s["id"] for s in sectors}
-        assert ids == {"vestuario", "alimentos", "informatica", "limpeza", "mobiliario", "papelaria", "engenharia"}
+        assert ids == {"vestuario", "alimentos", "informatica", "limpeza", "mobiliario", "papelaria", "engenharia", "software"}
 
     def test_get_sector_returns_config(self):
         s = get_sector("vestuario")
@@ -246,3 +246,76 @@ class TestAlimentosSector:
     def test_excludes_oleo_lubrificante(self):
         ok, _ = self._match("Aquisição de óleo lubrificante para máquinas")
         assert ok is False
+
+
+class TestSoftwareSector:
+    """Tests for Software e Sistemas sector — real-world derived."""
+
+    def _match(self, texto):
+        s = SECTORS["software"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    def test_matches_microsoft_office(self):
+        ok, _ = self._match("Aquisição de licenças Microsoft Office 365 para a Secretaria de Educação")
+        assert ok is True
+
+    def test_matches_licenca_software(self):
+        ok, _ = self._match("CONTRATAÇÃO DE LICENCIAMENTO DE SOFTWARE DE GESTÃO PÚBLICA")
+        assert ok is True
+
+    def test_matches_saas_plataforma(self):
+        ok, _ = self._match("Contratação de plataforma SaaS em nuvem para gestão escolar")
+        assert ok is True
+
+    def test_matches_desenvolvimento_sistema(self):
+        ok, _ = self._match("Desenvolvimento de sistema web para protocolo digital")
+        assert ok is True
+
+    def test_matches_sistema_gestao(self):
+        ok, _ = self._match("AQUISIÇÃO DE SISTEMA DE GESTÃO HOSPITALAR")
+        assert ok is True
+
+    def test_matches_erp(self):
+        ok, _ = self._match("Implantação de sistema ERP integrado para Prefeitura")
+        assert ok is True
+
+    def test_matches_consultoria_ti(self):
+        ok, _ = self._match("Contratação de consultoria de TI para implantação de sistema de compras")
+        assert ok is True
+
+    def test_excludes_hardware_computador(self):
+        """Hardware should be in 'informatica' sector, not 'software'."""
+        ok, _ = self._match("Aquisição de computadores e notebooks para laboratório")
+        assert ok is False
+
+    def test_excludes_hardware_impressora(self):
+        ok, _ = self._match("AQUISIÇÃO DE IMPRESSORAS E SCANNERS PARA SECRETARIA")
+        assert ok is False
+
+    def test_excludes_hardware_servidor_fisico(self):
+        ok, _ = self._match("Aquisição de servidor físico para datacenter")
+        assert ok is False
+
+    def test_excludes_curso_treinamento(self):
+        """Training/courses are not software procurement."""
+        ok, _ = self._match("Contratação de curso de desenvolvimento de software para servidores")
+        assert ok is False
+
+    def test_excludes_capacitacao_ti(self):
+        ok, _ = self._match("Capacitação em software de gestão para equipe administrativa")
+        assert ok is False
+
+    def test_allows_software_plus_consultoria(self):
+        """Software procurement bundled with consultancy services should match."""
+        ok, _ = self._match(
+            "Aquisição de licenças de software SAP com serviços de implantação e consultoria"
+        )
+        assert ok is True
+
+    def test_allows_portal_transparencia(self):
+        ok, _ = self._match("Desenvolvimento de portal de transparência para município")
+        assert ok is True
+
+    def test_allows_sistema_licitacao(self):
+        ok, _ = self._match("Contratação de sistema de licitação e compras eletrônicas")
+        assert ok is True

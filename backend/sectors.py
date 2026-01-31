@@ -434,6 +434,97 @@ SECTORS: Dict[str, SectorConfig] = {
             "arbitragem",
         },
     ),
+    "software": SectorConfig(
+        id="software",
+        name="Software e Sistemas",
+        description="Licenças de software, SaaS, desenvolvimento de sistemas, consultoria de TI",
+        keywords={
+            # Software licenses (high precision)
+            "licença de software", "licenca de software",
+            "licenciamento de software",
+            "licenciamento", "licenca",
+            "microsoft office", "office 365", "microsoft 365",
+            "windows server", "sql server",
+            "adobe", "autocad", "corel",
+            "sap", "oracle", "salesforce",
+            "software de gestão", "software de gestao",
+
+            # SaaS & Cloud platforms
+            "saas", "software as a service",
+            "software como serviço", "software como servico",
+            "plataforma cloud", "plataforma em nuvem",
+            "assinatura de software", "assinatura de sistema",
+            "serviço de nuvem", "servico de nuvem",
+
+            # Custom development
+            "desenvolvimento de software",
+            "desenvolvimento de sistema",
+            "desenvolvimento de aplicativo",
+            "desenvolvimento web",
+            "sistema web", "aplicação web", "aplicacao web",
+            "sistema de gestão", "sistema de gestao",
+            "software customizado", "software personalizado",
+            "aplicativo mobile", "aplicativo móvel", "aplicativo movel",
+
+            # Software services
+            "consultoria de software",
+            "consultoria de ti",
+            "implantação de sistema", "implantacao de sistema",
+            "integração de sistema", "integracao de sistema",
+            "manutenção de software", "manutencao de software",
+            "suporte técnico de software", "suporte tecnico de software",
+
+            # Specific business systems
+            "erp", "crm", "bi", "business intelligence",
+            "sistema de folha de pagamento",
+            "sistema de protocolo",
+            "sistema de almoxarifado",
+            "sistema de gestão escolar", "sistema de gestao escolar",
+            "sistema de gestão hospitalar", "sistema de gestao hospitalar",
+            "sistema de gestão pública", "sistema de gestao publica",
+            "sistema de compras",
+            "sistema de licitação", "sistema de licitacao",
+            "portal de transparência", "portal de transparencia",
+
+            # Restored standalone terms (guarded by exclusions)
+            "software", "softwares",
+            "sistema", "sistemas",
+            "aplicativo", "aplicativos",
+            "plataforma", "plataformas",
+            "solução de ti", "solucao de ti",
+            "solução tecnológica", "solucao tecnologica",
+        },
+        exclusions={
+            # Hardware (keep in "informatica" sector)
+            "hardware",
+            "equipamento de informatica", "equipamento de informática",
+            "computador", "computadores",
+            "notebook", "notebooks",
+            "servidor físico", "servidor fisico",
+            "impressora", "impressoras",
+            "scanner", "scanners",
+            "roteador", "roteadores",
+            "switch", "switches",
+            "teclado", "mouse",
+            "monitor", "monitores",
+
+            # Training/courses (not software procurement)
+            "curso de software",
+            "treinamento de software",
+            "capacitação em software", "capacitacao em software",
+            "treinamento em ti",
+            "capacitação em ti", "capacitacao em ti",
+
+            # Physical goods
+            "caixa de software",  # physical packaging
+            "embalagem de software",
+
+            # Non-software engineering
+            "engenharia de software",  # if it's about services, not procurement
+            "curso de desenvolvimento",
+            "bootcamp",
+        },
+    ),
 }
 
 

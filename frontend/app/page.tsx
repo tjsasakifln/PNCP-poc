@@ -121,6 +121,7 @@ export default function HomePage() {
           { id: "mobiliario", name: "Mobiliário", description: "" },
           { id: "papelaria", name: "Papelaria e Material de Escritório", description: "" },
           { id: "engenharia", name: "Engenharia e Construção", description: "" },
+          { id: "software", name: "Software e Sistemas", description: "" },
         ]);
       });
   }, []);
