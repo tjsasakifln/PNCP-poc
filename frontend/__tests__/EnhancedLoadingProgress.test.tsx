@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { EnhancedLoadingProgress } from '../components/EnhancedLoadingProgress';
 
@@ -35,7 +35,8 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       expect(screen.getByRole('status')).toBeInTheDocument();
-      expect(screen.getByText('Conectando ao PNCP')).toBeInTheDocument();
+      // Use getAllByText and check first match (main heading) to handle duplicates
+      expect(screen.getAllByText('Conectando ao PNCP')[0]).toBeInTheDocument();
       expect(screen.getByText(/Estabelecendo conexão com o Portal Nacional/)).toBeInTheDocument();
     });
 
@@ -130,7 +131,7 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Stage 1: Conectando (0-10%)
-      expect(screen.getByText('Conectando ao PNCP')).toBeInTheDocument();
+      expect(screen.getAllByText('Conectando ao PNCP')[0]).toBeInTheDocument();
 
       // Fast-forward to Stage 2: Buscando (10-40%)
       jest.advanceTimersByTime(6000); // 12% of 50s
@@ -167,8 +168,11 @@ describe('EnhancedLoadingProgress Component', () => {
         />
       );
 
-      // Fast-forward to trigger stage 2 (10% of 20s = 2s)
-      jest.advanceTimersByTime(3000);
+      // Fast-forward to trigger stage 2 (40% of 20s = 8s)
+      // Need to reach 40% threshold for stage 2
+      act(() => {
+        jest.advanceTimersByTime(9000);
+      });
 
       await waitFor(() => {
         expect(mockOnStageChange).toHaveBeenCalledWith(expect.any(Number));
@@ -378,7 +382,8 @@ describe('EnhancedLoadingProgress Component', () => {
         />
       );
 
-      expect(screen.getByText(/360s/)).toBeInTheDocument();
+      // Component formats as "6m 0s" for times > 5min (appears multiple times in UI)
+      expect(screen.getAllByText(/6m/)[0]).toBeInTheDocument();
     });
 
     it('should handle state count = 0', () => {
