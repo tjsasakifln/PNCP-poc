@@ -498,7 +498,7 @@ describe('SavedSearchesDropdown Component', () => {
       const button = screen.getByRole('button', { name: /Buscas salvas/i });
       fireEvent.click(button);
 
-      expect(screen.getByText('Nenhuma busca salva')).toBeInTheDocument();
+      expect(screen.getAllByText('Nenhuma busca salva')[0]).toBeInTheDocument();
       expect(screen.getByText(/Suas buscas aparecerão aqui/i)).toBeInTheDocument();
     });
 
@@ -605,6 +605,189 @@ describe('SavedSearchesDropdown Component', () => {
 
       const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
       expect(deleteButtons[0]).toHaveAttribute('title', 'Excluir');
+    });
+  });
+
+  describe('Filter Functionality', () => {
+    const mockSearches = [
+      {
+        id: '1',
+        name: 'Uniformes SC',
+        searchParams: {
+          ufs: ['SC'],
+          dataInicial: '2024-01-01',
+          dataFinal: '2024-01-07',
+          searchMode: 'setor' as const,
+          setorId: 'Vestuário',
+        },
+        createdAt: new Date().toISOString(),
+        lastUsedAt: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        name: 'Calçados RJ',
+        searchParams: {
+          ufs: ['RJ'],
+          dataInicial: '2024-01-01',
+          dataFinal: '2024-01-07',
+          searchMode: 'termos' as const,
+          termosBusca: 'sapato tenis',
+        },
+        createdAt: new Date().toISOString(),
+        lastUsedAt: new Date().toISOString(),
+      },
+      {
+        id: '3',
+        name: 'Uniformes SP/PR',
+        searchParams: {
+          ufs: ['SP', 'PR'],
+          dataInicial: '2024-01-01',
+          dataFinal: '2024-01-07',
+          searchMode: 'setor' as const,
+          setorId: 'Vestuário',
+        },
+        createdAt: new Date().toISOString(),
+        lastUsedAt: new Date().toISOString(),
+      },
+    ];
+
+    beforeEach(() => {
+      (useSavedSearches as jest.Mock).mockReturnValue({
+        searches: mockSearches,
+        loading: false,
+        deleteSearch: jest.fn(() => true),
+        loadSearch: jest.fn((id: string) => mockSearches.find(s => s.id === id)),
+        clearAll: jest.fn(),
+        refresh: jest.fn(),
+      });
+    });
+
+    it('should display filter input when searches exist', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      expect(screen.getByPlaceholderText('Filtrar buscas...')).toBeInTheDocument();
+    });
+
+    it('should filter searches by name', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      fireEvent.change(filterInput, { target: { value: 'Calçados' } });
+
+      expect(screen.getByText('Calçados RJ')).toBeInTheDocument();
+      expect(screen.queryByText('Uniformes SC')).not.toBeInTheDocument();
+      expect(screen.getByText(/\(1\/3\)/i)).toBeInTheDocument(); // Counter
+    });
+
+    it('should filter searches by UF', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      fireEvent.change(filterInput, { target: { value: 'PR' } });
+
+      expect(screen.getByText('Uniformes SP/PR')).toBeInTheDocument();
+      expect(screen.queryByText('Calçados RJ')).not.toBeInTheDocument();
+      expect(screen.queryByText('Uniformes SC')).not.toBeInTheDocument();
+    });
+
+    it('should filter searches by setor/termos', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      fireEvent.change(filterInput, { target: { value: 'sapato' } });
+
+      expect(screen.getByText('Calçados RJ')).toBeInTheDocument();
+      expect(screen.queryByText('Uniformes SC')).not.toBeInTheDocument();
+    });
+
+    it('should show clear button when typing', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      fireEvent.change(filterInput, { target: { value: 'test' } });
+
+      const clearButton = screen.getByLabelText('Limpar filtro');
+      expect(clearButton).toBeInTheDocument();
+    });
+
+    it('should clear filter when clicking clear button', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...') as HTMLInputElement;
+      fireEvent.change(filterInput, { target: { value: 'test' } });
+
+      const clearButton = screen.getByLabelText('Limpar filtro');
+      fireEvent.click(clearButton);
+
+      expect(filterInput.value).toBe('');
+      expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument(); // Counter back to full
+    });
+
+    it('should clear filter on Escape key', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...') as HTMLInputElement;
+      fireEvent.change(filterInput, { target: { value: 'test' } });
+      fireEvent.keyDown(filterInput, { key: 'Escape' });
+
+      expect(filterInput.value).toBe('');
+    });
+
+    it('should show empty state when no results match filter', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      fireEvent.change(filterInput, { target: { value: 'NOMATCH123' } });
+
+      expect(screen.getByText('Nenhuma busca encontrada')).toBeInTheDocument();
+      expect(screen.getByText(/Tente outro termo de busca/i)).toBeInTheDocument();
+    });
+
+    it('should update counter dynamically when filtering', () => {
+      render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
+
+      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      fireEvent.click(button);
+
+      // Initial: 3/10
+      expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
+
+      // Filter to 2 results
+      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      fireEvent.change(filterInput, { target: { value: 'Uniformes' } });
+      expect(screen.getByText(/\(2\/3\)/i)).toBeInTheDocument();
+
+      // Filter to 1 result
+      fireEvent.change(filterInput, { target: { value: 'SC' } });
+      expect(screen.getByText(/\(1\/3\)/i)).toBeInTheDocument();
+
+      // Clear filter: back to 3/10
+      fireEvent.change(filterInput, { target: { value: '' } });
+      expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
     });
   });
 });
