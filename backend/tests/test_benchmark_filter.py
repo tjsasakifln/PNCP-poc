@@ -34,7 +34,7 @@ def large_dataset():
     """Dataset de 1000 licitações para throughput testing."""
     return [
         {
-            "uf": f"SP" if i % 3 == 0 else "RJ",
+            "uf": "SP" if i % 3 == 0 else "RJ",
             "valorTotalEstimado": 50_000 + (i * 1_000),
             "objetoCompra": f"Aquisição de uniformes escolares variante {i}",
             "modalidadeNome": "Pregão Eletrônico",
