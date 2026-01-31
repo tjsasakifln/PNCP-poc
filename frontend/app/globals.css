@@ -303,3 +303,98 @@ select {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ==================================
+   React Day Picker Custom Styling
+   Issue #118 - Mobile-Optimized Date Picker
+   ================================== */
+
+.mobile-date-picker .rdp {
+  --rdp-cell-size: 44px;
+  --rdp-accent-color: var(--brand-navy);
+  --rdp-background-color: var(--brand-blue-subtle);
+  --rdp-accent-color-dark: var(--brand-blue-hover);
+  --rdp-background-color-dark: var(--surface-2);
+  --rdp-outline: 3px solid var(--ring);
+  --rdp-outline-selected: 2px solid var(--brand-blue);
+  margin: 0;
+}
+
+/* Month navigation */
+.mobile-date-picker .rdp-caption {
+  @apply flex justify-between items-center mb-4;
+}
+
+.mobile-date-picker .rdp-caption_label {
+  @apply text-base font-semibold text-ink;
+}
+
+.mobile-date-picker .rdp-nav_button {
+  @apply w-10 h-10 flex items-center justify-center rounded-button
+         text-ink-secondary hover:bg-surface-1 transition-colors;
+}
+
+/* Weekday headers */
+.mobile-date-picker .rdp-head_cell {
+  @apply text-xs font-medium text-ink-muted uppercase;
+  width: 44px;
+  height: 32px;
+}
+
+/* Day cells */
+.mobile-date-picker .rdp-cell {
+  @apply text-sm;
+  width: 44px;
+  height: 44px;
+}
+
+.mobile-date-picker .rdp-day {
+  @apply w-full h-full flex items-center justify-center rounded-button
+         text-ink hover:bg-surface-1 transition-colors;
+  border: 2px solid transparent;
+}
+
+/* Selected day */
+.mobile-date-picker .rdp-day_selected {
+  @apply bg-brand-navy text-white font-semibold;
+  border-color: var(--brand-navy);
+}
+
+.mobile-date-picker .rdp-day_selected:hover {
+  @apply bg-brand-blue-hover;
+}
+
+/* Today */
+.mobile-date-picker .rdp-day_today {
+  @apply font-semibold;
+  border-color: var(--brand-blue);
+}
+
+/* Disabled days */
+.mobile-date-picker .rdp-day_disabled {
+  @apply text-ink-faint cursor-not-allowed opacity-50;
+}
+
+.mobile-date-picker .rdp-day_disabled:hover {
+  @apply bg-transparent;
+}
+
+/* Outside month days */
+.mobile-date-picker .rdp-day_outside {
+  @apply text-ink-faint;
+}
+
+/* Focus states for accessibility */
+.mobile-date-picker .rdp-day:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Dark mode overrides */
+.dark .mobile-date-picker .rdp-day {
+  @apply text-ink;
+}
+
+.dark .mobile-date-picker .rdp-day_selected {
+  @apply bg-brand-navy text-white;
+}
