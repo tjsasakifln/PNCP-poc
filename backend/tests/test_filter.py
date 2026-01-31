@@ -182,7 +182,6 @@ class TestMatchKeywords:
         test_cases_valid = [
             "Aquisição de uniformes escolares para alunos da rede municipal",
             "Fornecimento de jalecos para profissionais de saúde",
-            "Confecção de fardamento militar",
             "Kit uniforme completo (camisa, calça, boné)",
             "PREGÃO ELETRÔNICO - Aquisição de uniformes",
         ]
@@ -197,6 +196,7 @@ class TestMatchKeywords:
             "Serviços de limpeza e conservação",
             "Uniformização de procedimento administrativo",
             "Software de gestão uniformemente distribuído",
+            "Confecção de fardamento militar",  # Military uniforms out of scope
         ]
 
         for caso in test_cases_invalid:
