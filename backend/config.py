@@ -27,13 +27,10 @@ MODALIDADES_PNCP = {
 }
 
 # Default modalities for BidIQ Uniformes search
-# Focus on competitive procurement modalities most likely for uniforms
+# Focus on Pregão Eletrônico (6) - most common for uniforms
+# NOTE: Modalidade 8 (Dispensa) has 2000+ records and causes timeouts
 DEFAULT_MODALIDADES: List[int] = [
-    4,  # Concorrência - Eletrônica
-    5,  # Concorrência - Presencial
-    6,  # Pregão - Eletrônico (most common for uniforms)
-    7,  # Pregão - Presencial
-    8,  # Dispensa
+    6,  # Pregão - Eletrônico (most common for uniforms, fast response)
 ]
 
 
