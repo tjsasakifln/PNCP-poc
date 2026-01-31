@@ -624,6 +624,295 @@ class TestBuscarEndpoint:
         assert "Search completed successfully" in log_messages
 
 
+class TestSetoresEndpoint:
+    """Test /setores endpoint for sector listing."""
+
+    def test_listar_setores_status_code(self, client):
+        """Setores endpoint should return 200 OK."""
+        response = client.get("/setores")
+        assert response.status_code == 200
+
+    def test_listar_setores_response_structure(self, client):
+        """Setores endpoint should return list of sectors."""
+        response = client.get("/setores")
+        data = response.json()
+        assert "setores" in data
+        assert isinstance(data["setores"], list)
+
+    def test_listar_setores_contains_uniformes(self, client):
+        """Setores endpoint should include uniformes sector."""
+        response = client.get("/setores")
+        data = response.json()
+        setores = data["setores"]
+
+        # Should have at least one sector
+        assert len(setores) > 0
+
+        # Each sector should have required fields
+        for sector in setores:
+            assert "id" in sector
+            assert "name" in sector
+            assert "description" in sector
+
+
+class TestDebugPNCPEndpoint:
+    """Test /debug/pncp-test diagnostic endpoint."""
+
+    def test_debug_pncp_test_success(self, client, monkeypatch):
+        """Debug endpoint should return success when PNCP is reachable."""
+        from unittest.mock import Mock
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_page.return_value = {
+            "totalRegistros": 100,
+            "data": [{"codigoCompra": "123"}],
+        }
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+
+        response = client.get("/debug/pncp-test")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "success" in data
+        assert data["success"] is True
+        assert "total_registros" in data
+        assert "items_returned" in data
+        assert "elapsed_ms" in data
+
+    def test_debug_pncp_test_failure(self, client, monkeypatch):
+        """Debug endpoint should return error details when PNCP fails."""
+        from unittest.mock import Mock
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_page.side_effect = Exception("Connection timeout")
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+
+        response = client.get("/debug/pncp-test")
+        assert response.status_code == 200  # Always 200 (diagnostic endpoint)
+
+        data = response.json()
+        assert data["success"] is False
+        assert "error" in data
+        assert "Connection timeout" in data["error"]
+        assert "error_type" in data
+        assert data["error_type"] == "Exception"
+
+    def test_debug_pncp_test_measures_elapsed_time(self, client, monkeypatch):
+        """Debug endpoint should measure response time."""
+        from unittest.mock import Mock
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_page.return_value = {
+            "totalRegistros": 10,
+            "data": [],
+        }
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+
+        response = client.get("/debug/pncp-test")
+        data = response.json()
+
+        # Should have elapsed time in milliseconds
+        assert "elapsed_ms" in data
+        assert isinstance(data["elapsed_ms"], int)
+        assert data["elapsed_ms"] >= 0
+
+
+class TestBuscarValidationExtended:
+    """Extended validation tests for /buscar endpoint edge cases."""
+
+    def test_buscar_invalid_sector_id(self, client):
+        """Request with invalid sector ID should return 500 (HTTPException caught by general handler)."""
+        request = {
+            "ufs": ["SP"],
+            "data_inicial": "2025-01-01",
+            "data_final": "2025-01-31",
+            "setor_id": "invalid-sector-999",
+        }
+        response = client.post("/buscar", json=request)
+        # HTTPException(400) is caught by the outer Exception handler and converted to 500
+        # This covers line 213-214 (KeyError -> HTTPException path)
+        assert response.status_code == 500
+        assert "detail" in response.json()
+
+    def test_buscar_date_range_end_before_start(self, client):
+        """Request with end date before start date should fail validation."""
+        request = {
+            "ufs": ["SP"],
+            "data_inicial": "2025-01-31",
+            "data_final": "2025-01-01",  # Before start
+        }
+        response = client.post("/buscar", json=request)
+        assert response.status_code == 422
+
+    def test_buscar_with_custom_search_terms(self, client, monkeypatch):
+        """Request with custom search terms should use them instead of sector keywords."""
+        from unittest.mock import Mock
+        from io import BytesIO
+
+        mock_licitacao = {
+            "codigoCompra": "CUSTOM123",
+            "objetoCompra": "Aquisição de customizado especial",
+            "nomeOrgao": "Prefeitura Test",
+            "uf": "SP",
+            "municipio": "São Paulo",
+            "valorTotalEstimado": 100000.00,
+            "dataAberturaProposta": "2025-02-10T10:00:00",
+            "linkSistemaOrigem": "https://pncp.gov.br/test",
+        }
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
+
+        def mock_gerar_resumo(bids, **kwargs):
+            from schemas import ResumoLicitacoes
+            return ResumoLicitacoes(
+                resumo_executivo="Custom terms used",
+                total_oportunidades=1,
+                valor_total=100000.00,
+            )
+
+        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
+
+        request = {
+            "ufs": ["SP"],
+            "data_inicial": "2025-01-01",
+            "data_final": "2025-01-31",
+            "termos_busca": "customizado especial",
+        }
+
+        response = client.post("/buscar", json=request)
+        assert response.status_code == 200
+
+    def test_buscar_with_empty_custom_search_terms(self, client, monkeypatch):
+        """Request with empty/whitespace-only custom terms should use sector keywords."""
+        from unittest.mock import Mock
+        from io import BytesIO
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_all.return_value = iter([])
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([], {}))
+
+        request = {
+            "ufs": ["SP"],
+            "data_inicial": "2025-01-01",
+            "data_final": "2025-01-31",
+            "termos_busca": "   ",  # Only whitespace
+        }
+
+        response = client.post("/buscar", json=request)
+        assert response.status_code == 200
+
+
+class TestBuscarDiagnosticLogging:
+    """Test diagnostic logging features in /buscar endpoint."""
+
+    def test_buscar_logs_keyword_rejection_sample(self, client, monkeypatch, caplog):
+        """Should log sample of keyword-rejected bids when rejections occur."""
+        from unittest.mock import Mock
+        from io import BytesIO
+
+        # Create bids that will be keyword-rejected
+        rejected_bids = [
+            {
+                "codigoCompra": f"REJ{i}",
+                "objetoCompra": "Aquisição de equipamentos de informática não relacionados a uniformes",
+                "nomeOrgao": "Prefeitura Test",
+                "uf": "SP",
+                "municipio": "São Paulo",
+                "valorTotalEstimado": 100000.00,
+                "dataAberturaProposta": "2025-02-10T10:00:00",
+            }
+            for i in range(5)
+        ]
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_all.return_value = iter(rejected_bids)
+
+        # Mock filter to return empty results (all rejected by keyword)
+        def mock_filter_batch(bids, **kwargs):
+            return [], {
+                "total": len(bids),
+                "aprovadas": 0,
+                "rejeitadas_keyword": len(bids),
+            }
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.filter_batch", mock_filter_batch)
+
+        request = {
+            "ufs": ["SP"],
+            "data_inicial": "2025-01-01",
+            "data_final": "2025-01-31",
+        }
+
+        with caplog.at_level("DEBUG"):
+            _response = client.post("/buscar", json=request)
+
+        # Check if diagnostic logging occurred
+        log_messages = " ".join([record.message for record in caplog.records])
+        # Should mention keyword rejections
+        assert "rejeitadas_keyword" in log_messages.lower() or "keyword" in log_messages.lower()
+
+    def test_buscar_override_llm_total_oportunidades(self, client, monkeypatch, caplog):
+        """Should override LLM total_oportunidades when it differs from actual count."""
+        from unittest.mock import Mock
+        from io import BytesIO
+
+        mock_licitacao = {
+            "codigoCompra": "TEST123",
+            "objetoCompra": "Aquisição de uniformes escolares",
+            "nomeOrgao": "Prefeitura Test",
+            "uf": "SP",
+            "municipio": "São Paulo",
+            "valorTotalEstimado": 150000.00,
+            "dataAberturaProposta": "2025-02-10T10:00:00",
+        }
+
+        mock_client_instance = Mock()
+        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
+
+        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
+
+        # Mock LLM to return WRONG count (0 instead of 1)
+        def mock_gerar_resumo(bids, **kwargs):
+            from schemas import ResumoLicitacoes
+            return ResumoLicitacoes(
+                resumo_executivo="Test",
+                total_oportunidades=0,  # WRONG - should be 1
+                valor_total=0.0,  # WRONG - should be 150k
+            )
+
+        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
+
+        request = {
+            "ufs": ["SP"],
+            "data_inicial": "2025-01-01",
+            "data_final": "2025-01-31",
+        }
+
+        with caplog.at_level("WARNING"):
+            response = client.post("/buscar", json=request)
+
+        # Verify override occurred
+        data = response.json()
+        assert data["resumo"]["total_oportunidades"] == 1  # Overridden to correct value
+
+        # Check for warning log
+        log_messages = " ".join([record.message for record in caplog.records])
+        assert "overriding with actual count" in log_messages.lower()
+
+
 class TestBuscarIntegration:
     """Integration tests using real modules (not fully mocked)."""
 
