@@ -5,6 +5,8 @@
  * Install required dependencies:
  *   npm install --save-dev jest @testing-library/react @testing-library/jest-dom
  *   npm install --save-dev @testing-library/user-event jest-environment-jsdom
+ *
+ * Cache invalidation: 2026-01-31-v2
  */
 
 const nextJest = require('next/jest')
