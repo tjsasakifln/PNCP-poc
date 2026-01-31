@@ -379,16 +379,41 @@ export default function HomePage() {
       }
 
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
       const setorLabel = sectorName.replace(/\s+/g, '_');
       const filename = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+
+      // Feature detection: check if browser supports download attribute
+      const anchor = document.createElement('a');
+      const supportsDownload = 'download' in anchor;
+
+      if (supportsDownload) {
+        // Modern browsers: Use Blob URL with download attribute (best UX)
+        const url = URL.createObjectURL(blob);
+        anchor.href = url;
+        anchor.download = filename;
+
+        // Trigger download without visible DOM manipulation (cleaner UX)
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+
+        // Clean up Blob URL after download starts
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      } else {
+        // Fallback for older browsers and iOS Safari
+        // Use window.open() approach for better mobile compatibility
+        const url = URL.createObjectURL(blob);
+        const newWindow = window.open(url, '_blank');
+
+        if (!newWindow) {
+          // If popup blocked, try location approach as last resort
+          window.location.href = url;
+        }
+
+        // Clean up Blob URL after a delay
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
 
       const downloadEndTime = Date.now();
       const timeElapsed = downloadEndTime - downloadStartTime;
@@ -403,6 +428,8 @@ export default function HomePage() {
         filename: filename,
         total_filtered: result.total_filtrado || 0,
         valor_total: result.resumo?.valor_total || 0,
+        download_method: supportsDownload ? 'blob_download_attribute' : 'window_open_fallback',
+        browser_supports_download: supportsDownload,
       });
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : 'Não foi possível baixar o arquivo.';
