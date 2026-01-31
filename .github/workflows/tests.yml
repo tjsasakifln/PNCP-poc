@@ -109,15 +109,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # TEMPORARILY DISABLE cache to force fresh install
-          # cache: 'npm'
-          # cache-dependency-path: frontend/package-lock.json
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: |
           cd frontend
           if [ -f package.json ]; then
             npm ci || npm install
+          fi
+
+      - name: Run security vulnerability audit
+        run: |
+          cd frontend
+          if [ -f package.json ]; then
+            # Run npm audit (allow to fail for now, just report)
+            npm audit --audit-level=moderate --json > audit-report.json || echo "⚠️ Vulnerabilities found - review required"
+            # Show summary
+            npm audit || true
           fi
 
       - name: Clear all caches

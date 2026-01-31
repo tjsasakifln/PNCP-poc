@@ -9,19 +9,18 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { EnhancedLoadingProgress } from '../components/EnhancedLoadingProgress';
 
-// Mock timers for progress calculation
-jest.useFakeTimers();
-
 describe('EnhancedLoadingProgress Component', () => {
   const mockOnStageChange = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    // Clean up all timers before switching back to real timers
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   describe('TC-LOADING-001: Basic rendering', () => {
@@ -89,7 +88,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward 5 seconds (50% of 10s estimated time)
-      jest.advanceTimersByTime(5000);
+      act(() => {
+        jest.advanceTimersByTime(5000);
+      });
 
       await waitFor(() => {
         const progressText = screen.getByText(/\d+%/);
@@ -109,7 +110,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward past estimated time (10s > 5s)
-      jest.advanceTimersByTime(10000);
+      act(() => {
+        jest.advanceTimersByTime(10000);
+      });
 
       await waitFor(() => {
         const progressText = screen.getByText(/\d+%/);
@@ -134,25 +137,33 @@ describe('EnhancedLoadingProgress Component', () => {
       expect(screen.getAllByText('Conectando ao PNCP')[0]).toBeInTheDocument();
 
       // Fast-forward to Stage 2: Buscando (10-40%)
-      jest.advanceTimersByTime(6000); // 12% of 50s
+      act(() => {
+        jest.advanceTimersByTime(6000); // 12% of 50s
+      });
       await waitFor(() => {
         expect(screen.getByText('Buscando dados')).toBeInTheDocument();
       });
 
       // Fast-forward to Stage 3: Filtrando (40-70%)
-      jest.advanceTimersByTime(15000); // 30% more
+      act(() => {
+        jest.advanceTimersByTime(15000); // 30% more
+      });
       await waitFor(() => {
         expect(screen.getByText('Filtrando resultados')).toBeInTheDocument();
       });
 
       // Fast-forward to Stage 4: Gerando resumo (70-90%)
-      jest.advanceTimersByTime(10000); // 20% more
+      act(() => {
+        jest.advanceTimersByTime(10000); // 20% more
+      });
       await waitFor(() => {
         expect(screen.getByText('Gerando resumo IA')).toBeInTheDocument();
       });
 
       // Fast-forward to Stage 5: Preparando Excel (90-100%)
-      jest.advanceTimersByTime(7000); // 14% more
+      act(() => {
+        jest.advanceTimersByTime(7000); // 14% more
+      });
       await waitFor(() => {
         expect(screen.getByText('Preparando Excel')).toBeInTheDocument();
       });
@@ -191,7 +202,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward 10 seconds
-      jest.advanceTimersByTime(10000);
+      act(() => {
+        jest.advanceTimersByTime(10000);
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/10s \/ 60s/)).toBeInTheDocument();
@@ -208,7 +221,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward 10 seconds
-      jest.advanceTimersByTime(10000);
+      act(() => {
+        jest.advanceTimersByTime(10000);
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/~20s restantes/)).toBeInTheDocument();
@@ -225,7 +240,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward past estimated time
-      jest.advanceTimersByTime(15000);
+      act(() => {
+        jest.advanceTimersByTime(15000);
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/Finalizando\.\.\./)).toBeInTheDocument();
@@ -258,7 +275,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward to stage 3 (40% of 20s = 8s)
-      jest.advanceTimersByTime(9000);
+      act(() => {
+        jest.advanceTimersByTime(9000);
+      });
 
       await waitFor(() => {
         // Stages 1 and 2 should be completed (showing checkmarks)
@@ -308,7 +327,9 @@ describe('EnhancedLoadingProgress Component', () => {
       );
 
       // Fast-forward 10 seconds (50% of 20s)
-      jest.advanceTimersByTime(10000);
+      act(() => {
+        jest.advanceTimersByTime(10000);
+      });
 
       await waitFor(() => {
         const progressBar = screen.getByRole('progressbar');
@@ -350,7 +371,9 @@ describe('EnhancedLoadingProgress Component', () => {
       expect(progressBar).toHaveStyle({ width: '0%' });
 
       // Fast-forward 5 seconds (50% of 10s)
-      jest.advanceTimersByTime(5000);
+      act(() => {
+        jest.advanceTimersByTime(5000);
+      });
 
       await waitFor(() => {
         const width = progressBar.style.width;

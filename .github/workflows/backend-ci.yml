@@ -35,6 +35,13 @@ jobs:
           cd backend
           ruff check .
 
+      - name: Run security vulnerability scan
+        run: |
+          cd backend
+          pip install safety
+          # Scan for known vulnerabilities (allow to fail for now)
+          safety check --json || echo "⚠️ Vulnerabilities found - review required"
+
       - name: Run tests with coverage
         run: |
           cd backend
