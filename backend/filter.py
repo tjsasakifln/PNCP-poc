@@ -237,6 +237,15 @@ KEYWORDS_EXCLUSAO: Set[str] = {
     "solucao de software",
     "plataforma web",
 
+    # --- Military / defense (uniformes militares fora do escopo) ---
+    "militar",
+    "militares",
+    "combate",
+    "batalhão",
+    "batalhao",
+    "exercito",
+    "exército",
+
     # --- Decoration / events / costumes ---
     "decoração",
     "decoracao",
