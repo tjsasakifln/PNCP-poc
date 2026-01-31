@@ -1,0 +1,157 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/lighthouse.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Run Lighthouse CI
+        run: |
+          cd frontend
+          npm run lighthouse
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: frontend/.lighthouseci/
+          retention-days: 30
+
+      - name: Comment PR with Lighthouse results
+        uses: actions/github-script@v8
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find latest manifest
+            const lhciDir = 'frontend/.lighthouseci';
+            if (!fs.existsSync(lhciDir)) {
+              console.log('No Lighthouse results found');
+              return;
+            }
+
+            const files = fs.readdirSync(lhciDir);
+            const manifestFile = files.find(f => f.startsWith('manifest'));
+
+            if (!manifestFile) {
+              console.log('No manifest found');
+              return;
+            }
+
+            const manifest = JSON.parse(
+              fs.readFileSync(path.join(lhciDir, manifestFile), 'utf8')
+            );
+
+            // Get latest run results
+            const latestRun = manifest[0];
+            if (!latestRun) {
+              console.log('No runs in manifest');
+              return;
+            }
+
+            const resultPath = path.join(lhciDir, latestRun.jsonPath);
+            const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+
+            // Extract scores
+            const scores = {
+              performance: Math.round(result.categories.performance.score * 100),
+              accessibility: Math.round(result.categories.accessibility.score * 100),
+              bestPractices: Math.round(result.categories['best-practices'].score * 100),
+              seo: Math.round(result.categories.seo.score * 100),
+            };
+
+            // Extract Core Web Vitals
+            const audits = result.audits;
+            const fcp = Math.round(audits['first-contentful-paint'].numericValue);
+            const lcp = Math.round(audits['largest-contentful-paint'].numericValue);
+            const tbt = Math.round(audits['total-blocking-time'].numericValue);
+            const cls = audits['cumulative-layout-shift'].numericValue.toFixed(3);
+            const si = Math.round(audits['speed-index'].numericValue);
+
+            // Build comment
+            const scoreEmoji = (score) => {
+              if (score >= 90) return '🟢';
+              if (score >= 50) return '🟡';
+              return '🔴';
+            };
+
+            const message = `## 🚦 Lighthouse Performance Report
+
+### Category Scores
+| Category | Score |
+|----------|-------|
+| ${scoreEmoji(scores.performance)} Performance | **${scores.performance}** |
+| ${scoreEmoji(scores.accessibility)} Accessibility | **${scores.accessibility}** |
+| ${scoreEmoji(scores.bestPractices)} Best Practices | **${scores.bestPractices}** |
+| ${scoreEmoji(scores.seo)} SEO | **${scores.seo}** |
+
+### Core Web Vitals
+| Metric | Value | Target |
+|--------|-------|--------|
+| First Contentful Paint (FCP) | ${fcp}ms | < 2000ms |
+| Largest Contentful Paint (LCP) | ${lcp}ms | < 2500ms |
+| Total Blocking Time (TBT) | ${tbt}ms | < 300ms |
+| Cumulative Layout Shift (CLS) | ${cls} | < 0.1 |
+| Speed Index (SI) | ${si}ms | < 3400ms |
+
+### Performance Budget
+${scores.performance >= 85 ? '✅' : '❌'} Performance score meets threshold (85+)
+${lcp <= 2500 ? '✅' : '❌'} LCP within budget (< 2.5s)
+${cls <= 0.1 ? '✅' : '❌'} CLS within budget (< 0.1)
+
+📊 [View full Lighthouse report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+`;
+
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } catch (error) {
+              console.log('Failed to post comment:', error.message);
+            }

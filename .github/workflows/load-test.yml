@@ -1,0 +1,263 @@
+name: Load Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      users:
+        description: 'Number of concurrent users'
+        required: false
+        default: '50'
+      duration:
+        description: 'Test duration (e.g., 120s, 5m)'
+        required: false
+        default: '120s'
+  schedule:
+    # Run weekly on Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/load-test.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  load-test:
+    name: Load Test - Backend API
+    runs-on: ubuntu-latest
+
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-fallback-key' }}
+      USERS: ${{ github.event.inputs.users || '50' }}
+      DURATION: ${{ github.event.inputs.duration || '120s' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Start backend server
+        run: |
+          cd backend
+          uvicorn main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
+
+          # Wait for backend to be ready (max 30 seconds)
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+              echo "✅ Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 1
+          done
+
+          echo "❌ Backend failed to start within 30 seconds"
+          cat backend.log
+          exit 1
+
+      - name: Run smoke test (5 users, 30s)
+        run: |
+          cd backend
+          mkdir -p results
+          locust -f locustfile.py \
+            --host=http://localhost:8000 \
+            --users 5 \
+            --spawn-rate 1 \
+            --run-time 30s \
+            --headless \
+            --only-summary \
+            --csv=results/smoke-test
+        continue-on-error: true
+
+      - name: Run load test (configurable)
+        run: |
+          cd backend
+          echo "Running load test: $USERS users for $DURATION"
+          locust -f locustfile.py \
+            --host=http://localhost:8000 \
+            --users $USERS \
+            --spawn-rate 10 \
+            --run-time $DURATION \
+            --headless \
+            --csv=results/load-test \
+            --html=results/load-test-report.html
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -n "$BACKEND_PID" ]; then
+            kill $BACKEND_PID || true
+            echo "Backend stopped (PID: $BACKEND_PID)"
+          fi
+
+      - name: Parse and validate results
+        if: always()
+        run: |
+          cd backend/results
+
+          # Check if results exist
+          if [ ! -f load-test_stats.csv ]; then
+            echo "❌ No load test results found"
+            exit 1
+          fi
+
+          # Extract key metrics
+          echo "=" | tr '=' '-' | head -c 80; echo
+          echo "LOAD TEST RESULTS SUMMARY"
+          echo "=" | tr '=' '-' | head -c 80; echo
+
+          # Parse CSV (skip header, get /api/buscar row)
+          SEARCH_STATS=$(grep "/api/buscar" load-test_stats.csv | tail -1)
+
+          if [ -n "$SEARCH_STATS" ]; then
+            # CSV columns: Type,Name,Request Count,Failure Count,Median,Average,Min,Max,Content Size,Requests/s,Failures/s,50%,66%,75%,80%,90%,95%,98%,99%,99.9%,99.99%,100%
+            REQ_COUNT=$(echo "$SEARCH_STATS" | cut -d',' -f3)
+            FAIL_COUNT=$(echo "$SEARCH_STATS" | cut -d',' -f4)
+            AVG_TIME=$(echo "$SEARCH_STATS" | cut -d',' -f6)
+            P95_TIME=$(echo "$SEARCH_STATS" | cut -d',' -f16)
+            RPS=$(echo "$SEARCH_STATS" | cut -d',' -f10)
+
+            echo "📊 /api/buscar endpoint:"
+            echo "   Total Requests: $REQ_COUNT"
+            echo "   Failed Requests: $FAIL_COUNT"
+            echo "   Average Response Time: ${AVG_TIME}ms"
+            echo "   P95 Response Time: ${P95_TIME}ms"
+            echo "   Requests/Second: $RPS"
+
+            # Calculate failure rate
+            if [ "$REQ_COUNT" -gt 0 ]; then
+              FAILURE_RATE=$(awk "BEGIN {print ($FAIL_COUNT / $REQ_COUNT) * 100}")
+              echo "   Failure Rate: ${FAILURE_RATE}%"
+
+              # Validate thresholds
+              echo ""
+              echo "=" | tr '=' '-' | head -c 80; echo
+              echo "PERFORMANCE VALIDATION"
+              echo "=" | tr '=' '-' | head -c 80; echo
+
+              # Threshold: < 5% failure rate
+              if (( $(echo "$FAILURE_RATE < 5" | bc -l) )); then
+                echo "✅ Failure rate acceptable (< 5%)"
+              else
+                echo "❌ Failure rate too high (>= 5%)"
+                exit 1
+              fi
+
+              # Threshold: P95 < 10 seconds
+              if (( $(echo "$P95_TIME < 10000" | bc -l) )); then
+                echo "✅ P95 response time acceptable (< 10s)"
+              else
+                echo "⚠️  P95 response time high (>= 10s)"
+              fi
+
+              # Threshold: RPS > 1
+              if (( $(echo "$RPS > 1" | bc -l) )); then
+                echo "✅ Throughput acceptable (> 1 req/s)"
+              else
+                echo "⚠️  Throughput low (<= 1 req/s)"
+              fi
+            fi
+          else
+            echo "⚠️  No /api/buscar statistics found"
+          fi
+
+          echo ""
+          echo "=" | tr '=' '-' | head -c 80; echo
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-results
+          path: backend/results/
+          retention-days: 30
+
+      - name: Upload backend logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-backend-logs
+          path: backend/backend.log
+          retention-days: 7
+
+      - name: Comment PR with results
+        uses: actions/github-script@v8
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            let message = '## 🔥 Load Test Results\n\n';
+            message += `**Configuration:** ${process.env.USERS} concurrent users for ${process.env.DURATION}\n\n`;
+
+            const csvPath = 'backend/results/load-test_stats.csv';
+
+            if (fs.existsSync(csvPath)) {
+              const csv = fs.readFileSync(csvPath, 'utf8');
+              const lines = csv.split('\n');
+
+              // Find /api/buscar row
+              const searchRow = lines.find(line => line.includes('/api/buscar'));
+
+              if (searchRow) {
+                const cols = searchRow.split(',');
+                const reqCount = cols[2];
+                const failCount = cols[3];
+                const avgTime = cols[5];
+                const p95Time = cols[15];
+                const rps = cols[9];
+
+                const failureRate = ((parseInt(failCount) / parseInt(reqCount)) * 100).toFixed(2);
+
+                message += '### Search Endpoint Performance\n\n';
+                message += '| Metric | Value |\n';
+                message += '|--------|-------|\n';
+                message += `| Total Requests | ${reqCount} |\n`;
+                message += `| Failed Requests | ${failCount} (${failureRate}%) |\n`;
+                message += `| Average Response Time | ${avgTime}ms |\n`;
+                message += `| P95 Response Time | ${p95Time}ms |\n`;
+                message += `| Throughput | ${parseFloat(rps).toFixed(2)} req/s |\n\n`;
+
+                // Thresholds
+                message += '### Quality Gates\n\n';
+                message += failureRate < 5 ? '✅' : '❌';
+                message += ` Failure Rate < 5% (${failureRate}%)\n`;
+                message += parseFloat(p95Time) < 10000 ? '✅' : '⚠️';
+                message += ` P95 Response Time < 10s (${p95Time}ms)\n`;
+                message += parseFloat(rps) > 1 ? '✅' : '⚠️';
+                message += ` Throughput > 1 req/s (${rps})\n\n`;
+              }
+            } else {
+              message += '⚠️ No load test results found.\n\n';
+            }
+
+            message += `📊 [View full report in artifacts](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n`;
+
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } catch (error) {
+              console.log('Failed to post comment:', error.message);
+            }

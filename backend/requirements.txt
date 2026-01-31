@@ -27,6 +27,9 @@ pytest-cov==6.0.0
 pytest-benchmark==5.1.0
 faker==37.1.0
 
+# Load testing
+locust==2.32.7
+
 # Code quality
 ruff==0.9.6
 mypy==1.15.0
