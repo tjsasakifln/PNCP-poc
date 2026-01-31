@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import type { BuscaResult, ValidationErrors, Setor } from "./types";
 import { EnhancedLoadingProgress } from "../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "./components/LoadingResultsSkeleton";
@@ -8,9 +9,12 @@ import { EmptyState } from "./components/EmptyState";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { RegionSelector } from "./components/RegionSelector";
 import { SavedSearchesDropdown } from "./components/SavedSearchesDropdown";
+import { CustomSelect } from "./components/CustomSelect";
+import { CustomDateInput } from "./components/CustomDateInput";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useSavedSearches } from "../hooks/useSavedSearches";
 import { useOnboarding } from "../hooks/useOnboarding";
+import { useKeyboardShortcuts, getShortcutDisplay } from "../hooks/useKeyboardShortcuts";
 import type { SavedSearch } from "../lib/savedSearches";
 
 const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fad0f461ff9565~mv2.png/v1/crop/x_0,y_301,w_5000,h_2398/fill/w_198,h_95,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Descomplicita%20-%20Azul.png";
@@ -97,6 +101,10 @@ export default function HomePage() {
   const [result, setResult] = useState<BuscaResult | null>(null);
   const [rawCount, setRawCount] = useState(0);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  // Refs for keyboard shortcuts
+  const searchButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     fetch("/api/setores")
@@ -134,6 +142,50 @@ export default function HomePage() {
   useEffect(() => {
     setValidationErrors(validateForm());
   }, [ufsSelecionadas, dataInicial, dataFinal]);
+
+  // Keyboard shortcuts - Issue #122
+  useKeyboardShortcuts({
+    shortcuts: [
+      {
+        key: 'k',
+        ctrlKey: true,
+        action: () => {
+          if (!loading && canSearch) {
+            searchButtonRef.current?.click();
+            trackEvent('keyboard_shortcut_used', { shortcut: 'Ctrl+K', action: 'search' });
+          }
+        },
+        description: 'Executar busca'
+      },
+      {
+        key: 'Escape',
+        action: () => {
+          setUfsSelecionadas(new Set());
+          setResult(null);
+          trackEvent('keyboard_shortcut_used', { shortcut: 'Escape', action: 'clear_selection' });
+        },
+        description: 'Limpar seleção de UFs'
+      },
+      {
+        key: 'a',
+        ctrlKey: true,
+        action: () => {
+          selecionarTodos();
+          trackEvent('keyboard_shortcut_used', { shortcut: 'Ctrl+A', action: 'select_all' });
+        },
+        description: 'Selecionar todos os estados'
+      },
+      {
+        key: '/',
+        action: () => {
+          setShowKeyboardHelp(true);
+          trackEvent('keyboard_shortcut_used', { shortcut: '/', action: 'show_help' });
+        },
+        description: 'Mostrar atalhos de teclado'
+      }
+    ],
+    enabled: !showKeyboardHelp && !showSaveDialog
+  });
 
   const toggleUf = (uf: string) => {
     const newSet = new Set(ufsSelecionadas);
@@ -416,13 +468,13 @@ export default function HomePage() {
       <header className="border-b border-strong bg-surface-0 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={LOGO_URL}
               alt="DescompLicita"
               width={140}
               height={67}
               className="h-10 w-auto"
+              priority
             />
           </div>
           <div className="flex items-center gap-4">
@@ -495,23 +547,15 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Sector Selector */}
+          {/* Sector Selector - Issue #89: Custom Select Component */}
           {searchMode === "setor" && (
-            <div>
-              <select
-                id="setor"
-                value={setorId}
-                onChange={e => { setSetorId(e.target.value); setResult(null); }}
-                className="w-full border border-strong rounded-input px-4 py-3 text-base
-                           bg-surface-0 text-ink
-                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
-                           transition-colors"
-              >
-                {setores.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
+            <CustomSelect
+              id="setor"
+              value={setorId}
+              options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
+              onChange={(value) => { setSetorId(value); setResult(null); }}
+              placeholder="Selecione um setor"
+            />
           )}
 
           {/* Custom Terms Input with Tags */}
@@ -653,39 +697,21 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* Date Range Section */}
+        {/* Date Range Section - Issue #89: Custom Date Inputs */}
         <section className="mb-6 animate-fade-in-up stagger-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="data-inicial" className="block text-base font-semibold text-ink mb-2">
-                Data inicial:
-              </label>
-              <input
-                id="data-inicial"
-                type="date"
-                value={dataInicial}
-                onChange={e => { setDataInicial(e.target.value); setResult(null); }}
-                className="w-full border border-strong rounded-input px-4 py-3 text-base
-                           bg-surface-0 text-ink
-                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
-                           transition-colors"
-              />
-            </div>
-            <div>
-              <label htmlFor="data-final" className="block text-base font-semibold text-ink mb-2">
-                Data final:
-              </label>
-              <input
-                id="data-final"
-                type="date"
-                value={dataFinal}
-                onChange={e => { setDataFinal(e.target.value); setResult(null); }}
-                className="w-full border border-strong rounded-input px-4 py-3 text-base
-                           bg-surface-0 text-ink
-                           focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
-                           transition-colors"
-              />
-            </div>
+            <CustomDateInput
+              id="data-inicial"
+              value={dataInicial}
+              onChange={(value) => { setDataInicial(value); setResult(null); }}
+              label="Data inicial:"
+            />
+            <CustomDateInput
+              id="data-final"
+              value={dataFinal}
+              onChange={(value) => { setDataFinal(value); setResult(null); }}
+              label="Data final:"
+            />
           </div>
 
           {validationErrors.date_range && (
@@ -698,6 +724,7 @@ export default function HomePage() {
         {/* Search Buttons */}
         <div className="space-y-3">
           <button
+            ref={searchButtonRef}
             onClick={buscar}
             disabled={loading || !canSearch}
             type="button"
@@ -934,10 +961,85 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Keyboard Shortcuts Help Dialog - Issue #122 */}
+      {showKeyboardHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div className="bg-surface-0 rounded-card shadow-xl max-w-lg w-full p-6 animate-fade-in-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-ink">Atalhos de Teclado</h3>
+              <button
+                onClick={() => setShowKeyboardHelp(false)}
+                type="button"
+                className="text-ink-muted hover:text-ink transition-colors"
+                aria-label="Fechar ajuda de atalhos"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-strong">
+                <span className="text-ink">Executar busca</span>
+                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                  {getShortcutDisplay({ key: 'k', ctrlKey: true, action: () => {}, description: '' })}
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-strong">
+                <span className="text-ink">Selecionar todos os estados</span>
+                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                  {getShortcutDisplay({ key: 'a', ctrlKey: true, action: () => {}, description: '' })}
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-strong">
+                <span className="text-ink">Limpar seleção</span>
+                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                  Esc
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-ink">Mostrar atalhos</span>
+                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                  /
+                </kbd>
+              </div>
+            </div>
+
+            <div className="mt-6 p-3 bg-brand-blue-subtle rounded border border-accent">
+              <p className="text-sm text-ink-secondary">
+                💡 Dica: Pressione <kbd className="px-1.5 py-0.5 bg-surface-0 rounded text-xs font-mono border border-strong">?</kbd> a qualquer momento para ver estes atalhos.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowKeyboardHelp(false)}
+              type="button"
+              className="mt-4 w-full px-4 py-2 text-sm font-medium text-white bg-brand-navy
+                         hover:bg-brand-blue-hover rounded-button transition-colors"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="border-t mt-12 py-6 text-center text-xs text-ink-muted" role="contentinfo">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          DescompLicita &mdash; Licitações e Contratos de Forma Descomplicada
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+          <span>DescompLicita &mdash; Licitações e Contratos de Forma Descomplicada</span>
+          <button
+            onClick={() => setShowKeyboardHelp(true)}
+            className="text-xs text-ink-muted hover:text-brand-blue transition-colors flex items-center gap-1"
+            title="Ver atalhos de teclado"
+            aria-label="Ver atalhos de teclado"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            Atalhos
+          </button>
         </div>
       </footer>
     </div>

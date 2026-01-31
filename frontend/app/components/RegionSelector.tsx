@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 const REGIONS: Record<string, { label: string; ufs: string[] }> = {
   norte: { label: "Norte", ufs: ["AC", "AP", "AM", "PA", "RO", "RR", "TO"] },
   nordeste: { label: "Nordeste", ufs: ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"] },
@@ -14,11 +16,22 @@ interface RegionSelectorProps {
 }
 
 export function RegionSelector({ selected, onToggleRegion }: RegionSelectorProps) {
+  const [clickedKey, setClickedKey] = useState<string | null>(null);
+
   const isRegionFullySelected = (regionUfs: string[]) =>
     regionUfs.every(uf => selected.has(uf));
 
   const isRegionPartiallySelected = (regionUfs: string[]) =>
     regionUfs.some(uf => selected.has(uf)) && !isRegionFullySelected(regionUfs);
+
+  const handleClick = (key: string, regionUfs: string[]) => {
+    // Trigger animation
+    setClickedKey(key);
+    setTimeout(() => setClickedKey(null), 200);
+
+    // Execute callback
+    onToggleRegion(regionUfs);
+  };
 
   return (
     <div className="flex flex-wrap gap-2 mb-3">
@@ -26,14 +39,18 @@ export function RegionSelector({ selected, onToggleRegion }: RegionSelectorProps
         const full = isRegionFullySelected(region.ufs);
         const partial = isRegionPartiallySelected(region.ufs);
         const count = region.ufs.filter(uf => selected.has(uf)).length;
+        const isClicked = clickedKey === key;
 
         return (
           <button
             key={key}
-            onClick={() => onToggleRegion(region.ufs)}
+            onClick={() => handleClick(key, region.ufs)}
             type="button"
             aria-label={`Selecionar região ${region.label}`}
-            className={`px-3 py-1 rounded-button text-sm font-medium transition-all duration-200 border ${
+            className={`px-3 py-1 rounded-button text-sm font-medium transition-all duration-200 border
+                       ${isClicked ? 'scale-95' : 'scale-100 hover:scale-105'}
+                       active:scale-95
+                       ${
               full
                 ? "bg-brand-navy text-white border-brand-navy"
                 : partial
