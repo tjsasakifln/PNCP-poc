@@ -15,7 +15,7 @@ import {
   clearAllSavedSearches,
   isMaxCapacity,
   type SavedSearch,
-} from '../lib/savedSearches';
+} from '@/lib/savedSearches';
 
 export interface UseSavedSearchesReturn {
   searches: SavedSearch[];
