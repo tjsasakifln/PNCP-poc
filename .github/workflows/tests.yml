@@ -97,11 +97,12 @@ jobs:
             npm ci || npm install
           fi
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
           cd frontend
           if [ -f package.json ]; then
-            npm test -- --coverage || echo "⚠️ Tests not configured yet"
+            # Jest exits with code 1 if coverage < 60% (configured in jest.config.js)
+            npm test -- --coverage --ci
           fi
 
       - name: Upload coverage
