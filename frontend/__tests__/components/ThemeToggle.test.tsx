@@ -97,9 +97,9 @@ describe('ThemeToggle Component', () => {
     const darkOption = screen.getAllByRole('button').find(btn => btn.textContent === 'Dark');
     fireEvent.click(darkOption!);
 
-    // Check localStorage (correct key is 'descomplicita-theme')
+    // Check localStorage (correct key is 'bidiq-theme')
     await waitFor(() => {
-      expect(localStorage.getItem('descomplicita-theme')).toBe('dark');
+      expect(localStorage.getItem('bidiq-theme')).toBe('dark');
     });
   });
 
