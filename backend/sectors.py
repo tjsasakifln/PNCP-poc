@@ -488,11 +488,10 @@ SECTORS: Dict[str, SectorConfig] = {
 
             # Restored standalone terms (guarded by exclusions)
             "software", "softwares",
-            "sistema", "sistemas",
             "aplicativo", "aplicativos",
-            "plataforma", "plataformas",
-            "solução de ti", "solucao de ti",
-            "solução tecnológica", "solucao tecnologica",
+            # NOTE: "sistema" and "plataforma" are TOO AMBIGUOUS in Brazilian Portuguese
+            # They match everything from "sistema de climatização" (HVAC) to "sistema de registro de preços" (procurement modality)
+            # Only use compound terms like "sistema de gestão", "sistema web", "plataforma cloud"
         },
         exclusions={
             # Hardware (keep in "informatica" sector)
@@ -514,6 +513,7 @@ SECTORS: Dict[str, SectorConfig] = {
             "capacitação em software", "capacitacao em software",
             "treinamento em ti",
             "capacitação em ti", "capacitacao em ti",
+            "curso de corte costura", "instrutor de corte costura",
 
             # Physical goods
             "caixa de software",  # physical packaging
@@ -523,6 +523,88 @@ SECTORS: Dict[str, SectorConfig] = {
             "engenharia de software",  # if it's about services, not procurement
             "curso de desenvolvimento",
             "bootcamp",
+
+            # "Sistema" in non-software context (CRITICAL - high false positive rate)
+            "sistema de climatização", "sistema de climatizacao",
+            "sistema de ar condicionado",
+            "sistema de sonorização", "sistema de sonorizacao",
+            "sistema de som",
+            "sistema de iluminação", "sistema de iluminacao",
+            "sistema de videomonitoramento",
+            "sistema de câmeras", "sistema de cameras",
+            "sistema de segurança eletrônica", "sistema de seguranca eletronica",
+            "sistema de alarme",
+            "sistema de combate a incêndio", "sistema de combate a incendio",
+            "sistema de hidrantes",
+            "sistema de registro de preços", "sistema de registro de precos",  # procurement modality, not software!
+            "sistema único de saúde", "sistema unico de saude", "sus",  # SUS - Brazilian public health system
+            "sistema de abastecimento de água", "sistema de abastecimento de agua",
+            "sistema de esgoto",
+            "sistema de drenagem",
+            "sistema de gradeamento",
+            "sistema de tratamento",
+            "sistema elétrico", "sistema eletrico",
+            "sistema hidráulico", "sistema hidraulico",
+            "sistema de freios",
+            "sistema de transmissão", "sistema de transmissao",
+            "sistema de suspensão", "sistema de suspensao",
+            "sistema fotovoltaico",
+            "sistema de energia solar",
+            "sistema de microgeração", "sistema de microgeracao",
+
+            # Physical infrastructure and equipment
+            "balança", "balanca",
+            "bomba", "bombas",
+            "moto bomba", "motobomba",
+            "escavadeira",
+            "caminhão", "caminhao",
+            "veículo", "veiculo", "veículos", "veiculos",
+            "máquina", "maquina",
+            "equipamento rodoviário", "equipamento rodoviario",
+            "plataforma fixa",  # truck platform
+
+            # HVAC and climate control
+            "climatização", "climatizacao",
+            "ar condicionado",
+            "ventilação", "ventilacao",
+            "refrigeração", "refrigeracao",
+
+            # Audio/video equipment
+            "sonorização", "sonorizacao",
+            "iluminação cênica", "iluminacao cenica",
+            "instrumentos musicais",
+
+            # Medical/health supplies
+            "oxigênio medicinal", "oxigenio medicinal",
+            "primeiros socorros",
+
+            # Food and consumables
+            "água mineral", "agua mineral",
+            "lanche", "lanches",
+            "kit de lanche",
+
+            # Physical construction/maintenance
+            "plotagem", "plotagens",
+            "painel", "painéis", "paineis",
+            "sondagem",
+            "gradeamento mecanizado",
+
+            # Personal services
+            "maquiagem",
+            "cabelo",
+            "beleza",
+
+            # Generic materials
+            "ferramentas manuais",
+            "materiais para manutenção", "materiais para manutencao",
+            "peças", "pecas",
+            "acessórios", "acessorios",
+            "insumos",
+
+            # Lighting/electrical
+            "iluminação pública", "iluminacao publica",
+            "extintores",
+            "luminárias", "luminarias",
         },
     ),
 }
