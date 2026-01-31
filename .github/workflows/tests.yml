@@ -109,12 +109,24 @@ jobs:
             npm ci || npm install
           fi
 
+      - name: Clear all caches
+        run: |
+          cd frontend
+          if [ -f package.json ]; then
+            # Clear Jest cache
+            npx jest --clearCache || true
+            # Clear node_modules/.cache
+            rm -rf node_modules/.cache || true
+            # Clear .next cache (if exists)
+            rm -rf .next || true
+          fi
+
       - name: Run tests with coverage
         run: |
           cd frontend
           if [ -f package.json ]; then
-            # Jest exits with code 1 if coverage < 60% (configured in jest.config.js)
-            npm test -- --coverage --ci || true
+            # Run with --no-cache to force fresh run
+            npm test -- --coverage --ci --no-cache || true
           fi
 
       - name: Publish Frontend Test Results
