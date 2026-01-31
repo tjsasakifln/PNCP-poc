@@ -47,6 +47,14 @@ jobs:
             echo "Skipping test execution"
           fi
 
+      - name: Publish Backend Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always() && matrix.python-version == '3.11'
+        with:
+          files: backend/pytest-report.xml
+          check_name: Backend Test Results
+          comment_title: Backend Test Results
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.11'
@@ -73,7 +81,6 @@ jobs:
 
             echo "✅ Coverage meets threshold"
           fi
-        continue-on-error: true
 
   frontend-tests:
     name: Frontend Tests
@@ -102,8 +109,17 @@ jobs:
           cd frontend
           if [ -f package.json ]; then
             # Jest exits with code 1 if coverage < 60% (configured in jest.config.js)
-            npm test -- --coverage --ci
+            npm test -- --coverage --ci --json --outputFile=test-results.json --testLocationInResults || true
           fi
+
+      - name: Publish Frontend Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Frontend Test Results
+          path: frontend/test-results.json
+          reporter: jest-json
+          fail-on-error: true
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
