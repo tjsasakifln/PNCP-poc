@@ -187,7 +187,7 @@ export function LoadingProgress({
         return "Estabelecendo conexão com Portal Nacional...";
       case 'fetching':
         const estimatedPages = Math.ceil(stateCount * 1.5); // Rough estimate
-        return `Consultando ${stateCount} estado${stateCount > 1 ? "s" : ""} em ~${estimatedPages} página${estimatedPages > 1 ? "s" : ""}...`;
+        return `Consultando ${stateCount} estado${stateCount === 1 ? "" : "s"} em ~${estimatedPages} página${estimatedPages === 1 ? "" : "s"}...`;
       case 'filtering':
         return "Aplicando filtros de setor e valor...";
       case 'summarizing':
@@ -318,7 +318,7 @@ export function LoadingProgress({
 
       {/* Context Info */}
       <p className="mt-4 text-xs text-center text-ink-muted">
-        Buscando em {stateCount} estado{stateCount > 1 ? "s" : ""} com 5 modalidades de contratação
+        Buscando em {stateCount} estado{stateCount === 1 ? "" : "s"} com 5 modalidades de contratação
       </p>
     </div>
   );

@@ -41,3 +41,4 @@ next-env.d.ts
 
 # jest
 jest.config.js.swp
+junit.xml

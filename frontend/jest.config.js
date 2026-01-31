@@ -90,6 +90,7 @@ const customJestConfig = {
     '/node_modules/',
     '/.next/',
     '/__tests__/e2e/', // E2E tests run via Playwright, not Jest
+    '/e2e-tests/', // Playwright E2E tests directory
   ],
 
   // Transform node_modules that use ES modules (uuid, etc.)
