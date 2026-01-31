@@ -348,4 +348,84 @@ describe('RegionSelector Component', () => {
       });
     });
   });
+
+  describe('Click Animations - Issue #123', () => {
+    it('should apply scale-95 class during click animation', () => {
+      jest.useFakeTimers();
+
+      const { container } = render(
+        <RegionSelector selected={new Set()} onToggleRegion={mockOnToggleRegion} />
+      );
+
+      const norteButton = screen.getByRole('button', { name: /Norte/i });
+      fireEvent.click(norteButton);
+
+      // Immediately after click, should have scale-95
+      expect(norteButton).toHaveClass('scale-95');
+
+      // After 200ms, animation should be removed
+      jest.advanceTimersByTime(200);
+      expect(norteButton).toHaveClass('scale-100');
+
+      jest.useRealTimers();
+    });
+
+    it('should have hover:scale-105 class for unclicked buttons', () => {
+      render(
+        <RegionSelector selected={new Set()} onToggleRegion={mockOnToggleRegion} />
+      );
+
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach(button => {
+        expect(button).toHaveClass('hover:scale-105');
+      });
+    });
+
+    it('should have active:scale-95 class for press state', () => {
+      render(
+        <RegionSelector selected={new Set()} onToggleRegion={mockOnToggleRegion} />
+      );
+
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach(button => {
+        expect(button).toHaveClass('active:scale-95');
+      });
+    });
+
+    it('should trigger callback after animation starts', () => {
+      jest.useFakeTimers();
+
+      render(
+        <RegionSelector selected={new Set()} onToggleRegion={mockOnToggleRegion} />
+      );
+
+      const norteButton = screen.getByRole('button', { name: /Norte/i });
+      fireEvent.click(norteButton);
+
+      // Callback should be called immediately
+      expect(mockOnToggleRegion).toHaveBeenCalledWith(['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO']);
+
+      jest.useRealTimers();
+    });
+
+    it('should handle multiple rapid clicks gracefully', () => {
+      jest.useFakeTimers();
+
+      render(
+        <RegionSelector selected={new Set()} onToggleRegion={mockOnToggleRegion} />
+      );
+
+      const norteButton = screen.getByRole('button', { name: /Norte/i });
+
+      // Click multiple times rapidly
+      fireEvent.click(norteButton);
+      fireEvent.click(norteButton);
+      fireEvent.click(norteButton);
+
+      // All callbacks should be triggered
+      expect(mockOnToggleRegion).toHaveBeenCalledTimes(3);
+
+      jest.useRealTimers();
+    });
+  });
 });

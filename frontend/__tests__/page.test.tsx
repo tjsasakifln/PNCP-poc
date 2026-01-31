@@ -302,8 +302,13 @@ describe('HomePage - UF Selection and Date Range', () => {
     it('should use grid layout for date inputs', () => {
       render(<HomePage />);
 
-      const dataInicialContainer = screen.getByLabelText('Data inicial:').closest('div')?.parentElement;
-      expect(dataInicialContainer).toHaveClass('grid');
+      // Find the section containing the date inputs
+      const dataInicialLabel = screen.getByText('Data inicial:');
+      const section = dataInicialLabel.closest('section');
+      const gridContainer = section?.querySelector('.grid');
+      expect(gridContainer).toBeInTheDocument();
+      expect(gridContainer).toHaveClass('grid-cols-1');
+      expect(gridContainer).toHaveClass('sm:grid-cols-2');
     });
   });
 
