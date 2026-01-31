@@ -95,7 +95,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("descomplicita-theme") as ThemeId | null;
+    const stored = localStorage.getItem("bidiq-theme") as ThemeId | null;
     const initial = stored && THEMES.some(t => t.id === stored) ? stored : "light";
     setThemeState(initial);
     applyTheme(initial);
@@ -105,7 +105,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = useCallback((t: ThemeId) => {
     setThemeState(t);
     applyTheme(t);
-    localStorage.setItem("descomplicita-theme", t);
+    localStorage.setItem("bidiq-theme", t);
   }, []);
 
   const config = THEMES.find(t => t.id === theme) || THEMES[0];

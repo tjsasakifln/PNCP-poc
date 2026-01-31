@@ -44,7 +44,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = localStorage.getItem('descomplicita-theme');
+                const theme = localStorage.getItem('bidiq-theme');
                 if (!theme) return;
                 if (theme === 'dark' || theme === 'dim') {
                   document.documentElement.classList.add('dark');
@@ -66,6 +66,15 @@ export default function RootLayout({
         />
       </head>
       <body>
+        {/* Skip navigation link for accessibility - WCAG 2.4.1 Bypass Blocks */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50
+                     focus:px-6 focus:py-3 focus:bg-brand-blue focus:text-white focus:rounded-button
+                     focus:font-semibold focus:shadow-lg"
+        >
+          Pular para conteúdo principal
+        </a>
         <AnalyticsProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </AnalyticsProvider>

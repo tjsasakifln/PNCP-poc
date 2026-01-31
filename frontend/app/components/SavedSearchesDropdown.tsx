@@ -118,19 +118,20 @@ export function SavedSearchesDropdown({
         aria-label="Buscas salvas"
         aria-expanded={isOpen}
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span className="hidden sm:inline">Buscas Salvas</span>
         {searches.length > 0 && (
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
-                         text-xs font-semibold text-white bg-brand-navy rounded-full">
+                         text-xs font-semibold text-white bg-brand-navy rounded-full"
+                aria-label={`${searches.length} busca${searches.length > 1 ? 's' : ''} salva${searches.length > 1 ? 's' : ''}`}>
             {searches.length}
           </span>
         )}
         <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -152,7 +153,8 @@ export function SavedSearchesDropdown({
               // Empty State
               <div className="p-6 text-center">
                 <svg className="mx-auto w-12 h-12 text-ink-faint mb-3" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor">
+                     viewBox="0 0 24 24" stroke="currentColor" aria-label="Nenhuma busca salva">
+                  <title>Nenhuma busca salva</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
@@ -210,7 +212,7 @@ export function SavedSearchesDropdown({
                               <span>{search.searchParams.ufs.join(', ')}</span>
                             </div>
                             <div className="flex items-center gap-2 text-ink-faint">
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
@@ -231,7 +233,7 @@ export function SavedSearchesDropdown({
                           aria-label={deleteConfirmId === search.id ? 'Confirmar exclusão' : 'Excluir busca'}
                           title={deleteConfirmId === search.id ? 'Clique novamente para confirmar' : 'Excluir'}
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
