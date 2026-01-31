@@ -6,6 +6,11 @@ on:
   push:
     branches: [master, main]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   backend-tests:
     name: Backend Tests
@@ -109,7 +114,7 @@ jobs:
           cd frontend
           if [ -f package.json ]; then
             # Jest exits with code 1 if coverage < 60% (configured in jest.config.js)
-            npm test -- --coverage --ci --json --outputFile=test-results.json --testLocationInResults || true
+            npm test -- --coverage --ci || true
           fi
 
       - name: Publish Frontend Test Results
@@ -117,8 +122,8 @@ jobs:
         if: always()
         with:
           name: Frontend Test Results
-          path: frontend/test-results.json
-          reporter: jest-json
+          path: frontend/junit.xml
+          reporter: jest-junit
           fail-on-error: true
 
       - name: Upload coverage
