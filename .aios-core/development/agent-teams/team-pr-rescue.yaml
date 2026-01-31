@@ -1,0 +1,109 @@
+# Emergency PR Rescue Squad
+# Created: 2026-01-31
+# Purpose: Fix failing PR #129 - Excel 100% coverage + Test reporting
+# Activation: /squad-creator "PR rescue mode"
+
+name: PR Rescue Team
+description: Emergency squad to diagnose and fix all PR check failures
+mission: Make PR #129 pass all CI/CD checks with 100% success rate
+
+agents:
+  # Lead: QA Agent - Diagnose test failures
+  - name: qa
+    role: Lead Test Engineer
+    priority: 1
+    responsibilities:
+      - Diagnose all frontend test failures
+      - Fix LoadingProgress timing issues
+      - Fix RegionSelector test failures
+      - Ensure 60%+ frontend coverage
+      - Validate jest-junit configuration
+      - Run full test suite locally
+
+  # DevOps Agent - Fix CI/CD pipeline
+  - name: devops
+    role: CI/CD Specialist
+    priority: 2
+    responsibilities:
+      - Fix test result reporting actions
+      - Ensure jest-junit outputs correctly
+      - Fix Playwright E2E pipeline issues
+      - Validate all GitHub Actions workflows
+      - Monitor PR check status
+      - Fix deployment staging issues
+
+  # Dev Agent - Fix code issues
+  - name: dev
+    role: Developer
+    priority: 3
+    responsibilities:
+      - Fix any remaining component errors
+      - Resolve module import issues
+      - Implement missing test mocks
+      - Fix timing/async test issues
+      - Code review and cleanup
+
+  # Architect Agent - Technical oversight
+  - name: architect
+    role: Technical Reviewer
+    priority: 4
+    responsibilities:
+      - Review all fixes for architectural soundness
+      - Ensure no regressions introduced
+      - Validate test coverage thresholds
+      - Review PR metadata compliance
+      - Final approval before push
+
+workflow:
+  phases:
+    - name: Diagnosis
+      lead: qa
+      steps:
+        - Run full test suite locally
+        - Identify all failing tests
+        - Categorize failures (timing, mocking, imports)
+        - Create fix priority list
+
+    - name: Fix Implementation
+      lead: dev
+      steps:
+        - Fix component test failures
+        - Resolve import/module issues
+        - Fix timing and async issues
+        - Update test mocks
+
+    - name: CI/CD Repair
+      lead: devops
+      steps:
+        - Fix jest-junit configuration
+        - Update test reporting actions
+        - Fix E2E pipeline
+        - Validate all workflows
+
+    - name: Validation
+      lead: qa
+      steps:
+        - Run full test suite
+        - Verify coverage thresholds met
+        - Check E2E tests pass
+        - Validate PR metadata
+
+    - name: Deployment
+      lead: devops
+      steps:
+        - Commit all fixes
+        - Push to PR branch
+        - Monitor CI/CD execution
+        - Ensure all checks green
+
+success_criteria:
+  - All frontend tests passing (0 failures)
+  - Frontend coverage >= 60%
+  - Backend tests passing (already ✅)
+  - E2E tests passing
+  - PR metadata validation passing
+  - All 28 GitHub Actions checks GREEN
+
+exit_conditions:
+  - PR #129 shows 100% green checks
+  - Ready for merge approval

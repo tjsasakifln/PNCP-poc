@@ -23,8 +23,8 @@ const customJestConfig = {
   // Setup files to run after Jest is initialized
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 
-  // Module paths - include lib/ and hooks/ explicitly for proper resolution
-  moduleDirectories: ['node_modules', '<rootDir>/', '<rootDir>/lib', '<rootDir>/hooks'],
+  // Module paths
+  moduleDirectories: ['node_modules', '<rootDir>/'],
 
   // Path aliases (sync with tsconfig.json paths)
   moduleNameMapper: {
