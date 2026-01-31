@@ -71,6 +71,20 @@ const customJestConfig = {
   // Coverage reporters
   coverageReporters: ['text', 'html', 'lcov'],
 
+  // Test reporters (for CI/CD)
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: '.',
+      outputName: 'junit.xml',
+      ancestorSeparator: ' › ',
+      uniqueOutputName: 'false',
+      suiteNameTemplate: '{filepath}',
+      classNameTemplate: '{classname}',
+      titleTemplate: '{title}',
+    }]
+  ],
+
   // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
