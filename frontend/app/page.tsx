@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import PullToRefresh from "react-simple-pull-to-refresh";
 import type { BuscaResult, ValidationErrors, Setor } from "./types";
 import { EnhancedLoadingProgress } from "../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "./components/LoadingResultsSkeleton";
@@ -105,6 +106,16 @@ export default function HomePage() {
 
   // Refs for keyboard shortcuts
   const searchButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Ref to store last search params for pull-to-refresh (Issue #119)
+  const lastSearchParamsRef = useRef<{
+    ufs: Set<string>;
+    dataInicial: string;
+    dataFinal: string;
+    searchMode: "setor" | "termos";
+    setorId?: string;
+    termosArray?: string[];
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/setores")
@@ -230,6 +241,16 @@ export default function HomePage() {
       setValidationErrors(errors);
       return;
     }
+
+    // Save search params for pull-to-refresh (Issue #119)
+    lastSearchParamsRef.current = {
+      ufs: new Set(ufsSelecionadas),
+      dataInicial,
+      dataFinal,
+      searchMode,
+      setorId: searchMode === "setor" ? setorId : undefined,
+      termosArray: searchMode === "termos" ? [...termosArray] : undefined,
+    };
 
     setLoading(true);
     setLoadingStep(1);
@@ -359,16 +380,41 @@ export default function HomePage() {
       }
 
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
       const setorLabel = sectorName.replace(/\s+/g, '_');
       const filename = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+
+      // Feature detection: check if browser supports download attribute
+      const anchor = document.createElement('a');
+      const supportsDownload = 'download' in anchor;
+
+      if (supportsDownload) {
+        // Modern browsers: Use Blob URL with download attribute (best UX)
+        const url = URL.createObjectURL(blob);
+        anchor.href = url;
+        anchor.download = filename;
+
+        // Trigger download without visible DOM manipulation (cleaner UX)
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+
+        // Clean up Blob URL after download starts
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      } else {
+        // Fallback for older browsers and iOS Safari
+        // Use window.open() approach for better mobile compatibility
+        const url = URL.createObjectURL(blob);
+        const newWindow = window.open(url, '_blank');
+
+        if (!newWindow) {
+          // If popup blocked, try location approach as last resort
+          window.location.href = url;
+        }
+
+        // Clean up Blob URL after a delay
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
 
       const downloadEndTime = Date.now();
       const timeElapsed = downloadEndTime - downloadStartTime;
@@ -383,6 +429,8 @@ export default function HomePage() {
         filename: filename,
         total_filtered: result.total_filtrado || 0,
         valor_total: result.resumo?.valor_total || 0,
+        download_method: supportsDownload ? 'blob_download_attribute' : 'window_open_fallback',
+        browser_supports_download: supportsDownload,
       });
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : 'Não foi possível baixar o arquivo.';
@@ -461,6 +509,38 @@ export default function HomePage() {
     setResult(null);
   };
 
+  // Pull-to-refresh handler (Issue #119)
+  const handleRefresh = async (): Promise<void> => {
+    if (!lastSearchParamsRef.current) {
+      // No previous search to refresh
+      return Promise.resolve();
+    }
+
+    const params = lastSearchParamsRef.current;
+
+    // Restore search params if they were changed
+    setUfsSelecionadas(new Set(params.ufs));
+    setDataInicial(params.dataInicial);
+    setDataFinal(params.dataFinal);
+    setSearchMode(params.searchMode);
+
+    if (params.searchMode === "setor" && params.setorId) {
+      setSetorId(params.setorId);
+    } else if (params.searchMode === "termos" && params.termosArray) {
+      setTermosArray(params.termosArray);
+    }
+
+    // Track pull-to-refresh event
+    trackEvent('pull_to_refresh_triggered', {
+      search_mode: params.searchMode,
+      ufs: Array.from(params.ufs),
+      uf_count: params.ufs.size,
+    });
+
+    // Execute search
+    await buscar();
+  };
+
   const isFormValid = Object.keys(validationErrors).length === 0;
 
   return (
@@ -508,15 +588,27 @@ export default function HomePage() {
       </header>
 
       <main id="main-content" className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
-        {/* Page Title */}
-        <div className="mb-8 animate-fade-in-up">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">
-            Busca de Licitações
-          </h1>
-          <p className="text-ink-secondary mt-1 text-sm sm:text-base">
-            Encontre oportunidades de contratação pública no Portal Nacional (PNCP)
-          </p>
-        </div>
+        <PullToRefresh
+          onRefresh={handleRefresh}
+          pullingContent=""
+          refreshingContent={
+            <div className="flex justify-center py-4">
+              <div className="w-6 h-6 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+            </div>
+          }
+          resistance={3}
+          className="pull-to-refresh-wrapper"
+        >
+          <div>
+            {/* Page Title */}
+            <div className="mb-8 animate-fade-in-up">
+              <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">
+                Busca de Licitações
+              </h1>
+              <p className="text-ink-secondary mt-1 text-sm sm:text-base">
+                Encontre oportunidades de contratação pública no Portal Nacional (PNCP)
+              </p>
+            </div>
 
         {/* Search Mode Toggle */}
         <section className="mb-6 animate-fade-in-up stagger-1">
@@ -898,6 +990,8 @@ export default function HomePage() {
             </div>
           </div>
         )}
+          </div>
+        </PullToRefresh>
       </main>
 
       {/* Save Search Dialog */}
