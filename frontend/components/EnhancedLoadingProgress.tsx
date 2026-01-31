@@ -18,6 +18,8 @@ export interface EnhancedLoadingProgressProps {
   estimatedTime: number;
   stateCount: number;
   onStageChange?: (stage: number) => void;
+  /** Issue #109: Show "X of Y states processed" for better feedback */
+  statesProcessed?: number;
 }
 
 interface Stage {
@@ -65,6 +67,7 @@ export function EnhancedLoadingProgress({
   estimatedTime,
   stateCount,
   onStageChange,
+  statesProcessed = 0,
 }: EnhancedLoadingProgressProps) {
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
@@ -201,7 +204,7 @@ export function EnhancedLoadingProgress({
                 aria-label={`Stage ${stage.id}: ${isCompleted ? 'Completed' : isActive ? 'In progress' : 'Pending'}`}
               >
                 {isCompleted ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" role="img" aria-label="Completed">
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -228,11 +231,17 @@ export function EnhancedLoadingProgress({
       {/* Meta information */}
       <div className="flex justify-between text-xs text-ink-secondary pt-3 border-t border-strong">
         <span>
-          {/* Bug fix P2-3: Display "Nenhum estado" instead of "0 estados" */}
-          Processando{' '}
-          {stateCount === 0
-            ? 'nenhum estado'
-            : `${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`}
+          {/* Issue #109: Show progress "X of Y states processed" for better feedback */}
+          {statesProcessed > 0 ? (
+            <>
+              <span className="font-semibold text-brand-blue">{statesProcessed}</span>
+              {' de '}
+              <span className="font-semibold">{stateCount}</span>
+              {` ${stateCount === 1 ? 'estado processado' : 'estados processados'}`}
+            </>
+          ) : (
+            `Processando ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`
+          )}
         </span>
         <span>
           {elapsedTime < estimatedTime

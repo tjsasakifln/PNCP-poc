@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { BuscaResult, ValidationErrors, Setor } from "./types";
 import { EnhancedLoadingProgress } from "../components/EnhancedLoadingProgress";
+import { LoadingResultsSkeleton } from "./components/LoadingResultsSkeleton";
 import { EmptyState } from "./components/EmptyState";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { RegionSelector } from "./components/RegionSelector";
@@ -89,6 +90,7 @@ export default function HomePage() {
 
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
+  const [statesProcessed, setStatesProcessed] = useState(0); // Issue #109: Track state progress
   const [error, setError] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -178,11 +180,26 @@ export default function HomePage() {
 
     setLoading(true);
     setLoadingStep(1);
+    setStatesProcessed(0); // Issue #109: Reset progress counter
     setError(null);
     setResult(null);
     setRawCount(0);
 
     const searchStartTime = Date.now();
+
+    // Issue #109: Simulate progressive state processing for better UX feedback
+    // In a real streaming implementation, this would be updated by backend SSE events
+    const totalStates = ufsSelecionadas.size;
+    const stateInterval = setInterval(() => {
+      setStatesProcessed(prev => {
+        if (prev >= totalStates) {
+          clearInterval(stateInterval);
+          return totalStates;
+        }
+        // Increment every ~3 seconds to simulate processing (totalStates * 6s / 2 intervals)
+        return prev + 1;
+      });
+    }, totalStates > 0 ? Math.max(2000, (totalStates * 6000) / (totalStates + 1)) : 3000);
 
     // Track search_started event
     trackEvent('search_started', {
@@ -256,6 +273,7 @@ export default function HomePage() {
     } finally {
       setLoading(false);
       setLoadingStep(1);
+      setStatesProcessed(0); // Issue #109: Reset progress counter
     }
   };
 
@@ -418,8 +436,9 @@ export default function HomePage() {
                 onClick={restartTour}
                 className="text-xs text-ink-muted hover:text-brand-blue transition-colors"
                 title="Ver tutorial novamente"
+                aria-label="Ver tutorial novamente"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -435,7 +454,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+      <main id="main-content" className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         {/* Page Title */}
         <div className="mb-8 animate-fade-in-up">
           <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">
@@ -518,7 +537,7 @@ export default function HomePage() {
                       className="ml-0.5 hover:text-error transition-colors"
                       aria-label={`Remover termo ${termo}`}
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -703,7 +722,7 @@ export default function HomePage() {
                          transition-all duration-200 flex items-center justify-center gap-2"
               title={isMaxCapacity ? "Máximo de 10 buscas salvas atingido" : "Salvar esta busca"}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
@@ -712,13 +731,14 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Loading State - Enhanced with 5-stage progress (Feature #2) */}
+        {/* Loading State - Enhanced with 5-stage progress (Feature #2) + Skeleton (Issue #111) + Progress feedback (Issue #109) */}
         {loading && (
           <div aria-live="polite">
             <EnhancedLoadingProgress
               currentStep={loadingStep}
               estimatedTime={Math.max(30, ufsSelecionadas.size * 6)}
               stateCount={ufsSelecionadas.size}
+              statesProcessed={statesProcessed}
               onStageChange={(stage) => {
                 // Track stage changes for analytics
                 trackEvent('search_progress_stage', {
@@ -728,6 +748,8 @@ export default function HomePage() {
                 });
               }}
             />
+            {/* Show skeleton after initial connection phase (Issue #111) */}
+            <LoadingResultsSkeleton count={1} />
           </div>
         )}
 
@@ -814,7 +836,7 @@ export default function HomePage() {
             >
               {downloadLoading ? (
                 <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
@@ -822,7 +844,7 @@ export default function HomePage() {
                 </>
               ) : (
                 <>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Baixar Excel ({result.resumo.total_oportunidades} licitações)

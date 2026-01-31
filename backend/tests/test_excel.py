@@ -389,3 +389,192 @@ class TestCreateExcel:
 
         with open_workbook(new_buffer) as wb2:
             assert "Licitações Uniformes" in wb2.sheetnames
+
+    def test_create_excel_with_numero_controle_missing_parts(self):
+        """Deve usar busca genérica quando numeroControlePNCP tem menos de 3 partes (sem tipo)."""
+        # Edge case: linha 152 - len(cnpj_tipo_seq) < 3
+        licitacao = {"numeroControlePNCP": "12345-000189/2025"}  # Missing tipo (-1-)
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Deve cair no except e usar busca genérica
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais?q=12345-000189/2025"
+        )
+
+    def test_create_excel_with_empty_cnpj_component(self):
+        """Deve usar busca genérica quando CNPJ está vazio após parsing."""
+        # Edge case: linha 160 - cnpj vazio
+        licitacao = {"numeroControlePNCP": "-1-000189/2025"}  # Empty CNPJ
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Deve cair no else (linha 160) e lançar ValueError -> busca genérica
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais?q=-1-000189/2025"
+        )
+
+    def test_create_excel_with_empty_ano_component(self):
+        """Deve usar busca genérica quando ano está vazio após parsing."""
+        # Edge case: linha 160 - ano vazio
+        licitacao = {"numeroControlePNCP": "12345678000100-1-000189/"}  # Empty ano
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # Deve cair no else (linha 160) e lançar ValueError -> busca genérica
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais?q=12345678000100-1-000189/"
+        )
+
+    def test_create_excel_with_empty_sequencial_component(self):
+        """Deve usar busca genérica quando sequencial é apenas zeros (lstrip retorna vazio)."""
+        # Edge case: linha 160 - sequencial vazio após lstrip("0")
+        licitacao = {"numeroControlePNCP": "12345678000100-1-000000/2025"}  # All zeros
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+        # sequencial.lstrip("0") = "" -> if cnpj and ano and sequencial fails -> linha 160
+        assert (
+            ws["K2"].hyperlink.target
+            == "https://pncp.gov.br/app/editais?q=12345678000100-1-000000/2025"
+        )
+
+    def test_create_excel_with_large_dataset(self):
+        """Deve gerar Excel com dataset grande (1000+ linhas) sem erros."""
+        # Edge case: stress test com 1000 licitações
+        licitacoes = [
+            {
+                "codigoCompra": f"CODE{i:04d}",
+                "objetoCompra": f"Objeto da licitação {i}" * 10,  # Strings longas
+                "nomeOrgao": f"Órgão {i}",
+                "uf": "SP" if i % 2 == 0 else "RJ",
+                "municipio": f"Município {i}",
+                "valorTotalEstimado": 50000 + (i * 1000),
+                "modalidadeNome": "Pregão Eletrônico",
+                "dataPublicacaoPncp": f"2024-01-{(i % 28) + 1:02d}T08:00:00Z",
+                "dataAberturaProposta": f"2024-02-{(i % 28) + 1:02d}T10:00:00Z",
+                "situacaoCompraNome": "Em Disputa",
+                "linkSistemaOrigem": f"https://sistema.compras.gov.br/edital/{i}",
+            }
+            for i in range(1000)
+        ]
+
+        buffer = create_excel(licitacoes)
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+            # Verificar primeira e última linha
+            assert ws["A2"].value == "CODE0000"
+            assert ws["A1001"].value == "CODE0999"  # Row 1001 = header + 1000 rows
+
+            # Verificar linha de totais (row 1002)
+            assert ws["E1002"].value == "TOTAL:"
+            assert "=SUM(F2:F1001)" in ws["F1002"].value
+
+            # Verificar metadata
+            ws_meta = wb["Metadata"]
+            assert ws_meta["B2"].value == 1000
+
+    def test_create_excel_with_special_characters(self):
+        """Deve lidar com caracteres especiais em todos os campos."""
+        licitacao = {
+            "codigoCompra": "ABC-123/2024",
+            "objetoCompra": 'Aquisição de "uniformes" & <equipamentos> (diversos)',
+            "nomeOrgao": "Prefeitura de São José dos Pinhais",
+            "uf": "PR",
+            "municipio": "São José dos Pinhais",
+            "valorTotalEstimado": 123456.78,
+            "modalidadeNome": "Pregão Eletrônico SRP",
+            "situacaoCompraNome": "Pré-Publicação",
+            "numeroControlePNCP": "12345678000100-1-000001/2024",
+        }
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+            # Verificar que caracteres especiais foram preservados
+            assert ws["A2"].value == "ABC-123/2024"
+            assert '"uniformes"' in ws["B2"].value
+            assert "&" in ws["B2"].value
+            assert "São José" in ws["C2"].value
+            assert ws["D2"].value == "PR"
+
+    def test_create_excel_with_extremely_long_objeto(self):
+        """Deve lidar com strings muito longas no campo objeto."""
+        # Edge case: strings gigantes (>1000 chars)
+        licitacao = {
+            "codigoCompra": "LONG001",
+            "objetoCompra": "A" * 5000,  # 5000 caracteres
+            "valorTotalEstimado": 100000,
+        }
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+            # Verificar que foi armazenado (Excel suporta até 32,767 chars)
+            assert ws["B2"].value == "A" * 5000
+            assert len(ws["B2"].value) == 5000
+
+    def test_create_excel_with_zero_value(self):
+        """Deve formatar corretamente valor zero."""
+        licitacao = {
+            "codigoCompra": "ZERO001",
+            "valorTotalEstimado": 0.0,  # Valor zero
+        }
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+            # Verificar formatação de moeda com valor zero
+            assert ws["F2"].value == 0.0
+            assert "R$" in ws["F2"].number_format
+
+    def test_create_excel_with_negative_value(self):
+        """Deve lidar com valores negativos (edge case improvável mas possível)."""
+        licitacao = {
+            "codigoCompra": "NEG001",
+            "valorTotalEstimado": -50000.0,  # Valor negativo
+        }
+
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+            # Verificar que aceita valor negativo
+            assert ws["F2"].value == -50000.0
+            assert "R$" in ws["F2"].number_format
+
+    def test_create_excel_metadata_with_empty_list(self):
+        """Metadata deve exibir zeros quando lista está vazia."""
+        buffer = create_excel([])
+
+        with open_workbook(buffer) as wb:
+            ws_meta = wb["Metadata"]
+
+            # Verificar valores zero
+            assert ws_meta["B2"].value == 0  # Total de licitações
+            assert ws_meta["B3"].value == 0  # Valor total
+            assert "R$" in ws_meta["B3"].number_format
