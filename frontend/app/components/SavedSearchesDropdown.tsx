@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSavedSearches, type UseSavedSearchesReturn } from '../../hooks/useSavedSearches';
 import type { SavedSearch } from '../../lib/savedSearches';
 
@@ -34,6 +34,7 @@ export function SavedSearchesDropdown({
 
   const [isOpen, setIsOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [filterTerm, setFilterTerm] = useState('');
 
   const handleLoadSearch = (id: string) => {
     const search = loadSearch(id);
@@ -102,6 +103,31 @@ export function SavedSearchesDropdown({
     return setorId || 'Busca personalizada';
   };
 
+  // Filter searches based on search term (debounced via useMemo)
+  const filteredSearches = useMemo(() => {
+    if (!filterTerm.trim()) return searches;
+
+    const term = filterTerm.toLowerCase().trim();
+    return searches.filter(search => {
+      // Search in: name, UFs, setor/termos
+      const searchableText = [
+        search.name,
+        ...search.searchParams.ufs,
+        getSearchLabel(search),
+      ].join(' ').toLowerCase();
+
+      return searchableText.includes(term);
+    });
+  }, [searches, filterTerm]);
+
+  // Handle keyboard shortcuts in filter input
+  const handleFilterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setFilterTerm('');
+      e.currentTarget.blur();
+    }
+  };
+
   if (loading) {
     return null; // Don't show anything while loading
   }
@@ -165,10 +191,47 @@ export function SavedSearchesDropdown({
               </div>
             ) : (
               <>
+                {/* Filter Input */}
+                <div className="px-4 pt-3 pb-2 border-b border-strong">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={filterTerm}
+                      onChange={(e) => setFilterTerm(e.target.value)}
+                      onKeyDown={handleFilterKeyDown}
+                      placeholder="Filtrar buscas..."
+                      className="w-full pl-9 pr-8 py-2 text-sm bg-surface-1 border border-strong rounded-button
+                                 text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brand-blue
+                                 focus:border-transparent transition-all"
+                      aria-label="Filtrar buscas salvas"
+                    />
+                    {/* Search Icon */}
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    {/* Clear Button */}
+                    {filterTerm && (
+                      <button
+                        onClick={() => setFilterTerm('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ink-muted hover:text-ink
+                                   transition-colors rounded"
+                        type="button"
+                        aria-label="Limpar filtro"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-strong">
                   <span className="text-sm font-semibold text-ink">
-                    Buscas Recentes ({searches.length}/10)
+                    Buscas Recentes {filterTerm ? `(${filteredSearches.length}/${searches.length})` : `(${searches.length}/10)`}
                   </span>
                   {searches.length > 0 && (
                     <button
@@ -176,6 +239,7 @@ export function SavedSearchesDropdown({
                         if (window.confirm('Deseja excluir todas as buscas salvas?')) {
                           clearAll();
                           setIsOpen(false);
+                          setFilterTerm('');
                         }
                       }}
                       className="text-xs text-ink-muted hover:text-error transition-colors"
@@ -188,7 +252,16 @@ export function SavedSearchesDropdown({
 
                 {/* Search List */}
                 <div className="py-2">
-                  {searches.map((search) => (
+                  {filteredSearches.length === 0 ? (
+                    // No results for filter
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm text-ink-muted">Nenhuma busca encontrada</p>
+                      <p className="text-xs text-ink-faint mt-1">
+                        Tente outro termo de busca
+                      </p>
+                    </div>
+                  ) : (
+                    filteredSearches.map((search) => (
                     <div
                       key={search.id}
                       className="px-4 py-3 hover:bg-surface-1 transition-colors border-b border-strong last:border-b-0"
@@ -240,7 +313,8 @@ export function SavedSearchesDropdown({
                         </button>
                       </div>
                     </div>
-                  ))}
+                  ))
+                  )}
                 </div>
               </>
             )}

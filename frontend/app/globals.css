@@ -279,6 +279,32 @@ select {
 }
 
 /* ==================================
+   Pull-to-Refresh Mobile-Only Styles
+   Issue #119 - Mobile UX Enhancement
+   ================================== */
+
+/* Desktop: Disable pull-to-refresh */
+@media (min-width: 768px) {
+  .pull-to-refresh-wrapper {
+    pointer-events: none;
+  }
+
+  .pull-to-refresh-wrapper > div {
+    pointer-events: auto;
+  }
+}
+
+/* Mobile: Enable pull-to-refresh with native-like feel */
+@media (max-width: 767px) {
+  .pull-to-refresh-wrapper {
+    min-height: calc(100vh - 200px);
+    touch-action: pan-y;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ==================================
    React Day Picker Custom Styling
    Issue #118 - Mobile-Optimized Date Picker
    ================================== */
