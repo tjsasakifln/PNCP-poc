@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP — BidIQ Uniformes POC
 
-**Versão:** 1.30 (POC Complete - Production Deployed)
-**Última Atualização:** 2026-01-28 12:30 (UTC)
-**Status:** ✅ POC COMPLETO (100% - 34/34 issues implementadas, 7 EPICs para fechar)
+**Versão:** 1.31 (POC Deployed + Quality Enhancement Phase)
+**Última Atualização:** 2026-01-31 15:45 (UTC)
+**Status:** ✅ POC DEPLOYED (34/34 original complete, 66 quality improvements in progress)
 
 ---
 
@@ -38,8 +38,8 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 ### 🎉 POC COMPLETO - DEPLOYED TO PRODUCTION
 
 **Meta:** POC funcional deployado em produção
-**Conclusão:** 2026-01-28 (4 dias de desenvolvimento)
-**Status:** ✅ 100% COMPLETO - Todas as 34 issues implementadas
+**Conclusão (POC):** 2026-01-28 (4 dias de desenvolvimento)
+**Status:** ✅ POC DEPLOYED - 34/34 original issues + 66 quality enhancements in progress
 
 **Progresso Geral:**
 ```
@@ -69,20 +69,20 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **Status:** ✅ 100% COMPLETO
 
 **Prioridade P0 (Crítico):**
-- [x] #2 - EPIC 1: Setup e Infraestrutura Base ✅ 100% COMPLETO
+- [x] #2 - EPIC 1: Setup e Infraestrutura Base ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #3 - Estrutura de pastas ✅
   - [x] #4 - Variáveis de ambiente ✅
   - [x] #5 - Docker Compose ✅ (PR #37 merged)
   - [x] #32 - Setup Test Frameworks ✅ (PR #43 merged 2026-01-25) 🎯 96.69% coverage
-- [x] #6 - EPIC 2: Cliente PNCP e Resiliência ✅ 100% COMPLETO
+- [x] #6 - EPIC 2: Cliente PNCP e Resiliência ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #7 - Cliente HTTP resiliente ✅ (PR #38 merged 2026-01-24)
   - [x] #8 - Paginação automática ✅ (PR #39 merged 2026-01-25)
   - [x] #28 - Rate limiting ✅ (merged with #7 in PR #38)
-- [x] #9 - EPIC 3: Motor de Filtragem ✅ 100% COMPLETO
+- [x] #9 - EPIC 3: Motor de Filtragem ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #10 - Normalização e keywords ✅ (PR #41 merged 2026-01-25)
   - [x] #11 - Filtros sequenciais ✅ (PR #42 merged 2026-01-25) 🎯 99% coverage, 48 tests
   - [x] #30 - Estatísticas ✅ (completed via filter_batch in PR #42)
-- [x] #12 - EPIC 4: Geração de Saídas ✅ 100% COMPLETO
+- [x] #12 - EPIC 4: Geração de Saídas ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #13 - Excel formatado ✅ (PR #44 merged 2026-01-25) 🎯 100% coverage, 20 tests
   - [x] #14 - GPT-4.1-nano ✅ (PR #46 merged 2026-01-25) 🎯 100% coverage llm.py, 15 tests, 99.12% backend
   - [x] #15 - Fallback sem LLM ✅ (PR #48 merged 2026-01-25) 🎯 100% coverage, 17 tests, 99.19% backend
@@ -101,12 +101,12 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **Status:** ✅ 100% COMPLETO (10/10 issues)
 
 **Prioridade P0 (Crítico):**
-- [x] #16 - EPIC 5: API Backend (FastAPI) ✅ 100% COMPLETO
+- [x] #16 - EPIC 5: API Backend (FastAPI) ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #17 - Estrutura base ✅ (PR #45 merged 2026-01-25) 🎯 100% coverage, 51 tests
   - [x] #18 - POST /buscar ✅ (PR #51 merged 2026-01-25) 🎯 100% coverage main.py, 14 tests, 99.27% backend
   - [x] #19 - Logging estruturado ✅ (PR #49 merged 2026-01-25) 🎯 100% coverage config.py, 23 tests, 99.21% backend
   - [x] #29 - Health check ✅ (PR #50 merged 2026-01-25) 🎯 100% governance score, 212 tests, 99.21% backend
-- [x] #20 - EPIC 6: Frontend (Next.js) ✅ 100% COMPLETO
+- [x] #20 - EPIC 6: Frontend (Next.js) ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #21 - Setup Next.js ✅ (PR #52 merged 2026-01-25) 🎯 Next.js 16.1.4 + Tailwind + TypeScript strict mode
   - [x] #22 - Seleção UFs e Date Range ✅ (PR #53 merged 2026-01-25) 🎯 83.58% coverage, 25 tests, 10/10 acceptance criteria
   - [x] #24 - API Routes ✅ (PR #54 merged 2026-01-25) 🎯 88.67% coverage, 18 tests, 4.76:1 test-to-code ratio
@@ -127,7 +127,7 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 **Status:** ✅ 100% COMPLETO - POC LIVE IN PRODUCTION
 
 **Prioridade P0 (Crítico):**
-- [x] #25 - EPIC 7: Integração e Deploy ✅ 100% COMPLETO
+- [x] #25 - EPIC 7: Integração e Deploy ✅ 100% COMPLETO (**CLOSED 2026-01-28**)
   - [x] #26 - Integração frontend ↔ backend ✅ (PR #59 merged 2026-01-25) 🎯 Integration documentation + health check script
   - [x] #27 - Testes end-to-end ✅ (PR #60 merged 2026-01-25) 🎯 25 E2E tests com Playwright
   - [x] #1 - Documentação (README.md) ✅ (PR #62 merged 2026-01-25) 🎯 Comprehensive documentation (+380 lines)
@@ -150,6 +150,74 @@ O **BidIQ Uniformes POC** é uma aplicação web que automatiza a busca, filtrag
 - ✅ Testes E2E implementados - 25/25 passing (100% deterministic with API mocks)
 - ✅ Railway configuration - Backend + Frontend deployed
 - ✅ CI/CD pipeline with smoke tests
+
+---
+
+## 🚀 Post-POC Evolution & Scope Expansion
+
+### 📊 Project Growth Analysis
+
+**Original POC Scope:** 34 implementation issues (7 EPICs)
+**Current Total Issues:** 132 issues
+**Scope Expansion:** **+185%** (98 additional issues beyond original POC)
+
+**All 7 EPICs Closed:** 2026-01-28
+- #2 - EPIC 1: Setup e Infraestrutura Base
+- #6 - EPIC 2: Cliente PNCP e Resiliência
+- #9 - EPIC 3: Motor de Filtragem
+- #12 - EPIC 4: Geração de Saídas
+- #16 - EPIC 5: API Backend (FastAPI)
+- #20 - EPIC 6: Frontend (Next.js)
+- #25 - EPIC 7: Integração e Deploy
+
+### 📈 Additional Work Beyond POC (91 orphan issues)
+
+#### ✅ Design System (EPIC 8) - 91.7% Complete (11/12)
+Professional UI polish following interface-design and frontend-design guidelines:
+- #83-#85: Typography, borders, depth strategy ✅
+- #86-#88: Domain exploration, backgrounds, motion ✅
+- #90-#94: Spacing, surfaces, monospace, navigation, token naming ✅
+- #89: Custom form controls (1 remaining)
+
+#### ⚙️ QA Backlog - 37.0% Complete (10/27)
+Quality improvements discovered during POC deployment:
+
+**P0-P1 (High Priority) - 85.7% Complete (6/7):**
+- #99: main.py endpoint coverage 70% → 90% ✅
+- #100: Missing frontend component tests ✅
+- #101: ThemeToggle async test fixes ✅
+- #102: E2E test suite implementation ✅
+- #103: Frontend coverage threshold CI enforcement ✅
+- #104: E2E CI pipeline integration ✅
+- #114: Test results visibility in PR checks 🔄
+
+**P2 (Medium Priority) - 36.4% Complete (4/11):**
+- #111: Loading skeleton for results ✅
+- #112: Excel edge case tests (96.97% → 100%) ✅
+- #113: useAnalytics coverage ✅
+- #109: Progressive search results ✅
+- 7 remaining: UX/accessibility improvements
+
+**P3 (Low Priority) - 0% Complete (0/12):**
+- 12 remaining: Nice-to-have enhancements (keyboard shortcuts, mobile gestures, etc.)
+
+#### 🏗️ Post-POC Infrastructure - 100% Complete (9/9)
+- #40: CI/CD fixes (TruffleHog, CodeQL) ✅
+- #82: PNCP 422 validation fix ✅
+- 7 additional infrastructure improvements ✅
+
+#### 📅 Value Sprint Tracking - 100% Complete (4/4)
+- #95-#97: Sprint phase tracking ✅
+
+#### 🆕 Recent Issues (2 open)
+- #131: GitHub Actions cache persistence issue
+- #132: LoadingProgress timing test improvements
+
+### 🎯 Current Focus: Quality & Polish (v0.3)
+
+**Status:** POC successfully deployed, transitioning to quality enhancement phase
+**Active Work:** 66 open issues (27 QA backlog + 1 design + 38 other enhancements)
+**Priority:** Complete P0-P1 QA items, then evaluate P2-P3 based on stakeholder priorities
 
 ---
 
@@ -455,15 +523,23 @@ ORIGINAL (Seção "Próximas Ações"):
 
 ## 🎯 Próximas Ações
 
-### ✅ POC COMPLETE - No Pending Implementation Work
+### ✅ POC DEPLOYED - Quality Enhancement Phase Active
 
-**All 34 implementation issues are CLOSED.**
+**Original POC:** All 34 implementation issues + 7 EPICs **CLOSED** (2026-01-28)
 
-The remaining 7 open items are EPICs (tracking containers):
-- #2, #6, #9, #12, #16, #20, #25 - Ready to close
+**Current Focus:** 66 open quality improvement issues
 
-### 🎁 Optional Future Enhancements (Nice-to-Have)
-If stakeholders want additional features:
+### 🔥 High Priority (P0-P1) - 1 Remaining
+- [ ] #114 - Test results visibility in PR checks
+
+### ⚙️ Medium Priority (P2) - 7 Remaining
+- UX/accessibility improvements (contrast ratios, skip links, offline fallback, etc.)
+
+### 🎁 Low Priority (P3) - 12 Remaining
+- Nice-to-have enhancements (keyboard shortcuts, mobile gestures, dark mode preview, etc.)
+
+### 🔮 Future Enhancements (Not Prioritized)
+If stakeholders want additional features beyond quality improvements:
 - [ ] Circuit breaker para resiliência avançada
 - [ ] Dashboard de métricas/observabilidade
 - [ ] Histórico de buscas
@@ -723,25 +799,38 @@ Sprint 3 (Polish):
 | 2026-01-26 | 1.22 | **ROADMAP AUDIT SYNC:** 7 orphan issues discovered and documented (#61, #65, #66, #71, #73, #74, #75). Total issues: 34 → 41. Progress recalculated: 73.5% → 63.4%. EPIC 6 marked 100% complete (#57 closed). E2E blockers and Railway config issues now tracked. M3 status: BLOCKED by E2E failures. |
 | 2026-01-26 | 1.23 | **DEPLOYMENT ACCELERATION ANALYSIS:** Comprehensive prioritization analysis completed. Confirms: Issues ARE correctly prioritized for fastest POC launch. 4-day deployment timeline documented. E2E blockers (#66, #71, #65, #61) must be resolved first (2 days), then Railway config (#73, #74, #75) (1 day), then Deploy (#31) (1 day). Recomendations added: P0 flagging, "Deploy Week" milestone, full-time resource allocation, focused daily standups. Analysis validates that M1 + M2 100% complete, only E2E + Deploy remain to ship POC. |
 | 2026-01-28 | 1.30 | **🎉 POC COMPLETE - DEPLOYED TO PRODUCTION:** All 34 implementation issues closed. All blockers resolved: E2E tests 25/25 passing (PR #78), Railway config complete (PRs #77, #79, #80), Deploy inicial merged (PR #81). M1, M2, M3 all 100% complete. Only 7 EPICs remain open (tracking containers). POC live on Vercel + Railway. |
+| 2026-01-31 | 1.31 | **📊 ROADMAP INTEGRITY AUDIT:** Comprehensive audit revealed 68.9% drift. Total issues: 41 → 132 (+221.9%). All 7 EPICs actually CLOSED on 2026-01-28. 91 orphan issues discovered (Design System 91.7% complete, QA Backlog 37.0%, Infrastructure 100%). Updated status to "POC Deployed + Quality Phase Active". 66 open issues for quality improvements. Post-POC Evolution section added documenting scope expansion. |
 
 ---
 
 ## ✅ Nota de Sincronização
 
-**ÚLTIMA AUDITORIA:** 2026-01-28 12:30 (UTC)
-**STATUS:** ✅ 100% SYNCHRONIZED - POC COMPLETE
+**ÚLTIMA AUDITORIA:** 2026-01-31 15:45 (UTC) - **Roadmap Integrity Audit Complete**
+**STATUS:** ✅ SYNCHRONIZED - POC Deployed + Quality Phase Active
 
-**Final Status:**
-- ✅ **34/34 implementation issues CLOSED**
-- ✅ **7 EPICs open** (tracking containers only, ready to close)
-- ✅ **All blockers resolved** (E2E, Railway, Deploy)
-- ✅ **POC deployed to production** (Vercel + Railway)
+**Audit Results:**
+- **Total Issues:** 132 (vs 41 documented = **+221.9% expansion**)
+- **POC Issues (Original):** 34/34 CLOSED ✅ + 7 EPICs CLOSED ✅
+- **Post-POC Issues:** 66 OPEN (91 total discovered, 25 closed)
+- **Drift Detected:** 68.9% (91 orphan issues not in original roadmap)
 
-**Issues Fechadas (34 total):**
-#1, #3, #4, #5, #7, #8, #10, #11, #13, #14, #15, #17, #18, #19, #21, #22, #23, #24, #26, #27, #28, #29, #30, #31, #32, #40, #56, #57, #61, #65, #66, #71, #73, #74, #75
+**Breakdown by Status:**
+- ✅ **66 implementation issues CLOSED** (34 POC + 32 post-POC)
+- 🔄 **66 issues OPEN** (quality improvements + enhancements)
+- ✅ **All 7 EPICs CLOSED** (2026-01-28)
+- ✅ **POC deployed to production** (Railway)
 
-**EPICs Abertas (7 total - tracking only):**
-#2, #6, #9, #12, #16, #20, #25
+**Post-POC Work (91 orphan issues):**
+- Design System (EPIC 8): 11/12 closed (91.7%)
+- QA Backlog: 10/27 closed (37.0%)
+- Infrastructure: 9/9 closed (100%)
+- Value Sprint: 4/4 closed (100%)
+- Recent: 0/2 closed (0%)
+
+**Issues Documentadas Originalmente (41 total):**
+- POC Implementation: #1, #3-#5, #7-#8, #10-#11, #13-#15, #17-#19, #21-#24, #26-#32, #56-#57
+- E2E Resolution: #61, #65-#66, #71, #73-#75
+- EPICs: #2, #6, #9, #12, #16, #20, #25 (ALL CLOSED 2026-01-28)
 
 ---
 
