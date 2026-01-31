@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './__tests__/e2e',
+  testDir: './e2e-tests',
 
   /* Maximum time one test can run */
   timeout: 60 * 1000, // 60s per test (AC7)
@@ -62,6 +62,10 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 13'] },
     },
   ],
 
