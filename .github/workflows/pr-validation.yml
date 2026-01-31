@@ -34,14 +34,15 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           # Check for required sections using environment variable (safe from injection)
-          if ! echo "$PR_BODY" | grep -q "## Context"; then
-            echo "❌ PR body must include '## Context' section"
+          # Accept either "## Context" or "## Summary" (flexible for different PR templates)
+          if ! echo "$PR_BODY" | grep -qE "## (Context|Summary)"; then
+            echo "❌ PR body must include '## Context' or '## Summary' section"
             exit 1
           fi
 
+          # "## Changes" is optional - many PRs describe changes in Summary
           if ! echo "$PR_BODY" | grep -q "## Changes"; then
-            echo "❌ PR body must include '## Changes' section"
-            exit 1
+            echo "⚠️ Note: PR body does not include '## Changes' section (optional)"
           fi
 
           if ! echo "$PR_BODY" | grep -q "## Testing Plan"; then
