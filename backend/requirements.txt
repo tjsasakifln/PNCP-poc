@@ -16,7 +16,7 @@ urllib3==2.6.3
 openpyxl==3.1.5
 
 # LLM integration
-openai==1.91.0
+openai==1.109.1
 
 # =============================================================================
 # Development dependencies (not needed in production but included for simplicity)
