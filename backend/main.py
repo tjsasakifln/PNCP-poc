@@ -20,7 +20,7 @@ from config import setup_logging
 from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
-from filter import filter_batch
+from filter import filter_batch, remove_stopwords
 from excel import create_excel
 from llm import gerar_resumo, gerar_resumo_fallback
 from sectors import get_sector, list_sectors
@@ -218,7 +218,11 @@ async def buscar_licitacoes(request: BuscaRequest):
         # Determine keywords: custom terms REPLACE sector keywords (mutually exclusive)
         custom_terms: list[str] = []
         if request.termos_busca and request.termos_busca.strip():
-            custom_terms = [t.strip().lower() for t in request.termos_busca.strip().split() if t.strip()]
+            raw_terms = [t.strip().lower() for t in request.termos_busca.strip().split() if t.strip()]
+            custom_terms = remove_stopwords(raw_terms)
+            if len(custom_terms) < len(raw_terms):
+                removed = set(raw_terms) - set(custom_terms)
+                logger.info(f"Removed {len(removed)} stopwords: {removed}")
 
         if custom_terms:
             active_keywords = set(custom_terms)

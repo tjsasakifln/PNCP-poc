@@ -6,8 +6,10 @@ from filter import (
     match_keywords,
     filter_licitacao,
     filter_batch,
+    remove_stopwords,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO,
+    STOPWORDS_PT,
 )
 
 
@@ -769,3 +771,56 @@ class TestFilterBatch:
         assert len(aprovadas) == 1000
         assert stats["total"] == 1000
         assert stats["aprovadas"] == 1000
+
+
+class TestRemoveStopwords:
+    """Tests for Portuguese stopword removal from custom search terms."""
+
+    def test_removes_common_prepositions(self):
+        assert remove_stopwords(["serviço", "de", "limpeza"]) == ["serviço", "limpeza"]
+
+    def test_removes_articles(self):
+        assert remove_stopwords(["aquisição", "de", "os", "uniformes"]) == ["aquisição", "uniformes"]
+
+    def test_removes_conjunctions(self):
+        assert remove_stopwords(["mesa", "e", "cadeira"]) == ["mesa", "cadeira"]
+
+    def test_keeps_meaningful_terms(self):
+        terms = ["jaleco", "avental", "uniforme"]
+        assert remove_stopwords(terms) == terms
+
+    def test_handles_accented_stopwords(self):
+        # "após" normalizes to "apos" which is in STOPWORDS_PT
+        assert remove_stopwords(["após", "licitação"]) == ["licitação"]
+
+    def test_all_stopwords_returns_original(self):
+        """If ALL terms are stopwords, return original to avoid empty search."""
+        terms = ["de", "para", "com"]
+        assert remove_stopwords(terms) == terms
+
+    def test_empty_list(self):
+        assert remove_stopwords([]) == []
+
+    def test_single_meaningful_term(self):
+        assert remove_stopwords(["uniforme"]) == ["uniforme"]
+
+    def test_single_stopword_returns_original(self):
+        assert remove_stopwords(["de"]) == ["de"]
+
+    def test_mixed_case_stopwords(self):
+        # Terms should already be lowercased, but test robustness
+        assert remove_stopwords(["serviço", "de", "limpeza"]) == ["serviço", "limpeza"]
+
+    def test_stopwords_set_contains_essentials(self):
+        """Verify the most critical stopwords are in the set."""
+        essential = {"de", "do", "da", "dos", "das", "para", "com", "em",
+                     "no", "na", "e", "ou", "o", "a", "os", "as", "um", "uma"}
+        assert essential.issubset(STOPWORDS_PT)
+
+    def test_real_world_query_servico_de_limpeza(self):
+        result = remove_stopwords(["serviço", "de", "limpeza", "para", "o", "prédio"])
+        assert result == ["serviço", "limpeza", "prédio"]
+
+    def test_real_world_query_material_de_escritorio(self):
+        result = remove_stopwords(["material", "de", "escritório", "e", "papelaria"])
+        assert result == ["material", "escritório", "papelaria"]

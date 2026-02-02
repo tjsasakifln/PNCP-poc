@@ -38,6 +38,31 @@ const UF_NAMES: Record<string, string> = {
   SE: "Sergipe", TO: "Tocantins",
 };
 
+// Portuguese stopwords — filtered out of custom search terms to avoid generic matches.
+// Mirrors the backend STOPWORDS_PT set in filter.py.
+const STOPWORDS_PT = new Set([
+  "o","a","os","as","um","uma","uns","umas",
+  "de","do","da","dos","das","em","no","na","nos","nas",
+  "por","pelo","pela","pelos","pelas","para","pra","pro",
+  "com","sem","sob","sobre","entre","ate","desde","apos",
+  "perante","contra","ante",
+  "ao","aos","num","numa","nuns","numas",
+  "e","ou","mas","porem","que","se","como","quando","porque","pois",
+  "nem","tanto","quanto","logo","portanto",
+  "nao","mais","muito","tambem","ja","ainda","so","apenas",
+  "ser","ter","estar","ir","vir","fazer","dar","ver",
+  "ha","foi","sao","era","sera",
+]);
+
+/** Strip accents from a string for stopword comparison */
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function isStopword(word: string): boolean {
+  return STOPWORDS_PT.has(stripAccents(word.toLowerCase()));
+}
+
 function dateDiffInDays(date1: string, date2: string): number {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
@@ -692,6 +717,11 @@ export default function HomePage() {
                     // When user types a space, commit the word as a tag
                     if (val.endsWith(" ")) {
                       const word = val.trim().toLowerCase();
+                      if (word && isStopword(word)) {
+                        // Skip stopwords silently
+                        setTermoInput("");
+                        return;
+                      }
                       if (word && !termosArray.includes(word)) {
                         setTermosArray(prev => [...prev, word]);
                         setResult(null);
@@ -711,6 +741,10 @@ export default function HomePage() {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       const word = termoInput.trim().toLowerCase();
+                      if (word && isStopword(word)) {
+                        setTermoInput("");
+                        return;
+                      }
                       if (word && !termosArray.includes(word)) {
                         setTermosArray(prev => [...prev, word]);
                         setResult(null);
@@ -724,7 +758,7 @@ export default function HomePage() {
                 />
               </div>
               <p className="text-sm text-ink-muted mt-1.5">
-                Digite cada termo e pressione <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">espaço</kbd> para confirmar.
+                Digite cada termo e pressione <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">espaço</kbd> para confirmar. Artigos e preposições (de, para, com...) são ignorados automaticamente.
                 {termosArray.length > 0 && (
                   <span className="text-brand-blue font-medium">
                     {" "}{termosArray.length} termo{termosArray.length > 1 ? "s" : ""} selecionado{termosArray.length > 1 ? "s" : ""}

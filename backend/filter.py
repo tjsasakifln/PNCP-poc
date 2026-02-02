@@ -5,6 +5,61 @@ import unicodedata
 from typing import Set, Tuple, List, Dict, Optional
 
 
+# ---------- Portuguese Stopwords ----------
+# Prepositions, articles, conjunctions, and other function words that should
+# be stripped from user-supplied custom search terms to avoid generic matches.
+# E.g., "de" matches virtually any procurement description.
+STOPWORDS_PT: Set[str] = {
+    # Artigos (articles)
+    "o", "a", "os", "as", "um", "uma", "uns", "umas",
+    # Preposições (prepositions)
+    "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+    "por", "pelo", "pela", "pelos", "pelas", "para", "pra", "pro",
+    "com", "sem", "sob", "sobre", "entre", "ate", "desde", "apos",
+    "perante", "contra", "ante",
+    # Contrações (contractions)
+    "ao", "aos", "num", "numa", "nuns", "numas",
+    "dele", "dela", "deles", "delas", "nele", "nela", "neles", "nelas",
+    "deste", "desta", "destes", "destas", "neste", "nesta", "nestes", "nestas",
+    "desse", "dessa", "desses", "dessas", "nesse", "nessa", "nesses", "nessas",
+    "daquele", "daquela", "daqueles", "daquelas",
+    "naquele", "naquela", "naqueles", "naquelas",
+    "disto", "disso", "daquilo", "nisto", "nisso", "naquilo",
+    # Conjunções (conjunctions)
+    "e", "ou", "mas", "porem", "todavia", "contudo", "entretanto",
+    "que", "se", "como", "quando", "porque", "pois", "enquanto",
+    "nem", "tanto", "quanto", "logo", "portanto",
+    # Pronomes relativos / demonstrativos comuns
+    "que", "quem", "qual", "quais", "cujo", "cuja", "cujos", "cujas",
+    "esse", "essa", "esses", "essas", "este", "esta", "estes", "estas",
+    "aquele", "aquela", "aqueles", "aquelas", "isto", "isso", "aquilo",
+    # Advérbios / palavras funcionais muito comuns
+    "nao", "mais", "muito", "tambem", "ja", "ainda", "so", "apenas",
+    "bem", "mal", "assim", "la", "aqui", "ali", "onde",
+    # Verbos auxiliares / muito comuns (formas curtas)
+    "ser", "ter", "estar", "ir", "vir", "fazer", "dar", "ver",
+    "ha", "foi", "sao", "era", "sera",
+}
+
+
+def remove_stopwords(terms: list[str]) -> list[str]:
+    """Remove Portuguese stopwords from a list of search terms.
+
+    Terms are normalized (lowercased, accent-stripped) before comparison
+    so that 'à', 'É', 'após' etc. are correctly identified as stopwords.
+
+    Args:
+        terms: List of user-supplied search terms (already lowercased).
+
+    Returns:
+        Filtered list with stopwords removed. If ALL terms are stopwords,
+        returns the original list unchanged to avoid an empty search.
+    """
+    filtered = [t for t in terms if normalize_text(t) not in STOPWORDS_PT]
+    # Safety: never return empty if user typed something
+    return filtered if filtered else terms
+
+
 # Primary keywords for uniform/apparel procurement (PRD Section 4.1)
 #
 # Strategy: keep ALL clothing-related terms (including ambiguous ones like
