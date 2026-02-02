@@ -21,7 +21,7 @@ openai==1.91.0
 # =============================================================================
 # Development dependencies (not needed in production but included for simplicity)
 # =============================================================================
-pytest==8.3.5
+pytest==8.4.2
 pytest-asyncio==0.25.0
 pytest-cov==6.0.0
 pytest-benchmark==5.1.0
