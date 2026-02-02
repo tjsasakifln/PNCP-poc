@@ -18,7 +18,9 @@ import { useOnboarding } from "../hooks/useOnboarding";
 import { useKeyboardShortcuts, getShortcutDisplay } from "../hooks/useKeyboardShortcuts";
 import type { SavedSearch } from "../lib/savedSearches";
 
-const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fad0f461ff9565~mv2.png/v1/crop/x_0,y_301,w_5000,h_2398/fill/w_198,h_95,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Descomplicita%20-%20Azul.png";
+// White label branding configuration
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
 
 const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
@@ -381,7 +383,8 @@ export default function HomePage() {
 
       const blob = await response.blob();
       const setorLabel = sectorName.replace(/\s+/g, '_');
-      const filename = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
+      const appNameSlug = APP_NAME.replace(/\s+/g, '_');
+      const filename = `${appNameSlug}_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
 
       // Feature detection: check if browser supports download attribute
       const anchor = document.createElement('a');
@@ -551,7 +554,7 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <Image
               src={LOGO_URL}
-              alt="DescompLicita"
+              alt={APP_NAME}
               width={140}
               height={67}
               className="h-10 w-auto"
@@ -1122,7 +1125,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t mt-12 py-6 text-center text-xs text-ink-muted" role="contentinfo">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-          <span>DescompLicita &mdash; Licitações e Contratos de Forma Descomplicada</span>
+          <span>{APP_NAME} &mdash; Busca Inteligente de Licitações no PNCP</span>
           <button
             onClick={() => setShowKeyboardHelp(true)}
             className="text-xs text-ink-muted hover:text-brand-blue transition-colors flex items-center gap-1"

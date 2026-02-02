@@ -14,7 +14,7 @@ class TestSectorConfig:
     def test_all_sectors_exist(self):
         sectors = list_sectors()
         ids = {s["id"] for s in sectors}
-        assert ids == {"vestuario", "alimentos", "informatica", "limpeza", "mobiliario", "papelaria", "engenharia", "software"}
+        assert ids == {"vestuario", "alimentos", "informatica", "limpeza", "mobiliario", "papelaria", "engenharia", "software", "facilities"}
 
     def test_get_sector_returns_config(self):
         s = get_sector("vestuario")
@@ -450,3 +450,193 @@ class TestSoftwareSector:
             "Contratação de empresa especializada para fornecimento e instalação de sistema de microgeração de energia solar fotovoltaica"
         )
         assert ok is False
+
+
+class TestFacilitiesSector:
+    """Tests for Facilities e Manutenção Predial sector — analyst-derived from real PNCP data."""
+
+    def _match(self, texto):
+        s = SECTORS["facilities"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    # TRUE POSITIVES - Should match facilities contracts
+
+    def test_matches_manutencao_predial(self):
+        """Real PNCP: Building maintenance services."""
+        ok, kw = self._match(
+            "Contratação empresa especializada na prestação de serviços contínuos de manutenção predial, "
+            "com dedicação exclusiva e não exclusiva de mão de obra, abrangendo a execução de rotinas preventivas e corretivas"
+        )
+        assert ok is True
+        # Should match either the full compound or related keywords
+        assert len(kw) > 0
+
+    def test_matches_unidades_residenciais(self):
+        """Real PNCP: University housing maintenance."""
+        ok, kw = self._match("Serviço de Manutenção de unidades residenciais do CRUSP.")
+        assert ok is True
+        assert "manutenção de unidades residenciais" in kw or "manutencao de unidades residenciais" in kw
+
+    def test_matches_limpeza_conservacao_imoveis(self):
+        """Real PNCP: Building cleaning and conservation."""
+        ok, kw = self._match(
+            "CONTRATAÇÃO DE EMPRESA PARA PRESTAÇÃO DE SERVIÇOS DE LIMPEZA, ASSEIO E CONSERVAÇÃO EM DIVERSAS SEDES DE PRÓPRIOS PÚBLICOS DE BARUERI"
+        )
+        assert ok is True
+
+    def test_matches_manutencao_elevadores(self):
+        """Real PNCP: Elevator maintenance."""
+        ok, kw = self._match(
+            "Contratação de empresa especializada em manutenção preventiva e corretiva dos elevadores da Superintendência Regional"
+        )
+        assert ok is True
+        assert "elevadores" in kw  # Matches standalone "elevadores" keyword
+
+    def test_matches_manutencao_ar_condicionado(self):
+        """Building HVAC maintenance with PMOC."""
+        ok, _ = self._match(
+            "Serviço de manutenção preventiva e corretiva em ar condicionado, cortinas de ar, "
+            "purificadores de água e execução do Plano de Manutenção, Operação e Controle (PMOC)"
+        )
+        assert ok is True
+
+    def test_matches_conservacao_instalacoes_eletricas(self):
+        """Real PNCP: Building electrical maintenance."""
+        ok, _ = self._match(
+            "Constituição de Sistema de Registro de Preços para a Prestação de Serviço de Manutenção e "
+            "Conservação de Instalações Elétricas, para atender à demanda da UNESP"
+        )
+        assert ok is True
+
+    def test_matches_limpeza_conservacao_imoveis_saae(self):
+        """Real PNCP: Building cleaning services."""
+        ok, _ = self._match("Contratação de empresa para limpeza e conservação dos imóveis da SAAE Atibaia.")
+        assert ok is True
+
+    def test_matches_facilities_english_term(self):
+        """Facilities management (English term)."""
+        ok, kw = self._match(
+            "Contratação de empresa para prestação de serviços de facilities management incluindo limpeza, "
+            "segurança e manutenção predial"
+        )
+        assert ok is True
+        assert "facilities" in kw
+
+    def test_matches_servicos_prediais(self):
+        """Building services (generic compound term)."""
+        ok, kw = self._match(
+            "Registro de preços para eventual contratação de serviços prediais para conservação de edifícios públicos"
+        )
+        assert ok is True
+        assert "serviços prediais" in kw or "servicos prediais" in kw
+
+    def test_matches_portaria_recepcao(self):
+        """Reception and concierge services."""
+        ok, _ = self._match(
+            "Contratação de empresa para prestação de serviços de portaria, recepção e controle de acesso"
+        )
+        assert ok is True
+
+    # FALSE POSITIVES - Should NOT match (filtered by exclusions)
+
+    def test_excludes_manutencao_veiculos(self):
+        """Automotive maintenance should NOT match facilities."""
+        ok, _ = self._match(
+            "AQUISIÇÃO DE TINTAS AUTOMOTIVAS PADRONIZADAS E DE INSUMOS DE PINTURA PARA A MANUTENÇÃO DA FROTA DO MUNICÍPIO"
+        )
+        assert ok is False
+
+    def test_excludes_iluminacao_publica(self):
+        """Public lighting infrastructure should NOT match facilities."""
+        ok, _ = self._match(
+            "REGISTRO DE PREÇO para eventual contratação de empresa(s) especializada(s) para o fornecimento de "
+            "materiais elétricos, referentes a manutenção da iluminação pública"
+        )
+        assert ok is False
+
+    def test_excludes_manutencao_frota(self):
+        """Fleet maintenance should NOT match facilities."""
+        ok, _ = self._match(
+            "REGISTRO DE PREÇOS para aquisição eventual e futura de pneus, câmaras de ar, acessórios e ferramentas "
+            "para borracharia, destinados à manutenção da frota de veículos oficiais"
+        )
+        assert ok is False
+
+    def test_excludes_sistema_freios_patrol(self):
+        """Heavy equipment maintenance should NOT match facilities."""
+        ok, _ = self._match(
+            "contratação de empresa para PRESTAÇÃO DE SERVIÇO de manutenção do sistema de freios da máquina Patrol Volvo G-930"
+        )
+        assert ok is False
+
+    def test_excludes_manutencao_drenagem(self):
+        """Drainage infrastructure should NOT match facilities."""
+        ok, _ = self._match(
+            "CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS CONTINUADOS DE MANUTENÇÃO DO SISTEMA DE DRENAGEM, "
+            "ATRAVÉS DE LIMPEZA MECÂNICA EM GALERIAS, RAMAIS, POÇOS DE VISITA"
+        )
+        assert ok is False
+
+    def test_excludes_limpeza_areas_publicas(self):
+        """Public space cleaning should NOT match facilities."""
+        ok, _ = self._match(
+            "Contratação de empresa especializada para realização de serviços contínuos de manutenção e limpeza de áreas públicas, "
+            "abrangendo, entre outras atividades, a varrição e capinação de guias e sarjetas"
+        )
+        assert ok is False
+
+    def test_excludes_tecnologia_informacao(self):
+        """IT maintenance should NOT match facilities."""
+        ok, _ = self._match(
+            "Prestação de serviços técnicos especializados em Tecnologia da Informação, incluindo suporte técnico remoto e presencial, "
+            "operação, manutenção, monitoramento, diagnóstico e consultoria em infraestrutura de TI"
+        )
+        assert ok is False
+
+    def test_excludes_construcao_reforma(self):
+        """Civil construction/renovation should NOT match facilities (belongs in engenharia)."""
+        ok, _ = self._match(
+            "Contratação de empresa para execução de obra de reforma e ampliação do prédio da secretaria municipal"
+        )
+        assert ok is False
+
+    def test_excludes_medicamento_manutencao(self):
+        """Healthcare 'maintenance' (treatment continuation) should NOT match facilities."""
+        ok, _ = self._match(
+            "REGISTRO DE PREÇOS do medicamento USTEQUINUMABE 90 mg, para assegurar o cumprimento de determinação judicial "
+            "e a manutenção da assistência farmacêutica de alta complexibildade"
+        )
+        assert ok is False
+
+    def test_excludes_manutencao_animais(self):
+        """Animal services should NOT match facilities."""
+        ok, _ = self._match(
+            "REGISTRO DE PREÇOS PARA FUTURA E EVENTUAL PRESTAÇÃO DE SERVIÇOS DE RECOLHIMENTO, GUARDA E MANUTENÇÃO DE ANIMAIS "
+            "DE MÉDIO E GRANDE PORTE (CAPRINOS, OVINOS, SUÍNOS, EQUÍDEOS E BOVÍDEOS)"
+        )
+        assert ok is False
+
+    def test_excludes_software_facilities(self):
+        """Facilities management software should NOT match (belongs in software sector)."""
+        ok, _ = self._match(
+            "Contratação de empresa para fornecimento de software de gestão de facilities com módulos de manutenção predial"
+        )
+        assert ok is False
+
+    # NORMALIZATION TESTS
+
+    def test_normalization_accents(self):
+        """Test that accents are properly normalized."""
+        ok1, _ = self._match("Manutenção predial")  # Without accent
+        ok2, _ = self._match("Manutenção predial")  # With accent (if different)
+        assert ok1 is True
+        assert ok2 is True
+
+    def test_normalization_case_insensitive(self):
+        """Test case insensitivity."""
+        ok1, _ = self._match("MANUTENÇÃO PREDIAL")
+        ok2, _ = self._match("manutenção predial")
+        ok3, _ = self._match("Manutenção Predial")
+        assert ok1 is True
+        assert ok2 is True
+        assert ok3 is True

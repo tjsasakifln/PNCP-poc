@@ -1,26 +1,30 @@
-# BidIQ Uniformes - POC v0.2
+# Smart PNCP - POC v0.3
 
 [![Backend Tests](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml)
 [![Frontend Tests](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml/badge.svg?event=push)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml)
-[![Coverage](https://img.shields.io/badge/Backend_Coverage-99.2%25-brightgreen)](./backend/htmlcov/index.html)
+[![Coverage](https://img.shields.io/badge/Backend_Coverage-80.8%25-brightgreen)](./backend/htmlcov/index.html)
 [![Coverage](https://img.shields.io/badge/Frontend_Coverage-91.5%25-brightgreen)](./frontend/coverage/index.html)
 
-Sistema de busca e análise de licitações de uniformes do Portal Nacional de Contratações Públicas (PNCP).
+White-label platform for intelligent procurement opportunity discovery from Brazil's PNCP (Portal Nacional de Contratações Públicas).
+
+> **Rebranding Note:** Formerly known as "BidIQ Uniformes" and "Descomplicita POC". Rebranded to Smart PNCP in February 2026 for white-label multi-tenant deployment.
 
 ## 📋 Sobre o Projeto
 
-O **BidIQ Uniformes** é um POC (Proof of Concept) que automatiza a descoberta de oportunidades de licitações de uniformes e fardamentos através da API do PNCP (Portal Nacional de Contratações Públicas).
+**Smart PNCP** é um POC (Proof of Concept) que automatiza a descoberta de oportunidades de licitações em **9 setores** (vestuário, alimentos, informática, limpeza, mobiliário, papelaria, engenharia, software, e **facilities**) através da API do PNCP.
 
 ### Funcionalidades Principais
 
-- ✅ **Filtragem inteligente** por estado, valor e keywords (~50 termos)
+- ✅ **Multi-setor** - 9 setores configurados (vestuário, alimentos, informática, limpeza, mobiliário, papelaria, engenharia, software, facilities)
+- ✅ **White Label** - Branding configurável via environment variables (app name, logo)
+- ✅ **Filtragem inteligente** por setor, estado, valor e keywords (500+ termos)
 - ✅ **Geração automática de planilhas Excel** com formatação profissional
 - ✅ **Resumo executivo via GPT-4.1-nano** com análise e destaques
 - ✅ **Interface web responsiva** para seleção de parâmetros
 - ✅ **Resiliência** - Retry logic com exponential backoff para API instável
 - ✅ **Fallback offline** - Sistema funciona mesmo sem OpenAI API
-- ✅ **Testes automatizados** - 99.2% coverage backend, 91.5% frontend, 25 E2E tests
+- ✅ **Testes automatizados** - 80.8% coverage backend, 91.5% frontend, 60 E2E tests
 
 ## 🚀 Quick Start
 

@@ -278,11 +278,13 @@ describe('HomePage - UF Selection and Date Range', () => {
   });
 
   describe('Header', () => {
-    it('should render the DescompLicita logo', () => {
+    it('should render the application logo', () => {
       render(<HomePage />);
 
-      const logo = screen.getByAltText('DescompLicita');
+      // Logo alt text is now dynamic (env: NEXT_PUBLIC_APP_NAME)
+      const logo = screen.getByRole('img');
       expect(logo).toBeInTheDocument();
+      expect(logo).toHaveAttribute('alt');
     });
 
     it('should display "Busca Inteligente PNCP" text', () => {

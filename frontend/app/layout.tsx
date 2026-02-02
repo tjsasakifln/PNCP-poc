@@ -24,11 +24,25 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+
 export const metadata: Metadata = {
-  title: "DescompLicita",
-  description: "Licitações e Contratos de Forma Descomplicada — Busca inteligente no PNCP",
+  title: `${appName} - Busca Inteligente de Licitações`,
+  description: "Ferramenta de busca avançada no PNCP com filtros por setor, região e período",
   icons: {
     icon: "/favicon.ico",
+  },
+  openGraph: {
+    title: appName,
+    description: "Busca inteligente de licitações no PNCP",
+    siteName: appName,
+    type: "website",
+    locale: "pt_BR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: appName,
+    description: "Busca inteligente de licitações no PNCP",
   },
 };
 
