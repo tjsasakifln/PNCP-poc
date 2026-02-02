@@ -14,7 +14,7 @@ class TestSectorConfig:
     def test_all_sectors_exist(self):
         sectors = list_sectors()
         ids = {s["id"] for s in sectors}
-        assert ids == {"vestuario", "alimentos", "informatica", "mobiliario", "papelaria", "engenharia", "software", "facilities", "manutencao_predial"}
+        assert ids == {"vestuario", "alimentos", "informatica", "mobiliario", "papelaria", "engenharia", "software", "facilities", "saude", "vigilancia", "transporte", "manutencao_predial"}
 
     def test_get_sector_returns_config(self):
         s = get_sector("vestuario")
@@ -643,3 +643,219 @@ class TestManutencaoPredialSector:
         ok2, _ = self._match("ar condicionado")
         assert ok1 is True
         assert ok2 is True
+
+
+class TestSaudeSector:
+    """Tests for Saúde (health) sector."""
+
+    def _match(self, objeto: str):
+        s = get_sector("saude")
+        return match_keywords(objeto, s.keywords, s.exclusions)
+
+    # TRUE POSITIVES
+    def test_matches_medicamentos(self):
+        ok, _ = self._match("Aquisição de medicamentos para atender a rede municipal de saúde")
+        assert ok is True
+
+    def test_matches_material_medico_hospitalar(self):
+        ok, _ = self._match("Registro de preço para aquisição de material médico-hospitalar")
+        assert ok is True
+
+    def test_matches_equipamento_hospitalar(self):
+        ok, _ = self._match("Aquisição de equipamentos hospitalares para o Hospital Municipal")
+        assert ok is True
+
+    def test_matches_insumos_hospitalares(self):
+        ok, _ = self._match("Aquisição de insumos hospitalares para uso dos pacientes admitidos no SAD")
+        assert ok is True
+
+    def test_matches_seringas_agulhas(self):
+        ok, _ = self._match("Registro de preços para aquisição de seringas e agulhas descartáveis")
+        assert ok is True
+
+    def test_matches_opme(self):
+        ok, _ = self._match("Aquisição de OPME - órteses, próteses e materiais especiais")
+        assert ok is True
+
+    def test_matches_reagentes_laboratorio(self):
+        ok, _ = self._match("Registro de preços para aquisição de reagentes de laboratório")
+        assert ok is True
+
+    def test_matches_oxigenio_medicinal(self):
+        ok, _ = self._match("Contratação de fornecimento de oxigênio medicinal e gases medicinais")
+        assert ok is True
+
+    def test_matches_material_odontologico(self):
+        ok, _ = self._match("Aquisição de material odontológico para as UBS")
+        assert ok is True
+
+    # FALSE POSITIVES (should be excluded)
+    def test_matches_secretaria_saude_with_medical_object(self):
+        """Secretaria de Saúde in description should NOT block medical procurement."""
+        ok, _ = self._match("Aquisição de gases medicinais para a Secretaria de Saúde")
+        assert ok is True
+
+    def test_excludes_plano_de_saude(self):
+        ok, _ = self._match("Contratação de plano de saúde para servidores municipais")
+        assert ok is False
+
+    def test_matches_dipirona(self):
+        ok, _ = self._match("Registro de preços para fornecimento de dipirona sódica solução injetável")
+        assert ok is True
+
+    def test_matches_tela_cirurgica(self):
+        ok, _ = self._match("Fornecimento de telas cirúrgicas não absorvíveis para Hospital Municipal")
+        assert ok is True
+
+    def test_matches_fisioterapia(self):
+        ok, _ = self._match("Prestação de serviço de fisioterapia clínica e domiciliar")
+        assert ok is True
+
+    def test_matches_telemedicina(self):
+        ok, _ = self._match("Prestação de serviços de telemedicina cardiológica 24 horas")
+        assert ok is True
+
+    def test_matches_instrumental_cirurgico(self):
+        ok, _ = self._match("Instrumentais em Titânio para Cirurgia Cardíaca")
+        assert ok is True
+
+    def test_matches_bipap(self):
+        ok, _ = self._match("Aquisição de aparelho bipap em cumprimento de determinação judicial")
+        assert ok is True
+
+    def test_matches_colostomia(self):
+        ok, _ = self._match("Aquisição de Material de Consumo (Bolsa de Colostomia/Ileostomia)")
+        assert ok is True
+
+    def test_matches_tubo_coletor_sangue(self):
+        ok, _ = self._match("Aquisição de tubos coletores de sangue para o Hospital Metropolitano")
+        assert ok is True
+
+    def test_excludes_plotagem_hospital(self):
+        """Plotagem for hospital is graphic services, not medical."""
+        ok, _ = self._match("Confecção de plotagens e painéis para atender a demanda do Hospital Municipal")
+        assert ok is False
+
+    def test_excludes_agulha_costura(self):
+        ok, _ = self._match("Aquisição de agulhas de costura e linhas para oficina de costura")
+        assert ok is False
+
+    def test_excludes_lamina_serra(self):
+        ok, _ = self._match("Aquisição de lâminas de serra para marcenaria")
+        assert ok is False
+
+    def test_excludes_vigilancia_sanitaria(self):
+        ok, _ = self._match("Serviços de vigilância sanitária e fiscalização")
+        assert ok is False
+
+
+class TestVigilanciaSector:
+    """Tests for Vigilância e Segurança sector."""
+
+    def _match(self, objeto: str):
+        s = get_sector("vigilancia")
+        return match_keywords(objeto, s.keywords, s.exclusions)
+
+    # TRUE POSITIVES
+    def test_matches_vigilancia_patrimonial(self):
+        ok, _ = self._match("Contratação de empresa de vigilância patrimonial armada e desarmada")
+        assert ok is True
+
+    def test_matches_cftv(self):
+        ok, _ = self._match("Implantação de sistema de CFTV com câmeras de monitoramento")
+        assert ok is True
+
+    def test_matches_alarme_monitoramento(self):
+        ok, _ = self._match("Prestação de serviços de monitoramento eletrônico com sistema de alarme")
+        assert ok is True
+
+    def test_matches_controle_acesso(self):
+        ok, _ = self._match("Aquisição e instalação de sistema de controle de acesso com catracas")
+        assert ok is True
+
+    def test_matches_seguranca_eletronica(self):
+        ok, _ = self._match("Contratação de serviços de segurança eletrônica e videomonitoramento")
+        assert ok is True
+
+    def test_matches_vigilante_armado(self):
+        ok, _ = self._match("Contratação de postos de vigilante armado 24 horas")
+        assert ok is True
+
+    # FALSE POSITIVES (should be excluded)
+    def test_excludes_vigilancia_sanitaria(self):
+        ok, _ = self._match("Ações de vigilância sanitária para fiscalização de alimentos")
+        assert ok is False
+
+    def test_excludes_vigilancia_epidemiologica(self):
+        ok, _ = self._match("Serviços de vigilância epidemiológica e controle de doenças")
+        assert ok is False
+
+    def test_excludes_seguranca_trabalho(self):
+        ok, _ = self._match("Contratação de serviços de segurança do trabalho e medicina ocupacional")
+        assert ok is False
+
+    def test_excludes_seguranca_informacao(self):
+        ok, _ = self._match("Consultoria em segurança da informação e segurança cibernética")
+        assert ok is False
+
+    def test_excludes_monitoramento_ambiental(self):
+        ok, _ = self._match("Serviços de monitoramento ambiental e controle de poluição")
+        assert ok is False
+
+
+class TestTransporteSector:
+    """Tests for Transporte e Veículos sector."""
+
+    def _match(self, objeto: str):
+        s = get_sector("transporte")
+        return match_keywords(objeto, s.keywords, s.exclusions)
+
+    # TRUE POSITIVES
+    def test_matches_locacao_veiculos(self):
+        ok, _ = self._match("Locação de veículos com motorista para a Secretaria de Educação")
+        assert ok is True
+
+    def test_matches_combustivel(self):
+        ok, _ = self._match("Registro de preços para aquisição de combustível (gasolina e diesel)")
+        assert ok is True
+
+    def test_matches_manutencao_frota(self):
+        ok, _ = self._match("Contratação de serviços de manutenção preventiva e corretiva da frota municipal")
+        assert ok is True
+
+    def test_matches_pneus(self):
+        ok, _ = self._match("Registro de preços para aquisição de pneus para a frota de veículos")
+        assert ok is True
+
+    def test_matches_transporte_escolar(self):
+        ok, _ = self._match("Contratação de serviços de transporte escolar para alunos da rede municipal")
+        assert ok is True
+
+    def test_matches_aquisicao_veiculos(self):
+        ok, _ = self._match("Aquisição de veículos zero km tipo caminhonete para a Secretaria de Obras")
+        assert ok is True
+
+    def test_matches_ambulancia(self):
+        ok, _ = self._match("Aquisição de ambulância tipo D para o SAMU")
+        assert ok is True
+
+    # FALSE POSITIVES (should be excluded)
+    def test_excludes_veiculo_comunicacao(self):
+        ok, _ = self._match("Contratação de veículo de comunicação para publicidade institucional")
+        assert ok is False
+
+    def test_excludes_mecanica_solos(self):
+        ok, _ = self._match("Serviços de mecânica dos solos e sondagem geotécnica")
+        assert ok is False
+
+    def test_excludes_ventilador_mecanico(self):
+        ok, _ = self._match("Aquisição de ventilador mecânico para UTI neonatal")
+        assert ok is False
+
+    def test_excludes_filtro_agua(self):
+        ok, _ = self._match("Aquisição de filtro de água para bebedouros")
+        assert ok is False
+
+    def test_excludes_bateria_notebook(self):
+        ok, _ = self._match("Substituição de bateria de notebook Dell Latitude")
+        assert ok is False

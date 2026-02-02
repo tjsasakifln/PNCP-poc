@@ -613,11 +613,8 @@ SECTORS: Dict[str, SectorConfig] = {
             "descartável", "descartaveis", "descartáveis",
             "inseticida",
 
-            # Support services
+            # Support services (NOTE: vigilância/segurança patrimonial moved to "vigilancia" sector)
             "portaria", "recepção", "recepcao",
-            "segurança patrimonial", "seguranca patrimonial",
-            "vigilância patrimonial", "vigilancia patrimonial",
-            "controle de acesso",
             "copa e cozinha",
             "zeladoria", "zelador",
             "recepcionista",
@@ -720,6 +717,487 @@ SECTORS: Dict[str, SectorConfig] = {
             # "higiene" in non-product context
             "higiene ocupacional",
             "higiene do trabalho",
+        },
+    ),
+    "saude": SectorConfig(
+        id="saude",
+        name="Saúde",
+        description="Medicamentos, equipamentos hospitalares, insumos médicos, materiais de laboratório, órteses e próteses",
+        keywords={
+            # High precision compound terms
+            "medicamento", "medicamentos",
+            "material médico", "material medico",
+            "material médico-hospitalar", "material medico-hospitalar",
+            "material médico hospitalar", "material medico hospitalar",
+            "materiais médicos", "materiais medicos",
+            "materiais médico-hospitalares", "materiais medico-hospitalares",
+            "insumo hospitalar", "insumos hospitalares",
+            "insumo médico", "insumo medico",
+            "insumos médicos", "insumos medicos",
+            "equipamento médico", "equipamento medico",
+            "equipamento hospitalar", "equipamentos hospitalares",
+            "equipamentos médicos", "equipamentos medicos",
+            "equipamentos médico-hospitalares", "equipamentos medico-hospitalares",
+            "equipamento médico-hospitalar", "equipamento medico-hospitalar",
+
+            # Pharmacy and drugs
+            "farmácia", "farmacia",
+            "farmacêutico", "farmaceutico",
+            "assistência farmacêutica", "assistencia farmaceutica",
+            "distribuição de medicamentos", "distribuicao de medicamentos",
+            "drogaria",
+            "fármaco", "farmaco", "fármacos", "farmacos",
+            "produto farmacêutico", "produto farmaceutico",
+            "produtos farmacêuticos", "produtos farmaceuticos",
+
+            # Specific medical items
+            "seringa", "seringas",
+            "agulha", "agulhas",
+            "cateter", "cateteres",
+            "sonda", "sondas",
+            "luva cirúrgica", "luva cirurgica",
+            "luva de procedimento", "luvas de procedimento",
+            "luva hospitalar",
+            "gaze", "gazes", "compressa", "compressas",
+            "atadura", "ataduras",
+            "esparadrapo",
+            "bisturi", "bisturis",
+            "sutura", "suturas", "fio de sutura",
+            "curativo", "curativos",
+
+            # Orthotics, prosthetics, special materials
+            "órtese", "ortese", "órteses", "orteses",
+            "prótese", "protese", "próteses", "proteses",
+            "opme",  # Órteses, Próteses e Materiais Especiais
+            "material especial", "materiais especiais",
+            "implante", "implantes",
+            "stent", "stents",
+            "marca-passo", "marcapasso",
+
+            # Medical equipment (large)
+            "raio-x", "raio x", "aparelho de raio",
+            "ultrassom", "ultrassonografia",
+            "tomógrafo", "tomografo", "tomografia",
+            "ressonância magnética", "ressonancia magnetica",
+            "desfibrilador", "desfibriladores",
+            "monitor multiparâmetro", "monitor multiparametro",
+            "monitor de sinais vitais",
+            "ventilador pulmonar", "ventilador mecânico", "ventilador mecanico",
+            "respirador", "respiradores",
+            "autoclave", "autoclaves",
+            "eletrocardiógrafo", "eletrocardiografo",
+            "oxímetro", "oximetro",
+            "esfigmomanômetro", "esfigmomanometro",
+            "estetoscópio", "estetoscopio",
+            "maca", "macas",
+            "cama hospitalar", "camas hospitalares",
+            "cadeira de rodas",
+            "muleta", "muletas",
+            "andador", "andadores",
+
+            # Laboratory
+            "material de laboratório", "material de laboratorio",
+            "reagente", "reagentes",
+            "kit diagnóstico", "kit diagnostico",
+            "teste rápido", "teste rapido", "testes rápidos", "testes rapidos",
+            "hemograma",
+            "lâmina", "lamina", "lâminas", "laminas",
+            "tubo de ensaio",
+            "pipeta", "pipetas",
+            "centrífuga", "centrifuga",
+            "microscópio", "microscopio",
+
+            # Dental
+            "material odontológico", "material odontologico",
+            "odontológico", "odontologico",
+            "odontologia",
+            "resina dental", "resina odontológica", "resina odontologica",
+            "amálgama", "amalgama",
+            "anestésico", "anestesico", "anestésicos", "anestesicos",
+
+            # Specific drugs / active ingredients (common in PNCP)
+            "dipirona", "dexametasona", "prednisolona",
+            "paracetamol", "ibuprofeno", "omeprazol",
+            "amoxicilina", "cefalexina", "azitromicina",
+            "insulina", "metformina",
+            "gabapentina", "losartana", "enalapril",
+            "captopril", "atenolol", "sinvastatina",
+            "diazepam", "clonazepam", "fluoxetina",
+            "água destilada", "agua destilada",
+            "soro fisiológico", "soro fisiologico",
+            "solução injetável", "solucao injetavel",
+            "solução parenteral", "solucao parenteral",
+            "comprimido", "comprimidos",
+            "cápsula", "capsula", "cápsulas", "capsulas",
+            "pomada", "pomadas",
+            "colírio", "colirio",
+
+            # Surgical and specialized
+            "tela cirúrgica", "tela cirurgica",
+            "telas cirúrgicas", "telas cirurgicas",
+            "instrumental cirúrgico", "instrumental cirurgico",
+            "instrumentais cirúrgicos", "instrumentais cirurgicos",
+            "instrumental", "instrumentais",
+            "colostomia", "ileostomia",
+            "bolsa coletora", "bolsas coletoras",
+            "bolsa pressórica", "bolsa pressorica",
+            "bolsas pressóricas", "bolsas pressoricas",
+            "dreno", "drenos",
+
+            # Therapies and specialties
+            "fisioterapia", "fonoaudiologia",
+            "telemedicina", "telessaúde", "telessaude",
+            "oftalmologia", "oftalmológico", "oftalmologico",
+            "endodontia", "endodôntico", "endodontico",
+            "ortopedia", "ortopédico", "ortopedico",
+            "neurologia", "cardiologia",
+            "cirurgia", "cirúrgico", "cirurgico",
+            "oncologia", "oncológico", "oncologico",
+
+            # Lab consumables
+            "tubo coletor", "tubos coletores",
+            "tubo de coleta", "tubos de coleta",
+
+            # Respiratory equipment
+            "bipap", "cpap",
+
+            # Hospital services and general
+            "hospitalar", "hospitalares",
+            "hospital",
+            "saúde", "saude",
+            "clínica", "clinica",
+            "ambulatorial",
+            "nutrição", "nutricao",
+            "dieta enteral", "nutrição enteral", "nutricao enteral",
+            "nutrição parenteral", "nutricao parenteral",
+            "oxigênio medicinal", "oxigenio medicinal",
+            "gases medicinais",
+        },
+        exclusions={
+            # "saúde" in non-medical procurement context
+            # NOTE: "secretaria de saúde" and "fundo municipal de saúde" REMOVED
+            # from exclusions — they appear in legitimate medical procurement
+            # descriptions (e.g., "Aquisição de gases medicinais para a Secretaria de Saúde")
+            "saúde do trabalhador", "saude do trabalhador",
+            "saúde ocupacional", "saude ocupacional",
+            "segurança e saúde", "seguranca e saude",
+            "plano de saúde", "plano de saude",
+            "vigilância em saúde", "vigilancia em saude",
+            "vigilância sanitária", "vigilancia sanitaria",
+
+            # "sonda" in non-medical context
+            "sondagem de solo", "sondagem geotécnica", "sondagem geotecnica",
+            "sondagem spt",
+
+            # "respirador" in non-medical context (PPE masks)
+            "respirador pff2", "respirador pff3",
+            "respirador semifacial",
+            "máscara pff2", "mascara pff2",
+
+            # Cleaning products
+            "material de limpeza", "produto de limpeza",
+            "detergente", "desinfetante",
+
+            # IT/Software
+            "software", "sistema de gestão", "sistema de gestao",
+            "tecnologia da informação", "tecnologia da informacao",
+
+            # Construction
+            "construção civil", "construcao civil",
+            "reforma", "obra",
+
+            # Food
+            "merenda", "merenda escolar",
+            "gênero alimentício", "genero alimenticio",
+            "refeição", "refeicao",
+
+            # Furniture
+            "mobiliário", "mobiliario",
+            "cadeira de escritório", "cadeira de escritorio",
+
+            # Uniforms
+            "uniforme", "uniformes", "fardamento",
+            "vestuário", "vestuario",
+
+            # "agulha" in non-medical context
+            "agulha de costura", "agulhas de costura",
+            "agulha de crochê", "agulha de croche",
+            "agulhas de crochê", "agulhas de croche",
+
+            # "lâmina" in non-medical context
+            "lâmina de barbear", "lamina de barbear",
+            "lâminas de barbear", "laminas de barbear",
+            "lâmina de serra", "lamina de serra",
+            "lâminas de serra", "laminas de serra",
+
+            # "monitor" in non-medical context
+            "monitor de computador",
+            "monitor de aluno", "monitor de pátio", "monitor de patio",
+
+            # "clínica" in non-procurement context
+            "clínica veterinária", "clinica veterinaria",
+            "ensaio clínico", "ensaio clinico",  # research, not procurement
+
+            # "hospital" in non-medical context
+            "hospital de campanha",  # military/emergency infrastructure
+
+            # "instrumental" in non-medical context
+            "instrumental musical", "instrumentais musicais",
+
+            # "nutrição" in non-medical context
+            "nutrição animal", "nutricao animal",
+            "ração", "racao",
+
+            # "cirurgia/cirúrgico" — avoid plotagem/gráfica for hospitals
+            "plotagem", "plotagens",
+            "material gráfico", "material grafico",
+            "materiais gráficos", "materiais graficos",
+
+            # "comprimido" in non-medical context (compressed)
+            "ar comprimido",
+        },
+    ),
+    "vigilancia": SectorConfig(
+        id="vigilancia",
+        name="Vigilância e Segurança",
+        description="Vigilância patrimonial, segurança eletrônica, CFTV, alarmes, controle de acesso, portaria armada/desarmada",
+        keywords={
+            # Core security services
+            "vigilância", "vigilancia",
+            "vigilância patrimonial", "vigilancia patrimonial",
+            "vigilância armada", "vigilancia armada",
+            "vigilância desarmada", "vigilancia desarmada",
+            "segurança patrimonial", "seguranca patrimonial",
+            "segurança privada", "seguranca privada",
+            "segurança orgânica", "seguranca organica",
+            "serviço de vigilância", "servico de vigilancia",
+            "serviço de segurança", "servico de seguranca",
+            "serviços de vigilância", "servicos de vigilancia",
+            "serviços de segurança", "servicos de seguranca",
+
+            # Armed/unarmed guard
+            "vigilante", "vigilantes",
+            "vigilante armado", "vigilantes armados",
+            "vigilante desarmado", "vigilantes desarmados",
+            "posto de vigilância", "posto de vigilancia",
+            "posto de segurança", "posto de seguranca",
+            "portaria armada",
+            "portaria desarmada",
+
+            # Electronic security
+            "segurança eletrônica", "seguranca eletronica",
+            "vigilância eletrônica", "vigilancia eletronica",
+            "monitoramento eletrônico", "monitoramento eletronico",
+            "cftv", "circuito fechado de televisão", "circuito fechado de televisao",
+            "circuito fechado de tv",
+            "câmera de segurança", "camera de seguranca",
+            "câmeras de segurança", "cameras de seguranca",
+            "câmera de monitoramento", "camera de monitoramento",
+            "câmeras de monitoramento", "cameras de monitoramento",
+            "câmera de vigilância", "camera de vigilancia",
+            "videomonitoramento",
+
+            # Alarms and access control
+            "alarme", "alarmes",
+            "sistema de alarme", "sistemas de alarme",
+            "central de alarme",
+            "controle de acesso",
+            "catracas", "catraca",
+            "cancela", "cancelas",
+            "detector de metais",
+            "raio x de bagagem",
+
+            # Monitoring center
+            "central de monitoramento",
+            "monitoramento 24 horas", "monitoramento 24h",
+            "monitoramento remoto",
+
+            # Security equipment
+            "colete balístico", "colete balistico",
+            "coletes balísticos", "coletes balisticos",
+            "colete à prova de balas", "colete a prova de balas",
+            "arma de fogo",
+            "munição", "municao",
+            "rádio comunicador", "radio comunicador",
+            "rádio comunicação", "radio comunicacao",
+        },
+        exclusions={
+            # "vigilância" in health context
+            "vigilância sanitária", "vigilancia sanitaria",
+            "vigilância em saúde", "vigilancia em saude",
+            "vigilância epidemiológica", "vigilancia epidemiologica",
+            "vigilância ambiental", "vigilancia ambiental",
+            "vigilância alimentar", "vigilancia alimentar",
+
+            # "segurança" in non-guard context
+            "segurança do trabalho", "seguranca do trabalho",
+            "segurança da informação", "seguranca da informacao",
+            "segurança cibernética", "seguranca cibernetica",
+            "segurança alimentar", "seguranca alimentar",
+            "segurança viária", "seguranca viaria",
+            "segurança pública", "seguranca publica",
+            "secretaria de segurança", "secretaria de seguranca",
+            "equipamento de proteção individual", "equipamento de protecao individual",
+            "epi", "epis",
+
+            # "alarme" in non-security context
+            "alarme de incêndio", "alarme de incendio",
+            "alarme hospitalar",
+
+            # IT/Software
+            "software", "sistema de gestão", "sistema de gestao",
+            "tecnologia da informação", "tecnologia da informacao",
+            "infraestrutura de ti",
+
+            # Construction
+            "construção civil", "construcao civil",
+            "reforma", "obra",
+
+            # Cleaning/Facilities (already in facilities)
+            "limpeza", "conservação predial", "conservacao predial",
+
+            # Uniforms (keep in vestuario)
+            "uniforme", "uniformes", "fardamento",
+
+            # "monitoramento" in non-security context
+            "monitoramento ambiental",
+            "monitoramento de qualidade",
+            "monitoramento de alunos",
+            "monitoramento de saúde", "monitoramento de saude",
+        },
+    ),
+    "transporte": SectorConfig(
+        id="transporte",
+        name="Transporte e Veículos",
+        description="Aquisição/locação de veículos, combustíveis, manutenção de frota, pneus, peças automotivas, gerenciamento de frota",
+        keywords={
+            # Vehicle acquisition
+            "veículo", "veiculo", "veículos", "veiculos",
+            "automóvel", "automovel", "automóveis", "automoveis",
+            "caminhão", "caminhao", "caminhões", "caminhoes",
+            "ônibus", "onibus",
+            "micro-ônibus", "micro-onibus", "micro ônibus", "micro onibus",
+            "motocicleta", "motocicletas",
+            "ambulância", "ambulancia", "ambulâncias", "ambulancias",
+            "van", "vans",
+            "utilitário", "utilitario",
+            "caminhonete", "caminhoneta",
+            "veículo zero km", "veiculo zero km",
+            "veículo novo", "veiculo novo",
+            "aquisição de veículo", "aquisicao de veiculo",
+            "aquisição de veículos", "aquisicao de veiculos",
+
+            # Vehicle rental/leasing
+            "locação de veículo", "locacao de veiculo",
+            "locação de veículos", "locacao de veiculos",
+            "aluguel de veículo", "aluguel de veiculo",
+            "aluguel de veículos", "aluguel de veiculos",
+            "locação de automóvel", "locacao de automovel",
+
+            # Fleet management
+            "frota", "frotas",
+            "gestão de frota", "gestao de frota",
+            "gerenciamento de frota",
+            "manutenção de frota", "manutencao de frota",
+            "manutenção de veículos", "manutencao de veiculos",
+            "manutenção veicular", "manutencao veicular",
+            "manutenção automotiva", "manutencao automotiva",
+            "manutenção preventiva veicular", "manutencao preventiva veicular",
+            "manutenção corretiva veicular", "manutencao corretiva veicular",
+
+            # Fuel
+            "combustível", "combustivel", "combustíveis", "combustiveis",
+            "gasolina",
+            "diesel", "óleo diesel", "oleo diesel",
+            "etanol",
+            "abastecimento de combustível", "abastecimento de combustivel",
+            "posto de combustível", "posto de combustivel",
+            "cartão combustível", "cartao combustivel",
+            "gnv", "gás natural veicular", "gas natural veicular",
+
+            # Tires and parts
+            "pneu", "pneus",
+            "câmara de ar", "camara de ar",
+            "peças automotivas", "pecas automotivas",
+            "peças de reposição veicular", "pecas de reposicao veicular",
+            "peças para veículos", "pecas para veiculos",
+            "bateria automotiva", "baterias automotivas",
+            "óleo lubrificante", "oleo lubrificante",
+            "lubrificante", "lubrificantes",
+            "filtro de óleo", "filtro de oleo",
+            "filtro automotivo", "filtros automotivos",
+            "filtro de ar", "filtro de combustível", "filtro de combustivel",
+            "pastilha de freio",
+            "amortecedor", "amortecedores",
+
+            # Transport services
+            "transporte escolar",
+            "transporte de passageiros",
+            "transporte de carga",
+            "transporte de pacientes",
+            "frete", "fretes",
+            "serviço de transporte", "servico de transporte",
+            "serviços de transporte", "servicos de transporte",
+
+            # Automotive services
+            "borracharia",
+            "funilaria", "funilaria e pintura",
+            "mecânica", "mecanica",
+            "oficina mecânica", "oficina mecanica",
+            "retífica", "retifica",
+            "autoelétrica", "autoeletrica",
+        },
+        exclusions={
+            # "veículo" in non-automotive context
+            "veículo de comunicação", "veiculo de comunicacao",
+            "veículo de informação", "veiculo de informacao",
+            "veículo de mídia", "veiculo de midia",
+            "veículo de publicidade", "veiculo de publicidade",
+
+            # "diesel" in non-fuel context
+            "grupo gerador diesel",  # keep in manutencao_predial
+            "gerador a diesel",
+
+            # "filtro" in non-automotive context
+            "filtro de água", "filtro de agua",
+            "filtro de linha",
+
+            # "bateria" in non-automotive context
+            "bateria musical",
+            "bateria de notebook",
+            "bateria de celular",
+
+            # "transporte" as department name
+            "secretaria de transporte",
+            "secretaria de transportes",
+            "secretaria municipal de transporte",
+            "secretaria de mobilidade",
+
+            # IT/Software
+            "software", "sistema de gestão", "sistema de gestao",
+            "tecnologia da informação", "tecnologia da informacao",
+
+            # Construction
+            "construção civil", "construcao civil",
+
+            # Medical
+            "medicamento", "medicamentos",
+            "ambulância aérea", "ambulancia aerea",  # aircraft, not vehicle
+
+            # Cleaning
+            "material de limpeza", "produto de limpeza",
+
+            # Furniture
+            "mobiliário", "mobiliario",
+
+            # "mecânica" in non-automotive context
+            "mecânica dos solos", "mecanica dos solos",
+            "ventilação mecânica", "ventilacao mecanica",
+            "ventilador mecânico", "ventilador mecanico",
+
+            # "lubrificante" in non-automotive context
+            "lubrificante cirúrgico", "lubrificante cirurgico",
+            "lubrificante industrial",
         },
     ),
     "manutencao_predial": SectorConfig(
