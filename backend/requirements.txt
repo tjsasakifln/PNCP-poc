@@ -28,7 +28,7 @@ pytest-benchmark==5.1.0
 faker==37.1.0
 
 # Load testing
-locust==2.32.7
+locust==2.43.2
 
 # Code quality
 ruff==0.9.6
