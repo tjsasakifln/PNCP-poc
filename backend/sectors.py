@@ -81,6 +81,8 @@ SECTORS: Dict[str, SectorConfig] = {
             "troca de óleo", "troca de oleo",
             # "bebida" — exclude non-procurement
             "bebida alcoólica", "bebida alcoolica",
+            "concessão", "concessao",
+            "exploração publicitária", "exploracao publicitaria",
         },
     ),
     "informatica": SectorConfig(
@@ -138,6 +140,10 @@ SECTORS: Dict[str, SectorConfig] = {
             "folha de pagamento dos servidores",
             "servidores e colaboradores",
             "proteção dos servidores", "protecao dos servidores",
+            "equipamento de proteção individual", "equipamento de protecao individual",
+            "equipamentos de proteção individual", "equipamentos de protecao individual",
+            "epi", "epis",
+            "uniforme", "uniformes", "fardamento",
             # "monitor" in non-IT context
             "monitor de aluno", "monitor de alunos",
             "monitor de pátio", "monitor de patio",
@@ -147,71 +153,8 @@ SECTORS: Dict[str, SectorConfig] = {
             "switch grass",
         },
     ),
-    "limpeza": SectorConfig(
-        id="limpeza",
-        name="Produtos de Limpeza",
-        description="Materiais de limpeza, higienização, saneantes, descartáveis",
-        keywords={
-            "material de limpeza", "materiais de limpeza",
-            "produto de limpeza", "produtos de limpeza",
-            "detergente", "detergentes",
-            "desinfetante", "desinfetantes",
-            "alvejante", "alvejantes",
-            "água sanitária", "agua sanitaria",
-            "saneante", "saneantes",
-            "papel higienico", "papel higiênico",
-            "papel toalha",
-            "saco de lixo", "sacos de lixo",
-            "luva de limpeza", "luvas de limpeza",
-            "vassoura", "vassouras",
-            "rodo", "rodos",
-            "pano de chão", "pano de chao",
-            "esponja", "esponjas",
-            "desengordurante",
-            "limpa vidro",
-            "material de higienização", "material de higienizacao",
-            "serviço de limpeza", "servico de limpeza",
-            "limpeza e conservação", "limpeza e conservacao",
-            "limpeza predial",
-            # Restored standalone terms (guarded by exclusions)
-            "limpeza",
-            "sabão", "sabao", "sabonete",
-            "cloro",
-            "balde", "baldes",
-            "cera",
-            "higiene", "higienização", "higienizacao",
-            "descartável", "descartaveis", "descartáveis",
-            "copa e cozinha",
-            "inseticida",
-        },
-        exclusions={
-            "limpeza de dados",
-            "limpeza de terreno", "limpeza de terrenos",
-            "limpeza de fossa", "limpeza de fossas",
-            "limpeza de código", "limpeza de codigo",
-            # "limpeza" in environmental/infrastructure context
-            "limpeza de rio", "limpeza de lagoa", "limpeza de canal",
-            "limpeza de córrego", "limpeza de corrego",
-            "limpeza de bueiro", "limpeza de bueiros",
-            "limpeza de galeria", "limpeza de galerias",
-            "desassoreamento",
-            "escavadeira",
-            # "limpeza" in automotive context
-            "limpeza pesada para veículos", "limpeza pesada para veiculos",
-            "limpeza automotiva",
-            # "inseticida" in pest control services (not cleaning product)
-            "nebulização", "nebulizacao",
-            "desinsetização", "desinsetizacao",
-            "controle de pragas",
-            "controle de vetores",
-            # "cera" in non-cleaning context
-            "cera perdida",  # lost-wax casting
-            "cera ortodôntica", "cera ortodontica",
-            # "higiene" in non-product context
-            "higiene ocupacional",
-            "higiene do trabalho",
-        },
-    ),
+    # NOTE: "limpeza" was merged into "facilities" — cleaning products and services
+    # are both part of facilities management.
     "mobiliario": SectorConfig(
         id="mobiliario",
         name="Mobiliário",
@@ -256,6 +199,10 @@ SECTORS: Dict[str, SectorConfig] = {
             "equipamento móvel", "equipamento movel",
             "unidade móvel", "unidade movel",
             "telefonia móvel", "telefonia movel",
+            "bens móveis", "bens moveis",
+            "equipamentos médicos", "equipamentos medicos",
+            "equipamento médico", "equipamento medico",
+            "equipamentos hospitalares", "equipamento hospitalar",
             # "banco" in non-furniture context
             "banco de dados",
             "banco central",
@@ -274,6 +221,9 @@ SECTORS: Dict[str, SectorConfig] = {
             # "rack" in non-furniture context
             "rack de servidor", "rack de servidores",
             "rack de rede",
+            # "balcão" in non-furniture context
+            "porta balcão", "porta balcao",
+            "concessão", "concessao",
         },
     ),
     "papelaria": SectorConfig(
@@ -337,6 +287,8 @@ SECTORS: Dict[str, SectorConfig] = {
             # "expediente" in non-product context
             "horário de expediente", "horario de expediente",
             "fora de expediente",
+            # "envelope" in non-stationery context
+            "concessão", "concessao",
         },
     ),
     "engenharia": SectorConfig(
@@ -609,47 +561,57 @@ SECTORS: Dict[str, SectorConfig] = {
     ),
     "facilities": SectorConfig(
         id="facilities",
-        name="Facilities e Manutenção Predial",
-        description="Facilities management, manutenção predial, conservação de imóveis, serviços prediais",
+        name="Facilities (Limpeza e Zeladoria)",
+        description="Limpeza predial, produtos de limpeza, conservação, copa/cozinha, segurança patrimonial, portaria, recepção, zeladoria, jardinagem",
         keywords={
             # Core facilities management (English + Portuguese)
             "facilities", "facilities management", "fm",
             "gestão de facilities", "gestao de facilities",
-
-            # Building maintenance (HIGH PRECISION - always include "predial" or "imóveis")
-            "manutenção predial", "manutencao predial",
-            "conservação predial", "conservacao predial",
-            "manutenção de imóveis", "manutencao de imoveis",
-            "conservação de imóveis", "conservacao de imoveis",
-            "manutenção de edificações", "manutencao de edificacoes",
-            "conservação de edificações", "conservacao de edificacoes",
 
             # Facilities services
             "serviços prediais", "servicos prediais",
             "serviços de facilities", "servicos de facilities",
             "serviços de conservação predial", "servicos de conservacao predial",
 
-            # Cleaning (building-specific, not products)
+            # Cleaning services (building-specific)
             "limpeza predial",
-            "limpeza e conservação", "limpeza e conservacao",  # Common pattern
+            "limpeza e conservação", "limpeza e conservacao",
             "conservação de imóveis", "conservacao de imoveis",
-            "conservação dos imóveis", "conservacao dos imoveis",  # Variant with "dos"
+            "conservação dos imóveis", "conservacao dos imoveis",
             "limpeza de edificações", "limpeza de edificacoes",
             "asseio de próprios públicos", "asseio de proprios publicos",
-            "próprios públicos", "proprios publicos",  # Government buildings
-            "asseio",  # Safe standalone (formal term for cleaning)
+            "próprios públicos", "proprios publicos",
+            "asseio",
+            "conservação predial", "conservacao predial",
+            "serviço de limpeza", "servico de limpeza",
 
-            # Building systems
-            "elevadores",  # Safe standalone - building elevators are clearly facilities
-            "instalações elétricas", "instalacoes eletricas",
-            "instalações hidráulicas", "instalacoes hidraulicas",
-            "instalações prediais", "instalacoes prediais",
-
-            # HVAC (building-specific)
-            "climatização predial", "climatizacao predial",
-            "ar condicionado",  # Common in facilities (exclude IT server rooms via other exclusions)
-            "ventilação predial", "ventilacao predial",
-            "pmoc",  # Plano de Manutenção, Operação e Controle - specific to HVAC facilities
+            # Cleaning products (merged from limpeza sector)
+            "material de limpeza", "materiais de limpeza",
+            "produto de limpeza", "produtos de limpeza",
+            "detergente", "detergentes",
+            "desinfetante", "desinfetantes",
+            "alvejante", "alvejantes",
+            "água sanitária", "agua sanitaria",
+            "saneante", "saneantes",
+            "papel higienico", "papel higiênico",
+            "papel toalha",
+            "saco de lixo", "sacos de lixo",
+            "luva de limpeza", "luvas de limpeza",
+            "vassoura", "vassouras",
+            "rodo", "rodos",
+            "pano de chão", "pano de chao",
+            "esponja", "esponjas",
+            "desengordurante",
+            "limpa vidro",
+            "material de higienização", "material de higienizacao",
+            "limpeza",
+            "sabão", "sabao", "sabonete",
+            "cloro",
+            "balde", "baldes",
+            "cera",
+            "higiene", "higienização", "higienizacao",
+            "descartável", "descartaveis", "descartáveis",
+            "inseticida",
 
             # Support services
             "portaria", "recepção", "recepcao",
@@ -657,31 +619,173 @@ SECTORS: Dict[str, SectorConfig] = {
             "vigilância patrimonial", "vigilancia patrimonial",
             "controle de acesso",
             "copa e cozinha",
+            "zeladoria", "zelador",
+            "recepcionista",
+            "copeira", "copeiro",
 
-            # Maintenance types (only with "predial")
+            # Outsourced services (only compound forms specific to facilities)
+            "terceirização de mão de obra", "terceirizacao de mao de obra",
+            "serviços de apoio administrativo", "servicos de apoio administrativo",
+
+            # Gardening (internal / condominium)
+            "jardinagem",
+            "paisagismo",
+            "manutenção de jardim", "manutencao de jardim",
+            "manutenção de jardins", "manutencao de jardins",
+            "áreas verdes", "areas verdes",
+        },
+        exclusions={
+            # Automotive
+            "manutenção de veículos", "manutencao de veiculos",
+            "manutenção de frota", "manutencao de frota",
+            "manutenção automotiva", "manutencao automotiva",
+            "pneus", "câmara de ar", "camara de ar",
+            "óleo lubrificante", "oleo lubrificante",
+            "tintas automotivas",
+            "borracharia",
+            "limpeza pesada para veículos", "limpeza pesada para veiculos",
+            "limpeza automotiva",
+
+            # IT/Equipment maintenance
+            "manutenção de equipamentos de ti", "manutencao de equipamentos de ti",
+            "tecnologia da informação", "tecnologia da informacao",
+            "infraestrutura de ti", "infraestrutura de tecnologia",
+            "equipamentos de informatica", "equipamentos de informática",
+
+            # Infrastructure/Public works (keep in "engenharia")
+            "pavimentação", "pavimentacao",
+            "recapeamento",
+            "iluminação pública", "iluminacao publica",
+            "drenagem", "bueiros", "galerias",
+            "sistema de drenagem",
+            "limpeza de áreas públicas", "limpeza de areas publicas",
+            "limpeza de vias públicas", "limpeza de vias publicas",
+            "limpeza de ruas",
+            "varrição de vias", "varricao de vias",
+            "capinação", "capinacao",
+            "jardinagem pública", "jardinagem publica",
+
+            # "limpeza" in environmental/infrastructure context
+            "limpeza de dados",
+            "limpeza de terreno", "limpeza de terrenos",
+            "limpeza de fossa", "limpeza de fossas",
+            "limpeza de código", "limpeza de codigo",
+            "limpeza de rio", "limpeza de lagoa", "limpeza de canal",
+            "limpeza de córrego", "limpeza de corrego",
+            "limpeza de bueiro", "limpeza de bueiros",
+            "limpeza de galeria", "limpeza de galerias",
+            "desassoreamento",
+            "escavadeira",
+
+            # Construction/Engineering (keep in "engenharia")
+            "construção civil", "construcao civil",
+            "reforma", "reformas",
+            "ampliação", "ampliacao",
+            "obra de construção", "obra de construcao",
+            "obras civis",
+            "edificação", "edificacao",
+
+            # Healthcare/Pharmacy
+            "medicamento", "medicamentos",
+            "assistência farmacêutica", "assistencia farmaceutica",
+
+            # Heavy equipment
+            "máquinas pesadas", "maquinas pesadas",
+            "retroescavadeira",
+            "patrol", "rolo compressor",
+
+            # Animal services
+            "recolhimento de animais",
+            "guarda de animais",
+            "manutenção de animais", "manutencao de animais",
+
+            # Software (keep in "software" sector)
+            "software",
+            "sistema de gestão", "sistema de gestao",
+            "plataforma",
+
+            # Agriculture
+            "manutenção de tratores", "manutencao de tratores",
+
+            # Pest control (not cleaning)
+            "nebulização", "nebulizacao",
+            "desinsetização", "desinsetizacao",
+            "controle de pragas",
+            "controle de vetores",
+
+            # "cera" in non-cleaning context
+            "cera perdida",
+            "cera ortodôntica", "cera ortodontica",
+
+            # "higiene" in non-product context
+            "higiene ocupacional",
+            "higiene do trabalho",
+        },
+    ),
+    "manutencao_predial": SectorConfig(
+        id="manutencao_predial",
+        name="Manutenção Predial",
+        description="Manutenção preventiva/corretiva de edificações, PMOC, ar condicionado, elevadores, instalações elétricas/hidráulicas, pintura predial, impermeabilização",
+        keywords={
+            # Building maintenance (HIGH PRECISION)
+            "manutenção predial", "manutencao predial",
+            "manutenção de imóveis", "manutencao de imoveis",
+            "manutenção de edificações", "manutencao de edificacoes",
+            "conservação de edificações", "conservacao de edificacoes",
+            "manutenção de unidades residenciais", "manutencao de unidades residenciais",
+            "conservação de unidades residenciais", "conservacao de unidades residenciais",
+
+            # Maintenance types (with "predial")
             "manutenção preventiva predial", "manutencao preventiva predial",
             "manutenção corretiva predial", "manutencao corretiva predial",
             "manutenção preditiva predial", "manutencao preditiva predial",
 
-            # Utilities management (building-specific)
-            "gestão predial de utilidades", "gestao predial de utilidades",
-            "gestão de edificações", "gestao de edificacoes",
+            # HVAC / Air conditioning
+            "ar condicionado",
+            "climatização", "climatizacao",
+            "climatização predial", "climatizacao predial",
+            "ventilação predial", "ventilacao predial",
+            "pmoc",
 
-            # Residential (university housing, government housing)
-            "manutenção de unidades residenciais", "manutencao de unidades residenciais",
-            "conservação de unidades residenciais", "conservacao de unidades residenciais",
+            # Elevators
+            "elevador", "elevadores",
+            "manutenção de elevador", "manutencao de elevador",
+            "manutenção de elevadores", "manutencao de elevadores",
+
+            # Electrical and hydraulic installations
+            "instalações elétricas", "instalacoes eletricas",
+            "instalações hidráulicas", "instalacoes hidraulicas",
+            "instalações prediais", "instalacoes prediais",
+            "instalação elétrica predial", "instalacao eletrica predial",
+            "instalação hidráulica predial", "instalacao hidraulica predial",
+
+            # Building painting
+            "pintura predial", "pintura de fachada",
+            "pintura de edificação", "pintura de edificacao",
+
+            # Waterproofing
+            "impermeabilização", "impermeabilizacao",
+            "impermeabilização predial", "impermeabilizacao predial",
+
+            # Generators and substations (building-specific)
+            "subestação", "subestacao",
+            "gerador predial",
+            "grupo gerador",
+
+            # Building utilities management
+            "gestão predial", "gestao predial",
+            "gestão de edificações", "gestao de edificacoes",
+            "gestão predial de utilidades", "gestao predial de utilidades",
         },
         exclusions={
-            # Automotive (CRITICAL - highest false positive rate)
+            # Automotive
             "manutenção de veículos", "manutencao de veiculos",
             "manutenção de frota", "manutencao de frota",
             "manutenção automotiva", "manutencao automotiva",
             "manutenção de caminhões", "manutencao de caminhoes",
             "manutenção de ônibus", "manutencao de onibus",
-            "manutenção de ambulância", "manutencao de ambulancia",
             "pneus", "câmara de ar", "camara de ar",
             "óleo lubrificante", "oleo lubrificante",
-            "tintas automotivas",
             "sistema de freios", "sistema diferencial",
             "borracharia",
 
@@ -691,61 +795,41 @@ SECTORS: Dict[str, SectorConfig] = {
             "manutenção de computador", "manutencao de computador",
             "manutenção de impressora", "manutencao de impressora",
             "tecnologia da informação", "tecnologia da informacao",
-            "infraestrutura de ti", "infraestrutura de tecnologia",
-            "equipamentos de informatica", "equipamentos de informática",
+            "infraestrutura de ti",
 
             # Infrastructure/Public works (keep in "engenharia")
             "manutenção de estradas", "manutencao de estradas",
             "manutenção de vias", "manutencao de vias",
             "manutenção de rodovias", "manutencao de rodovias",
             "pavimentação", "pavimentacao",
-            "recapeamento", "recapeamento asfáltico", "recapeamento asfaltico",
+            "recapeamento",
             "iluminação pública", "iluminacao publica",
             "drenagem", "bueiros", "galerias",
             "sistema de drenagem",
-            "limpeza de áreas públicas", "limpeza de areas publicas",
-            "limpeza de vias públicas", "limpeza de vias publicas",
-            "limpeza de ruas",
-            "varrição de vias", "varricao de vias",
-            "capinação", "capinacao",
-            "áreas verdes públicas", "areas verdes publicas",
-            "jardinagem pública", "jardinagem publica",
 
-            # Construction/Engineering (keep in "engenharia")
+            # Construction (keep in "engenharia")
             "construção civil", "construcao civil",
-            "reforma", "reformas",
-            "ampliação", "ampliacao",
-            "obra de construção", "obra de construcao",  # Construction works (not "mão de obra")
+            "obra de construção", "obra de construcao",
             "obras civis",
-            "obra de reforma",
-            "obra de ampliação", "obra de ampliacao",
-            "edificação", "edificacao",  # Construction of buildings, not maintenance
 
-            # Healthcare/Pharmacy
+            # Healthcare
             "medicamento", "medicamentos",
-            "assistência farmacêutica", "assistencia farmaceutica",
-            "manutenção de tratamento",  # Healthcare context
+            "manutenção de tratamento",
 
-            # Heavy equipment/Industrial machinery
+            # Heavy equipment
             "máquinas pesadas", "maquinas pesadas",
-            "equipamentos pesados",
             "retroescavadeira", "escavadeira",
             "patrol", "rolo compressor",
-            "motores estacionários", "motores estacionarios",
             "motores diesel",
-            "geradores",
 
             # Animal services
-            "recolhimento de animais",
-            "guarda de animais",
             "manutenção de animais", "manutencao de animais",
 
-            # Software (keep in "software" sector)
-            "software",  # Block ALL software (facilities is about services, not software)
-            "sistema de gestão", "sistema de gestao",  # Software systems
-            "plataforma",  # Software platforms
+            # Software
+            "software",
+            "sistema de gestão", "sistema de gestao",
 
-            # Agriculture/Rural
+            # Agriculture
             "manutenção de tratores", "manutencao de tratores",
             "manutenção de implementos agrícolas", "manutencao de implementos agricolas",
         },
