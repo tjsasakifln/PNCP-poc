@@ -99,6 +99,8 @@ export async function POST(request: NextRequest) {
       total_raw: data.total_raw || 0,
       total_filtrado: data.total_filtrado || 0,
       filter_stats: data.filter_stats || null,
+      termos_utilizados: data.termos_utilizados || null,
+      stopwords_removidas: data.stopwords_removidas || null,
     });
 
   } catch (error) {

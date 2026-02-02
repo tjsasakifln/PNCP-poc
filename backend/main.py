@@ -217,18 +217,24 @@ async def buscar_licitacoes(request: BuscaRequest):
 
         # Determine keywords: custom terms REPLACE sector keywords (mutually exclusive)
         custom_terms: list[str] = []
+        stopwords_removed: list[str] = []
         if request.termos_busca and request.termos_busca.strip():
             raw_terms = [t.strip().lower() for t in request.termos_busca.strip().split() if t.strip()]
             custom_terms = remove_stopwords(raw_terms)
-            if len(custom_terms) < len(raw_terms):
-                removed = set(raw_terms) - set(custom_terms)
-                logger.info(f"Removed {len(removed)} stopwords: {removed}")
+            stopwords_removed = [t for t in raw_terms if t not in custom_terms]
+            if stopwords_removed:
+                logger.info(f"Removed {len(stopwords_removed)} stopwords: {stopwords_removed}")
 
         if custom_terms:
             active_keywords = set(custom_terms)
             logger.info(f"Using {len(custom_terms)} custom search terms: {custom_terms}")
         else:
             active_keywords = set(sector.keywords)
+            if stopwords_removed:
+                logger.warning(
+                    f"All user terms were stopwords ({stopwords_removed}), "
+                    f"falling back to sector '{sector.id}' keywords"
+                )
             logger.info(f"Using sector keywords ({len(active_keywords)} terms)")
 
         # Step 1: Fetch from PNCP (generator → list for reusability in filter + LLM)
@@ -314,6 +320,8 @@ async def buscar_licitacoes(request: BuscaRequest):
                 total_raw=len(licitacoes_raw),
                 total_filtrado=0,
                 filter_stats=fs,
+                termos_utilizados=custom_terms if custom_terms else None,
+                stopwords_removidas=stopwords_removed if stopwords_removed else None,
             )
             logger.info(
                 "Search completed with 0 results",
@@ -362,6 +370,8 @@ async def buscar_licitacoes(request: BuscaRequest):
             total_raw=len(licitacoes_raw),
             total_filtrado=len(licitacoes_filtradas),
             filter_stats=fs,
+            termos_utilizados=custom_terms if custom_terms else None,
+            stopwords_removidas=stopwords_removed if stopwords_removed else None,
         )
 
         logger.info(

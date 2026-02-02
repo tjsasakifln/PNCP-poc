@@ -793,10 +793,10 @@ class TestRemoveStopwords:
         # "após" normalizes to "apos" which is in STOPWORDS_PT
         assert remove_stopwords(["após", "licitação"]) == ["licitação"]
 
-    def test_all_stopwords_returns_original(self):
-        """If ALL terms are stopwords, return original to avoid empty search."""
+    def test_all_stopwords_returns_empty(self):
+        """If ALL terms are stopwords, return empty list so caller falls back to sector keywords."""
         terms = ["de", "para", "com"]
-        assert remove_stopwords(terms) == terms
+        assert remove_stopwords(terms) == []
 
     def test_empty_list(self):
         assert remove_stopwords([]) == []
@@ -804,8 +804,8 @@ class TestRemoveStopwords:
     def test_single_meaningful_term(self):
         assert remove_stopwords(["uniforme"]) == ["uniforme"]
 
-    def test_single_stopword_returns_original(self):
-        assert remove_stopwords(["de"]) == ["de"]
+    def test_single_stopword_returns_empty(self):
+        assert remove_stopwords(["de"]) == []
 
     def test_mixed_case_stopwords(self):
         # Terms should already be lowercased, but test robustness

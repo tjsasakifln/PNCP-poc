@@ -180,6 +180,14 @@ class BuscaResponse(BaseModel):
     filter_stats: Optional[FilterStats] = Field(
         default=None, description="Breakdown of filter rejection reasons"
     )
+    termos_utilizados: Optional[List[str]] = Field(
+        default=None,
+        description="Keywords effectively used for filtering (after stopword removal)",
+    )
+    stopwords_removidas: Optional[List[str]] = Field(
+        default=None,
+        description="Stopwords stripped from user input (for transparency)",
+    )
 
     class Config:
         """Pydantic configuration."""

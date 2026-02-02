@@ -52,6 +52,8 @@ export interface BuscaResult {
   total_raw: number;
   total_filtrado: number;
   filter_stats: FilterStats | null;
+  termos_utilizados: string[] | null;
+  stopwords_removidas: string[] | null;
 }
 
 /** Form validation errors */

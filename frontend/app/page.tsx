@@ -938,6 +938,27 @@ export default function HomePage() {
         {/* Result Display */}
         {result && result.resumo.total_oportunidades > 0 && (
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in-up">
+            {/* Stopword / terms transparency banner */}
+            {(result.termos_utilizados || result.stopwords_removidas) && (
+              <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary">
+                {result.termos_utilizados && result.termos_utilizados.length > 0 && (
+                  <span>
+                    Termos utilizados na busca:{" "}
+                    {result.termos_utilizados.map(t => (
+                      <span key={t} className="inline-block px-2 py-0.5 mr-1 bg-brand-blue-subtle text-brand-navy dark:text-brand-blue rounded font-medium text-xs">
+                        {t}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                {result.stopwords_removidas && result.stopwords_removidas.length > 0 && (
+                  <span className="ml-2 text-ink-faint">
+                    (ignorados: {result.stopwords_removidas.join(", ")})
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Summary Card */}
             <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card">
               <p className="text-base sm:text-lg leading-relaxed text-ink">

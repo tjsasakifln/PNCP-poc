@@ -52,12 +52,10 @@ def remove_stopwords(terms: list[str]) -> list[str]:
         terms: List of user-supplied search terms (already lowercased).
 
     Returns:
-        Filtered list with stopwords removed. If ALL terms are stopwords,
-        returns the original list unchanged to avoid an empty search.
+        Filtered list with stopwords removed. Returns empty list if all
+        terms are stopwords — caller should fall back to sector keywords.
     """
-    filtered = [t for t in terms if normalize_text(t) not in STOPWORDS_PT]
-    # Safety: never return empty if user typed something
-    return filtered if filtered else terms
+    return [t for t in terms if normalize_text(t) not in STOPWORDS_PT]
 
 
 # Primary keywords for uniform/apparel procurement (PRD Section 4.1)
