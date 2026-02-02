@@ -146,8 +146,10 @@
 **EXC-3.** Registro de preços para aquisição de Equipamentos de Proteção Individual (EPIs), destinados à proteção dos servidores públicos da Prefeitura Municipal de Várzea Paulista
   Keywords que teriam matchado: servidores
 
-**EXC-4.** Contratação de instituição bancária para operar os serviços de processamento e
-gerenciamento de créditos provenientes da folha de pagamento dos servidores da Prefeitura
+**EXC-4.** Contratação de instituição bancária para operar os serviços de processamento e
+
+gerenciamento de créditos provenientes da folha de pagamento dos servidores da Prefeitura
+
 Municipal
   Keywords que teriam matchado: servidores
 
@@ -308,7 +310,8 @@ Municipal
   Keywords: ferro
 
 **10.** [SP] R$ 106,305.20
-  Contratação de Empresa especializada em Serviços de Arbitragem, compreendendo a escalação e
+  Contratação de Empresa especializada em Serviços de Arbitragem, compreendendo a escalação e
+
 fornecimento de árbitros, auxiliares, mesários e anotadores, para atuarem em jogos, tor
   Keywords: areia
 
@@ -325,7 +328,8 @@ fornecimento de árbitros, auxiliares, mesários e anotadores, para atuarem em j
   Keywords: ferro
 
 **14.** [SP] R$ 258,000.00
-  Contratação de empresa especializada para a execução dos serviços de engenharia de
+  Contratação de empresa especializada para a execução dos serviços de engenharia de
+
 segurança e medicina do trabalho, para atender as demandas da Prefeitura de Municipal de Garça, 
   Keywords: engenharia
 

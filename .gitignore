@@ -318,17 +318,19 @@ docker-compose.*.override.yml
 .terraform.lock.hcl
 
 # =============================================================================
-# AIOS Specific
+# AIOS Specific (stealth mode)
 # =============================================================================
-# Keep configuration, ignore runtime state
-.ai/debug-log.md
-.aios/project-status.yaml
-.aios/qa-reports/*.json
-.aios/qa-reports/*.html
-.aios/qa-status.json
-
-# Claude Code generated documentation
+# Ignore all AIOS/Claude artifacts
+.aios-core/
+.claude/
+.ai/
 CLAUDE.md
+.claude/CLAUDE.md
+*.aios-*
+*-aios-*
+.aios/
+*-OLD.md
+.pr-*-review-*.md
 
 # =============================================================================
 # Project Specific
@@ -338,7 +340,7 @@ backend/outputs/
 backend/logs/
 backend/.env*
 !backend/.env.example
-CLAUDE.md
+
 # Frontend outputs
 frontend/.next/
 frontend/out/
