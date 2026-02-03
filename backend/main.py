@@ -19,7 +19,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging
-from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes
+from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import filter_batch, remove_stopwords
@@ -228,49 +228,73 @@ def _get_admin_ids() -> set[str]:
     return {uid.strip() for uid in raw.split(",") if uid.strip()}
 
 
-@app.get("/me")
+@app.get("/me", response_model=UserProfileResponse)
 async def get_profile(user: dict = Depends(require_auth)):
-    """Get current user profile with active subscription info."""
+    """
+    Get current user profile with plan capabilities and quota status.
+
+    Returns complete user information including:
+    - Plan capabilities (max_history_days, allow_excel, etc.)
+    - Monthly quota usage and remaining
+    - Trial expiration (if applicable)
+    - Subscription status
+
+    This endpoint provides all necessary information for the frontend
+    to render plan-based UI elements (badges, quota counters, locked features).
+    """
+    from quota import check_quota
     from supabase_client import get_supabase
-    sb = get_supabase()
 
-    profile = (
-        sb.table("profiles")
-        .select("*")
-        .eq("id", user["id"])
-        .single()
-        .execute()
+    # Get quota info with capabilities
+    try:
+        quota_info = check_quota(user["id"])
+    except Exception as e:
+        logger.error(f"Failed to check quota for user {user['id']}: {e}")
+        # Return safe fallback
+        from quota import QuotaInfo, PLAN_CAPABILITIES
+        from datetime import datetime, timezone
+        quota_info = QuotaInfo(
+            allowed=True,
+            plan_id="free_trial",
+            plan_name="FREE Trial",
+            capabilities=PLAN_CAPABILITIES["free_trial"],
+            quota_used=0,
+            quota_remaining=999999,
+            quota_reset_date=datetime.now(timezone.utc),
+            trial_expires_at=None,
+            error_message=None,
+        )
+
+    # Get user email
+    try:
+        sb = get_supabase()
+        user_data = sb.auth.admin.get_user_by_id(user["id"])
+        email = user_data.user.email if user_data and user_data.user else user.get("email", "unknown@example.com")
+    except Exception as e:
+        logger.warning(f"Failed to fetch user email: {e}")
+        email = user.get("email", "unknown@example.com")
+
+    # Determine subscription status
+    if quota_info.trial_expires_at:
+        if datetime.now(timezone.utc) > quota_info.trial_expires_at:
+            subscription_status = "expired"
+        else:
+            subscription_status = "trial"
+    else:
+        subscription_status = "active"
+
+    return UserProfileResponse(
+        user_id=user["id"],
+        email=email,
+        plan_id=quota_info.plan_id,
+        plan_name=quota_info.plan_name,
+        capabilities=quota_info.capabilities,
+        quota_used=quota_info.quota_used,
+        quota_remaining=quota_info.quota_remaining,
+        quota_reset_date=quota_info.quota_reset_date.isoformat(),
+        trial_expires_at=quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
+        subscription_status=subscription_status,
     )
-
-    # Get active subscription
-    sub = (
-        sb.table("user_subscriptions")
-        .select("*, plans(*)")
-        .eq("user_id", user["id"])
-        .eq("is_active", True)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-
-    # Count total searches (for free tier tracking)
-    sessions = (
-        sb.table("search_sessions")
-        .select("id", count="exact")
-        .eq("user_id", user["id"])
-        .execute()
-    )
-
-    # Check if user is admin
-    admin_ids = _get_admin_ids()
-    is_admin = user["id"] in admin_ids
-
-    return {
-        "profile": profile.data,
-        "subscription": sub.data[0] if sub.data else None,
-        "total_searches": sessions.count or 0,
-        "is_admin": is_admin,
-    }
 
 
 @app.get("/sessions")
@@ -487,13 +511,18 @@ async def buscar_licitacoes(
         },
     )
 
-    # Quota check (user is always authenticated due to require_auth)
-    quota_info = None
+    # Quota check with new plan capabilities system
+    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
+    from datetime import datetime, timezone
+
     try:
-        from quota import check_quota, QuotaExceededError
         quota_info = check_quota(user["id"])
-    except QuotaExceededError as e:
-        raise HTTPException(status_code=403, detail=str(e))
+
+        if not quota_info.allowed:
+            # Quota exhausted or trial expired
+            raise HTTPException(status_code=403, detail=quota_info.error_message)
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except RuntimeError as e:
         # Configuration error (missing env vars) - fail fast
         logger.error(f"Supabase configuration error: {e}")
@@ -502,8 +531,20 @@ async def buscar_licitacoes(
             detail="Serviço temporariamente indisponível. Tente novamente em alguns minutos."
         )
     except Exception as e:
-        # Unexpected error - log but continue (user already authenticated)
-        logger.warning(f"Quota check failed (continuing without quota tracking): {e}")
+        # Unexpected error - log but continue with safe fallback (user already authenticated)
+        logger.warning(f"Quota check failed (continuing with fallback): {e}")
+        # Create safe fallback QuotaInfo (free_trial plan)
+        quota_info = QuotaInfo(
+            allowed=True,
+            plan_id="free_trial",
+            plan_name="FREE Trial",
+            capabilities=PLAN_CAPABILITIES["free_trial"],
+            quota_used=0,
+            quota_remaining=999999,
+            quota_reset_date=datetime.now(timezone.utc),
+            trial_expires_at=None,
+            error_message=None,
+        )
 
     try:
         # Load sector configuration
@@ -613,14 +654,28 @@ async def buscar_licitacoes(
                 destaques=[],
                 alerta_urgencia=None,
             )
+
+            # Increment quota and get updated values
+            from quota import increment_monthly_quota
+            try:
+                new_quota_used = increment_monthly_quota(user["id"])
+            except Exception as e:
+                logger.warning(f"Failed to increment quota (using fallback): {e}")
+                new_quota_used = quota_info.quota_used + 1 if quota_info else 0
+            quota_remaining = max(0, quota_info.capabilities["max_requests_per_month"] - new_quota_used) if quota_info else 0
+
             response = BuscaResponse(
                 resumo=resumo,
-                excel_base64="",
+                excel_base64=None if not quota_info or not quota_info.capabilities["allow_excel"] else "",
+                excel_available=quota_info.capabilities["allow_excel"] if quota_info else False,
+                quota_used=new_quota_used,
+                quota_remaining=quota_remaining,
                 total_raw=len(licitacoes_raw),
                 total_filtrado=0,
                 filter_stats=fs,
                 termos_utilizados=custom_terms if custom_terms else None,
                 stopwords_removidas=stopwords_removed if stopwords_removed else None,
+                upgrade_message="Exportar Excel disponível no plano Máquina (R$ 597/mês)." if quota_info and not quota_info.capabilities["allow_excel"] else None,
             )
             logger.info(
                 "Search completed with 0 results",
@@ -656,21 +711,42 @@ async def buscar_licitacoes(
         resumo.total_oportunidades = actual_total
         resumo.valor_total = actual_valor
 
-        # Step 4: Generate Excel report
-        logger.info("Generating Excel report")
-        excel_buffer = create_excel(licitacoes_filtradas)
-        excel_base64 = base64.b64encode(excel_buffer.read()).decode("utf-8")
-        logger.info(f"Excel report generated ({len(excel_base64)} base64 chars)")
+        # Step 4: Generate Excel report (conditional based on plan)
+        excel_base64 = None
+        excel_available = quota_info.capabilities["allow_excel"] if quota_info else False
+        upgrade_message = None
+
+        if excel_available:
+            logger.info("Generating Excel report")
+            excel_buffer = create_excel(licitacoes_filtradas)
+            excel_base64 = base64.b64encode(excel_buffer.read()).decode("utf-8")
+            logger.info(f"Excel report generated ({len(excel_base64)} base64 chars)")
+        else:
+            logger.info("Excel generation skipped (not allowed for user's plan)")
+            upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
+
+        # Increment quota and get updated values
+        from quota import increment_monthly_quota
+        try:
+            new_quota_used = increment_monthly_quota(user["id"])
+        except Exception as e:
+            logger.warning(f"Failed to increment quota (using fallback): {e}")
+            new_quota_used = quota_info.quota_used + 1 if quota_info else 0
+        quota_remaining = max(0, quota_info.capabilities["max_requests_per_month"] - new_quota_used) if quota_info else 0
 
         # Step 5: Return response
         response = BuscaResponse(
             resumo=resumo,
             excel_base64=excel_base64,
+            excel_available=excel_available,
+            quota_used=new_quota_used,
+            quota_remaining=quota_remaining,
             total_raw=len(licitacoes_raw),
             total_filtrado=len(licitacoes_filtradas),
             filter_stats=fs,
             termos_utilizados=custom_terms if custom_terms else None,
             stopwords_removidas=stopwords_removed if stopwords_removed else None,
+            upgrade_message=upgrade_message,
         )
 
         logger.info(
@@ -682,10 +758,10 @@ async def buscar_licitacoes(
             },
         )
 
-        # Save session + decrement credits (only for authenticated users)
+        # Save session (quota already incremented above)
         if user:
             try:
-                from quota import save_search_session, decrement_credits
+                from quota import save_search_session
                 save_search_session(
                     user_id=user["id"],
                     sectors=[request.setor_id],
@@ -699,10 +775,8 @@ async def buscar_licitacoes(
                     resumo_executivo=resumo.resumo_executivo,
                     destaques=resumo.destaques,
                 )
-                if quota_info and quota_info.get("subscription_id"):
-                    decrement_credits(quota_info["subscription_id"], user["id"])
             except Exception as e:
-                logger.error(f"Failed to save session/decrement credits: {e}")
+                logger.error(f"Failed to save session: {e}")
 
         return response
 

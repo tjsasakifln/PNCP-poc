@@ -1,8 +1,18 @@
 """Pydantic schemas for API request/response validation."""
 
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel, Field, model_validator
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+
+
+# Error codes for standardized error handling
+ERROR_CODES = {
+    "TRIAL_EXPIRED": "trial_expired",
+    "QUOTA_EXHAUSTED": "quota_exhausted",
+    "RATE_LIMIT_EXCEEDED": "rate_limit_exceeded",
+    "DATE_RANGE_EXCEEDED": "date_range_exceeded",
+    "EXCEL_NOT_ALLOWED": "excel_not_allowed",
+}
 
 
 class BuscaRequest(BaseModel):
@@ -157,8 +167,9 @@ class BuscaResponse(BaseModel):
 
     Returns the complete search results including:
     - AI-generated executive summary
-    - Excel file as base64-encoded string
+    - Excel file as base64-encoded string (optional, based on plan)
     - Statistics about raw vs filtered results
+    - Quota information for user awareness
 
     The Excel file can be decoded and downloaded by the frontend.
     """
@@ -166,8 +177,17 @@ class BuscaResponse(BaseModel):
     resumo: ResumoLicitacoes = Field(
         ..., description="Executive summary (AI-generated or fallback)"
     )
-    excel_base64: str = Field(
-        ..., description="Excel file encoded as base64 string (decode for download)"
+    excel_base64: Optional[str] = Field(
+        default=None, description="Excel file encoded as base64 string (None if plan doesn't allow)"
+    )
+    excel_available: bool = Field(
+        ..., description="Whether Excel export is available for user's plan"
+    )
+    quota_used: int = Field(
+        ..., ge=0, description="Monthly searches used after this request"
+    )
+    quota_remaining: int = Field(
+        ..., ge=0, description="Monthly searches remaining"
     )
     total_raw: int = Field(
         ..., ge=0, description="Total records fetched from PNCP API (before filtering)"
@@ -188,6 +208,10 @@ class BuscaResponse(BaseModel):
         default=None,
         description="Stopwords stripped from user input (for transparency)",
     )
+    upgrade_message: Optional[str] = Field(
+        default=None,
+        description="Message shown when Excel is blocked, encouraging upgrade"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -202,7 +226,64 @@ class BuscaResponse(BaseModel):
                     "alerta_urgencia": None,
                 },
                 "excel_base64": "UEsDBBQABg...",
+                "excel_available": True,
+                "quota_used": 24,
+                "quota_remaining": 26,
                 "total_raw": 523,
                 "total_filtrado": 15,
+                "upgrade_message": None,
             }
         }
+
+
+class ErrorDetail(BaseModel):
+    """
+    Standardized error response with upgrade guidance.
+
+    Used for 403 (Forbidden) and 429 (Too Many Requests) errors to provide
+    clear user feedback and contextual upgrade suggestions.
+    """
+    message: str = Field(..., description="Human-readable error message")
+    error_code: str = Field(..., description="Machine-readable error code")
+    upgrade_cta: Optional[str] = Field(
+        default=None, description="Call-to-action text for upgrade button"
+    )
+    suggested_plan: Optional[str] = Field(
+        default=None, description="Plan ID to suggest (e.g., 'maquina')"
+    )
+    suggested_plan_name: Optional[str] = Field(
+        default=None, description="Human-readable plan name"
+    )
+    suggested_plan_price: Optional[str] = Field(
+        default=None, description="Plan price (e.g., 'R$ 597/mês')"
+    )
+    retry_after: Optional[int] = Field(
+        default=None, description="Seconds to wait before retry (for 429 errors)"
+    )
+
+
+class UserProfileResponse(BaseModel):
+    """
+    User profile with plan capabilities and quota status.
+
+    Returned by /api/me endpoint to provide frontend with all
+    necessary plan information for UI rendering.
+    """
+    user_id: str
+    email: str
+    plan_id: str = Field(..., description="Plan ID (e.g., 'consultor_agil')")
+    plan_name: str = Field(..., description="Display name (e.g., 'Consultor Ágil')")
+    capabilities: Dict[str, Any] = Field(
+        ..., description="Plan capabilities (max_history_days, allow_excel, etc.)"
+    )
+    quota_used: int = Field(..., ge=0, description="Searches used this month")
+    quota_remaining: int = Field(..., ge=0, description="Searches remaining this month")
+    quota_reset_date: str = Field(
+        ..., description="ISO 8601 timestamp of next quota reset"
+    )
+    trial_expires_at: Optional[str] = Field(
+        default=None, description="ISO 8601 timestamp when trial expires (if applicable)"
+    )
+    subscription_status: str = Field(
+        ..., description="Status: 'trial', 'active', or 'expired'"
+    )
