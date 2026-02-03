@@ -78,7 +78,18 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service bidiq-backend --detach
+        run: |
+          for i in 1 2 3; do
+            echo "Deploy attempt $i..."
+            if timeout 120 railway up --service bidiq-backend --detach; then
+              echo "Deploy successful"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "All deploy attempts failed"
+          exit 1
         working-directory: backend
 
       - name: Wait for deployment
@@ -119,7 +130,18 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service bidiq-frontend --detach
+        run: |
+          for i in 1 2 3; do
+            echo "Deploy attempt $i..."
+            if timeout 120 railway up --service bidiq-frontend --detach; then
+              echo "Deploy successful"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "All deploy attempts failed"
+          exit 1
         working-directory: frontend
 
       - name: Wait for deployment
