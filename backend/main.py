@@ -192,6 +192,12 @@ async def change_password(
     return {"success": True}
 
 
+def _get_admin_ids() -> set[str]:
+    """Get admin user IDs from environment variable."""
+    raw = os.getenv("ADMIN_USER_IDS", "")
+    return {uid.strip() for uid in raw.split(",") if uid.strip()}
+
+
 @app.get("/me")
 async def get_profile(user: dict = Depends(require_auth)):
     """Get current user profile with active subscription info."""
@@ -225,10 +231,15 @@ async def get_profile(user: dict = Depends(require_auth)):
         .execute()
     )
 
+    # Check if user is admin
+    admin_ids = _get_admin_ids()
+    is_admin = user["id"] in admin_ids
+
     return {
         "profile": profile.data,
         "subscription": sub.data[0] if sub.data else None,
         "total_searches": sessions.count or 0,
+        "is_admin": is_admin,
     }
 
 

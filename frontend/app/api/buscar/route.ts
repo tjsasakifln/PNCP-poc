@@ -28,6 +28,13 @@ export async function POST(request: NextRequest) {
     // Use BACKEND_URL (set via env var in CI) instead of NEXT_PUBLIC_BACKEND_URL (build-time)
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
 
+    // Forward auth header if present (for quota tracking)
+    const authHeader = request.headers.get("authorization");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (authHeader) {
+      headers["Authorization"] = authHeader;
+    }
+
     let response: Response;
     try {
       // Timeout de 5 minutos — consultas com muitos estados podem demorar
@@ -36,7 +43,7 @@ export async function POST(request: NextRequest) {
 
       response = await fetch(`${backendUrl}/buscar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario", termos_busca: termos_busca || undefined }),
         signal: controller.signal,
       });

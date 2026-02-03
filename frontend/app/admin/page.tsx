@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface UserProfile {
   id: string;
@@ -23,7 +24,8 @@ interface UserProfile {
 const PLAN_OPTIONS = ["free", "pack_5", "pack_10", "pack_20", "monthly", "annual", "master"];
 
 export default function AdminPage() {
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, isAdmin } = useAuth();
+  const router = useRouter();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -144,6 +146,32 @@ export default function AdminPage() {
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><p className="text-[var(--ink-secondary)]">Carregando...</p></div>;
   if (!session) return <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><Link href="/login" className="text-[var(--brand-blue)]">Login necessario</Link></div>;
+
+  // Show 403 for non-admin users
+  if (!isAdmin && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center max-w-md px-4">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--error-subtle)] flex items-center justify-center">
+            <svg className="w-8 h-8 text-[var(--error)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-2">Acesso Restrito</h1>
+          <p className="text-[var(--ink-secondary)] mb-6">
+            Esta pagina e exclusiva para administradores do sistema. Se voce acredita que deveria ter acesso, entre em contato com o suporte.
+          </p>
+          <Link
+            href="/"
+            className="inline-block px-6 py-2 bg-[var(--brand-navy)] text-white rounded-button
+                       hover:bg-[var(--brand-blue)] transition-colors"
+          >
+            Voltar para inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
 

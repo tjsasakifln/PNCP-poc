@@ -5,7 +5,7 @@ import { useAuth } from "./AuthProvider";
 import Link from "next/link";
 
 export function UserMenu() {
-  const { user, session, loading, signOut } = useAuth();
+  const { user, session, loading, signOut, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -72,10 +72,12 @@ export function UserMenu() {
             className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Planos
           </Link>
-          <Link href="/admin" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
-            Admin
-          </Link>
+          {isAdmin && (
+            <Link href="/admin" onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+              Admin
+            </Link>
+          )}
           <div className="border-t border-[var(--border)] mt-1 pt-1">
             <button
               onClick={() => { signOut(); setOpen(false); }}

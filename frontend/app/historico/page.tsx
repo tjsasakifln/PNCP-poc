@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAnalytics } from "../../hooks/useAnalytics";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
 
@@ -22,11 +24,46 @@ interface SearchSession {
 
 export default function HistoricoPage() {
   const { session, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { trackEvent } = useAnalytics();
   const [sessions, setSessions] = useState<SearchSession[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const limit = 20;
+
+  // Handle re-run search navigation
+  const handleRerunSearch = useCallback((searchSession: SearchSession) => {
+    // Track analytics event
+    trackEvent('search_rerun', {
+      session_id: searchSession.id,
+      sectors: searchSession.sectors,
+      ufs: searchSession.ufs,
+      date_range: {
+        inicial: searchSession.data_inicial,
+        final: searchSession.data_final,
+      },
+      has_custom_keywords: Boolean(searchSession.custom_keywords?.length),
+      original_results: searchSession.total_filtered,
+    });
+
+    // Build URL params for the search page
+    const params = new URLSearchParams();
+    params.set('ufs', searchSession.ufs.join(','));
+    params.set('data_inicial', searchSession.data_inicial);
+    params.set('data_final', searchSession.data_final);
+
+    // Set sector or custom terms
+    if (searchSession.custom_keywords && searchSession.custom_keywords.length > 0) {
+      params.set('mode', 'termos');
+      params.set('termos', searchSession.custom_keywords.join(' '));
+    } else if (searchSession.sectors.length > 0) {
+      params.set('mode', 'setor');
+      params.set('setor', searchSession.sectors[0]);
+    }
+
+    router.push(`/?${params.toString()}`);
+  }, [router, trackEvent]);
 
   useEffect(() => {
     if (authLoading || !session) return;
@@ -158,6 +195,19 @@ export default function HistoricoPage() {
                       <p className="text-sm font-data text-[var(--success)] mt-1">
                         {formatCurrency(s.valor_total)}
                       </p>
+                      <button
+                        onClick={() => handleRerunSearch(s)}
+                        className="mt-3 px-3 py-1.5 text-xs font-medium text-[var(--brand-blue)]
+                                   border border-[var(--brand-blue)] rounded-button
+                                   hover:bg-[var(--brand-blue-subtle)] transition-colors
+                                   flex items-center gap-1.5"
+                        title="Repetir esta busca com os mesmos parametros"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Repetir busca
+                      </button>
                     </div>
                   </div>
                 </div>

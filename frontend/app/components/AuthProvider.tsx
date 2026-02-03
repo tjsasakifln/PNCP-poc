@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, fullName?: string) => Promise<void>;
   signInWithMagicLink: (email: string) => Promise<void>;
@@ -21,6 +22,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Fetch admin status when session changes
+  const fetchAdminStatus = useCallback(async (accessToken: string) => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const res = await fetch(`${backendUrl}/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsAdmin(data.is_admin === true);
+      } else {
+        setIsAdmin(false);
+      }
+    } catch {
+      setIsAdmin(false);
+    }
+  }, []);
 
   useEffect(() => {
     // Get initial session
@@ -28,6 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.access_token) {
+        fetchAdminStatus(session.access_token);
+      }
     });
 
     // Listen for auth changes
@@ -36,11 +59,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        if (session?.access_token) {
+          fetchAdminStatus(session.access_token);
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchAdminStatus]);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -80,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         loading,
+        isAdmin,
         signInWithEmail,
         signUpWithEmail,
         signInWithMagicLink,

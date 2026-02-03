@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import type { BuscaResult, ValidationErrors, Setor } from "./types";
@@ -17,6 +18,9 @@ import { useAnalytics } from "../hooks/useAnalytics";
 import { useSavedSearches } from "../hooks/useSavedSearches";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useKeyboardShortcuts, getShortcutDisplay } from "../hooks/useKeyboardShortcuts";
+import { useQuota } from "../hooks/useQuota";
+import { useAuth } from "./components/AuthProvider";
+import { QuotaBadge } from "./components/QuotaBadge";
 import type { SavedSearch } from "../lib/savedSearches";
 
 // White label branding configuration
@@ -71,7 +75,16 @@ function dateDiffInDays(date1: string, date2: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-export default function HomePage() {
+// Inner component that uses searchParams
+function HomePageContent() {
+  // URL search params for re-run search (Issue #154)
+  const searchParams = useSearchParams();
+  const [urlParamsApplied, setUrlParamsApplied] = useState(false);
+
+  // Auth and quota
+  const { session } = useAuth();
+  const { quota, refresh: refreshQuota } = useQuota();
+
   // Analytics tracking
   const { trackEvent } = useAnalytics();
 
@@ -121,10 +134,52 @@ export default function HomePage() {
     return now.toISOString().split("T")[0];
   });
 
+  // Apply URL params on mount (Issue #154: Re-run search from history)
+  useEffect(() => {
+    if (urlParamsApplied) return;
+
+    const ufsParam = searchParams.get('ufs');
+    const dataInicialParam = searchParams.get('data_inicial');
+    const dataFinalParam = searchParams.get('data_final');
+    const modeParam = searchParams.get('mode');
+    const setorParam = searchParams.get('setor');
+    const termosParam = searchParams.get('termos');
+
+    // Only apply if we have UFs (minimum required param)
+    if (ufsParam) {
+      const ufsArray = ufsParam.split(',').filter(uf => UFS.includes(uf));
+      if (ufsArray.length > 0) {
+        setUfsSelecionadas(new Set(ufsArray));
+
+        if (dataInicialParam) setDataInicial(dataInicialParam);
+        if (dataFinalParam) setDataFinal(dataFinalParam);
+
+        if (modeParam === 'termos' && termosParam) {
+          setSearchMode('termos');
+          setTermosArray(termosParam.split(' ').filter(Boolean));
+        } else if (modeParam === 'setor' && setorParam) {
+          setSearchMode('setor');
+          setSetorId(setorParam);
+        }
+
+        // Track that params were loaded from URL (re-run search)
+        trackEvent('search_params_loaded_from_url', {
+          ufs: ufsArray,
+          mode: modeParam,
+          setor: setorParam,
+          has_termos: Boolean(termosParam),
+        });
+      }
+    }
+
+    setUrlParamsApplied(true);
+  }, [searchParams, urlParamsApplied, trackEvent]);
+
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [statesProcessed, setStatesProcessed] = useState(0); // Issue #109: Track state progress
   const [error, setError] = useState<string | null>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null); // Issue #153: Quota exceeded
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [result, setResult] = useState<BuscaResult | null>(null);
@@ -284,6 +339,7 @@ export default function HomePage() {
     setLoadingStep(1);
     setStatesProcessed(0); // Issue #109: Reset progress counter
     setError(null);
+    setQuotaError(null); // Issue #153: Reset quota error
     setResult(null);
     setRawCount(0);
 
@@ -319,9 +375,15 @@ export default function HomePage() {
     });
 
     try {
+      // Issue #153: Include auth header for quota tracking
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
       const response = await fetch("/api/buscar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           ufs: Array.from(ufsSelecionadas),
           data_inicial: dataInicial,
@@ -333,12 +395,24 @@ export default function HomePage() {
 
       if (!response.ok) {
         const err = await response.json();
+
+        // Issue #153: Handle quota exceeded (403)
+        if (response.status === 403) {
+          setQuotaError(err.message || "Suas buscas acabaram.");
+          throw new Error(err.message || "Quota excedida");
+        }
+
         throw new Error(err.message || "Erro ao buscar licitações");
       }
 
       const data: BuscaResult = await response.json();
       setResult(data);
       setRawCount(data.total_raw || 0);
+
+      // Issue #153: Refresh quota after successful search
+      if (session?.access_token) {
+        refreshQuota();
+      }
 
       const searchEndTime = Date.now();
       const timeElapsed = searchEndTime - searchStartTime;
@@ -591,6 +665,9 @@ export default function HomePage() {
             <span className="hidden sm:block text-xs text-ink-muted font-medium">
               Busca Inteligente PNCP
             </span>
+
+            {/* Issue #153: Show quota badge */}
+            <QuotaBadge />
 
             {/* Re-trigger Onboarding Button */}
             {!shouldShowOnboarding && (
@@ -913,7 +990,7 @@ export default function HomePage() {
         )}
 
         {/* Error Display with Retry */}
-        {error && (
+        {error && !quotaError && (
           <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
             <p className="text-sm sm:text-base font-medium text-error mb-3">{error}</p>
             <button
@@ -923,6 +1000,35 @@ export default function HomePage() {
             >
               Tentar novamente
             </button>
+          </div>
+        )}
+
+        {/* Issue #153: Quota Exceeded Display */}
+        {quotaError && (
+          <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-warning-subtle border border-warning/20 rounded-card animate-fade-in-up" role="alert">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p className="text-sm sm:text-base font-medium text-warning mb-2">{quotaError}</p>
+                <p className="text-sm text-ink-secondary mb-4">
+                  Escolha um plano para continuar buscando oportunidades de licitacao.
+                </p>
+                <a
+                  href="/planos"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded-button text-sm font-medium
+                             hover:bg-brand-blue-hover transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                  Ver Planos
+                </a>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1198,5 +1304,18 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Wrapper component with Suspense for useSearchParams (Next.js App Router requirement)
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <p className="text-[var(--ink-secondary)]">Carregando...</p>
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }
