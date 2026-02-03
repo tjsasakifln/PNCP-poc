@@ -502,9 +502,20 @@ function HomePageContent() {
 
     try {
       const downloadUrl = `/api/download?id=${result.download_id}`;
-      const response = await fetch(downloadUrl);
+
+      // Include auth header for authenticated downloads
+      const downloadHeaders: Record<string, string> = {};
+      if (session?.access_token) {
+        downloadHeaders["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(downloadUrl, { headers: downloadHeaders });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/login";
+          throw new Error('Faça login para continuar');
+        }
         if (response.status === 404) {
           throw new Error('Arquivo expirado. Faça uma nova busca para gerar o Excel.');
         }

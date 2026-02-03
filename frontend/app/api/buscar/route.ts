@@ -6,6 +6,15 @@ import { tmpdir } from "os";
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication - return 401 if no auth header
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { message: "Autenticacao necessaria. Faca login para continuar." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { ufs, data_inicial, data_final, setor_id, termos_busca } = body;
 
@@ -28,12 +37,11 @@ export async function POST(request: NextRequest) {
     // Use BACKEND_URL (set via env var in CI) instead of NEXT_PUBLIC_BACKEND_URL (build-time)
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
 
-    // Forward auth header if present (for quota tracking)
-    const authHeader = request.headers.get("authorization");
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (authHeader) {
-      headers["Authorization"] = authHeader;
-    }
+    // Forward auth header to backend (already validated above)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "Authorization": authHeader,
+    };
 
     let response: Response;
     try {

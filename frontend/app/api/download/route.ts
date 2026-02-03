@@ -4,6 +4,15 @@ import { join } from "path";
 import { tmpdir } from "os";
 
 export async function GET(request: NextRequest) {
+  // Require authentication for downloads
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json(
+      { message: "Autenticacao necessaria. Faca login para continuar." },
+      { status: 401 }
+    );
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get("id");
 
