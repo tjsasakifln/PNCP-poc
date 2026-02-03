@@ -16,14 +16,14 @@ def main():
 
     users_to_create = [
         {
-            "email": "tjsasakifln@gmail.com",
+            "email": "tiago.sasaki@gmail.com",
             "password": "B1lous234!",
             "full_name": "TJ Sasaki",
             "plan_id": "master",
             "is_admin": True,
         },
         {
-            "email": "mari.baron@gmail.com",
+            "email": "marinalvabaron@gmail.com",
             "password": "mudar123",
             "full_name": "Mari Baron",
             "plan_id": "master",

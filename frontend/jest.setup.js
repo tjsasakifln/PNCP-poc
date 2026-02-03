@@ -51,6 +51,29 @@ try {
   // Next.js not installed yet (Issue #21)
 }
 
+// Mock window.matchMedia (not available in jsdom)
+// Uses beforeAll + beforeEach to survive jest.clearAllMocks()
+if (typeof window !== 'undefined') {
+  const matchMediaMock = (query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  });
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    configurable: true,
+    value: jest.fn().mockImplementation(matchMediaMock),
+  });
+  beforeEach(() => {
+    window.matchMedia = jest.fn().mockImplementation(matchMediaMock);
+  });
+}
+
 // Global test timeout (default: 5000ms)
 jest.setTimeout(10000)
 

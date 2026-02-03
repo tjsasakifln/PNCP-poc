@@ -2,6 +2,31 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import HomePage from '@/app/page';
 
+// Mock Supabase client
+jest.mock('../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: jest.fn().mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } }),
+    },
+  },
+}));
+
+// Mock AuthProvider to avoid Supabase dependency
+jest.mock('@/components/AuthProvider', () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useAuth: () => ({
+    user: null,
+    session: null,
+    loading: false,
+    signInWithEmail: jest.fn(),
+    signUpWithEmail: jest.fn(),
+    signInWithMagicLink: jest.fn(),
+    signInWithGoogle: jest.fn(),
+    signOut: jest.fn(),
+  }),
+}));
+
 // Mock fetch globally
 global.fetch = jest.fn();
 
