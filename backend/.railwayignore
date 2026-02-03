@@ -1,1 +1,49 @@
-# Deploy trigger 1769610324
+# Python virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Test and coverage
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Documentation
+docs/
+
+# Git
+.git/
+.gitignore
+
+# Local config
+.env
+.env.local
+*.local
+
+# Logs
+*.log
+logs/
+
+# Docker (Railway builds its own)
+Dockerfile
+docker-compose*.yml

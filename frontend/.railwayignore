@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Test and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+e2e-tests/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Docker (Railway builds its own)
+Dockerfile
+docker-compose*.yml
