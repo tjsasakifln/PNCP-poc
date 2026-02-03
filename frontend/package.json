@@ -22,6 +22,7 @@
     "lighthouse:assert": "lhci assert"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.93.3",
     "@types/uuid": "^10.0.0",
     "date-fns": "^4.1.0",
     "mixpanel-browser": "^2.74.0",

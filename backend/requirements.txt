@@ -18,6 +18,10 @@ openpyxl==3.1.5
 # LLM integration
 openai==1.109.1
 
+# Auth & Database
+supabase==2.13.0
+stripe==11.4.1
+
 # =============================================================================
 # Development dependencies (not needed in production but included for simplicity)
 # =============================================================================

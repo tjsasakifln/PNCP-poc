@@ -3,6 +3,7 @@ import { DM_Sans, Fahkwang, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AnalyticsProvider } from "./components/AnalyticsProvider";
+import { AuthProvider } from "./components/AuthProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -90,7 +91,9 @@ export default function RootLayout({
           Pular para conteúdo principal
         </a>
         <AnalyticsProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider>{children}</ThemeProvider>
+          </AuthProvider>
         </AnalyticsProvider>
       </body>
     </html>

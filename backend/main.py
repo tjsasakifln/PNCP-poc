@@ -14,7 +14,9 @@ This API provides endpoints for:
 import base64
 import logging
 import os
-from fastapi import FastAPI, HTTPException
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging
 from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes
@@ -24,6 +26,8 @@ from filter import filter_batch, remove_stopwords
 from excel import create_excel
 from llm import gerar_resumo, gerar_resumo_fallback
 from sectors import get_sector, list_sectors
+from auth import get_current_user, require_auth
+from admin import router as admin_router
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -50,9 +54,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins for POC (TODO: restrict in production)
     allow_credentials=True,
-    allow_methods=["GET", "POST"],  # Only methods we use
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],  # Allow all headers for development
 )
+
+app.include_router(admin_router)
 
 logger.info(
     "FastAPI application initialized — PORT=%s",
@@ -163,8 +169,242 @@ async def debug_pncp_test():
         }
 
 
+@app.post("/change-password")
+async def change_password(
+    request: Request,
+    user: dict = Depends(require_auth),
+):
+    """Change current user's password."""
+    body = await request.json()
+    new_password = body.get("new_password", "")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter no minimo 6 caracteres")
+
+    from supabase_client import get_supabase
+    sb = get_supabase()
+    try:
+        sb.auth.admin.update_user_by_id(user["id"], {"password": new_password})
+    except Exception as e:
+        logger.error(f"Password change failed for user {user['id']}: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao alterar senha")
+
+    logger.info(f"Password changed for user {user['id']}")
+    return {"success": True}
+
+
+@app.get("/me")
+async def get_profile(user: dict = Depends(require_auth)):
+    """Get current user profile with active subscription info."""
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    profile = (
+        sb.table("profiles")
+        .select("*")
+        .eq("id", user["id"])
+        .single()
+        .execute()
+    )
+
+    # Get active subscription
+    sub = (
+        sb.table("user_subscriptions")
+        .select("*, plans(*)")
+        .eq("user_id", user["id"])
+        .eq("is_active", True)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    # Count total searches (for free tier tracking)
+    sessions = (
+        sb.table("search_sessions")
+        .select("id", count="exact")
+        .eq("user_id", user["id"])
+        .execute()
+    )
+
+    return {
+        "profile": profile.data,
+        "subscription": sub.data[0] if sub.data else None,
+        "total_searches": sessions.count or 0,
+    }
+
+
+@app.get("/sessions")
+async def get_sessions(
+    user: dict = Depends(require_auth),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    """Get user's search session history."""
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    result = (
+        sb.table("search_sessions")
+        .select("*", count="exact")
+        .eq("user_id", user["id"])
+        .order("created_at", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+
+    return {
+        "sessions": result.data,
+        "total": result.count or 0,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@app.get("/plans")
+async def get_plans():
+    """Get available subscription plans."""
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    result = (
+        sb.table("plans")
+        .select("id, name, description, max_searches, price_brl, duration_days")
+        .eq("is_active", True)
+        .order("price_brl")
+        .execute()
+    )
+    return {"plans": result.data}
+
+
+@app.post("/checkout")
+async def create_checkout(
+    plan_id: str = Query(...),
+    user: dict = Depends(require_auth),
+):
+    """Create Stripe Checkout session for a plan purchase."""
+    import stripe as stripe_lib
+
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+    if not stripe_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    stripe_lib.api_key = stripe_key
+
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    # Get plan
+    plan_result = sb.table("plans").select("*").eq("id", plan_id).eq("is_active", True).single().execute()
+    if not plan_result.data:
+        raise HTTPException(status_code=404, detail="Plano nao encontrado")
+
+    plan = plan_result.data
+    if not plan.get("stripe_price_id"):
+        raise HTTPException(status_code=400, detail="Plano sem preco Stripe configurado")
+
+    # Determine if subscription or one-time
+    is_recurring = plan_id in ("monthly", "annual")
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+    session_params = {
+        "payment_method_types": ["card"],
+        "line_items": [{"price": plan["stripe_price_id"], "quantity": 1}],
+        "mode": "subscription" if is_recurring else "payment",
+        "success_url": f"{frontend_url}/planos?success=true&plan={plan_id}",
+        "cancel_url": f"{frontend_url}/planos?cancelled=true",
+        "client_reference_id": user["id"],
+        "metadata": {"plan_id": plan_id, "user_id": user["id"]},
+    }
+
+    # Attach customer email for receipt
+    session_params["customer_email"] = user["email"]
+
+    checkout_session = stripe_lib.checkout.Session.create(**session_params)
+    return {"checkout_url": checkout_session.url}
+
+
+@app.post("/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events (checkout completed, subscription updated)."""
+    import stripe as stripe_lib
+
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    if not stripe_key or not webhook_secret:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    stripe_lib.api_key = stripe_key
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    try:
+        event = stripe_lib.Webhook.construct_event(payload, sig_header, webhook_secret)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        user_id = session.get("client_reference_id") or session["metadata"].get("user_id")
+        plan_id = session["metadata"].get("plan_id")
+
+        if user_id and plan_id:
+            _activate_plan(user_id, plan_id, session)
+
+    elif event["type"] == "customer.subscription.deleted":
+        sub = event["data"]["object"]
+        _deactivate_stripe_subscription(sub["id"])
+
+    return {"status": "ok"}
+
+
+def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):
+    """Activate a plan for a user after successful payment."""
+    from supabase_client import get_supabase
+    from datetime import datetime, timezone, timedelta
+    sb = get_supabase()
+
+    # Get plan details
+    plan = sb.table("plans").select("*").eq("id", plan_id).single().execute()
+    if not plan.data:
+        logger.error(f"Plan {plan_id} not found during activation")
+        return
+
+    p = plan.data
+    expires_at = None
+    if p["duration_days"]:
+        expires_at = (datetime.now(timezone.utc) + timedelta(days=p["duration_days"])).isoformat()
+
+    # Deactivate previous subscriptions
+    sb.table("user_subscriptions").update({"is_active": False}).eq("user_id", user_id).eq("is_active", True).execute()
+
+    # Create new subscription
+    sb.table("user_subscriptions").insert({
+        "user_id": user_id,
+        "plan_id": plan_id,
+        "credits_remaining": p["max_searches"],
+        "expires_at": expires_at,
+        "stripe_subscription_id": stripe_session.get("subscription"),
+        "stripe_customer_id": stripe_session.get("customer"),
+        "is_active": True,
+    }).execute()
+
+    # Update profile plan_type
+    sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
+
+    logger.info(f"Activated plan {plan_id} for user {user_id}")
+
+
+def _deactivate_stripe_subscription(stripe_sub_id: str):
+    """Deactivate subscription when cancelled in Stripe."""
+    from supabase_client import get_supabase
+    sb = get_supabase()
+    sb.table("user_subscriptions").update({"is_active": False}).eq("stripe_subscription_id", stripe_sub_id).execute()
+    logger.info(f"Deactivated Stripe subscription {stripe_sub_id}")
+
+
 @app.post("/buscar", response_model=BuscaResponse)
-async def buscar_licitacoes(request: BuscaRequest):
+async def buscar_licitacoes(
+    request: BuscaRequest,
+    user: Optional[dict] = Depends(get_current_user),
+):
     """
     Main search endpoint - orchestrates the complete pipeline.
 
@@ -205,6 +445,17 @@ async def buscar_licitacoes(request: BuscaRequest):
             "setor_id": request.setor_id,
         },
     )
+
+    # Quota check (only if user is authenticated)
+    quota_info = None
+    if user:
+        try:
+            from quota import check_quota, QuotaExceededError
+            quota_info = check_quota(user["id"])
+        except QuotaExceededError as e:
+            raise HTTPException(status_code=403, detail=str(e))
+        except Exception as e:
+            logger.warning(f"Quota check failed (allowing search): {e}")
 
     try:
         # Load sector configuration
@@ -382,6 +633,28 @@ async def buscar_licitacoes(request: BuscaRequest):
                 "valor_total": resumo.valor_total,
             },
         )
+
+        # Save session + decrement credits (only for authenticated users)
+        if user:
+            try:
+                from quota import save_search_session, decrement_credits
+                save_search_session(
+                    user_id=user["id"],
+                    sectors=[request.setor_id],
+                    ufs=request.ufs,
+                    data_inicial=request.data_inicial,
+                    data_final=request.data_final,
+                    custom_keywords=custom_terms if custom_terms else None,
+                    total_raw=len(licitacoes_raw),
+                    total_filtered=len(licitacoes_filtradas),
+                    valor_total=resumo.valor_total,
+                    resumo_executivo=resumo.resumo_executivo,
+                    destaques=resumo.destaques,
+                )
+                if quota_info and quota_info.get("subscription_id"):
+                    decrement_credits(quota_info["subscription_id"], user["id"])
+            except Exception as e:
+                logger.error(f"Failed to save session/decrement credits: {e}")
 
         return response
 

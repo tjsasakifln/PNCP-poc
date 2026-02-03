@@ -8,6 +8,7 @@ import { EnhancedLoadingProgress } from "../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "./components/LoadingResultsSkeleton";
 import { EmptyState } from "./components/EmptyState";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { UserMenu } from "./components/UserMenu";
 import { RegionSelector } from "./components/RegionSelector";
 import { SavedSearchesDropdown } from "./components/SavedSearchesDropdown";
 import { CustomSelect } from "./components/CustomSelect";
@@ -611,6 +612,7 @@ export default function HomePage() {
               onAnalyticsEvent={trackEvent}
             />
             <ThemeToggle />
+            <UserMenu />
           </div>
         </div>
       </header>
