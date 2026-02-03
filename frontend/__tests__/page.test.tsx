@@ -27,8 +27,25 @@ jest.mock('@/components/AuthProvider', () => ({
   }),
 }));
 
+// Mock useQuota hook
+jest.mock('../hooks/useQuota', () => ({
+  useQuota: () => ({
+    quota: null,
+    loading: false,
+    error: null,
+    refresh: jest.fn(),
+  }),
+}));
+
 // Mock fetch globally
 global.fetch = jest.fn();
+
+// Mock Next.js navigation (for useSearchParams used in re-run search feature)
+jest.mock('next/navigation', () => ({
+  useSearchParams: () => ({
+    get: jest.fn().mockReturnValue(null),
+  }),
+}));
 
 // Mock child components that aren't relevant to page-level tests
 jest.mock('@/components/ThemeToggle', () => ({
@@ -47,6 +64,10 @@ jest.mock('@/components/EmptyState', () => ({
   EmptyState: ({ sectorName }: { sectorName?: string }) => (
     <div data-testid="empty-state">Nenhuma licitação de {sectorName?.toLowerCase() || 'licitações'} encontrada</div>
   ),
+}));
+
+jest.mock('@/components/QuotaBadge', () => ({
+  QuotaBadge: () => <div data-testid="quota-badge" />,
 }));
 
 describe('HomePage - UF Selection and Date Range', () => {
