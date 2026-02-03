@@ -396,6 +396,12 @@ function HomePageContent() {
       if (!response.ok) {
         const err = await response.json();
 
+        // Handle authentication required (401) - redirect to login
+        if (response.status === 401) {
+          window.location.href = "/login";
+          throw new Error("Faça login para continuar");
+        }
+
         // Issue #153: Handle quota exceeded (403)
         if (response.status === 403) {
           setQuotaError(err.message || "Suas buscas acabaram.");
