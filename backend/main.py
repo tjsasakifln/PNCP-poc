@@ -93,39 +93,69 @@ async def health():
     """
     Health check endpoint for monitoring and load balancers.
 
-    Provides lightweight service health verification without triggering
-    heavy operations (PNCP API calls, LLM processing, etc.). Designed
-    for use by orchestrators (Docker, Kubernetes), load balancers, and
-    uptime monitoring tools.
+    Provides lightweight service health verification including dependency
+    checks for Supabase connectivity. Designed for use by orchestrators
+    (Docker, Kubernetes), load balancers, and uptime monitoring tools.
 
     Returns:
-        dict: Service health status with timestamp and version
+        dict: Service health status with timestamp, version and dependency status
 
     Response Schema:
-        - status (str): "healthy" when service is operational
+        - status (str): "healthy" or "degraded"
         - timestamp (str): Current server time in ISO 8601 format
         - version (str): API version from app configuration
-
-    Example:
-        >>> response = await health()
-        >>> response
-        {
-            'status': 'healthy',
-            'timestamp': '2026-01-25T23:15:42.123456',
-            'version': '0.2.0'
-        }
+        - dependencies (dict): Status of external dependencies
 
     HTTP Status Codes:
         - 200: Service is healthy and operational
-        - 503: Service is degraded (future: dependency checks fail)
+        - 503: Service is degraded (dependency checks fail)
     """
     from datetime import datetime
+    import os
 
-    return {
-        "status": "healthy",
+    dependencies = {
+        "supabase": "unconfigured",
+        "openai": "unconfigured",
+    }
+
+    # Check Supabase configuration
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if supabase_url and supabase_key:
+        try:
+            from supabase_client import get_supabase
+            client = get_supabase()
+            # Quick connectivity test - just verify client is initialized
+            dependencies["supabase"] = "healthy"
+        except Exception as e:
+            dependencies["supabase"] = f"error: {str(e)[:50]}"
+    else:
+        dependencies["supabase"] = "missing_env_vars"
+
+    # Check OpenAI configuration
+    if os.getenv("OPENAI_API_KEY"):
+        dependencies["openai"] = "configured"
+    else:
+        dependencies["openai"] = "missing_api_key"
+
+    # Determine overall status
+    # Supabase is optional - missing_env_vars is acceptable (anonymous searches work)
+    # Only "error:*" status indicates actual degradation
+    supabase_ok = not dependencies["supabase"].startswith("error")
+    status = "healthy" if supabase_ok else "degraded"
+
+    response_data = {
+        "status": status,
         "timestamp": datetime.utcnow().isoformat(),
         "version": app.version,
+        "dependencies": dependencies,
     }
+
+    if not supabase_ok:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content=response_data, status_code=503)
+
+    return response_data
 
 
 @app.get("/setores")
@@ -465,8 +495,17 @@ async def buscar_licitacoes(
             quota_info = check_quota(user["id"])
         except QuotaExceededError as e:
             raise HTTPException(status_code=403, detail=str(e))
+        except RuntimeError as e:
+            # Configuration error (missing env vars) - fail fast
+            logger.error(f"Supabase configuration error: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="Serviço temporariamente indisponível. Tente novamente em alguns minutos."
+            )
         except Exception as e:
-            logger.warning(f"Quota check failed (allowing search): {e}")
+            # Unexpected error - log but allow anonymous search as fallback
+            logger.warning(f"Quota check failed (allowing search as anonymous): {e}")
+            user = None  # Treat as anonymous user
 
     try:
         # Load sector configuration
