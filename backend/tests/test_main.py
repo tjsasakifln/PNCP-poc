@@ -303,6 +303,17 @@ class TestBuscarEndpoint:
             "linkSistemaOrigem": "https://pncp.gov.br/app/editais/123456789",
         }
 
+    @pytest.fixture(autouse=True)
+    def mock_auth_and_quota(self, monkeypatch):
+        """Auto-apply auth mock and quota mock for all tests in this class."""
+        from auth import require_auth
+        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
+        app.dependency_overrides[require_auth] = lambda: mock_user
+        # Mock check_quota to skip Supabase connection
+        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        yield
+        app.dependency_overrides.clear()
+
     def test_buscar_endpoint_exists(self, client):
         """POST /buscar endpoint should be defined."""
         # Send empty POST to trigger validation error (not 404)
@@ -723,6 +734,16 @@ class TestDebugPNCPEndpoint:
 class TestBuscarValidationExtended:
     """Extended validation tests for /buscar endpoint edge cases."""
 
+    @pytest.fixture(autouse=True)
+    def mock_auth_and_quota(self, monkeypatch):
+        """Auto-apply auth mock and quota mock for all tests in this class."""
+        from auth import require_auth
+        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
+        app.dependency_overrides[require_auth] = lambda: mock_user
+        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        yield
+        app.dependency_overrides.clear()
+
     def test_buscar_invalid_sector_id(self, client):
         """Request with invalid sector ID should return 500 (HTTPException caught by general handler)."""
         request = {
@@ -813,6 +834,16 @@ class TestBuscarValidationExtended:
 
 class TestBuscarDiagnosticLogging:
     """Test diagnostic logging features in /buscar endpoint."""
+
+    @pytest.fixture(autouse=True)
+    def mock_auth_and_quota(self, monkeypatch):
+        """Auto-apply auth mock and quota mock for all tests in this class."""
+        from auth import require_auth
+        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
+        app.dependency_overrides[require_auth] = lambda: mock_user
+        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        yield
+        app.dependency_overrides.clear()
 
     def test_buscar_logs_keyword_rejection_sample(self, client, monkeypatch, caplog):
         """Should log sample of keyword-rejected bids when rejections occur."""
@@ -913,6 +944,16 @@ class TestBuscarDiagnosticLogging:
 
 class TestBuscarIntegration:
     """Integration tests using real modules (not fully mocked)."""
+
+    @pytest.fixture(autouse=True)
+    def mock_auth_and_quota(self, monkeypatch):
+        """Auto-apply auth mock and quota mock for all tests in this class."""
+        from auth import require_auth
+        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
+        app.dependency_overrides[require_auth] = lambda: mock_user
+        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        yield
+        app.dependency_overrides.clear()
 
     @pytest.mark.integration
     def test_buscar_with_real_filter_and_excel(self, client, monkeypatch):

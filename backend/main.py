@@ -444,7 +444,7 @@ def _deactivate_stripe_subscription(stripe_sub_id: str):
 @app.post("/buscar", response_model=BuscaResponse)
 async def buscar_licitacoes(
     request: BuscaRequest,
-    user: Optional[dict] = Depends(get_current_user),
+    user: dict = Depends(require_auth),
 ):
     """
     Main search endpoint - orchestrates the complete pipeline.
@@ -487,25 +487,23 @@ async def buscar_licitacoes(
         },
     )
 
-    # Quota check (only if user is authenticated)
+    # Quota check (user is always authenticated due to require_auth)
     quota_info = None
-    if user:
-        try:
-            from quota import check_quota, QuotaExceededError
-            quota_info = check_quota(user["id"])
-        except QuotaExceededError as e:
-            raise HTTPException(status_code=403, detail=str(e))
-        except RuntimeError as e:
-            # Configuration error (missing env vars) - fail fast
-            logger.error(f"Supabase configuration error: {e}")
-            raise HTTPException(
-                status_code=503,
-                detail="Serviço temporariamente indisponível. Tente novamente em alguns minutos."
-            )
-        except Exception as e:
-            # Unexpected error - log but allow anonymous search as fallback
-            logger.warning(f"Quota check failed (allowing search as anonymous): {e}")
-            user = None  # Treat as anonymous user
+    try:
+        from quota import check_quota, QuotaExceededError
+        quota_info = check_quota(user["id"])
+    except QuotaExceededError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except RuntimeError as e:
+        # Configuration error (missing env vars) - fail fast
+        logger.error(f"Supabase configuration error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Serviço temporariamente indisponível. Tente novamente em alguns minutos."
+        )
+    except Exception as e:
+        # Unexpected error - log but continue (user already authenticated)
+        logger.warning(f"Quota check failed (continuing without quota tracking): {e}")
 
     try:
         # Load sector configuration
