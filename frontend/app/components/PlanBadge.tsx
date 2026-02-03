@@ -1,0 +1,91 @@
+"use client";
+
+import { useMemo } from "react";
+
+interface PlanBadgeProps {
+  planId: "free_trial" | "consultor_agil" | "maquina" | "sala_guerra";
+  planName: string;
+  trialExpiresAt?: string; // ISO timestamp
+  onClick?: () => void;
+}
+
+/**
+ * Plan badge component showing current tier with trial countdown
+ * Based on UX design spec in docs/ux/STORY-165-plan-ui-design.md
+ */
+export function PlanBadge({ planId, planName, trialExpiresAt, onClick }: PlanBadgeProps) {
+  // Calculate days remaining for trial
+  const daysRemaining = useMemo(() => {
+    if (!trialExpiresAt) return null;
+
+    const expiryDate = new Date(trialExpiresAt);
+    const now = new Date();
+    const diffTime = expiryDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return Math.max(0, diffDays);
+  }, [trialExpiresAt]);
+
+  // Determine styling based on plan tier
+  const badgeStyles = useMemo(() => {
+    switch (planId) {
+      case "free_trial":
+        return "bg-gray-500 text-white border-gray-600";
+      case "consultor_agil":
+        return "bg-blue-500 text-white border-blue-600";
+      case "maquina":
+        return "bg-green-500 text-white border-green-600";
+      case "sala_guerra":
+        return "bg-yellow-500 text-gray-900 border-yellow-600";
+      default:
+        return "bg-gray-500 text-white border-gray-600";
+    }
+  }, [planId]);
+
+  // Warning state for trial expiring soon (<2 days)
+  const isExpiringSoon = daysRemaining !== null && daysRemaining < 2;
+
+  // Plan icon
+  const icon = useMemo(() => {
+    if (planId === "free_trial") return "⚠️";
+    if (planId === "consultor_agil") return "💼";
+    if (planId === "maquina") return "⚙️";
+    if (planId === "sala_guerra") return "👑";
+    return "📦";
+  }, [planId]);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium
+        border transition-all hover:opacity-90 cursor-pointer
+        ${badgeStyles}
+        ${isExpiringSoon ? "animate-pulse" : ""}
+      `}
+      title="Ver planos disponíveis"
+      aria-label={`Current plan: ${planName}. Click to view upgrade options`}
+    >
+      <span aria-hidden="true">{icon}</span>
+      <span>{planName}</span>
+
+      {/* Trial countdown */}
+      {daysRemaining !== null && (
+        <span className="text-xs opacity-90">
+          ({daysRemaining} dia{daysRemaining === 1 ? "" : "s"} restante{daysRemaining === 1 ? "" : "s"})
+        </span>
+      )}
+
+      {/* Chevron indicator */}
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  );
+}

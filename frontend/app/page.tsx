@@ -19,8 +19,12 @@ import { useSavedSearches } from "../hooks/useSavedSearches";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useKeyboardShortcuts, getShortcutDisplay } from "../hooks/useKeyboardShortcuts";
 import { useQuota } from "../hooks/useQuota";
+import { usePlan } from "../hooks/usePlan";
 import { useAuth } from "./components/AuthProvider";
 import { QuotaBadge } from "./components/QuotaBadge";
+import { PlanBadge } from "./components/PlanBadge";
+import { QuotaCounter } from "./components/QuotaCounter";
+import { UpgradeModal } from "./components/UpgradeModal";
 import type { SavedSearch } from "../lib/savedSearches";
 
 // White label branding configuration
@@ -84,6 +88,12 @@ function HomePageContent() {
   // Auth and quota
   const { session, loading: authLoading } = useAuth();
   const { quota, refresh: refreshQuota } = useQuota();
+  const { planInfo, refresh: refreshPlan } = usePlan();
+
+  // Upgrade modal state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [preSelectedPlan, setPreSelectedPlan] = useState<"consultor_agil" | "maquina" | "sala_guerra" | undefined>();
+  const [upgradeSource, setUpgradeSource] = useState<string | undefined>();
 
   // Require authentication - redirect to login if not authenticated
   useEffect(() => {
@@ -710,6 +720,20 @@ function HomePageContent() {
             {/* Issue #153: Show quota badge */}
             <QuotaBadge />
 
+            {/* STORY-165: Plan badge with upgrade modal */}
+            {planInfo && (
+              <PlanBadge
+                planId={planInfo.plan_id as "free_trial" | "consultor_agil" | "maquina" | "sala_guerra"}
+                planName={planInfo.plan_name}
+                trialExpiresAt={planInfo.trial_expires_at ?? undefined}
+                onClick={() => {
+                  setPreSelectedPlan(undefined);
+                  setUpgradeSource("plan_badge");
+                  setShowUpgradeModal(true);
+                }}
+              />
+            )}
+
             {/* Re-trigger Onboarding Button */}
             {!shouldShowOnboarding && (
               <button
@@ -969,6 +993,44 @@ function HomePageContent() {
               {validationErrors.date_range}
             </p>
           )}
+
+          {/* STORY-165: Date range validation warning */}
+          {planInfo && dataInicial && dataFinal && (() => {
+            const days = dateDiffInDays(dataInicial, dataFinal);
+            const maxDays = planInfo.capabilities.max_history_days;
+            if (days > maxDays) {
+              return (
+                <div className="mt-3 p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-warning mb-1">
+                        Período muito longo para seu plano
+                      </p>
+                      <p className="text-sm text-ink-secondary">
+                        Seu plano {planInfo.plan_name} permite buscas de até {maxDays} dias.
+                        Você selecionou {days} dias. Ajuste as datas ou faça upgrade.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const suggestedPlan = maxDays < 30 ? "consultor_agil" : maxDays < 365 ? "maquina" : "sala_guerra";
+                          setPreSelectedPlan(suggestedPlan as any);
+                          setUpgradeSource("date_range");
+                          setShowUpgradeModal(true);
+                        }}
+                        className="mt-2 text-sm font-medium text-brand-blue hover:underline"
+                      >
+                        Ver planos →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </section>
 
         {/* Search Buttons */}
@@ -1150,34 +1212,69 @@ function HomePageContent() {
               )}
             </div>
 
-            {/* Download Button */}
-            <button
-              onClick={handleDownload}
-              disabled={downloadLoading}
-              aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
-              className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
-                         hover:bg-brand-blue-hover active:bg-brand-blue
-                         disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
-                         transition-all duration-200
-                         flex items-center justify-center gap-3"
-            >
-              {downloadLoading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Preparando download...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Baixar Excel ({result.resumo.total_oportunidades} licitações)
-                </>
-              )}
-            </button>
+            {/* STORY-165: Quota Counter */}
+            {planInfo && (
+              <QuotaCounter
+                quotaUsed={planInfo.quota_used}
+                quotaLimit={planInfo.capabilities.max_requests_per_month}
+                resetDate={planInfo.quota_reset_date}
+                planId={planInfo.plan_id}
+                onUpgradeClick={() => {
+                  setPreSelectedPlan(undefined);
+                  setUpgradeSource("quota_counter");
+                  setShowUpgradeModal(true);
+                }}
+              />
+            )}
+
+            {/* Download Button - STORY-165: Conditional based on plan */}
+            {planInfo?.capabilities.allow_excel ? (
+              <button
+                onClick={handleDownload}
+                disabled={downloadLoading}
+                aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
+                className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                           hover:bg-brand-blue-hover active:bg-brand-blue
+                           disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                           transition-all duration-200
+                           flex items-center justify-center gap-3"
+              >
+                {downloadLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Preparando download...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Baixar Excel ({result.resumo.total_oportunidades} licitações)
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setPreSelectedPlan("maquina");
+                  setUpgradeSource("excel_button");
+                  setShowUpgradeModal(true);
+                }}
+                className="w-full bg-surface-0 border-2 border-brand-navy text-brand-navy py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                           hover:bg-brand-blue-subtle transition-all duration-200
+                           flex items-center justify-center gap-3"
+                aria-label="Export Excel feature locked. Available on Máquina plan at R$ 597 per month. Click to view plans"
+                title="Exportar Excel disponível no plano Máquina (R$ 597/mês)"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                🔒 Exportar Excel (Disponível no plano Máquina)
+              </button>
+            )}
 
             {/* Download Error */}
             {downloadError && (
@@ -1344,6 +1441,14 @@ function HomePageContent() {
           </button>
         </div>
       </footer>
+
+      {/* STORY-165: Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        preSelectedPlan={preSelectedPlan}
+        source={upgradeSource}
+      />
     </div>
   );
 }
