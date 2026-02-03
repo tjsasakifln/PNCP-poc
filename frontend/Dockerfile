@@ -5,7 +5,7 @@
 # Optimized for Railway deployment
 
 # CACHE BUST - forces Railway rebuild
-ARG CACHEBUST=20260128v1
+ARG CACHEBUST=20260203v2
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
