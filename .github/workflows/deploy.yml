@@ -79,9 +79,18 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
+          # Try redeploy first (faster, uses GitHub source)
+          echo "Attempting redeploy..."
+          if railway redeploy --service bidiq-backend -y; then
+            echo "Redeploy triggered successfully"
+            exit 0
+          fi
+
+          # Fallback to upload if redeploy fails
+          echo "Redeploy failed, trying upload..."
           for i in 1 2 3; do
-            echo "Deploy attempt $i..."
-            if timeout 120 railway up --service bidiq-backend --detach; then
+            echo "Upload attempt $i..."
+            if timeout 180 railway up --service bidiq-backend --detach; then
               echo "Deploy successful"
               exit 0
             fi
@@ -131,9 +140,18 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
+          # Try redeploy first (faster, uses GitHub source)
+          echo "Attempting redeploy..."
+          if railway redeploy --service bidiq-frontend -y; then
+            echo "Redeploy triggered successfully"
+            exit 0
+          fi
+
+          # Fallback to upload if redeploy fails
+          echo "Redeploy failed, trying upload..."
           for i in 1 2 3; do
-            echo "Deploy attempt $i..."
-            if timeout 120 railway up --service bidiq-frontend --detach; then
+            echo "Upload attempt $i..."
+            if timeout 180 railway up --service bidiq-frontend --detach; then
               echo "Deploy successful"
               exit 0
             fi
