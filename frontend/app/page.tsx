@@ -82,8 +82,32 @@ function HomePageContent() {
   const [urlParamsApplied, setUrlParamsApplied] = useState(false);
 
   // Auth and quota
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
   const { quota, refresh: refreshQuota } = useQuota();
+
+  // Require authentication - redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !session) {
+      window.location.href = "/login";
+    }
+  }, [authLoading, session]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
+          <p className="text-[var(--ink-secondary)]">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render page if not authenticated (redirect is happening)
+  if (!session) {
+    return null;
+  }
 
   // Analytics tracking
   const { trackEvent } = useAnalytics();
