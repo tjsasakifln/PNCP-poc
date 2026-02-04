@@ -310,7 +310,18 @@ class TestBuscarEndpoint:
         mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
         app.dependency_overrides[require_auth] = lambda: mock_user
         # Mock check_quota to skip Supabase connection
-        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        from quota import QuotaInfo, PLAN_CAPABILITIES
+        from datetime import datetime, timezone
+        mock_quota = QuotaInfo(
+            allowed=True,
+            plan_id="maquina",
+            plan_name="Máquina",
+            capabilities=PLAN_CAPABILITIES["maquina"],
+            quota_used=10,
+            quota_remaining=290,
+            quota_reset_date=datetime.now(timezone.utc)
+        )
+        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
         yield
         app.dependency_overrides.clear()
 
@@ -740,7 +751,18 @@ class TestBuscarValidationExtended:
         from auth import require_auth
         mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
         app.dependency_overrides[require_auth] = lambda: mock_user
-        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        from quota import QuotaInfo, PLAN_CAPABILITIES
+        from datetime import datetime, timezone
+        mock_quota = QuotaInfo(
+            allowed=True,
+            plan_id="maquina",
+            plan_name="Máquina",
+            capabilities=PLAN_CAPABILITIES["maquina"],
+            quota_used=10,
+            quota_remaining=290,
+            quota_reset_date=datetime.now(timezone.utc)
+        )
+        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
         yield
         app.dependency_overrides.clear()
 
@@ -841,7 +863,18 @@ class TestBuscarDiagnosticLogging:
         from auth import require_auth
         mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
         app.dependency_overrides[require_auth] = lambda: mock_user
-        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        from quota import QuotaInfo, PLAN_CAPABILITIES
+        from datetime import datetime, timezone
+        mock_quota = QuotaInfo(
+            allowed=True,
+            plan_id="maquina",
+            plan_name="Máquina",
+            capabilities=PLAN_CAPABILITIES["maquina"],
+            quota_used=10,
+            quota_remaining=290,
+            quota_reset_date=datetime.now(timezone.utc)
+        )
+        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
         yield
         app.dependency_overrides.clear()
 
@@ -951,7 +984,18 @@ class TestBuscarIntegration:
         from auth import require_auth
         mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
         app.dependency_overrides[require_auth] = lambda: mock_user
-        monkeypatch.setattr("quota.check_quota", lambda user_id: {"credits_remaining": 100, "plan": "unlimited"})
+        from quota import QuotaInfo, PLAN_CAPABILITIES
+        from datetime import datetime, timezone
+        mock_quota = QuotaInfo(
+            allowed=True,
+            plan_id="maquina",
+            plan_name="Máquina",
+            capabilities=PLAN_CAPABILITIES["maquina"],
+            quota_used=10,
+            quota_remaining=290,
+            quota_reset_date=datetime.now(timezone.utc)
+        )
+        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
         yield
         app.dependency_overrides.clear()
 

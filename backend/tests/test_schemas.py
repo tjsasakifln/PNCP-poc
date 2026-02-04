@@ -233,11 +233,17 @@ class TestBuscaResponse:
             excel_base64="UEsDBBQABgAIAAAAIQA=",  # Sample base64
             total_raw=523,
             total_filtrado=10,
+            excel_available=True,
+            quota_used=10,
+            quota_remaining=40,
         )
 
         assert response.total_raw == 523
         assert response.total_filtrado == 10
         assert isinstance(response.resumo, ResumoLicitacoes)
+        assert response.excel_available is True
+        assert response.quota_used == 10
+        assert response.quota_remaining == 40
 
     def test_nested_resumo_validation(self):
         """Nested ResumoLicitacoes should be validated."""
@@ -252,6 +258,9 @@ class TestBuscaResponse:
                 excel_base64="test",
                 total_raw=0,
                 total_filtrado=0,
+                excel_available=True,
+                quota_used=0,
+                quota_remaining=50,
             )
 
     def test_negative_totals_rejected(self):
@@ -263,7 +272,8 @@ class TestBuscaResponse:
         # Negative total_raw
         with pytest.raises(ValidationError):
             BuscaResponse(
-                resumo=resumo, excel_base64="test", total_raw=-100, total_filtrado=0
+                resumo=resumo, excel_base64="test", total_raw=-100, total_filtrado=0,
+                excel_available=True, quota_used=0, quota_remaining=50
             )
 
         # Negative total_filtrado
@@ -283,6 +293,9 @@ class TestBuscaResponse:
             excel_base64="",  # Empty but valid string
             total_raw=0,
             total_filtrado=0,
+            excel_available=False,
+            quota_used=1,
+            quota_remaining=49,
         )
         assert response.excel_base64 == ""
 
@@ -326,10 +339,14 @@ class TestSchemaJSONSerialization:
         )
 
         response = BuscaResponse(
-            resumo=resumo, excel_base64="ABC123", total_raw=100, total_filtrado=10
+            resumo=resumo, excel_base64="ABC123", total_raw=100, total_filtrado=10,
+            excel_available=True, quota_used=5, quota_remaining=45
         )
 
         json_data = response.model_dump()
         assert "resumo" in json_data
         assert json_data["resumo"]["total_oportunidades"] == 10
         assert json_data["excel_base64"] == "ABC123"
+        assert json_data["excel_available"] is True
+        assert json_data["quota_used"] == 5
+        assert json_data["quota_remaining"] == 45

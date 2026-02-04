@@ -30,6 +30,7 @@ def setup_auth_override(user_id="user-123"):
 class TestMeEndpoint:
     """Test /api/me endpoint."""
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_returns_user_profile_with_capabilities(
@@ -76,6 +77,7 @@ class TestMeEndpoint:
         finally:
             cleanup()
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_returns_trial_info_for_free_users(
@@ -115,6 +117,7 @@ class TestMeEndpoint:
         finally:
             cleanup()
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
@@ -148,6 +151,7 @@ class TestMeEndpoint:
 class TestBuscarEndpointQuotaValidation:
     """Test /api/buscar quota and rate limit validation."""
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     def test_blocks_request_when_quota_exhausted(self, mock_check_quota):
         """Should return 403 when monthly quota exhausted."""
@@ -181,6 +185,7 @@ class TestBuscarEndpointQuotaValidation:
         finally:
             cleanup()
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     def test_blocks_request_when_trial_expired(self, mock_check_quota):
         """Should return 403 when trial expired."""
@@ -214,6 +219,7 @@ class TestBuscarEndpointQuotaValidation:
         finally:
             cleanup()
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -267,6 +273,7 @@ class TestBuscarEndpointQuotaValidation:
 class TestBuscarEndpointExcelGating:
     """Test Excel export gating by plan."""
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -322,6 +329,7 @@ class TestBuscarEndpointExcelGating:
         finally:
             cleanup()
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -375,6 +383,7 @@ class TestBuscarEndpointExcelGating:
 class TestBuscarEndpointFallbackBehavior:
     """Test fallback behavior when quota/rate limiting fails."""
 
+    @patch("main.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")

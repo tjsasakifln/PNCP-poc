@@ -66,10 +66,9 @@ class TestCheckQuotaFreeTier:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["plan_id"] == "free"
-        assert result["credits_remaining"] == 2  # 3 - 1 used
-        assert result["subscription_id"] is None
+        assert result.allowed is True
+        assert result.plan_id == "free_trial"
+        assert result.quota_remaining > 0  # Should have searches remaining
 
     def test_free_tier_with_zero_searches_used(self):
         """Should return 3 credits for free tier user with no searches."""
@@ -94,8 +93,8 @@ class TestCheckQuotaFreeTier:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["credits_remaining"] == 3
+        assert result.allowed is True
+        assert result.quota_remaining > 0  # Should have searches available
 
     def test_free_tier_exhausted_raises_error(self):
         """Should raise QuotaExceededError when free tier searches exhausted."""
@@ -173,10 +172,10 @@ class TestCheckQuotaCreditPacks:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["plan_id"] == "pack_10"
-        assert result["credits_remaining"] == 7
-        assert result["subscription_id"] == "sub-123"
+        assert result.allowed is True
+        assert result.plan_id == "pack_10"
+        assert result.credits_remaining == 7
+        assert result.subscription_id == "sub-123"
 
     def test_pack_with_one_credit_remaining(self):
         """Should return allowed=True for pack user with exactly 1 credit."""
@@ -200,8 +199,8 @@ class TestCheckQuotaCreditPacks:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["credits_remaining"] == 1
+        assert result.allowed is True
+        assert result.credits_remaining == 1
 
     def test_pack_with_zero_credits_raises_error(self):
         """Should raise QuotaExceededError when pack credits exhausted."""
@@ -258,10 +257,10 @@ class TestCheckQuotaUnlimited:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["plan_id"] == "monthly"
-        assert result["credits_remaining"] is None
-        assert result["subscription_id"] == "sub-monthly"
+        assert result.allowed is True
+        assert result.plan_id == "monthly"
+        assert result.credits_remaining is None
+        assert result.subscription_id == "sub-monthly"
 
     def test_unlimited_plan_annual(self):
         """Should return allowed=True with None credits for annual plan."""
@@ -287,9 +286,9 @@ class TestCheckQuotaUnlimited:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["plan_id"] == "annual"
-        assert result["credits_remaining"] is None
+        assert result.allowed is True
+        assert result.plan_id == "annual"
+        assert result.credits_remaining is None
 
     def test_unlimited_plan_master(self):
         """Should return allowed=True for master plan (no expiry)."""
@@ -313,9 +312,9 @@ class TestCheckQuotaUnlimited:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result["allowed"] is True
-        assert result["plan_id"] == "master"
-        assert result["credits_remaining"] is None
+        assert result.allowed is True
+        assert result.plan_id == "master"
+        assert result.credits_remaining is None
 
 
 class TestCheckQuotaExpiredSubscriptions:

@@ -7,6 +7,9 @@ import { NextRequest } from "next/server";
 // Mock fetch globally
 global.fetch = jest.fn();
 
+// Mock authentication token
+const mockAuthToken = "Bearer mock-jwt-token-12345";
+
 describe("POST /api/buscar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -21,6 +24,9 @@ describe("POST /api/buscar", () => {
   it("should validate missing UFs", async () => {
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         data_inicial: "2026-01-01",
         data_final: "2026-01-07"
@@ -37,6 +43,9 @@ describe("POST /api/buscar", () => {
   it("should validate empty UFs array", async () => {
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: [],
         data_inicial: "2026-01-01",
@@ -54,6 +63,9 @@ describe("POST /api/buscar", () => {
   it("should validate missing dates", async () => {
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"]
       })
@@ -86,6 +98,9 @@ describe("POST /api/buscar", () => {
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"],
         data_inicial: "2026-01-01",
@@ -101,12 +116,15 @@ describe("POST /api/buscar", () => {
     expect(data.download_id).toBeDefined();
     expect(typeof data.download_id).toBe("string");
 
-    // Verify backend was called
+    // Verify backend was called with auth header
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/buscar"),
       expect.objectContaining({
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "Authorization": mockAuthToken
+        })
       })
     );
   });
@@ -120,6 +138,9 @@ describe("POST /api/buscar", () => {
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"],
         data_inicial: "2026-01-01",
@@ -141,6 +162,9 @@ describe("POST /api/buscar", () => {
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"],
         data_inicial: "2026-01-01",
@@ -176,6 +200,9 @@ describe("POST /api/buscar", () => {
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"],
         data_inicial: "2026-01-01",
@@ -214,6 +241,9 @@ describe("POST /api/buscar", () => {
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"],
         data_inicial: "2026-01-01",
@@ -255,6 +285,9 @@ describe("POST /api/buscar", () => {
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: ["SC"],
         data_inicial: "2026-01-01",
@@ -276,6 +309,9 @@ describe("POST /api/buscar", () => {
   it("should handle invalid UFs type", async () => {
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
+      headers: {
+        "Authorization": mockAuthToken
+      },
       body: JSON.stringify({
         ufs: "SC", // Should be array
         data_inicial: "2026-01-01",
