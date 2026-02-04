@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
 /**
  * Next.js Middleware for route protection.
- * Uses @supabase/ssr for proper cookie handling.
+ * Uses @supabase/ssr with getAll/setAll pattern for proper cookie handling.
  *
  * Protected routes: / (main search page), /historico, /conta, /admin/*
  * Public routes: /login, /signup, /planos, /auth/callback
+ *
+ * IMPORTANT: This middleware uses the recommended getAll/setAll cookie pattern
+ * which is compatible with createBrowserClient on the client side.
  */
 
 const PROTECTED_ROUTES = [
@@ -63,37 +66,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Create response (we may need to update cookies for session refresh)
+  // Create response - cookies will be set on this
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  // Create Supabase client with cookie handling
+  // Create Supabase client with getAll/setAll cookie pattern (recommended)
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
+      getAll() {
+        return request.cookies.getAll();
       },
-      set(name: string, value: string, options: CookieOptions) {
-        // Update cookies on response for session refresh
-        response.cookies.set({
-          name,
-          value,
-          ...options,
-          path: "/",
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
+      setAll(cookiesToSet) {
+        // Set cookies on both request (for subsequent middleware) and response
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
         });
-      },
-      remove(name: string, options: CookieOptions) {
-        response.cookies.set({
-          name,
-          value: "",
-          ...options,
-          path: "/",
-          maxAge: 0,
+        // Recreate response with updated request
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        });
+        // Set cookies on response
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, {
+            ...options,
+            // Ensure proper cookie settings for auth
+            path: options?.path || "/",
+            sameSite: options?.sameSite || "lax",
+            secure: process.env.NODE_ENV === "production",
+          });
         });
       },
     },
@@ -101,7 +106,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Get and verify the user session
-    // This also refreshes the session if needed and updates cookies
+    // This also refreshes the session if needed and updates cookies via setAll
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
 /**
  * OAuth Callback Handler
@@ -7,8 +7,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
  * This route handles the OAuth callback from Supabase (Google, Magic Link, etc).
  * It exchanges the authorization code for a session and sets the session cookies.
  *
- * IMPORTANT: Uses @supabase/ssr to properly set cookies in the response.
- * This fixes the race condition where the redirect happened before cookies were set.
+ * IMPORTANT: Uses @supabase/ssr with getAll/setAll pattern for proper cookie handling.
+ * This is compatible with createBrowserClient on the client side.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -33,36 +33,27 @@ export async function GET(request: NextRequest) {
   }
 
   // Create response that we'll add cookies to
-  const response = NextResponse.redirect(new URL("/", origin));
+  let response = NextResponse.redirect(new URL("/", origin));
 
-  // Create Supabase client that can set cookies on the response
+  // Create Supabase client with getAll/setAll cookie pattern (recommended)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          // Set cookie on both request (for any subsequent middleware) and response
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-            // Ensure cookies work across the domain
-            path: "/",
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-          });
-        },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value: "",
-            ...options,
-            path: "/",
-            maxAge: 0,
+        setAll(cookiesToSet) {
+          // Set cookies on response
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, {
+              ...options,
+              // Ensure proper cookie settings for auth
+              path: options?.path || "/",
+              sameSite: options?.sameSite || "lax",
+              secure: process.env.NODE_ENV === "production",
+            });
           });
         },
       },
@@ -70,7 +61,7 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    // Exchange the code for a session - this will set cookies via our handler above
+    // Exchange the code for a session - this will set cookies via setAll
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {

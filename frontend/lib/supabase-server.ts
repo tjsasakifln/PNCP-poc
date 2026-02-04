@@ -1,9 +1,12 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 /**
  * Create a Supabase client for Server Components and Route Handlers.
- * This client properly handles cookies for authentication.
+ * Uses getAll/setAll cookie pattern for compatibility with browser client.
+ *
+ * Note: In Server Components, setAll will log a warning because cookies
+ * cannot be mutated. This is expected - middleware handles session refresh.
  */
 export function createSupabaseServerClient() {
   const cookieStore = cookies();
@@ -13,22 +16,17 @@ export function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options });
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
           } catch {
-            // The `set` method was called from a Server Component.
+            // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing sessions.
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: "", ...options });
-          } catch {
-            // The `delete` method was called from a Server Component.
           }
         },
       },
