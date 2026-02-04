@@ -242,8 +242,9 @@ async def get_profile(user: dict = Depends(require_auth)):
     This endpoint provides all necessary information for the frontend
     to render plan-based UI elements (badges, quota counters, locked features).
     """
-    from quota import check_quota
+    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
     from supabase_client import get_supabase
+    from datetime import datetime, timezone
 
     # Get quota info with capabilities
     try:
@@ -251,8 +252,6 @@ async def get_profile(user: dict = Depends(require_auth)):
     except Exception as e:
         logger.error(f"Failed to check quota for user {user['id']}: {e}")
         # Return safe fallback
-        from quota import QuotaInfo, PLAN_CAPABILITIES
-        from datetime import datetime, timezone
         quota_info = QuotaInfo(
             allowed=True,
             plan_id="free_trial",
