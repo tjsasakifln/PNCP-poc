@@ -1,3 +1,7 @@
+// Set backend URL before imports (required by API routes)
+process.env.BACKEND_URL = 'http://test-backend:8000';
+process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-backend:8000';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import HomePage from '@/app/page';

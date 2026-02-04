@@ -34,8 +34,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Chamar backend Python
-    // Use BACKEND_URL (set via env var in CI) instead of NEXT_PUBLIC_BACKEND_URL (build-time)
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+    // BACKEND_URL must be set via environment variable - no localhost fallback
+    const backendUrl = process.env.BACKEND_URL;
+    if (!backendUrl) {
+      console.error("BACKEND_URL environment variable is not configured");
+      return NextResponse.json(
+        { message: "Servidor nao configurado. Contate o suporte." },
+        { status: 503 }
+      );
+    }
 
     // Forward auth header to backend (already validated above)
     const headers: Record<string, string> = {

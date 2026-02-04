@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
+    console.error("BACKEND_URL environment variable is not configured");
+    return NextResponse.json(
+      { message: "Servidor nao configurado" },
+      { status: 503 }
+    );
+  }
+
   try {
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
 
     const response = await fetch(`${backendUrl}/setores`);
 

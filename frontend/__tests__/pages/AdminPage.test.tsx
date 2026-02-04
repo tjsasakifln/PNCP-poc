@@ -4,6 +4,9 @@
  * Tests user CRUD, plan assignment, authentication, authorization
  */
 
+// Set backend URL before imports (required by component)
+process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-backend:8000';
+
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import AdminPage from '@/app/admin/page';
 

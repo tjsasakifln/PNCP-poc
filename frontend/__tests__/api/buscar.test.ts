@@ -10,6 +10,9 @@ global.fetch = jest.fn();
 // Mock authentication token
 const mockAuthToken = "Bearer mock-jwt-token-12345";
 
+// Set BACKEND_URL for all tests
+process.env.BACKEND_URL = "http://test-backend:8000";
+
 describe("POST /api/buscar", () => {
   beforeEach(() => {
     jest.clearAllMocks();

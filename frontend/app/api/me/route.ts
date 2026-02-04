@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
+    console.error("BACKEND_URL environment variable is not configured");
+    return NextResponse.json(
+      { message: "Servidor nao configurado" },
+      { status: 503 }
+    );
+  }
 
   // Forward auth header to backend
   const authHeader = request.headers.get("authorization");

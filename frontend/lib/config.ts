@@ -56,9 +56,10 @@ if (process.env.NODE_ENV === 'development') {
 export const config = {
   /**
    * Backend API base URL
-   * Defaults to localhost:8000 in development
+   * Must be set via NEXT_PUBLIC_API_URL environment variable
+   * No localhost fallback to prevent local network access prompts in production
    */
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || '',
 
   /**
    * Supabase configuration (public keys only)
