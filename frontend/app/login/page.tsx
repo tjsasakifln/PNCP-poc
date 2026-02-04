@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
 
+// Map error codes to user-friendly messages
+const ERROR_MESSAGES: Record<string, string> = {
+  auth_failed: "Falha na autenticação. Tente novamente.",
+  session_expired: "Sua sessão expirou. Faça login novamente.",
+  unexpected_error: "Erro inesperado. Tente novamente.",
+  access_denied: "Acesso negado. Verifique suas credenciais.",
+  invalid_request: "Requisição inválida. Tente novamente.",
+};
+
 export default function LoginPage() {
-  const { signInWithEmail, signInWithMagicLink, signInWithGoogle } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { signInWithEmail, signInWithMagicLink, signInWithGoogle, session, loading: authLoading } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +28,32 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [magicSent, setMagicSent] = useState(false);
+
+  // Check for error params from OAuth callback
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    const errorDescription = searchParams.get("error_description");
+
+    if (errorParam) {
+      const message = ERROR_MESSAGES[errorParam] || errorDescription || "Erro ao fazer login";
+      setError(message);
+
+      // Clear error params from URL without redirect
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      url.searchParams.delete("error_description");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.pathname);
+    }
+  }, [searchParams]);
+
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (!authLoading && session) {
+      const redirectTo = searchParams.get("redirect") || "/";
+      router.push(redirectTo);
+    }
+  }, [authLoading, session, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +66,8 @@ export default function LoginPage() {
         setMagicSent(true);
       } else {
         await signInWithEmail(email, password);
-        window.location.href = "/";
+        // Don't redirect here - the useEffect above will handle it
+        // when the session state updates
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao fazer login";
@@ -36,6 +76,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking initial auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
+          <p className="text-[var(--ink-secondary)]">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (magicSent) {
     return (
@@ -88,9 +140,11 @@ export default function LoginPage() {
         {/* Google OAuth */}
         <button
           onClick={() => signInWithGoogle()}
+          disabled={loading}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 mb-4
                      border border-[var(--border)] rounded-button bg-[var(--surface-0)]
-                     text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors"
+                     text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors
+                     disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -206,7 +260,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-[var(--ink-secondary)]">
-          Nao tem conta?{" "}
+          Não tem conta?{" "}
           <Link href="/signup" className="text-[var(--brand-blue)] hover:underline">
             Criar conta
           </Link>

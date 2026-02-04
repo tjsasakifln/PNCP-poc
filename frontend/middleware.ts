@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 /**
  * Next.js Middleware for route protection.
- * Validates Supabase session before allowing access to protected routes.
+ * Uses @supabase/ssr for proper cookie handling.
  *
- * Protected routes: /buscar (main search page), /historico, /conta, /admin/*
+ * Protected routes: / (main search page), /historico, /conta, /admin/*
  * Public routes: /login, /signup, /planos, /auth/callback
  */
 
@@ -13,7 +13,7 @@ const PROTECTED_ROUTES = [
   "/",           // Main search page requires auth
   "/historico",  // Search history
   "/conta",      // Account settings
-  "/admin",      // Admin dashboard (also requires admin role, checked in component)
+  "/admin",      // Admin dashboard
 ];
 
 const PUBLIC_ROUTES = [
@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow API routes to handle their own auth (they check Authorization header)
+  // Allow API routes to handle their own auth
   if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
@@ -54,79 +54,74 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get Supabase auth token from cookies
+  // Get Supabase config
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Supabase environment variables not configured");
-    // Allow access in misconfigured state (fail open for development)
     return NextResponse.next();
   }
 
-  // Look for Supabase session in cookies
-  // Supabase stores the session in cookies with format: sb-{project-ref}-auth-token
-  const cookies = request.cookies;
-  const projectRef = supabaseUrl.replace("https://", "").split(".")[0];
-  const authCookieName = `sb-${projectRef}-auth-token`;
-  const authCookie = cookies.get(authCookieName);
+  // Create response (we may need to update cookies for session refresh)
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  // Also check for access_token in various cookie formats Supabase might use
-  const accessTokenCookie = cookies.get("sb-access-token") ||
-                           cookies.get(`sb-${projectRef}-auth-token.0`) ||
-                           authCookie;
-
-  if (!accessTokenCookie?.value) {
-    // No session cookie found - redirect to login
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+  // Create Supabase client with cookie handling
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
+      },
+      set(name: string, value: string, options: CookieOptions) {
+        // Update cookies on response for session refresh
+        response.cookies.set({
+          name,
+          value,
+          ...options,
+          path: "/",
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+        });
+      },
+      remove(name: string, options: CookieOptions) {
+        response.cookies.set({
+          name,
+          value: "",
+          ...options,
+          path: "/",
+          maxAge: 0,
+        });
+      },
+    },
+  });
 
   try {
-    // Parse the session from cookie (it's JSON with access_token and refresh_token)
-    let sessionData;
-    try {
-      sessionData = JSON.parse(accessTokenCookie.value);
-    } catch {
-      // Cookie might be just the token string in some formats
-      sessionData = { access_token: accessTokenCookie.value };
-    }
-
-    const accessToken = sessionData.access_token || accessTokenCookie.value;
-
-    if (!accessToken) {
-      throw new Error("No access token in session");
-    }
-
-    // Verify the token by calling Supabase
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    // Get and verify the user session
+    // This also refreshes the session if needed and updates cookies
+    const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error || !user) {
-      // Invalid or expired token - redirect to login
+      // No valid session - redirect to login
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      loginUrl.searchParams.set("reason", "session_expired");
 
-      // Clear the invalid cookie
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete(authCookieName);
-      return response;
+      if (error) {
+        loginUrl.searchParams.set("reason", "session_expired");
+      }
+
+      return NextResponse.redirect(loginUrl);
     }
 
-    // Valid session - allow access
-    // Add user info to headers for downstream use if needed
+    // Valid session - add user info to headers and allow access
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-user-id", user.id);
     requestHeaders.set("x-user-email", user.email || "");
 
+    // Return response with any updated session cookies
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -135,7 +130,6 @@ export async function middleware(request: NextRequest) {
 
   } catch (error) {
     console.error("Middleware auth error:", error);
-    // On any error, redirect to login
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
