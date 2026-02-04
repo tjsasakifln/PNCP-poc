@@ -18,7 +18,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from config import setup_logging
+from config import setup_logging, ENABLE_NEW_PRICING
 from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
@@ -65,6 +65,12 @@ logger.info(
     os.getenv("PORT", "8000"),
 )
 
+
+# Log feature flag states
+logger.info(
+    "Feature Flags — ENABLE_NEW_PRICING=%s",
+    ENABLE_NEW_PRICING,
+)
 
 @app.get("/")
 async def root():
@@ -246,17 +252,33 @@ async def get_profile(user: dict = Depends(require_auth)):
     from supabase_client import get_supabase
     from datetime import datetime, timezone
 
-    # Get quota info with capabilities
-    try:
-        quota_info = check_quota(user["id"])
-    except Exception as e:
-        logger.error(f"Failed to check quota for user {user['id']}: {e}")
-        # Return safe fallback
+    # FEATURE FLAG: New Pricing Model (STORY-165)
+    if ENABLE_NEW_PRICING:
+        # Get quota info with capabilities
+        try:
+            quota_info = check_quota(user["id"])
+        except Exception as e:
+            logger.error(f"Failed to check quota for user {user['id']}: {e}")
+            # Return safe fallback
+            quota_info = QuotaInfo(
+                allowed=True,
+                plan_id="free_trial",
+                plan_name="FREE Trial",
+                capabilities=PLAN_CAPABILITIES["free_trial"],
+                quota_used=0,
+                quota_remaining=999999,
+                quota_reset_date=datetime.now(timezone.utc),
+                trial_expires_at=None,
+                error_message=None,
+            )
+    else:
+        # OLD BEHAVIOR: No quota/plan capabilities
+        logger.debug("New pricing disabled, using legacy behavior")
         quota_info = QuotaInfo(
             allowed=True,
-            plan_id="free_trial",
-            plan_name="FREE Trial",
-            capabilities=PLAN_CAPABILITIES["free_trial"],
+            plan_id="legacy",
+            plan_name="Legacy",
+            capabilities=PLAN_CAPABILITIES["free_trial"],  # Use free_trial as fallback
             quota_used=0,
             quota_remaining=999999,
             quota_reset_date=datetime.now(timezone.utc),
@@ -510,34 +532,50 @@ async def buscar_licitacoes(
         },
     )
 
-    # Quota check with new plan capabilities system
+    # FEATURE FLAG: New Pricing Model (STORY-165)
     from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
-    try:
-        quota_info = check_quota(user["id"])
+    if ENABLE_NEW_PRICING:
+        logger.debug("New pricing enabled, checking quota and plan capabilities")
+        try:
+            quota_info = check_quota(user["id"])
 
-        if not quota_info.allowed:
-            # Quota exhausted or trial expired
-            raise HTTPException(status_code=403, detail=quota_info.error_message)
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions
-    except RuntimeError as e:
-        # Configuration error (missing env vars) - fail fast
-        logger.error(f"Supabase configuration error: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail="Serviço temporariamente indisponível. Tente novamente em alguns minutos."
-        )
-    except Exception as e:
-        # Unexpected error - log but continue with safe fallback (user already authenticated)
-        logger.warning(f"Quota check failed (continuing with fallback): {e}")
-        # Create safe fallback QuotaInfo (free_trial plan)
+            if not quota_info.allowed:
+                # Quota exhausted or trial expired
+                raise HTTPException(status_code=403, detail=quota_info.error_message)
+        except HTTPException:
+            raise  # Re-raise HTTP exceptions
+        except RuntimeError as e:
+            # Configuration error (missing env vars) - fail fast
+            logger.error(f"Supabase configuration error: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="Serviço temporariamente indisponível. Tente novamente em alguns minutos."
+            )
+        except Exception as e:
+            # Unexpected error - log but continue with safe fallback (user already authenticated)
+            logger.warning(f"Quota check failed (continuing with fallback): {e}")
+            # Create safe fallback QuotaInfo (free_trial plan)
+            quota_info = QuotaInfo(
+                allowed=True,
+                plan_id="free_trial",
+                plan_name="FREE Trial",
+                capabilities=PLAN_CAPABILITIES["free_trial"],
+                quota_used=0,
+                quota_remaining=999999,
+                quota_reset_date=datetime.now(timezone.utc),
+                trial_expires_at=None,
+                error_message=None,
+            )
+    else:
+        # OLD BEHAVIOR: No quota/plan enforcement
+        logger.debug("New pricing disabled, using legacy behavior (no quota limits)")
         quota_info = QuotaInfo(
             allowed=True,
-            plan_id="free_trial",
-            plan_name="FREE Trial",
-            capabilities=PLAN_CAPABILITIES["free_trial"],
+            plan_id="legacy",
+            plan_name="Legacy",
+            capabilities=PLAN_CAPABILITIES["free_trial"],  # Use free_trial capabilities as base
             quota_used=0,
             quota_remaining=999999,
             quota_reset_date=datetime.now(timezone.utc),

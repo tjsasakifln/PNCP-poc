@@ -90,3 +90,47 @@ def setup_logging(level: str = "INFO") -> None:
     # Silence verbose logs from third-party libraries
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
+# ============================================
+# Feature Flags
+# ============================================
+
+import os
+
+def str_to_bool(value: str | None) -> bool:
+    """
+    Convert string environment variable to boolean.
+    
+    Accepts: 'true', '1', 'yes', 'on' (case-insensitive) as True
+    Everything else (including None) is False
+    
+    Args:
+        value: String value from environment variable
+        
+    Returns:
+        Boolean interpretation of the value
+        
+    Examples:
+        >>> str_to_bool("true")
+        True
+        >>> str_to_bool("1")
+        True
+        >>> str_to_bool("false")
+        False
+        >>> str_to_bool(None)
+        False
+    """
+    if value is None:
+        return False
+    return value.lower() in ("true", "1", "yes", "on")
+
+
+# Feature Flag: New Pricing Model (STORY-165)
+# Controls plan-based capabilities, quota enforcement, and Excel gating
+# Default: False (disabled for safety, rollout via gradual deployment)
+ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "false"))
+
+# Log feature flag state on import
+logger = logging.getLogger(__name__)
+logger.info(f"Feature Flag - ENABLE_NEW_PRICING: {ENABLE_NEW_PRICING}")
