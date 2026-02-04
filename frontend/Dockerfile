@@ -5,7 +5,7 @@
 # Optimized for Railway deployment
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
-ARG CACHEBUST=20260204v3-debugbuild
+ARG CACHEBUST=20260205v1-forcecacheinvalidate
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
@@ -20,6 +20,10 @@ RUN npm ci
 # Stage 2: Build
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Redeclare CACHEBUST in builder stage to invalidate cache
+ARG CACHEBUST
+RUN echo "Cache bust: $CACHEBUST"
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
