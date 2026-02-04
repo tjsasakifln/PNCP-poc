@@ -1,8 +1,10 @@
 """Tests for quota management module (quota.py).
 
 Tests search credit checking, decrementing, and search session saving.
-Covers all plan types: free tier, credit packs, unlimited subscriptions.
+Covers all plan types: free_trial, consultor_agil, maquina, sala_guerra.
 Uses mocked Supabase client to avoid external API calls.
+
+Updated for STORY-165: New pricing model with capabilities system.
 """
 
 import pytest
@@ -27,39 +29,143 @@ class TestQuotaExceededError:
         assert str(error) == "Custom quota message"
 
 
-class TestCheckQuotaFreeTier:
-    """Test suite for check_quota with free tier users (no subscription)."""
+class TestPlanCapabilities:
+    """Test suite for plan capabilities definitions (STORY-165)."""
 
-    @pytest.fixture
-    def mock_supabase_no_subscription(self):
-        """Create mock Supabase client with no active subscription."""
-        mock = Mock()
+    def test_all_plans_are_defined(self):
+        """All four pricing tiers should be defined."""
+        from quota import PLAN_CAPABILITIES
 
-        # No active subscription
-        subscription_result = Mock()
-        subscription_result.data = []
-        mock.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
+        expected_plans = ["free_trial", "consultor_agil", "maquina", "sala_guerra"]
+        assert all(plan in PLAN_CAPABILITIES for plan in expected_plans)
 
-        return mock
+    def test_free_trial_capabilities(self):
+        """FREE Trial should have restricted capabilities."""
+        from quota import PLAN_CAPABILITIES
 
-    def test_free_tier_with_searches_remaining(self):
-        """Should return allowed=True for free tier user with searches remaining."""
+        caps = PLAN_CAPABILITIES["free_trial"]
+        assert caps["max_history_days"] == 7
+        assert caps["allow_excel"] is False
+        assert caps["max_requests_per_min"] == 2
+        assert caps["max_summary_tokens"] == 200
+        assert caps["priority"] == "low"
+
+    def test_consultor_agil_capabilities(self):
+        """Consultor Ágil should have 30-day history, no Excel."""
+        from quota import PLAN_CAPABILITIES
+
+        caps = PLAN_CAPABILITIES["consultor_agil"]
+        assert caps["max_history_days"] == 30
+        assert caps["allow_excel"] is False
+        assert caps["max_requests_per_month"] == 50
+        assert caps["max_requests_per_min"] == 10
+        assert caps["max_summary_tokens"] == 200
+        assert caps["priority"] == "normal"
+
+    def test_maquina_capabilities(self):
+        """Máquina should have 1-year history, Excel enabled."""
+        from quota import PLAN_CAPABILITIES
+
+        caps = PLAN_CAPABILITIES["maquina"]
+        assert caps["max_history_days"] == 365
+        assert caps["allow_excel"] is True
+        assert caps["max_requests_per_month"] == 300
+        assert caps["max_requests_per_min"] == 30
+        assert caps["max_summary_tokens"] == 500
+        assert caps["priority"] == "high"
+
+    def test_sala_guerra_capabilities(self):
+        """Sala de Guerra should have 5-year history, max capabilities."""
+        from quota import PLAN_CAPABILITIES
+
+        caps = PLAN_CAPABILITIES["sala_guerra"]
+        assert caps["max_history_days"] == 1825  # 5 years
+        assert caps["allow_excel"] is True
+        assert caps["max_requests_per_month"] == 1000
+        assert caps["max_requests_per_min"] == 60
+        assert caps["max_summary_tokens"] == 1000
+        assert caps["priority"] == "critical"
+
+    def test_plan_names_are_defined(self):
+        """All plan display names should be defined."""
+        from quota import PLAN_NAMES
+
+        assert PLAN_NAMES["free_trial"] == "FREE Trial"
+        assert PLAN_NAMES["consultor_agil"] == "Consultor Ágil"
+        assert PLAN_NAMES["maquina"] == "Máquina"
+        assert PLAN_NAMES["sala_guerra"] == "Sala de Guerra"
+
+    def test_upgrade_suggestions_are_valid(self):
+        """Upgrade suggestions should point to valid plans."""
+        from quota import UPGRADE_SUGGESTIONS, PLAN_CAPABILITIES
+
+        for feature, suggestions in UPGRADE_SUGGESTIONS.items():
+            for from_plan, to_plan in suggestions.items():
+                assert to_plan in PLAN_CAPABILITIES, f"Invalid upgrade: {from_plan} → {to_plan}"
+
+
+class TestQuotaInfo:
+    """Test suite for QuotaInfo Pydantic model."""
+
+    def test_quota_info_creation(self):
+        """QuotaInfo should be created with all required fields."""
+        from quota import QuotaInfo
+
+        info = QuotaInfo(
+            allowed=True,
+            plan_id="maquina",
+            plan_name="Máquina",
+            capabilities={"max_history_days": 365, "allow_excel": True},
+            quota_used=10,
+            quota_remaining=290,
+            quota_reset_date=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            trial_expires_at=None,
+            error_message=None,
+        )
+
+        assert info.allowed is True
+        assert info.plan_id == "maquina"
+        assert info.quota_remaining == 290
+
+    def test_quota_info_with_error(self):
+        """QuotaInfo should capture error messages for denied access."""
+        from quota import QuotaInfo
+
+        info = QuotaInfo(
+            allowed=False,
+            plan_id="consultor_agil",
+            plan_name="Consultor Ágil",
+            capabilities={},
+            quota_used=50,
+            quota_remaining=0,
+            quota_reset_date=datetime(2026, 3, 1, tzinfo=timezone.utc),
+            error_message="Limite de 50 buscas mensais atingido.",
+        )
+
+        assert info.allowed is False
+        assert "50 buscas" in info.error_message
+
+
+class TestCheckQuotaFreeTrial:
+    """Test suite for check_quota with free trial users (no subscription)."""
+
+    def test_free_trial_with_searches_remaining(self):
+        """Should return allowed=True for free trial user with quota remaining."""
         from quota import check_quota
 
         mock_supabase = Mock()
 
-        # No active subscription
+        # No active subscription → defaults to free_trial
         subscription_result = Mock()
         subscription_result.data = []
 
-        # Chain for subscription query
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
 
-        # 1 search session used (2 remaining out of 3)
-        session_result = Mock()
-        session_result.count = 1
-        mock_table.select.return_value.eq.return_value.execute.return_value = session_result
+        # Monthly quota: 1 search used (virtually unlimited for free trial)
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 1}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
 
         mock_supabase.table.return_value = mock_table
 
@@ -68,25 +174,25 @@ class TestCheckQuotaFreeTier:
 
         assert result.allowed is True
         assert result.plan_id == "free_trial"
-        assert result.quota_remaining > 0  # Should have searches remaining
+        assert result.plan_name == "FREE Trial"
+        assert result.quota_remaining > 0
 
-    def test_free_tier_with_zero_searches_used(self):
-        """Should return 3 credits for free tier user with no searches."""
+    def test_free_trial_with_zero_searches_used(self):
+        """Should return full quota for free trial user with no searches."""
         from quota import check_quota
 
         mock_supabase = Mock()
 
-        # No active subscription
         subscription_result = Mock()
         subscription_result.data = []
 
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
 
-        # 0 search sessions used
-        session_result = Mock()
-        session_result.count = 0
-        mock_table.select.return_value.eq.return_value.execute.return_value = session_result
+        # No monthly quota record = 0 searches
+        monthly_result = Mock()
+        monthly_result.data = []
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
 
         mock_supabase.table.return_value = mock_table
 
@@ -94,353 +200,273 @@ class TestCheckQuotaFreeTier:
             result = check_quota("user-123")
 
         assert result.allowed is True
-        assert result.quota_remaining > 0  # Should have searches available
+        assert result.quota_used == 0
+        assert result.quota_remaining == 999999  # Unlimited during trial
 
-    def test_free_tier_exhausted_raises_error(self):
-        """Should raise QuotaExceededError when free tier searches exhausted."""
-        from quota import check_quota, QuotaExceededError
-
-        mock_supabase = Mock()
-
-        # No active subscription
-        subscription_result = Mock()
-        subscription_result.data = []
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-
-        # 3 search sessions used (exhausted)
-        session_result = Mock()
-        session_result.count = 3
-        mock_table.select.return_value.eq.return_value.execute.return_value = session_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with pytest.raises(QuotaExceededError) as exc_info:
-                check_quota("user-123")
-
-        assert "3 buscas gratuitas" in str(exc_info.value)
-        assert "plano" in str(exc_info.value).lower()
-
-    def test_free_tier_more_than_three_searches(self):
-        """Should return 0 credits when more than 3 free searches used."""
-        from quota import check_quota, QuotaExceededError
-
-        mock_supabase = Mock()
-
-        subscription_result = Mock()
-        subscription_result.data = []
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-
-        # 5 search sessions used (edge case)
-        session_result = Mock()
-        session_result.count = 5
-        mock_table.select.return_value.eq.return_value.execute.return_value = session_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with pytest.raises(QuotaExceededError):
-                check_quota("user-123")
-
-
-class TestCheckQuotaCreditPacks:
-    """Test suite for check_quota with credit-based plans (packs)."""
-
-    def test_pack_with_credits_remaining(self):
-        """Should return allowed=True for pack user with credits."""
+    def test_free_trial_capabilities_applied(self):
+        """Free trial should have restricted capabilities (7-day history, no Excel)."""
         from quota import check_quota
 
         mock_supabase = Mock()
 
+        subscription_result = Mock()
+        subscription_result.data = []
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
+
+        monthly_result = Mock()
+        monthly_result.data = []
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            result = check_quota("user-123")
+
+        assert result.capabilities["max_history_days"] == 7
+        assert result.capabilities["allow_excel"] is False
+        assert result.capabilities["max_summary_tokens"] == 200
+
+
+class TestCheckQuotaPaidPlans:
+    """Test suite for check_quota with paid plan subscribers."""
+
+    def test_consultor_agil_with_quota_remaining(self):
+        """Should return allowed=True for Consultor Ágil with quota remaining."""
+        from quota import check_quota
+
+        mock_supabase = Mock()
+
+        # Active subscription
+        future_date = (datetime.now(timezone.utc) + timedelta(days=25)).isoformat()
         subscription_result = Mock()
         subscription_result.data = [{
             "id": "sub-123",
-            "plan_id": "pack_10",
-            "credits_remaining": 7,
-            "expires_at": None,  # Packs don't expire by time
-        }]
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = check_quota("user-123")
-
-        assert result.allowed is True
-        assert result.plan_id == "pack_10"
-        assert result.credits_remaining == 7
-        assert result.subscription_id == "sub-123"
-
-    def test_pack_with_one_credit_remaining(self):
-        """Should return allowed=True for pack user with exactly 1 credit."""
-        from quota import check_quota
-
-        mock_supabase = Mock()
-
-        subscription_result = Mock()
-        subscription_result.data = [{
-            "id": "sub-456",
-            "plan_id": "pack_5",
-            "credits_remaining": 1,
-            "expires_at": None,
-        }]
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = check_quota("user-123")
-
-        assert result.allowed is True
-        assert result.credits_remaining == 1
-
-    def test_pack_with_zero_credits_raises_error(self):
-        """Should raise QuotaExceededError when pack credits exhausted."""
-        from quota import check_quota, QuotaExceededError
-
-        mock_supabase = Mock()
-
-        subscription_result = Mock()
-        subscription_result.data = [{
-            "id": "sub-789",
-            "plan_id": "pack_10",
-            "credits_remaining": 0,
-            "expires_at": None,
-        }]
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with pytest.raises(QuotaExceededError) as exc_info:
-                check_quota("user-123")
-
-        assert "buscas acabaram" in str(exc_info.value)
-        assert "pacote" in str(exc_info.value).lower()
-
-
-class TestCheckQuotaUnlimited:
-    """Test suite for check_quota with unlimited plans (monthly, annual, master)."""
-
-    def test_unlimited_plan_monthly(self):
-        """Should return allowed=True with None credits for monthly plan."""
-        from quota import check_quota
-
-        mock_supabase = Mock()
-
-        # Future expiry date
-        future_date = (datetime.now(timezone.utc) + timedelta(days=25)).isoformat()
-
-        subscription_result = Mock()
-        subscription_result.data = [{
-            "id": "sub-monthly",
-            "plan_id": "monthly",
-            "credits_remaining": None,  # Unlimited
+            "plan_id": "consultor_agil",
             "expires_at": future_date,
         }]
 
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
 
+        # 23 searches used (27 remaining from 50)
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 23}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
         assert result.allowed is True
-        assert result.plan_id == "monthly"
-        assert result.credits_remaining is None
-        assert result.subscription_id == "sub-monthly"
+        assert result.plan_id == "consultor_agil"
+        assert result.plan_name == "Consultor Ágil"
+        assert result.quota_used == 23
+        assert result.quota_remaining == 27
+        assert result.capabilities["max_history_days"] == 30
+        assert result.capabilities["allow_excel"] is False
 
-    def test_unlimited_plan_annual(self):
-        """Should return allowed=True with None credits for annual plan."""
+    def test_maquina_has_excel_enabled(self):
+        """Máquina plan should have Excel export enabled."""
+        from quota import check_quota
+
+        mock_supabase = Mock()
+
+        future_date = (datetime.now(timezone.utc) + timedelta(days=25)).isoformat()
+        subscription_result = Mock()
+        subscription_result.data = [{
+            "id": "sub-456",
+            "plan_id": "maquina",
+            "expires_at": future_date,
+        }]
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
+
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 100}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            result = check_quota("user-123")
+
+        assert result.allowed is True
+        assert result.plan_id == "maquina"
+        assert result.capabilities["allow_excel"] is True
+        assert result.capabilities["max_history_days"] == 365
+
+    def test_sala_guerra_has_max_capabilities(self):
+        """Sala de Guerra should have maximum capabilities."""
         from quota import check_quota
 
         mock_supabase = Mock()
 
         future_date = (datetime.now(timezone.utc) + timedelta(days=300)).isoformat()
-
         subscription_result = Mock()
         subscription_result.data = [{
-            "id": "sub-annual",
-            "plan_id": "annual",
-            "credits_remaining": None,
+            "id": "sub-789",
+            "plan_id": "sala_guerra",
             "expires_at": future_date,
         }]
 
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
 
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 500}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
         assert result.allowed is True
-        assert result.plan_id == "annual"
-        assert result.credits_remaining is None
+        assert result.plan_id == "sala_guerra"
+        assert result.capabilities["max_history_days"] == 1825
+        assert result.capabilities["allow_excel"] is True
+        assert result.capabilities["max_summary_tokens"] == 1000
+        assert result.quota_remaining == 500
 
-    def test_unlimited_plan_master(self):
-        """Should return allowed=True for master plan (no expiry)."""
+
+class TestCheckQuotaExhausted:
+    """Test suite for check_quota when quota is exhausted."""
+
+    def test_quota_exhausted_returns_not_allowed(self):
+        """Should return allowed=False when monthly quota exhausted."""
         from quota import check_quota
 
         mock_supabase = Mock()
 
+        future_date = (datetime.now(timezone.utc) + timedelta(days=25)).isoformat()
         subscription_result = Mock()
         subscription_result.data = [{
-            "id": "sub-master",
-            "plan_id": "master",
-            "credits_remaining": None,  # Unlimited
-            "expires_at": None,  # Never expires
+            "id": "sub-123",
+            "plan_id": "consultor_agil",
+            "expires_at": future_date,
         }]
 
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
 
+        # 50 searches used (quota exhausted for consultor_agil)
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 50}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result.allowed is True
-        assert result.plan_id == "master"
-        assert result.credits_remaining is None
+        assert result.allowed is False
+        assert result.quota_remaining == 0
+        assert "50 buscas mensais" in result.error_message
+        assert "upgrade" in result.error_message.lower()
+
+    def test_quota_exhausted_includes_reset_date(self):
+        """Exhausted quota error should include reset date."""
+        from quota import check_quota
+
+        mock_supabase = Mock()
+
+        future_date = (datetime.now(timezone.utc) + timedelta(days=25)).isoformat()
+        subscription_result = Mock()
+        subscription_result.data = [{
+            "id": "sub-123",
+            "plan_id": "maquina",
+            "expires_at": future_date,
+        }]
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
+
+        # 300 searches used (quota exhausted for maquina)
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 300}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            result = check_quota("user-123")
+
+        assert result.allowed is False
+        assert result.quota_reset_date is not None
+        assert "Renovação em" in result.error_message
 
 
 class TestCheckQuotaExpiredSubscriptions:
     """Test suite for check_quota with expired subscriptions."""
 
-    def test_expired_subscription_raises_error(self):
-        """Should raise QuotaExceededError for expired subscription."""
-        from quota import check_quota, QuotaExceededError
+    def test_expired_subscription_returns_not_allowed(self):
+        """Should return allowed=False for expired subscription."""
+        from quota import check_quota
 
         mock_supabase = Mock()
 
         # Past expiry date
         past_date = (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
-
         subscription_result = Mock()
         subscription_result.data = [{
             "id": "sub-expired",
-            "plan_id": "monthly",
-            "credits_remaining": None,
+            "plan_id": "consultor_agil",
             "expires_at": past_date,
         }]
 
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-        mock_table.update.return_value.eq.return_value.execute.return_value = Mock()
+
+        monthly_result = Mock()
+        monthly_result.data = []
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
 
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with pytest.raises(QuotaExceededError) as exc_info:
-                check_quota("user-123")
+            result = check_quota("user-123")
 
-        assert "expirou" in str(exc_info.value).lower()
-        assert "renove" in str(exc_info.value).lower()
-
-    def test_expired_subscription_is_deactivated(self):
-        """Should deactivate expired subscription in database."""
-        from quota import check_quota, QuotaExceededError
-
-        mock_supabase = Mock()
-
-        past_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-
-        subscription_result = Mock()
-        subscription_result.data = [{
-            "id": "sub-to-deactivate",
-            "plan_id": "monthly",
-            "credits_remaining": None,
-            "expires_at": past_date,
-        }]
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-        mock_update = Mock()
-        mock_table.update.return_value = mock_update
-        mock_update.eq.return_value.execute.return_value = Mock()
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with pytest.raises(QuotaExceededError):
-                check_quota("user-123")
-
-        # Verify deactivation was called
-        mock_table.update.assert_called_with({"is_active": False})
-
-    def test_expired_subscription_logs_info(self, caplog):
-        """Should log info message when subscription expires."""
-        from quota import check_quota, QuotaExceededError
-        import logging
-
-        mock_supabase = Mock()
-
-        past_date = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-
-        subscription_result = Mock()
-        subscription_result.data = [{
-            "id": "sub-logged",
-            "plan_id": "monthly",
-            "credits_remaining": None,
-            "expires_at": past_date,
-        }]
-
-        mock_table = Mock()
-        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-        mock_table.update.return_value.eq.return_value.execute.return_value = Mock()
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with caplog.at_level(logging.INFO):
-                with pytest.raises(QuotaExceededError):
-                    check_quota("user-123")
-
-        assert any("expired" in record.message.lower() for record in caplog.records)
+        assert result.allowed is False
+        assert "expirado" in result.error_message.lower()
+        assert "upgrade" in result.error_message.lower()
 
     def test_handles_utc_z_suffix_in_expires_at(self):
         """Should handle ISO date with Z suffix (UTC indicator)."""
-        from quota import check_quota, QuotaExceededError
+        from quota import check_quota
 
         mock_supabase = Mock()
 
         # Date with Z suffix (common in Supabase)
         past_date = "2020-01-01T00:00:00Z"
-
         subscription_result = Mock()
         subscription_result.data = [{
             "id": "sub-z",
-            "plan_id": "monthly",
-            "credits_remaining": None,
+            "plan_id": "maquina",
             "expires_at": past_date,
         }]
 
         mock_table = Mock()
         mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
-        mock_table.update.return_value.eq.return_value.execute.return_value = Mock()
+
+        monthly_result = Mock()
+        monthly_result.data = []
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
 
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            with pytest.raises(QuotaExceededError):
-                check_quota("user-123")
+            result = check_quota("user-123")
+
+        # Should parse date correctly and return not allowed (expired)
+        assert result.allowed is False
 
 
 class TestDecrementCredits:
-    """Test suite for decrement_credits function."""
+    """Test suite for decrement_credits function (legacy, kept for backward compatibility)."""
 
     def test_does_not_decrement_for_free_tier(self):
         """Should not decrement when subscription_id is None (free tier)."""
@@ -453,7 +479,7 @@ class TestDecrementCredits:
         mock_get_supabase.assert_not_called()
 
     def test_decrements_credit_based_plan(self):
-        """Should decrement credits for pack plans."""
+        """Should decrement credits for legacy pack plans."""
         from quota import decrement_credits
 
         mock_supabase = Mock()
@@ -560,6 +586,67 @@ class TestDecrementCredits:
             decrement_credits(subscription_id="sub-missing", user_id="user-123")
 
         mock_table.update.assert_not_called()
+
+
+class TestMonthlyQuotaFunctions:
+    """Test suite for monthly quota tracking functions (STORY-165)."""
+
+    def test_get_current_month_key_format(self):
+        """Month key should be in YYYY-MM format."""
+        from quota import get_current_month_key
+
+        key = get_current_month_key()
+        assert len(key) == 7
+        assert key[4] == "-"
+        assert key[:4].isdigit()
+        assert key[5:].isdigit()
+
+    def test_get_quota_reset_date_is_first_of_next_month(self):
+        """Reset date should be first of next month."""
+        from quota import get_quota_reset_date
+
+        reset = get_quota_reset_date()
+        assert reset.day == 1
+        assert reset.tzinfo == timezone.utc
+
+    def test_get_monthly_quota_used_returns_zero_for_no_record(self):
+        """Should return 0 if no monthly quota record exists."""
+        from quota import get_monthly_quota_used
+
+        mock_supabase = Mock()
+
+        # Empty result
+        result = Mock()
+        result.data = []
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            count = get_monthly_quota_used("user-123")
+
+        assert count == 0
+
+    def test_get_monthly_quota_used_returns_count(self):
+        """Should return actual count from database."""
+        from quota import get_monthly_quota_used
+
+        mock_supabase = Mock()
+
+        result = Mock()
+        result.data = [{"searches_count": 42}]
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            count = get_monthly_quota_used("user-123")
+
+        assert count == 42
 
 
 class TestSaveSearchSession:

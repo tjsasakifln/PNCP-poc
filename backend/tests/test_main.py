@@ -439,9 +439,12 @@ class TestBuscarEndpoint:
         assert "destaques" in resumo
         assert "alerta_urgencia" in resumo
 
-    def test_buscar_excel_base64_valid(self, client, valid_request, mock_licitacao, monkeypatch):
-        """Excel should be valid base64 string."""
-        import base64
+    def test_buscar_excel_gated_by_plan(self, client, valid_request, mock_licitacao, monkeypatch):
+        """Excel generation should be gated by plan capabilities (STORY-165).
+
+        With new pricing model (default), free_trial users don't get Excel.
+        This test verifies that Excel is correctly blocked for free_trial plan.
+        """
         from unittest.mock import Mock
         from io import BytesIO
 
@@ -467,10 +470,11 @@ class TestBuscarEndpoint:
         response = client.post("/buscar", json=valid_request)
         data = response.json()
 
-        excel_base64 = data["excel_base64"]
-        # Should be valid base64
-        decoded = base64.b64decode(excel_base64)
-        assert decoded == excel_content
+        # With new pricing model (STORY-165), free_trial plan doesn't have Excel
+        assert data["excel_available"] is False
+        assert data["excel_base64"] is None
+        assert "upgrade_message" in data
+        assert "Máquina" in data["upgrade_message"]
 
     def test_buscar_llm_fallback_on_error(self, client, valid_request, mock_licitacao, monkeypatch):
         """Should use fallback when LLM fails."""
@@ -642,7 +646,8 @@ class TestBuscarEndpoint:
         assert "Fetching bids from PNCP API" in log_messages
         assert "Applying filters" in log_messages
         assert "Generating executive summary" in log_messages
-        assert "Generating Excel report" in log_messages
+        # With new pricing model, Excel might be skipped for free_trial users
+        assert ("Generating Excel report" in log_messages or "Excel generation skipped" in log_messages)
         assert "Search completed successfully" in log_messages
 
 
@@ -1003,7 +1008,7 @@ class TestBuscarIntegration:
     def test_buscar_with_real_filter_and_excel(self, client, monkeypatch):
         """Test with real filter and excel modules (mock only PNCP and LLM)."""
         from unittest.mock import Mock
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
 
         # Use a deadline within 7 days to pass the filter
         future_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%dT10:00:00")
@@ -1047,5 +1052,12 @@ class TestBuscarIntegration:
         data = response.json()
         # Filter should pass the uniform keyword and date validation
         assert data["total_filtrado"] >= 1
-        # Excel should be generated (non-empty base64)
-        assert len(data["excel_base64"]) > 100
+        # With new pricing model (STORY-165), Excel availability depends on plan
+        # Free trial users don't have Excel, so we check for appropriate response
+        if data["excel_available"]:
+            # If Excel is enabled (maquina/sala_guerra plan), should have base64 content
+            assert len(data["excel_base64"]) > 100
+        else:
+            # If Excel is disabled (free_trial/consultor_agil plan), should show upgrade message
+            assert data["excel_base64"] is None
+            assert "upgrade_message" in data
