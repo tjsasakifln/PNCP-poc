@@ -26,8 +26,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch admin status when session changes
   const fetchAdminStatus = useCallback(async (accessToken: string) => {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+    // Skip admin check if backend URL not configured (avoids localhost fallback in production)
+    if (!backendUrl) {
+      setIsAdmin(false);
+      return;
+    }
+
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       const res = await fetch(`${backendUrl}/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });

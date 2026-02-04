@@ -43,10 +43,10 @@ export default function AdminPage() {
   const [newPlan, setNewPlan] = useState("free");
   const [creating, setCreating] = useState(false);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const fetchUsers = useCallback(async () => {
-    if (!session) return;
+    if (!session || !backendUrl) return;
     setLoading(true);
     setError(null);
     try {
@@ -73,6 +73,18 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authLoading && session) fetchUsers();
   }, [authLoading, session, fetchUsers]);
+
+  // Show error if backend URL not configured (must be after all hooks)
+  if (!backendUrl) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <div className="text-center p-8">
+          <h1 className="text-xl font-bold text-ink mb-2">Configuracao Necessaria</h1>
+          <p className="text-ink-secondary">Backend URL nao configurado. Configure NEXT_PUBLIC_BACKEND_URL.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

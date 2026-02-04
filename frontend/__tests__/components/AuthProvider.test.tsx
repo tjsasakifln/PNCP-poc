@@ -58,6 +58,9 @@ function TestConsumer() {
   );
 }
 
+// Set backend URL before tests run (needed for admin status checks)
+process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-backend:8000';
+
 describe('AuthProvider Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();

@@ -49,7 +49,10 @@ export default function ContaPage() {
 
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+      if (!backendUrl) {
+        throw new Error("Backend nao configurado. Contate o suporte.");
+      }
       const res = await fetch(`${backendUrl}/change-password`, {
         method: "POST",
         headers: {
