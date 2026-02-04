@@ -67,7 +67,7 @@ describe('LoginPage Component', () => {
     it('should show password field by default', () => {
       render(<LoginPage />);
 
-      expect(screen.getByLabelText(/Senha/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Sua senha/i)).toBeInTheDocument();
     });
 
     it('should show Google login button', () => {
@@ -97,7 +97,7 @@ describe('LoginPage Component', () => {
       render(<LoginPage />);
 
       // Initially password field should be visible
-      expect(screen.getByLabelText(/Senha/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Sua senha/i)).toBeInTheDocument();
 
       // Click magic link mode
       const magicButton = screen.getByRole('button', { name: /Magic Link/i });
@@ -106,7 +106,7 @@ describe('LoginPage Component', () => {
       });
 
       // Password field should be hidden
-      expect(screen.queryByLabelText(/Senha/i)).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/Sua senha/i)).not.toBeInTheDocument();
     });
 
     it('should show password field when switching back to password mode', async () => {
@@ -124,7 +124,7 @@ describe('LoginPage Component', () => {
         fireEvent.click(passwordButton);
       });
 
-      expect(screen.getByLabelText(/Senha/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Sua senha/i)).toBeInTheDocument();
     });
 
     it('should change submit button text based on mode', async () => {
@@ -150,7 +150,7 @@ describe('LoginPage Component', () => {
       render(<LoginPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
       const submitButton = screen.getByRole('button', { name: /Entrar$/i });
 
       await act(async () => {
@@ -173,7 +173,7 @@ describe('LoginPage Component', () => {
       render(<LoginPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
       const submitButton = screen.getByRole('button', { name: /Entrar$/i });
 
       await act(async () => {
@@ -196,7 +196,7 @@ describe('LoginPage Component', () => {
       render(<LoginPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
       const submitButton = screen.getByRole('button', { name: /Entrar$/i });
 
       await act(async () => {
@@ -215,7 +215,7 @@ describe('LoginPage Component', () => {
       render(<LoginPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
       const submitButton = screen.getByRole('button', { name: /Entrar$/i });
 
       await act(async () => {
@@ -235,7 +235,7 @@ describe('LoginPage Component', () => {
       render(<LoginPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
       const submitButton = screen.getByRole('button', { name: /Entrar$/i });
 
       await act(async () => {
@@ -348,7 +348,7 @@ describe('LoginPage Component', () => {
     it('should require password field in password mode', () => {
       render(<LoginPage />);
 
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
       expect(passwordInput).toHaveAttribute('required');
       expect(passwordInput).toHaveAttribute('type', 'password');
       expect(passwordInput).toHaveAttribute('minLength', '6');
