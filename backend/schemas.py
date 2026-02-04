@@ -1,8 +1,138 @@
 """Pydantic schemas for API request/response validation."""
 
+import re
 from datetime import date, datetime
-from pydantic import BaseModel, Field, model_validator
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, model_validator, field_validator
+from typing import List, Optional, Dict, Any, Annotated
+
+
+# ============================================================================
+# Secure ID Validation (Issue #203 - P0 Security Fix)
+# ============================================================================
+
+# UUID v4 regex pattern (Supabase uses UUID v4 for user IDs)
+UUID_V4_PATTERN = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+    re.IGNORECASE
+)
+
+# Plan ID pattern: alphanumeric with underscores, 1-50 chars
+PLAN_ID_PATTERN = re.compile(r'^[a-z][a-z0-9_]{0,49}$', re.IGNORECASE)
+
+# Search query sanitization - allows alphanumeric, spaces, accents, common punctuation
+SAFE_SEARCH_PATTERN = re.compile(r'^[\w\s@.\-áéíóúàèìòùâêîôûãõñç]+$', re.IGNORECASE | re.UNICODE)
+
+
+def validate_uuid(value: str, field_name: str = "id") -> str:
+    """
+    Validate that a string is a valid UUID v4 format.
+
+    Args:
+        value: The string to validate
+        field_name: Name of the field for error messages
+
+    Returns:
+        The validated UUID string (lowercase normalized)
+
+    Raises:
+        ValueError: If the value is not a valid UUID v4
+    """
+    if not value:
+        raise ValueError(f"{field_name} cannot be empty")
+
+    value = str(value).strip().lower()
+
+    if not UUID_V4_PATTERN.match(value):
+        raise ValueError(
+            f"Invalid {field_name} format. Expected UUID v4 format "
+            f"(e.g., '550e8400-e29b-41d4-a716-446655440000')"
+        )
+
+    return value
+
+
+def validate_plan_id(value: str) -> str:
+    """
+    Validate that a string is a valid plan ID.
+
+    Args:
+        value: The plan ID to validate
+
+    Returns:
+        The validated plan ID string (lowercase)
+
+    Raises:
+        ValueError: If the value is not a valid plan ID format
+    """
+    if not value:
+        raise ValueError("plan_id cannot be empty")
+
+    value = str(value).strip().lower()
+
+    if len(value) > 50:
+        raise ValueError("plan_id cannot exceed 50 characters")
+
+    if not PLAN_ID_PATTERN.match(value):
+        raise ValueError(
+            "Invalid plan_id format. Expected alphanumeric with underscores, "
+            "starting with a letter (e.g., 'free_trial', 'pack_10')"
+        )
+
+    return value
+
+
+def sanitize_search_query(value: str, max_length: int = 100) -> str:
+    """
+    Sanitize a search query to prevent SQL injection and other attacks.
+
+    Args:
+        value: The search query to sanitize
+        max_length: Maximum allowed length (default 100)
+
+    Returns:
+        The sanitized search query
+
+    Raises:
+        ValueError: If the query contains invalid characters
+    """
+    if not value:
+        return ""
+
+    value = str(value).strip()
+
+    if len(value) > max_length:
+        raise ValueError(f"Search query cannot exceed {max_length} characters")
+
+    if not SAFE_SEARCH_PATTERN.match(value):
+        raise ValueError(
+            "Search query contains invalid characters. "
+            "Only letters, numbers, spaces, and common punctuation are allowed."
+        )
+
+    # Escape SQL-like patterns used in ilike queries
+    value = value.replace('%', '').replace('_', ' ')
+
+    return value
+
+
+class SecureUserId(BaseModel):
+    """Pydantic model for secure user ID validation."""
+    user_id: str
+
+    @field_validator('user_id')
+    @classmethod
+    def validate_user_id(cls, v: str) -> str:
+        return validate_uuid(v, "user_id")
+
+
+class SecurePlanId(BaseModel):
+    """Pydantic model for secure plan ID validation."""
+    plan_id: str
+
+    @field_validator('plan_id')
+    @classmethod
+    def validate_plan_id_field(cls, v: str) -> str:
+        return validate_plan_id(v)
 
 
 # Error codes for standardized error handling

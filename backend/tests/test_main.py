@@ -168,7 +168,7 @@ class TestCORSHeaders:
     """Test CORS configuration and headers."""
 
     def test_cors_preflight_options(self, client):
-        """CORS preflight OPTIONS request should succeed."""
+        """CORS preflight OPTIONS request should succeed for allowed origins."""
         response = client.options(
             "/health",
             headers={
@@ -178,24 +178,29 @@ class TestCORSHeaders:
         )
         assert response.status_code == 200
 
-    def test_cors_headers_present(self, client):
-        """CORS headers should be present in responses."""
+    def test_cors_headers_present_for_allowed_origin(self, client):
+        """CORS headers should be present for allowed origins (localhost:3000)."""
         response = client.get("/health", headers={"Origin": "http://localhost:3000"})
 
         # Check for CORS headers (case-insensitive)
         headers_lower = {k.lower(): v for k, v in response.headers.items()}
         assert "access-control-allow-origin" in headers_lower
+        assert headers_lower["access-control-allow-origin"] == "http://localhost:3000"
 
-    def test_cors_allows_all_origins(self, client):
-        """CORS should allow all origins (POC configuration)."""
+    def test_cors_blocks_unauthorized_origins(self, client):
+        """CORS should not include allow-origin header for unauthorized origins."""
+        # example.com is not in the allowed origins list
         response = client.get("/health", headers={"Origin": "http://example.com"})
 
         headers_lower = {k.lower(): v for k, v in response.headers.items()}
-        # FastAPI CORS middleware returns the requesting origin or "*"
-        assert "access-control-allow-origin" in headers_lower
+        # For unauthorized origins, CORS middleware should not include the header
+        # or should not echo back the unauthorized origin
+        if "access-control-allow-origin" in headers_lower:
+            # If header is present, it should NOT be the unauthorized origin
+            assert headers_lower["access-control-allow-origin"] != "http://example.com"
 
     def test_cors_allows_post_method(self, client):
-        """CORS should allow POST method."""
+        """CORS should allow POST method for allowed origins."""
         response = client.options(
             "/health",
             headers={
@@ -204,6 +209,14 @@ class TestCORSHeaders:
             },
         )
         assert response.status_code == 200
+
+    def test_cors_allows_127_localhost(self, client):
+        """CORS should allow requests from 127.0.0.1:3000."""
+        response = client.get("/health", headers={"Origin": "http://127.0.0.1:3000"})
+
+        headers_lower = {k.lower(): v for k, v in response.headers.items()}
+        assert "access-control-allow-origin" in headers_lower
+        assert headers_lower["access-control-allow-origin"] == "http://127.0.0.1:3000"
 
 
 class TestOpenAPIDocumentation:

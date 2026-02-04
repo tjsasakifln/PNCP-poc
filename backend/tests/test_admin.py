@@ -2,6 +2,10 @@
 
 Tests user management CRUD operations, admin authorization, and plan assignment.
 Uses mocked Supabase client to avoid external API calls.
+
+Updated for:
+- Issue #203: UUID validation for admin IDs
+- Issue #205: SQL injection prevention in search
 """
 
 import pytest
@@ -9,6 +13,12 @@ import os
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+
+# Valid UUID v4 test fixtures
+VALID_UUID_1 = "550e8400-e29b-41d4-a716-446655440001"
+VALID_UUID_2 = "550e8400-e29b-41d4-a716-446655440002"
+VALID_UUID_3 = "550e8400-e29b-41d4-a716-446655440003"
+ADMIN_UUID = "550e8400-e29b-41d4-a716-446655440000"
 
 
 class TestGetAdminIds:
@@ -35,40 +45,67 @@ class TestGetAdminIds:
         assert result == set()
 
     def test_parses_single_admin_id(self):
-        """Should parse single admin ID correctly."""
+        """Should parse single valid UUID admin ID correctly."""
         from admin import _get_admin_ids
 
-        with patch.dict(os.environ, {"ADMIN_USER_IDS": "admin-uuid-123"}):
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ADMIN_UUID}):
             result = _get_admin_ids()
 
-        assert result == {"admin-uuid-123"}
+        assert result == {ADMIN_UUID}
 
     def test_parses_multiple_admin_ids(self):
-        """Should parse multiple comma-separated admin IDs."""
+        """Should parse multiple comma-separated valid UUID admin IDs."""
         from admin import _get_admin_ids
 
-        with patch.dict(os.environ, {"ADMIN_USER_IDS": "admin-1,admin-2,admin-3"}):
+        ids = f"{VALID_UUID_1},{VALID_UUID_2},{VALID_UUID_3}"
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ids}):
             result = _get_admin_ids()
 
-        assert result == {"admin-1", "admin-2", "admin-3"}
+        assert result == {VALID_UUID_1, VALID_UUID_2, VALID_UUID_3}
 
     def test_strips_whitespace_from_ids(self):
         """Should strip whitespace from admin IDs."""
         from admin import _get_admin_ids
 
-        with patch.dict(os.environ, {"ADMIN_USER_IDS": "  admin-1 , admin-2  , admin-3  "}):
+        ids = f"  {VALID_UUID_1} , {VALID_UUID_2}  , {VALID_UUID_3}  "
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ids}):
             result = _get_admin_ids()
 
-        assert result == {"admin-1", "admin-2", "admin-3"}
+        assert result == {VALID_UUID_1, VALID_UUID_2, VALID_UUID_3}
 
     def test_ignores_empty_entries(self):
         """Should ignore empty entries from extra commas."""
         from admin import _get_admin_ids
 
-        with patch.dict(os.environ, {"ADMIN_USER_IDS": "admin-1,,admin-2,,,admin-3,"}):
+        ids = f"{VALID_UUID_1},,{VALID_UUID_2},,,{VALID_UUID_3},"
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ids}):
             result = _get_admin_ids()
 
-        assert result == {"admin-1", "admin-2", "admin-3"}
+        assert result == {VALID_UUID_1, VALID_UUID_2, VALID_UUID_3}
+
+    def test_rejects_invalid_uuids(self):
+        """Should skip invalid UUIDs and only return valid ones (Issue #203)."""
+        from admin import _get_admin_ids
+
+        # Mix of valid and invalid UUIDs
+        ids = f"invalid-id,{VALID_UUID_1},not-a-uuid,{VALID_UUID_2},12345"
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ids}):
+            result = _get_admin_ids()
+
+        # Only valid UUIDs should be returned
+        assert result == {VALID_UUID_1, VALID_UUID_2}
+
+    def test_normalizes_uuids_to_lowercase(self):
+        """Should normalize UUIDs to lowercase (Issue #203)."""
+        from admin import _get_admin_ids
+
+        # Uppercase UUID
+        upper_uuid = VALID_UUID_1.upper()
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": upper_uuid}):
+            result = _get_admin_ids()
+
+        # Should be normalized to lowercase
+        assert result == {VALID_UUID_1}
 
 
 class TestRequireAdmin:
@@ -76,16 +113,17 @@ class TestRequireAdmin:
 
     @pytest.mark.asyncio
     async def test_allows_valid_admin_user(self):
-        """Should allow user whose ID is in ADMIN_USER_IDS."""
+        """Should allow user whose UUID is in ADMIN_USER_IDS."""
         from admin import require_admin
 
         admin_user = {
-            "id": "admin-uuid-123",
+            "id": ADMIN_UUID,
             "email": "admin@example.com",
             "role": "authenticated",
         }
 
-        with patch.dict(os.environ, {"ADMIN_USER_IDS": "admin-uuid-123,other-admin"}):
+        ids = f"{ADMIN_UUID},{VALID_UUID_1}"
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ids}):
             result = await require_admin(user=admin_user)
 
         assert result == admin_user
@@ -96,12 +134,12 @@ class TestRequireAdmin:
         from admin import require_admin
 
         regular_user = {
-            "id": "regular-user-456",
+            "id": VALID_UUID_2,
             "email": "user@example.com",
             "role": "authenticated",
         }
 
-        with patch.dict(os.environ, {"ADMIN_USER_IDS": "admin-uuid-123"}):
+        with patch.dict(os.environ, {"ADMIN_USER_IDS": ADMIN_UUID}):
             with pytest.raises(HTTPException) as exc_info:
                 await require_admin(user=regular_user)
 
@@ -114,7 +152,7 @@ class TestRequireAdmin:
         from admin import require_admin
 
         user = {
-            "id": "any-user",
+            "id": VALID_UUID_1,
             "email": "any@example.com",
             "role": "authenticated",
         }
@@ -131,9 +169,9 @@ class TestAdminEndpointsBase:
 
     @pytest.fixture
     def mock_admin_user(self):
-        """Create mock admin user."""
+        """Create mock admin user with valid UUID."""
         return {
-            "id": "admin-123",
+            "id": ADMIN_UUID,
             "email": "admin@example.com",
             "role": "authenticated",
         }
@@ -368,12 +406,12 @@ class TestDeleteUserEndpoint(TestAdminEndpointsBase):
         mock_supabase.auth.admin.delete_user.return_value = None
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            response = admin_client.delete("/admin/users/user-to-delete")
+            response = admin_client.delete(f"/admin/users/{VALID_UUID_1}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["deleted"] is True
-        assert data["user_id"] == "user-to-delete"
+        assert data["user_id"] == VALID_UUID_1
 
     def test_delete_user_not_found(self, admin_client):
         """Should return 404 when user not found."""
@@ -388,7 +426,7 @@ class TestDeleteUserEndpoint(TestAdminEndpointsBase):
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            response = admin_client.delete("/admin/users/nonexistent-user")
+            response = admin_client.delete(f"/admin/users/{VALID_UUID_2}")
 
         assert response.status_code == 404
         assert "nao encontrado" in response.json()["detail"].lower()
@@ -407,7 +445,7 @@ class TestDeleteUserEndpoint(TestAdminEndpointsBase):
         mock_supabase.auth.admin.delete_user.side_effect = Exception("Delete failed")
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            response = admin_client.delete("/admin/users/user-id")
+            response = admin_client.delete(f"/admin/users/{VALID_UUID_3}")
 
         assert response.status_code == 500
 
@@ -426,7 +464,7 @@ class TestUpdateUserEndpoint(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             response = admin_client.put(
-                "/admin/users/user-123",
+                f"/admin/users/{VALID_UUID_1}",
                 json={
                     "full_name": "Updated Name",
                     "company": "New Company",
@@ -436,7 +474,7 @@ class TestUpdateUserEndpoint(TestAdminEndpointsBase):
         assert response.status_code == 200
         data = response.json()
         assert data["updated"] is True
-        assert data["user_id"] == "user-123"
+        assert data["user_id"] == VALID_UUID_1
 
     def test_update_user_with_plan_change(self, admin_client):
         """Should update user plan when plan_id is provided."""
@@ -460,7 +498,7 @@ class TestUpdateUserEndpoint(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             response = admin_client.put(
-                "/admin/users/user-123",
+                f"/admin/users/{VALID_UUID_1}",
                 json={"plan_id": "monthly"}
             )
 
@@ -477,19 +515,19 @@ class TestResetPasswordEndpoint(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             response = admin_client.post(
-                "/admin/users/user-123/reset-password",
+                f"/admin/users/{VALID_UUID_1}/reset-password",
                 json={"new_password": "newSecurePassword123"}
             )
 
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["user_id"] == "user-123"
+        assert data["user_id"] == VALID_UUID_1
 
     def test_reset_password_too_short(self, admin_client):
         """Should reject password shorter than 6 characters."""
         response = admin_client.post(
-            "/admin/users/user-123/reset-password",
+            f"/admin/users/{VALID_UUID_1}/reset-password",
             json={"new_password": "12345"}  # Too short
         )
 
@@ -503,7 +541,7 @@ class TestResetPasswordEndpoint(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             response = admin_client.post(
-                "/admin/users/user-123/reset-password",
+                f"/admin/users/{VALID_UUID_1}/reset-password",
                 json={"new_password": "validPassword123"}
             )
 
@@ -535,13 +573,13 @@ class TestAssignPlanEndpoint(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             response = admin_client.post(
-                "/admin/users/user-123/assign-plan?plan_id=pack_10"
+                f"/admin/users/{VALID_UUID_1}/assign-plan?plan_id=pack_10"
             )
 
         assert response.status_code == 200
         data = response.json()
         assert data["assigned"] is True
-        assert data["user_id"] == "user-123"
+        assert data["user_id"] == VALID_UUID_1
         assert data["plan_id"] == "pack_10"
 
     def test_assign_plan_not_found(self, admin_client):
@@ -559,7 +597,7 @@ class TestAssignPlanEndpoint(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             response = admin_client.post(
-                "/admin/users/user-123/assign-plan?plan_id=invalid_plan"
+                f"/admin/users/{VALID_UUID_1}/assign-plan?plan_id=invalid_plan"
             )
 
         assert response.status_code == 404
@@ -591,7 +629,7 @@ class TestAssignPlanFunction:
 
         mock_supabase.table.return_value = mock_table
 
-        _assign_plan(mock_supabase, "user-123", "pack_10")
+        _assign_plan(mock_supabase, VALID_UUID_1, "pack_10")
 
         # Verify deactivation was called
         mock_table.update.assert_called_with({"is_active": False})
@@ -619,11 +657,11 @@ class TestAssignPlanFunction:
 
         mock_supabase.table.return_value = mock_table
 
-        _assign_plan(mock_supabase, "user-123", "pack_10")
+        _assign_plan(mock_supabase, VALID_UUID_1, "pack_10")
 
         # Verify insert was called with correct data
         insert_call = mock_table.insert.call_args[0][0]
-        assert insert_call["user_id"] == "user-123"
+        assert insert_call["user_id"] == VALID_UUID_1
         assert insert_call["plan_id"] == "pack_10"
         assert insert_call["credits_remaining"] == 10
         assert insert_call["is_active"] is True
@@ -653,7 +691,7 @@ class TestAssignPlanFunction:
 
         mock_supabase.table.return_value = mock_table
 
-        _assign_plan(mock_supabase, "user-123", "monthly")
+        _assign_plan(mock_supabase, VALID_UUID_1, "monthly")
 
         # Verify insert was called with expiry date
         insert_call = mock_table.insert.call_args[0][0]
@@ -668,17 +706,21 @@ class TestAssignPlanFunction:
 
 
 class TestAdminLogging(TestAdminEndpointsBase):
-    """Test suite for admin operation logging."""
+    """Test suite for admin operation logging.
+
+    Note: Logging now uses sanitized PII format (Issue #168) with log_admin_action().
+    Log messages use format: 'Admin action: {action} admin={masked_id} target={masked_id}'
+    """
 
     def test_create_user_logs_action(self, admin_client, caplog):
-        """Should log admin user creation action."""
+        """Should log admin user creation action with sanitized PII (Issue #168)."""
         import logging
 
         mock_supabase = Mock()
 
         created_user = Mock()
         created_user.user = Mock()
-        created_user.user.id = "new-user"
+        created_user.user.id = VALID_UUID_2
         mock_supabase.auth.admin.create_user.return_value = created_user
 
         mock_table = Mock()
@@ -691,11 +733,12 @@ class TestAdminLogging(TestAdminEndpointsBase):
                     json={"email": "new@example.com", "password": "password123"}
                 )
 
-        assert any("created user" in record.message.lower() for record in caplog.records)
-        assert any("admin-123" in record.message for record in caplog.records)
+        # Check for sanitized log format from log_admin_action (Issue #168)
+        assert any("admin action" in record.message.lower() for record in caplog.records)
+        assert any("create-user" in record.message.lower() for record in caplog.records)
 
     def test_delete_user_logs_action(self, admin_client, caplog):
-        """Should log admin user deletion action."""
+        """Should log admin user deletion action with sanitized PII (Issue #168)."""
         import logging
 
         mock_supabase = Mock()
@@ -711,6 +754,330 @@ class TestAdminLogging(TestAdminEndpointsBase):
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             with caplog.at_level(logging.INFO):
-                admin_client.delete("/admin/users/user-to-delete")
+                admin_client.delete(f"/admin/users/{VALID_UUID_1}")
 
-        assert any("deleted user" in record.message.lower() for record in caplog.records)
+        # Check for sanitized log format from log_admin_action (Issue #168)
+        assert any("admin action" in record.message.lower() for record in caplog.records)
+        assert any("delete-user" in record.message.lower() for record in caplog.records)
+
+
+class TestSanitizeSearchInput:
+    """Test suite for _sanitize_search_input function - SQL Injection Prevention (Issue #205)."""
+
+    def test_returns_empty_for_none_input(self):
+        """Should return empty string for None input."""
+        from admin import _sanitize_search_input
+
+        result = _sanitize_search_input(None)
+        assert result == ""
+
+    def test_returns_empty_for_empty_string(self):
+        """Should return empty string for empty input."""
+        from admin import _sanitize_search_input
+
+        result = _sanitize_search_input("")
+        assert result == ""
+
+    def test_allows_normal_search_terms(self):
+        """Should allow normal alphanumeric search terms."""
+        from admin import _sanitize_search_input
+
+        assert _sanitize_search_input("john") == "john"
+        assert _sanitize_search_input("John Doe") == "John Doe"
+        assert _sanitize_search_input("user123") == "user123"
+
+    def test_allows_email_addresses(self):
+        """Should allow email-like search terms."""
+        from admin import _sanitize_search_input
+
+        assert _sanitize_search_input("john@example.com") == "john@example.com"
+        assert _sanitize_search_input("user_test@domain.org") == "user_test@domain.org"
+
+    def test_allows_hyphens_and_underscores(self):
+        """Should allow hyphens and underscores in search terms."""
+        from admin import _sanitize_search_input
+
+        assert _sanitize_search_input("john-doe") == "john-doe"
+        assert _sanitize_search_input("john_doe") == "john_doe"
+
+    def test_removes_sql_injection_characters(self):
+        """Should remove characters used in SQL injection attacks."""
+        from admin import _sanitize_search_input
+
+        # Single quotes - used for string escaping
+        assert "'" not in _sanitize_search_input("john'; DROP TABLE users;--")
+
+        # Double quotes
+        assert '"' not in _sanitize_search_input('john"; DELETE FROM profiles;--')
+
+        # Semicolons - used to chain SQL statements
+        assert ";" not in _sanitize_search_input("john; DROP TABLE;")
+
+        # Double dashes - SQL comments
+        assert "--" not in _sanitize_search_input("john--comment")
+
+        # Parentheses - used in SQL functions
+        assert "(" not in _sanitize_search_input("john()")
+        assert ")" not in _sanitize_search_input("john()")
+
+    def test_removes_postgrest_manipulation_characters(self):
+        """Should remove characters that could manipulate PostgREST queries."""
+        from admin import _sanitize_search_input
+
+        # Commas separate filter conditions in PostgREST
+        result = _sanitize_search_input("john,id.eq.admin-123")
+        assert "," not in result
+
+        # Brackets used in array operations
+        assert "[" not in _sanitize_search_input("john[0]")
+        assert "]" not in _sanitize_search_input("john[0]")
+
+        # Curly braces used in JSON operations
+        assert "{" not in _sanitize_search_input("john{key}")
+        assert "}" not in _sanitize_search_input("john{key}")
+
+    def test_removes_postgrest_operators(self):
+        """Should remove PostgREST operators that could alter query logic."""
+        from admin import _sanitize_search_input
+
+        # .eq. operator
+        result = _sanitize_search_input("test.eq.value")
+        assert ".eq." not in result.lower()
+
+        # .ilike. operator
+        result = _sanitize_search_input("test.ilike.%admin%")
+        assert ".ilike." not in result.lower()
+
+        # .or. operator
+        result = _sanitize_search_input("test.or.another")
+        assert ".or." not in result.lower()
+
+        # .and. operator
+        result = _sanitize_search_input("test.and.another")
+        assert ".and." not in result.lower()
+
+        # .not. operator
+        result = _sanitize_search_input("test.not.value")
+        assert ".not." not in result.lower()
+
+    def test_prevents_filter_injection_attack(self):
+        """Should prevent injection of additional filter conditions."""
+        from admin import _sanitize_search_input
+
+        # Attack: inject a condition to match all records by ID
+        attack = "%,id.eq.any-id"
+        result = _sanitize_search_input(attack)
+
+        # Should not contain the comma or the eq operator
+        assert "," not in result
+        assert ".eq." not in result
+
+    def test_prevents_column_extraction_attack(self):
+        """Should prevent attempts to extract data from other columns."""
+        from admin import _sanitize_search_input
+
+        # Attack: try to access password_hash column
+        attack = "%,password_hash.ilike.%"
+        result = _sanitize_search_input(attack)
+
+        assert "," not in result
+        assert ".ilike." not in result
+
+    def test_prevents_boolean_based_injection(self):
+        """Should prevent boolean-based SQL injection patterns."""
+        from admin import _sanitize_search_input
+
+        # Attack: OR 1=1 pattern
+        attack = "' OR '1'='1"
+        result = _sanitize_search_input(attack)
+
+        assert "'" not in result
+        assert "OR" not in result or "=" not in result
+
+    def test_limits_input_length(self):
+        """Should limit input length to prevent DoS attacks."""
+        from admin import _sanitize_search_input
+
+        # Very long input
+        long_input = "a" * 1000
+        result = _sanitize_search_input(long_input)
+
+        assert len(result) <= 100
+
+    def test_preserves_unicode_characters(self):
+        """Should preserve Unicode letters for international names."""
+        from admin import _sanitize_search_input
+
+        # Portuguese names with accents
+        assert "João" in _sanitize_search_input("João")
+        assert "José" in _sanitize_search_input("José")
+        assert "André" in _sanitize_search_input("André")
+
+    def test_strips_whitespace(self):
+        """Should strip leading/trailing whitespace."""
+        from admin import _sanitize_search_input
+
+        assert _sanitize_search_input("  john  ") == "john"
+        assert _sanitize_search_input("\tjohn\n") == "john"
+
+    def test_handles_mixed_attack_patterns(self):
+        """Should handle complex mixed attack patterns."""
+        from admin import _sanitize_search_input
+
+        # Complex attack combining multiple techniques
+        attack = "john'; DROP TABLE profiles;-- .eq.value,id.ilike.%admin%"
+        result = _sanitize_search_input(attack)
+
+        # Should only contain safe characters
+        assert "'" not in result
+        assert ";" not in result
+        assert "--" not in result
+        assert "," not in result
+        assert ".eq." not in result
+        assert ".ilike." not in result
+
+
+class TestListUsersSearchSecurity(TestAdminEndpointsBase):
+    """Test suite for SQL injection prevention in list_users search (Issue #205)."""
+
+    def test_search_sanitizes_sql_injection_attempt(self, admin_client):
+        """Should sanitize SQL injection attempts in search parameter."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = []
+        users_result.count = 0
+
+        mock_table = Mock()
+        mock_table.select.return_value.or_.return_value.order.return_value.range.return_value.execute.return_value = users_result
+        mock_table.select.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            # Send SQL injection payload
+            response = admin_client.get("/admin/users?search=john'; DROP TABLE users;--")
+
+        # Should still return 200 (attack neutralized)
+        assert response.status_code == 200
+
+    def test_search_sanitizes_postgrest_filter_injection(self, admin_client):
+        """Should sanitize PostgREST filter injection attempts."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = []
+        users_result.count = 0
+
+        mock_table = Mock()
+        mock_table.select.return_value.or_.return_value.order.return_value.range.return_value.execute.return_value = users_result
+        mock_table.select.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            # Send PostgREST operator injection payload
+            response = admin_client.get("/admin/users?search=%25,id.eq.admin-uuid")
+
+        assert response.status_code == 200
+
+    def test_search_with_empty_after_sanitization_skips_filter(self, admin_client):
+        """Should skip filter when search becomes empty after sanitization."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = [{"id": "user-1", "email": "user@example.com", "user_subscriptions": []}]
+        users_result.count = 1
+
+        mock_table = Mock()
+        # When search is empty/sanitized away, or_ should NOT be called
+        mock_table.select.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            # Send search with only dangerous characters
+            response = admin_client.get("/admin/users?search=';--,()[]")
+
+        assert response.status_code == 200
+        # Verify or_ was not called (no filter applied)
+        assert mock_table.select.return_value.or_.call_count == 0
+
+    def test_search_rejects_too_long_input(self, admin_client):
+        """Should reject search input exceeding max length."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = []
+        users_result.count = 0
+
+        mock_table = Mock()
+        mock_table.select.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        # Send very long search input (> 100 chars)
+        long_search = "a" * 200
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            response = admin_client.get(f"/admin/users?search={long_search}")
+
+        # FastAPI should reject due to max_length=100 on Query parameter
+        assert response.status_code == 422
+
+    def test_search_allows_legitimate_searches(self, admin_client):
+        """Should allow legitimate search queries."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = [{"id": "user-1", "email": "john@example.com", "full_name": "John Doe", "user_subscriptions": []}]
+        users_result.count = 1
+
+        mock_table = Mock()
+        mock_table.select.return_value.or_.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            response = admin_client.get("/admin/users?search=john")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["users"]) == 1
+
+    def test_search_allows_email_searches(self, admin_client):
+        """Should allow searching by email address."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = [{"id": "user-1", "email": "john@example.com", "user_subscriptions": []}]
+        users_result.count = 1
+
+        mock_table = Mock()
+        mock_table.select.return_value.or_.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            response = admin_client.get("/admin/users?search=john@example.com")
+
+        assert response.status_code == 200
+
+    def test_search_allows_unicode_names(self, admin_client):
+        """Should allow searching with Unicode characters (Portuguese names)."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = [{"id": "user-br", "email": "joao@example.com", "full_name": "João Silva", "user_subscriptions": []}]
+        users_result.count = 1
+
+        mock_table = Mock()
+        mock_table.select.return_value.or_.return_value.order.return_value.range.return_value.execute.return_value = users_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            # URL-encoded "João"
+            response = admin_client.get("/admin/users?search=Jo%C3%A3o")
+
+        assert response.status_code == 200

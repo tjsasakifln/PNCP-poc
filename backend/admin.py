@@ -1,28 +1,193 @@
-"""Admin endpoints for user management (system admin only)."""
+"""Admin endpoints for user management (system admin only).
+
+Security hardened in Issue #203:
+- All user IDs validated as UUID v4 format
+- Plan IDs validated against allowed pattern
+- Admin IDs from env validated before use
+
+Security hardened in Issue #205:
+- Search queries sanitized to prevent SQL/PostgREST injection
+- Dangerous characters removed (quotes, semicolons, commas, etc.)
+- SQL comment markers (--) removed
+- PostgREST operators (.eq., .ilike., etc.) stripped
+- Input length limited to prevent DoS
+
+Security hardened in Issue #168:
+- PII sanitized in logs (emails masked)
+- User IDs partially masked in logs
+- No sensitive data in plain text logs
+"""
 
 import logging
 import os
+import re
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Request
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Depends, Query, Request, Path
+from pydantic import BaseModel, Field, field_validator
 from auth import require_auth
+from schemas import validate_uuid, validate_plan_id
+from log_sanitizer import mask_email, mask_user_id, sanitize_dict, log_admin_action
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-# Admin user IDs — set via ADMIN_USER_IDS env var (comma-separated UUIDs)
+
+def _sanitize_search_input(search: str) -> str:
+    """
+    Sanitize search input to prevent SQL injection attacks.
+
+    Removes or escapes dangerous characters that could manipulate PostgREST queries.
+    Only allows alphanumeric characters, spaces, hyphens, underscores, dots, and @ symbols.
+
+    Args:
+        search: Raw user input from query parameter
+
+    Returns:
+        Sanitized string safe for use in Supabase filter queries
+    """
+    if not search:
+        return ""
+
+    # Remove any characters that could be used for SQL injection or PostgREST manipulation
+    # PostgREST uses special characters like: . , ( ) for query syntax
+    # We only allow safe characters for search terms
+    sanitized = re.sub(r'[^\w\s\-_.@]', '', search, flags=re.UNICODE)
+
+    # SECURITY: Remove SQL comment patterns (Issue #205)
+    # Double-dash (--) is used for SQL line comments and must be removed
+    sanitized = re.sub(r'--+', '', sanitized)
+
+    # Limit length to prevent DoS
+    sanitized = sanitized[:100]
+
+    # Remove any potential PostgREST operators that snuck through
+    # These patterns could manipulate the query structure
+    dangerous_patterns = [
+        r'\.eq\.',
+        r'\.neq\.',
+        r'\.gt\.',
+        r'\.gte\.',
+        r'\.lt\.',
+        r'\.lte\.',
+        r'\.like\.',
+        r'\.ilike\.',
+        r'\.is\.',
+        r'\.in\.',
+        r'\.cs\.',
+        r'\.cd\.',
+        r'\.sl\.',
+        r'\.sr\.',
+        r'\.nxl\.',
+        r'\.nxr\.',
+        r'\.adj\.',
+        r'\.ov\.',
+        r'\.fts\.',
+        r'\.plfts\.',
+        r'\.phfts\.',
+        r'\.wfts\.',
+        r'\.or\.',
+        r'\.and\.',
+        r'\.not\.',
+    ]
+
+    for pattern in dangerous_patterns:
+        sanitized = re.sub(pattern, '', sanitized, flags=re.IGNORECASE)
+
+    return sanitized.strip()
+
 def _get_admin_ids() -> set[str]:
+    """
+    Get validated admin user IDs from environment variable.
+
+    Admin IDs are stored in ADMIN_USER_IDS env var as comma-separated UUIDs.
+    Each ID is validated against UUID v4 format for security.
+
+    Returns:
+        set[str]: Set of validated admin UUIDs (lowercase normalized)
+
+    Note:
+        Invalid UUIDs are logged and skipped (fail-safe behavior).
+    """
     raw = os.getenv("ADMIN_USER_IDS", "")
-    return {uid.strip() for uid in raw.split(",") if uid.strip()}
+    valid_ids = set()
+
+    for uid in raw.split(","):
+        uid = uid.strip()
+        if not uid:
+            continue
+
+        try:
+            # Validate each admin ID as UUID v4
+            validated = validate_uuid(uid, "admin_id")
+            valid_ids.add(validated)
+        except ValueError as e:
+            # Log invalid IDs but don't fail (security: don't expose which IDs are invalid)
+            logger.warning(f"Invalid admin ID in ADMIN_USER_IDS skipped: {e}")
+
+    return valid_ids
+
+
+def _validate_user_id_param(user_id: str) -> str:
+    """
+    Validate user_id path parameter as UUID v4.
+
+    Args:
+        user_id: The user ID from path parameter
+
+    Returns:
+        str: Validated and normalized user ID
+
+    Raises:
+        HTTPException: 400 if user_id is not valid UUID v4
+    """
+    try:
+        return validate_uuid(user_id, "user_id")
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"ID de usuario invalido: {e}"
+        )
+
+
+def _validate_plan_id_param(plan_id: str) -> str:
+    """
+    Validate plan_id parameter.
+
+    Args:
+        plan_id: The plan ID to validate
+
+    Returns:
+        str: Validated and normalized plan ID
+
+    Raises:
+        HTTPException: 400 if plan_id format is invalid
+    """
+    try:
+        return validate_plan_id(plan_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"ID de plano invalido: {e}"
+        )
 
 
 async def require_admin(user: dict = Depends(require_auth)) -> dict:
-    """Require system admin role."""
+    """
+    Require system admin role.
+
+    Validates user ID is a UUID v4 and checks against admin list.
+    User ID is normalized to lowercase for comparison.
+    """
     admin_ids = _get_admin_ids()
-    if user["id"] not in admin_ids:
+
+    # Normalize user ID for comparison (lowercase)
+    user_id = str(user.get("id", "")).strip().lower()
+
+    if user_id not in admin_ids:
         raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
+
     return user
 
 
@@ -45,7 +210,7 @@ async def list_users(
     admin: dict = Depends(require_admin),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    search: Optional[str] = Query(default=None),
+    search: Optional[str] = Query(default=None, max_length=100),
 ):
     """List all users with profiles and subscription info."""
     from supabase_client import get_supabase
@@ -54,7 +219,11 @@ async def list_users(
     query = sb.table("profiles").select("*, user_subscriptions(id, plan_id, credits_remaining, expires_at, is_active)", count="exact")
 
     if search:
-        query = query.or_(f"email.ilike.%{search}%,full_name.ilike.%{search}%,company.ilike.%{search}%")
+        # SECURITY: Sanitize search input to prevent SQL injection / PostgREST manipulation
+        sanitized_search = _sanitize_search_input(search)
+        if sanitized_search:
+            # Use parameterized-style filter with sanitized input
+            query = query.or_(f"email.ilike.%{sanitized_search}%,full_name.ilike.%{sanitized_search}%,company.ilike.%{sanitized_search}%")
 
     result = query.order("created_at", desc=True).range(offset, offset + limit - 1).execute()
 
@@ -101,17 +270,27 @@ async def create_user(
     if req.plan_id and req.plan_id != "free":
         _assign_plan(sb, user_id, req.plan_id)
 
-    logger.info(f"Admin {admin['id']} created user {user_id} ({req.email}) with plan {req.plan_id}")
+    # SECURITY: Sanitize PII before logging (Issue #168)
+    log_admin_action(
+        logger,
+        admin_id=admin['id'],
+        action="create-user",
+        target_user_id=user_id,
+        details={"plan": req.plan_id},
+    )
 
     return {"user_id": user_id, "email": req.email, "plan_id": req.plan_id}
 
 
 @router.delete("/users/{user_id}")
 async def delete_user(
-    user_id: str,
+    user_id: str = Path(..., description="User UUID to delete"),
     admin: dict = Depends(require_admin),
 ):
     """Delete a user and all their data."""
+    # SECURITY: Validate user_id as UUID v4 (Issue #203)
+    user_id = _validate_user_id_param(user_id)
+
     from supabase_client import get_supabase
     sb = get_supabase()
 
@@ -126,18 +305,32 @@ async def delete_user(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao excluir usuario: {e}")
 
-    logger.info(f"Admin {admin['id']} deleted user {user_id} ({profile.data['email']})")
+    # SECURITY: Sanitize PII before logging (Issue #168)
+    log_admin_action(
+        logger,
+        admin_id=admin['id'],
+        action="delete-user",
+        target_user_id=user_id,
+    )
 
     return {"deleted": True, "user_id": user_id}
 
 
 @router.put("/users/{user_id}")
 async def update_user(
-    user_id: str,
     req: UpdateUserRequest,
+    user_id: str = Path(..., description="User UUID to update"),
     admin: dict = Depends(require_admin),
 ):
     """Update user profile or plan."""
+    # SECURITY: Validate user_id as UUID v4 (Issue #203)
+    user_id = _validate_user_id_param(user_id)
+
+    # Validate plan_id if provided
+    validated_plan_id = None
+    if req.plan_id is not None:
+        validated_plan_id = _validate_plan_id_param(req.plan_id)
+
     from supabase_client import get_supabase
     sb = get_supabase()
 
@@ -146,26 +339,36 @@ async def update_user(
         updates["full_name"] = req.full_name
     if req.company is not None:
         updates["company"] = req.company
-    if req.plan_id is not None:
-        updates["plan_type"] = req.plan_id
+    if validated_plan_id is not None:
+        updates["plan_type"] = validated_plan_id
 
     if updates:
         sb.table("profiles").update(updates).eq("id", user_id).execute()
 
-    if req.plan_id:
-        _assign_plan(sb, user_id, req.plan_id)
+    if validated_plan_id:
+        _assign_plan(sb, user_id, validated_plan_id)
 
-    logger.info(f"Admin {admin['id']} updated user {user_id}: {updates}")
+    # SECURITY: Sanitize update data before logging (Issue #168)
+    log_admin_action(
+        logger,
+        admin_id=admin['id'],
+        action="update-user",
+        target_user_id=user_id,
+        details=sanitize_dict(updates),
+    )
     return {"updated": True, "user_id": user_id}
 
 
 @router.post("/users/{user_id}/reset-password")
 async def reset_user_password(
-    user_id: str,
     request: Request,
+    user_id: str = Path(..., description="User UUID to reset password for"),
     admin: dict = Depends(require_admin),
 ):
     """Reset a user's password (admin only)."""
+    # SECURITY: Validate user_id as UUID v4 (Issue #203)
+    user_id = _validate_user_id_param(user_id)
+
     body = await request.json()
     new_password = body.get("new_password", "")
     if len(new_password) < 6:
@@ -178,17 +381,27 @@ async def reset_user_password(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao resetar senha: {e}")
 
-    logger.info(f"Admin {admin['id']} reset password for user {user_id}")
+    # SECURITY: Never log password content (Issue #168)
+    log_admin_action(
+        logger,
+        admin_id=admin['id'],
+        action="reset-password",
+        target_user_id=user_id,
+    )
     return {"success": True, "user_id": user_id}
 
 
 @router.post("/users/{user_id}/assign-plan")
 async def assign_plan(
-    user_id: str,
-    plan_id: str = Query(...),
+    user_id: str = Path(..., description="User UUID to assign plan to"),
+    plan_id: str = Query(..., description="Plan ID to assign"),
     admin: dict = Depends(require_admin),
 ):
     """Manually assign a plan to a user (bypasses payment)."""
+    # SECURITY: Validate user_id and plan_id (Issue #203)
+    user_id = _validate_user_id_param(user_id)
+    plan_id = _validate_plan_id_param(plan_id)
+
     from supabase_client import get_supabase
     sb = get_supabase()
 
@@ -196,7 +409,14 @@ async def assign_plan(
 
     sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
 
-    logger.info(f"Admin {admin['id']} assigned plan {plan_id} to user {user_id}")
+    # SECURITY: Sanitize IDs before logging (Issue #168)
+    log_admin_action(
+        logger,
+        admin_id=admin['id'],
+        action="assign-plan",
+        target_user_id=user_id,
+        details={"plan_id": plan_id},
+    )
     return {"assigned": True, "user_id": user_id, "plan_id": plan_id}
 
 

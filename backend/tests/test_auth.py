@@ -116,7 +116,9 @@ class TestGetCurrentUser:
                 with pytest.raises(HTTPException):
                     await get_current_user(credentials=mock_credentials)
 
-        assert any("JWT verification failed" in record.message for record in caplog.records)
+        # SECURITY (Issue #168): Log format changed to sanitized auth events
+        # Format: "Auth: token_verification success=False reason=ExceptionType"
+        assert any("token_verification" in record.message and "success=False" in record.message for record in caplog.records)
 
     @pytest.mark.asyncio
     async def test_extracts_token_from_credentials(self, mock_user_response):

@@ -18,7 +18,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from config import setup_logging, ENABLE_NEW_PRICING
+from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
 from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
@@ -28,6 +28,7 @@ from llm import gerar_resumo, gerar_resumo_fallback
 from sectors import get_sector, list_sectors
 from auth import get_current_user, require_auth
 from admin import router as admin_router
+from log_sanitizer import mask_user_id, log_user_action, sanitize_string
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -48,14 +49,18 @@ app = FastAPI(
 )
 
 # CORS Configuration
-# NOTE: In production, restrict allow_origins to specific domains
-# Example: allow_origins=["https://bidiq-uniformes.vercel.app"]
+# Secure CORS: Only allow specific origins defined in CORS_ORIGINS env var
+# Default origins for development: localhost:3000
+# Production origins should be set via environment variable
+cors_origins = get_cors_origins()
+logger.info(f"CORS configured for origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for POC (TODO: restrict in production)
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],  # Allow all headers for development
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 app.include_router(admin_router)
@@ -221,10 +226,12 @@ async def change_password(
     try:
         sb.auth.admin.update_user_by_id(user["id"], {"password": new_password})
     except Exception as e:
-        logger.error(f"Password change failed for user {user['id']}: {e}")
+        # SECURITY: Sanitize error message (Issue #168) - never log password-related details
+        log_user_action(logger, "password-change-failed", user["id"], level=logging.ERROR)
         raise HTTPException(status_code=500, detail="Erro ao alterar senha")
 
-    logger.info(f"Password changed for user {user['id']}")
+    # SECURITY: Sanitize user ID in logs (Issue #168)
+    log_user_action(logger, "password-changed", user["id"])
     return {"success": True}
 
 
@@ -475,7 +482,8 @@ def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):
     # Update profile plan_type
     sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
 
-    logger.info(f"Activated plan {plan_id} for user {user_id}")
+    # SECURITY: Sanitize user ID in logs (Issue #168)
+    log_user_action(logger, "plan-activated", user_id, details={"plan_id": plan_id})
 
 
 def _deactivate_stripe_subscription(stripe_sub_id: str):
@@ -483,7 +491,9 @@ def _deactivate_stripe_subscription(stripe_sub_id: str):
     from supabase_client import get_supabase
     sb = get_supabase()
     sb.table("user_subscriptions").update({"is_active": False}).eq("stripe_subscription_id", stripe_sub_id).execute()
-    logger.info(f"Deactivated Stripe subscription {stripe_sub_id}")
+    # SECURITY: Sanitize subscription ID in logs (Issue #168)
+    # Stripe subscription IDs are not PII but mask for consistency
+    logger.info(f"Deactivated Stripe subscription {stripe_sub_id[:8]}***")
 
 
 @app.post("/buscar", response_model=BuscaResponse)

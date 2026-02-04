@@ -1,4 +1,9 @@
-"""Authentication middleware for FastAPI using Supabase JWT."""
+"""Authentication middleware for FastAPI using Supabase JWT.
+
+Security hardened in Issue #168:
+- JWT errors sanitized (no token content in logs)
+- Auth events logged with proper masking
+"""
 
 import os
 import logging
@@ -6,6 +11,7 @@ from typing import Optional
 
 from fastapi import Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from log_sanitizer import sanitize_string, log_auth_event
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +44,15 @@ async def get_current_user(
     except HTTPException:
         raise
     except Exception as e:
-        logger.warning(f"JWT verification failed: {e}")
+        # SECURITY: Sanitize error message to avoid token leakage (Issue #168)
+        # Only log generic error type, never the actual exception details
+        # which may contain token fragments
+        log_auth_event(
+            logger,
+            event="token_verification",
+            success=False,
+            reason=type(e).__name__,  # Only log exception type, not message
+        )
         raise HTTPException(status_code=401, detail="Token invalido ou expirado")
 
 

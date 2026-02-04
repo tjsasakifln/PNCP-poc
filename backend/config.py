@@ -65,9 +65,15 @@ def setup_logging(level: str = "INFO") -> None:
     Sets up a consistent logging format across all modules with proper
     level filtering and suppression of verbose third-party libraries.
 
+    SECURITY (Issue #168):
+    - In production (ENVIRONMENT=production), DEBUG logs are suppressed
+    - Log sanitization should be applied to sensitive data before logging
+    - See log_sanitizer.py for PII protection utilities
+
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
-               Defaults to INFO.
+               Defaults to INFO. In production, DEBUG is elevated to INFO
+               for security.
 
     Example:
         >>> setup_logging("DEBUG")
@@ -75,6 +81,19 @@ def setup_logging(level: str = "INFO") -> None:
         >>> logger.info("Application started")
         2026-01-25 23:00:00 | INFO     | __main__ | Application started
     """
+    import os
+
+    # SECURITY: In production, enforce minimum INFO level to prevent
+    # accidental debug information exposure (Issue #168)
+    env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+    is_production = env in ("production", "prod")
+
+    effective_level = level.upper()
+    if is_production and effective_level == "DEBUG":
+        effective_level = "INFO"
+        # Note: We can't log this warning yet since logging isn't configured
+        # The warning will be added after root logger setup below
+
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -84,8 +103,14 @@ def setup_logging(level: str = "INFO") -> None:
     handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(getattr(logging, level.upper()))
+    root_logger.setLevel(getattr(logging, effective_level))
     root_logger.addHandler(handler)
+
+    # Log security enforcement if level was elevated
+    if is_production and level.upper() == "DEBUG":
+        root_logger.warning(
+            "SECURITY: DEBUG level elevated to INFO in production (Issue #168)"
+        )
 
     # Silence verbose logs from third-party libraries
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -134,3 +159,84 @@ ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "false"))
 # Log feature flag state on import
 logger = logging.getLogger(__name__)
 logger.info(f"Feature Flag - ENABLE_NEW_PRICING: {ENABLE_NEW_PRICING}")
+
+
+# ============================================
+# CORS Configuration
+# ============================================
+
+# Default allowed origins for development
+DEFAULT_CORS_ORIGINS: list[str] = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Production allowed origins (always included when CORS_ORIGINS is set)
+PRODUCTION_ORIGINS: list[str] = [
+    "https://bidiq-frontend-production.up.railway.app",
+    "https://bidiq-uniformes-production.up.railway.app",
+]
+
+
+def get_cors_origins() -> list[str]:
+    """
+    Get allowed CORS origins from environment variable.
+
+    Environment Variable:
+        CORS_ORIGINS: Comma-separated list of allowed origins.
+                     If not set, defaults to localhost origins for development.
+
+    Security:
+        - Never allows "*" wildcard in production
+        - Always includes production domains when env var is set
+        - Falls back to safe defaults for local development
+
+    Examples:
+        # Development (no env var set):
+        >>> get_cors_origins()
+        ['http://localhost:3000', 'http://127.0.0.1:3000']
+
+        # Production (env var set):
+        >>> # CORS_ORIGINS=https://myapp.com,https://api.myapp.com
+        >>> get_cors_origins()
+        ['https://myapp.com', 'https://api.myapp.com',
+         'https://bidiq-frontend-production.up.railway.app',
+         'https://bidiq-uniformes-production.up.railway.app']
+
+    Returns:
+        List of allowed origin URLs
+    """
+    cors_env = os.getenv("CORS_ORIGINS", "").strip()
+
+    if not cors_env:
+        # No environment variable set - use development defaults
+        logger.info("CORS_ORIGINS not set, using development defaults")
+        return DEFAULT_CORS_ORIGINS.copy()
+
+    # Parse comma-separated origins
+    origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+
+    # Security check: reject wildcard in production
+    if "*" in origins:
+        logger.warning(
+            "SECURITY WARNING: Wildcard '*' in CORS_ORIGINS is not recommended. "
+            "Replacing with production defaults for security."
+        )
+        origins = [o for o in origins if o != "*"]
+
+    # Always include production origins when env var is configured
+    # (indicates production/staging environment)
+    for prod_origin in PRODUCTION_ORIGINS:
+        if prod_origin not in origins:
+            origins.append(prod_origin)
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_origins = []
+    for origin in origins:
+        if origin not in seen:
+            seen.add(origin)
+            unique_origins.append(origin)
+
+    logger.info(f"CORS origins configured: {unique_origins}")
+    return unique_origins

@@ -808,9 +808,13 @@ class TestSaveSearchSession:
             with caplog.at_level(logging.INFO):
                 save_search_session(**valid_session_data)
 
+        # SECURITY (Issue #168): Log format changed to sanitize user IDs and session IDs
+        # Format: "Saved search session session-***" for user user***"
         assert any("saved search session" in record.message.lower() for record in caplog.records)
-        assert any("session-logged" in record.message for record in caplog.records)
-        assert any("user-123" in record.message for record in caplog.records)
+        # Session ID is masked (first 8 chars + ***)
+        assert any("session-***" in record.message for record in caplog.records)
+        # User ID is masked via mask_user_id() function
+        assert any("user***" in record.message for record in caplog.records)
 
     def test_inserts_into_search_sessions_table(self, valid_session_data):
         """Should insert into the search_sessions table."""

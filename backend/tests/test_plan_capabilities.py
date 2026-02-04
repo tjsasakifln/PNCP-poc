@@ -191,30 +191,60 @@ class TestGetMonthlyQuotaUsed:
 
 
 class TestIncrementMonthlyQuota:
-    """Test increment_monthly_quota function."""
+    """Test increment_monthly_quota function.
+
+    Updated for Issue #189: Now uses atomic RPC function with fallback.
+    """
 
     @patch("supabase_client.get_supabase")
-    @patch("quota.get_monthly_quota_used")
-    def test_increments_existing_quota(self, mock_get_used, mock_get_supabase):
-        """Should increment quota by 1 when record exists."""
-        mock_get_used.return_value = 23
+    def test_increments_existing_quota_via_rpc(self, mock_get_supabase):
+        """Should increment quota via atomic RPC function."""
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
+
+        # Mock successful RPC call
+        mock_sb.rpc.return_value.execute.return_value.data = [
+            {"new_count": 24, "was_at_limit": False, "previous_count": 23}
+        ]
 
         result = increment_monthly_quota("user-123")
 
         assert result == 24
 
-        # Verify upsert was called
-        mock_sb.table.return_value.upsert.assert_called_once()
+        # Verify RPC was called with atomic function
+        mock_sb.rpc.assert_called_once()
+        call_args = mock_sb.rpc.call_args
+        assert call_args[0][0] == "increment_quota_atomic"
 
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
-    def test_creates_new_record_when_none_exists(self, mock_get_used, mock_get_supabase):
-        """Should create new record with count=1 when none exists."""
-        mock_get_used.return_value = 0
+    def test_fallback_increments_existing_quota(self, mock_get_used, mock_get_supabase):
+        """Should increment quota via fallback when RPC unavailable."""
+        # RPC fails (function not available)
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
+        mock_sb.rpc.return_value.execute.side_effect = Exception("function does not exist")
+
+        # Fallback: first call returns 23 (before), second returns 24 (after increment)
+        mock_get_used.side_effect = [23, 24]
+
+        result = increment_monthly_quota("user-123")
+
+        assert result == 24
+
+        # Verify upsert was called as fallback
+        mock_sb.table.return_value.upsert.assert_called_once()
+
+    @patch("supabase_client.get_supabase")
+    def test_creates_new_record_via_rpc(self, mock_get_supabase):
+        """Should create new record with count=1 via atomic RPC."""
+        mock_sb = MagicMock()
+        mock_get_supabase.return_value = mock_sb
+
+        # Mock RPC returning first increment
+        mock_sb.rpc.return_value.execute.return_value.data = [
+            {"new_count": 1, "was_at_limit": False, "previous_count": 0}
+        ]
 
         result = increment_monthly_quota("user-123")
 
