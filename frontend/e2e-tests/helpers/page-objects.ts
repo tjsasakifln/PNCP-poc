@@ -94,7 +94,7 @@ export class SearchPage {
    */
   async goto() {
     await this.page.goto('/');
-    await expect(this.page).toHaveTitle(/BidIQ|DescompLicita/i);
+    await expect(this.page).toHaveTitle(/BidIQ|DescompLicita|Smart PNCP/i);
   }
 
   /**
