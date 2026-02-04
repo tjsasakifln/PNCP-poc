@@ -95,7 +95,7 @@ jobs:
       - name: Deploy to Railway Staging
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
-        run: railway up --service bidiq-backend-staging --detach
+        run: railway up --service bidiq-backend --detach
         working-directory: backend
 
       - name: Wait for deployment
@@ -170,7 +170,7 @@ jobs:
       - name: Deploy to Railway Staging
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
-        run: railway up --service bidiq-frontend-staging --detach
+        run: railway up --service bidiq-frontend --detach
         working-directory: frontend
 
       - name: Wait for deployment
