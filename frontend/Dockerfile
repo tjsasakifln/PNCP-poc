@@ -4,8 +4,8 @@
 # Multi-stage build for Next.js with standalone output
 # Optimized for Railway deployment
 
-# CACHE BUST - forces Railway rebuild
-ARG CACHEBUST=20260204v2-fixbuildargs
+# CACHE BUST - forces Railway rebuild (change to invalidate cache)
+ARG CACHEBUST=20260204v3-debugbuild
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
@@ -47,7 +47,14 @@ ENV NEXT_PUBLIC_LOGO_URL=$NEXT_PUBLIC_LOGO_URL
 ENV NEXT_PUBLIC_MIXPANEL_TOKEN=$NEXT_PUBLIC_MIXPANEL_TOKEN
 ENV NEXT_PUBLIC_ENABLE_NEW_PRICING=$NEXT_PUBLIC_ENABLE_NEW_PRICING
 
+# Debug: Print build-time environment variables (remove in production if too verbose)
+RUN echo "=== Build-time Environment Variables ===" && \
+    echo "NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL" && \
+    echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" && \
+    echo "========================================="
+
 # Build the application
+# This will inline NEXT_PUBLIC_* vars into the JavaScript bundle
 RUN npm run build
 
 # Stage 3: Production
