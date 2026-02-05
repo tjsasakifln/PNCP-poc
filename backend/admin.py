@@ -187,16 +187,21 @@ def _is_admin_from_supabase(user_id: str) -> bool:
         from supabase_client import get_supabase
         sb = get_supabase()
 
-        profile = (
-            sb.table("profiles")
-            .select("is_admin")
-            .eq("id", user_id)
-            .single()
-            .execute()
-        )
+        try:
+            profile = (
+                sb.table("profiles")
+                .select("is_admin")
+                .eq("id", user_id)
+                .single()
+                .execute()
+            )
 
-        if profile.data and profile.data.get("is_admin"):
-            return True
+            if profile.data and profile.data.get("is_admin"):
+                return True
+        except Exception:
+            # is_admin column might not exist yet - that's OK
+            # Fall back to ADMIN_USER_IDS env var only
+            pass
 
         return False
     except Exception as e:

@@ -257,14 +257,24 @@ def _check_user_roles(user_id: str) -> tuple[bool, bool]:
         from supabase_client import get_supabase
         sb = get_supabase()
 
-        # Get profile with is_admin and plan_type
-        profile = (
-            sb.table("profiles")
-            .select("is_admin, plan_type")
-            .eq("id", user_id)
-            .single()
-            .execute()
-        )
+        # Get profile - try with is_admin first, fallback to just plan_type
+        try:
+            profile = (
+                sb.table("profiles")
+                .select("is_admin, plan_type")
+                .eq("id", user_id)
+                .single()
+                .execute()
+            )
+        except Exception:
+            # is_admin column might not exist yet - fallback
+            profile = (
+                sb.table("profiles")
+                .select("plan_type")
+                .eq("id", user_id)
+                .single()
+                .execute()
+            )
 
         if not profile.data:
             return (False, False)
