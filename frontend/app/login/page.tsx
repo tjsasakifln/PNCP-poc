@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
@@ -16,7 +16,28 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_request: "Requisição inválida. Tente novamente.",
 };
 
+// Loading fallback for Suspense
+function LoginLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
+        <p className="text-[var(--ink-secondary)]">Carregando...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main page wrapper with Suspense boundary (required for useSearchParams in Next.js 15+)
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithEmail, signInWithMagicLink, signInWithGoogle, session, loading: authLoading } = useAuth();
