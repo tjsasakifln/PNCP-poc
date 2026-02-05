@@ -17,12 +17,49 @@ Exemplo de uso:
     ...     f.write(buffer.getvalue())
 """
 
+import re
 from datetime import datetime
 from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+
+# Regex matching illegal XML characters that openpyxl rejects
+# Includes: \x00-\x08, \x0b-\x0c, \x0e-\x1f (control chars except tab, LF, CR)
+ILLEGAL_CHARACTERS_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+
+
+def sanitize_for_excel(value: str | None) -> str:
+    """
+    Remove illegal XML/Excel control characters from strings.
+
+    openpyxl raises IllegalCharacterError for control characters like:
+    - \x00-\x08 (NUL to BS)
+    - \x0b-\x0c (VT, FF)
+    - \x0e-\x1f (SO to US, includes \x13 Device Control 3)
+
+    This is commonly seen in PNCP data where em-dashes (–) are incorrectly
+    encoded as \x13 control characters.
+
+    Args:
+        value: String to sanitize, or None
+
+    Returns:
+        Sanitized string with illegal characters replaced by space, or empty string if None
+
+    Examples:
+        >>> sanitize_for_excel("AME \x13 SUL")
+        'AME   SUL'
+        >>> sanitize_for_excel(None)
+        ''
+    """
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        return str(value)
+    # Replace illegal control characters with a space (preserves readability)
+    return ILLEGAL_CHARACTERS_RE.sub(' ', value)
 
 
 def create_excel(licitacoes: list[dict]) -> BytesIO:
@@ -93,26 +130,26 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
     # === DADOS ===
     for row_idx, lic in enumerate(licitacoes, start=2):
         # A: Código PNCP
-        ws.cell(row=row_idx, column=1, value=lic.get("codigoCompra", ""))
+        ws.cell(row=row_idx, column=1, value=sanitize_for_excel(lic.get("codigoCompra")))
 
-        # B: Objeto
-        ws.cell(row=row_idx, column=2, value=lic.get("objetoCompra", ""))
+        # B: Objeto (sanitize to remove illegal control chars like \x13)
+        ws.cell(row=row_idx, column=2, value=sanitize_for_excel(lic.get("objetoCompra")))
 
         # C: Órgão
-        ws.cell(row=row_idx, column=3, value=lic.get("nomeOrgao", ""))
+        ws.cell(row=row_idx, column=3, value=sanitize_for_excel(lic.get("nomeOrgao")))
 
         # D: UF
-        ws.cell(row=row_idx, column=4, value=lic.get("uf", ""))
+        ws.cell(row=row_idx, column=4, value=sanitize_for_excel(lic.get("uf")))
 
         # E: Município
-        ws.cell(row=row_idx, column=5, value=lic.get("municipio", ""))
+        ws.cell(row=row_idx, column=5, value=sanitize_for_excel(lic.get("municipio")))
 
         # F: Valor (formatado como moeda)
         valor_cell = ws.cell(row=row_idx, column=6, value=lic.get("valorTotalEstimado"))
         valor_cell.number_format = currency_format
 
         # G: Modalidade
-        ws.cell(row=row_idx, column=7, value=lic.get("modalidadeNome", ""))
+        ws.cell(row=row_idx, column=7, value=sanitize_for_excel(lic.get("modalidadeNome")))
 
         # H: Data Publicação
         data_pub = parse_datetime(lic.get("dataPublicacaoPncp"))
@@ -127,7 +164,7 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
             abertura_cell.number_format = datetime_format
 
         # J: Situação
-        ws.cell(row=row_idx, column=10, value=lic.get("situacaoCompraNome", ""))
+        ws.cell(row=row_idx, column=10, value=sanitize_for_excel(lic.get("situacaoCompraNome")))
 
         # K: Link (hyperlink)
         # Prioridade: linkSistemaOrigem (URL real do edital) > linkProcessoEletronico > fallback PNCP

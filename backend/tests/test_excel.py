@@ -16,7 +16,7 @@ from io import BytesIO
 import pytest
 from openpyxl import load_workbook
 
-from excel import create_excel, parse_datetime
+from excel import create_excel, parse_datetime, sanitize_for_excel
 
 
 @contextmanager
@@ -578,3 +578,121 @@ class TestCreateExcel:
             assert ws_meta["B2"].value == 0  # Total de licitações
             assert ws_meta["B3"].value == 0  # Valor total
             assert "R$" in ws_meta["B3"].number_format
+
+    def test_create_excel_with_illegal_control_characters(self):
+        """
+        Deve sanitizar caracteres de controle ilegais (bug fix).
+
+        PNCP data sometimes contains \x13 (Device Control 3) instead of
+        em-dash characters. This was causing openpyxl.IllegalCharacterError.
+
+        Real error from production:
+        "Ambulatório Médico de Especialidades \x13 AME SUL"
+        """
+        # Real text that caused the production error (with \x13 char)
+        illegal_text = (
+            "Aquisição de equipamentos para Ambulatório \x13 AME SUL, "
+            "do Consórcio \x13 COMESP"
+        )
+
+        licitacao = {
+            "codigoCompra": "TEST-ILLEGAL-001",
+            "objetoCompra": illegal_text,
+            "nomeOrgao": "Órgão com \x00 NUL e \x1f controle",
+            "uf": "PR",
+            "municipio": "Curitiba",
+            "valorTotalEstimado": 500000.0,
+            "situacaoCompraNome": "Em andamento \x0b com tab vertical",
+        }
+
+        # Should NOT raise IllegalCharacterError
+        buffer = create_excel([licitacao])
+
+        with open_workbook(buffer) as wb:
+            ws = wb["Licitações Uniformes"]
+
+            # Verify data was written (chars replaced with space)
+            assert "Ambulatório" in ws["B2"].value
+            assert "AME SUL" in ws["B2"].value
+            # The \x13 should have been replaced
+            assert "\x13" not in ws["B2"].value
+
+            # Verify other sanitized fields
+            assert "\x00" not in ws["C2"].value
+            assert "\x1f" not in ws["C2"].value
+            assert "\x0b" not in ws["J2"].value
+
+
+class TestSanitizeForExcel:
+    """Testes para sanitize_for_excel()."""
+
+    def test_sanitize_removes_device_control_chars(self):
+        """Deve remover caracteres Device Control (\x13, \x14, etc)."""
+        text = "AME \x13 SUL \x14 NORTE"
+        result = sanitize_for_excel(text)
+        assert result == "AME   SUL   NORTE"
+        assert "\x13" not in result
+        assert "\x14" not in result
+
+    def test_sanitize_removes_nul_character(self):
+        """Deve remover caractere NUL (\x00)."""
+        text = "Texto\x00com\x00nulos"
+        result = sanitize_for_excel(text)
+        assert result == "Texto com nulos"
+        assert "\x00" not in result
+
+    def test_sanitize_removes_all_illegal_chars(self):
+        """Deve remover todos os caracteres ilegais do openpyxl."""
+        # All illegal chars: \x00-\x08, \x0b-\x0c, \x0e-\x1f
+        text = "A\x00B\x01C\x08D\x0bE\x0cF\x0eG\x1fH"
+        result = sanitize_for_excel(text)
+        assert result == "A B C D E F G H"
+
+    def test_sanitize_preserves_allowed_whitespace(self):
+        """Deve preservar tab (\x09), LF (\x0a), CR (\x0d)."""
+        text = "Linha1\tcom\ttab\nLinha2\rLinha3"
+        result = sanitize_for_excel(text)
+        assert result == text  # Unchanged
+
+    def test_sanitize_handles_none(self):
+        """Deve retornar string vazia para None."""
+        result = sanitize_for_excel(None)
+        assert result == ""
+
+    def test_sanitize_handles_empty_string(self):
+        """Deve retornar string vazia para string vazia."""
+        result = sanitize_for_excel("")
+        assert result == ""
+
+    def test_sanitize_handles_non_string(self):
+        """Deve converter não-strings para string."""
+        result = sanitize_for_excel(12345)
+        assert result == "12345"
+
+    def test_sanitize_preserves_unicode(self):
+        """Deve preservar caracteres Unicode válidos."""
+        text = "Licitação de móveis — R$ 50.000,00"
+        result = sanitize_for_excel(text)
+        assert result == text  # Unchanged
+
+    def test_sanitize_real_production_error(self):
+        """Teste com o texto exato que causou erro em produção."""
+        # Text from production log (2026-02-05)
+        text = (
+            "Aquisição e instalação de equipamentos de informática, "
+            "infraestrutura de rede lógica, rede sem fio de alta performance, "
+            "equipamentos de videoconferência e projeção multimídia, bem como "
+            "o respectivo mobiliário técnico (rack de piso), visando garantir "
+            "a plena operação do novo prédio do Ambulatório Médico de "
+            "Especialidades \x13 AME SUL, do Consórcio Metropolitano de "
+            "Serviços do Paraná \x13 COMESP"
+        )
+        result = sanitize_for_excel(text)
+
+        # Should not contain the illegal char
+        assert "\x13" not in result
+
+        # Should still contain the important text
+        assert "AME SUL" in result
+        assert "COMESP" in result
+        assert "Ambulatório" in result
