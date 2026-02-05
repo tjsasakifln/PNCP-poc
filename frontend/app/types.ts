@@ -45,15 +45,32 @@ export interface FilterStats {
   rejeitadas_outros: number;
 }
 
+/** Individual bid item for display in search results */
+export interface LicitacaoItem {
+  pncp_id: string;
+  objeto: string;
+  orgao: string;
+  uf: string;
+  municipio: string | null;
+  valor: number;
+  modalidade: string | null;
+  data_publicacao: string | null;
+  data_abertura: string | null;
+  link: string;
+}
+
 /** API response from POST /api/buscar */
 export interface BuscaResult {
   resumo: Resumo;
+  licitacoes: LicitacaoItem[];  // Individual bids for preview display
   download_id: string;
   total_raw: number;
   total_filtrado: number;
   filter_stats: FilterStats | null;
   termos_utilizados: string[] | null;
   stopwords_removidas: string[] | null;
+  excel_available: boolean;
+  upgrade_message: string | null;
 }
 
 /** Form validation errors */

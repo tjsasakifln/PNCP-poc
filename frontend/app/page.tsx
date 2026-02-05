@@ -25,6 +25,7 @@ import { QuotaBadge } from "./components/QuotaBadge";
 import { PlanBadge } from "./components/PlanBadge";
 import { QuotaCounter } from "./components/QuotaCounter";
 import { UpgradeModal } from "./components/UpgradeModal";
+import { LicitacoesPreview } from "./components/LicitacoesPreview";
 import type { SavedSearch } from "../lib/savedSearches";
 
 // White label branding configuration
@@ -1212,6 +1213,20 @@ function HomePageContent() {
                 onUpgradeClick={() => {
                   setPreSelectedPlan(undefined);
                   setUpgradeSource("quota_counter");
+                  setShowUpgradeModal(true);
+                }}
+              />
+            )}
+
+            {/* FREE tier preview: Show bid items with blur effect */}
+            {result.licitacoes && result.licitacoes.length > 0 && (
+              <LicitacoesPreview
+                licitacoes={result.licitacoes}
+                previewCount={5}
+                excelAvailable={planInfo?.capabilities.allow_excel ?? false}
+                onUpgradeClick={() => {
+                  setPreSelectedPlan("maquina");
+                  setUpgradeSource("licitacoes_preview");
                   setShowUpgradeModal(true);
                 }}
               />

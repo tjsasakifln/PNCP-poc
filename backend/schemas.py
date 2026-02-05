@@ -291,6 +291,41 @@ class FilterStats(BaseModel):
     rejeitadas_outros: int = Field(default=0, description="Rejected by other reasons")
 
 
+class LicitacaoItem(BaseModel):
+    """
+    Individual bid item for display in search results.
+
+    Used for FREE tier preview feature - shows 5-10 items fully,
+    rest are displayed blurred/partial without links.
+    """
+    pncp_id: str = Field(..., description="Unique PNCP identifier")
+    objeto: str = Field(..., description="Procurement object description")
+    orgao: str = Field(..., description="Government agency name")
+    uf: str = Field(..., description="State code (e.g., 'SP')")
+    municipio: Optional[str] = Field(default=None, description="Municipality name")
+    valor: float = Field(..., ge=0, description="Estimated total value in BRL")
+    modalidade: Optional[str] = Field(default=None, description="Procurement modality")
+    data_publicacao: Optional[str] = Field(default=None, description="Publication date")
+    data_abertura: Optional[str] = Field(default=None, description="Proposal opening date")
+    link: str = Field(..., description="Direct link to PNCP portal")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "pncp_id": "12345678000190-1-000001/2026",
+                "objeto": "Aquisição de uniformes para funcionários",
+                "orgao": "Prefeitura Municipal de São Paulo",
+                "uf": "SP",
+                "municipio": "São Paulo",
+                "valor": 150000.00,
+                "modalidade": "Pregão Eletrônico",
+                "data_publicacao": "2026-02-01",
+                "data_abertura": "2026-02-15",
+                "link": "https://pncp.gov.br/app/editais/12345678000190/2026/1"
+            }
+        }
+
+
 class BuscaResponse(BaseModel):
     """
     Response schema for /buscar endpoint.
@@ -306,6 +341,10 @@ class BuscaResponse(BaseModel):
 
     resumo: ResumoLicitacoes = Field(
         ..., description="Executive summary (AI-generated or fallback)"
+    )
+    licitacoes: List[LicitacaoItem] = Field(
+        default_factory=list,
+        description="List of individual bids for display. FREE tier shows 5-10 fully, rest blurred."
     )
     excel_base64: Optional[str] = Field(
         default=None, description="Excel file encoded as base64 string (None if plan doesn't allow)"

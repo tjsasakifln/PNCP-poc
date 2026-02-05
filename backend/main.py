@@ -19,7 +19,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
-from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse
+from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse, LicitacaoItem
 from pncp_client import PNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import filter_batch, remove_stopwords
@@ -238,7 +238,35 @@ async def change_password(
 def _get_admin_ids() -> set[str]:
     """Get admin user IDs from environment variable."""
     raw = os.getenv("ADMIN_USER_IDS", "")
-    return {uid.strip() for uid in raw.split(",") if uid.strip()}
+    return {uid.strip().lower() for uid in raw.split(",") if uid.strip()}
+
+
+def _is_admin(user_id: str) -> bool:
+    """Check if user is a system administrator."""
+    admin_ids = _get_admin_ids()
+    return user_id.lower() in admin_ids
+
+
+def _get_admin_quota_info():
+    """
+    Get quota info for admin users - always returns sala_guerra (highest tier).
+
+    Admins bypass all quota restrictions and have full access to all features.
+    """
+    from quota import QuotaInfo, PLAN_CAPABILITIES, PLAN_NAMES
+    from datetime import datetime, timezone
+
+    return QuotaInfo(
+        allowed=True,
+        plan_id="sala_guerra",
+        plan_name="Sala de Guerra (Admin)",
+        capabilities=PLAN_CAPABILITIES["sala_guerra"],
+        quota_used=0,
+        quota_remaining=999999,  # Unlimited for admins
+        quota_reset_date=datetime.now(timezone.utc),
+        trial_expires_at=None,
+        error_message=None,
+    )
 
 
 @app.get("/me", response_model=UserProfileResponse)
@@ -254,13 +282,19 @@ async def get_profile(user: dict = Depends(require_auth)):
 
     This endpoint provides all necessary information for the frontend
     to render plan-based UI elements (badges, quota counters, locked features).
+
+    Note: Admin users automatically receive "Sala de Guerra" tier with unlimited access.
     """
     from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
     from supabase_client import get_supabase
     from datetime import datetime, timezone
 
-    # FEATURE FLAG: New Pricing Model (STORY-165)
-    if ENABLE_NEW_PRICING:
+    # ADMIN BYPASS: Admins get highest tier automatically
+    if _is_admin(user["id"]):
+        logger.info(f"Admin user detected: {mask_user_id(user['id'])} - granting sala_guerra access")
+        quota_info = _get_admin_quota_info()
+    elif ENABLE_NEW_PRICING:
+        # FEATURE FLAG: New Pricing Model (STORY-165)
         # Get quota info with capabilities
         try:
             quota_info = check_quota(user["id"])
@@ -496,6 +530,60 @@ def _deactivate_stripe_subscription(stripe_sub_id: str):
     logger.info(f"Deactivated Stripe subscription {stripe_sub_id[:8]}***")
 
 
+def _build_pncp_link(lic: dict) -> str:
+    """
+    Build PNCP link from bid data.
+
+    Priority: linkSistemaOrigem > linkProcessoEletronico > constructed URL from numeroControlePNCP
+    """
+    link = lic.get("linkSistemaOrigem") or lic.get("linkProcessoEletronico")
+
+    if not link:
+        numero_controle = lic.get("numeroControlePNCP", "")
+        if numero_controle:
+            try:
+                # Parse: "67366310000103-1-000189/2025" -> cnpj=67366310000103, ano=2025, seq=189
+                partes = numero_controle.split("/")
+                if len(partes) == 2:
+                    ano = partes[1]
+                    cnpj_tipo_seq = partes[0].split("-")
+                    if len(cnpj_tipo_seq) >= 3:
+                        cnpj = cnpj_tipo_seq[0]
+                        sequencial = cnpj_tipo_seq[2].lstrip("0")
+                        if cnpj and ano and sequencial:
+                            link = f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{sequencial}"
+            except Exception:
+                pass
+
+    return link or ""
+
+
+def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
+    """
+    Convert raw bid dictionaries to LicitacaoItem objects for frontend display.
+    """
+    items = []
+    for lic in licitacoes:
+        try:
+            item = LicitacaoItem(
+                pncp_id=lic.get("codigoCompra", lic.get("numeroControlePNCP", "")),
+                objeto=lic.get("objetoCompra", "")[:500],  # Truncate long descriptions
+                orgao=lic.get("nomeOrgao", ""),
+                uf=lic.get("uf", ""),
+                municipio=lic.get("municipio"),
+                valor=lic.get("valorTotalEstimado") or 0.0,
+                modalidade=lic.get("modalidadeNome"),
+                data_publicacao=lic.get("dataPublicacaoPncp", "")[:10] if lic.get("dataPublicacaoPncp") else None,
+                data_abertura=lic.get("dataAberturaProposta", "")[:10] if lic.get("dataAberturaProposta") else None,
+                link=_build_pncp_link(lic),
+            )
+            items.append(item)
+        except Exception as e:
+            logger.warning(f"Failed to convert bid to LicitacaoItem: {e}")
+            continue
+    return items
+
+
 @app.post("/buscar", response_model=BuscaResponse)
 async def buscar_licitacoes(
     request: BuscaRequest,
@@ -546,7 +634,11 @@ async def buscar_licitacoes(
     from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
-    if ENABLE_NEW_PRICING:
+    # ADMIN BYPASS: Admins get highest tier automatically (no quota limits)
+    if _is_admin(user["id"]):
+        logger.info(f"Admin user detected: {mask_user_id(user['id'])} - bypassing quota check")
+        quota_info = _get_admin_quota_info()
+    elif ENABLE_NEW_PRICING:
         logger.debug("New pricing enabled, checking quota and plan capabilities")
         try:
             quota_info = check_quota(user["id"])
@@ -713,6 +805,7 @@ async def buscar_licitacoes(
 
             response = BuscaResponse(
                 resumo=resumo,
+                licitacoes=[],  # Empty list for zero results
                 excel_base64=None if not quota_info or not quota_info.capabilities["allow_excel"] else "",
                 excel_available=quota_info.capabilities["allow_excel"] if quota_info else False,
                 quota_used=new_quota_used,
@@ -781,9 +874,12 @@ async def buscar_licitacoes(
             new_quota_used = quota_info.quota_used + 1 if quota_info else 0
         quota_remaining = max(0, quota_info.capabilities["max_requests_per_month"] - new_quota_used) if quota_info else 0
 
-        # Step 5: Return response
+        # Step 5: Return response with individual bid items for preview
+        licitacao_items = _convert_to_licitacao_items(licitacoes_filtradas)
+
         response = BuscaResponse(
             resumo=resumo,
+            licitacoes=licitacao_items,  # Individual bids for frontend display
             excel_base64=excel_base64,
             excel_available=excel_available,
             quota_used=new_quota_used,
