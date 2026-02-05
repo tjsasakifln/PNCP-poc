@@ -774,7 +774,7 @@ function HomePageContent() {
             </div>
 
         {/* Search Mode Toggle */}
-        <section className="mb-6 animate-fade-in-up stagger-1">
+        <section className="mb-6 animate-fade-in-up stagger-1 relative z-30">
           <label className="block text-base font-semibold text-ink mb-3">
             Buscar por:
           </label>
@@ -805,13 +805,15 @@ function HomePageContent() {
 
           {/* Sector Selector - Issue #89: Custom Select Component */}
           {searchMode === "setor" && (
-            <CustomSelect
-              id="setor"
-              value={setorId}
-              options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
-              onChange={(value) => { setSetorId(value); setResult(null); }}
-              placeholder="Selecione um setor"
-            />
+            <div className="relative z-20">
+              <CustomSelect
+                id="setor"
+                value={setorId}
+                options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
+                onChange={(value) => { setSetorId(value); setResult(null); }}
+                placeholder="Selecione um setor"
+              />
+            </div>
           )}
 
           {/* Custom Terms Input with Tags */}
@@ -905,7 +907,7 @@ function HomePageContent() {
         </section>
 
         {/* UF Selection Section */}
-        <section className="mb-6 animate-fade-in-up stagger-2">
+        <section className="mb-6 animate-fade-in-up stagger-2 relative z-10">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
             <label className="text-base sm:text-lg font-semibold text-ink">
               Estados (UFs):
@@ -963,7 +965,7 @@ function HomePageContent() {
         </section>
 
         {/* Date Range Section - Issue #89: Custom Date Inputs */}
-        <section className="mb-6 animate-fade-in-up stagger-3">
+        <section className="mb-6 animate-fade-in-up stagger-3 relative z-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CustomDateInput
               id="data-inicial"
