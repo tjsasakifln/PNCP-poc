@@ -236,75 +236,95 @@ async def change_password(
 
 
 def _get_admin_ids() -> set[str]:
-    """Get admin user IDs from environment variable."""
+    """Get admin user IDs from environment variable (fallback/override)."""
     raw = os.getenv("ADMIN_USER_IDS", "")
     return {uid.strip().lower() for uid in raw.split(",") if uid.strip()}
 
 
-def _is_admin_from_env(user_id: str) -> bool:
-    """Check if user is admin via ADMIN_USER_IDS env var."""
-    admin_ids = _get_admin_ids()
-    return user_id.lower() in admin_ids
-
-
-def _is_master_from_supabase(user_id: str) -> bool:
+def _check_user_roles(user_id: str) -> tuple[bool, bool]:
     """
-    Check if user has master/admin access via Supabase.
+    Check user's admin and master status from Supabase.
 
-    Checks two conditions:
-    1. profiles.plan_type = 'master'
-    2. Active subscription with plan_id = 'master'
+    Returns:
+        tuple: (is_admin, is_master)
+        - is_admin: Can manage users via /admin/* endpoints
+        - is_master: Has full feature access (Excel, unlimited quota)
 
-    Returns True if either condition is met.
+    Hierarchy: admin > master > regular users
+    Admins automatically get master privileges.
     """
     try:
         from supabase_client import get_supabase
         sb = get_supabase()
 
-        # Check 1: profiles.plan_type = 'master'
-        profile = sb.table("profiles").select("plan_type").eq("id", user_id).single().execute()
-        if profile.data and profile.data.get("plan_type") == "master":
-            logger.debug(f"User {mask_user_id(user_id)} is master via profiles.plan_type")
-            return True
-
-        # Check 2: Active subscription with plan_id = 'master'
-        subscription = (
-            sb.table("user_subscriptions")
-            .select("plan_id")
-            .eq("user_id", user_id)
-            .eq("is_active", True)
-            .eq("plan_id", "master")
-            .limit(1)
+        # Get profile with is_admin and plan_type
+        profile = (
+            sb.table("profiles")
+            .select("is_admin, plan_type")
+            .eq("id", user_id)
+            .single()
             .execute()
         )
-        if subscription.data and len(subscription.data) > 0:
-            logger.debug(f"User {mask_user_id(user_id)} is master via active subscription")
-            return True
 
-        return False
+        if not profile.data:
+            return (False, False)
+
+        is_admin = profile.data.get("is_admin", False)
+        plan_type = profile.data.get("plan_type", "")
+
+        # Admin implies master access
+        is_master = is_admin or plan_type == "master"
+
+        if is_admin:
+            logger.debug(f"User {mask_user_id(user_id)} is ADMIN (profiles.is_admin)")
+        elif is_master:
+            logger.debug(f"User {mask_user_id(user_id)} is MASTER (profiles.plan_type)")
+
+        return (is_admin, is_master)
+
     except Exception as e:
-        logger.warning(f"Failed to check master status from Supabase: {e}")
-        return False
+        logger.warning(f"Failed to check user roles from Supabase: {e}")
+        return (False, False)
 
 
 def _is_admin(user_id: str) -> bool:
     """
-    Check if user is a system administrator.
+    Check if user can access /admin/* endpoints.
 
-    Checks multiple sources:
-    1. ADMIN_USER_IDS environment variable
-    2. Supabase profiles.plan_type = 'master'
-    3. Supabase user_subscriptions with plan_id = 'master' and is_active = true
+    Sources (in order):
+    1. ADMIN_USER_IDS env var (fallback/override)
+    2. Supabase profiles.is_admin = true
     """
     # Fast path: check env var first (no DB call)
-    if _is_admin_from_env(user_id):
+    admin_ids = _get_admin_ids()
+    if user_id.lower() in admin_ids:
         return True
 
-    # Check Supabase for master plan
-    return _is_master_from_supabase(user_id)
+    # Check Supabase
+    is_admin, _ = _check_user_roles(user_id)
+    return is_admin
 
 
-def _get_admin_quota_info():
+def _has_master_access(user_id: str) -> bool:
+    """
+    Check if user has full feature access (master or admin).
+
+    Sources:
+    1. ADMIN_USER_IDS env var (admins get master access)
+    2. Supabase profiles.is_admin = true (admins get master access)
+    3. Supabase profiles.plan_type = 'master'
+    """
+    # Fast path: check env var first (no DB call)
+    admin_ids = _get_admin_ids()
+    if user_id.lower() in admin_ids:
+        return True
+
+    # Check Supabase
+    is_admin, is_master = _check_user_roles(user_id)
+    return is_admin or is_master
+
+
+def _get_master_quota_info(is_admin: bool = False):
     """
     Get quota info for admin/master users - returns sala_guerra (highest tier).
 
@@ -313,10 +333,12 @@ def _get_admin_quota_info():
     from quota import QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
+    plan_name = "Sala de Guerra (Admin)" if is_admin else "Sala de Guerra (Master)"
+
     return QuotaInfo(
         allowed=True,
         plan_id="sala_guerra",
-        plan_name="Sala de Guerra (Master)",
+        plan_name=plan_name,
         capabilities=PLAN_CAPABILITIES["sala_guerra"],
         quota_used=0,
         quota_remaining=999999,  # Unlimited for admins/masters
@@ -346,10 +368,17 @@ async def get_profile(user: dict = Depends(require_auth)):
     from supabase_client import get_supabase
     from datetime import datetime, timezone
 
-    # ADMIN BYPASS: Admins get highest tier automatically
-    if _is_admin(user["id"]):
-        logger.info(f"Admin user detected: {mask_user_id(user['id'])} - granting sala_guerra access")
-        quota_info = _get_admin_quota_info()
+    # ADMIN/MASTER BYPASS: Get highest tier automatically
+    is_admin, is_master = _check_user_roles(user["id"])
+    # Also check env var for admin override
+    if user["id"].lower() in _get_admin_ids():
+        is_admin = True
+        is_master = True
+
+    if is_admin or is_master:
+        role = "ADMIN" if is_admin else "MASTER"
+        logger.info(f"{role} user detected: {mask_user_id(user['id'])} - granting sala_guerra access")
+        quota_info = _get_master_quota_info(is_admin=is_admin)
     elif ENABLE_NEW_PRICING:
         # FEATURE FLAG: New Pricing Model (STORY-165)
         # Get quota info with capabilities
@@ -691,10 +720,17 @@ async def buscar_licitacoes(
     from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
-    # ADMIN BYPASS: Admins get highest tier automatically (no quota limits)
-    if _is_admin(user["id"]):
-        logger.info(f"Admin user detected: {mask_user_id(user['id'])} - bypassing quota check")
-        quota_info = _get_admin_quota_info()
+    # ADMIN/MASTER BYPASS: Get highest tier automatically (no quota limits)
+    is_admin, is_master = _check_user_roles(user["id"])
+    # Also check env var for admin override
+    if user["id"].lower() in _get_admin_ids():
+        is_admin = True
+        is_master = True
+
+    if is_admin or is_master:
+        role = "ADMIN" if is_admin else "MASTER"
+        logger.info(f"{role} user detected: {mask_user_id(user['id'])} - bypassing quota check")
+        quota_info = _get_master_quota_info(is_admin=is_admin)
     elif ENABLE_NEW_PRICING:
         logger.debug("New pricing enabled, checking quota and plan capabilities")
         try:

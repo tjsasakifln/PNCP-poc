@@ -173,22 +173,59 @@ def _validate_plan_id_param(plan_id: str) -> str:
         )
 
 
+def _is_admin_from_supabase(user_id: str) -> bool:
+    """
+    Check if user has is_admin = true in Supabase profiles.
+
+    Args:
+        user_id: The user's UUID
+
+    Returns:
+        True if profiles.is_admin = true, False otherwise
+    """
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        profile = (
+            sb.table("profiles")
+            .select("is_admin")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+
+        if profile.data and profile.data.get("is_admin"):
+            return True
+
+        return False
+    except Exception as e:
+        logger.warning(f"Failed to check admin status from Supabase: {e}")
+        return False
+
+
 async def require_admin(user: dict = Depends(require_auth)) -> dict:
     """
     Require system admin role.
 
-    Validates user ID is a UUID v4 and checks against admin list.
+    Checks multiple sources:
+    1. ADMIN_USER_IDS environment variable (fast path)
+    2. Supabase profiles.is_admin = true
+
     User ID is normalized to lowercase for comparison.
     """
+    user_id = str(user.get("id", "")).strip()
+
+    # Fast path: check env var first (no DB call)
     admin_ids = _get_admin_ids()
+    if user_id.lower() in admin_ids:
+        return user
 
-    # Normalize user ID for comparison (lowercase)
-    user_id = str(user.get("id", "")).strip().lower()
+    # Check Supabase for is_admin flag
+    if _is_admin_from_supabase(user_id):
+        return user
 
-    if user_id not in admin_ids:
-        raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
-
-    return user
+    raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
 
 
 class CreateUserRequest(BaseModel):
