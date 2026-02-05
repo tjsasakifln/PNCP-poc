@@ -8,8 +8,8 @@ import { cookies } from "next/headers";
  * Note: In Server Components, setAll will log a warning because cookies
  * cannot be mutated. This is expected - middleware handles session refresh.
  */
-export function createSupabaseServerClient() {
-  const cookieStore = cookies();
+export async function createSupabaseServerClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
