@@ -5,17 +5,21 @@
 # Optimized for Railway deployment
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
-ARG CACHEBUST=20260205v1-forcecacheinvalidate
+ARG CACHEBUST=20260205v2-nuclearrebuild
 
 # Stage 1: Dependencies
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Force cache invalidation in deps stage too
+ARG CACHEBUST
+RUN echo "DEPS STAGE CACHE BUST: $CACHEBUST"
+
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with verbose output
+RUN npm ci && echo "Dependencies installed at $(date)"
 
 # Stage 2: Build
 FROM node:20-alpine AS builder
@@ -57,9 +61,12 @@ RUN echo "=== Build-time Environment Variables ===" && \
     echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" && \
     echo "========================================="
 
+# Create build timestamp to prevent caching
+RUN echo "BUILD_TIMESTAMP=$(date +%Y%m%d%H%M%S)" > /tmp/build-info.txt && cat /tmp/build-info.txt
+
 # Build the application
 # This will inline NEXT_PUBLIC_* vars into the JavaScript bundle
-RUN npm run build
+RUN npm run build && echo "Build completed at $(date)"
 
 # Stage 3: Production
 FROM node:20-alpine AS runner
