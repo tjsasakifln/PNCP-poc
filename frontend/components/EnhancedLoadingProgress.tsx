@@ -11,7 +11,7 @@
  * 5. Preparing Excel report (100%)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 export interface EnhancedLoadingProgressProps {
   currentStep: number;
@@ -73,7 +73,21 @@ export function EnhancedLoadingProgress({
   const [currentStage, setCurrentStage] = useState(1);
   const [elapsedTime, setElapsedTime] = useState(0);
 
+  // Refs to avoid resetting interval on stage/callback changes
+  const currentStageRef = useRef(currentStage);
+  const onStageChangeRef = useRef(onStageChange);
+
+  // Keep refs in sync with state/props
+  useEffect(() => {
+    currentStageRef.current = currentStage;
+  }, [currentStage]);
+
+  useEffect(() => {
+    onStageChangeRef.current = onStageChange;
+  }, [onStageChange]);
+
   // Calculate progress based on time elapsed
+  // BUG FIX: Removed currentStage from deps - was causing interval restart on every stage change
   useEffect(() => {
     const startTime = Date.now();
 
@@ -99,14 +113,16 @@ export function EnhancedLoadingProgress({
       }
 
       // If progress exceeds current stage target, move to next
-      if (newStage !== currentStage) {
+      // Use refs to avoid stale closure issue
+      if (newStage !== currentStageRef.current) {
         setCurrentStage(newStage);
-        onStageChange?.(newStage);
+        currentStageRef.current = newStage;
+        onStageChangeRef.current?.(newStage);
       }
     }, 500); // Update every 500ms
 
     return () => clearInterval(interval);
-  }, [estimatedTime, currentStage, onStageChange]);
+  }, [estimatedTime]); // Only restart on estimatedTime change
 
   const activeStage = STAGES.find(s => s.id === currentStage) || STAGES[0];
   const progressPercentage = Math.min(100, Math.max(0, progress));

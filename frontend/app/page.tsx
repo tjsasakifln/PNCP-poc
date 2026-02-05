@@ -373,16 +373,26 @@ function HomePageContent() {
     // Issue #109: Simulate progressive state processing for better UX feedback
     // In a real streaming implementation, this would be updated by backend SSE events
     const totalStates = ufsSelecionadas.size;
-    const stateInterval = setInterval(() => {
+    let stateIntervalId: ReturnType<typeof setInterval> | null = null;
+
+    stateIntervalId = setInterval(() => {
       setStatesProcessed(prev => {
         if (prev >= totalStates) {
-          clearInterval(stateInterval);
+          if (stateIntervalId) clearInterval(stateIntervalId);
           return totalStates;
         }
         // Increment every ~3 seconds to simulate processing (totalStates * 6s / 2 intervals)
         return prev + 1;
       });
     }, totalStates > 0 ? Math.max(2000, (totalStates * 6000) / (totalStates + 1)) : 3000);
+
+    // Helper to cleanup interval
+    const cleanupInterval = () => {
+      if (stateIntervalId) {
+        clearInterval(stateIntervalId);
+        stateIntervalId = null;
+      }
+    };
 
     // Track search_started event
     trackEvent('search_started', {
@@ -478,6 +488,7 @@ function HomePageContent() {
         search_mode: searchMode,
       });
     } finally {
+      cleanupInterval(); // BUG FIX: Always cleanup interval to prevent memory leaks
       setLoading(false);
       setLoadingStep(1);
       setStatesProcessed(0); // Issue #109: Reset progress counter
