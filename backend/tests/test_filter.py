@@ -318,43 +318,41 @@ class TestFilterLicitacao:
         assert aprovada is True
         assert motivo is None
 
-    def test_rejects_valor_none(self):
-        """Should reject bid when valorTotalEstimado is missing."""
+    def test_accepts_valor_none(self):
+        """Should accept bid even when valorTotalEstimado is missing (value filter removed 2026-02-05)."""
         licitacao = {"uf": "SP", "objetoCompra": "Uniformes"}
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
-        assert aprovada is False
-        assert "Valor não informado" in motivo
+        assert aprovada is True
+        assert motivo is None
 
-    def test_rejects_valor_below_min(self):
-        """Should reject bid when value is below minimum threshold."""
+    def test_accepts_valor_below_previous_min(self):
+        """Should accept bid with any value (value filter removed 2026-02-05)."""
         licitacao = {
             "uf": "SP",
-            "valorTotalEstimado": 30_000.0,  # Below 50k default
+            "valorTotalEstimado": 100.0,  # Very small value - now accepted
             "objetoCompra": "Uniformes escolares",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
-        assert aprovada is False
-        assert "Valor" in motivo
-        assert "fora da faixa" in motivo
+        assert aprovada is True
+        assert motivo is None
 
-    def test_rejects_valor_above_max(self):
-        """Should reject bid when value is above maximum threshold."""
+    def test_accepts_valor_above_previous_max(self):
+        """Should accept bid with any value (value filter removed 2026-02-05)."""
         licitacao = {
             "uf": "SP",
-            "valorTotalEstimado": 6_000_000.0,  # Above 5M default
+            "valorTotalEstimado": 100_000_000.0,  # Very large value - now accepted
             "objetoCompra": "Uniformes escolares",
         }
         aprovada, motivo = filter_licitacao(licitacao, {"SP"})
-        assert aprovada is False
-        assert "Valor" in motivo
-        assert "fora da faixa" in motivo
+        assert aprovada is True
+        assert motivo is None
 
-    def test_accepts_valor_within_range(self):
-        """Should accept bid when value is within range."""
+    def test_accepts_valor_within_any_range(self):
+        """Should accept bid with any value (value filter removed 2026-02-05)."""
         future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         licitacao = {
             "uf": "SP",
-            "valorTotalEstimado": 150_000.0,  # Within 50k-5M range
+            "valorTotalEstimado": 150_000.0,
             "objetoCompra": "Uniformes escolares",
             "dataAberturaProposta": future_date,
         }
@@ -362,8 +360,8 @@ class TestFilterLicitacao:
         assert aprovada is True
         assert motivo is None
 
-    def test_accepts_custom_valor_range(self):
-        """Should respect custom valor_min and valor_max parameters."""
+    def test_accepts_any_valor_after_filter_removal(self):
+        """Should accept any value since filter was removed (2026-02-05)."""
         future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         licitacao = {
             "uf": "SP",
@@ -371,11 +369,10 @@ class TestFilterLicitacao:
             "objetoCompra": "Uniformes",
             "dataAberturaProposta": future_date,
         }
-        # Custom range: 100k-200k (should reject 75k)
-        aprovada, _ = filter_licitacao(
-            licitacao, {"SP"}, valor_min=100_000, valor_max=200_000
-        )
-        assert aprovada is False
+        # Value filter parameters no longer exist
+        aprovada, motivo = filter_licitacao(licitacao, {"SP"})
+        assert aprovada is True
+        assert motivo is None
 
     def test_rejects_missing_keywords(self):
         """Should reject bid without uniform keywords."""
@@ -637,9 +634,8 @@ class TestFilterBatch:
         """
         Should accurately count rejections by category.
 
-        Note (Investigation 2026-01-28): Prazo filter was removed, so both
-        past_date and future_date bids are now approved. The rejeitadas_prazo
-        counter should always be 0.
+        Note (2026-02-05): Value filter was removed, so low/high values are now accepted.
+        Note (2026-01-28): Prazo filter was removed, so past dates are approved.
         """
         future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         past_date = (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
@@ -647,7 +643,7 @@ class TestFilterBatch:
         licitacoes = [
             # Rejected: UF
             {"uf": "RJ", "valorTotalEstimado": 100_000.0, "objetoCompra": "Uniformes"},
-            # Rejected: Valor (too low)
+            # Approved: Low value no longer rejected (value filter removed 2026-02-05)
             {"uf": "SP", "valorTotalEstimado": 30_000.0, "objetoCompra": "Uniformes"},
             # Rejected: Keywords
             {"uf": "SP", "valorTotalEstimado": 100_000.0, "objetoCompra": "Notebooks"},
@@ -669,50 +665,48 @@ class TestFilterBatch:
 
         aprovadas, stats = filter_batch(licitacoes, {"SP"})
 
-        # Both past and future date bids should now be approved
-        assert len(aprovadas) == 2
+        # 3 approved: low value (now OK), past date, future date
+        assert len(aprovadas) == 3
         assert stats["total"] == 5
-        assert stats["aprovadas"] == 2
+        assert stats["aprovadas"] == 3
         assert stats["rejeitadas_uf"] == 1
-        assert stats["rejeitadas_valor"] == 1
         assert stats["rejeitadas_keyword"] == 1
-        assert stats["rejeitadas_prazo"] == 0  # No deadline rejections after fix
+        assert stats["rejeitadas_prazo"] == 0  # No deadline rejections
         assert stats["rejeitadas_outros"] == 0
 
     def test_all_statistics_keys_present(self):
-        """Should return all expected statistics keys."""
+        """Should return all expected statistics keys (value filter removed 2026-02-05)."""
         aprovadas, stats = filter_batch([], {"SP"})
 
         required_keys = {
             "total",
             "aprovadas",
             "rejeitadas_uf",
-            "rejeitadas_valor",
             "rejeitadas_keyword",
             "rejeitadas_prazo",
             "rejeitadas_outros",
         }
         assert set(stats.keys()) == required_keys
 
-    def test_custom_valor_range_in_batch(self):
-        """Should respect custom valor range in batch filtering."""
+    def test_batch_accepts_all_values_after_filter_removal(self):
+        """Should accept all values since value filter was removed (2026-02-05)."""
         future_date = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
         licitacoes = [
-            # Within custom range: 80k-120k
+            # Any value is now accepted
             {
                 "uf": "SP",
                 "valorTotalEstimado": 100_000.0,
                 "objetoCompra": "Uniformes",
                 "dataAberturaProposta": future_date,
             },
-            # Below custom min
+            # Low value - now accepted
             {
                 "uf": "SP",
                 "valorTotalEstimado": 60_000.0,
                 "objetoCompra": "Uniformes",
                 "dataAberturaProposta": future_date,
             },
-            # Above custom max
+            # High value - now accepted
             {
                 "uf": "SP",
                 "valorTotalEstimado": 150_000.0,
@@ -721,13 +715,11 @@ class TestFilterBatch:
             },
         ]
 
-        aprovadas, stats = filter_batch(
-            licitacoes, {"SP"}, valor_min=80_000, valor_max=120_000
-        )
+        aprovadas, stats = filter_batch(licitacoes, {"SP"})
 
-        assert len(aprovadas) == 1
-        assert stats["aprovadas"] == 1
-        assert stats["rejeitadas_valor"] == 2
+        # All 3 should be approved - no value filtering
+        assert len(aprovadas) == 3
+        assert stats["aprovadas"] == 3
 
     def test_preserves_original_bid_structure(self):
         """Should return approved bids with all original fields intact."""

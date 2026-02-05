@@ -832,16 +832,13 @@ async def buscar_licitacoes(
         logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP")
 
         # Step 2: Apply filtering (fail-fast sequential: UF → value → keywords)
-        # Value range expanded to capture more opportunities:
-        # - R$ 10k min: Include smaller municipal contracts
-        # - R$ 10M max: Include larger state/federal contracts
-        # Reference: Investigation 2026-01-28 - docs/investigations/
-        logger.info("Applying filters to raw bids")
+        # Value range filter REMOVED (2026-02-05) to return ALL results
+        # Previously: valor_min=10_000.0, valor_max=10_000_000.0
+        # Now: No value filtering - all opportunities shown regardless of value
+        logger.info("Applying filters to raw bids (no value restrictions)")
         licitacoes_filtradas, stats = filter_batch(
             licitacoes_raw,
             ufs_selecionadas=set(request.ufs),
-            valor_min=10_000.0,   # Expanded from R$ 50k to capture more opportunities
-            valor_max=10_000_000.0,  # Expanded from R$ 5M to capture larger contracts
             keywords=active_keywords,
             exclusions=sector.exclusions if not custom_terms else set(),
         )

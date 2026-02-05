@@ -1,92 +1,33 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-interface PlanFeature {
-  text: string;
-  available: boolean;
-  highlight?: boolean;
-}
-
-interface PlanCard {
+interface Plan {
   id: string;
   name: string;
-  price: string;
-  priceMonthly: number;
-  popular?: boolean;
-  features: PlanFeature[];
-  buttonText: string;
-  buttonStyle: "outline" | "solid" | "premium";
+  description: string;
+  max_searches: number | null;
+  price_brl: number;
+  duration_days: number | null;
 }
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  preSelectedPlan?: "consultor_agil" | "maquina" | "sala_guerra";
+  preSelectedPlan?: string;
   source?: string; // Analytics: 'excel_button', 'date_range', 'quota_counter'
 }
 
-const PLANS: PlanCard[] = [
-  {
-    id: "consultor_agil",
-    name: "Consultor Ágil",
-    price: "R$ 297/mês",
-    priceMonthly: 297,
-    features: [
-      { text: "50 buscas por mês", available: true },
-      { text: "30 dias de histórico", available: true },
-      { text: "Resumo executivo IA (básico)", available: true },
-      { text: "Filtros por setor e UF", available: true },
-      { text: "Exportar Excel", available: false },
-      { text: "Suporte prioritário", available: false },
-    ],
-    buttonText: "Assinar Consultor Ágil",
-    buttonStyle: "outline",
-  },
-  {
-    id: "maquina",
-    name: "Máquina",
-    price: "R$ 597/mês",
-    priceMonthly: 597,
-    popular: true,
-    features: [
-      { text: "300 buscas por mês", available: true, highlight: true },
-      { text: "1 ano de histórico", available: true, highlight: true },
-      { text: "Resumo executivo IA (completo)", available: true },
-      { text: "Exportar Excel", available: true, highlight: true },
-      { text: "Filtros avançados", available: true },
-      { text: "Suporte prioritário", available: true },
-      { text: "API básica", available: true },
-    ],
-    buttonText: "Assinar Máquina",
-    buttonStyle: "solid",
-  },
-  {
-    id: "sala_guerra",
-    name: "Sala de Guerra",
-    price: "R$ 1.497/mês",
-    priceMonthly: 1497,
-    features: [
-      { text: "1000 buscas por mês", available: true, highlight: true },
-      { text: "5 anos de histórico", available: true, highlight: true },
-      { text: "Resumo executivo IA (premium)", available: true },
-      { text: "Exportar Excel (formatação avançada)", available: true },
-      { text: "Alertas automáticos", available: true },
-      { text: "Suporte 24/7 dedicado", available: true, highlight: true },
-      { text: "API completa + webhooks", available: true },
-      { text: "Relatórios personalizados", available: true },
-    ],
-    buttonText: "Assinar Sala de Guerra",
-    buttonStyle: "premium",
-  },
-];
-
 /**
  * Upgrade modal with plan comparison
- * Based on UX design spec in docs/ux/STORY-165-plan-ui-design.md
+ * Now fetches plans dynamically from backend to ensure consistency with /planos page
+ * Updated 2026-02-05: Removed hardcoded plans, synced with backend API
  */
 export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: UpgradeModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Close on Escape key
   useEffect(() => {
@@ -108,10 +49,34 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
     };
   }, [isOpen, onClose]);
 
+  // Fetch plans from backend when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchPlans = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
+        const res = await fetch(`${backendUrl}/plans`);
+        if (!res.ok) throw new Error("Erro ao carregar planos");
+        const data = await res.json();
+        // Hide free and master from public listing
+        setPlans(data.plans.filter((p: Plan) => p.id !== "free" && p.id !== "master"));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar planos");
+        setPlans([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, [isOpen]);
+
   // Track analytics when modal opens
   useEffect(() => {
     if (isOpen && typeof window !== "undefined") {
-      // TODO: Implement analytics tracking
       console.log("Upgrade modal opened", { source, preSelectedPlan });
     }
   }, [isOpen, source, preSelectedPlan]);
@@ -119,25 +84,28 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
   if (!isOpen) return null;
 
   const handlePlanClick = (planId: string) => {
-    // TODO: Redirect to Stripe Checkout
     console.log("Plan clicked:", planId, { source });
-    // For now, just redirect to /planos page
     window.location.href = `/planos?plan=${planId}`;
   };
 
-  const getButtonClasses = (buttonStyle: string) => {
+  const formatPrice = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+  const getPlanLabel = (plan: Plan) => {
+    if (plan.duration_days === 30) return "/mês";
+    if (plan.duration_days === 365) return "/ano";
+    return "";
+  };
+
+  const isPopular = (id: string) => id === "monthly" || id === "maquina";
+
+  const getButtonClasses = (popular: boolean, isPreSelected: boolean) => {
     const baseClasses = "w-full px-6 py-3 rounded-button font-semibold transition-all";
 
-    switch (buttonStyle) {
-      case "outline":
-        return `${baseClasses} border-2 border-brand-navy text-brand-navy bg-transparent hover:bg-brand-blue-subtle`;
-      case "solid":
-        return `${baseClasses} bg-brand-navy text-white hover:bg-brand-blue-hover hover:-translate-y-0.5 hover:shadow-lg`;
-      case "premium":
-        return `${baseClasses} bg-gradient-to-br from-yellow-400 to-yellow-600 text-gray-900 font-bold hover:-translate-y-0.5 hover:shadow-xl`;
-      default:
-        return `${baseClasses} bg-brand-navy text-white`;
+    if (popular || isPreSelected) {
+      return `${baseClasses} bg-brand-navy text-white hover:bg-brand-blue-hover hover:-translate-y-0.5 hover:shadow-lg`;
     }
+    return `${baseClasses} border-2 border-brand-navy text-brand-navy bg-transparent hover:bg-brand-blue-subtle`;
   };
 
   return (
@@ -176,72 +144,98 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
 
         {/* Plan cards grid */}
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {PLANS.map((plan) => {
-              const isPreSelected = preSelectedPlan === plan.id;
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-72 bg-surface-1 rounded-card animate-pulse" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-error mb-4">{error}</p>
+              <button
+                onClick={() => window.location.href = "/planos"}
+                className="text-brand-blue hover:underline"
+              >
+                Ver planos na página completa
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map((plan) => {
+                const popular = isPopular(plan.id);
+                const isPreSelected = preSelectedPlan === plan.id;
 
-              return (
-                <div
-                  key={plan.id}
-                  className={`
-                    relative p-6 rounded-card border-2 transition-all
-                    ${plan.popular ? "scale-105 shadow-xl border-brand-blue" : "border-border"}
-                    ${isPreSelected ? "ring-4 ring-brand-blue/30 animate-pulse-border" : ""}
-                  `}
-                >
-                  {/* Popular badge */}
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-blue text-white text-xs font-semibold rounded-full">
-                      ⭐ Mais Popular
+                return (
+                  <div
+                    key={plan.id}
+                    className={`
+                      relative p-6 rounded-card border-2 transition-all
+                      ${popular ? "scale-105 shadow-xl border-brand-blue" : "border-border"}
+                      ${isPreSelected ? "ring-4 ring-brand-blue/30" : ""}
+                    `}
+                  >
+                    {/* Popular badge */}
+                    {popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-blue text-white text-xs font-semibold rounded-full whitespace-nowrap">
+                        Mais Popular
+                      </div>
+                    )}
+
+                    {/* Plan name and price */}
+                    <div className="text-center mb-6">
+                      <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
+                      <p className="text-3xl font-bold text-brand-navy">
+                        {formatPrice(plan.price_brl)}
+                        <span className="text-sm font-normal text-ink-muted">{getPlanLabel(plan)}</span>
+                      </p>
                     </div>
-                  )}
 
-                  {/* Plan name and price */}
-                  <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
-                    <p className="text-3xl font-bold text-brand-navy">{plan.price}</p>
-                  </div>
-
-                  {/* Features list */}
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, idx) => (
-                      <li
-                        key={idx}
-                        className={`flex items-start gap-2 text-sm ${
-                          feature.highlight ? "font-semibold" : ""
-                        }`}
-                      >
-                        <span
-                          className={`flex-shrink-0 mt-0.5 ${
-                            feature.available ? "text-green-500" : "text-gray-400"
-                          }`}
-                          aria-hidden="true"
-                        >
-                          {feature.available ? "✓" : "✗"}
-                        </span>
-                        <span className={feature.available ? "text-ink" : "text-ink-muted"}>
-                          {feature.text}
+                    {/* Features list */}
+                    <ul className="space-y-3 mb-6">
+                      <li className="flex items-start gap-2 text-sm">
+                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
+                        <span className="text-ink">
+                          {plan.max_searches ? `${plan.max_searches} buscas/mês` : "Buscas ilimitadas"}
                         </span>
                       </li>
-                    ))}
-                  </ul>
+                      <li className="flex items-start gap-2 text-sm">
+                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
+                        <span className="text-ink">Todos os setores</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm">
+                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
+                        <span className="text-ink">Exportar Excel</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-sm">
+                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
+                        <span className="text-ink">Resumo executivo IA</span>
+                      </li>
+                      {!plan.max_searches && (
+                        <li className="flex items-start gap-2 text-sm font-semibold">
+                          <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
+                          <span className="text-ink">Histórico completo</span>
+                        </li>
+                      )}
+                    </ul>
 
-                  {/* CTA button */}
-                  <button
-                    onClick={() => handlePlanClick(plan.id)}
-                    className={getButtonClasses(plan.buttonStyle)}
-                  >
-                    {plan.buttonText}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                    {/* CTA button */}
+                    <button
+                      onClick={() => handlePlanClick(plan.id)}
+                      className={getButtonClasses(popular, isPreSelected)}
+                    >
+                      Assinar {plan.name}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Footer tip */}
           <div className="mt-8 p-4 bg-brand-blue-subtle border border-brand-blue/20 rounded-card text-center">
             <p className="text-sm text-ink-secondary">
-              💡 <strong>Dica:</strong> Upgrade a qualquer momento sem perder dados
+              Upgrade a qualquer momento sem perder dados
             </p>
           </div>
         </div>

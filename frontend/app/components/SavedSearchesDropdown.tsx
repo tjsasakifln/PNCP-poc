@@ -172,9 +172,9 @@ export function SavedSearchesDropdown({
             aria-hidden="true"
           />
 
-          {/* Dropdown Panel */}
-          <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface-0 border border-strong
-                          rounded-card shadow-lg z-20 max-h-[400px] overflow-y-auto">
+          {/* Dropdown Panel - Improved mobile: max-w to prevent overflow on small screens */}
+          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-80 sm:max-w-96 sm:w-96 bg-surface-0 border border-strong
+                          rounded-card shadow-lg z-20 max-h-[70vh] sm:max-h-[400px] overflow-y-auto">
             {searches.length === 0 ? (
               // Empty State
               <div className="p-6 text-center">

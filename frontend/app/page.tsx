@@ -944,8 +944,8 @@ function HomePageContent() {
           {/* Region quick-select */}
           <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
 
-          {/* UF Grid */}
-          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-2">
+          {/* UF Grid - Improved mobile: 4 cols on xs, 5 on sm, 7 on md, 9 on lg */}
+          <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5 sm:gap-2">
             {UFS.map(uf => (
               <button
                 key={uf}
@@ -953,7 +953,7 @@ function HomePageContent() {
                 type="button"
                 title={UF_NAMES[uf]}
                 aria-pressed={ufsSelecionadas.has(uf)}
-                className={`px-2 py-2 sm:px-4 rounded-button border text-sm sm:text-base font-medium transition-all duration-200 ${
+                className={`px-1.5 py-2.5 sm:px-4 sm:py-2 rounded-button border text-xs sm:text-base font-medium transition-all duration-200 min-h-[44px] ${
                   ufsSelecionadas.has(uf)
                     ? "bg-brand-navy text-white border-brand-navy hover:bg-brand-blue-hover"
                     : "bg-surface-0 text-ink-secondary border hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
@@ -1045,10 +1045,10 @@ function HomePageContent() {
             disabled={loading || !canSearch}
             type="button"
             aria-busy={loading}
-            className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+            className="w-full bg-brand-navy text-white py-3.5 sm:py-4 rounded-button text-base sm:text-lg font-semibold
                        hover:bg-brand-blue-hover active:bg-brand-blue
                        disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
-                       transition-all duration-200"
+                       transition-all duration-200 min-h-[48px] sm:min-h-[52px]"
           >
             {loading ? "Buscando..." : `Buscar ${searchLabel}`}
           </button>

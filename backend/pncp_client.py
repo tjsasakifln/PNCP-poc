@@ -405,7 +405,7 @@ class PNCPClient:
         modalidade: int,
         uf: str | None,
         on_progress: Callable[[int, int, int], None] | None,
-        max_pages: int = 10,  # Limit to prevent timeouts (10 pages = 200 records)
+        max_pages: int = 50,  # Increased from 10 to 50 to fetch more results (50 pages = 1000 records)
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all pages for a specific modality and UF combination.
@@ -420,7 +420,7 @@ class PNCPClient:
             modalidade: Modality code (codigoModalidadeContratacao)
             uf: State code (e.g., "SP") or None for all states
             on_progress: Optional progress callback
-            max_pages: Maximum number of pages to fetch (prevents timeouts, default 10)
+            max_pages: Maximum number of pages to fetch (prevents timeouts, default 50)
 
         Yields:
             Dict[str, Any]: Individual procurement record

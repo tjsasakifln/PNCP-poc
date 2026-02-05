@@ -119,8 +119,8 @@ def test_benchmark_full_filter_pipeline_rejected_uf(benchmark, sample_licitacao)
     assert "UF" in motivo
 
 
-def test_benchmark_full_filter_pipeline_rejected_valor(benchmark):
-    """Benchmark: Pipeline completo (rejeitado na 2ª etapa - Valor)."""
+def test_benchmark_full_filter_pipeline_any_valor(benchmark):
+    """Benchmark: Pipeline completo (value filter removed 2026-02-05 - all values accepted)."""
     licitacao_cara = {
         "uf": "SP",
         "valorTotalEstimado": 10_000_000.0,
@@ -128,19 +128,18 @@ def test_benchmark_full_filter_pipeline_rejected_valor(benchmark):
     }
     ufs = {"SP"}
     resultado, motivo = benchmark(filter_licitacao, licitacao_cara, ufs)
-    assert resultado is False
-    assert "valor" in motivo.lower()
+    # Value filter removed - now accepts any value
+    assert resultado is True
+    assert motivo is None
 
 
-def test_benchmark_full_filter_custom_params(benchmark, sample_licitacao):
-    """Benchmark: Pipeline com parâmetros customizados."""
+def test_benchmark_full_filter_no_value_params(benchmark, sample_licitacao):
+    """Benchmark: Pipeline (value filter removed 2026-02-05)."""
     ufs = {"SP"}
     resultado, _ = benchmark(
         filter_licitacao,
         sample_licitacao,
-        ufs,
-        valor_min=100_000.0,
-        valor_max=200_000.0
+        ufs
     )
     assert resultado is True
 

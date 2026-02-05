@@ -103,42 +103,40 @@ export function CustomDateInput({
       )}
 
       <div className="relative">
-        {/* Hidden native date input */}
-        <input
-          ref={inputRef}
-          id={id}
-          type="date"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          min={min}
-          max={max}
-          disabled={disabled}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-          aria-label={label}
-        />
-
-        {/* Custom styled display */}
+        {/* Custom styled display container */}
         <div
           className={`w-full border rounded-input px-4 py-3 text-base
                      bg-surface-0 text-ink
                      transition-all duration-200
                      flex items-center justify-between
                      ${isFocused ? 'ring-2 ring-brand-blue border-brand-blue' : 'border-strong'}
-                     ${disabled ? 'bg-surface-1 text-ink-muted cursor-not-allowed' : 'cursor-pointer'}
-                     pointer-events-none`}
+                     ${disabled ? 'bg-surface-1 text-ink-muted cursor-not-allowed' : 'cursor-pointer'}`}
         >
+          {/* Hidden native date input - z-10 ensures it captures all clicks */}
+          <input
+            ref={inputRef}
+            id={id}
+            type="date"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            min={min}
+            max={max}
+            disabled={disabled}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
+            aria-label={label}
+          />
           <span className={value ? 'text-ink' : 'text-ink-muted'}>
             {value ? formatDateDisplay(value) : 'DD/MM/AAAA'}
           </span>
 
-          {/* Calendar Icon */}
+          {/* Calendar Icon - z-20 to be above the input overlay */}
           <button
             type="button"
             onClick={handleCalendarClick}
             disabled={disabled}
-            className="pointer-events-auto"
+            className="pointer-events-auto relative z-20"
             aria-label="Abrir seletor de data"
             tabIndex={-1}
           >
@@ -160,14 +158,15 @@ export function CustomDateInput({
         </div>
       </div>
 
-      {/* Mobile Date Picker Modal - Issue #118 */}
+      {/* Mobile Date Picker Modal - Issue #118, improved landscape support */}
       {isMobile && showPicker && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 animate-fade-in"
           onClick={() => setShowPicker(false)}
         >
           <div
-            className="bg-surface-0 rounded-t-card sm:rounded-card shadow-xl w-full sm:max-w-md p-6 animate-fade-in-up"
+            className="bg-surface-0 rounded-t-card sm:rounded-card shadow-xl w-full sm:max-w-md p-4 sm:p-6
+                       max-h-[85vh] overflow-y-auto animate-fade-in-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

@@ -445,8 +445,6 @@ def match_keywords(
 def filter_licitacao(
     licitacao: dict,
     ufs_selecionadas: Set[str],
-    valor_min: float = 50_000.0,
-    valor_max: float = 5_000_000.0,
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
 ) -> Tuple[bool, Optional[str]]:
@@ -455,15 +453,16 @@ def filter_licitacao(
 
     Filter order (fastest to slowest for optimization):
     1. UF check (O(1) set lookup)
-    2. Value range check (simple numeric comparison)
-    3. Keyword matching (regex - most expensive)
-    4. Status/deadline validation (datetime parsing)
+    2. Keyword matching (regex - most expensive)
+    3. Status/deadline validation (datetime parsing)
+
+    Note: Value range filter was REMOVED (2026-02-05) to return all results
+    regardless of estimated value. This allows users to see all opportunities
+    without arbitrary value restrictions.
 
     Args:
         licitacao: PNCP procurement bid dictionary
         ufs_selecionadas: Set of selected Brazilian state codes (e.g., {'SP', 'RJ'})
-        valor_min: Minimum bid value in BRL (default: R$ 50,000)
-        valor_max: Maximum bid value in BRL (default: R$ 5,000,000)
 
     Returns:
         Tuple containing:
@@ -489,15 +488,11 @@ def filter_licitacao(
     if uf not in ufs_selecionadas:
         return False, f"UF '{uf}' não selecionada"
 
-    # 2. Value Range Filter
-    valor = licitacao.get("valorTotalEstimado")
-    if valor is None:
-        return False, "Valor não informado"
+    # VALUE RANGE FILTER REMOVED (2026-02-05)
+    # Previously filtered by valor_min/valor_max (R$ 10k - R$ 10M)
+    # Now returns ALL results regardless of value to maximize opportunities
 
-    if not (valor_min <= valor <= valor_max):
-        return False, f"Valor R$ {valor:,.2f} fora da faixa"
-
-    # 3. Keyword Filter (most expensive - regex matching)
+    # 2. Keyword Filter (most expensive - regex matching)
     kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
     exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
     objeto = licitacao.get("objetoCompra", "")
@@ -529,8 +524,6 @@ def filter_licitacao(
 def filter_batch(
     licitacoes: List[dict],
     ufs_selecionadas: Set[str],
-    valor_min: float = 50_000.0,
-    valor_max: float = 5_000_000.0,
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
@@ -540,11 +533,12 @@ def filter_batch(
     Applies filter_licitacao() to each bid and tracks rejection reasons
     for observability and debugging.
 
+    Note: Value range filter was REMOVED (2026-02-05) to return all results
+    regardless of estimated value.
+
     Args:
         licitacoes: List of PNCP procurement bid dictionaries
         ufs_selecionadas: Set of selected Brazilian state codes
-        valor_min: Minimum bid value in BRL (default: R$ 50,000)
-        valor_max: Maximum bid value in BRL (default: R$ 5,000,000)
 
     Returns:
         Tuple containing:
@@ -555,7 +549,6 @@ def filter_batch(
         - total: Total number of bids processed
         - aprovadas: Number of bids that passed all filters
         - rejeitadas_uf: Rejected due to UF not selected
-        - rejeitadas_valor: Rejected due to value outside range
         - rejeitadas_keyword: Rejected due to missing uniform keywords
         - rejeitadas_prazo: Rejected due to deadline passed
         - rejeitadas_outros: Rejected for other reasons
@@ -578,14 +571,13 @@ def filter_batch(
         "total": len(licitacoes),
         "aprovadas": 0,
         "rejeitadas_uf": 0,
-        "rejeitadas_valor": 0,
         "rejeitadas_keyword": 0,
         "rejeitadas_prazo": 0,
         "rejeitadas_outros": 0,
     }
 
     for lic in licitacoes:
-        aprovada, motivo = filter_licitacao(lic, ufs_selecionadas, valor_min, valor_max, keywords, exclusions)
+        aprovada, motivo = filter_licitacao(lic, ufs_selecionadas, keywords, exclusions)
 
         if aprovada:
             aprovadas.append(lic)
@@ -595,8 +587,6 @@ def filter_batch(
             motivo_lower = (motivo or "").lower()
             if "uf" in motivo_lower and "não selecionada" in motivo_lower:
                 stats["rejeitadas_uf"] += 1
-            elif "valor" in motivo_lower and "fora da faixa" in motivo_lower:
-                stats["rejeitadas_valor"] += 1
             elif "keyword" in motivo_lower:
                 stats["rejeitadas_keyword"] += 1
             elif "prazo" in motivo_lower:
