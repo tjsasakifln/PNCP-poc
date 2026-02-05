@@ -6,8 +6,7 @@
 # =============================================================================
 
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+builder = "NIXPACKS"
 watchPatterns = ["**"]
 
 [deploy]
