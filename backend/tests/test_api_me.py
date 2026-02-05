@@ -30,10 +30,11 @@ class TestMeEndpointFeatureFlagEnabled:
     """Test /api/me endpoint with ENABLE_NEW_PRICING=true."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_user_profile_with_capabilities(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return complete user profile with plan capabilities."""
         cleanup = setup_auth_override("user-123")
@@ -71,6 +72,7 @@ class TestMeEndpointFeatureFlagEnabled:
             assert data["plan_name"] == "Consultor Ágil"
             assert data["quota_used"] == 23
             assert data["quota_remaining"] == 27
+            assert data["is_admin"] is False
             assert "capabilities" in data
             assert data["capabilities"]["max_history_days"] == 30
             assert data["capabilities"]["allow_excel"] is False
@@ -79,10 +81,11 @@ class TestMeEndpointFeatureFlagEnabled:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_trial_info_for_free_users(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should include trial_expires_at for FREE trial users."""
         cleanup = setup_auth_override("user-123")
@@ -121,10 +124,11 @@ class TestMeEndpointFeatureFlagEnabled:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_expired_status_for_expired_trial(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return 'expired' subscription_status for expired trial."""
         cleanup = setup_auth_override("user-123")
@@ -204,9 +208,10 @@ class TestMeEndpointFeatureFlagDisabled:
     """Test /api/me endpoint with ENABLE_NEW_PRICING=false (legacy behavior)."""
 
     @patch("main.ENABLE_NEW_PRICING", False)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     def test_returns_legacy_plan_when_disabled(
-        self, mock_get_supabase
+        self, mock_get_supabase, mock_check_roles
     ):
         """Should return legacy plan info when feature flag is disabled."""
         cleanup = setup_auth_override("user-123")
@@ -236,10 +241,11 @@ class TestMeEndpointDifferentPlanTiers:
     """Test /api/me with different subscription plan tiers."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_free_trial_plan_capabilities(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return correct capabilities for FREE Trial plan."""
         cleanup = setup_auth_override("user-123")
@@ -277,10 +283,11 @@ class TestMeEndpointDifferentPlanTiers:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_consultor_agil_plan_capabilities(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return correct capabilities for Consultor Ágil plan."""
         cleanup = setup_auth_override("user-123")
@@ -317,10 +324,11 @@ class TestMeEndpointDifferentPlanTiers:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_maquina_plan_capabilities(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return correct capabilities for Máquina plan."""
         cleanup = setup_auth_override("user-123")
@@ -361,10 +369,11 @@ class TestMeEndpointQuotaInfo:
     """Test /api/me quota information returned."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_quota_used_and_remaining(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return quota_used and quota_remaining."""
         cleanup = setup_auth_override("user-123")
@@ -400,10 +409,11 @@ class TestMeEndpointQuotaInfo:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_quota_reset_date(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
     ):
         """Should return quota_reset_date in ISO format."""
         cleanup = setup_auth_override("user-123")
@@ -442,10 +452,11 @@ class TestMeEndpointErrorHandling:
     """Test error handling in /api/me endpoint."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
-        self, mock_get_supabase, mock_check_quota
+        self, mock_get_supabase, mock_check_quota, mock_check_roles
     ):
         """Should return safe fallback if quota check fails."""
         cleanup = setup_auth_override("user-123")
@@ -543,6 +554,75 @@ class TestMeEndpointErrorHandling:
 
             # Should have fallback email
             assert "email" in data
+        finally:
+            cleanup()
+
+
+class TestMeEndpointAdminStatus:
+    """Test admin status in /api/me response."""
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(True, True))  # is_admin=True
+    @patch("supabase_client.get_supabase")
+    def test_returns_is_admin_true_for_admin_users(
+        self, mock_get_supabase, mock_check_roles
+    ):
+        """Should return is_admin=true for admin users."""
+        cleanup = setup_auth_override("admin-123")
+        try:
+            mock_sb = MagicMock()
+            mock_get_supabase.return_value = mock_sb
+
+            mock_user_data = MagicMock()
+            mock_user_data.user.email = "admin@example.com"
+            mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
+
+            response = client.get("/me")
+
+            assert response.status_code == 200
+            data = response.json()
+
+            assert data["is_admin"] is True
+            assert data["plan_id"] == "sala_guerra"
+            assert data["plan_name"] == "Sala de Guerra (Admin)"
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
+    @patch("supabase_client.get_supabase")
+    @patch("quota.check_quota")
+    def test_returns_is_admin_false_for_regular_users(
+        self, mock_check_quota, mock_get_supabase, mock_check_roles
+    ):
+        """Should return is_admin=false for regular users."""
+        cleanup = setup_auth_override("user-123")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=10,
+                quota_remaining=40,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            mock_sb = MagicMock()
+            mock_get_supabase.return_value = mock_sb
+
+            mock_user_data = MagicMock()
+            mock_user_data.user.email = "user@example.com"
+            mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
+
+            response = client.get("/me")
+
+            assert response.status_code == 200
+            data = response.json()
+
+            assert data["is_admin"] is False
         finally:
             cleanup()
 

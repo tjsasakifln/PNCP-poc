@@ -452,6 +452,7 @@ async def get_profile(user: dict = Depends(require_auth)):
         quota_reset_date=quota_info.quota_reset_date.isoformat(),
         trial_expires_at=quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
         subscription_status=subscription_status,
+        is_admin=is_admin,
     )
 
 

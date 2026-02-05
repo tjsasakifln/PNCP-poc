@@ -456,3 +456,6 @@ class UserProfileResponse(BaseModel):
     subscription_status: str = Field(
         ..., description="Status: 'trial', 'active', or 'expired'"
     )
+    is_admin: bool = Field(
+        default=False, description="Whether user has admin privileges"
+    )

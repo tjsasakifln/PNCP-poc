@@ -31,10 +31,11 @@ class TestMeEndpoint:
     """Test /api/me endpoint."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_returns_user_profile_with_capabilities(
-        self, mock_get_used, mock_get_supabase
+        self, mock_get_used, mock_get_supabase, mock_check_roles
     ):
         """Should return complete user profile with plan capabilities."""
         cleanup = setup_auth_override("user-123")
@@ -78,10 +79,11 @@ class TestMeEndpoint:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_returns_trial_info_for_free_users(
-        self, mock_get_used, mock_get_supabase
+        self, mock_get_used, mock_get_supabase, mock_check_roles
     ):
         """Should include trial_expires_at for FREE trial users."""
         cleanup = setup_auth_override("user-123")
@@ -118,10 +120,11 @@ class TestMeEndpoint:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles", return_value=(False, False))
     @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
-        self, mock_get_supabase, mock_check_quota
+        self, mock_get_supabase, mock_check_quota, mock_check_roles
     ):
         """Should return safe fallback if quota check fails."""
         cleanup = setup_auth_override("user-123")

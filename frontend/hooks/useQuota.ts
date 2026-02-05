@@ -10,6 +10,7 @@ interface QuotaInfo {
   totalSearches: number;
   isUnlimited: boolean;
   isFreeUser: boolean;
+  isAdmin: boolean;
 }
 
 interface UseQuotaReturn {
@@ -20,6 +21,7 @@ interface UseQuotaReturn {
 }
 
 const FREE_SEARCHES_LIMIT = 3;
+const UNLIMITED_THRESHOLD = 999999;
 
 export function useQuota(): UseQuotaReturn {
   const { session, user } = useAuth();
@@ -49,34 +51,28 @@ export function useQuota(): UseQuotaReturn {
 
       const data = await response.json();
 
-      const subscription = data.subscription;
-      const totalSearches = data.total_searches || 0;
+      // New format: UserProfileResponse has fields at root level
+      const planId = data.plan_id;
+      const planName = data.plan_name;
+      const quotaRemaining = data.quota_remaining;
+      const quotaUsed = data.quota_used || 0;
+      const isAdmin = data.is_admin === true;
 
-      if (subscription) {
-        const plan = subscription.plans;
-        const creditsRemaining = subscription.credits_remaining;
-        const isUnlimited = creditsRemaining === null;
+      // Detect unlimited users (admins, masters, sala_guerra)
+      const isUnlimited = quotaRemaining >= UNLIMITED_THRESHOLD || isAdmin;
 
-        setQuota({
-          planId: subscription.plan_id,
-          planName: plan?.name || subscription.plan_id,
-          creditsRemaining: creditsRemaining,
-          totalSearches,
-          isUnlimited,
-          isFreeUser: false,
-        });
-      } else {
-        // Free tier
-        const remaining = Math.max(0, FREE_SEARCHES_LIMIT - totalSearches);
-        setQuota({
-          planId: "free",
-          planName: "Gratuito",
-          creditsRemaining: remaining,
-          totalSearches,
-          isUnlimited: false,
-          isFreeUser: true,
-        });
-      }
+      // Free user detection: plan_id starts with "free" and not admin
+      const isFreeUser = !isAdmin && (planId === "free" || planId === "free_trial");
+
+      setQuota({
+        planId,
+        planName,
+        creditsRemaining: isUnlimited ? null : quotaRemaining,
+        totalSearches: quotaUsed,
+        isUnlimited,
+        isFreeUser,
+        isAdmin,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setQuota(null);
