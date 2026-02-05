@@ -8,12 +8,13 @@
 ARG CACHEBUST=20260205v2-nuclearrebuild
 
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+# Using node:20.11-alpine3.19 instead of node:20-alpine to force layer rebuild
+FROM node:20.11-alpine3.19 AS deps
 WORKDIR /app
 
 # Force cache invalidation in deps stage too
 ARG CACHEBUST
-RUN echo "DEPS STAGE CACHE BUST: $CACHEBUST"
+RUN echo "DEPS STAGE CACHE BUST: $CACHEBUST - BUILD $(date +%s)"
 
 # Copy package files
 COPY package.json package-lock.json* ./
@@ -22,7 +23,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci && echo "Dependencies installed at $(date)"
 
 # Stage 2: Build
-FROM node:20-alpine AS builder
+FROM node:20.11-alpine3.19 AS builder
 WORKDIR /app
 
 # Redeclare CACHEBUST in builder stage to invalidate cache
@@ -69,7 +70,7 @@ RUN echo "BUILD_TIMESTAMP=$(date +%Y%m%d%H%M%S)" > /tmp/build-info.txt && cat /t
 RUN npm run build && echo "Build completed at $(date)"
 
 # Stage 3: Production
-FROM node:20-alpine AS runner
+FROM node:20.11-alpine3.19 AS runner
 WORKDIR /app
 
 # Set production environment
