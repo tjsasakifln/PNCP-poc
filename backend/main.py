@@ -241,28 +241,85 @@ def _get_admin_ids() -> set[str]:
     return {uid.strip().lower() for uid in raw.split(",") if uid.strip()}
 
 
-def _is_admin(user_id: str) -> bool:
-    """Check if user is a system administrator."""
+def _is_admin_from_env(user_id: str) -> bool:
+    """Check if user is admin via ADMIN_USER_IDS env var."""
     admin_ids = _get_admin_ids()
     return user_id.lower() in admin_ids
 
 
+def _is_master_from_supabase(user_id: str) -> bool:
+    """
+    Check if user has master/admin access via Supabase.
+
+    Checks two conditions:
+    1. profiles.plan_type = 'master'
+    2. Active subscription with plan_id = 'master'
+
+    Returns True if either condition is met.
+    """
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        # Check 1: profiles.plan_type = 'master'
+        profile = sb.table("profiles").select("plan_type").eq("id", user_id).single().execute()
+        if profile.data and profile.data.get("plan_type") == "master":
+            logger.debug(f"User {mask_user_id(user_id)} is master via profiles.plan_type")
+            return True
+
+        # Check 2: Active subscription with plan_id = 'master'
+        subscription = (
+            sb.table("user_subscriptions")
+            .select("plan_id")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .eq("plan_id", "master")
+            .limit(1)
+            .execute()
+        )
+        if subscription.data and len(subscription.data) > 0:
+            logger.debug(f"User {mask_user_id(user_id)} is master via active subscription")
+            return True
+
+        return False
+    except Exception as e:
+        logger.warning(f"Failed to check master status from Supabase: {e}")
+        return False
+
+
+def _is_admin(user_id: str) -> bool:
+    """
+    Check if user is a system administrator.
+
+    Checks multiple sources:
+    1. ADMIN_USER_IDS environment variable
+    2. Supabase profiles.plan_type = 'master'
+    3. Supabase user_subscriptions with plan_id = 'master' and is_active = true
+    """
+    # Fast path: check env var first (no DB call)
+    if _is_admin_from_env(user_id):
+        return True
+
+    # Check Supabase for master plan
+    return _is_master_from_supabase(user_id)
+
+
 def _get_admin_quota_info():
     """
-    Get quota info for admin users - always returns sala_guerra (highest tier).
+    Get quota info for admin/master users - returns sala_guerra (highest tier).
 
-    Admins bypass all quota restrictions and have full access to all features.
+    Admins/masters bypass all quota restrictions and have full access to all features.
     """
-    from quota import QuotaInfo, PLAN_CAPABILITIES, PLAN_NAMES
+    from quota import QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
     return QuotaInfo(
         allowed=True,
         plan_id="sala_guerra",
-        plan_name="Sala de Guerra (Admin)",
+        plan_name="Sala de Guerra (Master)",
         capabilities=PLAN_CAPABILITIES["sala_guerra"],
         quota_used=0,
-        quota_remaining=999999,  # Unlimited for admins
+        quota_remaining=999999,  # Unlimited for admins/masters
         quota_reset_date=datetime.now(timezone.utc),
         trial_expires_at=None,
         error_message=None,
