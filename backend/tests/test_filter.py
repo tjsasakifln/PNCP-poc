@@ -7,6 +7,12 @@ from filter import (
     filter_licitacao,
     filter_batch,
     remove_stopwords,
+    filtrar_por_status,
+    filtrar_por_modalidade,
+    filtrar_por_valor,
+    filtrar_por_esfera,
+    filtrar_por_municipio,
+    aplicar_todos_filtros,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO,
     STOPWORDS_PT,
@@ -816,3 +822,898 @@ class TestRemoveStopwords:
     def test_real_world_query_material_de_escritorio(self):
         result = remove_stopwords(["material", "de", "escritório", "e", "papelaria"])
         assert result == ["material", "escritório", "papelaria"]
+
+
+# =============================================================================
+# NEW FILTER FUNCTION TESTS (P0/P1)
+# =============================================================================
+
+
+class TestFiltrarPorStatus:
+    """Tests for filtrar_por_status() function."""
+
+    def test_status_todos_returns_all(self):
+        """Status 'todos' should return all bids."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Encerrada"},
+        ]
+        result = filtrar_por_status(bids, "todos")
+        assert len(result) == 2
+
+    def test_status_none_returns_all(self):
+        """None status should return all bids."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Encerrada"},
+        ]
+        result = filtrar_por_status(bids, None)
+        assert len(result) == 2
+
+    def test_status_recebendo_proposta(self):
+        """Should filter bids receiving proposals."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Aberta"},
+            {"situacaoCompra": "Encerrada"},
+            {"situacaoCompra": "Em julgamento"},
+        ]
+        result = filtrar_por_status(bids, "recebendo_proposta")
+        assert len(result) == 2
+        assert all(
+            "recebendo" in b["situacaoCompra"].lower() or
+            "aberta" in b["situacaoCompra"].lower()
+            for b in result
+        )
+
+    def test_status_em_julgamento(self):
+        """Should filter bids under evaluation."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Em julgamento"},
+            {"situacaoCompra": "Propostas encerradas"},
+            {"situacaoCompra": "Encerrada"},
+        ]
+        result = filtrar_por_status(bids, "em_julgamento")
+        assert len(result) == 2
+
+    def test_status_encerrada(self):
+        """Should filter closed/finalized bids."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Encerrada"},
+            {"situacaoCompra": "Homologada"},
+            {"situacaoCompra": "Adjudicada"},
+            {"situacaoCompra": "Anulada"},
+        ]
+        result = filtrar_por_status(bids, "encerrada")
+        assert len(result) == 4
+
+    def test_status_case_insensitive(self):
+        """Should handle case variations."""
+        bids = [
+            {"situacaoCompra": "RECEBENDO PROPOSTAS"},
+            {"situacaoCompra": "recebendo propostas"},
+            {"situacaoCompra": "Recebendo Propostas"},
+        ]
+        result = filtrar_por_status(bids, "recebendo_proposta")
+        assert len(result) == 3
+
+    def test_uses_alternative_status_fields(self):
+        """Should check situacao and statusCompra as fallback."""
+        bids = [
+            {"situacao": "Recebendo propostas"},
+            {"statusCompra": "Aberta"},
+            {"outroCampo": "Recebendo propostas"},  # Should NOT match
+        ]
+        result = filtrar_por_status(bids, "recebendo_proposta")
+        assert len(result) == 2
+
+    def test_unknown_status_returns_all(self):
+        """Unknown status should return all bids (graceful fallback)."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Encerrada"},
+        ]
+        result = filtrar_por_status(bids, "status_invalido")
+        assert len(result) == 2
+
+
+class TestFiltrarPorModalidade:
+    """Tests for filtrar_por_modalidade() function."""
+
+    def test_modalidade_none_returns_all(self):
+        """None modalidades should return all bids."""
+        bids = [
+            {"modalidadeId": 1},
+            {"modalidadeId": 6},
+        ]
+        result = filtrar_por_modalidade(bids, None)
+        assert len(result) == 2
+
+    def test_modalidade_empty_list_returns_all(self):
+        """Empty list should return all bids."""
+        bids = [
+            {"modalidadeId": 1},
+            {"modalidadeId": 6},
+        ]
+        result = filtrar_por_modalidade(bids, [])
+        assert len(result) == 2
+
+    def test_single_modalidade_filter(self):
+        """Should filter by single modalidade."""
+        bids = [
+            {"modalidadeId": 1, "objeto": "Pregão"},
+            {"modalidadeId": 6, "objeto": "Dispensa"},
+            {"modalidadeId": 3, "objeto": "Concorrência"},
+        ]
+        result = filtrar_por_modalidade(bids, [1])
+        assert len(result) == 1
+        assert result[0]["modalidadeId"] == 1
+
+    def test_multiple_modalidades_filter(self):
+        """Should filter by multiple modalidades."""
+        bids = [
+            {"modalidadeId": 1, "objeto": "Pregão Eletrônico"},
+            {"modalidadeId": 2, "objeto": "Pregão Presencial"},
+            {"modalidadeId": 6, "objeto": "Dispensa"},
+            {"modalidadeId": 3, "objeto": "Concorrência"},
+        ]
+        result = filtrar_por_modalidade(bids, [1, 2, 6])
+        assert len(result) == 3
+
+    def test_uses_alternative_modalidade_fields(self):
+        """Should check codigoModalidadeContratacao as fallback."""
+        bids = [
+            {"codigoModalidadeContratacao": 1},
+            {"modalidade_id": 6},
+        ]
+        result = filtrar_por_modalidade(bids, [1, 6])
+        assert len(result) == 2
+
+    def test_handles_string_modalidade_id(self):
+        """Should handle modalidadeId as string."""
+        bids = [
+            {"modalidadeId": "1"},
+            {"modalidadeId": "6"},
+        ]
+        result = filtrar_por_modalidade(bids, [1])
+        assert len(result) == 1
+
+
+class TestFiltrarPorValor:
+    """Tests for filtrar_por_valor() function."""
+
+    def test_no_limits_returns_all(self):
+        """No min/max should return all bids."""
+        bids = [
+            {"valorTotalEstimado": 50000},
+            {"valorTotalEstimado": 200000},
+            {"valorTotalEstimado": 1000000},
+        ]
+        result = filtrar_por_valor(bids, None, None)
+        assert len(result) == 3
+
+    def test_min_only_filter(self):
+        """Should filter with only minimum value."""
+        bids = [
+            {"valorTotalEstimado": 50000},
+            {"valorTotalEstimado": 100000},
+            {"valorTotalEstimado": 200000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=100000)
+        assert len(result) == 2
+        assert all(b["valorTotalEstimado"] >= 100000 for b in result)
+
+    def test_max_only_filter(self):
+        """Should filter with only maximum value."""
+        bids = [
+            {"valorTotalEstimado": 50000},
+            {"valorTotalEstimado": 100000},
+            {"valorTotalEstimado": 200000},
+        ]
+        result = filtrar_por_valor(bids, valor_max=100000)
+        assert len(result) == 2
+        assert all(b["valorTotalEstimado"] <= 100000 for b in result)
+
+    def test_range_filter(self):
+        """Should filter with both min and max."""
+        bids = [
+            {"valorTotalEstimado": 50000},
+            {"valorTotalEstimado": 100000},
+            {"valorTotalEstimado": 200000},
+            {"valorTotalEstimado": 500000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=75000, valor_max=300000)
+        assert len(result) == 2
+        assert all(75000 <= b["valorTotalEstimado"] <= 300000 for b in result)
+
+    def test_uses_alternative_value_fields(self):
+        """Should check valorEstimado as fallback."""
+        bids = [
+            {"valorEstimado": 100000},
+            {"valor": 200000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=50000)
+        assert len(result) == 2
+
+    def test_handles_string_value_brazilian_format(self):
+        """Should handle Brazilian number format (1.000,00)."""
+        bids = [
+            {"valorTotalEstimado": "100.000,00"},  # 100000
+            {"valorTotalEstimado": "200.000,00"},  # 200000
+        ]
+        result = filtrar_por_valor(bids, valor_min=150000)
+        assert len(result) == 1
+
+    def test_handles_zero_and_none_values(self):
+        """Should handle zero and missing values."""
+        bids = [
+            {"valorTotalEstimado": 0},
+            {"valorTotalEstimado": None},
+            {},  # Missing field
+            {"valorTotalEstimado": 100000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=50000)
+        assert len(result) == 1
+
+
+class TestFiltrarPorEsfera:
+    """Tests for filtrar_por_esfera() function."""
+
+    def test_esfera_none_returns_all(self):
+        """None esferas should return all bids."""
+        bids = [
+            {"esferaId": "F"},
+            {"esferaId": "M"},
+        ]
+        result = filtrar_por_esfera(bids, None)
+        assert len(result) == 2
+
+    def test_federal_filter(self):
+        """Should filter federal bids."""
+        bids = [
+            {"esferaId": "F", "orgao": "Ministério da Saúde"},
+            {"esferaId": "E", "orgao": "Governo do Estado"},
+            {"esferaId": "M", "orgao": "Prefeitura"},
+        ]
+        result = filtrar_por_esfera(bids, ["F"])
+        assert len(result) == 1
+        assert result[0]["esferaId"] == "F"
+
+    def test_municipal_filter(self):
+        """Should filter municipal bids."""
+        bids = [
+            {"esferaId": "F"},
+            {"esferaId": "E"},
+            {"esferaId": "M"},
+        ]
+        result = filtrar_por_esfera(bids, ["M"])
+        assert len(result) == 1
+
+    def test_multiple_esferas_filter(self):
+        """Should filter by multiple esferas."""
+        bids = [
+            {"esferaId": "F"},
+            {"esferaId": "E"},
+            {"esferaId": "M"},
+        ]
+        result = filtrar_por_esfera(bids, ["F", "M"])
+        assert len(result) == 2
+
+    def test_fallback_by_orgao_name(self):
+        """Should use orgao name as fallback when esferaId missing."""
+        bids = [
+            {"nomeOrgao": "Ministério da Educação"},  # Federal
+            {"nomeOrgao": "Prefeitura Municipal de São Paulo"},  # Municipal
+            {"nomeOrgao": "Secretaria de Estado de Saúde"},  # Estadual
+        ]
+        result = filtrar_por_esfera(bids, ["F"])
+        assert len(result) == 1
+
+    def test_case_insensitive_esfera_id(self):
+        """Should handle case variations in esferaId."""
+        bids = [
+            {"esferaId": "f"},
+            {"esferaId": "F"},
+            {"esfera": "f"},
+        ]
+        result = filtrar_por_esfera(bids, ["F"])
+        assert len(result) == 3
+
+
+class TestFiltrarPorMunicipio:
+    """Tests for filtrar_por_municipio() function."""
+
+    def test_municipio_none_returns_all(self):
+        """None municipios should return all bids."""
+        bids = [
+            {"codigoMunicipioIbge": "3550308"},
+            {"codigoMunicipioIbge": "3304557"},
+        ]
+        result = filtrar_por_municipio(bids, None)
+        assert len(result) == 2
+
+    def test_single_municipio_filter(self):
+        """Should filter by single municipio code."""
+        bids = [
+            {"codigoMunicipioIbge": "3550308", "municipio": "São Paulo"},
+            {"codigoMunicipioIbge": "3304557", "municipio": "Rio de Janeiro"},
+        ]
+        result = filtrar_por_municipio(bids, ["3550308"])
+        assert len(result) == 1
+        assert result[0]["municipio"] == "São Paulo"
+
+    def test_multiple_municipios_filter(self):
+        """Should filter by multiple municipio codes."""
+        bids = [
+            {"codigoMunicipioIbge": "3550308"},
+            {"codigoMunicipioIbge": "3304557"},
+            {"codigoMunicipioIbge": "3106200"},
+        ]
+        result = filtrar_por_municipio(bids, ["3550308", "3304557"])
+        assert len(result) == 2
+
+    def test_uses_alternative_municipio_fields(self):
+        """Should check municipioId and ibge as fallback."""
+        bids = [
+            {"municipioId": "3550308"},
+            {"codigoMunicipio": "3304557"},
+            {"ibge": "3106200"},
+        ]
+        result = filtrar_por_municipio(bids, ["3550308", "3304557", "3106200"])
+        assert len(result) == 3
+
+    def test_handles_integer_codes(self):
+        """Should handle integer municipio codes."""
+        bids = [
+            {"codigoMunicipioIbge": 3550308},
+        ]
+        result = filtrar_por_municipio(bids, ["3550308"])
+        assert len(result) == 1
+
+
+class TestFiltrarPorStatusEdgeCases:
+    """Additional edge case tests for filtrar_por_status()."""
+
+    def test_status_empty_string_returns_all(self):
+        """Empty string status should return all bids (same as 'todos')."""
+        bids = [
+            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": "Encerrada"},
+        ]
+        result = filtrar_por_status(bids, "")
+        assert len(result) == 2
+
+    def test_bid_with_all_status_fields_none(self):
+        """Bid with no status fields should not match any filter."""
+        bids = [
+            {},  # No situacaoCompra, situacao, or statusCompra
+            {"situacaoCompra": "Recebendo propostas"},
+        ]
+        result = filtrar_por_status(bids, "recebendo_proposta")
+        assert len(result) == 1
+
+    def test_bid_with_none_status_value(self):
+        """Bid with None as status value should be handled."""
+        bids = [
+            {"situacaoCompra": None},
+            {"situacaoCompra": "Recebendo propostas"},
+        ]
+        result = filtrar_por_status(bids, "recebendo_proposta")
+        assert len(result) == 1
+
+    def test_empty_list_returns_empty(self):
+        """Empty bid list should return empty list."""
+        result = filtrar_por_status([], "recebendo_proposta")
+        assert result == []
+
+    def test_status_with_extra_whitespace(self):
+        """Status with extra whitespace should still match."""
+        bids = [
+            {"situacaoCompra": "  Recebendo propostas  "},
+        ]
+        # Note: The current implementation doesn't strip, so we test as-is
+        result = filtrar_por_status(bids, "recebendo_proposta")
+        # Should match because 'recebendo' is found in the lowercased string
+        assert len(result) == 1
+
+
+class TestFiltrarPorModalidadeEdgeCases:
+    """Additional edge case tests for filtrar_por_modalidade()."""
+
+    def test_modalidade_none_value_in_bid(self):
+        """Bid with None modalidadeId should be filtered out."""
+        bids = [
+            {"modalidadeId": None},
+            {"modalidadeId": 1},
+        ]
+        result = filtrar_por_modalidade(bids, [1])
+        assert len(result) == 1
+        assert result[0]["modalidadeId"] == 1
+
+    def test_modalidade_invalid_string_value(self):
+        """Bid with non-numeric string modalidadeId should be filtered out."""
+        bids = [
+            {"modalidadeId": "invalid"},
+            {"modalidadeId": "1"},
+        ]
+        result = filtrar_por_modalidade(bids, [1])
+        assert len(result) == 1
+
+    def test_modalidade_float_conversion(self):
+        """Bid with float modalidadeId should be handled."""
+        bids = [
+            {"modalidadeId": 1.0},
+            {"modalidadeId": 2.5},  # Should convert to 2
+        ]
+        result = filtrar_por_modalidade(bids, [1, 2])
+        assert len(result) == 2
+
+    def test_modalidade_empty_bid(self):
+        """Bid with no modalidade fields should be filtered out."""
+        bids = [
+            {},
+            {"modalidadeId": 1},
+        ]
+        result = filtrar_por_modalidade(bids, [1])
+        assert len(result) == 1
+
+
+class TestFiltrarPorValorEdgeCases:
+    """Additional edge case tests for filtrar_por_valor()."""
+
+    def test_value_exactly_at_min(self):
+        """Value exactly at minimum should be included."""
+        bids = [{"valorTotalEstimado": 100000}]
+        result = filtrar_por_valor(bids, valor_min=100000)
+        assert len(result) == 1
+
+    def test_value_exactly_at_max(self):
+        """Value exactly at maximum should be included."""
+        bids = [{"valorTotalEstimado": 100000}]
+        result = filtrar_por_valor(bids, valor_max=100000)
+        assert len(result) == 1
+
+    def test_value_negative_number(self):
+        """Negative value should be handled (filtered out by min)."""
+        bids = [
+            {"valorTotalEstimado": -1000},
+            {"valorTotalEstimado": 100000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=0)
+        assert len(result) == 1
+
+    def test_value_very_large_number(self):
+        """Very large value should be handled."""
+        bids = [
+            {"valorTotalEstimado": 999_999_999_999.99},
+        ]
+        result = filtrar_por_valor(bids, valor_max=1_000_000_000_000)
+        assert len(result) == 1
+
+    def test_value_list_type_returns_zero(self):
+        """Non-numeric type (list) should be treated as 0."""
+        bids = [
+            {"valorTotalEstimado": [100000]},  # Invalid type
+            {"valorTotalEstimado": 100000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=50000)
+        assert len(result) == 1
+
+    def test_value_dict_type_returns_zero(self):
+        """Non-numeric type (dict) should be treated as 0."""
+        bids = [
+            {"valorTotalEstimado": {"amount": 100000}},  # Invalid type
+            {"valorTotalEstimado": 100000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=50000)
+        assert len(result) == 1
+
+    def test_value_empty_string(self):
+        """Empty string value should be treated as 0."""
+        bids = [
+            {"valorTotalEstimado": ""},
+            {"valorTotalEstimado": 100000},
+        ]
+        result = filtrar_por_valor(bids, valor_min=50000)
+        assert len(result) == 1
+
+
+class TestFiltrarPorEsferaEdgeCases:
+    """Additional edge case tests for filtrar_por_esfera()."""
+
+    def test_esfera_empty_list_returns_all(self):
+        """Empty esferas list should return all bids."""
+        bids = [
+            {"esferaId": "F"},
+            {"esferaId": "M"},
+        ]
+        result = filtrar_por_esfera(bids, [])
+        assert len(result) == 2
+
+    def test_esfera_lowercase_input(self):
+        """Lowercase esfera input should work."""
+        bids = [
+            {"esferaId": "F"},
+            {"esferaId": "M"},
+        ]
+        result = filtrar_por_esfera(bids, ["f", "m"])
+        assert len(result) == 2
+
+    def test_esfera_bid_with_no_fields(self):
+        """Bid with no esfera or orgao fields should be excluded."""
+        bids = [
+            {},  # No esferaId, esfera, tipoOrgao, or nomeOrgao
+            {"esferaId": "M"},
+        ]
+        result = filtrar_por_esfera(bids, ["M"])
+        assert len(result) == 1
+
+    def test_esfera_estadual_detection_by_orgao(self):
+        """Should detect estadual from orgao name."""
+        bids = [
+            {"nomeOrgao": "Secretaria de Estado de Educação"},
+            {"nomeOrgao": "Prefeitura Municipal"},
+        ]
+        result = filtrar_por_esfera(bids, ["E"])
+        assert len(result) == 1
+
+
+class TestFiltrarPorMunicipioEdgeCases:
+    """Additional edge case tests for filtrar_por_municipio()."""
+
+    def test_municipio_empty_list_returns_all(self):
+        """Empty municipios list should return all bids."""
+        bids = [
+            {"codigoMunicipioIbge": "3550308"},
+            {"codigoMunicipioIbge": "3304557"},
+        ]
+        result = filtrar_por_municipio(bids, [])
+        assert len(result) == 2
+
+    def test_municipio_partial_code_no_match(self):
+        """Partial IBGE code should not match."""
+        bids = [
+            {"codigoMunicipioIbge": "3550308"},
+        ]
+        result = filtrar_por_municipio(bids, ["35503"])  # Partial
+        assert len(result) == 0
+
+    def test_municipio_bid_with_no_fields(self):
+        """Bid with no municipio fields should be excluded."""
+        bids = [
+            {},  # No municipio fields
+            {"codigoMunicipioIbge": "3550308"},
+        ]
+        result = filtrar_por_municipio(bids, ["3550308"])
+        assert len(result) == 1
+
+    def test_municipio_with_whitespace_in_code(self):
+        """Whitespace in municipio code should be stripped."""
+        bids = [
+            {"codigoMunicipioIbge": " 3550308 "},
+        ]
+        result = filtrar_por_municipio(bids, ["3550308"])
+        assert len(result) == 1
+
+
+class TestAplicarTodosFiltros:
+    """Tests for aplicar_todos_filtros() orchestrator function."""
+
+    def test_minimal_filter_uf_only(self):
+        """Should filter by UF when only UF specified."""
+        bids = [
+            {"uf": "SP", "objetoCompra": "Uniformes escolares"},
+            {"uf": "RJ", "objetoCompra": "Uniformes escolares"},
+        ]
+        result, stats = aplicar_todos_filtros(bids, {"SP"})
+        assert len(result) == 1
+        assert stats["rejeitadas_uf"] == 1
+
+    def test_combined_filters(self):
+        """Should apply all filters in sequence."""
+        bids = [
+            # Should pass all filters
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 150000,
+                "objetoCompra": "Aquisição de uniformes escolares",
+            },
+            # Rejected by UF
+            {
+                "uf": "RJ",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 150000,
+                "objetoCompra": "Aquisição de uniformes escolares",
+            },
+            # Rejected by modalidade
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 3,  # Concorrência, not in filter
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 150000,
+                "objetoCompra": "Aquisição de uniformes escolares",
+            },
+            # Rejected by value
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 50000,  # Below minimum
+                "objetoCompra": "Aquisição de uniformes escolares",
+            },
+            # Rejected by keyword
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 150000,
+                "objetoCompra": "Aquisição de notebooks",  # No uniform keywords
+            },
+        ]
+
+        result, stats = aplicar_todos_filtros(
+            bids,
+            ufs_selecionadas={"SP"},
+            status="recebendo_proposta",
+            modalidades=[1, 2],
+            valor_min=100000,
+            valor_max=500000,
+            esferas=["M"],
+            municipios=["3550308"],
+        )
+
+        assert len(result) == 1
+        assert stats["total"] == 5
+        assert stats["aprovadas"] == 1
+        assert stats["rejeitadas_uf"] == 1
+        assert stats["rejeitadas_modalidade"] == 1
+        assert stats["rejeitadas_valor"] == 1
+        assert stats["rejeitadas_keyword"] == 1
+
+    def test_returns_complete_statistics(self):
+        """Should return all statistics keys."""
+        result, stats = aplicar_todos_filtros([], {"SP"})
+
+        required_keys = {
+            "total",
+            "aprovadas",
+            "rejeitadas_uf",
+            "rejeitadas_status",
+            "rejeitadas_esfera",
+            "rejeitadas_modalidade",
+            "rejeitadas_municipio",
+            "rejeitadas_valor",
+            "rejeitadas_keyword",
+            "rejeitadas_outros",
+        }
+        assert required_keys.issubset(set(stats.keys()))
+
+    def test_fail_fast_order(self):
+        """Should reject early to optimize performance."""
+        # Bid that would fail UF filter
+        bids = [
+            {
+                "uf": "RJ",  # Will fail first filter (UF)
+                "situacaoCompra": "Encerrada",  # Would fail status
+                "esferaId": "F",  # Would fail esfera
+                "modalidadeId": 99,  # Would fail modalidade
+                "valorTotalEstimado": 1,  # Would fail value
+                "objetoCompra": "Notebooks",  # Would fail keyword
+            }
+        ]
+
+        result, stats = aplicar_todos_filtros(
+            bids,
+            ufs_selecionadas={"SP"},
+            status="recebendo_proposta",
+            esferas=["M"],
+            modalidades=[1],
+            valor_min=100000,
+        )
+
+        # Should only count UF rejection (fail-fast)
+        assert stats["rejeitadas_uf"] == 1
+        assert stats["rejeitadas_status"] == 0
+        assert stats["rejeitadas_esfera"] == 0
+        assert stats["rejeitadas_modalidade"] == 0
+        assert stats["rejeitadas_valor"] == 0
+
+    def test_no_optional_filters(self):
+        """Should work with only required UF filter."""
+        bids = [
+            {"uf": "SP", "objetoCompra": "Uniformes escolares"},
+            {"uf": "RJ", "objetoCompra": "Uniformes escolares"},
+        ]
+        result, stats = aplicar_todos_filtros(
+            bids,
+            ufs_selecionadas={"SP", "RJ"},
+        )
+        assert len(result) == 2
+
+    def test_empty_input(self):
+        """Should handle empty input gracefully."""
+        result, stats = aplicar_todos_filtros([], {"SP"})
+        assert result == []
+        assert stats["total"] == 0
+        assert stats["aprovadas"] == 0
+
+    def test_preserves_bid_structure(self):
+        """Should preserve all original fields in approved bids."""
+        original_bid = {
+            "uf": "SP",
+            "objetoCompra": "Uniformes escolares",
+            "customField": "custom value",
+            "nestedObject": {"key": "value"},
+        }
+        result, _ = aplicar_todos_filtros([original_bid], {"SP"})
+        assert len(result) == 1
+        assert result[0]["customField"] == "custom value"
+        assert result[0]["nestedObject"]["key"] == "value"
+
+    def test_multiple_filters_all_pass(self):
+        """Bid passing all filters should be approved."""
+        bid = {
+            "uf": "SP",
+            "situacaoCompra": "Recebendo propostas",
+            "esferaId": "M",
+            "modalidadeId": 1,
+            "codigoMunicipioIbge": "3550308",
+            "valorTotalEstimado": 150000,
+            "objetoCompra": "Aquisição de uniformes escolares",
+        }
+        result, stats = aplicar_todos_filtros(
+            [bid],
+            ufs_selecionadas={"SP"},
+            status="recebendo_proposta",
+            modalidades=[1],
+            valor_min=100000,
+            valor_max=200000,
+            esferas=["M"],
+            municipios=["3550308"],
+        )
+        assert len(result) == 1
+        assert stats["aprovadas"] == 1
+
+    def test_custom_keywords_override_defaults(self):
+        """Custom keywords should override default KEYWORDS_UNIFORMES."""
+        bid = {
+            "uf": "SP",
+            "objetoCompra": "Aquisição de software de gestão",  # No uniform keywords
+        }
+        # Should fail with default keywords
+        result1, _ = aplicar_todos_filtros([bid], {"SP"})
+        assert len(result1) == 0
+
+        # Should pass with custom keywords
+        result2, _ = aplicar_todos_filtros(
+            [bid], {"SP"}, keywords={"software", "gestao"}
+        )
+        assert len(result2) == 1
+
+    def test_custom_exclusions_override_defaults(self):
+        """Custom exclusions should override default KEYWORDS_EXCLUSAO."""
+        bid = {
+            "uf": "SP",
+            "objetoCompra": "Aquisição de uniformes para militares",
+        }
+        # Should fail with default exclusions (militar is excluded)
+        result1, _ = aplicar_todos_filtros([bid], {"SP"})
+        assert len(result1) == 0
+
+        # Should pass with empty exclusions
+        result2, _ = aplicar_todos_filtros([bid], {"SP"}, exclusions=set())
+        assert len(result2) == 1
+
+    def test_all_filters_applied_in_sequence(self):
+        """All filters should be applied in fail-fast sequence."""
+        bids = [
+            # Fails UF
+            {"uf": "RJ", "objetoCompra": "Uniformes"},
+            # Fails status
+            {
+                "uf": "SP",
+                "situacaoCompra": "Encerrada",
+                "objetoCompra": "Uniformes",
+            },
+            # Fails esfera
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "F",
+                "objetoCompra": "Uniformes",
+            },
+            # Fails modalidade
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 9,
+                "objetoCompra": "Uniformes",
+            },
+            # Fails municipio
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "9999999",
+                "objetoCompra": "Uniformes",
+            },
+            # Fails value
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 10,
+                "objetoCompra": "Uniformes",
+            },
+            # Fails keyword
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 100000,
+                "objetoCompra": "Notebooks",
+            },
+            # PASSES all
+            {
+                "uf": "SP",
+                "situacaoCompra": "Recebendo propostas",
+                "esferaId": "M",
+                "modalidadeId": 1,
+                "codigoMunicipioIbge": "3550308",
+                "valorTotalEstimado": 100000,
+                "objetoCompra": "Uniformes escolares",
+            },
+        ]
+
+        result, stats = aplicar_todos_filtros(
+            bids,
+            ufs_selecionadas={"SP"},
+            status="recebendo_proposta",
+            modalidades=[1],
+            valor_min=50000,
+            valor_max=200000,
+            esferas=["M"],
+            municipios=["3550308"],
+        )
+
+        assert len(result) == 1
+        assert stats["total"] == 8
+        assert stats["aprovadas"] == 1
+        assert stats["rejeitadas_uf"] == 1
+        assert stats["rejeitadas_status"] == 1
+        assert stats["rejeitadas_esfera"] == 1
+        assert stats["rejeitadas_modalidade"] == 1
+        assert stats["rejeitadas_municipio"] == 1
+        assert stats["rejeitadas_valor"] == 1
+        assert stats["rejeitadas_keyword"] == 1
+
+    def test_status_todos_skips_status_filter(self):
+        """Status 'todos' should not filter by status."""
+        bids = [
+            {"uf": "SP", "situacaoCompra": "Encerrada", "objetoCompra": "Uniformes"},
+            {"uf": "SP", "situacaoCompra": "Recebendo propostas", "objetoCompra": "Uniformes"},
+        ]
+        result, stats = aplicar_todos_filtros(bids, {"SP"}, status="todos")
+        assert len(result) == 2
+        assert stats["rejeitadas_status"] == 0

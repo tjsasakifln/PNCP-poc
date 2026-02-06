@@ -16,7 +16,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { ufs, data_inicial, data_final, setor_id, termos_busca } = body;
+    const {
+      ufs,
+      data_inicial,
+      data_final,
+      setor_id,
+      termos_busca,
+      // New filter parameters
+      status,
+      modalidades,
+      valor_minimo,
+      valor_maximo,
+      esferas,
+      municipios,
+      ordenacao,
+    } = body;
 
     // Validações
     if (!ufs || !Array.isArray(ufs) || ufs.length === 0) {
@@ -59,7 +73,21 @@ export async function POST(request: NextRequest) {
       response = await fetch(`${backendUrl}/buscar`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ufs, data_inicial, data_final, setor_id: setor_id || "vestuario", termos_busca: termos_busca || undefined }),
+        body: JSON.stringify({
+          ufs,
+          data_inicial,
+          data_final,
+          setor_id: setor_id || "vestuario",
+          termos_busca: termos_busca || undefined,
+          // New filter parameters
+          status: status || undefined,
+          modalidades: modalidades || undefined,
+          valor_minimo: valor_minimo ?? undefined,
+          valor_maximo: valor_maximo ?? undefined,
+          esferas: esferas || undefined,
+          municipios: municipios || undefined,
+          ordenacao: ordenacao || undefined,
+        }),
         signal: controller.signal,
       });
 

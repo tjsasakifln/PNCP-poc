@@ -28,6 +28,16 @@ import { UpgradeModal } from "./components/UpgradeModal";
 import { LicitacoesPreview } from "./components/LicitacoesPreview";
 import type { SavedSearch } from "../lib/savedSearches";
 
+// P0 Filters
+import { StatusFilter, type StatusLicitacao } from "../components/StatusFilter";
+import { ModalidadeFilter } from "../components/ModalidadeFilter";
+import { ValorFilter } from "../components/ValorFilter";
+
+// P1 Filters
+import { EsferaFilter, type Esfera } from "./components/EsferaFilter";
+import { MunicipioFilter, type Municipio } from "./components/MunicipioFilter";
+import { OrdenacaoSelect, type OrdenacaoOption } from "./components/OrdenacaoSelect";
+
 // White label branding configuration
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
@@ -134,6 +144,17 @@ function HomePageContent() {
   const [termosArray, setTermosArray] = useState<string[]>([]);
   const [termoInput, setTermoInput] = useState("");
 
+  // P0 Filter states
+  const [status, setStatus] = useState<StatusLicitacao>("recebendo_proposta");
+  const [modalidades, setModalidades] = useState<number[]>([]);
+  const [valorMin, setValorMin] = useState<number | null>(null);
+  const [valorMax, setValorMax] = useState<number | null>(null);
+
+  // P1 Filter states
+  const [esferas, setEsferas] = useState<Esfera[]>([]);
+  const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [ordenacao, setOrdenacao] = useState<OrdenacaoOption>("data_desc");
+
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
     new Set(["SC", "PR", "RS"])
   );
@@ -211,7 +232,19 @@ function HomePageContent() {
     searchMode: "setor" | "termos";
     setorId?: string;
     termosArray?: string[];
+    status: StatusLicitacao;
+    modalidades: number[];
+    valorMin: number | null;
+    valorMax: number | null;
+    esferas: Esfera[];
+    municipios: Municipio[];
+    ordenacao: OrdenacaoOption;
   } | null>(null);
+
+  // Clear municipios when UFs change (they depend on selected UFs)
+  useEffect(() => {
+    setMunicipios([]);
+  }, [Array.from(ufsSelecionadas).sort().join(",")]);
 
   useEffect(() => {
     fetch("/api/setores")
@@ -346,6 +379,13 @@ function HomePageContent() {
       searchMode,
       setorId: searchMode === "setor" ? setorId : undefined,
       termosArray: searchMode === "termos" ? [...termosArray] : undefined,
+      status,
+      modalidades: [...modalidades],
+      valorMin,
+      valorMax,
+      esferas: [...esferas],
+      municipios: [...municipios],
+      ordenacao,
     };
 
     setLoading(true);
@@ -413,6 +453,14 @@ function HomePageContent() {
           data_final: dataFinal,
           setor_id: searchMode === "setor" ? setorId : null,
           termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
+          // New filter parameters
+          status,
+          modalidades: modalidades.length > 0 ? modalidades : undefined,
+          valor_minimo: valorMin,
+          valor_maximo: valorMax,
+          esferas: esferas.length > 0 ? esferas : undefined,
+          municipios: municipios.length > 0 ? municipios.map(m => m.codigo) : undefined,
+          ordenacao,
         })
       });
 
@@ -673,6 +721,15 @@ function HomePageContent() {
     } else if (params.searchMode === "termos" && params.termosArray) {
       setTermosArray(params.termosArray);
     }
+
+    // Restore new filter params
+    setStatus(params.status);
+    setModalidades(params.modalidades);
+    setValorMin(params.valorMin);
+    setValorMax(params.valorMax);
+    setEsferas(params.esferas);
+    setMunicipios(params.municipios);
+    setOrdenacao(params.ordenacao);
 
     // Track pull-to-refresh event
     trackEvent('pull_to_refresh_triggered', {
@@ -1040,6 +1097,58 @@ function HomePageContent() {
           })()}
         </section>
 
+        {/* P1 Filters: Esfera and Municipio (Location Section) */}
+        <section className="mb-6 animate-fade-in-up stagger-3 relative z-0">
+          <h3 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Filtragem por Localizacao
+          </h3>
+          <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong">
+            <EsferaFilter
+              value={esferas}
+              onChange={(newEsferas) => { setEsferas(newEsferas); setResult(null); }}
+              disabled={loading}
+            />
+            <MunicipioFilter
+              ufs={Array.from(ufsSelecionadas)}
+              value={municipios}
+              onChange={(newMunicipios) => { setMunicipios(newMunicipios); setResult(null); }}
+              disabled={loading}
+            />
+          </div>
+        </section>
+
+        {/* P0 Filters: Status, Modalidade, Valor (Advanced Filters Section) */}
+        <section className="mb-6 animate-fade-in-up stagger-4 relative z-0">
+          <h3 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filtros Avancados
+          </h3>
+          <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong">
+            <StatusFilter
+              value={status}
+              onChange={(newStatus) => { setStatus(newStatus); setResult(null); }}
+              disabled={loading}
+            />
+            <ModalidadeFilter
+              value={modalidades}
+              onChange={(newModalidades) => { setModalidades(newModalidades); setResult(null); }}
+              disabled={loading}
+            />
+            <ValorFilter
+              valorMin={valorMin}
+              valorMax={valorMax}
+              onChange={(min, max) => { setValorMin(min); setValorMax(max); setResult(null); }}
+              disabled={loading}
+            />
+          </div>
+        </section>
+
         {/* Search Buttons */}
         <div className="space-y-3">
           <button
@@ -1156,6 +1265,18 @@ function HomePageContent() {
         {/* Result Display */}
         {result && result.resumo.total_oportunidades > 0 && (
           <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in-up">
+            {/* Results header with ordering */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong">
+              <h2 className="text-lg font-semibold text-ink">
+                Resultados da Busca
+              </h2>
+              <OrdenacaoSelect
+                value={ordenacao}
+                onChange={(newOrdenacao) => { setOrdenacao(newOrdenacao); }}
+                disabled={loading}
+              />
+            </div>
+
             {/* Stopword / terms transparency banner */}
             {(result.termos_utilizados || result.stopwords_removidas) && (
               <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary">

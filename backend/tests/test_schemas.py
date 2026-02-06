@@ -3,7 +3,17 @@
 import pytest
 from datetime import date, timedelta
 from pydantic import ValidationError
-from schemas import BuscaRequest, BuscaResponse, ResumoLicitacoes
+from schemas import (
+    BuscaRequest,
+    BuscaResponse,
+    ResumoLicitacoes,
+    StatusLicitacao,
+    ModalidadeContratacao,
+    EsferaGovernamental,
+    validate_uuid,
+    validate_plan_id,
+    sanitize_search_query,
+)
 
 
 def _recent_dates(days_back: int = 7) -> tuple[str, str]:
@@ -350,3 +360,444 @@ class TestSchemaJSONSerialization:
         assert json_data["excel_available"] is True
         assert json_data["quota_used"] == 5
         assert json_data["quota_remaining"] == 45
+
+
+# ============================================================================
+# NEW: Tests for P0/P1 Filters - Enums
+# ============================================================================
+
+
+class TestStatusLicitacaoEnum:
+    """Tests for StatusLicitacao enum."""
+
+    def test_all_status_values_exist(self):
+        """All expected status values should be defined."""
+        assert StatusLicitacao.RECEBENDO_PROPOSTA.value == "recebendo_proposta"
+        assert StatusLicitacao.EM_JULGAMENTO.value == "em_julgamento"
+        assert StatusLicitacao.ENCERRADA.value == "encerrada"
+        assert StatusLicitacao.TODOS.value == "todos"
+
+    def test_status_enum_count(self):
+        """Should have exactly 4 status options."""
+        assert len(StatusLicitacao) == 4
+
+    def test_status_from_string(self):
+        """Should create enum from string value."""
+        status = StatusLicitacao("recebendo_proposta")
+        assert status == StatusLicitacao.RECEBENDO_PROPOSTA
+
+
+class TestModalidadeContratacaoEnum:
+    """Tests for ModalidadeContratacao enum."""
+
+    def test_all_modalidade_codes_exist(self):
+        """All 10 modalidade codes should be defined."""
+        assert ModalidadeContratacao.PREGAO_ELETRONICO == 1
+        assert ModalidadeContratacao.PREGAO_PRESENCIAL == 2
+        assert ModalidadeContratacao.CONCORRENCIA == 3
+        assert ModalidadeContratacao.TOMADA_PRECOS == 4
+        assert ModalidadeContratacao.CONVITE == 5
+        assert ModalidadeContratacao.DISPENSA == 6
+        assert ModalidadeContratacao.INEXIGIBILIDADE == 7
+        assert ModalidadeContratacao.CREDENCIAMENTO == 8
+        assert ModalidadeContratacao.LEILAO == 9
+        assert ModalidadeContratacao.DIALOGO_COMPETITIVO == 10
+
+    def test_modalidade_enum_count(self):
+        """Should have exactly 10 modalidade options."""
+        assert len(ModalidadeContratacao) == 10
+
+    def test_modalidade_codes_are_sequential(self):
+        """Modalidade codes should be 1-10."""
+        codes = [m.value for m in ModalidadeContratacao]
+        assert codes == list(range(1, 11))
+
+
+class TestEsferaGovernamentalEnum:
+    """Tests for EsferaGovernamental enum."""
+
+    def test_all_esfera_values_exist(self):
+        """All esfera codes should be defined."""
+        assert EsferaGovernamental.FEDERAL.value == "F"
+        assert EsferaGovernamental.ESTADUAL.value == "E"
+        assert EsferaGovernamental.MUNICIPAL.value == "M"
+
+    def test_esfera_enum_count(self):
+        """Should have exactly 3 esfera options."""
+        assert len(EsferaGovernamental) == 3
+
+
+# ============================================================================
+# NEW: Tests for BuscaRequest P0/P1 Filters Validation
+# ============================================================================
+
+
+class TestBuscaRequestValorValidation:
+    """Tests for valor_minimo and valor_maximo validation."""
+
+    def test_valor_maximo_greater_than_minimo_accepted(self):
+        """valor_maximo >= valor_minimo should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            valor_minimo=50000,
+            valor_maximo=500000,
+        )
+        assert request.valor_minimo == 50000
+        assert request.valor_maximo == 500000
+
+    def test_valor_maximo_equal_to_minimo_accepted(self):
+        """valor_maximo == valor_minimo should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            valor_minimo=100000,
+            valor_maximo=100000,
+        )
+        assert request.valor_minimo == request.valor_maximo
+
+    def test_valor_maximo_less_than_minimo_rejected(self):
+        """valor_maximo < valor_minimo should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                valor_minimo=500000,
+                valor_maximo=50000,
+            )
+        assert "valor_maximo deve ser maior ou igual" in str(exc_info.value)
+
+    def test_valor_minimo_only_accepted(self):
+        """Only valor_minimo without valor_maximo should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            valor_minimo=50000,
+        )
+        assert request.valor_minimo == 50000
+        assert request.valor_maximo is None
+
+    def test_valor_maximo_only_accepted(self):
+        """Only valor_maximo without valor_minimo should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            valor_maximo=500000,
+        )
+        assert request.valor_minimo is None
+        assert request.valor_maximo == 500000
+
+    def test_valor_minimo_negative_rejected(self):
+        """Negative valor_minimo should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError):
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                valor_minimo=-1000,
+            )
+
+    def test_valor_maximo_negative_rejected(self):
+        """Negative valor_maximo should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError):
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                valor_maximo=-1000,
+            )
+
+    def test_valor_zero_accepted(self):
+        """Zero values should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            valor_minimo=0,
+            valor_maximo=0,
+        )
+        assert request.valor_minimo == 0
+        assert request.valor_maximo == 0
+
+
+class TestBuscaRequestModalidadeValidation:
+    """Tests for modalidades validation."""
+
+    def test_valid_modalidade_codes_accepted(self):
+        """Valid modalidade codes (1-10) should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=[1, 2, 6],
+        )
+        assert request.modalidades == [1, 2, 6]
+
+    def test_all_modalidade_codes_accepted(self):
+        """All 10 modalidade codes should be accepted together."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        )
+        assert len(request.modalidades) == 10
+
+    def test_invalid_modalidade_code_zero_rejected(self):
+        """Modalidade code 0 should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[0, 1],
+            )
+        assert "inválidos" in str(exc_info.value).lower()
+
+    def test_invalid_modalidade_code_eleven_rejected(self):
+        """Modalidade code 11 should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[11],
+            )
+        assert "inválidos" in str(exc_info.value).lower()
+
+    def test_invalid_modalidade_negative_rejected(self):
+        """Negative modalidade code should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError):
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[-1],
+            )
+
+    def test_modalidades_none_accepted(self):
+        """None modalidades should be accepted (means all)."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=None,
+        )
+        assert request.modalidades is None
+
+    def test_modalidades_empty_list_accepted(self):
+        """Empty modalidades list should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=[],
+        )
+        assert request.modalidades == []
+
+
+class TestBuscaRequestOrdenacaoValidation:
+    """Tests for ordenacao validation."""
+
+    def test_valid_ordenacao_data_desc(self):
+        """'data_desc' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            ordenacao="data_desc",
+        )
+        assert request.ordenacao == "data_desc"
+
+    def test_valid_ordenacao_data_asc(self):
+        """'data_asc' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            ordenacao="data_asc",
+        )
+        assert request.ordenacao == "data_asc"
+
+    def test_valid_ordenacao_valor_desc(self):
+        """'valor_desc' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            ordenacao="valor_desc",
+        )
+        assert request.ordenacao == "valor_desc"
+
+    def test_valid_ordenacao_valor_asc(self):
+        """'valor_asc' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            ordenacao="valor_asc",
+        )
+        assert request.ordenacao == "valor_asc"
+
+    def test_valid_ordenacao_prazo_asc(self):
+        """'prazo_asc' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            ordenacao="prazo_asc",
+        )
+        assert request.ordenacao == "prazo_asc"
+
+    def test_valid_ordenacao_relevancia(self):
+        """'relevancia' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            ordenacao="relevancia",
+        )
+        assert request.ordenacao == "relevancia"
+
+    def test_invalid_ordenacao_rejected(self):
+        """Invalid ordenacao should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                ordenacao="invalid_option",
+            )
+        assert "inválida" in str(exc_info.value).lower()
+
+    def test_default_ordenacao_is_data_desc(self):
+        """Default ordenacao should be 'data_desc'."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+        )
+        assert request.ordenacao == "data_desc"
+
+
+class TestBuscaRequestStatusValidation:
+    """Tests for status validation."""
+
+    def test_default_status_is_recebendo_proposta(self):
+        """Default status should be 'recebendo_proposta'."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+        )
+        assert request.status == StatusLicitacao.RECEBENDO_PROPOSTA
+
+    def test_status_todos_accepted(self):
+        """Status 'todos' should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            status=StatusLicitacao.TODOS,
+        )
+        assert request.status == StatusLicitacao.TODOS
+
+    def test_status_enum_value_accepted(self):
+        """Status enum value should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            status="encerrada",
+        )
+        assert request.status == StatusLicitacao.ENCERRADA
+
+
+class TestBuscaRequestEsferaValidation:
+    """Tests for esferas validation."""
+
+    def test_valid_esferas_accepted(self):
+        """Valid esfera codes should be accepted."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            esferas=[EsferaGovernamental.MUNICIPAL, EsferaGovernamental.ESTADUAL],
+        )
+        assert len(request.esferas) == 2
+
+    def test_esferas_none_accepted(self):
+        """None esferas should be accepted (means all)."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            esferas=None,
+        )
+        assert request.esferas is None
+
+
+class TestBuscaRequestFullRequest:
+    """Tests for complete BuscaRequest with all P0/P1 fields."""
+
+    def test_complete_request_with_all_filters(self):
+        """Complete request with all filters should be valid."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP", "RJ"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            setor_id="vestuario",
+            termos_busca="jaleco avental",
+            status=StatusLicitacao.RECEBENDO_PROPOSTA,
+            modalidades=[1, 2, 6],
+            valor_minimo=50000,
+            valor_maximo=500000,
+            esferas=[EsferaGovernamental.MUNICIPAL],
+            municipios=["3550308", "3304557"],
+            ordenacao="valor_desc",
+        )
+
+        assert request.ufs == ["SP", "RJ"]
+        assert request.setor_id == "vestuario"
+        assert request.termos_busca == "jaleco avental"
+        assert request.status == StatusLicitacao.RECEBENDO_PROPOSTA
+        assert request.modalidades == [1, 2, 6]
+        assert request.valor_minimo == 50000
+        assert request.valor_maximo == 500000
+        assert len(request.esferas) == 1
+        assert request.municipios == ["3550308", "3304557"]
+        assert request.ordenacao == "valor_desc"

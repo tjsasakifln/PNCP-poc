@@ -20,9 +20,19 @@ from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
 from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse, LicitacaoItem
-from pncp_client import PNCPClient
+from pncp_client import PNCPClient, buscar_todas_ufs_paralelo, AsyncPNCPClient
 from exceptions import PNCPAPIError, PNCPRateLimitError
-from filter import filter_batch, remove_stopwords
+from filter import (
+    filter_batch,
+    remove_stopwords,
+    aplicar_todos_filtros,
+    filtrar_por_status,
+    filtrar_por_modalidade,
+    filtrar_por_valor,
+    filtrar_por_esfera,
+    filtrar_por_municipio,
+)
+from utils.ordenacao import ordenar_licitacoes
 from excel import create_excel
 from llm import gerar_resumo, gerar_resumo_fallback
 from sectors import get_sector, list_sectors
@@ -717,6 +727,11 @@ async def buscar_licitacoes(
         >>> response.total_filtrado
         15
     """
+    import asyncio
+    import time as sync_time
+
+    start_time = sync_time.time()
+
     logger.info(
         "Starting procurement search",
         extra={
@@ -724,6 +739,13 @@ async def buscar_licitacoes(
             "data_inicial": request.data_inicial,
             "data_final": request.data_final,
             "setor_id": request.setor_id,
+            "status": request.status.value if request.status else None,
+            "modalidades": request.modalidades,
+            "valor_minimo": request.valor_minimo,
+            "valor_maximo": request.valor_maximo,
+            "esferas": [e.value for e in request.esferas] if request.esferas else None,
+            "municipios": request.municipios,
+            "ordenacao": request.ordenacao,
         },
     )
 
@@ -820,26 +842,88 @@ async def buscar_licitacoes(
                 )
             logger.info(f"Using sector keywords ({len(active_keywords)} terms)")
 
-        # Step 1: Fetch from PNCP (generator → list for reusability in filter + LLM)
-        logger.info("Fetching bids from PNCP API")
-        client = PNCPClient()
-        licitacoes_raw = list(
-            client.fetch_all(
-                data_inicial=request.data_inicial,
-                data_final=request.data_final,
-                ufs=request.ufs,
-            )
-        )
-        logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP")
+        # Step 1: Fetch from PNCP API
+        # Use parallel fetching for multiple UFs to improve performance
+        logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
 
-        # Step 2: Apply filtering (fail-fast sequential: UF → value → keywords)
-        # Value range filter REMOVED (2026-02-05) to return ALL results
-        # Previously: valor_min=10_000.0, valor_max=10_000_000.0
-        # Now: No value filtering - all opportunities shown regardless of value
-        logger.info("Applying filters to raw bids (no value restrictions)")
-        licitacoes_filtradas, stats = filter_batch(
+        # Determine if we should use parallel fetching (multiple UFs benefit from it)
+        use_parallel = len(request.ufs) > 1
+
+        # Get status value for PNCP API query
+        status_value = request.status.value if request.status else None
+
+        # Get modalidades to fetch (defaults to [6] if not specified)
+        modalidades_to_fetch = request.modalidades if request.modalidades else None
+
+        if use_parallel:
+            # Use async parallel fetching for better performance
+            logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
+            try:
+                licitacoes_raw = await buscar_todas_ufs_paralelo(
+                    ufs=request.ufs,
+                    data_inicial=request.data_inicial,
+                    data_final=request.data_final,
+                    modalidades=modalidades_to_fetch,
+                    status=status_value,
+                    max_concurrent=10,
+                )
+            except Exception as e:
+                logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
+                # Fallback to sequential fetch
+                client = PNCPClient()
+                licitacoes_raw = list(
+                    client.fetch_all(
+                        data_inicial=request.data_inicial,
+                        data_final=request.data_final,
+                        ufs=request.ufs,
+                        modalidades=modalidades_to_fetch,
+                    )
+                )
+        else:
+            # Use sequential fetch for single UF (simpler, less overhead)
+            client = PNCPClient()
+            licitacoes_raw = list(
+                client.fetch_all(
+                    data_inicial=request.data_inicial,
+                    data_final=request.data_final,
+                    ufs=request.ufs,
+                    modalidades=modalidades_to_fetch,
+                )
+            )
+
+        fetch_elapsed = sync_time.time() - start_time
+        logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP in {fetch_elapsed:.2f}s")
+
+        # Step 2: Apply ALL filters (fail-fast sequential)
+        # Filter order (optimized for performance):
+        # 1. UF (O(1) - already filtered at API level for parallel, but verify)
+        # 2. Status (if specified)
+        # 3. Esfera (if specified)
+        # 4. Modalidade (if specified - may be filtered at API level)
+        # 5. Município (if specified)
+        # 6. Valor (if specified)
+        # 7. Keywords (regex - most expensive)
+
+        # Extract filter parameters from request
+        esferas_values = [e.value for e in request.esferas] if request.esferas else None
+        status_filter = request.status.value if request.status else "todos"
+
+        logger.info(
+            f"Applying filters: status={status_filter}, modalidades={request.modalidades}, "
+            f"valor=[{request.valor_minimo}, {request.valor_maximo}], esferas={esferas_values}, "
+            f"municipios={len(request.municipios) if request.municipios else 0}"
+        )
+
+        # Use the comprehensive filter function that applies all filters in order
+        licitacoes_filtradas, stats = aplicar_todos_filtros(
             licitacoes_raw,
             ufs_selecionadas=set(request.ufs),
+            status=status_filter,
+            modalidades=request.modalidades,
+            valor_min=request.valor_minimo,
+            valor_max=request.valor_maximo,
+            esferas=esferas_values,
+            municipios=request.municipios,
             keywords=active_keywords,
             exclusions=sector.exclusions if not custom_terms else set(),
         )
@@ -853,9 +937,12 @@ async def buscar_licitacoes(
             logger.info(f"  - Total processadas: {stats.get('total', len(licitacoes_raw))}")
             logger.info(f"  - Aprovadas: {stats.get('aprovadas', len(licitacoes_filtradas))}")
             logger.info(f"  - Rejeitadas (UF): {stats.get('rejeitadas_uf', 0)}")
+            logger.info(f"  - Rejeitadas (Status): {stats.get('rejeitadas_status', 0)}")
+            logger.info(f"  - Rejeitadas (Esfera): {stats.get('rejeitadas_esfera', 0)}")
+            logger.info(f"  - Rejeitadas (Modalidade): {stats.get('rejeitadas_modalidade', 0)}")
+            logger.info(f"  - Rejeitadas (Município): {stats.get('rejeitadas_municipio', 0)}")
             logger.info(f"  - Rejeitadas (Valor): {stats.get('rejeitadas_valor', 0)}")
             logger.info(f"  - Rejeitadas (Keyword): {stats.get('rejeitadas_keyword', 0)}")
-            logger.info(f"  - Rejeitadas (Prazo): {stats.get('rejeitadas_prazo', 0)}")
             logger.info(f"  - Rejeitadas (Outros): {stats.get('rejeitadas_outros', 0)}")
 
         # Diagnostic: sample of keyword-rejected items for debugging
@@ -948,6 +1035,21 @@ async def buscar_licitacoes(
                     )
 
             return response
+
+        # Step 2.5: Apply sorting/ordering
+        # Sort results before LLM summary and Excel generation so order is consistent
+        logger.info(f"Applying sorting: ordenacao='{request.ordenacao}'")
+        licitacoes_filtradas = ordenar_licitacoes(
+            licitacoes_filtradas,
+            ordenacao=request.ordenacao,
+            termos_busca=custom_terms if custom_terms else list(active_keywords)[:10],  # Use first 10 keywords for relevance
+        )
+
+        filter_elapsed = sync_time.time() - start_time
+        logger.info(
+            f"Filtering and sorting complete in {filter_elapsed:.2f}s: "
+            f"{len(licitacoes_filtradas)} results ordered by '{request.ordenacao}'"
+        )
 
         # Step 3: Generate executive summary via LLM (with automatic fallback)
         logger.info("Generating executive summary")

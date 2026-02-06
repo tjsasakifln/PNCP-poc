@@ -800,3 +800,275 @@ class TestDateRangeChunking:
         chunks = PNCPClient._chunk_date_range("2024-06-15", "2024-06-15")
         assert len(chunks) == 1
         assert chunks[0] == ("2024-06-15", "2024-06-15")
+
+
+# ============================================================================
+# Async Parallel Client Tests
+# ============================================================================
+
+
+class TestAsyncPNCPClient:
+    """Test AsyncPNCPClient for parallel UF fetching."""
+
+    @pytest.mark.asyncio
+    async def test_async_client_context_manager(self):
+        """Test AsyncPNCPClient can be used as async context manager."""
+        from pncp_client import AsyncPNCPClient
+
+        async with AsyncPNCPClient() as client:
+            assert client._client is not None
+            assert client._semaphore is not None
+            assert client.max_concurrent == 10  # default
+
+    @pytest.mark.asyncio
+    async def test_async_client_custom_concurrency(self):
+        """Test AsyncPNCPClient respects custom max_concurrent setting."""
+        from pncp_client import AsyncPNCPClient
+
+        async with AsyncPNCPClient(max_concurrent=5) as client:
+            assert client.max_concurrent == 5
+            # Semaphore should limit to 5 concurrent requests
+            assert client._semaphore._value == 5
+
+    @pytest.mark.asyncio
+    async def test_status_pncp_map_values(self):
+        """Test STATUS_PNCP_MAP contains expected mappings."""
+        from pncp_client import STATUS_PNCP_MAP
+
+        assert STATUS_PNCP_MAP["recebendo_proposta"] == "recebendo_proposta"
+        assert STATUS_PNCP_MAP["em_julgamento"] == "propostas_encerradas"
+        assert STATUS_PNCP_MAP["encerrada"] == "encerrada"
+        assert STATUS_PNCP_MAP["todos"] is None
+
+
+class TestBuscarTodasUfsParalelo:
+    """Test buscar_todas_ufs_paralelo convenience function."""
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_parallel_fetch_single_uf(self, mock_get):
+        """Test parallel fetch with a single UF."""
+        from pncp_client import buscar_todas_ufs_paralelo
+
+        # Mock response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {"numeroControlePNCP": "001", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": "Sao Paulo"}, "orgaoEntidade": {"razaoSocial": "Orgao SP"}},
+                {"numeroControlePNCP": "002", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": "Campinas"}, "orgaoEntidade": {"razaoSocial": "Orgao Campinas"}},
+            ],
+            "totalRegistros": 2,
+            "totalPaginas": 1,
+            "paginasRestantes": 0,
+        }
+        mock_get.return_value = mock_response
+
+        results = await buscar_todas_ufs_paralelo(
+            ufs=["SP"],
+            data_inicial="2026-01-01",
+            data_final="2026-01-15",
+        )
+
+        assert len(results) == 2
+        assert all(r["uf"] == "SP" for r in results)
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_parallel_fetch_multiple_ufs(self, mock_get):
+        """Test parallel fetch with multiple UFs executes concurrently."""
+        from pncp_client import buscar_todas_ufs_paralelo
+
+        # Track which UFs were requested
+        requested_ufs = []
+
+        def mock_get_side_effect(*args, **kwargs):
+            uf = kwargs.get("params", {}).get("uf", "ALL")
+            requested_ufs.append(uf)
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "data": [
+                    {"numeroControlePNCP": f"{uf}-001", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                ],
+                "totalRegistros": 1,
+                "totalPaginas": 1,
+                "paginasRestantes": 0,
+            }
+            return mock_response
+
+        mock_get.side_effect = mock_get_side_effect
+
+        results = await buscar_todas_ufs_paralelo(
+            ufs=["SP", "RJ", "MG"],
+            data_inicial="2026-01-01",
+            data_final="2026-01-15",
+        )
+
+        # Should have results from all 3 UFs
+        assert len(results) == 3
+        ufs_in_results = {r["uf"] for r in results}
+        assert ufs_in_results == {"SP", "RJ", "MG"}
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_parallel_fetch_handles_errors_gracefully(self, mock_get):
+        """Test parallel fetch continues despite errors in individual UFs."""
+        from pncp_client import buscar_todas_ufs_paralelo, PNCPAPIError
+        import httpx
+
+        call_count = 0
+
+        def mock_get_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            uf = kwargs.get("params", {}).get("uf", "ALL")
+
+            # Simulate error for RJ
+            if uf == "RJ":
+                raise httpx.TimeoutException("Timeout")
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "data": [
+                    {"numeroControlePNCP": f"{uf}-001", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                ],
+                "totalRegistros": 1,
+                "totalPaginas": 1,
+                "paginasRestantes": 0,
+            }
+            return mock_response
+
+        mock_get.side_effect = mock_get_side_effect
+
+        # Should NOT raise error - should continue with other UFs
+        results = await buscar_todas_ufs_paralelo(
+            ufs=["SP", "RJ", "MG"],
+            data_inicial="2026-01-01",
+            data_final="2026-01-15",
+            max_concurrent=10,
+        )
+
+        # Should have results from SP and MG (RJ failed)
+        ufs_in_results = {r["uf"] for r in results}
+        assert "SP" in ufs_in_results
+        assert "MG" in ufs_in_results
+        # RJ may or may not be present depending on retry logic
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_parallel_fetch_deduplicates_within_uf(self, mock_get):
+        """Test parallel fetch removes duplicate records within each UF."""
+        from pncp_client import buscar_todas_ufs_paralelo
+
+        call_count = 0
+
+        def mock_get_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            uf = kwargs.get("params", {}).get("uf", "SP")
+            page = kwargs.get("params", {}).get("pagina", 1)
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+
+            if page == 1:
+                # First page returns items including a duplicate for page 2
+                mock_response.json.return_value = {
+                    "data": [
+                        {"numeroControlePNCP": f"{uf}-001", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                        {"numeroControlePNCP": f"{uf}-002", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                    ],
+                    "totalRegistros": 3,
+                    "totalPaginas": 2,
+                    "paginasRestantes": 1,
+                }
+            else:
+                # Second page returns a duplicate of 001
+                mock_response.json.return_value = {
+                    "data": [
+                        {"numeroControlePNCP": f"{uf}-001", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},  # Duplicate!
+                        {"numeroControlePNCP": f"{uf}-003", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+                    ],
+                    "totalRegistros": 3,
+                    "totalPaginas": 2,
+                    "paginasRestantes": 0,
+                }
+            return mock_response
+
+        mock_get.side_effect = mock_get_side_effect
+
+        results = await buscar_todas_ufs_paralelo(
+            ufs=["SP"],
+            data_inicial="2026-01-01",
+            data_final="2026-01-15",
+        )
+
+        # Should have 3 unique items (001, 002, 003) - duplicate 001 removed
+        assert len(results) == 3
+        codigo_compras = {r["codigoCompra"] for r in results}
+        assert codigo_compras == {"SP-001", "SP-002", "SP-003"}
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_parallel_fetch_with_status_filter(self, mock_get):
+        """Test parallel fetch passes status parameter correctly."""
+        from pncp_client import buscar_todas_ufs_paralelo, STATUS_PNCP_MAP
+
+        captured_params = []
+
+        def mock_get_side_effect(*args, **kwargs):
+            captured_params.append(kwargs.get("params", {}))
+
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "data": [],
+                "totalRegistros": 0,
+                "totalPaginas": 1,
+                "paginasRestantes": 0,
+            }
+            return mock_response
+
+        mock_get.side_effect = mock_get_side_effect
+
+        await buscar_todas_ufs_paralelo(
+            ufs=["SP"],
+            data_inicial="2026-01-01",
+            data_final="2026-01-15",
+            status="recebendo_proposta",
+        )
+
+        # Should have passed situacaoCompra parameter
+        assert len(captured_params) > 0
+        assert captured_params[0].get("situacaoCompra") == "recebendo_proposta"
+
+    @pytest.mark.asyncio
+    async def test_parallel_fetch_logs_execution_time(self, caplog):
+        """Test parallel fetch logs total execution time."""
+        from pncp_client import buscar_todas_ufs_paralelo
+        import logging
+
+        with patch("pncp_client.httpx.AsyncClient.get") as mock_get:
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "data": [],
+                "totalRegistros": 0,
+                "totalPaginas": 1,
+                "paginasRestantes": 0,
+            }
+            mock_get.return_value = mock_response
+
+            with caplog.at_level(logging.INFO):
+                await buscar_todas_ufs_paralelo(
+                    ufs=["SP"],
+                    data_inicial="2026-01-01",
+                    data_final="2026-01-15",
+                )
+
+            # Should log completion with timing
+            assert any("Parallel fetch complete" in record.message for record in caplog.records)
+            assert any("in" in record.message and "s" in record.message for record in caplog.records)

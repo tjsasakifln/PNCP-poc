@@ -1,11 +1,13 @@
 """Resilient HTTP client for PNCP API."""
 
+import asyncio
 import logging
 import random
 import time
 from datetime import date, timedelta
-from typing import Any, Callable, Dict, Generator
+from typing import Any, Callable, Dict, Generator, List, Optional
 
+import httpx
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -14,6 +16,20 @@ from config import RetryConfig, DEFAULT_MODALIDADES
 from exceptions import PNCPAPIError
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Status Mapping for PNCP API
+# ============================================================================
+
+# Mapping from StatusLicitacao enum values to PNCP API parameter values
+# Note: Import StatusLicitacao at runtime to avoid circular imports
+STATUS_PNCP_MAP = {
+    "recebendo_proposta": "recebendo_proposta",
+    "em_julgamento": "propostas_encerradas",
+    "encerrada": "encerrada",
+    "todos": None,  # Don't send status parameter - return all
+}
 
 
 def calculate_delay(attempt: int, config: RetryConfig) -> float:
@@ -498,3 +514,402 @@ class PNCPClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit - close session."""
         self.close()
+
+
+# ============================================================================
+# Async Parallel Search Client
+# ============================================================================
+
+class AsyncPNCPClient:
+    """
+    Async HTTP client for PNCP API with parallel UF fetching.
+
+    Uses httpx for async HTTP requests and asyncio.Semaphore for
+    concurrency control. This enables fetching multiple UFs in parallel
+    while respecting rate limits.
+
+    Example:
+        >>> async with AsyncPNCPClient() as client:
+        ...     results = await client.buscar_todas_ufs_paralelo(
+        ...         ufs=["SP", "RJ", "MG"],
+        ...         data_inicial="2026-01-01",
+        ...         data_final="2026-01-31"
+        ...     )
+    """
+
+    BASE_URL = "https://pncp.gov.br/api/consulta/v1"
+
+    def __init__(
+        self,
+        config: RetryConfig | None = None,
+        max_concurrent: int = 10
+    ):
+        """
+        Initialize async PNCP client.
+
+        Args:
+            config: Retry configuration (uses defaults if not provided)
+            max_concurrent: Maximum concurrent requests (default 10)
+        """
+        self.config = config or RetryConfig()
+        self.max_concurrent = max_concurrent
+        self._semaphore: asyncio.Semaphore | None = None
+        self._client: httpx.AsyncClient | None = None
+        self._request_count = 0
+        self._last_request_time = 0.0
+
+    async def __aenter__(self) -> "AsyncPNCPClient":
+        """Async context manager entry."""
+        self._semaphore = asyncio.Semaphore(self.max_concurrent)
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(self.config.timeout),
+            headers={
+                "User-Agent": "BidIQ/1.0 (procurement-search; contact@bidiq.com.br)",
+                "Accept": "application/json",
+            },
+            follow_redirects=True,
+        )
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        if self._client:
+            await self._client.aclose()
+        logger.debug(f"Async session closed. Total requests made: {self._request_count}")
+
+    async def _rate_limit(self) -> None:
+        """
+        Enforce rate limiting: minimum 100ms between requests.
+
+        This is applied per-request, not per-UF, to respect PNCP's rate limits
+        even when making parallel requests.
+        """
+        MIN_INTERVAL = 0.1  # 100ms
+
+        current_time = asyncio.get_event_loop().time()
+        elapsed = current_time - self._last_request_time
+        if elapsed < MIN_INTERVAL:
+            await asyncio.sleep(MIN_INTERVAL - elapsed)
+
+        self._last_request_time = asyncio.get_event_loop().time()
+        self._request_count += 1
+
+    async def _fetch_page_async(
+        self,
+        data_inicial: str,
+        data_final: str,
+        modalidade: int,
+        uf: str | None = None,
+        pagina: int = 1,
+        tamanho: int = 20,
+        status: str | None = None,
+    ) -> Dict[str, Any]:
+        """
+        Fetch a single page of procurement data asynchronously.
+
+        Args:
+            data_inicial: Start date in YYYY-MM-DD format
+            data_final: End date in YYYY-MM-DD format
+            modalidade: Modality code
+            uf: Optional state code
+            pagina: Page number
+            tamanho: Page size
+            status: Optional status filter (PNCP API value)
+
+        Returns:
+            API response dictionary
+        """
+        if self._client is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+
+        await self._rate_limit()
+
+        # Convert dates from YYYY-MM-DD to yyyyMMdd (PNCP API format)
+        data_inicial_fmt = data_inicial.replace("-", "")
+        data_final_fmt = data_final.replace("-", "")
+
+        params = {
+            "dataInicial": data_inicial_fmt,
+            "dataFinal": data_final_fmt,
+            "codigoModalidadeContratacao": modalidade,
+            "pagina": pagina,
+            "tamanhoPagina": tamanho,
+        }
+
+        if uf:
+            params["uf"] = uf
+
+        # Add status parameter if provided (not "todos")
+        if status:
+            params["situacaoCompra"] = status
+
+        url = f"{self.BASE_URL}/contratacoes/publicacao"
+
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                logger.debug(
+                    f"Async request {url} params={params} attempt={attempt + 1}/"
+                    f"{self.config.max_retries + 1}"
+                )
+
+                response = await self._client.get(url, params=params)
+
+                # Handle rate limiting
+                if response.status_code == 429:
+                    retry_after = int(response.headers.get("Retry-After", 60))
+                    logger.warning(f"Rate limited (429). Waiting {retry_after}s")
+                    await asyncio.sleep(retry_after)
+                    continue
+
+                # Success
+                if response.status_code == 200:
+                    return response.json()
+
+                # No content
+                if response.status_code == 204:
+                    return {
+                        "data": [],
+                        "totalRegistros": 0,
+                        "totalPaginas": 0,
+                        "paginaAtual": pagina,
+                        "temProximaPagina": False,
+                    }
+
+                # Non-retryable error
+                if response.status_code not in self.config.retryable_status_codes:
+                    raise PNCPAPIError(
+                        f"API returned non-retryable status {response.status_code}"
+                    )
+
+                # Retryable error - wait and retry
+                if attempt < self.config.max_retries:
+                    delay = min(
+                        self.config.base_delay * (self.config.exponential_base ** attempt),
+                        self.config.max_delay
+                    )
+                    if self.config.jitter:
+                        delay *= random.uniform(0.5, 1.5)
+                    logger.warning(
+                        f"Error {response.status_code}. Retrying in {delay:.1f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise PNCPAPIError(
+                        f"Failed after {self.config.max_retries + 1} attempts"
+                    )
+
+            except httpx.TimeoutException as e:
+                if attempt < self.config.max_retries:
+                    delay = min(
+                        self.config.base_delay * (self.config.exponential_base ** attempt),
+                        self.config.max_delay
+                    )
+                    logger.warning(f"Timeout. Retrying in {delay:.1f}s")
+                    await asyncio.sleep(delay)
+                else:
+                    raise PNCPAPIError(f"Timeout after {self.config.max_retries + 1} attempts") from e
+
+            except httpx.HTTPError as e:
+                if attempt < self.config.max_retries:
+                    delay = min(
+                        self.config.base_delay * (self.config.exponential_base ** attempt),
+                        self.config.max_delay
+                    )
+                    logger.warning(f"HTTP error: {e}. Retrying in {delay:.1f}s")
+                    await asyncio.sleep(delay)
+                else:
+                    raise PNCPAPIError(f"HTTP error after retries: {e}") from e
+
+        raise PNCPAPIError("Unexpected: exhausted retries without result")
+
+    async def _fetch_uf_all_pages(
+        self,
+        uf: str,
+        data_inicial: str,
+        data_final: str,
+        modalidades: List[int],
+        status: str | None = None,
+        max_pages: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch all pages for a single UF across all modalities.
+
+        Args:
+            uf: State code
+            data_inicial: Start date
+            data_final: End date
+            modalidades: List of modality codes
+            status: Optional status filter
+            max_pages: Maximum pages to fetch per modality
+
+        Returns:
+            List of procurement records
+        """
+        async with self._semaphore:
+            all_items: List[Dict[str, Any]] = []
+            seen_ids: set = set()
+
+            for modalidade in modalidades:
+                pagina = 1
+
+                while pagina <= max_pages:
+                    try:
+                        response = await self._fetch_page_async(
+                            data_inicial=data_inicial,
+                            data_final=data_final,
+                            modalidade=modalidade,
+                            uf=uf,
+                            pagina=pagina,
+                            status=status,
+                        )
+
+                        data = response.get("data", [])
+                        paginas_restantes = response.get("paginasRestantes", 0)
+
+                        for item in data:
+                            item_id = item.get("numeroControlePNCP", "")
+                            if item_id and item_id not in seen_ids:
+                                seen_ids.add(item_id)
+                                # Normalize item
+                                normalized = PNCPClient._normalize_item(item)
+                                all_items.append(normalized)
+
+                        if paginas_restantes <= 0:
+                            break
+
+                        pagina += 1
+
+                    except PNCPAPIError as e:
+                        logger.warning(f"Error fetching UF={uf}, modalidade={modalidade}: {e}")
+                        break
+
+            logger.info(f"Fetched {len(all_items)} items for UF={uf}")
+            return all_items
+
+    async def buscar_todas_ufs_paralelo(
+        self,
+        ufs: List[str],
+        data_inicial: str,
+        data_final: str,
+        modalidades: List[int] | None = None,
+        status: str | None = None,
+        max_pages_per_uf: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """
+        Busca licitações em múltiplas UFs em paralelo com limite de concorrência.
+
+        This is the main method for parallel UF fetching. It creates one task
+        per UF and executes them concurrently (up to max_concurrent).
+
+        Args:
+            ufs: List of state codes (e.g., ["SP", "RJ", "MG"])
+            data_inicial: Start date in YYYY-MM-DD format
+            data_final: End date in YYYY-MM-DD format
+            modalidades: List of modality codes (default: [6] - Pregão Eletrônico)
+            status: Status filter (StatusLicitacao value or None)
+            max_pages_per_uf: Maximum pages to fetch per UF/modality
+
+        Returns:
+            List of all procurement records (deduplicated)
+
+        Example:
+            >>> async with AsyncPNCPClient(max_concurrent=10) as client:
+            ...     results = await client.buscar_todas_ufs_paralelo(
+            ...         ufs=["SP", "RJ", "MG", "BA", "RS"],
+            ...         data_inicial="2026-01-01",
+            ...         data_final="2026-01-15",
+            ...         status="recebendo_proposta"
+            ...     )
+            >>> len(results)
+            1523
+        """
+        import time as sync_time
+        start_time = sync_time.time()
+
+        # Use default modalities if not specified
+        modalidades = modalidades or DEFAULT_MODALIDADES
+
+        # Map status to PNCP API value
+        pncp_status = STATUS_PNCP_MAP.get(status) if status else None
+
+        logger.info(
+            f"Starting parallel fetch for {len(ufs)} UFs "
+            f"(max_concurrent={self.max_concurrent}, status={status})"
+        )
+
+        # Create tasks for each UF
+        tasks = [
+            self._fetch_uf_all_pages(
+                uf=uf,
+                data_inicial=data_inicial,
+                data_final=data_final,
+                modalidades=modalidades,
+                status=pncp_status,
+                max_pages=max_pages_per_uf,
+            )
+            for uf in ufs
+        ]
+
+        # Execute all tasks concurrently (semaphore limits actual concurrency)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Flatten results and handle errors
+        all_items: List[Dict[str, Any]] = []
+        errors = 0
+
+        for uf, result in zip(ufs, results):
+            if isinstance(result, Exception):
+                logger.error(f"Error fetching UF={uf}: {result}")
+                errors += 1
+            else:
+                all_items.extend(result)
+
+        elapsed = sync_time.time() - start_time
+        logger.info(
+            f"Parallel fetch complete: {len(all_items)} items from {len(ufs)} UFs "
+            f"in {elapsed:.2f}s ({errors} errors)"
+        )
+
+        return all_items
+
+
+async def buscar_todas_ufs_paralelo(
+    ufs: List[str],
+    data_inicial: str,
+    data_final: str,
+    modalidades: List[int] | None = None,
+    status: str | None = None,
+    max_concurrent: int = 10,
+) -> List[Dict[str, Any]]:
+    """
+    Convenience function for parallel UF search.
+
+    Creates an AsyncPNCPClient and performs parallel search in a single call.
+    Use this for simple cases where you don't need to reuse the client.
+
+    Args:
+        ufs: List of state codes
+        data_inicial: Start date YYYY-MM-DD
+        data_final: End date YYYY-MM-DD
+        modalidades: Optional modality codes
+        status: Optional status filter
+        max_concurrent: Maximum concurrent requests (default 10)
+
+    Returns:
+        List of procurement records
+
+    Example:
+        >>> results = await buscar_todas_ufs_paralelo(
+        ...     ufs=["SP", "RJ"],
+        ...     data_inicial="2026-01-01",
+        ...     data_final="2026-01-15"
+        ... )
+    """
+    async with AsyncPNCPClient(max_concurrent=max_concurrent) as client:
+        return await client.buscar_todas_ufs_paralelo(
+            ufs=ufs,
+            data_inicial=data_inicial,
+            data_final=data_final,
+            modalidades=modalidades,
+            status=status,
+        )

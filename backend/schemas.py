@@ -2,8 +2,65 @@
 
 import re
 from datetime import date, datetime
+from enum import Enum, IntEnum
 from pydantic import BaseModel, Field, model_validator, field_validator
 from typing import List, Optional, Dict, Any, Annotated
+
+
+# ============================================================================
+# Enums for Filter Options (P0/P1 Features)
+# ============================================================================
+
+class StatusLicitacao(str, Enum):
+    """
+    Status da licitação para filtro de busca.
+
+    Define o estágio atual do processo licitatório:
+    - RECEBENDO_PROPOSTA: Licitações abertas para envio de propostas (padrão)
+    - EM_JULGAMENTO: Propostas encerradas, em análise pelo órgão
+    - ENCERRADA: Processo finalizado (com ou sem vencedor)
+    - TODOS: Sem filtro de status (retorna todas)
+    """
+    RECEBENDO_PROPOSTA = "recebendo_proposta"
+    EM_JULGAMENTO = "em_julgamento"
+    ENCERRADA = "encerrada"
+    TODOS = "todos"
+
+
+class ModalidadeContratacao(IntEnum):
+    """
+    Modalidades de contratação conforme legislação brasileira.
+
+    Códigos padronizados pela API PNCP para tipos de licitação:
+    - 1-2: Pregões (eletrônico/presencial) - mais comuns
+    - 3-5: Modalidades tradicionais por valor
+    - 6-7: Contratação direta
+    - 8-10: Modalidades especiais
+    """
+    PREGAO_ELETRONICO = 1
+    PREGAO_PRESENCIAL = 2
+    CONCORRENCIA = 3
+    TOMADA_PRECOS = 4
+    CONVITE = 5
+    DISPENSA = 6
+    INEXIGIBILIDADE = 7
+    CREDENCIAMENTO = 8
+    LEILAO = 9
+    DIALOGO_COMPETITIVO = 10
+
+
+class EsferaGovernamental(str, Enum):
+    """
+    Esfera governamental para filtro de busca.
+
+    Define o nível de governo do órgão contratante:
+    - FEDERAL (F): União, ministérios, autarquias federais
+    - ESTADUAL (E): Estados, DF, secretarias estaduais
+    - MUNICIPAL (M): Prefeituras, câmaras municipais
+    """
+    FEDERAL = "F"
+    ESTADUAL = "E"
+    MUNICIPAL = "M"
 
 
 # ============================================================================
@@ -155,6 +212,7 @@ class BuscaRequest(BaseModel):
     - data_inicial must be <= data_final
     - Date range cannot exceed 30 days
     - data_final cannot be in the future
+    - valor_maximo must be >= valor_minimo (if both provided)
 
     Examples:
         >>> request = BuscaRequest(
@@ -164,8 +222,23 @@ class BuscaRequest(BaseModel):
         ... )
         >>> request.ufs
         ['SP', 'RJ']
+
+        >>> # With new P0/P1 filters
+        >>> request = BuscaRequest(
+        ...     ufs=["SP"],
+        ...     data_inicial="2025-01-01",
+        ...     data_final="2025-01-31",
+        ...     status=StatusLicitacao.RECEBENDO_PROPOSTA,
+        ...     modalidades=[1, 2, 6],
+        ...     valor_minimo=50000,
+        ...     valor_maximo=500000,
+        ...     esferas=[EsferaGovernamental.MUNICIPAL]
+        ... )
     """
 
+    # -------------------------------------------------------------------------
+    # Required Fields (Existing)
+    # -------------------------------------------------------------------------
     ufs: List[str] = Field(
         ...,
         min_length=1,
@@ -184,6 +257,10 @@ class BuscaRequest(BaseModel):
         description="End date in YYYY-MM-DD format",
         examples=["2025-01-31"],
     )
+
+    # -------------------------------------------------------------------------
+    # Optional Fields (Existing)
+    # -------------------------------------------------------------------------
     setor_id: str = Field(
         default="vestuario",
         description="Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica')",
@@ -196,9 +273,75 @@ class BuscaRequest(BaseModel):
         examples=["jaleco avental"],
     )
 
+    # -------------------------------------------------------------------------
+    # NEW P0 Filters: Status, Modalidade, Valor
+    # -------------------------------------------------------------------------
+    status: StatusLicitacao = Field(
+        default=StatusLicitacao.RECEBENDO_PROPOSTA,
+        description="Status da licitação para filtrar. Padrão: 'recebendo_proposta' (abertas)",
+        examples=["recebendo_proposta", "em_julgamento", "encerrada", "todos"],
+    )
+
+    modalidades: Optional[List[int]] = Field(
+        default=None,
+        description="Lista de códigos de modalidade de contratação (1=Pregão Eletrônico, "
+                    "2=Pregão Presencial, 3=Concorrência, 4=Tomada de Preços, 5=Convite, "
+                    "6=Dispensa, 7=Inexigibilidade, 8=Credenciamento, 9=Leilão, "
+                    "10=Diálogo Competitivo). None = todas as modalidades.",
+        examples=[[1, 2, 6]],
+    )
+
+    valor_minimo: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Valor mínimo estimado da licitação em BRL. None = sem limite inferior.",
+        examples=[50000.0],
+    )
+
+    valor_maximo: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Valor máximo estimado da licitação em BRL. None = sem limite superior.",
+        examples=[5000000.0],
+    )
+
+    # -------------------------------------------------------------------------
+    # NEW P1 Filters: Esfera, Município, Ordenação
+    # -------------------------------------------------------------------------
+    esferas: Optional[List[EsferaGovernamental]] = Field(
+        default=None,
+        description="Lista de esferas governamentais ('F'=Federal, 'E'=Estadual, 'M'=Municipal). "
+                    "None = todas as esferas.",
+        examples=[["M", "E"]],
+    )
+
+    municipios: Optional[List[str]] = Field(
+        default=None,
+        description="Lista de códigos IBGE de municípios para filtrar. "
+                    "None = todos os municípios das UFs selecionadas.",
+        examples=[["3550308", "3304557"]],  # São Paulo, Rio de Janeiro
+    )
+
+    ordenacao: str = Field(
+        default="data_desc",
+        description="Critério de ordenação dos resultados: "
+                    "'data_desc' (mais recente), 'data_asc' (mais antigo), "
+                    "'valor_desc' (maior valor), 'valor_asc' (menor valor), "
+                    "'prazo_asc' (prazo mais próximo), 'relevancia' (score de matching).",
+        examples=["data_desc", "valor_desc", "prazo_asc"],
+    )
+
+    # -------------------------------------------------------------------------
+    # Validators
+    # -------------------------------------------------------------------------
     @model_validator(mode="after")
-    def validate_dates(self) -> "BuscaRequest":
-        """Validate date business logic before hitting PNCP API."""
+    def validate_dates_and_values(self) -> "BuscaRequest":
+        """
+        Validate business logic:
+        1. Date range validation (data_inicial <= data_final)
+        2. Value range validation (valor_maximo >= valor_minimo)
+        """
+        # Date validation
         try:
             d_ini = date.fromisoformat(self.data_inicial)
             d_fin = date.fromisoformat(self.data_final)
@@ -210,7 +353,45 @@ class BuscaRequest(BaseModel):
                 "Data inicial deve ser anterior ou igual à data final"
             )
 
+        # Value range validation
+        if self.valor_minimo is not None and self.valor_maximo is not None:
+            if self.valor_maximo < self.valor_minimo:
+                raise ValueError(
+                    "valor_maximo deve ser maior ou igual a valor_minimo "
+                    f"(min={self.valor_minimo}, max={self.valor_maximo})"
+                )
+
         return self
+
+    @field_validator('modalidades')
+    @classmethod
+    def validate_modalidades(cls, v: Optional[List[int]]) -> Optional[List[int]]:
+        """Validate that modalidade codes are within valid range (1-10)."""
+        if v is not None:
+            valid_codes = set(m.value for m in ModalidadeContratacao)
+            invalid_codes = [code for code in v if code not in valid_codes]
+            if invalid_codes:
+                raise ValueError(
+                    f"Códigos de modalidade inválidos: {invalid_codes}. "
+                    f"Valores válidos: {sorted(valid_codes)}"
+                )
+        return v
+
+    @field_validator('ordenacao')
+    @classmethod
+    def validate_ordenacao(cls, v: str) -> str:
+        """Validate that ordenacao is a valid option."""
+        valid_options = {
+            'data_desc', 'data_asc',
+            'valor_desc', 'valor_asc',
+            'prazo_asc', 'relevancia'
+        }
+        if v not in valid_options:
+            raise ValueError(
+                f"Ordenação inválida: '{v}'. "
+                f"Opções válidas: {sorted(valid_options)}"
+            )
+        return v
 
     class Config:
         """Pydantic configuration."""
@@ -220,6 +401,12 @@ class BuscaRequest(BaseModel):
                 "ufs": ["SP", "RJ"],
                 "data_inicial": "2025-01-01",
                 "data_final": "2025-01-31",
+                "status": "recebendo_proposta",
+                "modalidades": [1, 2, 6],
+                "valor_minimo": 50000,
+                "valor_maximo": 500000,
+                "esferas": ["M"],
+                "ordenacao": "data_desc"
             }
         }
 
