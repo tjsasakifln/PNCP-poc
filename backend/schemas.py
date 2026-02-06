@@ -332,6 +332,31 @@ class BuscaRequest(BaseModel):
     )
 
     # -------------------------------------------------------------------------
+    # NEW P2 Filters: Órgão, Paginação (Issue #xxx - P2 Enhancement)
+    # -------------------------------------------------------------------------
+    orgaos: Optional[List[str]] = Field(
+        default=None,
+        description="Lista de nomes de órgãos/entidades para filtrar (busca parcial). "
+                    "None = todos os órgãos.",
+        examples=[["Prefeitura de São Paulo", "Ministério da Saúde"]],
+    )
+
+    pagina: int = Field(
+        default=1,
+        ge=1,
+        description="Número da página de resultados (1-indexed). Padrão: 1.",
+        examples=[1, 2, 3],
+    )
+
+    itens_por_pagina: int = Field(
+        default=20,
+        ge=10,
+        le=100,
+        description="Quantidade de itens por página. Valores permitidos: 10, 20, 50, 100. Padrão: 20.",
+        examples=[10, 20, 50, 100],
+    )
+
+    # -------------------------------------------------------------------------
     # Validators
     # -------------------------------------------------------------------------
     @model_validator(mode="after")
@@ -390,6 +415,18 @@ class BuscaRequest(BaseModel):
             raise ValueError(
                 f"Ordenação inválida: '{v}'. "
                 f"Opções válidas: {sorted(valid_options)}"
+            )
+        return v
+
+    @field_validator('itens_por_pagina')
+    @classmethod
+    def validate_itens_por_pagina(cls, v: int) -> int:
+        """Validate that itens_por_pagina is one of the allowed values."""
+        valid_options = {10, 20, 50, 100}
+        if v not in valid_options:
+            raise ValueError(
+                f"Itens por página inválido: {v}. "
+                f"Valores permitidos: {sorted(valid_options)}"
             )
         return v
 

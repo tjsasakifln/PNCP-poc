@@ -913,6 +913,148 @@ def filtrar_por_esfera(
     return resultado
 
 
+def paginar_resultados(
+    licitacoes: List[dict],
+    pagina: int = 1,
+    itens_por_pagina: int = 20
+) -> Tuple[List[dict], Dict[str, int]]:
+    """
+    Pagina os resultados de licitações.
+
+    Args:
+        licitacoes: Lista completa de licitações
+        pagina: Número da página (1-indexed). Padrão: 1.
+        itens_por_pagina: Quantidade de itens por página. Padrão: 20.
+
+    Returns:
+        Tuple contendo:
+        - List[dict]: Licitações da página solicitada
+        - Dict[str, int]: Metadados de paginação com:
+            - total: Total de itens
+            - pagina: Página atual
+            - itens_por_pagina: Itens por página
+            - total_paginas: Total de páginas
+            - inicio: Índice do primeiro item (0-indexed)
+            - fim: Índice do último item (exclusivo)
+
+    Examples:
+        >>> bids = [{"id": i} for i in range(100)]
+        >>> page, meta = paginar_resultados(bids, pagina=2, itens_por_pagina=20)
+        >>> len(page)
+        20
+        >>> meta["total"]
+        100
+        >>> meta["total_paginas"]
+        5
+        >>> meta["inicio"]
+        20
+    """
+    total = len(licitacoes)
+
+    if total == 0:
+        return [], {
+            "total": 0,
+            "pagina": 1,
+            "itens_por_pagina": itens_por_pagina,
+            "total_paginas": 0,
+            "inicio": 0,
+            "fim": 0,
+        }
+
+    # Calcula total de páginas
+    total_paginas = (total + itens_por_pagina - 1) // itens_por_pagina
+
+    # Garante que a página está dentro dos limites
+    pagina = max(1, min(pagina, total_paginas))
+
+    # Calcula índices de início e fim
+    inicio = (pagina - 1) * itens_por_pagina
+    fim = min(inicio + itens_por_pagina, total)
+
+    # Extrai a página
+    pagina_resultado = licitacoes[inicio:fim]
+
+    metadata = {
+        "total": total,
+        "pagina": pagina,
+        "itens_por_pagina": itens_por_pagina,
+        "total_paginas": total_paginas,
+        "inicio": inicio,
+        "fim": fim,
+    }
+
+    logger.debug(
+        f"paginar_resultados: página {pagina}/{total_paginas} "
+        f"(itens {inicio+1}-{fim} de {total})"
+    )
+
+    return pagina_resultado, metadata
+
+
+def filtrar_por_orgao(
+    licitacoes: List[dict],
+    orgaos: List[str] | None
+) -> List[dict]:
+    """
+    Filtra licitações por nome do órgão/entidade contratante.
+
+    Realiza busca parcial (contains) normalizada para encontrar licitações
+    de órgãos específicos. A busca é case-insensitive e ignora acentos.
+
+    Args:
+        licitacoes: Lista de licitações
+        orgaos: Lista de nomes de órgãos para filtrar (busca parcial).
+                None = todos os órgãos.
+
+    Returns:
+        Lista filtrada de licitações
+
+    Examples:
+        >>> bids = [
+        ...     {"nomeOrgao": "Prefeitura Municipal de São Paulo"},
+        ...     {"nomeOrgao": "Ministério da Saúde"},
+        ...     {"nomeOrgao": "INSS"},
+        ... ]
+        >>> filtrar_por_orgao(bids, ["Prefeitura"])
+        [{'nomeOrgao': 'Prefeitura Municipal de São Paulo'}]
+        >>> filtrar_por_orgao(bids, ["Ministerio", "INSS"])
+        [{'nomeOrgao': 'Ministério da Saúde'}, {'nomeOrgao': 'INSS'}]
+    """
+    if not orgaos:
+        logger.debug("filtrar_por_orgao: orgaos=None, retornando todas")
+        return licitacoes
+
+    # Normaliza os termos de busca
+    orgaos_norm = [normalize_text(o) for o in orgaos if o]
+
+    if not orgaos_norm:
+        return licitacoes
+
+    resultado: List[dict] = []
+    for lic in licitacoes:
+        # Tenta diferentes campos que podem conter o nome do órgão
+        nome_orgao = (
+            lic.get("nomeOrgao", "")
+            or lic.get("orgao", "")
+            or lic.get("nomeUnidade", "")
+            or lic.get("entidade", "")
+            or ""
+        )
+        nome_orgao_norm = normalize_text(nome_orgao)
+
+        # Verifica se algum termo de busca está presente (busca parcial)
+        for termo in orgaos_norm:
+            if termo in nome_orgao_norm:
+                resultado.append(lic)
+                break  # Evita duplicatas
+
+    logger.debug(
+        f"filtrar_por_orgao: {len(licitacoes)} -> {len(resultado)} "
+        f"(orgaos={len(orgaos)} termos)"
+    )
+    return resultado
+
+
 def filtrar_por_municipio(
     licitacoes: List[dict],
     municipios: List[str] | None
@@ -973,6 +1115,7 @@ def aplicar_todos_filtros(
     valor_max: float | None = None,
     esferas: List[str] | None = None,
     municipios: List[str] | None = None,
+    orgaos: List[str] | None = None,
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
@@ -987,8 +1130,9 @@ def aplicar_todos_filtros(
     3. Esfera (O(1) - string comparison)
     4. Modalidade (O(1) - int comparison)
     5. Município (O(1) - string comparison)
-    6. Valor (O(1) - numeric comparison)
-    7. Keywords (O(n) - regex matching) - mais lento
+    6. Órgão (O(n) - string contains) - P2 filter
+    7. Valor (O(1) - numeric comparison)
+    8. Keywords (O(n) - regex matching) - mais lento
 
     Args:
         licitacoes: Lista de licitações da API PNCP
@@ -999,6 +1143,7 @@ def aplicar_todos_filtros(
         valor_max: Valor máximo (None = sem limite)
         esferas: Lista de esferas ("F", "E", "M") (None = todas)
         municipios: Lista de códigos IBGE (None = todos)
+        orgaos: Lista de nomes de órgãos para filtrar (None = todos)
         keywords: Set de keywords para matching (None = usa KEYWORDS_UNIFORMES)
         exclusions: Set de exclusões (None = usa KEYWORDS_EXCLUSAO)
 
@@ -1031,6 +1176,7 @@ def aplicar_todos_filtros(
         "rejeitadas_esfera": 0,
         "rejeitadas_modalidade": 0,
         "rejeitadas_municipio": 0,
+        "rejeitadas_orgao": 0,
         "rejeitadas_valor": 0,
         "rejeitadas_keyword": 0,
         "rejeitadas_outros": 0,
@@ -1167,10 +1313,42 @@ def aplicar_todos_filtros(
     else:
         resultado_municipio = resultado_modalidade
 
-    # Etapa 6: Filtro de Valor
+    # Etapa 6: Filtro de Órgão (P2)
+    if orgaos:
+        resultado_orgao: List[dict] = []
+        orgaos_norm = [normalize_text(o) for o in orgaos if o]
+
+        for lic in resultado_municipio:
+            nome_orgao = (
+                lic.get("nomeOrgao", "")
+                or lic.get("orgao", "")
+                or lic.get("nomeUnidade", "")
+                or ""
+            )
+            nome_orgao_norm = normalize_text(nome_orgao)
+
+            matched = False
+            for termo in orgaos_norm:
+                if termo in nome_orgao_norm:
+                    matched = True
+                    break
+
+            if matched:
+                resultado_orgao.append(lic)
+            else:
+                stats["rejeitadas_orgao"] += 1
+
+        logger.debug(
+            f"  Após filtro Órgão: {len(resultado_orgao)} "
+            f"(rejeitadas: {stats['rejeitadas_orgao']})"
+        )
+    else:
+        resultado_orgao = resultado_municipio
+
+    # Etapa 7: Filtro de Valor
     if valor_min is not None or valor_max is not None:
         resultado_valor: List[dict] = []
-        for lic in resultado_municipio:
+        for lic in resultado_orgao:
             valor = lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0
 
             if isinstance(valor, str):
@@ -1195,9 +1373,9 @@ def aplicar_todos_filtros(
             f"(rejeitadas: {stats['rejeitadas_valor']})"
         )
     else:
-        resultado_valor = resultado_municipio
+        resultado_valor = resultado_orgao
 
-    # Etapa 7: Filtro de Keywords (mais lento - regex)
+    # Etapa 8: Filtro de Keywords (mais lento - regex)
     kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
     exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
 
