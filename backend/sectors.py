@@ -119,6 +119,22 @@ SECTORS: Dict[str, SectorConfig] = {
             "hd", "ssd", "storage",
             "projetor", "projetores",
             "placa de video", "placa de vídeo",
+
+            # COMPOUND TERMS ADDED (Issue #informatica-precision - 2026-02-06)
+            # Increase precision by using procurement-specific compound terms
+            "aquisição de computador", "aquisicao de computador",
+            "aquisição de notebook", "aquisicao de notebook",
+            "fornecimento de equipamento de informática", "fornecimento de equipamento de informatica",
+            "locação de impressora", "locacao de impressora",
+            "manutenção de equipamento de informática", "manutencao de equipamento de informatica",
+            "manutenção de computador", "manutencao de computador",
+            "instalação de rede", "instalacao de rede",
+            "cabeamento de rede", "infraestrutura de rede",
+            "suporte técnico de informática", "suporte tecnico de informatica",
+            "assistência técnica", "assistencia tecnica",
+            "peças para computador", "pecas para computador",
+            "acessórios de informática", "acessorios de informatica",
+            "periféricos de computador", "perifericos de computador",
         },
         exclusions={
             "informática educativa",
@@ -184,6 +200,19 @@ SECTORS: Dict[str, SectorConfig] = {
             "arquivo", "arquivos",
             "rack", "racks",
             "quadro branco", "lousa",
+
+            # COMPOUND TERMS ADDED (Issue #mobiliario-precision - 2026-02-06)
+            "aquisição de mobiliário", "aquisicao de mobiliario",
+            "fornecimento de móveis", "fornecimento de moveis",
+            "móveis de escritório", "moveis de escritorio",
+            "móveis escolares", "moveis escolares",
+            "cadeira de escritório", "cadeira de escritorio",
+            "cadeira giratória", "cadeira giratoria",
+            "mesa para escritório", "mesa para escritorio",
+            "armário de aço", "armario de aco",
+            "estante de aço", "estante de aco",
+            "arquivo de aço", "arquivo de aco",
+            "mesa para computador",
         },
         exclusions={
             "mesa de negociação", "mesa de negociacao",
@@ -258,6 +287,21 @@ SECTORS: Dict[str, SectorConfig] = {
             "pasta", "pastas",
             "agenda", "agendas",
             "expediente",
+
+            # COMPOUND TERMS ADDED (Issue #papelaria-precision - 2026-02-06)
+            "aquisição de material de escritório", "aquisicao de material de escritorio",
+            "fornecimento de material de expediente",
+            "material de papelaria",
+            "artigos de papelaria",
+            "papel ofício", "papel oficio",
+            "caneta esferográfica", "caneta esfero", "caneta esferografica",
+            "lápis de cor", "lapis de cor",
+            "giz de cera",
+            "marcador de texto",
+            "pasta suspensa", "pasta arquivo",
+            "grampeador de mesa",
+            "perfurador de papel",
+            "material escolar básico", "material escolar basico",
         },
         exclusions={
             "papel de parede",
@@ -441,6 +485,20 @@ SECTORS: Dict[str, SectorConfig] = {
             # Restored standalone terms (guarded by exclusions)
             "software", "softwares",
             "aplicativo", "aplicativos",
+
+            # CRITICAL ADDITIONS (Issue #software-0-results - 2026-02-06)
+            # These compound terms are ESSENTIAL for matching real PNCP bids
+            "sistema informatizado", "sistema informatizada",
+            "aplicação informatizada", "aplicacao informatizada",
+            "solução tecnológica", "solucao tecnologica",
+            "solução de tecnologia", "solucao de tecnologia",
+            "ferramenta digital", "ferramenta de gestão", "ferramenta de gestao",
+            "plataforma digital", "portal digital", "portal web",
+            "tecnologia da informação", "tecnologia da informacao",
+            "serviços de tecnologia", "servicos de tecnologia",
+            "contratação de ti", "contratacao de ti",
+            "fornecimento de software", "aquisição de software", "aquisicao de software",
+
             # NOTE: "sistema" and "plataforma" are TOO AMBIGUOUS in Brazilian Portuguese
             # They match everything from "sistema de climatização" (HVAC) to "sistema de registro de preços" (procurement modality)
             # Only use compound terms like "sistema de gestão", "sistema web", "plataforma cloud"
@@ -471,10 +529,14 @@ SECTORS: Dict[str, SectorConfig] = {
             "caixa de software",  # physical packaging
             "embalagem de software",
 
-            # Non-software engineering
-            "engenharia de software",  # if it's about services, not procurement
+            # Non-software training/education (REVISED - Issue #software-0-results)
+            # REMOVED: "engenharia de software" - too broad, blocks valid procurement like "contratação de empresa de engenharia de software"
+            "curso de engenharia de software",
+            "graduação em engenharia de software", "graduacao em engenharia de software",
+            "bacharelado em engenharia de software",
             "curso de desenvolvimento",
             "bootcamp",
+            "treinamento de desenvolvimento",
 
             # "Sistema" in non-software context (CRITICAL - high false positive rate)
             "sistema de climatização", "sistema de climatizacao",

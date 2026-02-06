@@ -114,7 +114,7 @@ export function EmptyState({
           </li>
           <li className="flex items-start gap-2">
             <span className="text-brand-blue mt-0.5">•</span>
-            <span><strong>Troque o setor</strong> — Setores como &quot;Alimentos&quot; e &quot;Limpeza&quot; têm mais licitações</span>
+            <span><strong>Ajuste os filtros</strong> — Experimente ampliar faixa de valor, período ou modalidades de contratação</span>
           </li>
         </ul>
       </div>
