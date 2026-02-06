@@ -217,15 +217,20 @@ class TestBuscarDateRangeValidation:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     def test_rejects_date_range_exceeding_plan_limit(
         self,
         mock_check_quota,
+        mock_rate_limiter,
     ):
-        """Should reject date range exceeding plan's max_history_days (if enforced)."""
-        cleanup = setup_auth_override("user-123")
+        """Should reject date range exceeding plan's max_history_days."""
+        cleanup = setup_auth_override("user-date-range-test")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
             # FREE Trial: max_history_days = 7
             mock_check_quota.return_value = QuotaInfo(
@@ -240,8 +245,6 @@ class TestBuscarDateRangeValidation:
             )
 
             # 60 days range (exceeds 7 days limit)
-            # NOTE: Current implementation doesn't enforce this at endpoint level
-            # It's a validation gap that could be added in future
             response = client.post(
                 "/buscar",
                 json={
@@ -252,8 +255,349 @@ class TestBuscarDateRangeValidation:
                 },
             )
 
-            # Currently passes (no validation), but could be 400 in future
-            assert response.status_code in [200, 400, 403]
+            # Date range validation now returns 400 when exceeded
+            assert response.status_code == 400
+            assert "excede o limite de 7 dias" in response.json()["detail"]
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_rejects_date_range_exceeding_consultor_agil_limit(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should reject date range exceeding Consultor Ágil's max_history_days (30 days)."""
+        cleanup = setup_auth_override("user-consultor-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Consultor Ágil: max_history_days = 30
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=10,
+                quota_remaining=40,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            # 45 days range (exceeds 30 days limit)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-02-14",  # 45 days
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 400
+            detail = response.json()["detail"]
+            assert "45 dias" in detail
+            assert "30 dias" in detail
+            assert "Consultor Ágil" in detail
+            assert "Máquina" in detail  # Upgrade suggestion
+            assert "R$ 597/mês" in detail  # Price in suggestion
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_rejects_date_range_exceeding_maquina_limit(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should reject date range exceeding Máquina's max_history_days (365 days)."""
+        cleanup = setup_auth_override("user-maquina-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Máquina: max_history_days = 365
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="maquina",
+                plan_name="Máquina",
+                capabilities=PLAN_CAPABILITIES["maquina"],
+                quota_used=100,
+                quota_remaining=200,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            # 400 days range (exceeds 365 days limit)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2025-01-01",
+                    "data_final": "2026-02-04",  # 400 days
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 400
+            detail = response.json()["detail"]
+            assert "400 dias" in detail
+            assert "365 dias" in detail
+            assert "Máquina" in detail
+            assert "Sala de Guerra" in detail  # Upgrade suggestion
+            assert "R$ 1.497/mês" in detail  # Price in suggestion
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_accepts_full_range_for_sala_guerra(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should accept up to 1825 days for Sala de Guerra plan."""
+        cleanup = setup_auth_override("user-sala-guerra-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Sala de Guerra: max_history_days = 1825 (5 years)
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="sala_guerra",
+                plan_name="Sala de Guerra",
+                capabilities=PLAN_CAPABILITIES["sala_guerra"],
+                quota_used=500,
+                quota_remaining=500,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 501
+
+            # 1000 days range (within 1825 days limit)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2023-05-01",
+                    "data_final": "2026-01-25",  # ~1000 days
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_rejects_date_range_exceeding_sala_guerra_limit(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should reject date range exceeding Sala de Guerra's max_history_days (1825 days)."""
+        cleanup = setup_auth_override("user-sala-guerra-exceed-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Sala de Guerra: max_history_days = 1825
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="sala_guerra",
+                plan_name="Sala de Guerra",
+                capabilities=PLAN_CAPABILITIES["sala_guerra"],
+                quota_used=500,
+                quota_remaining=500,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            # 2000 days range (exceeds 1825 days limit)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2020-07-01",
+                    "data_final": "2026-01-25",  # ~2000 days
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 400
+            detail = response.json()["detail"]
+            assert "1825 dias" in detail
+            assert "Sala de Guerra" in detail
+            # No upgrade suggestion for highest tier
+            assert "reduza o período" in detail
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_accepts_exact_limit_boundary(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should accept date range exactly at the plan's limit."""
+        cleanup = setup_auth_override("user-boundary-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Consultor Ágil: max_history_days = 30
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=10,
+                quota_remaining=40,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 11
+
+            # Exactly 30 days (Jan 1 to Jan 30 inclusive = 30 days)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-30",  # 30 days exactly
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_rejects_one_day_over_limit(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should reject date range that is just 1 day over the limit."""
+        cleanup = setup_auth_override("user-one-over-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Consultor Ágil: max_history_days = 30
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=10,
+                quota_remaining=40,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            # 31 days (Jan 1 to Jan 31 inclusive = 31 days, 1 over limit)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-31",  # 31 days
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 400
+            detail = response.json()["detail"]
+            assert "31 dias" in detail
+            assert "30 dias" in detail
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_accepts_single_day_range(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should accept single day range (same start and end date)."""
+        cleanup = setup_auth_override("user-single-day-test")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            # Free trial: max_history_days = 7
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="free_trial",
+                plan_name="FREE Trial",
+                capabilities=PLAN_CAPABILITIES["free_trial"],
+                quota_used=1,
+                quota_remaining=2,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 2
+
+            # Single day (1 day range)
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-15",
+                    "data_final": "2026-01-15",  # Same day = 1 day
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
         finally:
             cleanup()
 
@@ -397,20 +741,25 @@ class TestBuscarExcelGating:
             cleanup()
 
 
-class TestBuscarRateLimiting:
-    """Test rate limiting scenarios."""
+class TestBuscarPNCPRateLimiting:
+    """Test PNCP API rate limiting scenarios (external API)."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
-    def test_returns_429_when_rate_limit_exceeded(
+    def test_returns_503_when_pncp_rate_limit_exceeded(
         self,
         mock_check_quota,
+        mock_rate_limiter,
     ):
-        """Should return 503 (not 429) when PNCP rate limit exceeded."""
+        """Should return 503 when PNCP API rate limit exceeded."""
         cleanup = setup_auth_override("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
             from exceptions import PNCPRateLimitError
+
+            # User rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -447,19 +796,356 @@ class TestBuscarRateLimiting:
             cleanup()
 
 
+class TestBuscarUserRateLimiting:
+    """Test per-user, plan-based rate limiting."""
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_returns_429_when_user_rate_limit_exceeded(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should return 429 when user exceeds per-minute rate limit."""
+        cleanup = setup_auth_override("user-123")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit exceeded (10 req/min for consultor_agil)
+            mock_rate_limiter.check_rate_limit.return_value = (False, 45)
+
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=10,
+                quota_remaining=40,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 429
+            assert "Retry-After" in response.headers
+            assert response.headers["Retry-After"] == "45"
+            assert "10/min" in response.json()["detail"]
+            assert "45 segundos" in response.json()["detail"]
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_allows_request_within_rate_limit(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should allow request when within rate limit."""
+        cleanup = setup_auth_override("user-123")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="maquina",
+                plan_name="Máquina",
+                capabilities=PLAN_CAPABILITIES["maquina"],
+                quota_used=100,
+                quota_remaining=200,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 101
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
+            # Verify rate limiter was called with correct parameters
+            mock_rate_limiter.check_rate_limit.assert_called_once_with("user-123", 30)  # maquina = 30 req/min
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_uses_plan_specific_rate_limit(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should use plan-specific rate limit (e.g., sala_guerra = 60 req/min)."""
+        cleanup = setup_auth_override("user-premium")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            mock_rate_limiter.check_rate_limit.return_value = (False, 30)
+
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="sala_guerra",
+                plan_name="Sala de Guerra",
+                capabilities=PLAN_CAPABILITIES["sala_guerra"],
+                quota_used=500,
+                quota_remaining=500,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 429
+            # Verify rate limiter was called with sala_guerra limit (60 req/min)
+            mock_rate_limiter.check_rate_limit.assert_called_once_with("user-premium", 60)
+            assert "60/min" in response.json()["detail"]
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles")
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_admin_bypasses_rate_limit(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+        mock_check_user_roles,
+    ):
+        """Admin users should bypass rate limiting entirely."""
+        cleanup = setup_auth_override("admin-user")
+        try:
+            # User is admin
+            mock_check_user_roles.return_value = (True, True)
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 1
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
+            # Rate limiter should NOT have been called for admin
+            mock_rate_limiter.check_rate_limit.assert_not_called()
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main._check_user_roles")
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_master_bypasses_rate_limit(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+        mock_check_user_roles,
+    ):
+        """Master users should bypass rate limiting entirely."""
+        cleanup = setup_auth_override("master-user")
+        try:
+            # User is master (not admin)
+            mock_check_user_roles.return_value = (False, True)
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 1
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
+            # Rate limiter should NOT have been called for master
+            mock_rate_limiter.check_rate_limit.assert_not_called()
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    @patch("quota.increment_monthly_quota")
+    @patch("quota.save_search_session")
+    @patch("main.PNCPClient")
+    def test_rate_limit_fallback_on_quota_check_failure(
+        self,
+        mock_pncp_client_class,
+        mock_save_session,
+        mock_increment_quota,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Should use fallback rate limit (10 req/min) when quota check fails."""
+        cleanup = setup_auth_override("user-123")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # First call fails (for rate limit check), second call succeeds (for quota check)
+            call_count = [0]
+            def check_quota_side_effect(user_id):
+                call_count[0] += 1
+                if call_count[0] == 1:
+                    raise Exception("Database error")
+                return QuotaInfo(
+                    allowed=True,
+                    plan_id="consultor_agil",
+                    plan_name="Consultor Ágil",
+                    capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                    quota_used=10,
+                    quota_remaining=40,
+                    quota_reset_date=datetime.now(timezone.utc),
+                )
+
+            mock_check_quota.side_effect = check_quota_side_effect
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+            mock_increment_quota.return_value = 11
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            assert response.status_code == 200
+            # Verify rate limiter was called with fallback limit (10 req/min)
+            mock_rate_limiter.check_rate_limit.assert_called_once_with("user-123", 10)
+        finally:
+            cleanup()
+
+    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
+    @patch("quota.check_quota")
+    def test_rate_limit_check_happens_before_quota_check(
+        self,
+        mock_check_quota,
+        mock_rate_limiter,
+    ):
+        """Rate limit should be checked before quota is consumed."""
+        cleanup = setup_auth_override("user-123")
+        try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit exceeded
+            mock_rate_limiter.check_rate_limit.return_value = (False, 30)
+
+            mock_check_quota.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="consultor_agil",
+                plan_name="Consultor Ágil",
+                capabilities=PLAN_CAPABILITIES["consultor_agil"],
+                quota_used=49,  # Almost at limit
+                quota_remaining=1,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
+            response = client.post(
+                "/buscar",
+                json={
+                    "ufs": ["SC"],
+                    "data_inicial": "2026-01-01",
+                    "data_final": "2026-01-07",
+                    "setor_id": "vestuario",
+                },
+            )
+
+            # Should return 429 (rate limit) not proceed to quota consumption
+            assert response.status_code == 429
+            # check_quota should have been called once (for rate limit determination)
+            # but NOT for the main quota check since we fail early
+            assert mock_check_quota.call_count == 1
+        finally:
+            cleanup()
+
+
 class TestBuscarErrorHandling:
     """Test error handling scenarios."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     def test_returns_403_on_quota_exhausted(
         self,
         mock_check_quota,
+        mock_rate_limiter,
     ):
         """Should return 403 when quota is exhausted."""
-        cleanup = setup_auth_override("user-123")
+        cleanup = setup_auth_override("user-quota-exhausted-test")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=False,
@@ -678,15 +1364,25 @@ class TestBuscarInvalidSector:
     """Test invalid sector handling."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     def test_returns_500_on_invalid_sector_id(
         self,
         mock_check_quota,
+        mock_rate_limiter,
     ):
-        """Should return 500 when invalid sector ID is provided."""
-        cleanup = setup_auth_override("user-123")
+        """Should return 500 when invalid sector ID is provided.
+
+        Note: The KeyError is caught and converted to HTTPException(400),
+        but this HTTPException is then caught by the outer exception handler
+        which converts it to 500. This is a known quirk in the error handling.
+        """
+        cleanup = setup_auth_override("user-invalid-sector-test")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -708,7 +1404,7 @@ class TestBuscarInvalidSector:
                 },
             )
 
-            # KeyError -> HTTPException(400) -> outer exception handler -> 500
+            # KeyError -> HTTPException(400) -> caught by outer handler -> 500
             assert response.status_code == 500
         finally:
             cleanup()
@@ -718,6 +1414,7 @@ class TestBuscarCustomSearchTerms:
     """Test custom search terms and stopword removal."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
@@ -728,11 +1425,15 @@ class TestBuscarCustomSearchTerms:
         mock_save_session,
         mock_increment_quota,
         mock_check_quota,
+        mock_rate_limiter,
     ):
         """Should use custom terms when provided."""
-        cleanup = setup_auth_override("user-123")
+        cleanup = setup_auth_override("user-custom-terms-test")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -825,6 +1526,7 @@ class TestBuscarCustomSearchTerms:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
@@ -835,11 +1537,15 @@ class TestBuscarCustomSearchTerms:
         mock_save_session,
         mock_increment_quota,
         mock_check_quota,
+        mock_rate_limiter,
     ):
         """Should fallback to sector keywords when all custom terms are stopwords."""
-        cleanup = setup_auth_override("user-123")
+        cleanup = setup_auth_override("user-stopwords-test")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,

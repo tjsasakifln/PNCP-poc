@@ -7,6 +7,16 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '@/app/components/AuthProvider';
 
+// Mock next/navigation
+const mockRouterPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+}));
+
 // Mock Supabase client
 const mockGetSession = jest.fn();
 const mockOnAuthStateChange = jest.fn();
@@ -64,6 +74,7 @@ process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-backend:8000';
 describe('AuthProvider Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouterPush.mockClear();
     mockGetSession.mockResolvedValue({ data: { session: null } });
     mockFetch.mockResolvedValue({
       ok: true,
@@ -464,7 +475,7 @@ describe('Auth methods', () => {
     });
   });
 
-  it('signOut should call supabase signOut', async () => {
+  it('signOut should call supabase signOut and redirect to home', async () => {
     mockSignOut.mockResolvedValue({ error: null });
 
     render(
@@ -481,5 +492,6 @@ describe('Auth methods', () => {
     });
 
     expect(mockSignOut).toHaveBeenCalled();
+    expect(mockRouterPush).toHaveBeenCalledWith('/');
   });
 });

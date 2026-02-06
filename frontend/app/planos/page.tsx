@@ -34,11 +34,61 @@ const PLAN_HIERARCHY = [
   "master",
 ];
 
-// Plans that should be hidden from public listing
-const HIDDEN_PLANS = ["free", "master", "sala_guerra"];
+// Plans that should be hidden from public listing (only truly internal plans)
+const HIDDEN_PLANS = ["free", "master"];
 
 // Free tier plan IDs
 const FREE_TIER_IDS = ["free", "free_trial"];
+
+// Plan capabilities for feature display (matches backend quota.py PLAN_CAPABILITIES)
+interface PlanFeatures {
+  maxHistoryDays: number;
+  allowExcel: boolean;
+  maxRequestsPerMonth: number;
+  maxRequestsPerMin: number;
+  aiLevel: string;  // Display text for AI summary level
+}
+
+const PLAN_FEATURES: Record<string, PlanFeatures> = {
+  free_trial: {
+    maxHistoryDays: 7,
+    allowExcel: false,
+    maxRequestsPerMonth: 3,
+    maxRequestsPerMin: 2,
+    aiLevel: "Basico",
+  },
+  consultor_agil: {
+    maxHistoryDays: 30,
+    allowExcel: false,
+    maxRequestsPerMonth: 50,
+    maxRequestsPerMin: 10,
+    aiLevel: "Basico",
+  },
+  maquina: {
+    maxHistoryDays: 365,
+    allowExcel: true,
+    maxRequestsPerMonth: 300,
+    maxRequestsPerMin: 30,
+    aiLevel: "Detalhado",
+  },
+  sala_guerra: {
+    maxHistoryDays: 1825,  // 5 years
+    allowExcel: true,
+    maxRequestsPerMonth: 1000,
+    maxRequestsPerMin: 60,
+    aiLevel: "Prioritario",
+  },
+};
+
+/**
+ * Format history days as human-readable string.
+ */
+function formatHistoryDays(days: number): string {
+  if (days <= 7) return `${days} dias`;
+  if (days <= 30) return "30 dias";
+  if (days <= 365) return "1 ano";
+  return "5 anos";
+}
 
 /**
  * Check if user is on a free tier plan.
@@ -314,7 +364,7 @@ export default function PlanosPage() {
     return "";
   };
 
-  const isPopular = (id: string) => id === "monthly";
+  const isPopular = (id: string) => id === "maquina";
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] py-12 px-4">
@@ -405,28 +455,48 @@ export default function PlanosPage() {
                   </div>
 
                   <ul className="space-y-2 mb-6 text-sm text-[var(--ink-secondary)]">
-                    <li className="flex items-center gap-2">
-                      <span className="text-[var(--success)]">&#10003;</span>
-                      {plan.max_searches ? `${plan.max_searches} buscas` : "Buscas ilimitadas"}
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[var(--success)]">&#10003;</span>
-                      Todos os setores
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[var(--success)]">&#10003;</span>
-                      Download Excel
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[var(--success)]">&#10003;</span>
-                      Resumo executivo IA
-                    </li>
-                    {!plan.max_searches && (
-                      <li className="flex items-center gap-2">
-                        <span className="text-[var(--success)]">&#10003;</span>
-                        Historico completo
-                      </li>
-                    )}
+                    {/* Dynamic features based on plan capabilities */}
+                    {(() => {
+                      const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES.consultor_agil;
+                      return (
+                        <>
+                          {/* Searches per month */}
+                          <li className="flex items-center gap-2">
+                            <span className="text-[var(--success)]">&#10003;</span>
+                            {features.maxRequestsPerMonth} buscas/mes
+                          </li>
+                          {/* History period */}
+                          <li className="flex items-center gap-2">
+                            <span className="text-[var(--success)]">&#10003;</span>
+                            Historico de {formatHistoryDays(features.maxHistoryDays)}
+                          </li>
+                          {/* Excel export - show as available or blocked */}
+                          <li className="flex items-center gap-2">
+                            {features.allowExcel ? (
+                              <>
+                                <span className="text-[var(--success)]">&#10003;</span>
+                                <span>Download Excel</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-[var(--ink-muted)]">&#10007;</span>
+                                <span className="text-[var(--ink-muted)] line-through">Download Excel</span>
+                              </>
+                            )}
+                          </li>
+                          {/* AI summary level */}
+                          <li className="flex items-center gap-2">
+                            <span className="text-[var(--success)]">&#10003;</span>
+                            IA {features.aiLevel}
+                          </li>
+                          {/* Rate limit */}
+                          <li className="flex items-center gap-2">
+                            <span className="text-[var(--success)]">&#10003;</span>
+                            {features.maxRequestsPerMin} req/min
+                          </li>
+                        </>
+                      );
+                    })()}
                   </ul>
 
                   <button

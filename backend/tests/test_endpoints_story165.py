@@ -155,11 +155,15 @@ class TestBuscarEndpointQuotaValidation:
     """Test /api/buscar quota and rate limit validation."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
-    def test_blocks_request_when_quota_exhausted(self, mock_check_quota):
+    def test_blocks_request_when_quota_exhausted(self, mock_check_quota, mock_rate_limiter):
         """Should return 403 when monthly quota exhausted."""
-        cleanup = setup_auth_override("user-123")
+        cleanup = setup_auth_override("user-quota-exhausted-story165")
         try:
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
             # Mock exhausted quota
             from quota import QuotaInfo, PLAN_CAPABILITIES
             mock_check_quota.return_value = QuotaInfo(
@@ -189,11 +193,15 @@ class TestBuscarEndpointQuotaValidation:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
-    def test_blocks_request_when_trial_expired(self, mock_check_quota):
+    def test_blocks_request_when_trial_expired(self, mock_check_quota, mock_rate_limiter):
         """Should return 403 when trial expired."""
-        cleanup = setup_auth_override("user-123")
+        cleanup = setup_auth_override("user-trial-expired-story165")
         try:
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
             from quota import QuotaInfo, PLAN_CAPABILITIES
             mock_check_quota.return_value = QuotaInfo(
                 allowed=False,
@@ -223,6 +231,7 @@ class TestBuscarEndpointQuotaValidation:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -231,10 +240,14 @@ class TestBuscarEndpointQuotaValidation:
         mock_pncp_client_class,
         mock_increment_quota,
         mock_check_quota,
+        mock_rate_limiter,
     ):
         """Should increment quota after successful search."""
-        cleanup = setup_auth_override("user-123")
+        cleanup = setup_auth_override("user-increment-quota-story165")
         try:
+            # Rate limit passes
+            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
             from quota import QuotaInfo, PLAN_CAPABILITIES
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -266,7 +279,7 @@ class TestBuscarEndpointQuotaValidation:
             data = response.json()
 
             # Verify quota was incremented
-            mock_increment_quota.assert_called_once_with("user-123")
+            mock_increment_quota.assert_called_once_with("user-increment-quota-story165")
             assert data["quota_used"] == 24
             assert data["quota_remaining"] == 26  # 50 - 24
         finally:
@@ -333,6 +346,7 @@ class TestBuscarEndpointExcelGating:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -341,8 +355,12 @@ class TestBuscarEndpointExcelGating:
         mock_pncp_client_class,
         mock_increment_quota,
         mock_check_quota,
+        mock_rate_limiter,
     ):
         """Should skip Excel for Consultor Ágil plan (allow_excel=False)."""
+        # Mock rate limiter to allow requests
+        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
         cleanup = setup_auth_override("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
@@ -387,6 +405,7 @@ class TestBuscarEndpointFallbackBehavior:
     """Test fallback behavior when quota/rate limiting fails."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("main.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -395,8 +414,12 @@ class TestBuscarEndpointFallbackBehavior:
         mock_pncp_client_class,
         mock_increment_quota,
         mock_check_quota,
+        mock_rate_limiter,
     ):
         """Should continue search even if quota increment fails."""
+        # Mock rate limiter to allow requests
+        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+
         cleanup = setup_auth_override("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES

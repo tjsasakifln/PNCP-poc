@@ -180,12 +180,32 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/\/m[eê]s/)).toBeInTheDocument();
+        // Use getAllByText since multiple elements contain /mes (price label + features)
+        expect(screen.getAllByText(/\/m[eê]s/).length).toBeGreaterThan(0);
         expect(screen.getByText('/ano')).toBeInTheDocument();
       });
     });
 
-    it('should highlight monthly plan as popular', async () => {
+    it('should highlight maquina plan as popular', async () => {
+      // Reset mock with plans including maquina
+      mockFetch.mockReset();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          plans: [
+            ...mockPlans,
+            {
+              id: 'maquina',
+              name: 'Maquina',
+              description: 'Plano intermediario',
+              max_searches: 300,
+              price_brl: 597,
+              duration_days: 30,
+            },
+          ],
+        }),
+      });
+
       render(<PlanosPage />);
 
       await waitFor(() => {
@@ -193,29 +213,101 @@ describe('PlanosPage Component', () => {
       });
     });
 
-    it('should show plan features', async () => {
+    it('should show dynamic plan features based on plan capabilities', async () => {
+      // Reset mock with new plan structure
+      mockFetch.mockReset();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          plans: [
+            {
+              id: 'consultor_agil',
+              name: 'Consultor Agil',
+              description: 'Plano basico',
+              max_searches: 50,
+              price_brl: 297,
+              duration_days: 30,
+            },
+            {
+              id: 'maquina',
+              name: 'Maquina',
+              description: 'Plano intermediario',
+              max_searches: 300,
+              price_brl: 597,
+              duration_days: 30,
+            },
+          ],
+        }),
+      });
+
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getAllByText('Todos os setores').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Download Excel').length).toBeGreaterThan(0);
-        expect(screen.getAllByText('Resumo executivo IA').length).toBeGreaterThan(0);
+        // Check for dynamic features
+        expect(screen.getByText('50 buscas/mes')).toBeInTheDocument();
+        expect(screen.getByText('300 buscas/mes')).toBeInTheDocument();
+        // Check for history periods
+        expect(screen.getByText('Historico de 30 dias')).toBeInTheDocument();
+        expect(screen.getByText('Historico de 1 ano')).toBeInTheDocument();
+        // Check for AI levels
+        expect(screen.getAllByText('IA Basico').length).toBe(1);
+        expect(screen.getByText('IA Detalhado')).toBeInTheDocument();
       });
     });
 
-    it('should show unlimited searches for subscription plans', async () => {
+    it('should show Excel as blocked for consultor_agil plan', async () => {
+      // Reset mock with consultor_agil plan
+      mockFetch.mockReset();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          plans: [
+            {
+              id: 'consultor_agil',
+              name: 'Consultor Agil',
+              description: 'Plano basico',
+              max_searches: 50,
+              price_brl: 297,
+              duration_days: 30,
+            },
+          ],
+        }),
+      });
+
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getAllByText('Buscas ilimitadas').length).toBe(2);
+        // The text should have line-through style (blocked Excel)
+        const excelText = screen.getByText('Download Excel');
+        expect(excelText).toHaveClass('line-through');
       });
     });
 
-    it('should show search count for pack plans', async () => {
+    it('should show Excel as available for maquina plan', async () => {
+      // Reset mock with maquina plan
+      mockFetch.mockReset();
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          plans: [
+            {
+              id: 'maquina',
+              name: 'Maquina',
+              description: 'Plano intermediario',
+              max_searches: 300,
+              price_brl: 597,
+              duration_days: 30,
+            },
+          ],
+        }),
+      });
+
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('5 buscas')).toBeInTheDocument();
+        // Excel should be available (no line-through)
+        const excelText = screen.getByText('Download Excel');
+        expect(excelText).not.toHaveClass('line-through');
       });
     });
 

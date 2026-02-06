@@ -320,9 +320,20 @@ class TestBuscarEndpoint:
     def mock_auth_and_quota(self, monkeypatch):
         """Auto-apply auth mock and quota mock for all tests in this class."""
         from auth import require_auth
+        from unittest.mock import Mock
+
         mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
         app.dependency_overrides[require_auth] = lambda: mock_user
+
+        # Mock rate limiter to always allow requests
+        # Note: rate_limiter is imported at module level in main.py
+        mock_rate_limiter = Mock()
+        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+        monkeypatch.setattr("main.rate_limiter", mock_rate_limiter)
+
         # Mock check_quota to skip Supabase connection
+        # Note: check_quota is imported INSIDE buscar_licitacoes function,
+        # so patching quota.check_quota works (function-local imports do lookup)
         from quota import QuotaInfo, PLAN_CAPABILITIES
         from datetime import datetime, timezone
         mock_quota = QuotaInfo(
@@ -463,7 +474,13 @@ class TestBuscarEndpoint:
         from quota import QuotaInfo, PLAN_CAPABILITIES
         from datetime import datetime, timezone
 
+        # Mock rate limiter to always allow
+        mock_rate_limiter = Mock()
+        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+        monkeypatch.setattr("main.rate_limiter", mock_rate_limiter)
+
         # Override the autouse mock to use free_trial (no Excel access)
+        # check_quota is imported INSIDE buscar_licitacoes, so patching quota.check_quota works
         mock_quota_free = QuotaInfo(
             allowed=True,
             plan_id="free_trial",
@@ -494,7 +511,17 @@ class TestBuscarEndpoint:
 
         monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
 
-        response = client.post("/buscar", json=valid_request)
+        # Use a 7-day date range (within free_trial's max_history_days limit)
+        free_trial_request = {
+            "ufs": ["SP", "RJ"],
+            "data_inicial": "2025-01-01",
+            "data_final": "2025-01-07",  # 7 days (within free_trial limit)
+        }
+
+        response = client.post("/buscar", json=free_trial_request)
+
+        # Verify successful response before checking fields
+        assert response.status_code == 200, f"Expected 200 but got {response.status_code}: {response.json()}"
         data = response.json()
 
         # With new pricing model (STORY-165), free_trial plan doesn't have Excel

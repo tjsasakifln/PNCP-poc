@@ -39,6 +39,7 @@ from sectors import get_sector, list_sectors
 from auth import get_current_user, require_auth
 from admin import router as admin_router
 from log_sanitizer import mask_user_id, log_user_action, sanitize_string
+from rate_limiter import rate_limiter
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -753,12 +754,43 @@ async def buscar_licitacoes(
     from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
-    # ADMIN/MASTER BYPASS: Get highest tier automatically (no quota limits)
+    # ADMIN/MASTER BYPASS: Get highest tier automatically (no quota/rate limits)
     is_admin, is_master = _check_user_roles(user["id"])
     # Also check env var for admin override
     if user["id"].lower() in _get_admin_ids():
         is_admin = True
         is_master = True
+
+    # -----------------------------------------------------------------
+    # RATE LIMITING CHECK (per-minute, plan-based)
+    # Must happen BEFORE quota check to prevent abuse
+    # Admins/masters bypass rate limiting
+    # -----------------------------------------------------------------
+    if not (is_admin or is_master):
+        # Get user's plan to determine rate limit
+        # Quick check to get max_requests_per_min without full quota check
+        try:
+            quick_quota = check_quota(user["id"])
+            max_rpm = quick_quota.capabilities.get("max_requests_per_min", 10)
+        except Exception as e:
+            logger.warning(f"Failed to get rate limit for user {mask_user_id(user['id'])}: {e}")
+            # Fallback to conservative limit (consultor_agil level)
+            max_rpm = 10
+
+        rate_allowed, retry_after = rate_limiter.check_rate_limit(user["id"], max_rpm)
+
+        if not rate_allowed:
+            logger.warning(
+                f"Rate limit exceeded for user {mask_user_id(user['id'])}: "
+                f"{max_rpm} req/min limit, retry after {retry_after}s"
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=f"Limite de requisições excedido ({max_rpm}/min). Aguarde {retry_after} segundos.",
+                headers={"Retry-After": str(retry_after)},
+            )
+
+        logger.debug(f"Rate limit check passed for user {mask_user_id(user['id'])}: {max_rpm} req/min")
 
     if is_admin or is_master:
         role = "ADMIN" if is_admin else "MASTER"
@@ -810,6 +842,60 @@ async def buscar_licitacoes(
             trial_expires_at=None,
             error_message=None,
         )
+
+    # ==========================================================================
+    # DATE RANGE VALIDATION (based on plan's max_history_days)
+    # ==========================================================================
+    # This MUST happen BEFORE calling the PNCP API to prevent unauthorized
+    # access to historical data beyond the user's plan limits.
+    from datetime import date
+    from quota import PLAN_NAMES, UPGRADE_SUGGESTIONS, PLAN_PRICES
+
+    try:
+        d_ini = date.fromisoformat(request.data_inicial)
+        d_fin = date.fromisoformat(request.data_final)
+        date_range_days = (d_fin - d_ini).days + 1  # +1 because both dates are inclusive
+
+        max_history_days = quota_info.capabilities.get("max_history_days", 7)
+
+        if date_range_days > max_history_days:
+            # Build helpful error message with upgrade suggestion
+            plan_id = quota_info.plan_id
+            suggested_plan = UPGRADE_SUGGESTIONS.get("max_history_days", {}).get(plan_id)
+
+            if suggested_plan:
+                suggested_name = PLAN_NAMES.get(suggested_plan, suggested_plan)
+                suggested_price = PLAN_PRICES.get(suggested_plan, "")
+                suggested_max_days = PLAN_CAPABILITIES.get(suggested_plan, {}).get("max_history_days", 0)
+
+                error_msg = (
+                    f"Período de {date_range_days} dias excede o limite de {max_history_days} dias "
+                    f"do seu plano {quota_info.plan_name}. "
+                    f"Faça upgrade para o plano {suggested_name} ({suggested_price}) "
+                    f"para consultar até {suggested_max_days} dias de histórico."
+                )
+            else:
+                # No upgrade available (already at highest tier or unknown plan)
+                error_msg = (
+                    f"Período de {date_range_days} dias excede o limite de {max_history_days} dias "
+                    f"do seu plano {quota_info.plan_name}. "
+                    f"Por favor, reduza o período de busca."
+                )
+
+            logger.warning(
+                f"Date range validation failed for user {mask_user_id(user['id'])}: "
+                f"requested={date_range_days} days, max_allowed={max_history_days} days"
+            )
+            raise HTTPException(status_code=400, detail=error_msg)
+
+        logger.debug(
+            f"Date range validation passed: {date_range_days} days <= {max_history_days} days allowed"
+        )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except ValueError as e:
+        # Invalid date format (should be caught by Pydantic, but just in case)
+        raise HTTPException(status_code=400, detail=f"Data inválida: {e}")
 
     try:
         # Load sector configuration
