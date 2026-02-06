@@ -852,11 +852,14 @@ class TestFiltrarPorStatus:
 
     def test_status_recebendo_proposta(self):
         """Should filter bids receiving proposals."""
+        from datetime import datetime, timedelta
+        agora = datetime.now()
+
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Aberta"},
-            {"situacaoCompra": "Encerrada"},
-            {"situacaoCompra": "Em julgamento"},
+            {"situacaoCompra": "Recebendo propostas", "dataEncerramentoProposta": (agora + timedelta(days=7)).isoformat()},
+            {"situacaoCompra": "Aberta", "_status_inferido": "recebendo_proposta"},
+            {"situacaoCompra": "Encerrada", "valorTotalHomologado": 50000},
+            {"situacaoCompra": "Em julgamento", "_status_inferido": "em_julgamento"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 2
@@ -868,11 +871,14 @@ class TestFiltrarPorStatus:
 
     def test_status_em_julgamento(self):
         """Should filter bids under evaluation."""
+        from datetime import datetime, timedelta
+        agora = datetime.now()
+
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Em julgamento"},
-            {"situacaoCompra": "Propostas encerradas"},
-            {"situacaoCompra": "Encerrada"},
+            {"situacaoCompra": "Recebendo propostas", "_status_inferido": "recebendo_proposta"},
+            {"situacaoCompra": "Em julgamento", "_status_inferido": "em_julgamento"},
+            {"situacaoCompra": "Propostas encerradas", "dataEncerramentoProposta": (agora - timedelta(days=5)).isoformat()},
+            {"situacaoCompra": "Encerrada", "valorTotalHomologado": 100000},
         ]
         result = filtrar_por_status(bids, "em_julgamento")
         assert len(result) == 2
@@ -880,11 +886,11 @@ class TestFiltrarPorStatus:
     def test_status_encerrada(self):
         """Should filter closed/finalized bids."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Encerrada"},
-            {"situacaoCompra": "Homologada"},
-            {"situacaoCompra": "Adjudicada"},
-            {"situacaoCompra": "Anulada"},
+            {"situacaoCompra": "Recebendo propostas", "_status_inferido": "recebendo_proposta"},
+            {"situacaoCompra": "Encerrada", "_status_inferido": "encerrada"},
+            {"situacaoCompra": "Homologada", "valorTotalHomologado": 50000},
+            {"situacaoCompra": "Adjudicada", "_status_inferido": "encerrada"},
+            {"situacaoCompra": "Anulada", "_status_inferido": "encerrada"},
         ]
         result = filtrar_por_status(bids, "encerrada")
         assert len(result) == 4
@@ -892,9 +898,9 @@ class TestFiltrarPorStatus:
     def test_status_case_insensitive(self):
         """Should handle case variations."""
         bids = [
-            {"situacaoCompra": "RECEBENDO PROPOSTAS"},
-            {"situacaoCompra": "recebendo propostas"},
-            {"situacaoCompra": "Recebendo Propostas"},
+            {"situacaoCompra": "RECEBENDO PROPOSTAS", "_status_inferido": "recebendo_proposta"},
+            {"situacaoCompra": "recebendo propostas", "_status_inferido": "recebendo_proposta"},
+            {"situacaoCompra": "Recebendo Propostas", "_status_inferido": "recebendo_proposta"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 3
@@ -910,13 +916,14 @@ class TestFiltrarPorStatus:
         assert len(result) == 2
 
     def test_unknown_status_returns_all(self):
-        """Unknown status should return all bids (graceful fallback)."""
+        """Unknown status should return empty (no match with invalid status)."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Encerrada"},
+            {"situacaoCompra": "Recebendo propostas", "_status_inferido": "recebendo_proposta"},
+            {"situacaoCompra": "Encerrada", "_status_inferido": "encerrada"},
         ]
         result = filtrar_por_status(bids, "status_invalido")
-        assert len(result) == 2
+        # Status inválido não match com nenhum status inferido
+        assert len(result) == 0
 
 
 class TestFiltrarPorModalidade:

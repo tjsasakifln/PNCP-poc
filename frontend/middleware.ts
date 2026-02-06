@@ -105,12 +105,13 @@ export async function middleware(request: NextRequest) {
   });
 
   try {
-    // Get and verify the user session
-    // This also refreshes the session if needed and updates cookies via setAll
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Get session - this automatically refreshes if needed using refresh token
+    // IMPORTANT: Use getSession() not getUser() to enable automatic token refresh
+    // getUser() fails immediately on expired token, getSession() tries refresh first
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (error || !user) {
-      // No valid session - redirect to login
+    if (error || !session) {
+      // No valid session and refresh failed - redirect to login
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
 
@@ -120,6 +121,9 @@ export async function middleware(request: NextRequest) {
 
       return NextResponse.redirect(loginUrl);
     }
+
+    // Extract user from session
+    const user = session.user;
 
     // Valid session - add user info to headers and allow access
     const requestHeaders = new Headers(request.headers);

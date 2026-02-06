@@ -277,9 +277,13 @@ class BuscaRequest(BaseModel):
     # NEW P0 Filters: Status, Modalidade, Valor
     # -------------------------------------------------------------------------
     status: StatusLicitacao = Field(
-        default=StatusLicitacao.RECEBENDO_PROPOSTA,
-        description="Status da licitação para filtrar. Padrão: 'recebendo_proposta' (abertas)",
-        examples=["recebendo_proposta", "em_julgamento", "encerrada", "todos"],
+        default=StatusLicitacao.TODOS,
+        description=(
+            "Status da licitação para filtrar. Padrão: 'todos' (sem filtro de status). "
+            "IMPORTANTE: Filtro de status desabilitado por padrão devido a valores inconsistentes "
+            "na API PNCP. Use 'todos' para máxima cobertura de resultados."
+        ),
+        examples=["todos", "recebendo_proposta", "em_julgamento", "encerrada"],
     )
 
     modalidades: Optional[List[int]] = Field(

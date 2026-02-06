@@ -613,8 +613,12 @@ def filtrar_por_status(
     """
     Filtra licitações por status do processo licitatório.
 
+    IMPORTANTE: Esta função usa INFERÊNCIA DE STATUS baseada em múltiplos campos
+    (datas, valores, situação textual) porque a API PNCP não retorna um campo
+    de status padronizado. Ver status_inference.py para detalhes da lógica.
+
     Args:
-        licitacoes: Lista de licitações da API PNCP
+        licitacoes: Lista de licitações da API PNCP (deve ter `_status_inferido`)
         status: Status desejado:
             - "recebendo_proposta": Licitações abertas para envio de propostas
             - "em_julgamento": Propostas encerradas, em análise
@@ -625,67 +629,44 @@ def filtrar_por_status(
         Lista filtrada de licitações
 
     Examples:
+        >>> from status_inference import enriquecer_com_status_inferido
         >>> bids = [
-        ...     {"situacaoCompra": "Recebendo propostas"},
-        ...     {"situacaoCompra": "Encerrada"},
+        ...     {"dataEncerramentoProposta": "2026-12-31T10:00:00"},
+        ...     {"valorTotalHomologado": 100000},
         ... ]
+        >>> enriquecer_com_status_inferido(bids)  # Adiciona _status_inferido
         >>> filtrar_por_status(bids, "recebendo_proposta")
-        [{'situacaoCompra': 'Recebendo propostas'}]
+        [{'dataEncerramentoProposta': '2026-12-31T10:00:00', '_status_inferido': 'recebendo_proposta'}]
     """
     if not status or status == "todos":
         logger.debug("filtrar_por_status: status='todos', retornando todas")
         return licitacoes
 
-    # Mapeamento de status interno para valores da API PNCP
-    # A API pode retornar diferentes textos dependendo da versão
-    status_map: Dict[str, List[str]] = {
-        "recebendo_proposta": [
-            "recebendo propostas",
-            "aberta",
-            "recebendo proposta",
-            "em andamento",
-            "publicada",
-        ],
-        "em_julgamento": [
-            "propostas encerradas",
-            "em julgamento",
-            "julgamento",
-            "análise",
-            "analise",
-            "avaliação",
-            "avaliacao",
-        ],
-        "encerrada": [
-            "encerrada",
-            "finalizada",
-            "homologada",
-            "adjudicada",
-            "concluída",
-            "concluida",
-            "anulada",
-            "revogada",
-            "fracassada",
-            "deserta",
-        ],
-    }
-
-    termos_aceitos = status_map.get(status.lower(), [])
-    if not termos_aceitos:
-        logger.warning(f"filtrar_por_status: status '{status}' desconhecido, retornando todas")
-        return licitacoes
+    # Importa função de inferência (lazy import para evitar circular dependency)
+    from status_inference import inferir_status_licitacao
 
     resultado: List[dict] = []
-    for lic in licitacoes:
-        # Tenta diferentes campos que podem conter o status
-        situacao = (
-            lic.get("situacaoCompra", "")
-            or lic.get("situacao", "")
-            or lic.get("statusCompra", "")
-            or ""
-        ).lower()
+    inferencias_realizadas = 0
 
-        if any(termo in situacao for termo in termos_aceitos):
+    for lic in licitacoes:
+        # Usa status inferido se já existir (enriquecido previamente)
+        # Caso contrário, infere on-the-fly
+        if "_status_inferido" in lic:
+            status_lic = lic["_status_inferido"]
+        else:
+            status_lic = inferir_status_licitacao(lic)
+            lic["_status_inferido"] = status_lic  # Cache para próximos filtros
+            inferencias_realizadas += 1
+
+        # Compara com status solicitado
+        if status_lic == status.lower():
             resultado.append(lic)
+
+    if inferencias_realizadas > 0:
+        logger.debug(
+            f"filtrar_por_status: realizadas {inferencias_realizadas} "
+            f"inferências on-the-fly"
+        )
 
     logger.debug(
         f"filtrar_por_status: {len(licitacoes)} -> {len(resultado)} "

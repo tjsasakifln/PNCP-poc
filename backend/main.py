@@ -32,6 +32,7 @@ from filter import (
     filtrar_por_esfera,
     filtrar_por_municipio,
 )
+from status_inference import enriquecer_com_status_inferido
 from utils.ordenacao import ordenar_licitacoes
 from excel import create_excel
 from llm import gerar_resumo, gerar_resumo_fallback
@@ -980,7 +981,14 @@ async def buscar_licitacoes(
         fetch_elapsed = sync_time.time() - start_time
         logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP in {fetch_elapsed:.2f}s")
 
-        # Step 2: Apply ALL filters (fail-fast sequential)
+        # Step 2: Enrich with inferred status (before filtering)
+        # IMPORTANTE: A API PNCP não retorna status padronizado, então inferimos
+        # baseado em datas (abertura, encerramento) e valores (homologado)
+        logger.info("Enriching bids with inferred status...")
+        enriquecer_com_status_inferido(licitacoes_raw)
+        logger.info(f"Status inference complete for {len(licitacoes_raw)} bids")
+
+        # Step 3: Apply ALL filters (fail-fast sequential)
         # Filter order (optimized for performance):
         # 1. UF (O(1) - already filtered at API level for parallel, but verify)
         # 2. Status (if specified)
