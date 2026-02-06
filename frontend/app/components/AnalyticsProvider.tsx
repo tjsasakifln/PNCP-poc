@@ -41,8 +41,9 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.warn('❌ Mixpanel initialization failed:', error);
       }
-    } else {
-      console.warn('⚠️ NEXT_PUBLIC_MIXPANEL_TOKEN not found. Analytics disabled.');
+    } else if (process.env.NODE_ENV === 'development') {
+      // Only log in development - no warning in production
+      console.log('ℹ️ Mixpanel token not configured. Analytics disabled.');
     }
 
     // Track page_exit event when user leaves

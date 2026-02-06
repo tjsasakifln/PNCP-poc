@@ -73,13 +73,14 @@ const STAGES = [
   },
 ];
 
-// Time estimation formula (calibrated from baseline data)
+// Time estimation formula (calibrated from production data - Jan 2026)
+// Real-world measurements show ~20-25s per state due to PNCP API latency
 const estimateTotalTime = (ufCount: number): number => {
-  const baseTime = 10; // 10s minimum
-  const perUfTime = 3;  // 3s per state (average)
-  const filteringTime = 2; // 2s filtering
-  const llmTime = 5;      // 5s LLM
-  const excelTime = 1;    // 1s Excel
+  const baseTime = 15;     // 15s minimum (connection + initial setup)
+  const perUfTime = 20;    // 20s per state (PNCP API is slow)
+  const filteringTime = 3; // 3s filtering
+  const llmTime = 8;       // 8s LLM (GPT-4.1-nano)
+  const excelTime = 5;     // 5s Excel generation
 
   return baseTime + (ufCount * perUfTime) + filteringTime + llmTime + excelTime;
 };
