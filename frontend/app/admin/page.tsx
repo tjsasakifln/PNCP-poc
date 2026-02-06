@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PLAN_CONFIGS } from "../../lib/plans";
 
 interface UserProfile {
   id: string;
@@ -21,7 +22,17 @@ interface UserProfile {
   }>;
 }
 
-const PLAN_OPTIONS = ["free", "pack_5", "pack_10", "pack_20", "monthly", "annual", "master"];
+// Plan IDs for dropdowns (from centralized config)
+const PLAN_OPTIONS = Object.keys(PLAN_CONFIGS);
+
+// Helper to get formatted display name for admin dropdowns (includes price)
+const getAdminPlanDisplayName = (planId: string): string => {
+  const config = PLAN_CONFIGS[planId];
+  if (!config) return planId;
+  return config.price
+    ? `${config.displayNamePt} (${config.price})`
+    : config.displayNamePt;
+};
 
 export default function AdminPage() {
   const { session, loading: authLoading, isAdmin } = useAuth();
@@ -40,7 +51,7 @@ export default function AdminPage() {
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
   const [newCompany, setNewCompany] = useState("");
-  const [newPlan, setNewPlan] = useState("free");
+  const [newPlan, setNewPlan] = useState("free_trial");
   const [creating, setCreating] = useState(false);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -114,7 +125,7 @@ export default function AdminPage() {
       setNewPassword("");
       setNewName("");
       setNewCompany("");
-      setNewPlan("free");
+      setNewPlan("free_trial");
       fetchUsers();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Erro");
@@ -241,7 +252,7 @@ export default function AdminPage() {
                 <label className="block text-sm text-[var(--ink-secondary)] mb-1">Plano</label>
                 <select value={newPlan} onChange={(e) => setNewPlan(e.target.value)}
                   className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)]">
-                  {PLAN_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  {PLAN_OPTIONS.map((p) => <option key={p} value={p}>{getAdminPlanDisplayName(p)}</option>)}
                 </select>
               </div>
               <div className="flex items-end">
@@ -302,7 +313,7 @@ export default function AdminPage() {
                           onChange={(e) => handleAssignPlan(u.id, e.target.value)}
                           className="text-xs px-2 py-1 rounded border border-[var(--border)] bg-[var(--surface-0)]"
                         >
-                          {PLAN_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                          {PLAN_OPTIONS.map((p) => <option key={p} value={p}>{getAdminPlanDisplayName(p)}</option>)}
                         </select>
                       </td>
                       <td className="py-3 px-4 font-data text-[var(--ink)]">

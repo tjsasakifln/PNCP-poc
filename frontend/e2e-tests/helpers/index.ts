@@ -25,4 +25,7 @@ export {
   getLocalStorageItem,
   setLocalStorageItem,
   generateMockSavedSearches,
+  mockAuthAPI,
+  mockMeAPI,
+  mockAdminUsersAPI,
 } from './test-utils';

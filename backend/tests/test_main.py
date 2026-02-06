@@ -460,6 +460,20 @@ class TestBuscarEndpoint:
         """
         from unittest.mock import Mock
         from io import BytesIO
+        from quota import QuotaInfo, PLAN_CAPABILITIES
+        from datetime import datetime, timezone
+
+        # Override the autouse mock to use free_trial (no Excel access)
+        mock_quota_free = QuotaInfo(
+            allowed=True,
+            plan_id="free_trial",
+            plan_name="FREE Trial",
+            capabilities=PLAN_CAPABILITIES["free_trial"],  # allow_excel=False
+            quota_used=0,
+            quota_remaining=999999,
+            quota_reset_date=datetime.now(timezone.utc),
+        )
+        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota_free)
 
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])

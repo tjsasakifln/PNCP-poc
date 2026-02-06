@@ -728,7 +728,7 @@ function HomePageContent() {
             {/* STORY-165: Plan badge with upgrade modal */}
             {planInfo && (
               <PlanBadge
-                planId={planInfo.plan_id as "free_trial" | "consultor_agil" | "maquina" | "sala_guerra"}
+                planId={planInfo.plan_id}
                 planName={planInfo.plan_name}
                 trialExpiresAt={planInfo.trial_expires_at ?? undefined}
                 onClick={() => {

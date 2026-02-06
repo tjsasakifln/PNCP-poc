@@ -202,22 +202,30 @@ export function LoadingProgress({
 
   const statusMessage = getStatusMessage();
 
-  // Format elapsed time
-  const minutes = Math.floor(elapsedTime / 60);
-  const seconds = elapsedTime % 60;
-  const timeDisplay = minutes > 0
-    ? `${minutes}min ${seconds.toString().padStart(2, "0")}s`
-    : `${seconds}s`;
+  // Format elapsed time - cap display at estimated time when exceeded
+  const displayElapsed = elapsedTime > totalEstimatedTime ? totalEstimatedTime : elapsedTime;
+  const minutes = Math.floor(displayElapsed / 60);
+  const seconds = displayElapsed % 60;
 
-  // Remaining estimate
+  // Check if time exceeded estimated - show different message
+  const isTimeExceeded = elapsedTime > totalEstimatedTime;
+  const timeDisplay = isTimeExceeded
+    ? "Finalizando..."
+    : minutes > 0
+      ? `${minutes}min ${seconds.toString().padStart(2, "0")}s`
+      : `${seconds}s`;
+
+  // Remaining estimate - show "Finalizando..." when exceeded
   const remaining = Math.max(0, totalEstimatedTime - elapsedTime);
   const remainingMin = Math.floor(remaining / 60);
   const remainingSec = remaining % 60;
-  const remainingDisplay = remaining > 0
-    ? remainingMin > 0
-      ? `~${remainingMin}min ${remainingSec}s restantes`
-      : `~${remainingSec}s restantes`
-    : "Finalizando...";
+  const remainingDisplay = isTimeExceeded
+    ? "Quase la! A busca esta demorando mais que o esperado..."
+    : remaining > 0
+      ? remainingMin > 0
+        ? `~${remainingMin}min ${remainingSec}s restantes`
+        : `~${remainingSec}s restantes`
+      : "Finalizando...";
 
   return (
     <div className="mt-8 p-6 bg-surface-1 rounded-card border animate-fade-in-up">

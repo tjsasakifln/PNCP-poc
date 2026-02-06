@@ -354,4 +354,101 @@ describe('LoginPage Component', () => {
       expect(passwordInput).toHaveAttribute('minLength', '6');
     });
   });
+
+  describe('Password visibility toggle', () => {
+    it('should hide password by default', () => {
+      render(<LoginPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
+      expect(passwordInput).toHaveAttribute('type', 'password');
+    });
+
+    it('should show password when toggle button is clicked', async () => {
+      render(<LoginPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      expect(passwordInput).toHaveAttribute('type', 'password');
+
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+
+      expect(passwordInput).toHaveAttribute('type', 'text');
+    });
+
+    it('should hide password again when toggle button is clicked twice', async () => {
+      render(<LoginPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      // First click - show password
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+      expect(passwordInput).toHaveAttribute('type', 'text');
+
+      // Second click - hide password
+      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
+      await act(async () => {
+        fireEvent.click(hideButton);
+      });
+      expect(passwordInput).toHaveAttribute('type', 'password');
+    });
+
+    it('should update aria-label based on visibility state', async () => {
+      render(<LoginPage />);
+
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      expect(toggleButton).toHaveAttribute('aria-label', 'Mostrar senha');
+
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+
+      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
+      expect(hideButton).toHaveAttribute('aria-label', 'Ocultar senha');
+    });
+
+    it('should not show toggle button in magic link mode', async () => {
+      render(<LoginPage />);
+
+      // Initially toggle button should be visible
+      expect(screen.getByRole('button', { name: /Mostrar senha/i })).toBeInTheDocument();
+
+      // Switch to magic link mode
+      const magicButton = screen.getByRole('button', { name: /Magic Link/i });
+      await act(async () => {
+        fireEvent.click(magicButton);
+      });
+
+      // Toggle button should not be visible (password field is hidden)
+      expect(screen.queryByRole('button', { name: /Mostrar senha/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Ocultar senha/i })).not.toBeInTheDocument();
+    });
+
+    it('should maintain password visibility state when typing', async () => {
+      render(<LoginPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Sua senha/i);
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      // Show password
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+      expect(passwordInput).toHaveAttribute('type', 'text');
+
+      // Type in the password field
+      await act(async () => {
+        fireEvent.change(passwordInput, { target: { value: 'mypassword123' } });
+      });
+
+      // Password should still be visible
+      expect(passwordInput).toHaveAttribute('type', 'text');
+      expect(passwordInput).toHaveValue('mypassword123');
+    });
+  });
 });

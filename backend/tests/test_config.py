@@ -474,3 +474,80 @@ class TestGetCorsOrigins:
         # Count occurrences of production origin
         count = origins.count(prod_origin)
         assert count == 1
+
+    def test_railway_environment_includes_production_origins(self):
+        """In Railway environment (no CORS_ORIGINS), should include production origins."""
+        # Clear CORS_ORIGINS
+        if "CORS_ORIGINS" in os.environ:
+            del os.environ["CORS_ORIGINS"]
+        # Set Railway environment variable
+        os.environ["RAILWAY_ENVIRONMENT"] = "production"
+
+        try:
+            origins = get_cors_origins()
+
+            # Should include both localhost and production origins
+            assert "http://localhost:3000" in origins
+            assert "http://127.0.0.1:3000" in origins
+            for prod_origin in PRODUCTION_ORIGINS:
+                assert prod_origin in origins
+        finally:
+            # Cleanup
+            del os.environ["RAILWAY_ENVIRONMENT"]
+
+    def test_railway_project_id_includes_production_origins(self):
+        """RAILWAY_PROJECT_ID should also trigger production origins."""
+        if "CORS_ORIGINS" in os.environ:
+            del os.environ["CORS_ORIGINS"]
+        os.environ["RAILWAY_PROJECT_ID"] = "some-project-id"
+
+        try:
+            origins = get_cors_origins()
+
+            for prod_origin in PRODUCTION_ORIGINS:
+                assert prod_origin in origins
+        finally:
+            del os.environ["RAILWAY_PROJECT_ID"]
+
+    def test_environment_production_includes_production_origins(self):
+        """ENVIRONMENT=production should include production origins."""
+        if "CORS_ORIGINS" in os.environ:
+            del os.environ["CORS_ORIGINS"]
+        os.environ["ENVIRONMENT"] = "production"
+
+        try:
+            origins = get_cors_origins()
+
+            for prod_origin in PRODUCTION_ORIGINS:
+                assert prod_origin in origins
+        finally:
+            del os.environ["ENVIRONMENT"]
+
+    def test_env_prod_includes_production_origins(self):
+        """ENV=prod should include production origins."""
+        if "CORS_ORIGINS" in os.environ:
+            del os.environ["CORS_ORIGINS"]
+        os.environ["ENV"] = "prod"
+
+        try:
+            origins = get_cors_origins()
+
+            for prod_origin in PRODUCTION_ORIGINS:
+                assert prod_origin in origins
+        finally:
+            del os.environ["ENV"]
+
+    def test_no_production_env_excludes_production_origins(self):
+        """Without production indicators, should NOT include production origins."""
+        # Clear all production environment indicators
+        for var in ["CORS_ORIGINS", "RAILWAY_ENVIRONMENT", "RAILWAY_PROJECT_ID", "ENVIRONMENT", "ENV"]:
+            if var in os.environ:
+                del os.environ[var]
+
+        origins = get_cors_origins()
+
+        # Should only have localhost origins
+        assert origins == DEFAULT_CORS_ORIGINS
+        # Production origins should NOT be included
+        for prod_origin in PRODUCTION_ORIGINS:
+            assert prod_origin not in origins

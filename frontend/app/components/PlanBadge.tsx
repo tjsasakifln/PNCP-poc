@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { getPlanDisplayName, normalizePlanId } from "../../lib/plans";
 
 interface PlanBadgeProps {
-  planId: "free_trial" | "consultor_agil" | "maquina" | "sala_guerra";
+  planId: string;  // Accept any plan ID (will be normalized)
   planName: string;
   trialExpiresAt?: string; // ISO timestamp
   onClick?: () => void;
@@ -13,7 +14,14 @@ interface PlanBadgeProps {
  * Plan badge component showing current tier with trial countdown
  * Based on UX design spec in docs/ux/STORY-165-plan-ui-design.md
  */
-export function PlanBadge({ planId, planName, trialExpiresAt, onClick }: PlanBadgeProps) {
+export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick }: PlanBadgeProps) {
+  // Normalize plan ID to handle legacy values
+  const planId = normalizePlanId(rawPlanId);
+
+  // Get user-friendly display name
+  const displayName = useMemo(() => {
+    return getPlanDisplayName(rawPlanId, planName);
+  }, [rawPlanId, planName]);
   // Calculate days remaining for trial
   const daysRemaining = useMemo(() => {
     if (!trialExpiresAt) return null;
@@ -45,13 +53,13 @@ export function PlanBadge({ planId, planName, trialExpiresAt, onClick }: PlanBad
   // Warning state for trial expiring soon (<2 days)
   const isExpiringSoon = daysRemaining !== null && daysRemaining < 2;
 
-  // Plan icon
+  // Plan icon - use text icons instead of emojis for better cross-platform support
   const icon = useMemo(() => {
-    if (planId === "free_trial") return "⚠️";
-    if (planId === "consultor_agil") return "💼";
-    if (planId === "maquina") return "⚙️";
-    if (planId === "sala_guerra") return "👑";
-    return "📦";
+    if (planId === "free_trial") return "G";  // Gratuito
+    if (planId === "consultor_agil") return "C";  // Consultor
+    if (planId === "maquina") return "M";  // Maquina
+    if (planId === "sala_guerra") return "S";  // Sala de Guerra
+    return "?";
   }, [planId]);
 
   return (
@@ -64,10 +72,10 @@ export function PlanBadge({ planId, planName, trialExpiresAt, onClick }: PlanBad
         ${isExpiringSoon ? "animate-pulse" : ""}
       `}
       title="Ver planos disponíveis"
-      aria-label={`Current plan: ${planName}. Click to view upgrade options`}
+      aria-label={`Plano atual: ${displayName}. Clique para ver opcoes de upgrade`}
     >
-      <span aria-hidden="true">{icon}</span>
-      <span>{planName}</span>
+      <span aria-hidden="true" className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{icon}</span>
+      <span>{displayName}</span>
 
       {/* Trial countdown */}
       {daysRemaining !== null && (

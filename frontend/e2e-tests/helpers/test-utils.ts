@@ -267,3 +267,217 @@ export function generateMockSavedSearches(count: number = 3) {
   }
   return searches;
 }
+
+/**
+ * Mock user data for different user types
+ */
+const mockUsers = {
+  admin: {
+    id: 'admin-user-id',
+    email: 'admin@test.com',
+    user_metadata: { full_name: 'Admin User', is_admin: true },
+    app_metadata: { is_admin: true },
+  },
+  user: {
+    id: 'regular-user-id',
+    email: 'user@test.com',
+    user_metadata: { full_name: 'Regular User' },
+    app_metadata: {},
+  },
+};
+
+/**
+ * Mock session data
+ */
+const mockSession = {
+  access_token: 'mock-access-token-12345',
+  refresh_token: 'mock-refresh-token-12345',
+  expires_at: Date.now() + 3600 * 1000,
+};
+
+/**
+ * Setup authentication mocking
+ * Simulates authenticated user for testing protected pages
+ */
+export async function mockAuthAPI(page: Page, userType: 'admin' | 'user' = 'user') {
+  const user = mockUsers[userType];
+  const isAdmin = userType === 'admin';
+
+  // Mock Supabase auth endpoints
+  await page.route('**/auth/v1/token**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        access_token: mockSession.access_token,
+        refresh_token: mockSession.refresh_token,
+        expires_in: 3600,
+        token_type: 'bearer',
+        user,
+      }),
+    });
+  });
+
+  // Mock /me endpoint
+  await page.route('**/me', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata.full_name,
+        is_admin: isAdmin,
+        plan_id: 'free',
+        plan_name: 'Gratuito',
+        credits_remaining: 3,
+      }),
+    });
+  });
+
+  // Set auth state in localStorage before page load
+  await page.addInitScript(
+    ({ user, session, isAdmin }) => {
+      // Supabase stores auth in localStorage
+      const authKey = 'sb-localhost-auth-token';
+      const authData = {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+        user: { ...user, is_admin: isAdmin },
+      };
+      localStorage.setItem(authKey, JSON.stringify(authData));
+
+      // Also set a flag for our AuthProvider
+      localStorage.setItem('auth-user', JSON.stringify({ ...user, is_admin: isAdmin }));
+      localStorage.setItem('auth-session', JSON.stringify(session));
+    },
+    { user, session: mockSession, isAdmin }
+  );
+}
+
+/**
+ * Mock /me endpoint with custom user data
+ * Used for testing different plan types and quota states
+ */
+export async function mockMeAPI(
+  page: Page,
+  userData: {
+    plan_id?: string;
+    plan_name?: string;
+    credits_remaining?: number | null;
+    credits_total?: number;
+    quota_used?: number;
+    reset_date?: string;
+    trial_expires_at?: string;
+    is_admin?: boolean;
+  }
+) {
+  await page.route('**/me', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'mock-user-id',
+        email: 'user@test.com',
+        full_name: 'Test User',
+        is_admin: userData.is_admin || false,
+        plan_id: userData.plan_id || 'free',
+        plan_name: userData.plan_name || 'Gratuito',
+        credits_remaining: userData.credits_remaining ?? 3,
+        credits_total: userData.credits_total,
+        quota_used: userData.quota_used,
+        reset_date: userData.reset_date,
+        trial_expires_at: userData.trial_expires_at,
+      }),
+    });
+  });
+}
+
+/**
+ * Mock admin users API endpoint
+ */
+export async function mockAdminUsersAPI(page: Page) {
+  // Mock GET /admin/users (list users)
+  await page.route('**/admin/users**', async (route: Route) => {
+    const method = route.request().method();
+
+    if (method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          users: [
+            {
+              id: 'user-1',
+              email: 'user1@test.com',
+              full_name: 'User One',
+              company: 'Company A',
+              plan_type: 'free',
+              created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+              user_subscriptions: [
+                { id: 'sub-1', plan_id: 'free', credits_remaining: 2, is_active: true },
+              ],
+            },
+            {
+              id: 'user-2',
+              email: 'user2@test.com',
+              full_name: 'User Two',
+              company: 'Company B',
+              plan_type: 'monthly',
+              created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+              user_subscriptions: [
+                { id: 'sub-2', plan_id: 'monthly', credits_remaining: null, is_active: true },
+              ],
+            },
+            {
+              id: 'user-3',
+              email: 'user3@test.com',
+              full_name: null,
+              company: null,
+              plan_type: 'pack_10',
+              created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+              user_subscriptions: [
+                { id: 'sub-3', plan_id: 'pack_10', credits_remaining: 8, is_active: true },
+              ],
+            },
+          ],
+          total: 3,
+        }),
+      });
+    } else if (method === 'POST') {
+      // Create user
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'new-user-id',
+          email: 'newuser@test.com',
+          message: 'User created successfully',
+        }),
+      });
+    }
+  });
+
+  // Mock DELETE /admin/users/:id
+  await page.route('**/admin/users/*', async (route: Route) => {
+    const method = route.request().method();
+
+    if (method === 'DELETE') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'User deleted' }),
+      });
+    } else if (method === 'POST' && route.request().url().includes('assign-plan')) {
+      // Assign plan
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Plan assigned' }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}

@@ -323,4 +323,88 @@ describe('QuotaCounter', () => {
       expect(progressBar).toHaveStyle({ width: '100%' });
     });
   });
+
+  describe('Credits display formatting', () => {
+    it('formats large quota numbers correctly', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={250}
+          quotaLimit={1000}
+          resetDate={mockResetDate}
+          planId="sala_guerra"
+        />
+      );
+
+      expect(screen.getByText(/Buscas este mês: 250\/1000/i)).toBeInTheDocument();
+    });
+
+    it('shows remaining searches clearly', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={30}
+          quotaLimit={50}
+          resetDate={mockResetDate}
+          planId="consultor_agil"
+        />
+      );
+
+      // 50 - 30 = 20 remaining
+      expect(screen.getByText(/30\/50/i)).toBeInTheDocument();
+    });
+
+    it('handles single search remaining', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={49}
+          quotaLimit={50}
+          resetDate={mockResetDate}
+          planId="consultor_agil"
+        />
+      );
+
+      // 1 search remaining should trigger warning
+      expect(screen.getByText(/49\/50/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Plan-specific displays', () => {
+    it('correctly displays Consultor Ágil quota', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={10}
+          quotaLimit={50}
+          resetDate={mockResetDate}
+          planId="consultor_agil"
+        />
+      );
+
+      expect(screen.getByText(/10\/50/i)).toBeInTheDocument();
+    });
+
+    it('correctly displays Máquina quota', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={100}
+          quotaLimit={300}
+          resetDate={mockResetDate}
+          planId="maquina"
+        />
+      );
+
+      expect(screen.getByText(/100\/300/i)).toBeInTheDocument();
+    });
+
+    it('correctly displays Sala de Guerra quota', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={500}
+          quotaLimit={1000}
+          resetDate={mockResetDate}
+          planId="sala_guerra"
+        />
+      );
+
+      expect(screen.getByText(/500\/1000/i)).toBeInTheDocument();
+    });
+  });
 });

@@ -424,3 +424,131 @@ class TestCheckQuota:
 
         assert result.plan_id == "free_trial"
         assert result.allowed is True
+
+
+class TestPlanNameMapping:
+    """Test PLAN_NAMES constants for correct display names."""
+
+    def test_free_trial_display_name(self):
+        """FREE trial should display as 'FREE Trial'."""
+        assert PLAN_NAMES["free_trial"] == "FREE Trial"
+
+    def test_consultor_agil_display_name(self):
+        """Consultor Agil should display with accent."""
+        assert PLAN_NAMES["consultor_agil"] == "Consultor Ágil"
+
+    def test_maquina_display_name(self):
+        """Maquina should display as 'Máquina'."""
+        assert PLAN_NAMES["maquina"] == "Máquina"
+
+    def test_sala_guerra_display_name(self):
+        """Sala de Guerra should display correctly."""
+        assert PLAN_NAMES["sala_guerra"] == "Sala de Guerra"
+
+    def test_plan_names_matches_capabilities_keys(self):
+        """All capability plan IDs must have a display name."""
+        capability_plan_ids = set(PLAN_CAPABILITIES.keys())
+        name_plan_ids = set(PLAN_NAMES.keys())
+        assert capability_plan_ids == name_plan_ids
+
+    def test_plan_names_not_empty(self):
+        """All plan display names must be non-empty."""
+        for plan_id, name in PLAN_NAMES.items():
+            assert name, f"Plan {plan_id} has empty display name"
+            assert len(name) >= 3, f"Plan {plan_id} display name too short"
+
+
+class TestPlanPricing:
+    """Test PLAN_PRICES constants for correct pricing display."""
+
+    def test_consultor_agil_price(self):
+        """Consultor Agil should have correct price."""
+        assert PLAN_PRICES["consultor_agil"] == "R$ 297/mês"
+
+    def test_maquina_price(self):
+        """Maquina should have correct price."""
+        assert PLAN_PRICES["maquina"] == "R$ 597/mês"
+
+    def test_sala_guerra_price(self):
+        """Sala de Guerra should have correct price."""
+        assert PLAN_PRICES["sala_guerra"] == "R$ 1.497/mês"
+
+    def test_free_trial_has_no_price(self):
+        """FREE trial should not be in pricing (it's free)."""
+        assert "free_trial" not in PLAN_PRICES
+
+    def test_all_paid_plans_have_prices(self):
+        """All paid plans must have prices."""
+        paid_plans = {"consultor_agil", "maquina", "sala_guerra"}
+        assert set(PLAN_PRICES.keys()) == paid_plans
+
+    def test_prices_contain_currency_symbol(self):
+        """All prices should contain R$ currency symbol."""
+        for plan_id, price in PLAN_PRICES.items():
+            assert "R$" in price, f"Plan {plan_id} price missing currency symbol"
+
+    def test_prices_contain_period(self):
+        """All prices should indicate billing period."""
+        for plan_id, price in PLAN_PRICES.items():
+            assert "/mês" in price or "/ano" in price, f"Plan {plan_id} price missing period"
+
+
+class TestQuotaInfoPlanName:
+    """Test QuotaInfo returns correct plan_name field."""
+
+    @patch("supabase_client.get_supabase")
+    @patch("quota.get_monthly_quota_used")
+    def test_quota_info_returns_correct_plan_name(self, mock_get_used, mock_get_supabase):
+        """check_quota should return correctly formatted plan_name."""
+        mock_get_used.return_value = 10
+        mock_sb = MagicMock()
+        mock_get_supabase.return_value = mock_sb
+
+        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
+            {
+                "id": "sub-123",
+                "plan_id": "consultor_agil",
+                "expires_at": None,
+            }
+        ]
+
+        result = check_quota("user-123")
+
+        assert result.plan_id == "consultor_agil"
+        assert result.plan_name == "Consultor Ágil"
+
+    @patch("supabase_client.get_supabase")
+    @patch("quota.get_monthly_quota_used")
+    def test_quota_info_maquina_plan_name(self, mock_get_used, mock_get_supabase):
+        """check_quota should return 'Máquina' for maquina plan."""
+        mock_get_used.return_value = 50
+        mock_sb = MagicMock()
+        mock_get_supabase.return_value = mock_sb
+
+        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
+            {
+                "id": "sub-123",
+                "plan_id": "maquina",
+                "expires_at": None,
+            }
+        ]
+
+        result = check_quota("user-123")
+
+        assert result.plan_id == "maquina"
+        assert result.plan_name == "Máquina"
+
+    @patch("supabase_client.get_supabase")
+    @patch("quota.get_monthly_quota_used")
+    def test_quota_info_defaults_to_free_trial_name(self, mock_get_used, mock_get_supabase):
+        """check_quota should default to 'FREE Trial' name for unknown plans."""
+        mock_get_used.return_value = 0
+        mock_sb = MagicMock()
+        mock_get_supabase.return_value = mock_sb
+
+        # No subscription
+        mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = []
+
+        result = check_quota("user-123")
+
+        assert result.plan_name == "FREE Trial"

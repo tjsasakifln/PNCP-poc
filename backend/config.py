@@ -153,8 +153,8 @@ def str_to_bool(value: str | None) -> bool:
 
 # Feature Flag: New Pricing Model (STORY-165)
 # Controls plan-based capabilities, quota enforcement, and Excel gating
-# Default: False (disabled for safety, rollout via gradual deployment)
-ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "false"))
+# Default: True (enabled - new pricing is production-ready)
+ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "true"))
 
 # Log feature flag state on import
 logger = logging.getLogger(__name__)
@@ -188,13 +188,19 @@ def get_cors_origins() -> list[str]:
 
     Security:
         - Never allows "*" wildcard in production
-        - Always includes production domains when env var is set
+        - Always includes production domains in Railway/production environments
         - Falls back to safe defaults for local development
 
     Examples:
-        # Development (no env var set):
+        # Development (no env var set, RAILWAY_ENVIRONMENT not set):
         >>> get_cors_origins()
         ['http://localhost:3000', 'http://127.0.0.1:3000']
+
+        # Production (Railway environment detected):
+        >>> get_cors_origins()
+        ['http://localhost:3000', 'http://127.0.0.1:3000',
+         'https://bidiq-frontend-production.up.railway.app',
+         'https://bidiq-uniformes-production.up.railway.app']
 
         # Production (env var set):
         >>> # CORS_ORIGINS=https://myapp.com,https://api.myapp.com
@@ -208,10 +214,28 @@ def get_cors_origins() -> list[str]:
     """
     cors_env = os.getenv("CORS_ORIGINS", "").strip()
 
+    # Detect if running in production environment (Railway, Docker, etc.)
+    is_production = (
+        os.getenv("RAILWAY_ENVIRONMENT") is not None or
+        os.getenv("RAILWAY_PROJECT_ID") is not None or
+        os.getenv("ENVIRONMENT", "").lower() in ("production", "prod") or
+        os.getenv("ENV", "").lower() in ("production", "prod")
+    )
+
     if not cors_env:
-        # No environment variable set - use development defaults
-        logger.info("CORS_ORIGINS not set, using development defaults")
-        return DEFAULT_CORS_ORIGINS.copy()
+        # No environment variable set - start with development defaults
+        origins = DEFAULT_CORS_ORIGINS.copy()
+
+        if is_production:
+            # In production, always include production origins even without CORS_ORIGINS
+            logger.info("Production environment detected, including production origins")
+            for prod_origin in PRODUCTION_ORIGINS:
+                if prod_origin not in origins:
+                    origins.append(prod_origin)
+        else:
+            logger.info("CORS_ORIGINS not set, using development defaults only")
+
+        return origins
 
     # Parse comma-separated origins
     origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]

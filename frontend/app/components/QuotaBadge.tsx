@@ -2,11 +2,17 @@
 
 import { useQuota } from "../../hooks/useQuota";
 import { useAuth } from "./AuthProvider";
+import { getPlanDisplayName } from "../../lib/plans";
 import Link from "next/link";
 
 export function QuotaBadge() {
   const { user } = useAuth();
   const { quota, loading } = useQuota();
+
+  // Get user-friendly plan name
+  const friendlyPlanName = quota?.planId
+    ? getPlanDisplayName(quota.planId, quota.planName ?? undefined)
+    : null;
 
   // Don't show if not logged in
   if (!user) return null;
@@ -46,13 +52,13 @@ export function QuotaBadge() {
         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
                    bg-brand-blue-subtle text-brand-navy dark:text-brand-blue
                    rounded-full border border-brand-blue/20"
-        title={`Plano ${quota.planName}`}
+        title={`Plano ${friendlyPlanName || quota.planName}`}
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
         </svg>
-        {quota.planName}
+        {friendlyPlanName || quota.planName}
       </span>
     );
   }

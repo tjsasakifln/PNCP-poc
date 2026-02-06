@@ -48,7 +48,7 @@ describe('SignupPage Component', () => {
 
       expect(screen.getByLabelText(/Nome completo/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Senha/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Minimo 6 caracteres/i)).toBeInTheDocument();
     });
 
     it('should show Google signup button', () => {
@@ -78,7 +78,7 @@ describe('SignupPage Component', () => {
     it('should have required password field with min length', () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       expect(passwordInput).toHaveAttribute('required');
       expect(passwordInput).toHaveAttribute('type', 'password');
       expect(passwordInput).toHaveAttribute('minLength', '6');
@@ -100,7 +100,7 @@ describe('SignupPage Component', () => {
 
       const nameInput = screen.getByLabelText(/Nome completo/i);
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -125,7 +125,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -151,7 +151,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -172,7 +172,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -192,7 +192,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -213,7 +213,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -237,7 +237,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -257,7 +257,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
@@ -279,7 +279,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByLabelText(/Senha/i);
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       // First submission - fails
@@ -318,6 +318,94 @@ describe('SignupPage Component', () => {
       });
 
       expect(mockSignInWithGoogle).toHaveBeenCalled();
+    });
+  });
+
+  describe('Password visibility toggle', () => {
+    it('should hide password by default', () => {
+      render(<SignupPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      expect(passwordInput).toHaveAttribute('type', 'password');
+    });
+
+    it('should show password when toggle button is clicked', async () => {
+      render(<SignupPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      expect(passwordInput).toHaveAttribute('type', 'password');
+
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+
+      expect(passwordInput).toHaveAttribute('type', 'text');
+    });
+
+    it('should hide password again when toggle button is clicked twice', async () => {
+      render(<SignupPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      // First click - show password
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+      expect(passwordInput).toHaveAttribute('type', 'text');
+
+      // Second click - hide password
+      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
+      await act(async () => {
+        fireEvent.click(hideButton);
+      });
+      expect(passwordInput).toHaveAttribute('type', 'password');
+    });
+
+    it('should update aria-label based on visibility state', async () => {
+      render(<SignupPage />);
+
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      expect(toggleButton).toHaveAttribute('aria-label', 'Mostrar senha');
+
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+
+      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
+      expect(hideButton).toHaveAttribute('aria-label', 'Ocultar senha');
+    });
+
+    it('should display password as typed when visible', async () => {
+      render(<SignupPage />);
+
+      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      // Type password while hidden
+      await act(async () => {
+        fireEvent.change(passwordInput, { target: { value: 'secret123' } });
+      });
+
+      // Show password
+      await act(async () => {
+        fireEvent.click(toggleButton);
+      });
+
+      expect(passwordInput).toHaveAttribute('type', 'text');
+      expect(passwordInput).toHaveValue('secret123');
+    });
+
+    it('should render toggle button inside password field container', () => {
+      render(<SignupPage />);
+
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+
+      // Toggle button should exist and be interactive
+      expect(toggleButton).toBeInTheDocument();
+      expect(toggleButton).toHaveAttribute('type', 'button');
     });
   });
 });
