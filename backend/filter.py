@@ -397,9 +397,14 @@ def match_keywords(
     """
     Check if procurement object description contains uniform-related keywords.
 
-    Uses word boundary matching to prevent partial matches:
-    - "uniforme" matches "Aquisição de uniformes"
-    - "uniforme" does NOT match "uniformemente" or "uniformização"
+    Uses flexible word boundary matching to handle plural variations:
+    - "uniforme" matches "uniforme" and "uniformes" (plural -s or -es suffix)
+    - "notebook" matches "notebook" and "notebooks" (plural -s suffix)
+    - "uniforme" does NOT match "uniformemente" or "uniformização" (different words)
+
+    Algorithm:
+    1. Try exact match with word boundaries: \b{keyword}\b
+    2. If no match, try plural variations: \b{keyword}s\b or \b{keyword}es\b
 
     Args:
         objeto: Procurement object description (objetoCompra from PNCP API)
@@ -415,6 +420,9 @@ def match_keywords(
         >>> match_keywords("Aquisição de uniformes escolares", KEYWORDS_UNIFORMES)
         (True, ['uniformes', 'uniforme escolar'])
 
+        >>> match_keywords("Aquisição de notebooks", {"notebook"})
+        (True, ['notebook'])
+
         >>> match_keywords("Uniformização de procedimento", KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
         (False, [])
 
@@ -427,7 +435,7 @@ def match_keywords(
     if exclusions:
         for exc in exclusions:
             exc_norm = normalize_text(exc)
-            # Use word boundary for exclusions too
+            # Use strict word boundary for exclusions (exact match required)
             pattern = rf"\b{re.escape(exc_norm)}\b"
             if re.search(pattern, objeto_norm):
                 return False, []
@@ -437,11 +445,27 @@ def match_keywords(
     for kw in keywords:
         kw_norm = normalize_text(kw)
 
-        # Match by complete word (word boundary)
-        # \b ensures we don't match partial words
-        pattern = rf"\b{re.escape(kw_norm)}\b"
-        if re.search(pattern, objeto_norm):
+        # Try exact match first
+        pattern_exact = rf"\b{re.escape(kw_norm)}\b"
+        if re.search(pattern_exact, objeto_norm):
             matched.append(kw)
+            continue
+
+        # Try plural forms if exact match failed
+        # Portuguese plurals: add -s or -es (e.g., "uniforme" -> "uniformes")
+        # English plurals: add -s (e.g., "notebook" -> "notebooks")
+        if not kw_norm.endswith('s'):  # Avoid double plural (e.g., "roupas" -> "roupass")
+            # Try -s suffix (most common plural)
+            pattern_plural_s = rf"\b{re.escape(kw_norm)}s\b"
+            if re.search(pattern_plural_s, objeto_norm):
+                matched.append(kw)
+                continue
+
+            # Try -es suffix (Portuguese plural for words ending in consonants)
+            pattern_plural_es = rf"\b{re.escape(kw_norm)}es\b"
+            if re.search(pattern_plural_es, objeto_norm):
+                matched.append(kw)
+                continue
 
     return len(matched) > 0, matched
 
