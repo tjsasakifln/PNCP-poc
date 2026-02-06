@@ -21,7 +21,7 @@ interface UseQuotaReturn {
 }
 
 const FREE_SEARCHES_LIMIT = 3;
-const UNLIMITED_THRESHOLD = 999999;
+const UNLIMITED_THRESHOLD = 999990; // Lowered threshold to catch near-unlimited values
 
 export function useQuota(): UseQuotaReturn {
   const { session, user } = useAuth();
@@ -58,16 +58,30 @@ export function useQuota(): UseQuotaReturn {
       const quotaUsed = data.quota_used || 0;
       const isAdmin = data.is_admin === true;
 
-      // Detect unlimited users (admins, masters, sala_guerra)
-      const isUnlimited = quotaRemaining >= UNLIMITED_THRESHOLD || isAdmin;
-
       // Free user detection: plan_id starts with "free" and not admin
       const isFreeUser = !isAdmin && (planId === "free" || planId === "free_trial");
+
+      // Detect unlimited users (admins, masters, sala_guerra, or very high quota)
+      // NOTE: Free users are NEVER unlimited - they have 3 free searches
+      const isUnlimited = !isFreeUser && (quotaRemaining >= UNLIMITED_THRESHOLD || isAdmin);
+
+      // Calculate credits remaining for display:
+      // - Unlimited users: null (show plan badge instead of count)
+      // - Free users: Always show FREE_SEARCHES_LIMIT - quotaUsed (handles stale backend data)
+      // - Paid users: Show actual quotaRemaining from backend
+      let creditsRemaining: number | null = null;
+      if (isFreeUser) {
+        // Free users always get 3 free searches, calculate remaining based on usage
+        // This handles both correctly configured backend (max=3) and stale data (max=999999)
+        creditsRemaining = Math.max(0, FREE_SEARCHES_LIMIT - quotaUsed);
+      } else if (!isUnlimited) {
+        creditsRemaining = quotaRemaining;
+      }
 
       setQuota({
         planId,
         planName,
-        creditsRemaining: isUnlimited ? null : quotaRemaining,
+        creditsRemaining,
         totalSearches: quotaUsed,
         isUnlimited,
         isFreeUser,

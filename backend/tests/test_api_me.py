@@ -278,7 +278,9 @@ class TestMeEndpointDifferentPlanTiers:
             caps = data["capabilities"]
             assert caps["max_history_days"] == 7
             assert caps["allow_excel"] is False
-            assert caps["max_requests_per_month"] == 999999  # FREE trial has unlimited requests
+            # Free trial has limited requests (3 searches as per plan config)
+            from quota import PLAN_CAPABILITIES
+            assert caps["max_requests_per_month"] == PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"]
         finally:
             cleanup()
 

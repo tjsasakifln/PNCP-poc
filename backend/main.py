@@ -922,6 +922,31 @@ async def buscar_licitacoes(
                 "Search completed with 0 results",
                 extra={"total_raw": len(licitacoes_raw), "total_filtrado": 0},
             )
+
+            # Save session even for zero results (for history tracking)
+            if user:
+                try:
+                    from quota import save_search_session
+                    session_id = save_search_session(
+                        user_id=user["id"],
+                        sectors=[request.setor_id],
+                        ufs=request.ufs,
+                        data_inicial=request.data_inicial,
+                        data_final=request.data_final,
+                        custom_keywords=custom_terms if custom_terms else None,
+                        total_raw=len(licitacoes_raw),
+                        total_filtered=0,
+                        valor_total=0.0,
+                        resumo_executivo=resumo.resumo_executivo,
+                        destaques=[],
+                    )
+                    logger.info(f"Search session saved (0 results): {session_id[:8]}*** for user {mask_user_id(user['id'])}")
+                except Exception as e:
+                    logger.error(
+                        f"Failed to save search session for user {mask_user_id(user['id'])}: {type(e).__name__}: {e}",
+                        exc_info=True,
+                    )
+
             return response
 
         # Step 3: Generate executive summary via LLM (with automatic fallback)
@@ -1002,11 +1027,12 @@ async def buscar_licitacoes(
             },
         )
 
-        # Save session (quota already incremented above)
+        # Save session to history (for /historico page)
+        # This must happen BEFORE returning the response
         if user:
             try:
                 from quota import save_search_session
-                save_search_session(
+                session_id = save_search_session(
                     user_id=user["id"],
                     sectors=[request.setor_id],
                     ufs=request.ufs,
@@ -1019,8 +1045,13 @@ async def buscar_licitacoes(
                     resumo_executivo=resumo.resumo_executivo,
                     destaques=resumo.destaques,
                 )
+                logger.info(f"Search session saved: {session_id[:8]}*** for user {mask_user_id(user['id'])}")
             except Exception as e:
-                logger.error(f"Failed to save session: {e}")
+                # Log detailed error but don't fail the search request
+                logger.error(
+                    f"Failed to save search session for user {mask_user_id(user['id'])}: {type(e).__name__}: {e}",
+                    exc_info=True,
+                )
 
         return response
 

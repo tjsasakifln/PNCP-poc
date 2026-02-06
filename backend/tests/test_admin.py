@@ -225,8 +225,8 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
 
         users_result = Mock()
         users_result.data = [
-            {"id": "user-1", "email": "user1@example.com", "full_name": "User One", "user_subscriptions": []},
-            {"id": "user-2", "email": "user2@example.com", "full_name": "User Two", "user_subscriptions": []},
+            {"id": "user-1", "email": "user1@example.com", "full_name": "User One", "plan_type": "free_trial", "user_subscriptions": []},
+            {"id": "user-2", "email": "user2@example.com", "full_name": "User Two", "plan_type": "free_trial", "user_subscriptions": []},
         ]
         users_result.count = 2
 
@@ -235,7 +235,8 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             response = admin_client.get("/admin/users")
 
         assert response.status_code == 200
@@ -245,13 +246,17 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
         assert "limit" in data
         assert "offset" in data
         assert len(data["users"]) == 2
+        # Users without subscriptions should now have synthetic subscription with credits
+        for user in data["users"]:
+            assert len(user["user_subscriptions"]) == 1
+            assert user["user_subscriptions"][0]["credits_remaining"] == 3  # free_trial limit
 
     def test_list_users_respects_limit_and_offset(self, admin_client):
         """Should respect limit and offset query parameters."""
         mock_supabase = Mock()
 
         users_result = Mock()
-        users_result.data = [{"id": "user-3", "email": "user3@example.com", "user_subscriptions": []}]
+        users_result.data = [{"id": "user-3", "email": "user3@example.com", "plan_type": "free_trial", "user_subscriptions": []}]
         users_result.count = 100
 
         mock_table = Mock()
@@ -259,7 +264,8 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             response = admin_client.get("/admin/users?limit=10&offset=50")
 
         assert response.status_code == 200
@@ -272,7 +278,7 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
         mock_supabase = Mock()
 
         users_result = Mock()
-        users_result.data = [{"id": "user-match", "email": "john@example.com", "user_subscriptions": []}]
+        users_result.data = [{"id": "user-match", "email": "john@example.com", "plan_type": "free_trial", "user_subscriptions": []}]
         users_result.count = 1
 
         mock_table = Mock()
@@ -280,10 +286,90 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             response = admin_client.get("/admin/users?search=john")
 
         assert response.status_code == 200
+
+    def test_list_users_computes_credits_for_users_without_subscription(self, admin_client):
+        """Should compute credits from plan capabilities for users without subscription."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = [
+            {"id": "user-1", "email": "user1@example.com", "plan_type": "free_trial", "user_subscriptions": []},
+            {"id": "user-2", "email": "user2@example.com", "plan_type": "maquina", "user_subscriptions": []},
+        ]
+        users_result.count = 2
+
+        mock_table = Mock()
+        mock_table.select.return_value.order.return_value.range.return_value.execute.return_value = users_result
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=1):  # 1 search used
+            response = admin_client.get("/admin/users")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # User 1: free_trial (3 max) - 1 used = 2 remaining
+        user1 = data["users"][0]
+        assert len(user1["user_subscriptions"]) == 1
+        assert user1["user_subscriptions"][0]["credits_remaining"] == 2
+        assert user1["user_subscriptions"][0]["plan_id"] == "free_trial"
+
+        # User 2: maquina (300 max) - 1 used = 299 remaining
+        user2 = data["users"][1]
+        assert len(user2["user_subscriptions"]) == 1
+        assert user2["user_subscriptions"][0]["credits_remaining"] == 299
+        assert user2["user_subscriptions"][0]["plan_id"] == "maquina"
+
+    def test_list_users_preserves_existing_subscription_data(self, admin_client):
+        """Should preserve existing subscription data for users with active subscriptions."""
+        mock_supabase = Mock()
+
+        users_result = Mock()
+        users_result.data = [
+            {
+                "id": "user-1",
+                "email": "user1@example.com",
+                "plan_type": "maquina",
+                "user_subscriptions": [
+                    {"id": "sub-1", "plan_id": "maquina", "credits_remaining": 150, "expires_at": None, "is_active": True}
+                ]
+            },
+            {
+                "id": "user-2",
+                "email": "user2@example.com",
+                "plan_type": "sala_guerra",
+                "user_subscriptions": [
+                    {"id": "sub-2", "plan_id": "sala_guerra", "credits_remaining": None, "expires_at": None, "is_active": True}
+                ]
+            },
+        ]
+        users_result.count = 2
+
+        mock_table = Mock()
+        mock_table.select.return_value.order.return_value.range.return_value.execute.return_value = users_result
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            response = admin_client.get("/admin/users")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # User 1: existing subscription preserved
+        user1 = data["users"][0]
+        assert user1["user_subscriptions"][0]["credits_remaining"] == 150
+        assert user1["user_subscriptions"][0]["id"] == "sub-1"
+
+        # User 2: unlimited plan (None) preserved
+        user2 = data["users"][1]
+        assert user2["user_subscriptions"][0]["credits_remaining"] is None
+        assert user2["user_subscriptions"][0]["id"] == "sub-2"
 
 
 class TestCreateUserEndpoint(TestAdminEndpointsBase):
@@ -986,7 +1072,7 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
         mock_supabase = Mock()
 
         users_result = Mock()
-        users_result.data = [{"id": "user-1", "email": "user@example.com", "user_subscriptions": []}]
+        users_result.data = [{"id": "user-1", "email": "user@example.com", "plan_type": "free_trial", "user_subscriptions": []}]
         users_result.count = 1
 
         mock_table = Mock()
@@ -995,7 +1081,8 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             # Send search with only dangerous characters
             response = admin_client.get("/admin/users?search=';--,()[]")
 
@@ -1030,7 +1117,7 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
         mock_supabase = Mock()
 
         users_result = Mock()
-        users_result.data = [{"id": "user-1", "email": "john@example.com", "full_name": "John Doe", "user_subscriptions": []}]
+        users_result.data = [{"id": "user-1", "email": "john@example.com", "full_name": "John Doe", "plan_type": "free_trial", "user_subscriptions": []}]
         users_result.count = 1
 
         mock_table = Mock()
@@ -1038,7 +1125,8 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             response = admin_client.get("/admin/users?search=john")
 
         assert response.status_code == 200
@@ -1050,7 +1138,7 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
         mock_supabase = Mock()
 
         users_result = Mock()
-        users_result.data = [{"id": "user-1", "email": "john@example.com", "user_subscriptions": []}]
+        users_result.data = [{"id": "user-1", "email": "john@example.com", "plan_type": "free_trial", "user_subscriptions": []}]
         users_result.count = 1
 
         mock_table = Mock()
@@ -1058,7 +1146,8 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             response = admin_client.get("/admin/users?search=john@example.com")
 
         assert response.status_code == 200
@@ -1068,7 +1157,7 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
         mock_supabase = Mock()
 
         users_result = Mock()
-        users_result.data = [{"id": "user-br", "email": "joao@example.com", "full_name": "João Silva", "user_subscriptions": []}]
+        users_result.data = [{"id": "user-br", "email": "joao@example.com", "full_name": "João Silva", "plan_type": "free_trial", "user_subscriptions": []}]
         users_result.count = 1
 
         mock_table = Mock()
@@ -1076,7 +1165,8 @@ class TestListUsersSearchSecurity(TestAdminEndpointsBase):
 
         mock_supabase.table.return_value = mock_table
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase), \
+             patch("quota.get_monthly_quota_used", return_value=0):
             # URL-encoded "João"
             response = admin_client.get("/admin/users?search=Jo%C3%A3o")
 

@@ -54,6 +54,11 @@ export default function AdminPage() {
   const [newPlan, setNewPlan] = useState("free_trial");
   const [creating, setCreating] = useState(false);
 
+  // Credit editing state
+  const [editingCreditsUserId, setEditingCreditsUserId] = useState<string | null>(null);
+  const [editCreditsValue, setEditCreditsValue] = useState<string>("");
+  const [savingCredits, setSavingCredits] = useState(false);
+
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const fetchUsers = useCallback(async () => {
@@ -164,6 +169,51 @@ export default function AdminPage() {
       fetchUsers();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Erro");
+    }
+  };
+
+  const handleStartEditCredits = (userId: string, currentCredits: number | null | undefined) => {
+    setEditingCreditsUserId(userId);
+    setEditCreditsValue(currentCredits !== null && currentCredits !== undefined ? String(currentCredits) : "0");
+  };
+
+  const handleCancelEditCredits = () => {
+    setEditingCreditsUserId(null);
+    setEditCreditsValue("");
+  };
+
+  const handleSaveCredits = async (userId: string) => {
+    if (!session) return;
+
+    const credits = parseInt(editCreditsValue, 10);
+    if (isNaN(credits) || credits < 0) {
+      alert("Valor de creditos invalido. Deve ser um numero >= 0.");
+      return;
+    }
+
+    setSavingCredits(true);
+    try {
+      const res = await fetch(`${backendUrl}/admin/users/${userId}/credits`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ credits }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Erro ao atualizar creditos");
+      }
+
+      setEditingCreditsUserId(null);
+      setEditCreditsValue("");
+      fetchUsers();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao atualizar creditos");
+    } finally {
+      setSavingCredits(false);
     }
   };
 
@@ -317,9 +367,49 @@ export default function AdminPage() {
                         </select>
                       </td>
                       <td className="py-3 px-4 font-data text-[var(--ink)]">
-                        {activeSub?.credits_remaining !== null && activeSub?.credits_remaining !== undefined
-                          ? activeSub.credits_remaining
-                          : "\u221E"}
+                        {editingCreditsUserId === u.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              value={editCreditsValue}
+                              onChange={(e) => setEditCreditsValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSaveCredits(u.id);
+                                if (e.key === "Escape") handleCancelEditCredits();
+                              }}
+                              className="w-20 px-2 py-1 text-xs rounded border border-[var(--border)] bg-[var(--surface-0)]"
+                              disabled={savingCredits}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveCredits(u.id)}
+                              disabled={savingCredits}
+                              className="text-xs px-2 py-1 bg-[var(--brand-navy)] text-white rounded hover:bg-[var(--brand-blue)] disabled:opacity-50"
+                              title="Salvar"
+                            >
+                              {savingCredits ? "..." : "OK"}
+                            </button>
+                            <button
+                              onClick={handleCancelEditCredits}
+                              disabled={savingCredits}
+                              className="text-xs px-1 py-1 text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                              title="Cancelar"
+                            >
+                              X
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleStartEditCredits(u.id, activeSub?.credits_remaining)}
+                            className="hover:bg-[var(--surface-1)] px-2 py-1 rounded cursor-pointer transition-colors"
+                            title="Clique para editar creditos"
+                          >
+                            {activeSub?.credits_remaining !== null && activeSub?.credits_remaining !== undefined
+                              ? activeSub.credits_remaining
+                              : "\u221E"}
+                          </button>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-[var(--ink-muted)]">{formatDate(u.created_at)}</td>
                       <td className="py-3 px-4 text-right">

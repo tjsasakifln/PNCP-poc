@@ -63,7 +63,7 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "free_trial": {
         "max_history_days": 7,
         "allow_excel": False,
-        "max_requests_per_month": 999999,  # Unlimited during trial (quota by expiry)
+        "max_requests_per_month": 3,  # Free trial: 3 searches only
         "max_requests_per_min": 2,
         "max_summary_tokens": 200,
         "priority": PlanPriority.LOW.value,
@@ -483,6 +483,41 @@ def decrement_credits(subscription_id: Optional[str], user_id: str) -> None:
         )
 
 
+def _ensure_profile_exists(user_id: str, sb) -> bool:
+    """Ensure user profile exists in the profiles table.
+
+    Creates a minimal profile if one doesn't exist (handles cases where
+    the trigger on auth.users didn't fire or failed).
+
+    Returns True if profile exists or was created, False on error.
+    """
+    try:
+        # Check if profile exists
+        result = sb.table("profiles").select("id").eq("id", user_id).execute()
+        if result.data and len(result.data) > 0:
+            return True
+
+        # Profile doesn't exist - try to get user email from auth
+        try:
+            user_data = sb.auth.admin.get_user_by_id(user_id)
+            email = user_data.user.email if user_data and user_data.user else f"{user_id[:8]}@placeholder.local"
+        except Exception as e:
+            logger.warning(f"Could not fetch user email for profile creation: {e}")
+            email = f"{user_id[:8]}@placeholder.local"
+
+        # Create minimal profile
+        sb.table("profiles").insert({
+            "id": user_id,
+            "email": email,
+            "plan_type": "free",
+        }).execute()
+        logger.info(f"Created missing profile for user {mask_user_id(user_id)}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to ensure profile exists for user {mask_user_id(user_id)}: {e}")
+        return False
+
+
 def save_search_session(
     user_id: str,
     sectors: list[str],
@@ -500,25 +535,37 @@ def save_search_session(
     from supabase_client import get_supabase
     sb = get_supabase()
 
-    result = (
-        sb.table("search_sessions")
-        .insert({
-            "user_id": user_id,
-            "sectors": sectors,
-            "ufs": ufs,
-            "data_inicial": data_inicial,
-            "data_final": data_final,
-            "custom_keywords": custom_keywords,
-            "total_raw": total_raw,
-            "total_filtered": total_filtered,
-            "valor_total": float(valor_total),
-            "resumo_executivo": resumo_executivo,
-            "destaques": destaques,
-        })
-        .execute()
-    )
+    # Ensure profile exists (FK constraint requires this)
+    if not _ensure_profile_exists(user_id, sb):
+        raise RuntimeError(f"Cannot save session: profile missing for user {mask_user_id(user_id)}")
 
-    session_id = result.data[0]["id"]
-    # SECURITY: Sanitize user ID in logs (Issue #168)
-    logger.info(f"Saved search session {session_id[:8]}*** for user {mask_user_id(user_id)}")
-    return session_id
+    try:
+        result = (
+            sb.table("search_sessions")
+            .insert({
+                "user_id": user_id,
+                "sectors": sectors,
+                "ufs": ufs,
+                "data_inicial": data_inicial,
+                "data_final": data_final,
+                "custom_keywords": custom_keywords,
+                "total_raw": total_raw,
+                "total_filtered": total_filtered,
+                "valor_total": float(valor_total),
+                "resumo_executivo": resumo_executivo,
+                "destaques": destaques,
+            })
+            .execute()
+        )
+
+        if not result.data or len(result.data) == 0:
+            logger.error(f"Insert returned empty result for user {mask_user_id(user_id)}")
+            raise RuntimeError("Insert returned empty result")
+
+        session_id = result.data[0]["id"]
+        # SECURITY: Sanitize user ID in logs (Issue #168)
+        logger.info(f"Saved search session {session_id[:8]}*** for user {mask_user_id(user_id)}")
+        return session_id
+    except Exception as e:
+        logger.error(f"Failed to insert search session for user {mask_user_id(user_id)}: {e}")
+        raise

@@ -179,7 +179,7 @@ class TestCheckQuotaFreeTrial:
 
     def test_free_trial_with_zero_searches_used(self):
         """Should return full quota for free trial user with no searches."""
-        from quota import check_quota
+        from quota import check_quota, PLAN_CAPABILITIES
 
         mock_supabase = Mock()
 
@@ -201,7 +201,8 @@ class TestCheckQuotaFreeTrial:
 
         assert result.allowed is True
         assert result.quota_used == 0
-        assert result.quota_remaining == 999999  # Unlimited during trial
+        # Free trial has limited searches (3 searches as per plan config)
+        assert result.quota_remaining == PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"]
 
     def test_free_trial_capabilities_applied(self):
         """Free trial should have restricted capabilities (7-day history, no Excel)."""
@@ -669,43 +670,45 @@ class TestSaveSearchSession:
             "destaques": ["SP: R$ 500k", "RJ: R$ 1M"],
         }
 
-    def test_saves_session_and_returns_id(self, valid_session_data):
-        """Should save session and return the generated ID."""
-        from quota import save_search_session
-
+    @pytest.fixture
+    def mock_supabase_with_profile(self):
+        """Create mock Supabase client that confirms profile exists."""
         mock_supabase = Mock()
 
+        # Mock profile check - profile exists
+        profile_result = Mock()
+        profile_result.data = [{"id": "user-123"}]
+
+        # Mock insert result for sessions
         insert_result = Mock()
         insert_result.data = [{"id": "session-uuid-123"}]
 
+        # Configure table mock to handle both profiles and search_sessions
         mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.execute.return_value = profile_result
         mock_table.insert.return_value.execute.return_value = insert_result
 
         mock_supabase.table.return_value = mock_table
+        return mock_supabase
 
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+    def test_saves_session_and_returns_id(self, valid_session_data, mock_supabase_with_profile):
+        """Should save session and return the generated ID."""
+        from quota import save_search_session
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
             result = save_search_session(**valid_session_data)
 
         assert result == "session-uuid-123"
 
-    def test_saves_all_fields_correctly(self, valid_session_data):
+    def test_saves_all_fields_correctly(self, valid_session_data, mock_supabase_with_profile):
         """Should save all session fields to database."""
         from quota import save_search_session
 
-        mock_supabase = Mock()
-
-        insert_result = Mock()
-        insert_result.data = [{"id": "session-id"}]
-
-        mock_table = Mock()
-        mock_table.insert.return_value.execute.return_value = insert_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
             save_search_session(**valid_session_data)
 
         # Verify all fields were passed to insert
+        mock_table = mock_supabase_with_profile.table.return_value
         call_args = mock_table.insert.call_args[0][0]
         assert call_args["user_id"] == "user-123"
         assert call_args["sectors"] == ["uniformes", "alimentacao"]
@@ -725,10 +728,15 @@ class TestSaveSearchSession:
 
         mock_supabase = Mock()
 
+        # Mock profile check - profile exists
+        profile_result = Mock()
+        profile_result.data = [{"id": "user-456"}]
+
         insert_result = Mock()
         insert_result.data = [{"id": "session-minimal"}]
 
         mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.execute.return_value = profile_result
         mock_table.insert.return_value.execute.return_value = insert_result
 
         mock_supabase.table.return_value = mock_table
@@ -762,10 +770,15 @@ class TestSaveSearchSession:
 
         mock_supabase = Mock()
 
+        # Mock profile check - profile exists
+        profile_result = Mock()
+        profile_result.data = [{"id": "user-123"}]
+
         insert_result = Mock()
         insert_result.data = [{"id": "session-id"}]
 
         mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.execute.return_value = profile_result
         mock_table.insert.return_value.execute.return_value = insert_result
 
         mock_supabase.table.return_value = mock_table
@@ -789,22 +802,16 @@ class TestSaveSearchSession:
         assert isinstance(call_args["valor_total"], float)
         assert call_args["valor_total"] == 123456.78
 
-    def test_logs_saved_session_info(self, valid_session_data, caplog):
+    def test_logs_saved_session_info(self, valid_session_data, mock_supabase_with_profile, caplog):
         """Should log info message when session is saved."""
         from quota import save_search_session
         import logging
 
-        mock_supabase = Mock()
+        # Override the insert result for this test
+        mock_table = mock_supabase_with_profile.table.return_value
+        mock_table.insert.return_value.execute.return_value.data = [{"id": "session-logged"}]
 
-        insert_result = Mock()
-        insert_result.data = [{"id": "session-logged"}]
-
-        mock_table = Mock()
-        mock_table.insert.return_value.execute.return_value = insert_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
             with caplog.at_level(logging.INFO):
                 save_search_session(**valid_session_data)
 
@@ -816,21 +823,15 @@ class TestSaveSearchSession:
         # User ID is masked via mask_user_id() function
         assert any("user***" in record.message for record in caplog.records)
 
-    def test_inserts_into_search_sessions_table(self, valid_session_data):
+    def test_inserts_into_search_sessions_table(self, valid_session_data, mock_supabase_with_profile):
         """Should insert into the search_sessions table."""
         from quota import save_search_session
 
-        mock_supabase = Mock()
-
-        insert_result = Mock()
-        insert_result.data = [{"id": "session-id"}]
-
-        mock_table = Mock()
-        mock_table.insert.return_value.execute.return_value = insert_result
-
-        mock_supabase.table.return_value = mock_table
-
-        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+        with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
             save_search_session(**valid_session_data)
 
-        mock_supabase.table.assert_called_with("search_sessions")
+        # The table should be called with "profiles" first (to check) and then "search_sessions" (to insert)
+        calls = mock_supabase_with_profile.table.call_args_list
+        table_names = [call[0][0] for call in calls]
+        assert "profiles" in table_names
+        assert "search_sessions" in table_names

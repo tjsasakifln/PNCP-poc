@@ -117,12 +117,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       resumo: data.resumo,
+      licitacoes: data.licitacoes || [],  // Individual bids for preview display
       download_id: downloadId,
       total_raw: data.total_raw || 0,
       total_filtrado: data.total_filtrado || 0,
       filter_stats: data.filter_stats || null,
       termos_utilizados: data.termos_utilizados || null,
       stopwords_removidas: data.stopwords_removidas || null,
+      excel_available: data.excel_available || false,
+      upgrade_message: data.upgrade_message || null,
     });
 
   } catch (error) {

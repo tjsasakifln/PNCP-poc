@@ -256,6 +256,7 @@ async def list_users(
 ):
     """List all users with profiles and subscription info."""
     from supabase_client import get_supabase
+    from quota import PLAN_CAPABILITIES, get_monthly_quota_used
     sb = get_supabase()
 
     query = sb.table("profiles").select("*, user_subscriptions(id, plan_id, credits_remaining, expires_at, is_active)", count="exact")
@@ -269,8 +270,41 @@ async def list_users(
 
     result = query.order("created_at", desc=True).range(offset, offset + limit - 1).execute()
 
+    # Enrich user data with computed credits for users without active subscriptions
+    users = result.data or []
+    for user in users:
+        subscriptions = user.get("user_subscriptions", [])
+        active_sub = next((s for s in subscriptions if s.get("is_active")), None)
+
+        if active_sub is None:
+            # User has no active subscription - compute credits from plan capabilities
+            plan_id = user.get("plan_type", "free_trial")
+            caps = PLAN_CAPABILITIES.get(plan_id, PLAN_CAPABILITIES.get("free_trial", {}))
+            max_requests = caps.get("max_requests_per_month", 3)
+
+            # Get monthly quota used to compute remaining credits
+            user_id = user.get("id")
+            if user_id:
+                quota_used = get_monthly_quota_used(user_id)
+                credits_remaining = max(0, max_requests - quota_used)
+            else:
+                credits_remaining = max_requests
+
+            # Create a synthetic subscription entry for the frontend
+            user["user_subscriptions"] = [{
+                "id": None,
+                "plan_id": plan_id,
+                "credits_remaining": credits_remaining,
+                "expires_at": None,
+                "is_active": True,
+            }]
+        else:
+            # User has active subscription - if credits_remaining is None, it means unlimited
+            # Keep as-is (frontend handles None as infinity correctly)
+            pass
+
     return {
-        "users": result.data,
+        "users": users,
         "total": result.count or 0,
         "limit": limit,
         "offset": offset,
@@ -447,9 +481,28 @@ async def assign_plan(
     from supabase_client import get_supabase
     sb = get_supabase()
 
-    _assign_plan(sb, user_id, plan_id)
+    try:
+        _assign_plan(sb, user_id, plan_id)
 
-    sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
+        sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
+    except HTTPException:
+        # Re-raise HTTPException as-is (e.g., 404 for plan not found)
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        # Handle database constraint violations (e.g., invalid plan_type)
+        if "check constraint" in error_msg.lower() or "23514" in error_msg:
+            logger.warning(f"Invalid plan_id '{plan_id}' for user {user_id}: {error_msg}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Plano '{plan_id}' nao e valido. Planos disponiveis: free_trial, consultor_agil, maquina, sala_guerra"
+            )
+        # Handle other database errors
+        logger.error(f"Failed to assign plan {plan_id} to user {user_id}: {error_msg}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao atribuir plano: {error_msg}"
+        )
 
     # SECURITY: Sanitize IDs before logging (Issue #168)
     log_admin_action(
@@ -460,6 +513,113 @@ async def assign_plan(
         details={"plan_id": plan_id},
     )
     return {"assigned": True, "user_id": user_id, "plan_id": plan_id}
+
+
+class UpdateCreditsRequest(BaseModel):
+    """Request body for manual credit adjustment."""
+    credits: int = Field(..., ge=0, description="New credit value (must be >= 0)")
+
+
+@router.put("/users/{user_id}/credits")
+async def update_user_credits(
+    req: UpdateCreditsRequest,
+    user_id: str = Path(..., description="User UUID to update credits for"),
+    admin: dict = Depends(require_admin),
+):
+    """
+    Manually adjust a user's credits (admin only).
+
+    Sets the credits_remaining value directly on the user's active subscription.
+    If no active subscription exists, creates one based on user's current plan.
+
+    Args:
+        user_id: UUID of the user
+        req.credits: New credit value (must be >= 0)
+
+    Returns:
+        Updated user info with new credit value
+    """
+    # SECURITY: Validate user_id as UUID v4 (Issue #203)
+    user_id = _validate_user_id_param(user_id)
+
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    # Verify user exists
+    profile = sb.table("profiles").select("email, plan_type").eq("id", user_id).single().execute()
+    if not profile.data:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado")
+
+    # Get active subscription
+    sub_result = (
+        sb.table("user_subscriptions")
+        .select("id, plan_id, credits_remaining")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .execute()
+    )
+
+    if sub_result.data and len(sub_result.data) > 0:
+        # Update existing subscription
+        subscription = sub_result.data[0]
+        old_credits = subscription.get("credits_remaining")
+
+        sb.table("user_subscriptions").update({
+            "credits_remaining": req.credits
+        }).eq("id", subscription["id"]).execute()
+
+        log_admin_action(
+            logger,
+            admin_id=admin['id'],
+            action="update-credits",
+            target_user_id=user_id,
+            details={"old_credits": old_credits, "new_credits": req.credits},
+        )
+
+        return {
+            "success": True,
+            "user_id": user_id,
+            "credits": req.credits,
+            "previous_credits": old_credits,
+        }
+    else:
+        # No active subscription - create one based on user's plan_type
+        plan_id = profile.data.get("plan_type", "free_trial")
+
+        # Get plan details for expiration
+        plan = sb.table("plans").select("*").eq("id", plan_id).execute()
+        plan_data = plan.data[0] if plan.data else None
+
+        from datetime import datetime, timezone, timedelta
+
+        expires_at = None
+        if plan_data and plan_data.get("duration_days"):
+            expires_at = (datetime.now(timezone.utc) + timedelta(days=plan_data["duration_days"])).isoformat()
+
+        # Create new subscription with specified credits
+        sb.table("user_subscriptions").insert({
+            "user_id": user_id,
+            "plan_id": plan_id,
+            "credits_remaining": req.credits,
+            "expires_at": expires_at,
+            "is_active": True,
+        }).execute()
+
+        log_admin_action(
+            logger,
+            admin_id=admin['id'],
+            action="create-subscription-with-credits",
+            target_user_id=user_id,
+            details={"plan_id": plan_id, "credits": req.credits},
+        )
+
+        return {
+            "success": True,
+            "user_id": user_id,
+            "credits": req.credits,
+            "previous_credits": None,
+            "subscription_created": True,
+        }
 
 
 def _assign_plan(sb, user_id: str, plan_id: str):
