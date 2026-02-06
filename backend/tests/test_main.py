@@ -379,9 +379,9 @@ class TestBuscarEndpoint:
         def mock_pncp_client():
             return mock_client_instance
 
-        # Mock filter_batch to return the bid
-        def mock_filter_batch(bids, **kwargs):
-            return [bids[0]], {"total_rejeitados": 0}
+        # Mock aplicar_todos_filtros to return the bid
+        def mock_aplicar_todos_filtros(bids, **kwargs):
+            return [bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0, "total_rejeitados": 0}
 
         # Mock create_excel to return a buffer
         from io import BytesIO
@@ -403,7 +403,7 @@ class TestBuscarEndpoint:
 
         # Apply mocks
         monkeypatch.setattr("main.PNCPClient", mock_pncp_client)
-        monkeypatch.setattr("main.filter_batch", mock_filter_batch)
+        monkeypatch.setattr("main.aplicar_todos_filtros", mock_aplicar_todos_filtros)
         monkeypatch.setattr("main.create_excel", mock_create_excel)
         monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
 
@@ -427,7 +427,7 @@ class TestBuscarEndpoint:
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         def mock_gerar_resumo(bids, **kwargs):
@@ -479,7 +479,7 @@ class TestBuscarEndpoint:
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
 
         excel_content = b"PK\x03\x04fake-excel-header"
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(excel_content))
@@ -512,7 +512,7 @@ class TestBuscarEndpoint:
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         # Mock gerar_resumo to raise exception
@@ -545,7 +545,11 @@ class TestBuscarEndpoint:
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.side_effect = PNCPAPIError("Connection timeout")
 
+        async def mock_buscar_paralelo(*args, **kwargs):
+            raise PNCPAPIError("Connection timeout")
+
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
 
         response = client.post("/buscar", json=valid_request)
         assert response.status_code == 502
@@ -561,7 +565,11 @@ class TestBuscarEndpoint:
         error.retry_after = 120
         mock_client_instance.fetch_all.side_effect = error
 
+        async def mock_buscar_paralelo(*args, **kwargs):
+            raise error
+
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
 
         response = client.post("/buscar", json=valid_request)
         assert response.status_code == 503
@@ -575,7 +583,11 @@ class TestBuscarEndpoint:
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.side_effect = RuntimeError("Internal bug with sensitive data")
 
+        async def mock_buscar_paralelo(*args, **kwargs):
+            raise RuntimeError("Internal bug with sensitive data")
+
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
+        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
 
         response = client.post("/buscar", json=valid_request)
         assert response.status_code == 500
@@ -585,14 +597,19 @@ class TestBuscarEndpoint:
 
     def test_buscar_empty_results(self, client, valid_request, monkeypatch):
         """Should handle empty results gracefully."""
-        from unittest.mock import Mock
+        from unittest.mock import Mock, AsyncMock
         from io import BytesIO
 
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.return_value = iter([])  # Empty generator
 
+        # Mock both PNCPClient and buscar_todas_ufs_paralelo (used for 2+ UFs)
+        async def mock_buscar_paralelo(*args, **kwargs):
+            return []
+
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([], {}))
+        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([], {"total_raw": 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"empty-excel"))
 
         def mock_gerar_resumo(bids, **kwargs):
@@ -623,8 +640,12 @@ class TestBuscarEndpoint:
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.return_value = iter(mock_licitacoes_raw)
 
+        async def mock_buscar_paralelo(*args, **kwargs):
+            return mock_licitacoes_raw
+
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: (mock_licitacoes_filtradas, {}))
+        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: (mock_licitacoes_filtradas, {"total_raw": len(bids) if bids else 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         def mock_gerar_resumo(bids, **kwargs):
@@ -650,8 +671,12 @@ class TestBuscarEndpoint:
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
 
+        async def mock_buscar_paralelo(*args, **kwargs):
+            return [mock_licitacao]
+
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         def mock_gerar_resumo(bids, **kwargs):
@@ -842,7 +867,7 @@ class TestBuscarValidationExtended:
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         def mock_gerar_resumo(bids, **kwargs):
@@ -873,7 +898,7 @@ class TestBuscarValidationExtended:
         mock_client_instance.fetch_all.return_value = iter([])
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([], {}))
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([], {"total_raw": 0}))
 
         request = {
             "ufs": ["SP"],
@@ -932,15 +957,15 @@ class TestBuscarDiagnosticLogging:
         mock_client_instance.fetch_all.return_value = iter(rejected_bids)
 
         # Mock filter to return empty results (all rejected by keyword)
-        def mock_filter_batch(bids, **kwargs):
+        def mock_aplicar_todos_filtros(bids, **kwargs):
             return [], {
-                "total": len(bids),
+                "total_raw": len(bids),
                 "aprovadas": 0,
                 "rejeitadas_keyword": len(bids),
             }
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", mock_filter_batch)
+        monkeypatch.setattr("main.aplicar_todos_filtros", mock_aplicar_todos_filtros)
 
         request = {
             "ufs": ["SP"],
@@ -975,7 +1000,7 @@ class TestBuscarDiagnosticLogging:
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
 
         monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.filter_batch", lambda bids, **kwargs: ([bids[0]], {}))
+        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
         monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
 
         # Mock LLM to return WRONG count (0 instead of 1)
@@ -1049,6 +1074,7 @@ class TestBuscarIntegration:
             "valorTotalEstimado": 200000.00,
             "dataAberturaProposta": future_date,  # Future date within 7 days
             "linkSistemaOrigem": "https://pncp.gov.br/test",
+            "situacaoCompra": "Recebendo Propostas",  # Status for P0 filter
         }
 
         mock_client_instance = Mock()

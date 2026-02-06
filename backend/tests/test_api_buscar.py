@@ -266,12 +266,12 @@ class TestBuscarExcelGating:
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
     @patch("main.PNCPClient")
-    @patch("main.filter_batch")
+    @patch("main.aplicar_todos_filtros")
     @patch("main.create_excel")
     def test_generates_excel_for_maquina_plan(
         self,
         mock_create_excel,
-        mock_filter_batch,
+        mock_aplicar_todos_filtros,
         mock_pncp_client_class,
         mock_save_session,
         mock_increment_quota,
@@ -309,8 +309,8 @@ class TestBuscarExcelGating:
             mock_increment_quota.return_value = 101
 
             # Mock filter to return the bid
-            mock_filter_batch.return_value = ([mock_licitacao], {
-                "total": 1,
+            mock_aplicar_todos_filtros.return_value = ([mock_licitacao], {
+                "total_raw": 1,
                 "aprovadas": 1,
                 "rejeitadas_uf": 0,
                 "rejeitadas_valor": 0,

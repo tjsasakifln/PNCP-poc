@@ -57,6 +57,10 @@ export interface LicitacaoItem {
   data_publicacao: string | null;
   data_abertura: string | null;
   link: string;
+  /** Status of the licitacao (e.g., "aberta", "em_julgamento", "encerrada") */
+  status?: string | null;
+  /** Keywords that matched this item during search */
+  matched_keywords?: string[];
 }
 
 /** API response from POST /api/buscar */
