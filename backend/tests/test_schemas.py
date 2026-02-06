@@ -712,14 +712,14 @@ class TestBuscaRequestStatusValidation:
     """Tests for status validation."""
 
     def test_default_status_is_recebendo_proposta(self):
-        """Default status should be 'recebendo_proposta'."""
+        """Default status should be 'todos' (changed from recebendo_proposta)."""
         d_ini, d_fin = _recent_dates(7)
         request = BuscaRequest(
             ufs=["SP"],
             data_inicial=d_ini,
             data_final=d_fin,
         )
-        assert request.status == StatusLicitacao.RECEBENDO_PROPOSTA
+        assert request.status == StatusLicitacao.TODOS
 
     def test_status_todos_accepted(self):
         """Status 'todos' should be accepted."""

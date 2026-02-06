@@ -1182,27 +1182,55 @@ def aplicar_todos_filtros(
     )
 
     # Etapa 2: Filtro de Status
+    # CRITICAL FIX (2026-02-06): Use inferred status (_status_inferido) instead of
+    # raw API fields (situacaoCompra, etc.) because PNCP returns values like
+    # "Divulgada no PNCP" which don't match simple string patterns.
+    # The status_inference.py module correctly infers status from dates and values.
     if status and status != "todos":
         resultado_status: List[dict] = []
+        status_lower = status.lower()
+
         for lic in resultado_uf:
-            situacao = (
-                lic.get("situacaoCompra", "")
-                or lic.get("situacao", "")
-                or lic.get("statusCompra", "")
-                or ""
-            ).lower()
+            # Use inferred status if available (set by enriquecer_com_status_inferido)
+            status_inferido = lic.get("_status_inferido", "")
 
-            status_map = {
-                "recebendo_proposta": ["recebendo propostas", "aberta", "publicada"],
-                "em_julgamento": ["propostas encerradas", "em julgamento", "julgamento"],
-                "encerrada": ["encerrada", "finalizada", "homologada", "adjudicada"],
-            }
-            termos = status_map.get(status.lower(), [])
-
-            if any(t in situacao for t in termos):
-                resultado_status.append(lic)
+            if status_inferido:
+                # Direct comparison with inferred status
+                if status_inferido == status_lower:
+                    resultado_status.append(lic)
+                else:
+                    stats["rejeitadas_status"] += 1
             else:
-                stats["rejeitadas_status"] += 1
+                # Fallback: try raw API fields (legacy behavior)
+                situacao = (
+                    lic.get("situacaoCompraNome", "")
+                    or lic.get("situacaoCompra", "")
+                    or lic.get("situacao", "")
+                    or lic.get("statusCompra", "")
+                    or ""
+                ).lower()
+
+                status_map = {
+                    "recebendo_proposta": [
+                        "recebendo propostas", "aberta", "publicada",
+                        "divulgada", "vigente", "ativa", "em andamento"
+                    ],
+                    "em_julgamento": [
+                        "propostas encerradas", "em julgamento", "julgamento",
+                        "análise", "analise", "classificação", "classificacao"
+                    ],
+                    "encerrada": [
+                        "encerrada", "finalizada", "homologada", "adjudicada",
+                        "anulada", "revogada", "cancelada", "fracassada",
+                        "deserta", "suspensa", "concluída", "concluida"
+                    ],
+                }
+                termos = status_map.get(status_lower, [])
+
+                if any(t in situacao for t in termos):
+                    resultado_status.append(lic)
+                else:
+                    stats["rejeitadas_status"] += 1
 
         logger.debug(
             f"  Após filtro Status: {len(resultado_status)} "

@@ -1193,19 +1193,30 @@ class TestFiltrarPorStatusEdgeCases:
         assert len(result) == 2
 
     def test_bid_with_all_status_fields_none(self):
-        """Bid with no status fields should not match any filter."""
+        """Bid with no status fields should infer status='todos' and not match specific filter.
+
+        NOTE: filtrar_por_status uses status_inference.py which infers status from
+        dates and values, NOT from raw situacaoCompra fields. Bids without enough
+        data to infer status get 'todos' which doesn't match 'recebendo_proposta'.
+        """
         bids = [
-            {},  # No situacaoCompra, situacao, or statusCompra
-            {"situacaoCompra": "Recebendo propostas"},
+            {},  # No data to infer status -> 'todos'
+            {"_status_inferido": "recebendo_proposta"},  # Pre-inferred status
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 1
+        assert result[0].get("_status_inferido") == "recebendo_proposta"
 
     def test_bid_with_none_status_value(self):
-        """Bid with None as status value should be handled."""
+        """Bid with None status should infer from dates/values, not raw fields.
+
+        NOTE: The status inference uses dataEncerramentoProposta, valorTotalHomologado,
+        and situacaoCompraNome - NOT situacaoCompra. Bids with only situacaoCompra=None
+        will get status inferred from other fields (fallback to 'todos').
+        """
         bids = [
-            {"situacaoCompra": None},
-            {"situacaoCompra": "Recebendo propostas"},
+            {"situacaoCompra": None},  # No inference data -> 'todos'
+            {"_status_inferido": "recebendo_proposta"},  # Pre-inferred
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 1
@@ -1215,14 +1226,21 @@ class TestFiltrarPorStatusEdgeCases:
         result = filtrar_por_status([], "recebendo_proposta")
         assert result == []
 
-    def test_status_with_extra_whitespace(self):
-        """Status with extra whitespace should still match."""
+    def test_status_with_inferred_recebendo_proposta(self):
+        """Status filter should match bids with inferred 'recebendo_proposta' status.
+
+        NOTE: filtrar_por_status uses _status_inferido field, not raw situacaoCompra.
+        The status is inferred by status_inference.py based on dates and values.
+        """
+        from datetime import datetime, timedelta
+
+        future_date = (datetime.now() + timedelta(days=7)).isoformat()
         bids = [
-            {"situacaoCompra": "  Recebendo propostas  "},
+            # Bid with future encerramento date -> inferred as 'recebendo_proposta'
+            {"dataEncerramentoProposta": future_date},
         ]
-        # Note: The current implementation doesn't strip, so we test as-is
         result = filtrar_por_status(bids, "recebendo_proposta")
-        # Should match because 'recebendo' is found in the lowercased string
+        # Should match because status is inferred as 'recebendo_proposta'
         assert len(result) == 1
 
 

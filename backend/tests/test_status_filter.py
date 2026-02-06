@@ -45,14 +45,14 @@ class TestDefaultStatusIsRecebendoProposta:
     """Tests verifying default status is 'recebendo_proposta'."""
 
     def test_default_status_in_busca_request(self):
-        """BuscaRequest should default to 'recebendo_proposta'."""
+        """BuscaRequest should default to 'todos' (changed from recebendo_proposta)."""
         d_ini, d_fin = _recent_dates(7)
         request = BuscaRequest(
             ufs=["SP"],
             data_inicial=d_ini,
             data_final=d_fin,
         )
-        assert request.status == StatusLicitacao.RECEBENDO_PROPOSTA
+        assert request.status == StatusLicitacao.TODOS
 
     def test_explicit_status_recebendo_proposta(self):
         """Explicit 'recebendo_proposta' should work."""
@@ -72,26 +72,22 @@ class TestAllStatusEnumValues:
     def test_status_recebendo_proposta_filtering(self):
         """Should filter bids receiving proposals."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Aberta"},
-            {"situacaoCompra": "Encerrada"},
-            {"situacaoCompra": "Em julgamento"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Aberta"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Encerrada"},
+            {"_status_inferido": "em_julgamento", "situacaoCompra": "Em julgamento"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 2
-        assert all(
-            "recebendo" in b["situacaoCompra"].lower() or
-            "aberta" in b["situacaoCompra"].lower()
-            for b in result
-        )
+        assert all(b.get("_status_inferido") == "recebendo_proposta" for b in result)
 
     def test_status_em_julgamento_filtering(self):
         """Should filter bids under evaluation."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Em julgamento"},
-            {"situacaoCompra": "Propostas encerradas"},
-            {"situacaoCompra": "Encerrada"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
+            {"_status_inferido": "em_julgamento", "situacaoCompra": "Em julgamento"},
+            {"_status_inferido": "em_julgamento", "situacaoCompra": "Propostas encerradas"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Encerrada"},
         ]
         result = filtrar_por_status(bids, "em_julgamento")
         assert len(result) == 2
@@ -99,11 +95,11 @@ class TestAllStatusEnumValues:
     def test_status_encerrada_filtering(self):
         """Should filter closed/finalized bids."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Encerrada"},
-            {"situacaoCompra": "Homologada"},
-            {"situacaoCompra": "Adjudicada"},
-            {"situacaoCompra": "Anulada"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Encerrada"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Homologada"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Adjudicada"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Anulada"},
         ]
         result = filtrar_por_status(bids, "encerrada")
         assert len(result) == 4
@@ -140,13 +136,13 @@ class TestInvalidStatusHandling:
     """Tests for invalid status handling."""
 
     def test_unknown_status_returns_all(self):
-        """Unknown status should return all bids (graceful fallback)."""
+        """Unknown status should return empty list (no matches)."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
-            {"situacaoCompra": "Encerrada"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
+            {"_status_inferido": "encerrada", "situacaoCompra": "Encerrada"},
         ]
         result = filtrar_por_status(bids, "status_invalido")
-        assert len(result) == 2
+        assert len(result) == 0  # Invalid status matches nothing
 
     def test_invalid_status_in_schema_raises_error(self):
         """Invalid status in BuscaRequest should raise validation error."""
@@ -164,9 +160,9 @@ class TestStatusFilterFieldVariants:
     """Tests for different field names containing status."""
 
     def test_uses_situacaoCompra_field(self):
-        """Should use situacaoCompra as primary field."""
+        """Should use _status_inferido when available, fallback to situacaoCompra."""
         bids = [
-            {"situacaoCompra": "Recebendo propostas"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 1
@@ -188,32 +184,32 @@ class TestStatusFilterFieldVariants:
         assert len(result) == 1
 
     def test_bid_with_no_status_fields_excluded(self):
-        """Bid with no status fields should not match any filter."""
+        """Bid with no status fields should be inferred as 'todos' and excluded."""
         bids = [
-            {},  # No situacaoCompra, situacao, or statusCompra
-            {"situacaoCompra": "Recebendo propostas"},
+            {},  # No _status_inferido, situacaoCompra, situacao, or statusCompra
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
-        assert len(result) == 1
+        assert len(result) == 1  # Only the one with _status_inferido matches
 
 
 class TestStatusFilterCaseInsensitivity:
     """Tests for case insensitivity in status matching."""
 
     def test_status_case_insensitive(self):
-        """Should handle case variations."""
+        """_status_inferido is normalized by status_inference.py (lowercase)."""
         bids = [
-            {"situacaoCompra": "RECEBENDO PROPOSTAS"},
-            {"situacaoCompra": "recebendo propostas"},
-            {"situacaoCompra": "Recebendo Propostas"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "RECEBENDO PROPOSTAS"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "recebendo propostas"},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo Propostas"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 3
 
     def test_status_with_extra_whitespace(self):
-        """Status with extra whitespace should still match."""
+        """_status_inferido is pre-processed without whitespace."""
         bids = [
-            {"situacaoCompra": "  Recebendo propostas  "},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "  Recebendo propostas  "},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
         assert len(result) == 1
@@ -228,13 +224,13 @@ class TestStatusFilterEdgeCases:
         assert result == []
 
     def test_bid_with_none_status_value(self):
-        """Bid with None as status value should be handled."""
+        """Bid with None as status value should be inferred and excluded."""
         bids = [
-            {"situacaoCompra": None},
-            {"situacaoCompra": "Recebendo propostas"},
+            {"_status_inferido": None, "situacaoCompra": None},
+            {"_status_inferido": "recebendo_proposta", "situacaoCompra": "Recebendo propostas"},
         ]
         result = filtrar_por_status(bids, "recebendo_proposta")
-        assert len(result) == 1
+        assert len(result) == 1  # Only the one with valid _status_inferido
 
     def test_status_accepts_all_valid_enum_string_values(self):
         """All valid enum string values should be accepted in BuscaRequest."""
