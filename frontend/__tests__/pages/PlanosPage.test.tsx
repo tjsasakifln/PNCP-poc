@@ -40,6 +40,8 @@ beforeEach(() => {
   mockUseAuth.mockReturnValue({
     session: null,
     user: null,
+    isAdmin: false,
+    loading: false,
   });
 });
 
@@ -71,7 +73,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Comece gratis com 3 buscas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Comece gr[aá]tis com 3 buscas/i)).toBeInTheDocument();
       });
     });
 
@@ -178,7 +180,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('/mes')).toBeInTheDocument();
+        expect(screen.getByText(/\/m[eê]s/)).toBeInTheDocument();
         expect(screen.getByText('/ano')).toBeInTheDocument();
       });
     });
@@ -255,6 +257,8 @@ describe('PlanosPage Component', () => {
       mockUseAuth.mockReturnValue({
         session: null,
         user: null,
+        isAdmin: false,
+        loading: false,
       });
 
       mockFetch.mockResolvedValueOnce({
@@ -281,17 +285,32 @@ describe('PlanosPage Component', () => {
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
+        isAdmin: false,
+        loading: false,
       });
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ plans: mockPlans }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ checkout_url: 'https://checkout.stripe.com/123' }),
-        });
+      // Mock endpoints: /me (returns regular user), /plans, /checkout
+      mockFetch.mockImplementation((url: string, options?: RequestInit) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plan_id: 'free_trial', plan_name: 'FREE Trial', is_admin: false }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        if (url.includes('/checkout') && options?.method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ checkout_url: 'https://checkout.stripe.com/123' }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
 
       render(<PlanosPage />);
 
@@ -322,17 +341,32 @@ describe('PlanosPage Component', () => {
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
+        isAdmin: false,
+        loading: false,
       });
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ plans: mockPlans }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ checkout_url: 'https://checkout.stripe.com/123' }),
-        });
+      // Mock endpoints: /me (returns regular user), /plans, /checkout
+      mockFetch.mockImplementation((url: string, options?: RequestInit) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plan_id: 'free_trial', plan_name: 'FREE Trial', is_admin: false }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        if (url.includes('/checkout') && options?.method === 'POST') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ checkout_url: 'https://checkout.stripe.com/123' }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
 
       render(<PlanosPage />);
 
@@ -355,19 +389,34 @@ describe('PlanosPage Component', () => {
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
+        isAdmin: false,
+        loading: false,
       });
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ plans: mockPlans }),
-        })
-        .mockImplementationOnce(
-          () => new Promise((resolve) => setTimeout(() => resolve({
+      let checkoutCalled = false;
+      // Mock endpoints: /me (returns regular user), /plans, /checkout (delayed)
+      mockFetch.mockImplementation((url: string, options?: RequestInit) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plan_id: 'free_trial', plan_name: 'FREE Trial', is_admin: false }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        if (url.includes('/checkout') && options?.method === 'POST') {
+          checkoutCalled = true;
+          return new Promise((resolve) => setTimeout(() => resolve({
             ok: true,
             json: () => Promise.resolve({ checkout_url: 'https://checkout.stripe.com/123' }),
-          }), 100))
-        );
+          }), 100));
+        }
+        return Promise.resolve({ ok: false });
+      });
 
       render(<PlanosPage />);
 
@@ -390,17 +439,32 @@ describe('PlanosPage Component', () => {
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
+        isAdmin: false,
+        loading: false,
       });
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ plans: mockPlans }),
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          json: () => Promise.resolve({ detail: 'Payment failed' }),
-        });
+      // Mock endpoints: /me (returns regular user), /plans, /checkout (fails)
+      mockFetch.mockImplementation((url: string, options?: RequestInit) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plan_id: 'free_trial', plan_name: 'FREE Trial', is_admin: false }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        if (url.includes('/checkout') && options?.method === 'POST') {
+          return Promise.resolve({
+            ok: false,
+            json: () => Promise.resolve({ detail: 'Payment failed' }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
 
       render(<PlanosPage />);
 
@@ -476,6 +540,531 @@ describe('PlanosPage Component', () => {
       // Should not crash
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /Escolha seu plano/i })).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Privileged user access', () => {
+    it('should show admin message for isAdmin users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: true,
+        loading: false,
+      });
+
+      // Mock /me endpoint returning admin profile
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'sala_guerra',
+              plan_name: 'Sala de Guerra (Admin)',
+              is_admin: true
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: [] }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /administrador/i })).toBeInTheDocument();
+      });
+
+      // Should show admin link (with or without accent)
+      expect(screen.getByRole('link', { name: /Gerenciar usu[aá]rios/i })).toBeInTheDocument();
+    });
+
+    it('should show master message for master plan users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      // Mock /me endpoint returning master profile (not admin, but master plan)
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'master',
+              plan_name: 'Master',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: [] }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /acesso Master/i })).toBeInTheDocument();
+      });
+
+      // Should NOT show admin link for master users (with or without accent)
+      expect(screen.queryByRole('link', { name: /Gerenciar usu[aá]rios/i })).not.toBeInTheDocument();
+    });
+
+    it('should show sala_guerra message for sala_guerra plan users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      // Mock /me endpoint returning sala_guerra profile
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'sala_guerra',
+              plan_name: 'Sala de Guerra',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: [] }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Sala de Guerra/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should show pricing for regular users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      const mockPlans = [
+        {
+          id: 'monthly',
+          name: 'Mensal',
+          description: 'Test plan',
+          max_searches: null,
+          price_brl: 99.90,
+          duration_days: 30,
+        },
+      ];
+
+      // Mock /me endpoint returning regular user profile
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'free_trial',
+              plan_name: 'FREE Trial',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      // Wait for both profile and plans to load, then check for pricing page
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Escolha seu plano/i })).toBeInTheDocument();
+        expect(screen.getByText('Mensal')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle profile fetch error gracefully', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      const mockPlans = [
+        {
+          id: 'monthly',
+          name: 'Mensal',
+          description: 'Test plan',
+          max_searches: null,
+          price_brl: 99.90,
+          duration_days: 30,
+        },
+      ];
+
+      // Mock /me endpoint failing
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({ ok: false, status: 500 });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      // Should still show pricing page (graceful fallback)
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Escolha seu plano/i })).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Upgrade/Downgrade for paying users', () => {
+    const mockPlans = [
+      {
+        id: 'pack_5',
+        name: 'Pacote 5',
+        description: '5 buscas avulsas',
+        max_searches: 5,
+        price_brl: 49.90,
+        duration_days: null,
+      },
+      {
+        id: 'monthly',
+        name: 'Mensal',
+        description: 'Buscas ilimitadas por mes',
+        max_searches: null,
+        price_brl: 297,
+        duration_days: 30,
+      },
+      {
+        id: 'annual',
+        name: 'Anual',
+        description: 'Buscas ilimitadas por ano',
+        max_searches: null,
+        price_brl: 597,
+        duration_days: 365,
+      },
+    ];
+
+    it('should show "Gerenciar sua assinatura" title for paying users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'monthly',
+              plan_name: 'Consultor Agil',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Gerenciar sua assinatura/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should show current plan banner for paying users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'monthly',
+              plan_name: 'Consultor Agil',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Seu plano atual:/i)).toBeInTheDocument();
+        expect(screen.getByText('Consultor Agil')).toBeInTheDocument();
+      });
+    });
+
+    it('should show "Seu plano atual" badge and button on current plan card', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'monthly',
+              plan_name: 'Mensal',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        // Should have badge and button with "Seu plano atual"
+        const elements = screen.getAllByText('Seu plano atual');
+        expect(elements.length).toBe(2); // badge + button
+      });
+    });
+
+    it('should show "Fazer upgrade" button for higher tier plans', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'pack_5',
+              plan_name: 'Pacote 5',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        const upgradeButtons = screen.getAllByRole('button', { name: /Fazer upgrade/i });
+        expect(upgradeButtons.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should show "Fazer downgrade" button for lower tier plans', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'annual',
+              plan_name: 'Anual',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        const downgradeButtons = screen.getAllByRole('button', { name: /Fazer downgrade/i });
+        expect(downgradeButtons.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should show downgrade warning text', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'annual',
+              plan_name: 'Anual',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        // Should have at least one downgrade warning (pack_5 and monthly are lower than annual)
+        const warnings = screen.getAllByText(/perdera recursos/i);
+        expect(warnings.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should disable current plan button', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'monthly',
+              plan_name: 'Mensal',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        const currentPlanButton = screen.getByRole('button', { name: /Seu plano atual/i });
+        expect(currentPlanButton).toBeDisabled();
+      });
+    });
+
+    it('should show link to account details for paying users', async () => {
+      mockUseAuth.mockReturnValue({
+        session: { access_token: 'test-token' },
+        user: { id: '123' },
+        isAdmin: false,
+        loading: false,
+      });
+
+      mockFetch.mockImplementation((url: string) => {
+        if (url.includes('/me')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              plan_id: 'monthly',
+              plan_name: 'Mensal',
+              is_admin: false
+            }),
+          });
+        }
+        if (url.includes('/plans')) {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ plans: mockPlans }),
+          });
+        }
+        return Promise.resolve({ ok: false });
+      });
+
+      render(<PlanosPage />);
+
+      await waitFor(() => {
+        const accountLink = screen.getByRole('link', { name: /Ver detalhes da conta/i });
+        expect(accountLink).toBeInTheDocument();
+        expect(accountLink).toHaveAttribute('href', '/conta');
       });
     });
   });

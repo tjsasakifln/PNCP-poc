@@ -66,7 +66,7 @@ export function UserMenu() {
           </Link>
           <Link href="/historico" onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
-            Historico
+            Histórico
           </Link>
           <Link href="/planos" onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">

@@ -29,22 +29,24 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Close on Escape key
+  // Close on Escape key - prevent propagation to global handlers
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
+      document.addEventListener("keydown", handleEscape, true); // capture phase
       // Lock body scroll
       document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleEscape, true);
       document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);

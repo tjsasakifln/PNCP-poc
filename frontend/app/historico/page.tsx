@@ -78,7 +78,7 @@ export default function HistoricoPage() {
         `${backendUrl}/sessions?limit=${limit}&offset=${page * limit}`,
         { headers: { Authorization: `Bearer ${session!.access_token}` } }
       );
-      if (!res.ok) throw new Error("Erro ao carregar historico");
+      if (!res.ok) throw new Error("Erro ao carregar histórico");
       const data = await res.json();
       setSessions(data.sessions);
       setTotal(data.total);
@@ -101,7 +101,7 @@ export default function HistoricoPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
         <div className="text-center">
-          <p className="text-[var(--ink-secondary)] mb-4">Faca login para ver seu historico</p>
+          <p className="text-[var(--ink-secondary)] mb-4">Faça login para ver seu histórico</p>
           <Link href="/login" className="text-[var(--brand-blue)] hover:underline">
             Ir para login
           </Link>
@@ -127,7 +127,7 @@ export default function HistoricoPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-display font-bold text-[var(--ink)]">
-              Historico de Buscas
+              Histórico de Buscas
             </h1>
             <p className="text-[var(--ink-secondary)]">{total} busca{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
           </div>
@@ -201,7 +201,7 @@ export default function HistoricoPage() {
                                    border border-[var(--brand-blue)] rounded-button
                                    hover:bg-[var(--brand-blue-subtle)] transition-colors
                                    flex items-center gap-1.5"
-                        title="Repetir esta busca com os mesmos parametros"
+                        title="Repetir esta busca com os mesmos parâmetros"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -234,7 +234,7 @@ export default function HistoricoPage() {
                   className="px-3 py-1 text-sm border border-[var(--border)] rounded-button
                              disabled:opacity-30 hover:bg-[var(--surface-1)]"
                 >
-                  Proximo
+                  Próximo
                 </button>
               </div>
             )}

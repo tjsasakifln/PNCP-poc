@@ -63,6 +63,26 @@ export function CustomSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  // Close dropdown on Escape key - prevent propagation to global handlers
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(false);
+      }
+    };
+
+    // Use capture phase to intercept before other handlers
+    window.addEventListener('keydown', handleEscapeKey, true);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscapeKey, true);
+    };
+  }, [isOpen]);
+
   // Reset highlighted index when opening
   useEffect(() => {
     if (isOpen) {

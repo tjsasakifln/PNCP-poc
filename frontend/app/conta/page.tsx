@@ -24,7 +24,7 @@ export default function ContaPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
         <div className="text-center">
-          <p className="text-[var(--ink-secondary)] mb-4">Faca login para acessar sua conta</p>
+          <p className="text-[var(--ink-secondary)] mb-4">Faça login para acessar sua conta</p>
           <Link href="/login" className="text-[var(--brand-blue)] hover:underline">
             Ir para login
           </Link>
@@ -39,11 +39,11 @@ export default function ContaPage() {
     setSuccess(false);
 
     if (newPassword.length < 6) {
-      setError("Senha deve ter no minimo 6 caracteres");
+      setError("Senha deve ter no mínimo 6 caracteres");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError("As senhas nao coincidem");
+      setError("As senhas não coincidem");
       return;
     }
 
@@ -51,7 +51,7 @@ export default function ContaPage() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       if (!backendUrl) {
-        throw new Error("Backend nao configurado. Contate o suporte.");
+        throw new Error("Backend não configurado. Contate o suporte.");
       }
       const res = await fetch(`${backendUrl}/change-password`, {
         method: "POST",

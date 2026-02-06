@@ -40,6 +40,9 @@ export function useKeyboardShortcuts({ shortcuts, enabled = true }: UseKeyboardS
     if (!enabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Skip if event was already handled (e.g., by dropdown's Escape handler)
+      if (event.defaultPrevented) return;
+
       for (const shortcut of shortcuts) {
         const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
         const ctrlMatches = shortcut.ctrlKey ? event.ctrlKey : !event.ctrlKey;

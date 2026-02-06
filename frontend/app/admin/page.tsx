@@ -56,10 +56,10 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.status === 403) {
-        setError("Acesso negado. Voce nao e administrador.");
+        setError("Acesso negado. Você não é administrador.");
         return;
       }
-      if (!res.ok) throw new Error("Erro ao carregar usuarios");
+      if (!res.ok) throw new Error("Erro ao carregar usuários");
       const data = await res.json();
       setUsers(data.users);
       setTotal(data.total);
@@ -79,8 +79,8 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-canvas">
         <div className="text-center p-8">
-          <h1 className="text-xl font-bold text-ink mb-2">Configuracao Necessaria</h1>
-          <p className="text-ink-secondary">Backend URL nao configurado. Configure NEXT_PUBLIC_BACKEND_URL.</p>
+          <h1 className="text-xl font-bold text-ink mb-2">Configuração Necessária</h1>
+          <p className="text-ink-secondary">Backend URL não configurado. Configure NEXT_PUBLIC_BACKEND_URL.</p>
         </div>
       </div>
     );
@@ -107,7 +107,7 @@ export default function AdminPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || "Erro ao criar usuario");
+        throw new Error(err.detail || "Erro ao criar usuário");
       }
       setShowCreate(false);
       setNewEmail("");
@@ -125,7 +125,7 @@ export default function AdminPage() {
 
   const handleDelete = async (userId: string, email: string) => {
     if (!session) return;
-    if (!confirm(`Excluir usuario ${email}? Esta acao nao pode ser desfeita.`)) return;
+    if (!confirm(`Excluir usuário ${email}? Esta ação não pode ser desfeita.`)) return;
 
     try {
       const res = await fetch(`${backendUrl}/admin/users/${userId}`, {
@@ -157,7 +157,7 @@ export default function AdminPage() {
   };
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><p className="text-[var(--ink-secondary)]">Carregando...</p></div>;
-  if (!session) return <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><Link href="/login" className="text-[var(--brand-blue)]">Login necessario</Link></div>;
+  if (!session) return <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]"><Link href="/login" className="text-[var(--brand-blue)]">Login necessário</Link></div>;
 
   // Show 403 for non-admin users
   if (!isAdmin && !loading) {
@@ -171,14 +171,14 @@ export default function AdminPage() {
           </div>
           <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-2">Acesso Restrito</h1>
           <p className="text-[var(--ink-secondary)] mb-6">
-            Esta pagina e exclusiva para administradores do sistema. Se voce acredita que deveria ter acesso, entre em contato com o suporte.
+            Esta página é exclusiva para administradores do sistema. Se você acredita que deveria ter acesso, entre em contato com o suporte.
           </p>
           <Link
             href="/"
             className="inline-block px-6 py-2 bg-[var(--brand-navy)] text-white rounded-button
                        hover:bg-[var(--brand-blue)] transition-colors"
           >
-            Voltar para inicio
+            Voltar para início
           </Link>
         </div>
       </div>
@@ -192,8 +192,8 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-display font-bold text-[var(--ink)]">Admin - Usuarios</h1>
-            <p className="text-[var(--ink-secondary)]">{total} usuario{total !== 1 ? "s" : ""}</p>
+            <h1 className="text-2xl font-display font-bold text-[var(--ink)]">Admin - Usuários</h1>
+            <p className="text-[var(--ink-secondary)]">{total} usuário{total !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex gap-3">
             <Link href="/" className="px-4 py-2 border border-[var(--border)] rounded-button text-sm hover:bg-[var(--surface-1)]">
@@ -203,7 +203,7 @@ export default function AdminPage() {
               onClick={() => setShowCreate(!showCreate)}
               className="px-4 py-2 bg-[var(--brand-navy)] text-white rounded-button text-sm hover:bg-[var(--brand-blue)]"
             >
-              {showCreate ? "Cancelar" : "Novo usuario"}
+              {showCreate ? "Cancelar" : "Novo usuário"}
             </button>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function AdminPage() {
         {/* Create user form */}
         {showCreate && (
           <div className="mb-8 p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card">
-            <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Criar usuario</h2>
+            <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Criar usuário</h2>
             <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-[var(--ink-secondary)] mb-1">Email *</label>
@@ -283,9 +283,9 @@ export default function AdminPage() {
                   <th className="text-left py-3 px-4 text-[var(--ink-secondary)] font-medium">Nome</th>
                   <th className="text-left py-3 px-4 text-[var(--ink-secondary)] font-medium">Empresa</th>
                   <th className="text-left py-3 px-4 text-[var(--ink-secondary)] font-medium">Plano</th>
-                  <th className="text-left py-3 px-4 text-[var(--ink-secondary)] font-medium">Creditos</th>
+                  <th className="text-left py-3 px-4 text-[var(--ink-secondary)] font-medium">Créditos</th>
                   <th className="text-left py-3 px-4 text-[var(--ink-secondary)] font-medium">Criado</th>
-                  <th className="text-right py-3 px-4 text-[var(--ink-secondary)] font-medium">Acoes</th>
+                  <th className="text-right py-3 px-4 text-[var(--ink-secondary)] font-medium">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -308,7 +308,7 @@ export default function AdminPage() {
                       <td className="py-3 px-4 font-data text-[var(--ink)]">
                         {activeSub?.credits_remaining !== null && activeSub?.credits_remaining !== undefined
                           ? activeSub.credits_remaining
-                          : "&#8734;"}
+                          : "\u221E"}
                       </td>
                       <td className="py-3 px-4 text-[var(--ink-muted)]">{formatDate(u.created_at)}</td>
                       <td className="py-3 px-4 text-right">
@@ -337,7 +337,7 @@ export default function AdminPage() {
             <span className="text-sm text-[var(--ink-secondary)]">{page + 1} de {Math.ceil(total / limit)}</span>
             <button onClick={() => setPage(page + 1)} disabled={page >= Math.ceil(total / limit) - 1}
               className="px-3 py-1 text-sm border border-[var(--border)] rounded-button disabled:opacity-30">
-              Proximo
+              Próximo
             </button>
           </div>
         )}

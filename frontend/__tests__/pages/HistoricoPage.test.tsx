@@ -54,7 +54,7 @@ describe('HistoricoPage Component', () => {
     it('should show login prompt when not authenticated', () => {
       render(<HistoricoPage />);
 
-      expect(screen.getByText(/Faca login para ver seu historico/i)).toBeInTheDocument();
+      expect(screen.getByText(/Faça login para ver seu histórico/i)).toBeInTheDocument();
     });
 
     it('should show login link', () => {
@@ -105,7 +105,7 @@ describe('HistoricoPage Component', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Historico de Buscas/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Histórico de Buscas/i })).toBeInTheDocument();
       });
     });
 
@@ -328,7 +328,7 @@ describe('HistoricoPage Component', () => {
       });
 
       expect(screen.queryByRole('button', { name: /Anterior/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Proximo/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Próximo/i })).not.toBeInTheDocument();
     });
 
     it('should show pagination for multiple pages', async () => {
@@ -341,7 +341,7 @@ describe('HistoricoPage Component', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Anterior/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Proximo/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Próximo/i })).toBeInTheDocument();
       });
     });
 
@@ -368,7 +368,7 @@ describe('HistoricoPage Component', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        const nextButton = screen.getByRole('button', { name: /Proximo/i });
+        const nextButton = screen.getByRole('button', { name: /Próximo/i });
         expect(nextButton).not.toBeDisabled();
       });
     });
@@ -403,7 +403,7 @@ describe('HistoricoPage Component', () => {
         expect(screen.getByText(/1 de 3/)).toBeInTheDocument();
       });
 
-      const nextButton = screen.getByRole('button', { name: /Proximo/i });
+      const nextButton = screen.getByRole('button', { name: /Próximo/i });
       await act(async () => {
         fireEvent.click(nextButton);
       });

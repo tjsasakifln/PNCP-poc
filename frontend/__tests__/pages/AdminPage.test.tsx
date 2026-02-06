@@ -60,7 +60,7 @@ describe('AdminPage Component', () => {
 
       render(<AdminPage />);
 
-      expect(screen.getByRole('link', { name: /Login necessario/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Login necessário/i })).toBeInTheDocument();
     });
   });
 
@@ -104,7 +104,7 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Admin - Usuarios/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Admin - Usuários/i })).toBeInTheDocument();
       });
     });
 
@@ -117,7 +117,7 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/5 usuarios/)).toBeInTheDocument();
+        expect(screen.getByText(/5 usuários/)).toBeInTheDocument();
       });
     });
 
@@ -130,7 +130,7 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/1 usuario$/)).toBeInTheDocument();
+        expect(screen.getByText(/1 usuário$/)).toBeInTheDocument();
       });
     });
 
@@ -144,7 +144,7 @@ describe('AdminPage Component', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('link', { name: /Voltar/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Novo usuario/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Novo usuário/i })).toBeInTheDocument();
       });
     });
   });
@@ -161,7 +161,7 @@ describe('AdminPage Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Acesso Restrito/i)).toBeInTheDocument();
-        expect(screen.getByText(/Esta pagina e exclusiva para administradores/i)).toBeInTheDocument();
+        expect(screen.getByText(/Esta página é exclusiva para administradores/i)).toBeInTheDocument();
       });
     });
 
@@ -175,7 +175,7 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        const backLink = screen.getByRole('link', { name: /Voltar para inicio/i });
+        const backLink = screen.getByRole('link', { name: /Voltar para início/i });
         expect(backLink).toBeInTheDocument();
         expect(backLink).toHaveAttribute('href', '/');
       });
@@ -199,7 +199,7 @@ describe('AdminPage Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Acesso negado/i)).toBeInTheDocument();
-        expect(screen.getByText(/Voce nao e administrador/i)).toBeInTheDocument();
+        expect(screen.getByText(/Você não é administrador/i)).toBeInTheDocument();
       });
     });
   });
@@ -299,9 +299,9 @@ describe('AdminPage Component', () => {
         expect(screen.getByText('Nome')).toBeInTheDocument();
         expect(screen.getByText('Empresa')).toBeInTheDocument();
         expect(screen.getByText('Plano')).toBeInTheDocument();
-        expect(screen.getByText('Creditos')).toBeInTheDocument();
+        expect(screen.getByText('Créditos')).toBeInTheDocument();
         expect(screen.getByText('Criado')).toBeInTheDocument();
-        expect(screen.getByText('Acoes')).toBeInTheDocument();
+        expect(screen.getByText('Ações')).toBeInTheDocument();
       });
     });
 
@@ -400,16 +400,16 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Novo usuario/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Novo usuário/i })).toBeInTheDocument();
       });
 
       // Click to show form
-      const newButton = screen.getByRole('button', { name: /Novo usuario/i });
+      const newButton = screen.getByRole('button', { name: /Novo usuário/i });
       await act(async () => {
         fireEvent.click(newButton);
       });
 
-      expect(screen.getByText('Criar usuario')).toBeInTheDocument();
+      expect(screen.getByText('Criar usuário')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Cancelar/i })).toBeInTheDocument();
     });
 
@@ -422,10 +422,10 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Novo usuario/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Novo usuário/i })).toBeInTheDocument();
       });
 
-      const newButton = screen.getByRole('button', { name: /Novo usuario/i });
+      const newButton = screen.getByRole('button', { name: /Novo usuário/i });
       await act(async () => {
         fireEvent.click(newButton);
       });
@@ -457,11 +457,11 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Novo usuario/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Novo usuário/i })).toBeInTheDocument();
       });
 
       // Open form
-      const newButton = screen.getByRole('button', { name: /Novo usuario/i });
+      const newButton = screen.getByRole('button', { name: /Novo usuário/i });
       await act(async () => {
         fireEvent.click(newButton);
       });
@@ -508,10 +508,10 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Novo usuario/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Novo usuário/i })).toBeInTheDocument();
       });
 
-      const newButton = screen.getByRole('button', { name: /Novo usuario/i });
+      const newButton = screen.getByRole('button', { name: /Novo usuário/i });
       await act(async () => {
         fireEvent.click(newButton);
       });
@@ -766,7 +766,7 @@ describe('AdminPage Component', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Anterior/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Proximo/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Próximo/i })).toBeInTheDocument();
       });
     });
 
@@ -780,7 +780,7 @@ describe('AdminPage Component', () => {
 
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: /Anterior/i })).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: /Proximo/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Próximo/i })).not.toBeInTheDocument();
       });
     });
   });
@@ -807,7 +807,7 @@ describe('AdminPage Component', () => {
       render(<AdminPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Erro ao carregar usuarios/i)).toBeInTheDocument();
+        expect(screen.getByText(/Erro ao carregar usuários/i)).toBeInTheDocument();
       });
     });
 

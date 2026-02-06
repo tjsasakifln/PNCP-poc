@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSavedSearches, type UseSavedSearchesReturn } from '../../hooks/useSavedSearches';
 import type { SavedSearch } from '../../lib/savedSearches';
 
@@ -123,10 +123,35 @@ export function SavedSearchesDropdown({
   // Handle keyboard shortcuts in filter input
   const handleFilterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
+      e.stopPropagation(); // Prevent bubbling to global handlers
       setFilterTerm('');
       e.currentTarget.blur();
     }
   };
+
+  // Close dropdown on Escape key - prevent propagation to global handlers
+  // This fixes the bug where pressing Escape while dropdown is open clears page state
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // Stop other listeners on window
+        setIsOpen(false);
+        setDeleteConfirmId(null);
+        setFilterTerm('');
+      }
+    };
+
+    // Use capture phase to intercept before other handlers
+    window.addEventListener('keydown', handleEscapeKey, true);
+
+    return () => {
+      window.removeEventListener('keydown', handleEscapeKey, true);
+    };
+  }, [isOpen]);
 
   if (loading) {
     return null; // Don't show anything while loading

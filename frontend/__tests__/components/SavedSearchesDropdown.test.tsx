@@ -562,9 +562,11 @@ describe('SavedSearchesDropdown Component', () => {
       const button = screen.getByRole('button', { name: /Buscas salvas/i });
       fireEvent.click(button);
 
-      const panel = container.querySelector('.max-h-\\[400px\\]');
+      // Dropdown panel should have overflow-y-auto for scrolling
+      const panel = container.querySelector('.overflow-y-auto');
       expect(panel).toBeInTheDocument();
-      expect(panel).toHaveClass('overflow-y-auto');
+      // Also has responsive max-height: max-h-[70vh] sm:max-h-[400px]
+      expect(panel).toHaveClass('max-h-[70vh]');
     });
 
     it('should apply hover effects to search items', () => {
@@ -741,17 +743,22 @@ describe('SavedSearchesDropdown Component', () => {
       expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument(); // Counter back to full
     });
 
-    it('should clear filter on Escape key', () => {
+    it('should close dropdown on Escape key (preventing global state loss)', async () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
       const button = screen.getByRole('button', { name: /Buscas salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...') as HTMLInputElement;
-      fireEvent.change(filterInput, { target: { value: 'test' } });
-      fireEvent.keyDown(filterInput, { key: 'Escape' });
+      // Verify dropdown is open
+      expect(screen.getByPlaceholderText('Filtrar buscas...')).toBeInTheDocument();
 
-      expect(filterInput.value).toBe('');
+      // Press Escape - this should close the dropdown entirely
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      // Dropdown should be closed (filter input should no longer be visible)
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('Filtrar buscas...')).not.toBeInTheDocument();
+      });
     });
 
     it('should show empty state when no results match filter', () => {

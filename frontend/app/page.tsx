@@ -96,21 +96,9 @@ function HomePageContent() {
   const [preSelectedPlan, setPreSelectedPlan] = useState<"consultor_agil" | "maquina" | "sala_guerra" | undefined>();
   const [upgradeSource, setUpgradeSource] = useState<string | undefined>();
 
-  // Note: Authentication is handled by middleware.ts
-  // If we reach this point, user is already authenticated (middleware validated session)
-  // Show loading only during initial hydration
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
-          <p className="text-[var(--ink-secondary)]">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Analytics tracking
+  // IMPORTANT: All hooks must be called unconditionally BEFORE any early returns
+  // to comply with React's Rules of Hooks (Error #310 fix)
   const { trackEvent } = useAnalytics();
 
   // Saved searches
@@ -699,12 +687,27 @@ function HomePageContent() {
 
   const isFormValid = Object.keys(validationErrors).length === 0;
 
+  // Note: Authentication is handled by middleware.ts
+  // If we reach this point, user is already authenticated (middleware validated session)
+  // Show loading only during initial hydration
+  // IMPORTANT: This check MUST come AFTER all hooks are called to comply with React's Rules of Hooks
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
+          <p className="text-[var(--ink-secondary)]">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Navigation Header */}
-      <header className="border-b border-strong bg-surface-0 sticky top-0 z-40">
+      <header className="border-b border-strong bg-[var(--surface-0)] sticky top-0 z-50 backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Image
               src={LOGO_URL}
               alt={APP_NAME}
@@ -713,11 +716,11 @@ function HomePageContent() {
               className="h-10 w-auto"
               priority
             />
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:block text-xs text-ink-muted font-medium">
+            <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-4">
               Busca Inteligente PNCP
             </span>
+          </div>
+          <div className="flex items-center gap-4">
 
             {/* Issue #153: Show quota badge */}
             <QuotaBadge />

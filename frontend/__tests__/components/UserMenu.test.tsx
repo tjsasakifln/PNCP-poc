@@ -107,7 +107,7 @@ describe('UserMenu Component', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('link', { name: /Minha conta/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /Historico/i })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: /Histórico/i })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: /Planos/i })).toBeInTheDocument();
         // Admin link should NOT be shown for non-admin users
         expect(screen.queryByRole('link', { name: /Admin/i })).not.toBeInTheDocument();
@@ -142,7 +142,7 @@ describe('UserMenu Component', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('link', { name: /Minha conta/i })).toHaveAttribute('href', '/conta');
-        expect(screen.getByRole('link', { name: /Historico/i })).toHaveAttribute('href', '/historico');
+        expect(screen.getByRole('link', { name: /Histórico/i })).toHaveAttribute('href', '/historico');
         expect(screen.getByRole('link', { name: /Planos/i })).toHaveAttribute('href', '/planos');
       });
     });
@@ -248,7 +248,7 @@ describe('UserMenu Component', () => {
       fireEvent.click(contaLink);
 
       await waitFor(() => {
-        expect(screen.queryByText('Historico')).not.toBeInTheDocument();
+        expect(screen.queryByText('Histórico')).not.toBeInTheDocument();
       });
     });
   });
