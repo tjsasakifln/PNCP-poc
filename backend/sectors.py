@@ -63,6 +63,14 @@ SECTORS: Dict[str, SectorConfig] = {
             "carne", "frango", "peixe",
             "pão", "pao", "pães", "paes",
             "bebida", "bebidas", "suco", "sucos",
+
+            # COMPOUND TERMS ADDED (Issue #all-sectors-expansion - 2026-02-06)
+            "alimento perecível", "alimento perecivel",
+            "alimento não perecível", "alimento nao perecivel",
+            "kit merenda", "kit de alimentos",
+            "fornecimento de carne", "fornecimento de frango",
+            "produto alimentício", "produto alimenticio",
+            "gênero de primeira necessidade", "genero de primeira necessidade",
         },
         exclusions={
             # "alimentação" in non-food context
@@ -378,6 +386,17 @@ SECTORS: Dict[str, SectorConfig] = {
             "telhado", "cobertura",
             "piso", "revestimento",
             "elevador", "elevadores",
+
+            # COMPOUND TERMS ADDED (Issue #all-sectors-expansion - 2026-02-06)
+            "material de construção", "material de construcao",
+            "materiais de construção", "materiais de construcao",
+            "obra de construção civil", "obra de construcao civil",
+            "reforma de prédio", "reforma de predio",
+            "construção de prédio", "construcao de predio",
+            "pavimentação asfáltica", "pavimentacao asfaltica",
+            "recuperação de pavimento", "recuperacao de pavimento",
+            "obra de infraestrutura", "serviços de construção", "servicos de construcao",
+            "execução de obra", "execucao de obra",
         },
         exclusions={
             "engenharia de software",
@@ -692,6 +711,12 @@ SECTORS: Dict[str, SectorConfig] = {
             "manutenção de jardim", "manutencao de jardim",
             "manutenção de jardins", "manutencao de jardins",
             "áreas verdes", "areas verdes",
+
+            # COMPOUND TERMS ADDED (Issue #all-sectors-expansion - 2026-02-06)
+            "serviço de limpeza e conservação", "servico de limpeza e conservacao",
+            "produto de limpeza profissional",
+            "material de limpeza hospitalar",
+            "fornecimento de material de limpeza",
         },
         exclusions={
             # Automotive
