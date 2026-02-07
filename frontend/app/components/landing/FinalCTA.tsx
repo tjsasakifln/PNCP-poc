@@ -37,10 +37,10 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
           }`}
         >
           <a
-            href="/buscar"
+            href="/signup?source=landing-cta"
             className="w-full sm:w-auto bg-white text-brand-navy hover:bg-surface-1 font-bold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center text-lg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
           >
-            Acessar busca — 3 consultas gratuitas
+            Criar conta grátis — 3 consultas gratuitas
           </a>
         </div>
 

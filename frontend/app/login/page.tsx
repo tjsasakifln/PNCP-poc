@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
+import { toast } from "sonner";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
@@ -30,6 +31,10 @@ function translateSupabaseError(message: string): string {
     "User already registered": "Este email já está cadastrado. Faça login.",
     "Password should be at least 6 characters": "A senha deve ter pelo menos 6 caracteres.",
     "Unable to validate email address: invalid format": "Formato de email inválido.",
+    "fetch failed": "Erro de conexão. Verifique sua internet.",
+    "Failed to fetch": "Erro de conexão. Verifique sua internet.",
+    "NetworkError": "Erro de conexão. Verifique sua internet.",
+    "network error": "Erro de conexão. Verifique sua internet.",
   };
 
   // Check for exact match first
@@ -80,6 +85,7 @@ function LoginContent() {
   const [mode, setMode] = useState<"password" | "magic">("password");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
 
   // Check for error params from OAuth callback
@@ -90,6 +96,7 @@ function LoginContent() {
     if (errorParam) {
       const message = ERROR_MESSAGES[errorParam] || errorDescription || "Erro ao fazer login";
       setError(message);
+      toast.error(message);
 
       // Clear error params from URL without redirect
       const url = new URL(window.location.href);
@@ -111,20 +118,26 @@ function LoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(false);
     setLoading(true);
 
     try {
       if (mode === "magic") {
         await signInWithMagicLink(email);
         setMagicSent(true);
+        toast.success("Link mágico enviado! Verifique seu email.");
       } else {
         await signInWithEmail(email, password);
+        setSuccess(true);
+        toast.success("Login realizado com sucesso!");
         // Don't redirect here - the useEffect above will handle it
         // when the session state updates
       }
     } catch (err: unknown) {
       const rawMessage = err instanceof Error ? err.message : "Erro ao fazer login";
-      setError(translateSupabaseError(rawMessage));
+      const translatedMessage = translateSupabaseError(rawMessage);
+      setError(translatedMessage);
+      toast.error(translatedMessage);
     } finally {
       setLoading(false);
     }
@@ -189,9 +202,21 @@ function LoginContent() {
             Entre para acessar suas buscas
           </p>
 
+        {success && (
+          <div className="mb-4 p-3 bg-[var(--success-subtle)] border border-[var(--success)]/20 rounded-input text-sm flex items-center gap-2" role="status">
+            <svg className="w-5 h-5 text-[var(--success)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-[var(--success)]">Login realizado! Redirecionando...</span>
+          </div>
+        )}
+
         {error && (
-          <div className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-input text-sm">
-            {error}
+          <div className="mb-4 p-3 bg-[var(--error-subtle)] border border-[var(--error)]/20 rounded-input text-sm flex items-start gap-2" role="alert">
+            <svg className="w-5 h-5 text-[var(--error)] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="text-[var(--error)]">{error}</span>
           </div>
         )}
 
@@ -311,9 +336,18 @@ function LoginContent() {
             disabled={loading}
             className="w-full py-3 bg-[var(--brand-navy)] text-white rounded-button
                        font-semibold hover:bg-[var(--brand-blue)] transition-colors
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
           >
-            {loading ? "Entrando..." : mode === "magic" ? "Enviar link" : "Entrar"}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Entrando...
+              </>
+            ) : mode === "magic" ? "Enviar link" : "Entrar"}
           </button>
         </form>
 

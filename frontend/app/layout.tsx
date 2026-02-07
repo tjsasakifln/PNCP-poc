@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AnalyticsProvider } from "./components/AnalyticsProvider";
 import { AuthProvider } from "./components/AuthProvider";
+import { Toaster } from "sonner";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -61,19 +62,13 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  const theme = localStorage.getItem('bidiq-theme');
+                  let theme = localStorage.getItem('bidiq-theme');
                   if (!theme) return;
-                  if (theme === 'dark' || theme === 'dim') {
-                    document.documentElement.classList.add('dark');
+                  if (theme === 'system') {
+                    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                   }
-                  if (theme === 'paperwhite') {
-                    document.documentElement.style.setProperty('--canvas', '#F5F0E8');
-                  } else if (theme === 'sepia') {
-                    document.documentElement.style.setProperty('--canvas', '#EDE0CC');
-                  } else if (theme === 'dim') {
-                    document.documentElement.style.setProperty('--canvas', '#2A2A2E');
-                    document.documentElement.style.setProperty('--ink', '#e0e0e0');
-                  } else if (theme === 'dark') {
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
                     document.documentElement.style.setProperty('--canvas', '#121212');
                     document.documentElement.style.setProperty('--ink', '#e0e0e0');
                   }
@@ -95,7 +90,10 @@ export default function RootLayout({
         </a>
         <AnalyticsProvider>
           <AuthProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <ThemeProvider>
+              {children}
+              <Toaster position="top-right" richColors closeButton />
+            </ThemeProvider>
           </AuthProvider>
         </AnalyticsProvider>
       </body>

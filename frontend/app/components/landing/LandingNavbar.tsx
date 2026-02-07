@@ -77,10 +77,10 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
               Login
             </Link>
             <Link
-              href="/buscar"
+              href="/signup?source=landing-cta"
               className="bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
             >
-              Acessar
+              Criar conta
             </Link>
           </div>
         </div>

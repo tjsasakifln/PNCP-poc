@@ -58,7 +58,7 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
-                  <a href="/signup" className="hover:text-blue-400 transition-colors">
+                  <a href="/signup?source=landing-cta" className="hover:text-blue-400 transition-colors">
                     Teste Gratuito
                   </a>
                 </li>

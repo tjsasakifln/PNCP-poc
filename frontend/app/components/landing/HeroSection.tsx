@@ -47,10 +47,10 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           }`}
         >
           <a
-            href="/buscar"
+            href="/signup?source=landing-cta"
             className="w-full sm:w-auto bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
-            Acessar busca
+            Criar conta grátis
           </a>
           <button
             onClick={() => scrollToSection('como-funciona')}
