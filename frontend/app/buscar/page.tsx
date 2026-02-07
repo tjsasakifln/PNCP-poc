@@ -996,12 +996,47 @@ function HomePageContent() {
             </button>
           </div>
 
-          {/* Sector Selector - Issue #89: Custom Select Component */}
+          {/* Sector Selector - Issue #89: Custom Select Component + STORY-170 AC4: Error States */}
           {searchMode === "setor" && (
             <div className="relative z-20">
               {setoresLoading ? (
-                <div className="border border-strong rounded-input px-4 py-3 bg-surface-1 animate-pulse">
-                  <div className="h-5 bg-surface-2 rounded w-48"></div>
+                /* STORY-170 AC4: Skeleton loader while fetching sectors */
+                <div className="border border-strong rounded-input px-4 py-3 bg-surface-1 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-blue"></div>
+                    <div className="h-5 bg-surface-2 rounded w-48 animate-pulse"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-surface-2 rounded w-full animate-pulse"></div>
+                    <div className="h-4 bg-surface-2 rounded w-3/4 animate-pulse"></div>
+                    <div className="h-4 bg-surface-2 rounded w-5/6 animate-pulse"></div>
+                  </div>
+                </div>
+              ) : setoresError && !setoresUsingFallback ? (
+                /* STORY-170 AC4: Error state with retry button */
+                <div className="border border-error/20 rounded-input px-4 py-3 bg-error-subtle">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-error flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-error">Não foi possível carregar setores</p>
+                      <p className="text-xs text-ink-secondary mt-0.5">
+                        Tentativa {setoresRetryCount + 1} de 3
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => fetchSetores(0)}
+                      className="text-sm font-medium text-brand-blue hover:underline flex items-center gap-1 flex-shrink-0"
+                      type="button"
+                      aria-label="Tentar carregar setores novamente"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Tentar novamente
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <CustomSelect
