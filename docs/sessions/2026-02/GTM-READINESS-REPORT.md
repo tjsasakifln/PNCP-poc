@@ -1,4 +1,4 @@
-# Relatório de Prontidão GTM - Smart PNCP
+# Relatório de Prontidão GTM - SmartLic
 
 **Data:** 2026-02-06
 **Versão:** POC v0.3
@@ -8,7 +8,7 @@
 
 ## Sumário Executivo
 
-O sistema Smart PNCP está **funcionalmente pronto para GTM**, com fluxos principais operacionais. Identificamos **3 bugs críticos (P0)**, **3 problemas importantes (P1)** e **8 melhorias de UX** que devem ser endereçados em ordem de prioridade.
+O sistema SmartLic está **funcionalmente pronto para GTM**, com fluxos principais operacionais. Identificamos **3 bugs críticos (P0)**, **3 problemas importantes (P1)** e **8 melhorias de UX** que devem ser endereçados em ordem de prioridade.
 
 **Fontes de Dados:** Atualmente apenas PNCP está ativo. O sistema tem infraestrutura pronta para Portal de Compras Públicas e Licitar Digital, mas para os 50 usuários iniciais, **PNCP é suficiente** (fonte oficial do governo, mais completa).
 
@@ -328,11 +328,11 @@ O sistema tem a arquitetura pronta para escalar com múltiplas fontes quando nec
 
 ---
 
-## Teste de Comparação: Smart PNCP vs PNCP Oficial
+## Teste de Comparação: SmartLic vs PNCP Oficial
 
 ### Metodologia
 
-Teste realizado para verificar se os resultados do Smart PNCP são consistentes com o portal oficial do governo, já que usuários inevitavelmente farão essa comparação.
+Teste realizado para verificar se os resultados do SmartLic são consistentes com o portal oficial do governo, já que usuários inevitavelmente farão essa comparação.
 
 ### Teste Executado
 
@@ -348,11 +348,11 @@ Teste realizado para verificar se os resultados do Smart PNCP são consistentes 
 | Sistema | Licitações Encontradas | Resultado Final |
 |---------|----------------------|-----------------|
 | **PNCP Oficial** | 336 | ✅ 336 exibidas |
-| **Smart PNCP** | 1000 (da API) | ❌ **0 aprovadas** |
+| **SmartLic** | 1000 (da API) | ❌ **0 aprovadas** |
 
 ### Análise do Bug
 
-**Fluxo observado no Smart PNCP:**
+**Fluxo observado no SmartLic:**
 
 ```
 1. API PNCP retornou: 1000 licitações ✅
@@ -376,7 +376,7 @@ Em modo "Termos Específicos", o sistema deveria:
 
 | Screenshot | Descrição |
 |------------|-----------|
-| `gtm-inspection-13-termos-especificos-bug.png` | Smart PNCP mostrando 0 resultados |
+| `gtm-inspection-13-termos-especificos-bug.png` | SmartLic mostrando 0 resultados |
 | `gtm-inspection-14-pncp-oficial-336-results.png` | PNCP oficial mostrando 336 resultados |
 
 ### Impacto
@@ -407,7 +407,7 @@ if modo_busca != "termos_especificos":
 
 ## Conclusão
 
-O Smart PNCP está **bloqueado para GTM** devido ao bug crítico na busca por "Termos Específicos". Este bug deve ser corrigido **ANTES** de qualquer lançamento, pois afeta a funcionalidade principal do sistema.
+O SmartLic está **bloqueado para GTM** devido ao bug crítico na busca por "Termos Específicos". Este bug deve ser corrigido **ANTES** de qualquer lançamento, pois afeta a funcionalidade principal do sistema.
 
 **Status:** ⚠️ **NÃO APROVADO** até correção do P0 #1
 

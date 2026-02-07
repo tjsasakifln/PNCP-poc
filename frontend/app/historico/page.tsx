@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
 interface SearchSession {
   id: string;

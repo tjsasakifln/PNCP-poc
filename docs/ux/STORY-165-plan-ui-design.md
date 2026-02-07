@@ -575,7 +575,7 @@ trackEvent('upgrade_plan_clicked', {
       </h4>
       <p className="text-sm text-ink-secondary mb-3">
         Seu período de teste gratuito de 7 dias terminou.
-        Escolha um plano para continuar usando o Smart PNCP.
+        Escolha um plano para continuar usando o SmartLic.
       </p>
       <button className="px-4 py-2 bg-brand-navy text-white rounded-button font-medium hover:bg-brand-blue-hover">
         Ver Planos
@@ -875,7 +875,7 @@ Access restored immediately
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  Smart PNCP                [💼 Consultor Ágil >] [🌙] [👤]     │
+│  SmartLic                [💼 Consultor Ágil >] [🌙] [👤]     │
 │                            Buscas: 23/50                        │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                 │
@@ -922,7 +922,7 @@ Access restored immediately
 
 ```
 ┌───────────────────────────────┐
-│ Smart PNCP      [🌙] [👤]    │
+│ SmartLic      [🌙] [👤]    │
 ├───────────────────────────────┤
 │ [💼 Consultor Ágil (50 buscas)│
 │  Buscas: 23/50 █████░░ 46%   │

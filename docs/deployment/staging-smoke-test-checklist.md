@@ -268,7 +268,7 @@ These tests are important but not blockers for deployment.
 - [ ] **Step 2:** Attempt to execute search
 - [ ] **Expected:** HTTP 403 error returned
 - [ ] **Step 3:** Verify error message
-- [ ] **Error Message:** "Trial expirado. Faça upgrade para continuar usando o Smart PNCP."
+- [ ] **Error Message:** "Trial expirado. Faça upgrade para continuar usando o SmartLic."
 - [ ] **Step 4:** Verify upgrade modal displayed automatically or via CTA
 - [ ] **Expected:** Modal shows plan comparison
 - [ ] **Screenshot:** Save expired trial error

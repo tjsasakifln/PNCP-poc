@@ -1,8 +1,8 @@
-# Session Handoff - Facilities Sector + Smart PNCP Rebranding
+# Session Handoff - Facilities Sector + SmartLic Rebranding
 
 **Date:** 2026-02-02
 **Agent Squad:** Mission Squad (analyst, architect, dev, qa, devops)
-**Mission:** Add Facilities sector + Rebrand from Descomplicita to Smart PNCP
+**Mission:** Add Facilities sector + Rebrand from Descomplicita to SmartLic
 **Status:** ✅ **COMPLETE**
 
 ---
@@ -12,7 +12,7 @@
 ### Primary Objectives ✅
 - [x] Add "Facilities e Manutenção Predial" sector with comprehensive keyword set
 - [x] Remove all "Descomplicita" branding from active code
-- [x] Implement white label solution ("Smart PNCP")
+- [x] Implement white label solution ("SmartLic")
 - [x] Update all frontend references (logo, name, meta tags)
 - [x] Update documentation and environment examples
 
@@ -73,7 +73,7 @@
 
 ---
 
-### Frontend - Smart PNCP Rebranding
+### Frontend - SmartLic Rebranding
 
 **File:** `frontend/app/page.tsx`
 - **Changed:** Logo URL hardcoded → Environment variable
@@ -89,7 +89,7 @@ const filename = `DescompLicita_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx
 
 **After:**
 ```typescript
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
 const appNameSlug = APP_NAME.replace(/\s+/g, '_');
 const filename = `${appNameSlug}_${setorLabel}_${dataInicial}_a_${dataFinal}.xlsx`;
@@ -108,11 +108,11 @@ const filename = `${appNameSlug}_${setorLabel}_${dataInicial}_a_${dataFinal}.xls
 - Created SVG placeholder logo
 - Navy blue background (#0A1E3F)
 - Building + magnifying glass icon
-- "Smart PNCP" text with "Busca Inteligente" tagline
+- "SmartLic" text with "Busca Inteligente" tagline
 - Dimensions: 180x60px
 
 **File:** `.env.example`
-- **Added:** `NEXT_PUBLIC_APP_NAME=Smart PNCP`
+- **Added:** `NEXT_PUBLIC_APP_NAME=SmartLic`
 - **Added:** `NEXT_PUBLIC_LOGO_URL=/logo.svg`
 - **Documented:** White label configuration section
 
@@ -131,12 +131,12 @@ const filename = `${appNameSlug}_${setorLabel}_${dataInicial}_a_${dataFinal}.xls
 ### Documentation
 
 **File:** `CLAUDE.md`
-- **Updated:** Project Overview - "Smart PNCP (formerly BidIQ Uniformes)"
+- **Updated:** Project Overview - "SmartLic (formerly BidIQ Uniformes)"
 - **Updated:** Version 0.2 → 0.3
 - **Mentioned:** White-label system with 9 sectors
 
 **File:** `README.md`
-- **Updated:** Title: "Smart PNCP - POC v0.3"
+- **Updated:** Title: "SmartLic - POC v0.3"
 - **Added:** Rebranding note explaining history
 - **Updated:** Project description mentions 9 sectors
 - **Updated:** Funcionalidades - added multi-setor and white label
@@ -245,7 +245,7 @@ Add to production `.env`:
 
 ```env
 # White Label Branding
-NEXT_PUBLIC_APP_NAME=Smart PNCP
+NEXT_PUBLIC_APP_NAME=SmartLic
 NEXT_PUBLIC_LOGO_URL=/logo.svg
 
 # Optional: Use custom logo from CDN
@@ -324,7 +324,7 @@ git push origin main
 ### Future Enhancements
 - [ ] Add sector icons in dropdown (UX improvement)
 - [ ] Facilities keyword refinement based on production data
-- [ ] A/B test different brand names ("Smart PNCP" vs alternatives)
+- [ ] A/B test different brand names ("SmartLic" vs alternatives)
 - [ ] Social media og:image custom design (currently uses default)
 - [ ] Multi-language support (Portuguese + English)
 
@@ -357,7 +357,7 @@ git push origin main
 - [ ] Design final logo (replace SVG placeholder)
 - [ ] Add sector icons to dropdown
 - [ ] Monitor user analytics for facilities usage
-- [ ] Gather feedback on Smart PNCP branding
+- [ ] Gather feedback on SmartLic branding
 
 ### Long-term (Q1 2026)
 - [ ] Multi-language support

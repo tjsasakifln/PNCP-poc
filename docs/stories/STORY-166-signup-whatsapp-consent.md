@@ -7,7 +7,7 @@
 
 ## User Story
 
-**Como** visitante do Smart PNCP,
+**Como** visitante do SmartLic,
 **Quero** preencher meu perfil completo durante o cadastro e aceitar os termos de consentimento,
 **Para que** eu possa receber ofertas e promoções da equipe via Email e WhatsApp.
 
@@ -138,7 +138,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_whatsapp_consent
 TERMOS DE CONSENTIMENTO PARA COMUNICACOES PROMOCIONAIS
 
 Ao fornecer seus dados e marcar a caixa de aceite abaixo, voce autoriza
-expressamente a equipe do Smart PNCP a enviar comunicacoes promocionais
+expressamente a equipe do SmartLic a enviar comunicacoes promocionais
 por EMAIL e WHATSAPP, incluindo:
 
 1. Mensagens promocionais sobre novos recursos e funcionalidades;

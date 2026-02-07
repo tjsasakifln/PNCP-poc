@@ -1,4 +1,4 @@
-# Smart PNCP - POC v0.3
+# SmartLic - POC v0.3
 
 [![Backend Tests](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml)
@@ -8,7 +8,7 @@
 
 White-label platform for intelligent procurement opportunity discovery from Brazil's PNCP (Portal Nacional de Contratações Públicas).
 
-> **Rebranding Note:** Formerly known as "BidIQ Uniformes" and "Descomplicita POC". Rebranded to Smart PNCP in February 2026 for white-label multi-tenant deployment.
+> **Rebranding Note:** Formerly known as "BidIQ Uniformes", "Descomplicita POC", and "Smart PNCP". Rebranded to SmartLic in February 2026 for white-label multi-tenant deployment (smartlic.tech).
 
 ## 📋 Sobre o Projeto
 

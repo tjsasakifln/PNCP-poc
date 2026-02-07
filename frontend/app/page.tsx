@@ -39,7 +39,7 @@ import { MunicipioFilter, type Municipio } from "./components/MunicipioFilter";
 import { OrdenacaoSelect, type OrdenacaoOption } from "./components/OrdenacaoSelect";
 
 // White label branding configuration
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
 
 const UFS = [

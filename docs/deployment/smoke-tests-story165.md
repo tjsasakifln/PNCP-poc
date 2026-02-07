@@ -178,7 +178,7 @@ Validate critical user flows for the new 4-tier pricing model (FREE Trial, Consu
 2. **Expected:** Plan badge shows "Trial Expirado" or similar
 3. Attempt to execute search
 4. **Expected:** HTTP 403 error returned
-5. Verify error message: "Trial expirado. Faça upgrade para continuar usando o Smart PNCP."
+5. Verify error message: "Trial expirado. Faça upgrade para continuar usando o SmartLic."
 6. Verify upgrade modal displayed automatically or via CTA
 
 **Pass Criteria:**

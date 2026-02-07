@@ -10,7 +10,7 @@
 
 ## Context
 
-Smart PNCP is restructuring from 6 credit-based plans to 3 time-based subscription tiers + FREE trial:
+SmartLic is restructuring from 6 credit-based plans to 3 time-based subscription tiers + FREE trial:
 
 **Current System (To Be Replaced):**
 - Credit packs (1, 5, 10, 20 searches)

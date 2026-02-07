@@ -1,4 +1,4 @@
-# Story: Add Facilities Sector + Rebrand to Smart PNCP
+# Story: Add Facilities Sector + Rebrand to SmartLic
 
 **ID:** STORY-FACILITIES-REBRAND-001
 **Epic:** Multi-Sector Expansion + White Label
@@ -15,7 +15,7 @@ O BidIQ possui 8 setores de busca (vestuário, alimentos, informática, limpeza,
 
 **Necessidade Dupla:**
 1. **Facilities Sector:** Adicionar setor para facilities management (manutenção predial, serviços prediais, FM) - segmento importante em licitações públicas
-2. **Rebranding:** Remover branding "Descomplicita" e migrar para solução white label (**Smart PNCP**)
+2. **Rebranding:** Remover branding "Descomplicita" e migrar para solução white label (**SmartLic**)
 
 **Motivação:**
 - Facilities é um setor significativo de procurement público (manutenção, limpeza, segurança, recepção)
@@ -34,7 +34,7 @@ O BidIQ possui 8 setores de busca (vestuário, alimentos, informática, limpeza,
 ### Rebranding
 4. Remover 100% das referências "Descomplicita"
 5. Implementar configuração white label via environment variables
-6. Aplicar novo nome: **Smart PNCP** (ou alternativa aprovada)
+6. Aplicar novo nome: **SmartLic** (ou alternativa aprovada)
 7. Atualizar logo, favicon, meta tags, documentação
 
 ---
@@ -74,13 +74,13 @@ O BidIQ possui 8 setores de busca (vestuário, alimentos, informática, limpeza,
 
 - [ ] Remover LOGO_URL hardcoded em `frontend/app/page.tsx:21`
 - [ ] Implementar environment variables:
-  - [ ] `NEXT_PUBLIC_APP_NAME` (default: "Smart PNCP")
+  - [ ] `NEXT_PUBLIC_APP_NAME` (default: "SmartLic")
   - [ ] `NEXT_PUBLIC_LOGO_URL` (default: "/logo.svg")
 - [ ] Atualizar `frontend/app/layout.tsx` metadata:
-  - [ ] `title`: "Smart PNCP - Busca Inteligente de Licitações"
+  - [ ] `title`: "SmartLic - Busca Inteligente de Licitações"
   - [ ] `description`: Atualizar para remover "Descomplicita"
-  - [ ] `og:title`: "Smart PNCP"
-  - [ ] `og:site_name`: "Smart PNCP"
+  - [ ] `og:title`: "SmartLic"
+  - [ ] `og:site_name`: "SmartLic"
   - [ ] Remover qualquer referência a "Descomplicita"
 - [ ] Adicionar logo placeholder em `frontend/public/logo.svg`
 - [ ] Atualizar favicon (`frontend/public/favicon.ico`)
@@ -97,7 +97,7 @@ O BidIQ possui 8 setores de busca (vestuário, alimentos, informática, limpeza,
 - [ ] `PRD.md` - Atualizar branding guidelines
 - [ ] `.env.example` - Adicionar novas variáveis:
   ```env
-  NEXT_PUBLIC_APP_NAME=Smart PNCP
+  NEXT_PUBLIC_APP_NAME=SmartLic
   NEXT_PUBLIC_LOGO_URL=/logo.svg
   ```
 - [ ] `docs/sessions/` - Criar handoff desta missão
@@ -128,7 +128,7 @@ O BidIQ possui 8 setores de busca (vestuário, alimentos, informática, limpeza,
 - [ ] Code review aprovado
 - [ ] Production `.env` documentado:
   ```env
-  NEXT_PUBLIC_APP_NAME=Smart PNCP
+  NEXT_PUBLIC_APP_NAME=SmartLic
   NEXT_PUBLIC_LOGO_URL=/logo.svg  # Replace with final asset URL
   ```
 - [ ] Logo final substituído (SVG placeholder → final asset)
@@ -221,7 +221,7 @@ const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fa
 
 **After (white label):**
 ```typescript
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
 ```
 
@@ -362,7 +362,7 @@ grep -ri "descomplicita" frontend/ backend/ docs/ \
    # Frontend deployment (Vercel/Netlify)
    git push origin main
    # Set environment variables in hosting dashboard:
-   # NEXT_PUBLIC_APP_NAME=Smart PNCP
+   # NEXT_PUBLIC_APP_NAME=SmartLic
    # NEXT_PUBLIC_LOGO_URL=/logo.svg
    ```
 
@@ -454,23 +454,23 @@ Consultar especialista em facilities management para validar keywords após impl
 - Normas ABNT de facilities management
 - Associação Brasileira de Facilities (ABRAFAC)
 
-### Alternative Branding Names (If Not "Smart PNCP")
+### Alternative Branding Names (If Not "SmartLic")
 
 | Name | Pros | Cons |
 |------|------|------|
-| Smart PNCP | Descriptive, searchable | Generic |
+| SmartLic | Descriptive, searchable | Generic |
 | PNCP Finder | Clear purpose | Less professional |
 | BidIQ | Tech-savvy, memorable | Less descriptive |
 | LicitaSmart | Portuguese, modern | May confuse non-BR users |
 
-**Final decision:** Smart PNCP (can rebrand via .env later)
+**Final decision:** SmartLic (can rebrand via .env later)
 
 ### Logo Design Guidelines (Future)
 
 - Simple, scalable SVG
 - Monochrome or 2-color max
 - Works at 16x16px (favicon) and 200x50px (header)
-- Includes text "Smart PNCP" or icon only (configurable)
+- Includes text "SmartLic" or icon only (configurable)
 - Use Figma/Adobe Illustrator for final asset
 
 ### YOLO Mode Justifications

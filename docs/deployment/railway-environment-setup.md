@@ -1,6 +1,6 @@
 # Railway Environment Setup Guide
 
-This document lists all required environment variables for deploying Smart PNCP to Railway.
+This document lists all required environment variables for deploying SmartLic to Railway.
 
 ## Critical Issue: Authentication Not Working in Production
 
@@ -62,7 +62,7 @@ Or via Railway Dashboard:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_APP_NAME` | `Smart PNCP` | Application display name |
+| `NEXT_PUBLIC_APP_NAME` | `SmartLic` | Application display name |
 | `NEXT_PUBLIC_LOGO_URL` | `/logo.svg` | Logo URL |
 | `NEXT_PUBLIC_MIXPANEL_TOKEN` | (none) | Mixpanel analytics token |
 
@@ -179,7 +179,7 @@ ADMIN_USER_IDS=
 BACKEND_URL=https://bidiq-backend.up.railway.app
 NEXT_PUBLIC_SUPABASE_URL=https://yourproject.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-NEXT_PUBLIC_APP_NAME=Smart PNCP
+NEXT_PUBLIC_APP_NAME=SmartLic
 ```
 
 Then use Railway CLI to set all at once:

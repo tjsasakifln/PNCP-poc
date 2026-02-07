@@ -1,4 +1,4 @@
-# Smart PNCP - Project Status
+# SmartLic - Project Status
 
 **Last Updated:** February 4, 2026
 **Version:** v0.3

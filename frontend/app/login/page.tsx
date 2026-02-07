@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
 // Map error codes to user-friendly messages
 const ERROR_MESSAGES: Record<string, string> = {

@@ -523,7 +523,7 @@ Escalate to CTO:
 
 ### Customer Communication (Email/Support Ticket)
 ```
-Subject: Service Disruption Resolved - Smart PNCP
+Subject: Service Disruption Resolved - SmartLic
 
 Dear [Customer],
 
@@ -550,7 +550,7 @@ We sincerely apologize for the inconvenience.
 Contact support@smartpncp.com or reply to this email.
 
 Thank you for your patience,
-Smart PNCP Team
+SmartLic Team
 ```
 
 ---

@@ -448,7 +448,7 @@ def check_quota(user_id: str) -> QuotaInfo:
             quota_remaining=0,
             quota_reset_date=datetime.utcnow(),
             trial_expires_at=trial_expires_at,
-            error_message="Trial expirado. Faça upgrade para continuar usando o Smart PNCP.",
+            error_message="Trial expirado. Faça upgrade para continuar usando o SmartLic.",
         )
 
     # Check monthly quota

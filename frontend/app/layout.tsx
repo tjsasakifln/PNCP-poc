@@ -25,7 +25,7 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
-const appName = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
 export const metadata: Metadata = {
   title: `${appName} - Busca Inteligente de Licitações`,
