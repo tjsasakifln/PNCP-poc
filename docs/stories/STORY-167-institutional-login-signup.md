@@ -325,6 +325,7 @@ const SIDEBAR_CONTENT = {
 - [ ] Componente InstitutionalSidebar criado e testado
 - [ ] Página de login atualizada com split screen
 - [ ] Página de signup atualizada com split screen
+- [x] **Rebrand completo:** Todas referências "Smart PNCP" → "SmartLic" (verificado e corrigido)
 - [ ] Responsividade testada (desktop, tablet, mobile)
 - [ ] Formulários existentes funcionando sem regressão
 - [ ] Testes unitários passando
