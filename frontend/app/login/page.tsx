@@ -16,6 +16,37 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_request: "Requisição inválida. Tente novamente.",
 };
 
+// Translate Supabase error messages to Portuguese
+function translateSupabaseError(message: string): string {
+  const translations: Record<string, string> = {
+    "Error sending magic link email": "Este email ainda não está cadastrado. Crie sua conta gratuitamente para começar.",
+    "For security purposes, you can only request this after": "Por segurança, aguarde alguns segundos antes de tentar novamente.",
+    "Email not confirmed": "Email não confirmado. Verifique sua caixa de entrada.",
+    "Invalid login credentials": "Email ou senha incorretos.",
+    "Email rate limit exceeded": "Muitas tentativas. Aguarde alguns minutos.",
+    "User not found": "Usuário não encontrado. Verifique o email ou crie uma conta.",
+    "Signups not allowed for this instance": "Cadastros não permitidos no momento.",
+    "User already registered": "Este email já está cadastrado. Faça login.",
+    "Password should be at least 6 characters": "A senha deve ter pelo menos 6 caracteres.",
+    "Unable to validate email address: invalid format": "Formato de email inválido.",
+  };
+
+  // Check for exact match first
+  if (translations[message]) {
+    return translations[message];
+  }
+
+  // Check for partial matches
+  for (const [key, value] of Object.entries(translations)) {
+    if (message.toLowerCase().includes(key.toLowerCase())) {
+      return value;
+    }
+  }
+
+  // Return original if no translation found
+  return message;
+}
+
 // Loading fallback for Suspense
 function LoginLoading() {
   return (
@@ -91,8 +122,8 @@ function LoginContent() {
         // when the session state updates
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao fazer login";
-      setError(message);
+      const rawMessage = err instanceof Error ? err.message : "Erro ao fazer login";
+      setError(translateSupabaseError(rawMessage));
     } finally {
       setLoading(false);
     }

@@ -221,7 +221,7 @@ otp_expiry = 3600
 [auth.email.smtp]
 enabled = true
 host = "smtp.resend.com"
-port = 465
+port = 587
 user = "resend"
 pass = "env(RESEND_API_KEY)"
 admin_email = "onboarding@resend.dev"
