@@ -107,11 +107,18 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  // Redirect to app if already authenticated
+  // Handle already authenticated users
   useEffect(() => {
     if (!authLoading && session) {
       const redirectTo = searchParams.get("redirect") || "/buscar";
-      router.push(redirectTo);
+
+      // Show toast notification
+      toast.info("Você já está autenticado!");
+
+      // Redirect after short delay to allow toast to be seen
+      setTimeout(() => {
+        router.push(redirectTo);
+      }, 1500);
     }
   }, [authLoading, session, router, searchParams]);
 
@@ -150,6 +157,35 @@ function LoginContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-blue)] mx-auto mb-4"></div>
           <p className="text-[var(--ink-secondary)]">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show "already logged in" screen if authenticated (mobile-friendly, no scrolling)
+  if (session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] p-4">
+        <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg text-center">
+          <div className="text-6xl mb-4">✓</div>
+          <h2 className="text-2xl font-bold text-[var(--ink)] mb-2">Você já está logado</h2>
+          <p className="text-[var(--ink-secondary)] mb-6">
+            Sua sessão está ativa como <strong>{session.user.email}</strong>
+          </p>
+          <button
+            onClick={() => router.push("/buscar")}
+            className="w-full py-3 bg-[var(--brand-navy)] text-white rounded-button
+                       font-semibold hover:bg-[var(--brand-blue)] transition-colors
+                       mb-3"
+          >
+            Ir para o painel
+          </button>
+          <Link
+            href="/conta"
+            className="block w-full py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--brand-blue)] transition-colors"
+          >
+            Gerenciar conta
+          </Link>
         </div>
       </div>
     );
