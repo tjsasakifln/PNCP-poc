@@ -114,7 +114,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
     headline: "Descubra oportunidades de licitação antes da concorrência",
     subheadline: "Acesse seu painel e encontre as melhores oportunidades para sua empresa",
     benefits: [
-      { icon: "clock", text: "Monitoramento em tempo real do PNCP" },
+      { icon: "clock", text: "Monitoramento em tempo real de licitações" },
       { icon: "filter", text: "Filtros por estado, valor e setor" },
       { icon: "brain", text: "Resumo executivo gerado por IA" },
       { icon: "download", text: "Exportação de relatórios em Excel" },
@@ -122,7 +122,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
     ],
     stats: [
       { value: "27", label: "estados monitorados" },
-      { value: "9", label: "setores pré-configurados" },
+      { value: "12", label: "setores pré-configurados" },
       { value: "24h", label: "atualização diária" },
     ],
   },

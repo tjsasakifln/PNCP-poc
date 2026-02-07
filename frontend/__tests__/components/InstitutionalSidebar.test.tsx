@@ -27,7 +27,7 @@ describe('InstitutionalSidebar', () => {
     it('renders correct login benefits', () => {
       render(<InstitutionalSidebar variant="login" />);
 
-      expect(screen.getByText('Monitoramento em tempo real do PNCP')).toBeInTheDocument();
+      expect(screen.getByText('Monitoramento em tempo real de licitações')).toBeInTheDocument();
       expect(screen.getByText('Filtros por estado, valor e setor')).toBeInTheDocument();
       expect(screen.getByText('Resumo executivo gerado por IA')).toBeInTheDocument();
       expect(screen.getByText('Exportação de relatórios em Excel')).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('InstitutionalSidebar', () => {
 
       expect(screen.getByText('27')).toBeInTheDocument();
       expect(screen.getByText('estados monitorados')).toBeInTheDocument();
-      expect(screen.getByText('9')).toBeInTheDocument();
+      expect(screen.getByText('12')).toBeInTheDocument();
       expect(screen.getByText('setores pré-configurados')).toBeInTheDocument();
       expect(screen.getByText('24h')).toBeInTheDocument();
       expect(screen.getByText('atualização diária')).toBeInTheDocument();
