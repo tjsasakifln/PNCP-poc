@@ -1,0 +1,31 @@
+# =============================================================================
+# Root .dockerignore - Railway Monorepo
+# =============================================================================
+# This is for the root Dockerfile that builds the frontend service
+# We MUST include the frontend/ directory
+
+# Exclude everything first
+*
+
+# Then explicitly include only what we need for frontend build
+!frontend/
+!frontend/**
+
+# But exclude node_modules and build artifacts from frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Exclude git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Exclude backend
+backend/
+
+# Exclude docs
+docs/
