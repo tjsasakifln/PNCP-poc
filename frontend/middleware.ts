@@ -13,7 +13,7 @@ import { createServerClient } from "@supabase/ssr";
  */
 
 const PROTECTED_ROUTES = [
-  "/",           // Main search page requires auth
+  "/buscar",     // Main search page requires auth
   "/historico",  // Search history
   "/conta",      // Account settings
   "/admin",      // Admin dashboard
