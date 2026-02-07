@@ -4,39 +4,39 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import PullToRefresh from "react-simple-pull-to-refresh";
-import type { BuscaResult, ValidationErrors, Setor } from "./types";
-import { EnhancedLoadingProgress } from "../components/EnhancedLoadingProgress";
-import { LoadingResultsSkeleton } from "./components/LoadingResultsSkeleton";
-import { EmptyState } from "./components/EmptyState";
-import { ThemeToggle } from "./components/ThemeToggle";
-import { UserMenu } from "./components/UserMenu";
-import { RegionSelector } from "./components/RegionSelector";
-import { SavedSearchesDropdown } from "./components/SavedSearchesDropdown";
-import { CustomSelect } from "./components/CustomSelect";
-import { CustomDateInput } from "./components/CustomDateInput";
-import { useAnalytics } from "../hooks/useAnalytics";
-import { useSavedSearches } from "../hooks/useSavedSearches";
-import { useOnboarding } from "../hooks/useOnboarding";
-import { useKeyboardShortcuts, getShortcutDisplay } from "../hooks/useKeyboardShortcuts";
-import { useQuota } from "../hooks/useQuota";
-import { usePlan } from "../hooks/usePlan";
-import { useAuth } from "./components/AuthProvider";
-import { QuotaBadge } from "./components/QuotaBadge";
-import { PlanBadge } from "./components/PlanBadge";
-import { QuotaCounter } from "./components/QuotaCounter";
-import { UpgradeModal } from "./components/UpgradeModal";
-import { LicitacoesPreview } from "./components/LicitacoesPreview";
-import type { SavedSearch } from "../lib/savedSearches";
+import type { BuscaResult, ValidationErrors, Setor } from "../types";
+import { EnhancedLoadingProgress } from "../../components/EnhancedLoadingProgress";
+import { LoadingResultsSkeleton } from "../components/LoadingResultsSkeleton";
+import { EmptyState } from "../components/EmptyState";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { UserMenu } from "../components/UserMenu";
+import { RegionSelector } from "../components/RegionSelector";
+import { SavedSearchesDropdown } from "../components/SavedSearchesDropdown";
+import { CustomSelect } from "../components/CustomSelect";
+import { CustomDateInput } from "../components/CustomDateInput";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { useSavedSearches } from "../../hooks/useSavedSearches";
+import { useOnboarding } from "../../hooks/useOnboarding";
+import { useKeyboardShortcuts, getShortcutDisplay } from "../../hooks/useKeyboardShortcuts";
+import { useQuota } from "../../hooks/useQuota";
+import { usePlan } from "../../hooks/usePlan";
+import { useAuth } from "../components/AuthProvider";
+import { QuotaBadge } from "../components/QuotaBadge";
+import { PlanBadge } from "../components/PlanBadge";
+import { QuotaCounter } from "../components/QuotaCounter";
+import { UpgradeModal } from "../components/UpgradeModal";
+import { LicitacoesPreview } from "../components/LicitacoesPreview";
+import type { SavedSearch } from "../../lib/savedSearches";
 
 // P0 Filters
-import { StatusFilter, type StatusLicitacao } from "../components/StatusFilter";
-import { ModalidadeFilter } from "../components/ModalidadeFilter";
-import { ValorFilter } from "../components/ValorFilter";
+import { StatusFilter, type StatusLicitacao } from "../../components/StatusFilter";
+import { ModalidadeFilter } from "../../components/ModalidadeFilter";
+import { ValorFilter } from "../../components/ValorFilter";
 
 // P1 Filters
-import { EsferaFilter, type Esfera } from "./components/EsferaFilter";
-import { MunicipioFilter, type Municipio } from "./components/MunicipioFilter";
-import { OrdenacaoSelect, type OrdenacaoOption } from "./components/OrdenacaoSelect";
+import { EsferaFilter, type Esfera } from "../components/EsferaFilter";
+import { MunicipioFilter, type Municipio } from "../components/MunicipioFilter";
+import { OrdenacaoSelect, type OrdenacaoOption } from "../components/OrdenacaoSelect";
 
 // White label branding configuration
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
