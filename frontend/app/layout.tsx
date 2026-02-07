@@ -25,6 +25,7 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
+// Force rebuild to pick up NEXT_PUBLIC_APP_NAME from Railway (SmartLic)
 const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
 export const metadata: Metadata = {
