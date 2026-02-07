@@ -1,3 +1,5 @@
+// Landing Page Institucional - STORY-168
+// Route: / (root)
 import LandingNavbar from './components/landing/LandingNavbar';
 import HeroSection from './components/landing/HeroSection';
 import OpportunityCost from './components/landing/OpportunityCost';
