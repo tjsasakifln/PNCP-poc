@@ -7,7 +7,7 @@
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "frontend/Dockerfile"
+dockerfilePath = "Dockerfile"
 watchPatterns = ["**"]
 
 [deploy]
