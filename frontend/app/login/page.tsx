@@ -107,10 +107,10 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  // Redirect to home if already authenticated
+  // Redirect to app if already authenticated
   useEffect(() => {
     if (!authLoading && session) {
-      const redirectTo = searchParams.get("redirect") || "/";
+      const redirectTo = searchParams.get("redirect") || "/buscar";
       router.push(redirectTo);
     }
   }, [authLoading, session, router, searchParams]);
