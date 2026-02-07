@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
@@ -176,14 +177,19 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] py-8">
-      <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
-        <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
-          Criar conta
-        </h1>
-        <p className="text-center text-[var(--ink-secondary)] mb-6">
-          Comece com 3 buscas gratuitas
-        </p>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left: Institutional Sidebar */}
+      <InstitutionalSidebar variant="signup" className="w-full md:w-1/2" />
+
+      {/* Right: Signup Form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4 py-8">
+        <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
+          <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
+            Criar conta
+          </h1>
+          <p className="text-center text-[var(--ink-secondary)] mb-6">
+            Comece com 3 buscas gratuitas
+          </p>
 
         {error && (
           <div className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-input text-sm">
@@ -499,6 +505,7 @@ export default function SignupPage() {
             Fazer login
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

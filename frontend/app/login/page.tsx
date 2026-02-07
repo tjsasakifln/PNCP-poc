@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
 
@@ -174,14 +175,19 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
-      <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
-        <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
-          {APP_NAME}
-        </h1>
-        <p className="text-center text-[var(--ink-secondary)] mb-8">
-          Entre para acessar suas buscas
-        </p>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left: Institutional Sidebar */}
+      <InstitutionalSidebar variant="login" className="w-full md:w-1/2" />
+
+      {/* Right: Login Form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4">
+        <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
+          <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
+            {APP_NAME}
+          </h1>
+          <p className="text-center text-[var(--ink-secondary)] mb-8">
+            Entre para acessar suas buscas
+          </p>
 
         {error && (
           <div className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-input text-sm">
@@ -325,6 +331,7 @@ function LoginContent() {
           >
             ← Ver planos disponíveis
           </Link>
+        </div>
         </div>
       </div>
     </div>
