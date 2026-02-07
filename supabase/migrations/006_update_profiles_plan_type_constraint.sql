@@ -1,5 +1,5 @@
 -- ============================================================
--- Smart PNCP: Update profiles plan_type CHECK constraint
+-- SmartLic: Update profiles plan_type CHECK constraint
 -- Migration: 006_update_profiles_plan_type_constraint
 -- Date: 2026-02-06
 -- Issue: Admin assign-plan fails because profiles.plan_type_check

@@ -1,5 +1,5 @@
 -- ============================================================
--- Smart PNCP: Update plans to new pricing tiers
+-- SmartLic: Update plans to new pricing tiers
 -- Migration: 005_update_plans_to_new_tiers
 -- Date: 2026-02-05
 -- ============================================================

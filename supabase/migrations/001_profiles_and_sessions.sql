@@ -1,5 +1,5 @@
 -- ============================================================
--- Smart PNCP Multi-Tenancy: Phase 1 - Profiles & Session History
+-- SmartLic Multi-Tenancy: Phase 1 - Profiles & Session History
 -- ============================================================
 
 -- 1. Profiles (extends auth.users)

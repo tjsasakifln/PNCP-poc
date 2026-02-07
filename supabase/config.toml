@@ -225,7 +225,7 @@ port = 587
 user = "resend"
 pass = "env(RESEND_API_KEY)"
 admin_email = "onboarding@resend.dev"
-sender_name = "Smart PNCP"
+sender_name = "SmartLic"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

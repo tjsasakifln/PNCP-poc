@@ -1,4 +1,4 @@
-# ROADMAP — Smart PNCP POC
+# ROADMAP — SmartLic POC
 
 **Versao:** 2.0 | **Atualizado:** 2026-02-04 | **Status:** POC DEPLOYED + Technical Debt Phase
 

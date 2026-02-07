@@ -1,5 +1,5 @@
 -- ============================================================
--- Smart PNCP: STORY-166 - Marketing Consent & Sector Fields
+-- SmartLic: STORY-166 - Marketing Consent & Sector Fields
 -- ============================================================
 -- Adds phone number, sector, and marketing consent fields to profiles
 -- for Email and WhatsApp promotional communications (LGPD compliant)
