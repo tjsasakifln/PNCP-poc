@@ -209,20 +209,14 @@ export default function InstitutionalSidebar({ variant, className = "" }: Instit
           ))}
         </div>
 
-        {/* PNCP Official Badge */}
+        {/* Official Data Badge */}
         <div className="pt-4">
-          <a
-            href="https://pncp.gov.br"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Dados extraídos diretamente da API oficial do PNCP - Portal Nacional de Contratações Públicas. Abre em nova aba."
-            className="flex items-center gap-2 px-4 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/15 transition-colors group"
-          >
+          <div className="flex items-center gap-2 px-4 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
             <ICONS.check className="w-5 h-5 text-white flex-shrink-0" />
-            <span className="text-sm text-white/90 group-hover:text-white transition-colors">
-              Dados oficiais do PNCP - Portal Nacional de Contratações Públicas
+            <span className="text-sm text-white/90">
+              Dados oficiais em tempo real
             </span>
-          </a>
+          </div>
         </div>
       </div>
     </div>

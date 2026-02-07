@@ -89,40 +89,27 @@ describe('InstitutionalSidebar', () => {
     });
   });
 
-  describe('PNCP Badge', () => {
-    it('renders PNCP official badge link', () => {
+  describe('Official Data Badge', () => {
+    it('renders official data badge', () => {
       render(<InstitutionalSidebar variant="login" />);
 
-      const link = screen.getByRole('link', { name: /Dados extraídos diretamente da API oficial do PNCP/i });
-      expect(link).toBeInTheDocument();
+      expect(screen.getByText('Dados oficiais em tempo real')).toBeInTheDocument();
     });
 
-    it('PNCP badge opens in new tab', () => {
-      render(<InstitutionalSidebar variant="login" />);
+    it('badge has check icon', () => {
+      const { container } = render(<InstitutionalSidebar variant="login" />);
 
-      const link = screen.getByRole('link', { name: /PNCP/i });
-      expect(link).toHaveAttribute('target', '_blank');
+      // Badge should contain an SVG icon
+      const badge = screen.getByText('Dados oficiais em tempo real').closest('div');
+      expect(badge?.querySelector('svg')).toBeInTheDocument();
     });
 
-    it('PNCP badge has noopener noreferrer for security', () => {
-      render(<InstitutionalSidebar variant="login" />);
+    it('badge has proper styling', () => {
+      const { container } = render(<InstitutionalSidebar variant="login" />);
 
-      const link = screen.getByRole('link', { name: /PNCP/i });
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-
-    it('PNCP badge links to correct URL', () => {
-      render(<InstitutionalSidebar variant="login" />);
-
-      const link = screen.getByRole('link', { name: /PNCP/i });
-      expect(link).toHaveAttribute('href', 'https://pncp.gov.br');
-    });
-
-    it('PNCP badge has descriptive aria-label', () => {
-      render(<InstitutionalSidebar variant="login" />);
-
-      const link = screen.getByRole('link', { name: /Dados extraídos diretamente da API oficial do PNCP/i });
-      expect(link).toHaveAccessibleName();
+      const badge = screen.getByText('Dados oficiais em tempo real').closest('div');
+      expect(badge?.className).toContain('bg-white/10');
+      expect(badge?.className).toContain('backdrop-blur-sm');
     });
   });
 

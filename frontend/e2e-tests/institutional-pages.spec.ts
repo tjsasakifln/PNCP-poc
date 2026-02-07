@@ -29,23 +29,11 @@ test.describe('Login Page - Institutional Sidebar', () => {
     await expect(page.getByText('setores pré-configurados')).toBeVisible();
   });
 
-  test('PNCP badge opens in new tab', async ({ page, context }) => {
+  test('official data badge is visible', async ({ page }) => {
     await page.goto('/login');
 
-    // Find PNCP badge link
-    const pncpLink = page.getByRole('link', { name: /Dados oficiais do PNCP/i });
-    await expect(pncpLink).toBeVisible();
-
-    // Listen for new page
-    const pagePromise = context.waitForEvent('page');
-    await pncpLink.click();
-
-    // Verify new tab opened
-    const newPage = await pagePromise;
-    await newPage.waitForLoadState();
-    expect(newPage.url()).toContain('pncp.gov.br');
-
-    await newPage.close();
+    // Find official data badge
+    await expect(page.getByText('Dados oficiais em tempo real')).toBeVisible();
   });
 
   test('login form still works with sidebar', async ({ page }) => {
@@ -179,26 +167,18 @@ test.describe('Accessibility', () => {
   test('keyboard navigation works on login page', async ({ page }) => {
     await page.goto('/login');
 
-    // Tab through interactive elements
-    await page.keyboard.press('Tab'); // PNCP badge link should receive focus
-
-    const pncpLink = page.getByRole('link', { name: /Dados oficiais do PNCP/i });
-    await expect(pncpLink).toBeFocused();
-
-    // Continue tabbing to form elements
+    // Tab to first interactive element (Google OAuth button)
     await page.keyboard.press('Tab');
     const googleButton = page.getByRole('button', { name: /Entrar com Google/i });
     await expect(googleButton).toBeFocused();
   });
 
-  test('PNCP link has aria-label for screen readers', async ({ page }) => {
+  test('official data badge has proper content', async ({ page }) => {
     await page.goto('/login');
 
-    const pncpLink = page.getByRole('link', { name: /Dados oficiais do PNCP/i });
-    const ariaLabel = await pncpLink.getAttribute('aria-label');
-
-    expect(ariaLabel).toContain('PNCP');
-    expect(ariaLabel).toContain('Abre em nova aba');
+    const badge = page.getByText('Dados oficiais em tempo real');
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveText('Dados oficiais em tempo real');
   });
 
   test('heading hierarchy is correct on login', async ({ page }) => {
