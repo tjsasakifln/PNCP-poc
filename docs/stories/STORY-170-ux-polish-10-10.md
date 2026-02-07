@@ -339,7 +339,7 @@ Teste realizado por Claude Code com Playwright MCP em:
 
 ---
 
-### AC12: Seleção de Região com Preview Visual (P3)
+### AC12: Seleção de Região com Preview Visual (P3) ✅ COMPLETED
 
 - [ ] **Preview on hover (antes de clicar):**
   ```tsx
@@ -394,7 +394,7 @@ Teste realizado por Claude Code com Playwright MCP em:
 
 ---
 
-### AC13: Tutorial Contextual (Progressive Onboarding) (P3)
+### AC13: Tutorial Contextual (Progressive Onboarding) (P3) ✅ COMPLETED
 
 - [ ] **Triggers baseados em comportamento (não tempo arbitrário):**
   ```tsx
@@ -447,7 +447,7 @@ Teste realizado por Claude Code com Playwright MCP em:
 
 ---
 
-### AC14: Indicador Tranquilo de Buscas Salvas (P3)
+### AC14: Indicador Tranquilo de Buscas Salvas (P3) ✅ COMPLETED
 
 - [ ] **Header do dropdown (simples e informativo):**
   ```tsx
@@ -698,10 +698,22 @@ Teste realizado por Claude Code com Playwright MCP em:
 - [x] `frontend/app/components/ThemeToggle.tsx` - Theme selector UI with descriptions (AC9)
 - [x] `frontend/components/ValorFilter.tsx` - Real-time validation with aria-invalid (AC10)
 
+### AC11-AC14 (Completed 2026-02-07)
+
+- [x] `frontend/app/components/SavedSearchesDropdown.tsx` - Date tooltips with date-fns (AC11)
+- [x] `frontend/app/components/RegionSelector.tsx` - Preview visual on hover (AC12)
+- [x] `frontend/app/components/ContextualTutorialTooltip.tsx` - Behavioral tutorial triggers (AC13)
+- [x] `frontend/hooks/useContextualTutorial.ts` - Tutorial state management (AC13)
+- [x] `frontend/app/components/SavedSearchesDropdown.tsx` - Calm counter without semaphoric colors (AC14)
+
+### AC15 (Completed 2026-02-07)
+
+- [x] `frontend/app/buscar/page.tsx` - SETORES_FALLBACK with retry logic and warning banner (AC15)
+- [x] `scripts/sync-setores-fallback.js` - Monthly sector sync script (AC15)
+- [x] `scripts/README-sync-setores.md` - Script documentation (AC15)
+
 ### Pending Implementation
 
-- [ ] `frontend/components/SavedSearches.tsx` - Date tooltips (AC11)
-- [ ] `frontend/components/RegionSelector.tsx` - Preview visual (AC12)
 - [ ] `frontend/lib/error-messages.ts` - Error mapping (AC6)
 - [ ] `frontend/e2e-tests/ux-polish.spec.ts` - E2E tests for all ACs
 

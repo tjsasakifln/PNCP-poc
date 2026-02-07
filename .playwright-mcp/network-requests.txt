@@ -1,0 +1,12 @@
+[GET] https://bidiq-frontend-production.up.railway.app/api/setores => [503] 
+[GET] https://api.smartlic.tech/me => [FAILED] net::ERR_CERT_COMMON_NAME_INVALID
+[GET] https://bidiq-frontend-production.up.railway.app/api/me => [503] 
+[GET] https://bidiq-frontend-production.up.railway.app/api/me => [503] 
+[GET] https://bidiq-frontend-production.up.railway.app/api/me => [503] 
+[GET] https://api.smartlic.tech/me => [FAILED] net::ERR_CERT_COMMON_NAME_INVALID
+[GET] https://bidiq-frontend-production.up.railway.app/api/me => [503] 
+[GET] https://bidiq-frontend-production.up.railway.app/api/me => [503] 
+[GET] https://bidiq-frontend-production.up.railway.app/api/me => [503] 
+[GET] https://api.smartlic.tech/me => [FAILED] net::ERR_CERT_COMMON_NAME_INVALID
+[GET] https://api.smartlic.tech/me => [FAILED] net::ERR_CERT_COMMON_NAME_INVALID
+[POST] https://bidiq-frontend-production.up.railway.app/api/buscar => [503] 

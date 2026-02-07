@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-export type ThemeId = "light" | "paperwhite" | "sepia" | "dim" | "dark";
+export type ThemeId = "light" | "system" | "dark";
 
 interface ThemeConfig {
   id: ThemeId;
@@ -15,9 +15,7 @@ interface ThemeConfig {
 
 export const THEMES: ThemeConfig[] = [
   { id: "light", label: "Light", isDark: false, canvas: "#ffffff", ink: "#1e2d3b", preview: "#ffffff" },
-  { id: "paperwhite", label: "Paperwhite", isDark: false, canvas: "#F5F0E8", ink: "#1e2d3b", preview: "#F5F0E8" },
-  { id: "sepia", label: "Sépia", isDark: false, canvas: "#EDE0CC", ink: "#2c1810", preview: "#EDE0CC" },
-  { id: "dim", label: "Dim", isDark: true, canvas: "#2A2A2E", ink: "#e0e0e0", preview: "#2A2A2E" },
+  { id: "system", label: "Sistema", isDark: false, canvas: "#ffffff", ink: "#1e2d3b", preview: "#808080" },
   { id: "dark", label: "Dark", isDark: true, canvas: "#121212", ink: "#e0e0e0", preview: "#121212" },
 ];
 
@@ -43,7 +41,11 @@ function getSystemTheme(): ThemeId {
 }
 
 function applyTheme(themeId: ThemeId) {
-  const config = THEMES.find(t => t.id === themeId) || THEMES[0];
+  let resolvedId = themeId;
+  if (themeId === "system") {
+    resolvedId = getSystemTheme();
+  }
+  const config = THEMES.find(t => t.id === resolvedId) || THEMES[0];
   const root = document.documentElement;
 
   root.style.setProperty("--canvas", config.canvas);
@@ -72,17 +74,17 @@ function applyTheme(themeId: ThemeId) {
     root.style.setProperty("--ink-secondary", "#3d5975");
     root.style.setProperty("--ink-muted", "#808f9f");
     root.style.setProperty("--ink-faint", "#c0d2e5");
-    root.style.setProperty("--brand-blue-subtle", config.id === "sepia" ? "#e8e0d4" : "#e8f0ff");
+    root.style.setProperty("--brand-blue-subtle", "#e8f0ff");
     root.style.setProperty("--surface-0", config.canvas);
-    root.style.setProperty("--surface-1", config.id === "sepia" ? "#e8dcc8" : config.id === "paperwhite" ? "#efe9e0" : "#f7f8fa");
-    root.style.setProperty("--surface-2", config.id === "sepia" ? "#e0d4be" : config.id === "paperwhite" ? "#e8e2d8" : "#f0f2f5");
+    root.style.setProperty("--surface-1", "#f7f8fa");
+    root.style.setProperty("--surface-2", "#f0f2f5");
     root.style.setProperty("--surface-elevated", config.canvas);
     root.style.setProperty("--success", "#16a34a");
-    root.style.setProperty("--success-subtle", config.id === "sepia" ? "#e8f5e9" : "#f0fdf4");
+    root.style.setProperty("--success-subtle", "#f0fdf4");
     root.style.setProperty("--error", "#dc2626");
-    root.style.setProperty("--error-subtle", config.id === "sepia" ? "#fce4ec" : "#fef2f2");
+    root.style.setProperty("--error-subtle", "#fef2f2");
     root.style.setProperty("--warning", "#ca8a04");
-    root.style.setProperty("--warning-subtle", config.id === "sepia" ? "#fff8e1" : "#fefce8");
+    root.style.setProperty("--warning-subtle", "#fefce8");
     root.style.setProperty("--border", "rgba(0, 0, 0, 0.08)");
     root.style.setProperty("--border-strong", "rgba(0, 0, 0, 0.15)");
     root.style.setProperty("--ring", "#116dff");
@@ -101,6 +103,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyTheme(initial);
     setMounted(true);
   }, []);
+
+  // Listen for system theme changes when "system" is selected
+  useEffect(() => {
+    if (theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyTheme("system");
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [theme]);
 
   const setTheme = useCallback((t: ThemeId) => {
     setThemeState(t);

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { formatDistanceToNow, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useSavedSearches, type UseSavedSearchesReturn } from '../../hooks/useSavedSearches';
 import type { SavedSearch } from '../../lib/savedSearches';
 
@@ -79,21 +81,16 @@ export function SavedSearchesDropdown({
     }
   };
 
+  // AC11: Use date-fns for consistent relative time formatting
   const formatDate = (isoString: string): string => {
     const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
+  };
 
-    if (diffMins < 1) return 'agora';
-    if (diffMins < 60) return `há ${diffMins} min`;
-    if (diffHours < 24) return `há ${diffHours}h`;
-    if (diffDays === 1) return 'ontem';
-    if (diffDays < 7) return `há ${diffDays} dias`;
-
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  // AC11: Format full date/time for tooltip
+  const formatFullDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
 
   const getSearchLabel = (search: SavedSearch): string => {
@@ -260,16 +257,18 @@ export function SavedSearchesDropdown({
                   </div>
                 </div>
 
-                {/* Header */}
+                {/* AC14: Header with calm counter (no semaphoric colors) */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-strong">
                   <div className="flex items-center gap-2">
+                    {/* AC14: Simple, neutral counter without colors */}
                     <span className="text-sm text-ink-muted">
                       Buscas Recentes ({searches.length}/10)
                     </span>
-                    {searches.length >= 10 && (
+                    {/* AC14: Gentle suggestion when limit reached */}
+                    {searches.length === 10 && (
                       <button
                         onClick={() => {
-                          if (window.confirm('Deseja excluir todas as buscas salvas para liberar espaço?')) {
+                          if (window.confirm('Você tem 10 buscas salvas. Deseja gerenciar para liberar espaço?')) {
                             clearAll();
                             setIsOpen(false);
                             setFilterTerm('');
@@ -277,6 +276,7 @@ export function SavedSearchesDropdown({
                         }}
                         className="text-xs text-brand-blue hover:underline"
                         type="button"
+                        aria-label="Gerenciar buscas salvas"
                       >
                         Gerenciar
                       </button>
@@ -291,8 +291,9 @@ export function SavedSearchesDropdown({
                           setFilterTerm('');
                         }
                       }}
-                      className="text-xs text-ink-muted hover:text-error transition-colors"
+                      className="text-xs text-ink-muted hover:text-ink transition-colors"
                       type="button"
+                      aria-label="Limpar todas as buscas"
                     >
                       Limpar todas
                     </button>
@@ -338,9 +339,13 @@ export function SavedSearchesDropdown({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span className="cursor-help">{formatDate(search.lastUsedAt)}</span>
+                              {/* AC11: Relative date with full date tooltip */}
+                              <span className="cursor-help" title={formatFullDate(search.lastUsedAt)}>
+                                {formatDate(search.lastUsedAt)}
+                              </span>
+                              {/* AC11: Enhanced tooltip with date-fns formatting */}
                               <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-ink text-[var(--canvas)] text-xs rounded whitespace-nowrap opacity-0 group-hover/date:opacity-100 transition-opacity pointer-events-none z-10">
-                                {new Date(search.lastUsedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} às {new Date(search.lastUsedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                {formatFullDate(search.lastUsedAt)}
                               </div>
                             </div>
                           </div>

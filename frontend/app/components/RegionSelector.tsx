@@ -27,6 +27,10 @@ export function RegionSelector({ selected, onToggleRegion, onPreviewStates, onCl
   const isRegionPartiallySelected = (regionUfs: string[]) =>
     regionUfs.some(uf => selected.has(uf)) && !isRegionFullySelected(regionUfs);
 
+  // AC12: Calculate how many states would be added on click
+  const getUnselectedCount = (regionUfs: string[]) =>
+    regionUfs.filter(uf => !selected.has(uf)).length;
+
   const handleClick = (key: string, regionUfs: string[]) => {
     // Trigger animation
     setClickedKey(key);
@@ -36,30 +40,39 @@ export function RegionSelector({ selected, onToggleRegion, onPreviewStates, onCl
     onToggleRegion(regionUfs);
   };
 
+  // AC12: Handle preview on hover
+  const handleMouseEnter = (key: string, regionUfs: string[]) => {
+    setHoveredKey(key);
+    const unselected = regionUfs.filter(uf => !selected.has(uf));
+    if (unselected.length > 0) {
+      onPreviewStates?.(unselected);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredKey(null);
+    onClearPreview?.();
+  };
+
   return (
     <div className="flex flex-wrap gap-2 mb-3">
       {Object.entries(REGIONS).map(([key, region]) => {
         const full = isRegionFullySelected(region.ufs);
         const partial = isRegionPartiallySelected(region.ufs);
         const count = region.ufs.filter(uf => selected.has(uf)).length;
-        const unselectedCount = region.ufs.filter(uf => !selected.has(uf)).length;
+        const unselectedCount = getUnselectedCount(region.ufs);
         const isClicked = clickedKey === key;
+        const isHovered = hoveredKey === key;
 
         return (
           <button
             key={key}
             onClick={() => handleClick(key, region.ufs)}
-            onMouseEnter={() => {
-              setHoveredKey(key);
-              onPreviewStates?.(region.ufs.filter(uf => !selected.has(uf)));
-            }}
-            onMouseLeave={() => {
-              setHoveredKey(null);
-              onClearPreview?.();
-            }}
+            onMouseEnter={() => handleMouseEnter(key, region.ufs)}
+            onMouseLeave={handleMouseLeave}
             type="button"
-            aria-label={`Selecionar região ${region.label}`}
-            className={`px-3 py-1 rounded-button text-sm font-medium transition-all duration-200 border
+            aria-label={`Selecionar região ${region.label}${unselectedCount > 0 ? ` (adicionar ${unselectedCount} estado${unselectedCount > 1 ? 's' : ''})` : ''}`}
+            className={`px-3 py-1.5 rounded-button text-sm font-medium transition-all duration-200 border relative
                        ${isClicked ? 'scale-95' : 'scale-100 hover:scale-105'}
                        active:scale-95
                        ${
@@ -72,6 +85,7 @@ export function RegionSelector({ selected, onToggleRegion, onPreviewStates, onCl
           >
             {full ? (
               <>
+                {/* AC12: Fully selected region with checkmark and remove button */}
                 {region.label} ✓
                 <button
                   type="button"
@@ -88,9 +102,13 @@ export function RegionSelector({ selected, onToggleRegion, onPreviewStates, onCl
             ) : (
               <>
                 {region.label}
+                {/* AC12: Show partial selection count */}
                 {partial && <span className="ml-1 text-xs opacity-75">({count}/{region.ufs.length})</span>}
-                {hoveredKey === key && !full && unselectedCount > 0 && (
-                  <span className="ml-1 text-xs bg-brand-blue text-white rounded-full px-1.5">+{unselectedCount}</span>
+                {/* AC12: Show preview badge on hover with count of states to be added */}
+                {isHovered && !full && unselectedCount > 0 && (
+                  <span className="ml-1.5 text-xs bg-brand-blue text-white rounded-full px-2 py-0.5 font-semibold animate-fadeIn">
+                    +{unselectedCount}
+                  </span>
                 )}
               </>
             )}

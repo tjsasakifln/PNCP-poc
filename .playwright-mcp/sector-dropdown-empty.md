@@ -1,0 +1,193 @@
+- generic [ref=e1]:
+  - link "Pular para conteúdo principal" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - alert [ref=e3]
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - img "SmartLic" [ref=e8]
+          - generic [ref=e9]: Busca inteligente de licitações
+        - generic [ref=e10]:
+          - button "Ver tutorial novamente" [ref=e12] [cursor=pointer]:
+            - img [ref=e13]
+          - button "Buscas salvas" [ref=e16] [cursor=pointer]:
+            - img [ref=e17]
+            - generic [ref=e19]: Buscas Salvas
+            - generic "1 busca salva" [ref=e20]: "1"
+            - img [ref=e21]
+          - button "Alternar tema" [ref=e24] [cursor=pointer]:
+            - generic [ref=e26]: Light
+            - img [ref=e27]
+          - button "T" [ref=e30] [cursor=pointer]
+    - main [ref=e31]:
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - heading "Busca de Licitações" [level=1] [ref=e35]
+          - paragraph [ref=e36]: Encontre oportunidades de contratação pública no Portal Nacional (PNCP)
+        - generic [ref=e37]:
+          - generic [ref=e38]: "Buscar por:"
+          - generic [ref=e39]:
+            - button "Setor" [ref=e40] [cursor=pointer]
+            - button "Termos Específicos" [ref=e41] [cursor=pointer]
+          - generic [ref=e43]:
+            - combobox [expanded] [active] [ref=e44] [cursor=pointer]:
+              - generic [ref=e45]: Selecione um setor
+              - img [ref=e46]
+            - listbox [ref=e221]
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: "Estados (UFs):"
+            - generic [ref=e51]:
+              - button "Selecionar todos" [ref=e52] [cursor=pointer]
+              - button "Limpar" [ref=e53] [cursor=pointer]
+          - generic [ref=e54]:
+            - button "Selecionar região Norte" [ref=e55] [cursor=pointer]: Norte
+            - button "Selecionar região Nordeste" [ref=e56] [cursor=pointer]: Nordeste
+            - button "Selecionar região Centro-Oeste" [ref=e57] [cursor=pointer]: Centro-Oeste
+            - button "Selecionar região Sudeste" [ref=e58] [cursor=pointer]: Sudeste
+            - button "Selecionar região Sul" [ref=e59] [cursor=pointer]: Sul
+          - generic [ref=e60]:
+            - button "AC" [ref=e61] [cursor=pointer]
+            - button "AL" [ref=e62] [cursor=pointer]
+            - button "AP" [ref=e63] [cursor=pointer]
+            - button "AM" [ref=e64] [cursor=pointer]
+            - button "BA" [ref=e65] [cursor=pointer]
+            - button "CE" [ref=e66] [cursor=pointer]
+            - button "DF" [ref=e67] [cursor=pointer]
+            - button "ES" [ref=e68] [cursor=pointer]
+            - button "GO" [ref=e69] [cursor=pointer]
+            - button "MA" [ref=e70] [cursor=pointer]
+            - button "MT" [ref=e71] [cursor=pointer]
+            - button "MS" [ref=e72] [cursor=pointer]
+            - button "MG" [ref=e73] [cursor=pointer]
+            - button "PA" [ref=e74] [cursor=pointer]
+            - button "PB" [ref=e75] [cursor=pointer]
+            - button "PR" [pressed] [ref=e76] [cursor=pointer]
+            - button "PE" [ref=e77] [cursor=pointer]
+            - button "PI" [ref=e78] [cursor=pointer]
+            - button "RJ" [ref=e79] [cursor=pointer]
+            - button "RN" [ref=e80] [cursor=pointer]
+            - button "RS" [pressed] [ref=e81] [cursor=pointer]
+            - button "RO" [ref=e82] [cursor=pointer]
+            - button "RR" [ref=e83] [cursor=pointer]
+            - button "SC" [pressed] [ref=e84] [cursor=pointer]
+            - button "SP" [ref=e85] [cursor=pointer]
+            - button "SE" [ref=e86] [cursor=pointer]
+            - button "TO" [ref=e87] [cursor=pointer]
+          - paragraph [ref=e88]: 3 estados selecionados
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: "Data inicial:"
+            - generic [ref=e94] [cursor=pointer]:
+              - textbox "Data inicial:" [ref=e95]: 2026-01-31
+              - generic [ref=e96]: 31/01/2026
+              - button "Abrir seletor de data" [ref=e97]:
+                - img [ref=e98]
+          - generic [ref=e100]:
+            - generic [ref=e101]: "Data final:"
+            - generic [ref=e103] [cursor=pointer]:
+              - textbox "Data final:" [ref=e104]: 2026-02-07
+              - generic [ref=e105]: 07/02/2026
+              - button "Abrir seletor de data" [ref=e106]:
+                - img [ref=e107]
+        - generic [ref=e109]:
+          - heading "Filtragem por Localizacao" [level=3] [ref=e110]:
+            - img [ref=e111]
+            - text: Filtragem por Localizacao
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - generic [ref=e116]: "Esfera Governamental:"
+              - group "Selecionar esferas governamentais" [ref=e117]:
+                - 'button "Federal: Uniao, ministerios, autarquias federais" [ref=e118] [cursor=pointer]':
+                  - img [ref=e119]
+                  - generic [ref=e121]: Federal
+                - 'button "Estadual: Estados, secretarias estaduais" [ref=e122] [cursor=pointer]':
+                  - img [ref=e123]
+                  - generic [ref=e125]: Estadual
+                - 'button "Municipal: Prefeituras, camaras municipais" [ref=e126] [cursor=pointer]':
+                  - img [ref=e127]
+                  - generic [ref=e129]: Municipal
+            - generic [ref=e130]:
+              - generic [ref=e132]: "Municipio: (opcional)"
+              - generic [ref=e133]:
+                - generic:
+                  - img
+                - textbox "Buscar municipio" [ref=e134]:
+                  - /placeholder: Digite para buscar municipio...
+              - paragraph [ref=e135]: Deixe vazio para buscar em todos os municipios das UFs selecionadas
+        - generic [ref=e136]:
+          - heading "Filtros Avancados" [level=3] [ref=e137]:
+            - img [ref=e138]
+            - text: Filtros Avancados
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - generic [ref=e142]:
+                - generic [ref=e143]: "Status da Licitacao:"
+                - generic "Filtre por licitacoes abertas para enviar propostas" [ref=e144]:
+                  - img [ref=e145]
+              - radiogroup "Status da licitacao" [ref=e147]:
+                - radio "Abertas Recomendado" [checked] [ref=e148] [cursor=pointer]:
+                  - generic [ref=e151]: Abertas
+                  - generic [ref=e152]: Recomendado
+                - radio "Em Julgamento" [ref=e153] [cursor=pointer]:
+                  - generic [ref=e155]: Em Julgamento
+                - radio "Encerradas" [ref=e156] [cursor=pointer]:
+                  - generic [ref=e158]: Encerradas
+                - radio "Todas" [ref=e159] [cursor=pointer]:
+                  - generic [ref=e161]: Todas
+              - paragraph [ref=e162]: "Dica: \"Abertas\" mostra licitacoes que ainda aceitam propostas"
+            - generic [ref=e163]:
+              - generic [ref=e164]:
+                - generic [ref=e165]: "Modalidade de Contratacao:"
+                - generic [ref=e166]:
+                  - button "Todas" [ref=e167] [cursor=pointer]
+                  - generic [ref=e168]: "|"
+                  - button "Limpar" [disabled] [ref=e169]
+              - group "Modalidades populares" [ref=e170]:
+                - checkbox "Pregao Eletronico" [ref=e171] [cursor=pointer]:
+                  - generic [ref=e173]: Pregao Eletronico
+                - checkbox "Pregao Presencial" [ref=e174] [cursor=pointer]:
+                  - generic [ref=e176]: Pregao Presencial
+                - checkbox "Dispensa de Licitacao" [ref=e177] [cursor=pointer]:
+                  - generic [ref=e179]: Dispensa de Licitacao
+              - button "Mais opcoes" [ref=e181] [cursor=pointer]:
+                - generic [ref=e182]: Mais opcoes
+                - img [ref=e183]
+            - generic [ref=e185]:
+              - text: "Valor Estimado:"
+              - generic [ref=e186]:
+                - group "Seletor de faixa de valor" [ref=e187] [cursor=pointer]:
+                  - slider "Valor minimo" [ref=e189]
+                  - slider "Valor maximo" [ref=e190]
+                - generic [ref=e191]:
+                  - generic [ref=e192]: R$ 0
+                  - generic [ref=e193]: Sem limite
+              - generic [ref=e194]:
+                - button "Ate 50k" [ref=e195] [cursor=pointer]
+                - button "50k-200k" [ref=e196] [cursor=pointer]
+                - button "200k-1M" [ref=e197] [cursor=pointer]
+                - button "1M-5M" [ref=e198] [cursor=pointer]
+                - button "Acima 5M" [ref=e199] [cursor=pointer]
+                - button "Qualquer" [ref=e200] [cursor=pointer]
+              - generic [ref=e201]:
+                - generic [ref=e202]:
+                  - generic [ref=e203]: "Minimo:"
+                  - generic [ref=e204]:
+                    - generic [ref=e205]: R$
+                    - textbox "Minimo:" [ref=e206]:
+                      - /placeholder: "0"
+                - generic [ref=e207]:
+                  - generic [ref=e208]: "Maximo:"
+                  - generic [ref=e209]:
+                    - generic [ref=e210]: R$
+                    - textbox "Maximo:" [ref=e211]:
+                      - /placeholder: Sem limite
+              - paragraph [ref=e212]: Deixe "Maximo" vazio ou selecione "Qualquer" para buscar sem limite de valor
+        - button "Buscar Licitações" [ref=e214] [cursor=pointer]
+    - contentinfo [ref=e215]:
+      - generic [ref=e216]:
+        - generic [ref=e217]: SmartLic — Busca Inteligente de Licitações
+        - button "Ver atalhos de teclado" [ref=e218] [cursor=pointer]:
+          - img [ref=e219]
+          - text: Atalhos
