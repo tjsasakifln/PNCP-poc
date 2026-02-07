@@ -35,6 +35,7 @@ export function SavedSearchesDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [filterTerm, setFilterTerm] = useState('');
+  const [, setTick] = useState(0);
 
   const handleLoadSearch = (id: string) => {
     const search = loadSearch(id);
@@ -128,6 +129,12 @@ export function SavedSearchesDropdown({
       e.currentTarget.blur();
     }
   };
+
+  // Auto-update relative times every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Close dropdown on Escape key - prevent propagation to global handlers
   // This fixes the bug where pressing Escape while dropdown is open clears page state
@@ -255,9 +262,26 @@ export function SavedSearchesDropdown({
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-strong">
-                  <span className="text-sm font-semibold text-ink">
-                    Buscas Recentes {filterTerm ? `(${filteredSearches.length}/${searches.length})` : `(${searches.length}/10)`}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-ink-muted">
+                      Buscas Recentes ({searches.length}/10)
+                    </span>
+                    {searches.length >= 10 && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Deseja excluir todas as buscas salvas para liberar espaço?')) {
+                            clearAll();
+                            setIsOpen(false);
+                            setFilterTerm('');
+                          }
+                        }}
+                        className="text-xs text-brand-blue hover:underline"
+                        type="button"
+                      >
+                        Gerenciar
+                      </button>
+                    )}
+                  </div>
                   {searches.length > 0 && (
                     <button
                       onClick={() => {
@@ -309,12 +333,15 @@ export function SavedSearchesDropdown({
                               <span>•</span>
                               <span>{search.searchParams.ufs.join(', ')}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-ink-faint">
+                            <div className="flex items-center gap-2 text-ink-faint group/date relative">
                               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span>{formatDate(search.lastUsedAt)}</span>
+                              <span className="cursor-help">{formatDate(search.lastUsedAt)}</span>
+                              <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-ink text-[var(--canvas)] text-xs rounded whitespace-nowrap opacity-0 group-hover/date:opacity-100 transition-opacity pointer-events-none z-10">
+                                {new Date(search.lastUsedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} às {new Date(search.lastUsedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </div>
                             </div>
                           </div>
                         </button>
