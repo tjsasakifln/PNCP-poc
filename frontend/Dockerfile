@@ -5,7 +5,7 @@
 # Optimized for Railway deployment
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
-ARG CACHEBUST=20260205v2-nuclearrebuild
+ARG CACHEBUST=20260207-story168-landing-page-routing-fix
 
 # Stage 1: Dependencies
 # Using node:20.11-alpine3.19 instead of node:20-alpine to force layer rebuild
