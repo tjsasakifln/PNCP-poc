@@ -338,7 +338,7 @@ describe('Analytics - Real-World Event Scenarios', () => {
           time_elapsed_readable: '0s',
           file_size_bytes: 5120,
           file_size_readable: '5.00 KB',
-          filename: 'Smart_PNCP_Vestuário_e_Uniformes_2026-01-01_a_2026-01-07.xlsx',
+          filename: 'SmartLic_Vestuário_e_Uniformes_2026-01-01_a_2026-01-07.xlsx',
           total_filtered: 50,
           valor_total: 1000000,
         });
