@@ -774,7 +774,7 @@ function HomePageContent() {
               priority
             />
             <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-4">
-              Busca Inteligente PNCP
+              Busca inteligente de licitações
             </span>
           </div>
           <div className="flex items-center gap-4">
