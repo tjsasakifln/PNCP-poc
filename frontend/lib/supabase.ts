@@ -7,6 +7,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
  * Browser Supabase client using @supabase/ssr for proper cookie handling.
  * This ensures cookies are compatible with the middleware for SSR auth.
  *
- * Uses singleton pattern by default for consistent session state.
+ * Uses 'implicit' flow to avoid PKCE issues with magic links opened in
+ * different browsers/devices (code_verifier not found error).
  */
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: "implicit",
+  },
+});
