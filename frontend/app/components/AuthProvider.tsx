@@ -11,7 +11,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, fullName?: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, fullName?: string, company?: string, sector?: string, phoneWhatsApp?: string, whatsappConsent?: boolean) => Promise<void>;
   signInWithMagicLink: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -84,11 +84,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const signUpWithEmail = useCallback(async (email: string, password: string, fullName?: string) => {
+  const signUpWithEmail = useCallback(async (
+    email: string,
+    password: string,
+    fullName?: string,
+    company?: string,
+    sector?: string,
+    phoneWhatsApp?: string,
+    whatsappConsent?: boolean
+  ) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          company: company,
+          sector: sector,
+          phone_whatsapp: phoneWhatsApp,
+          whatsapp_consent: whatsappConsent,
+        },
+      },
     });
     if (error) throw error;
   }, []);

@@ -1,7 +1,8 @@
 /**
  * SignupPage Component Tests
  *
- * Tests form submission, validation, success/error states
+ * Tests form submission, validation, success/error states,
+ * phone formatting, and consent scroll behavior
  */
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
@@ -25,6 +26,65 @@ jest.mock('next/link', () => {
   };
 });
 
+// Helper to fill form and scroll consent
+async function fillFormAndConsent(
+  options: {
+    name?: string;
+    company?: string;
+    sector?: string;
+    email?: string;
+    password?: string;
+    phone?: string;
+    scrollToBottom?: boolean;
+    checkConsent?: boolean;
+  } = {}
+) {
+  const {
+    name = 'John Doe',
+    company = 'Test Company',
+    sector = 'informatica',
+    email = 'john@example.com',
+    password = 'password123',
+    phone = '11999999999',
+    scrollToBottom = true,
+    checkConsent = true,
+  } = options;
+
+  const nameInput = screen.getByLabelText(/Nome completo/i);
+  const companyInput = screen.getByLabelText(/Empresa/i);
+  const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
+  const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
+  const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+  const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+
+  await act(async () => {
+    fireEvent.change(nameInput, { target: { value: name } });
+    fireEvent.change(companyInput, { target: { value: company } });
+    fireEvent.change(sectorSelect, { target: { value: sector } });
+    fireEvent.change(emailInput, { target: { value: email } });
+    fireEvent.change(passwordInput, { target: { value: password } });
+    fireEvent.change(phoneInput, { target: { value: phone } });
+  });
+
+  if (scrollToBottom) {
+    // Find the scroll box and simulate scrolling to bottom
+    const scrollBox = screen.getByTestId('consent-scroll-box');
+    await act(async () => {
+      Object.defineProperty(scrollBox, 'scrollHeight', { value: 500, configurable: true });
+      Object.defineProperty(scrollBox, 'clientHeight', { value: 144, configurable: true });
+      Object.defineProperty(scrollBox, 'scrollTop', { value: 360, configurable: true });
+      fireEvent.scroll(scrollBox);
+    });
+  }
+
+  if (checkConsent && scrollToBottom) {
+    const consentCheckbox = screen.getByRole('checkbox');
+    await act(async () => {
+      fireEvent.click(consentCheckbox);
+    });
+  }
+}
+
 describe('SignupPage Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -43,12 +103,15 @@ describe('SignupPage Component', () => {
       expect(screen.getByText(/Comece com 3 buscas gratuitas/i)).toBeInTheDocument();
     });
 
-    it('should render all form fields', () => {
+    it('should render all form fields including WhatsApp, Company, and Sector', () => {
       render(<SignupPage />);
 
       expect(screen.getByLabelText(/Nome completo/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Empresa/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Setor de atuação/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/seu@email.com/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/Minimo 6 caracteres/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/\(11\) 99999-9999/i)).toBeInTheDocument();
     });
 
     it('should show Google signup button', () => {
@@ -64,13 +127,143 @@ describe('SignupPage Component', () => {
       expect(loginLink).toBeInTheDocument();
       expect(loginLink).toHaveAttribute('href', '/login');
     });
+
+    it('should show consent terms section', () => {
+      render(<SignupPage />);
+
+      // Check for consent label (contains "role ate o final para aceitar")
+      expect(screen.getByText(/role ate o final para aceitar/i)).toBeInTheDocument();
+      // Check consent box is present using testid
+      expect(screen.getByTestId('consent-scroll-box')).toBeInTheDocument();
+      // Check consent terms content
+      expect(screen.getByTestId('consent-scroll-box')).toHaveTextContent(/TERMOS DE CONSENTIMENTO PARA COMUNICACOES PROMOCIONAIS/i);
+    });
+
+    it('should show scroll indicator initially', () => {
+      render(<SignupPage />);
+
+      expect(screen.getByText(/Role para baixo/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Phone field', () => {
+    it('should format phone as user types (11 digits)', async () => {
+      render(<SignupPage />);
+
+      const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+
+      await act(async () => {
+        fireEvent.change(phoneInput, { target: { value: '11999998888' } });
+      });
+
+      expect(phoneInput).toHaveValue('(11) 99999-8888');
+    });
+
+    it('should format phone as user types (10 digits)', async () => {
+      render(<SignupPage />);
+
+      const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+
+      await act(async () => {
+        fireEvent.change(phoneInput, { target: { value: '1199998888' } });
+      });
+
+      expect(phoneInput).toHaveValue('(11) 9999-8888');
+    });
+
+    it('should strip non-numeric characters', async () => {
+      render(<SignupPage />);
+
+      const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+
+      await act(async () => {
+        fireEvent.change(phoneInput, { target: { value: '(11) abc 999-99' } });
+      });
+
+      // Should only have the digits
+      expect(phoneInput).toHaveValue('(11) 9999-9');
+    });
+
+    it('should limit to 11 digits', async () => {
+      render(<SignupPage />);
+
+      const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+
+      await act(async () => {
+        fireEvent.change(phoneInput, { target: { value: '119999988881234' } });
+      });
+
+      expect(phoneInput).toHaveValue('(11) 99999-8888');
+    });
+
+    it('should have placeholder with format hint', () => {
+      render(<SignupPage />);
+
+      const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+      expect(phoneInput).toHaveAttribute('placeholder', '(11) 99999-9999');
+    });
+  });
+
+  describe('Consent scroll behavior', () => {
+    it('should have checkbox disabled initially', () => {
+      render(<SignupPage />);
+
+      const consentCheckbox = screen.getByRole('checkbox');
+      expect(consentCheckbox).toBeDisabled();
+    });
+
+    it('should enable checkbox after scrolling to bottom', async () => {
+      render(<SignupPage />);
+
+      const scrollBox = screen.getByTestId('consent-scroll-box');
+      const consentCheckbox = screen.getByRole('checkbox');
+
+      expect(consentCheckbox).toBeDisabled();
+
+      await act(async () => {
+        Object.defineProperty(scrollBox, 'scrollHeight', { value: 500, configurable: true });
+        Object.defineProperty(scrollBox, 'clientHeight', { value: 144, configurable: true });
+        Object.defineProperty(scrollBox, 'scrollTop', { value: 360, configurable: true });
+        fireEvent.scroll(scrollBox);
+      });
+
+      expect(consentCheckbox).not.toBeDisabled();
+    });
+
+    it('should hide scroll indicator after scrolling to bottom', async () => {
+      render(<SignupPage />);
+
+      expect(screen.getByText(/Role para baixo/i)).toBeInTheDocument();
+
+      const scrollBox = screen.getByTestId('consent-scroll-box');
+      await act(async () => {
+        Object.defineProperty(scrollBox, 'scrollHeight', { value: 500, configurable: true });
+        Object.defineProperty(scrollBox, 'clientHeight', { value: 144, configurable: true });
+        Object.defineProperty(scrollBox, 'scrollTop', { value: 360, configurable: true });
+        fireEvent.scroll(scrollBox);
+      });
+
+      expect(screen.queryByText(/Role para baixo/i)).not.toBeInTheDocument();
+    });
+
+    it('should not allow checking consent without scrolling', async () => {
+      render(<SignupPage />);
+
+      const consentCheckbox = screen.getByRole('checkbox');
+
+      await act(async () => {
+        fireEvent.click(consentCheckbox);
+      });
+
+      expect(consentCheckbox).not.toBeChecked();
+    });
   });
 
   describe('Form validation', () => {
     it('should have required email field', () => {
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
+      const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
       expect(emailInput).toHaveAttribute('required');
       expect(emailInput).toHaveAttribute('type', 'email');
     });
@@ -84,29 +277,92 @@ describe('SignupPage Component', () => {
       expect(passwordInput).toHaveAttribute('minLength', '6');
     });
 
-    it('should have optional name field (not required)', () => {
+    it('should have required name field', () => {
       render(<SignupPage />);
 
       const nameInput = screen.getByLabelText(/Nome completo/i);
-      expect(nameInput).not.toHaveAttribute('required');
+      expect(nameInput).toHaveAttribute('required');
+    });
+
+    it('should have required phone field', () => {
+      render(<SignupPage />);
+
+      const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
+      expect(phoneInput).toHaveAttribute('required');
+    });
+
+    it('should have required company field', () => {
+      render(<SignupPage />);
+
+      const companyInput = screen.getByLabelText(/Empresa/i);
+      expect(companyInput).toHaveAttribute('required');
+    });
+
+    it('should have required sector field', () => {
+      render(<SignupPage />);
+
+      const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
+      expect(sectorSelect).toHaveAttribute('required');
+    });
+
+    it('should show other sector input when "outro" is selected', async () => {
+      render(<SignupPage />);
+
+      const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
+
+      await act(async () => {
+        fireEvent.change(sectorSelect, { target: { value: 'outro' } });
+      });
+
+      expect(screen.getByLabelText(/Qual setor\?/i)).toBeInTheDocument();
+    });
+
+    it('should disable submit button when form is incomplete', async () => {
+      render(<SignupPage />);
+
+      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
+      expect(submitButton).toBeDisabled();
+    });
+
+    it('should enable submit button when all fields are valid', async () => {
+      render(<SignupPage />);
+
+      await fillFormAndConsent();
+
+      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
+      expect(submitButton).not.toBeDisabled();
+    });
+
+    it('should show error for invalid phone', async () => {
+      render(<SignupPage />);
+
+      await fillFormAndConsent({ phone: '123' }); // Too short
+
+      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
+
+      // Button should still be disabled due to invalid phone
+      expect(submitButton).toBeDisabled();
     });
   });
 
   describe('Form submission', () => {
-    it('should call signUpWithEmail with correct params', async () => {
+    it('should call signUpWithEmail with all params including company, sector, phone and consent', async () => {
       mockSignUpWithEmail.mockResolvedValue(undefined);
 
       render(<SignupPage />);
 
-      const nameInput = screen.getByLabelText(/Nome completo/i);
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent({
+        name: 'John Doe',
+        company: 'Acme Corp',
+        sector: 'informatica',
+        email: 'john@example.com',
+        password: 'password123',
+        phone: '11999998888',
+      });
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(nameInput, { target: { value: 'John Doe' } });
-        fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
@@ -114,31 +370,11 @@ describe('SignupPage Component', () => {
         expect(mockSignUpWithEmail).toHaveBeenCalledWith(
           'john@example.com',
           'password123',
-          'John Doe'
-        );
-      });
-    });
-
-    it('should allow signup without name', async () => {
-      mockSignUpWithEmail.mockResolvedValue(undefined);
-
-      render(<SignupPage />);
-
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
-      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
-
-      await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
-        fireEvent.click(submitButton);
-      });
-
-      await waitFor(() => {
-        expect(mockSignUpWithEmail).toHaveBeenCalledWith(
-          'john@example.com',
-          'password123',
-          ''
+          'John Doe',
+          'Acme Corp',
+          'informatica', // sector
+          '11999998888', // Only digits
+          true // whatsappConsent
         );
       });
     });
@@ -150,18 +386,15 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent();
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
       expect(screen.getByRole('button', { name: /Criando conta.../i })).toBeInTheDocument();
-      expect(submitButton).toBeDisabled();
     });
   });
 
@@ -171,13 +404,11 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent();
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
@@ -191,13 +422,11 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent({ email: 'john@example.com' });
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
@@ -212,13 +441,11 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent();
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
@@ -236,13 +463,11 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent({ email: 'existing@example.com' });
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'existing@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
@@ -256,13 +481,11 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent();
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
@@ -278,14 +501,12 @@ describe('SignupPage Component', () => {
 
       render(<SignupPage />);
 
-      const emailInput = screen.getByLabelText(/Email/i);
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      await fillFormAndConsent();
+
       const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
 
       // First submission - fails
       await act(async () => {
-        fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
         fireEvent.click(submitButton);
       });
 
