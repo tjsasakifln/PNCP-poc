@@ -12,7 +12,7 @@ White-label platform for intelligent procurement opportunity discovery from Braz
 
 ## 📋 Sobre o Projeto
 
-**Smart PNCP** é um POC (Proof of Concept) que automatiza a descoberta de oportunidades de licitações em **9 setores** (vestuário, alimentos, informática, limpeza, mobiliário, papelaria, engenharia, software, e **facilities**) através da API do PNCP.
+**SmartLic** é um POC (Proof of Concept) que automatiza a descoberta de oportunidades de licitações em **9 setores** (vestuário, alimentos, informática, limpeza, mobiliário, papelaria, engenharia, software, e **facilities**) através da API do PNCP.
 
 ### Funcionalidades Principais
 
