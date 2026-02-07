@@ -11,10 +11,17 @@ import { createServerClient } from "@supabase/ssr";
  * This is compatible with createBrowserClient on the client side.
  */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
+
+  // Use public URL instead of request origin (which may be internal container address)
+  const publicUrl = process.env.NEXT_PUBLIC_SITE_URL
+    || process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+    : "https://bidiq-frontend-production.up.railway.app";
+  const origin = publicUrl;
 
   // Handle OAuth errors
   if (error) {
