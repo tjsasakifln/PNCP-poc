@@ -111,6 +111,7 @@ test.describe("Signup with WhatsApp Consent", () => {
     await page.getByLabel(/Email/i).fill("test@example.com");
     await page.getByPlaceholder(/\(11\) 99999-9999/i).fill("11999998888");
     await page.getByPlaceholder(/Minimo 6 caracteres/i).fill("password123");
+    await page.getByPlaceholder(/Digite a senha novamente/i).fill("password123");
 
     // Scroll consent to bottom
     const scrollBox = page.locator(".overflow-y-auto").first();
@@ -135,6 +136,7 @@ test.describe("Signup with WhatsApp Consent", () => {
     await page.getByLabel(/Email/i).fill("test@example.com");
     await page.getByPlaceholder(/\(11\) 99999-9999/i).fill("123"); // Too short
     await page.getByPlaceholder(/Minimo 6 caracteres/i).fill("password123");
+    await page.getByPlaceholder(/Digite a senha novamente/i).fill("password123");
 
     // Scroll and consent
     const scrollBox = page.locator(".overflow-y-auto").first();
@@ -198,6 +200,7 @@ test.describe("Signup with WhatsApp Consent", () => {
     await page.getByLabel(/Email/i).fill("test@example.com");
     await page.getByPlaceholder(/\(11\) 99999-9999/i).fill("11999998888");
     await page.getByPlaceholder(/Minimo 6 caracteres/i).fill("password123");
+    await page.getByPlaceholder(/Digite a senha novamente/i).fill("password123");
 
     // Scroll consent to bottom
     const scrollBox = page.locator(".overflow-y-auto").first();

@@ -34,6 +34,7 @@ async function fillFormAndConsent(
     sector?: string;
     email?: string;
     password?: string;
+    confirmPassword?: string;
     phone?: string;
     scrollToBottom?: boolean;
     checkConsent?: boolean;
@@ -45,6 +46,7 @@ async function fillFormAndConsent(
     sector = 'informatica',
     email = 'john@example.com',
     password = 'password123',
+    confirmPassword = 'password123',
     phone = '11999999999',
     scrollToBottom = true,
     checkConsent = true,
@@ -55,6 +57,7 @@ async function fillFormAndConsent(
   const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
   const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
   const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+  const confirmPasswordInput = screen.getByPlaceholderText(/Digite a senha novamente/i);
   const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
 
   await act(async () => {
@@ -63,6 +66,7 @@ async function fillFormAndConsent(
     fireEvent.change(sectorSelect, { target: { value: sector } });
     fireEvent.change(emailInput, { target: { value: email } });
     fireEvent.change(passwordInput, { target: { value: password } });
+    fireEvent.change(confirmPasswordInput, { target: { value: confirmPassword } });
     fireEvent.change(phoneInput, { target: { value: phone } });
   });
 
@@ -554,7 +558,9 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
-      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      // Get first toggle button (password field, not confirm password)
+      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
+      const toggleButton = toggleButtons[0];
 
       expect(passwordInput).toHaveAttribute('type', 'password');
 
@@ -569,7 +575,8 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
-      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
+      const toggleButton = toggleButtons[0];
 
       // First click - show password
       await act(async () => {
@@ -578,9 +585,9 @@ describe('SignupPage Component', () => {
       expect(passwordInput).toHaveAttribute('type', 'text');
 
       // Second click - hide password
-      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
+      const hideButtons = screen.getAllByRole('button', { name: /Ocultar senha/i });
       await act(async () => {
-        fireEvent.click(hideButton);
+        fireEvent.click(hideButtons[0]);
       });
       expect(passwordInput).toHaveAttribute('type', 'password');
     });
@@ -588,22 +595,24 @@ describe('SignupPage Component', () => {
     it('should update aria-label based on visibility state', async () => {
       render(<SignupPage />);
 
-      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
+      const toggleButton = toggleButtons[0];
       expect(toggleButton).toHaveAttribute('aria-label', 'Mostrar senha');
 
       await act(async () => {
         fireEvent.click(toggleButton);
       });
 
-      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
-      expect(hideButton).toHaveAttribute('aria-label', 'Ocultar senha');
+      const hideButtons = screen.getAllByRole('button', { name: /Ocultar senha/i });
+      expect(hideButtons[0]).toHaveAttribute('aria-label', 'Ocultar senha');
     });
 
     it('should display password as typed when visible', async () => {
       render(<SignupPage />);
 
       const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
-      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
+      const toggleButton = toggleButtons[0];
 
       // Type password while hidden
       await act(async () => {
@@ -622,7 +631,8 @@ describe('SignupPage Component', () => {
     it('should render toggle button inside password field container', () => {
       render(<SignupPage />);
 
-      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
+      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
+      const toggleButton = toggleButtons[0];
 
       // Toggle button should exist and be interactive
       expect(toggleButton).toBeInTheDocument();
