@@ -1568,7 +1568,7 @@ function HomePageContent() {
       {/* Footer */}
       <footer className="border-t mt-12 py-6 text-center text-xs text-ink-muted" role="contentinfo">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-          <span>{APP_NAME} &mdash; Busca Inteligente de Licitações no PNCP</span>
+          <span>{APP_NAME} &mdash; Busca Inteligente de Licitações</span>
           <button
             onClick={() => setShowKeyboardHelp(true)}
             className="text-xs text-ink-muted hover:text-brand-blue transition-colors flex items-center gap-1"
