@@ -44,7 +44,7 @@ export default function AuthCallbackPage() {
           setStatus("success");
           // Small delay to ensure cookies are set
           setTimeout(() => {
-            router.push("/");
+            router.push("/buscar");
           }, 500);
         } else {
           // No session yet - might need to wait for hash handling
@@ -53,7 +53,7 @@ export default function AuthCallbackPage() {
             if (event === "SIGNED_IN" && session) {
               setStatus("success");
               subscription.unsubscribe();
-              router.push("/");
+              router.push("/buscar");
             }
           });
 
