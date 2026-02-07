@@ -27,6 +27,7 @@ import { QuotaCounter } from "../components/QuotaCounter";
 import { UpgradeModal } from "../components/UpgradeModal";
 import { LicitacoesPreview } from "../components/LicitacoesPreview";
 import type { SavedSearch } from "../../lib/savedSearches";
+import { getUserFriendlyError } from "../../lib/error-messages";
 
 // P0 Filters
 import { StatusFilter, type StatusLicitacao } from "../../components/StatusFilter";
@@ -139,6 +140,10 @@ function HomePageContent() {
   });
 
   const [setores, setSetores] = useState<Setor[]>([]);
+  const [setoresLoading, setSetoresLoading] = useState(true);
+  const [setoresError, setSetoresError] = useState(false);
+  const [setoresUsingFallback, setSetoresUsingFallback] = useState(false);
+  const [setoresRetryCount, setSetoresRetryCount] = useState(0);
   const [setorId, setSetorId] = useState("vestuario");
   const [searchMode, setSearchMode] = useState<"setor" | "termos">("setor");
   const [termosArray, setTermosArray] = useState<string[]>([]);
@@ -149,11 +154,22 @@ function HomePageContent() {
   const [modalidades, setModalidades] = useState<number[]>([]);
   const [valorMin, setValorMin] = useState<number | null>(null);
   const [valorMax, setValorMax] = useState<number | null>(null);
+  const [valorValid, setValorValid] = useState(true); // AC10: Value validation state
 
   // P1 Filter states
   const [esferas, setEsferas] = useState<Esfera[]>([]);
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [ordenacao, setOrdenacao] = useState<OrdenacaoOption>("data_desc");
+
+  // Collapsible filter states (STORY-170 AC7)
+  const [locationFiltersOpen, setLocationFiltersOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('smartlic-location-filters') === 'open';
+  });
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('smartlic-advanced-filters') === 'open';
+  });
 
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
     new Set(["SC", "PR", "RS"])
@@ -209,6 +225,15 @@ function HomePageContent() {
     setUrlParamsApplied(true);
   }, [searchParams, urlParamsApplied, trackEvent]);
 
+  // Persist collapsible filter states (STORY-170 AC7)
+  useEffect(() => {
+    localStorage.setItem('smartlic-location-filters', locationFiltersOpen ? 'open' : 'closed');
+  }, [locationFiltersOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('smartlic-advanced-filters', advancedFiltersOpen ? 'open' : 'closed');
+  }, [advancedFiltersOpen]);
+
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [statesProcessed, setStatesProcessed] = useState(0); // Issue #109: Track state progress
@@ -220,6 +245,10 @@ function HomePageContent() {
   const [rawCount, setRawCount] = useState(0);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    return parseInt(localStorage.getItem('smartlic-onboarding-step') || '0', 10);
+  });
 
   // Refs for keyboard shortcuts
   const searchButtonRef = useRef<HTMLButtonElement>(null);
@@ -246,24 +275,54 @@ function HomePageContent() {
     setMunicipios([]);
   }, [Array.from(ufsSelecionadas).sort().join(",")]);
 
+  // Hardcoded fallback list of sectors
+  const SETORES_FALLBACK: Setor[] = [
+    { id: "vestuario", name: "Vestuário e Uniformes", description: "Uniformes, fardamentos, roupas profissionais" },
+    { id: "facilities", name: "Facilities (Manutenção Predial)", description: "Manutenção, limpeza, conservação" },
+    { id: "software", name: "Software & TI", description: "Software, sistemas, hardware, tecnologia" },
+    { id: "alimentacao", name: "Alimentação", description: "Merenda, refeições, alimentos" },
+    { id: "equipamentos", name: "Equipamentos", description: "Máquinas, equipamentos, ferramentas" },
+    { id: "transporte", name: "Transporte", description: "Veículos, combustível, frete" },
+    { id: "saude", name: "Saúde", description: "Medicamentos, material hospitalar" },
+    { id: "limpeza", name: "Limpeza", description: "Produtos de limpeza, higiene" },
+    { id: "seguranca", name: "Segurança", description: "Vigilância, segurança patrimonial" },
+    { id: "escritorio", name: "Material de Escritório", description: "Papelaria, escritório" },
+    { id: "construcao", name: "Construção Civil", description: "Obras, materiais de construção" },
+    { id: "servicos", name: "Serviços Gerais", description: "Serviços diversos" },
+  ];
+
+  const fetchSetores = async (attempt = 0) => {
+    setSetoresLoading(true);
+    setSetoresError(false);
+    try {
+      const res = await fetch("/api/setores");
+      const data = await res.json();
+      if (data.setores && data.setores.length > 0) {
+        setSetores(data.setores);
+        setSetoresUsingFallback(false);
+      } else {
+        throw new Error("Empty response");
+      }
+    } catch {
+      if (attempt < 2) {
+        // Retry with exponential backoff
+        setTimeout(() => fetchSetores(attempt + 1), Math.pow(2, attempt) * 1000);
+        return;
+      }
+      // After 3 failures, use fallback
+      setSetores(SETORES_FALLBACK);
+      setSetoresUsingFallback(true);
+      setSetoresError(true);
+    } finally {
+      if (attempt >= 2 || !setoresError) {
+        setSetoresLoading(false);
+      }
+      setSetoresRetryCount(attempt);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/setores")
-      .then(res => res.json())
-      .then(data => {
-        if (data.setores) setSetores(data.setores);
-      })
-      .catch(() => {
-        setSetores([
-          { id: "vestuario", name: "Vestuário e Uniformes", description: "" },
-          { id: "alimentos", name: "Alimentos e Merenda", description: "" },
-          { id: "informatica", name: "Informática e Tecnologia", description: "" },
-          { id: "limpeza", name: "Produtos de Limpeza", description: "" },
-          { id: "mobiliario", name: "Mobiliário", description: "" },
-          { id: "papelaria", name: "Papelaria e Material de Escritório", description: "" },
-          { id: "engenharia", name: "Engenharia e Construção", description: "" },
-          { id: "software", name: "Software e Sistemas", description: "" },
-        ]);
-      });
+    fetchSetores();
   }, []);
 
   function validateForm(): ValidationErrors {
@@ -278,7 +337,8 @@ function HomePageContent() {
   }
 
   const canSearch = Object.keys(validateForm()).length === 0
-    && (searchMode === "setor" || termosArray.length > 0);
+    && (searchMode === "setor" || termosArray.length > 0)
+    && valorValid;
 
   useEffect(() => {
     setValidationErrors(validateForm());
@@ -323,6 +383,35 @@ function HomePageContent() {
           trackEvent('keyboard_shortcut_used', { shortcut: '/', action: 'show_help' });
         },
         description: 'Mostrar atalhos de teclado'
+      },
+      {
+        key: 'Enter',
+        ctrlKey: true,
+        action: () => {
+          if (!loading && canSearch) {
+            searchButtonRef.current?.click();
+            trackEvent('keyboard_shortcut_used', { shortcut: 'Ctrl+Enter', action: 'search' });
+          }
+        },
+        description: 'Executar busca'
+      },
+      {
+        key: 'L',
+        ctrlKey: true,
+        shiftKey: true,
+        action: () => {
+          limparSelecao();
+          setStatus("recebendo_proposta");
+          setModalidades([]);
+          setValorMin(null);
+          setValorMax(null);
+          setEsferas([]);
+          setMunicipios([]);
+          setTermosArray([]);
+          setTermoInput("");
+          trackEvent('keyboard_shortcut_used', { shortcut: 'Ctrl+Shift+L', action: 'clear_all_filters' });
+        },
+        description: 'Limpar todos os filtros'
       }
     ],
     enabled: !showKeyboardHelp && !showSaveDialog
@@ -486,6 +575,19 @@ function HomePageContent() {
       setResult(data);
       setRawCount(data.total_raw || 0);
 
+      // Progressive onboarding - increment step counter
+      const currentStep = parseInt(localStorage.getItem('smartlic-onboarding-step') || '0', 10);
+      if (currentStep === 0) {
+        localStorage.setItem('smartlic-onboarding-step', '1');
+        setOnboardingStep(1);
+      } else if (currentStep === 1) {
+        localStorage.setItem('smartlic-onboarding-step', '2');
+        setOnboardingStep(2);
+      } else if (currentStep === 2) {
+        localStorage.setItem('smartlic-onboarding-step', '3');
+        setOnboardingStep(3);
+      }
+
       // Issue #153: Refresh quota after successful search
       if (session?.access_token) {
         refreshQuota();
@@ -511,7 +613,7 @@ function HomePageContent() {
       });
 
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
+      const errorMessage = getUserFriendlyError(e instanceof Error ? e : "Erro desconhecido");
       setError(errorMessage);
 
       // Track search_failed event
@@ -625,7 +727,7 @@ function HomePageContent() {
         browser_supports_download: supportsDownload,
       });
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : 'Não foi possível baixar o arquivo.';
+      const errorMessage = getUserFriendlyError(e instanceof Error ? e : 'Não foi possível baixar o arquivo.');
       setDownloadError(errorMessage);
 
       // Track download_failed event
@@ -844,6 +946,26 @@ function HomePageContent() {
               </p>
             </div>
 
+        {/* Warning banner for fallback mode */}
+        {setoresUsingFallback && (
+          <div className="mb-4 p-3 bg-[var(--warning-subtle)] border border-[var(--warning)]/20 rounded-card flex items-start gap-3 animate-fade-in-up" role="alert">
+            <svg className="w-5 h-5 text-[var(--warning)] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-[var(--warning)]">Usando lista offline de setores</p>
+              <p className="text-xs text-ink-secondary mt-0.5">Alguns setores novos podem não aparecer.</p>
+            </div>
+            <button
+              onClick={() => fetchSetores(0)}
+              className="text-xs font-medium text-brand-blue hover:underline flex-shrink-0"
+              type="button"
+            >
+              Tentar atualizar
+            </button>
+          </div>
+        )}
+
         {/* Search Mode Toggle */}
         <section className="mb-6 animate-fade-in-up stagger-1 relative z-30">
           <label className="block text-base font-semibold text-ink mb-3">
@@ -877,13 +999,19 @@ function HomePageContent() {
           {/* Sector Selector - Issue #89: Custom Select Component */}
           {searchMode === "setor" && (
             <div className="relative z-20">
-              <CustomSelect
-                id="setor"
-                value={setorId}
-                options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
-                onChange={(value) => { setSetorId(value); setResult(null); }}
-                placeholder="Selecione um setor"
-              />
+              {setoresLoading ? (
+                <div className="border border-strong rounded-input px-4 py-3 bg-surface-1 animate-pulse">
+                  <div className="h-5 bg-surface-2 rounded w-48"></div>
+                </div>
+              ) : (
+                <CustomSelect
+                  id="setor"
+                  value={setorId}
+                  options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
+                  onChange={(value) => { setSetorId(value); setResult(null); }}
+                  placeholder="Selecione um setor"
+                />
+              )}
             </div>
           )}
 
@@ -1097,60 +1225,79 @@ function HomePageContent() {
           })()}
         </section>
 
-        {/* P1 Filters: Esfera and Municipio (Location Section) */}
+        {/* P1 Filters: Esfera and Municipio (Location Section) - STORY-170 AC7 */}
         <section className="mb-6 animate-fade-in-up stagger-3 relative z-0">
-          <h3 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setLocationFiltersOpen(!locationFiltersOpen)}
+            className="w-full text-base font-semibold text-ink mb-4 flex items-center gap-2 hover:text-brand-blue transition-colors"
+          >
             <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             Filtragem por Localizacao
-          </h3>
-          <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong">
-            <EsferaFilter
-              value={esferas}
-              onChange={(newEsferas) => { setEsferas(newEsferas); setResult(null); }}
-              disabled={loading}
-            />
-            <MunicipioFilter
-              ufs={Array.from(ufsSelecionadas)}
-              value={municipios}
-              onChange={(newMunicipios) => { setMunicipios(newMunicipios); setResult(null); }}
-              disabled={loading}
-            />
-          </div>
+            <svg className={`w-4 h-4 ml-auto transition-transform ${locationFiltersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {locationFiltersOpen && (
+            <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong animate-fade-in-up">
+              <EsferaFilter
+                value={esferas}
+                onChange={(newEsferas) => { setEsferas(newEsferas); setResult(null); }}
+                disabled={loading}
+              />
+              <MunicipioFilter
+                ufs={Array.from(ufsSelecionadas)}
+                value={municipios}
+                onChange={(newMunicipios) => { setMunicipios(newMunicipios); setResult(null); }}
+                disabled={loading}
+              />
+            </div>
+          )}
         </section>
 
-        {/* P0 Filters: Status, Modalidade, Valor (Advanced Filters Section) */}
+        {/* P0 Filters: Status, Modalidade, Valor (Advanced Filters Section) - STORY-170 AC7 */}
         <section className="mb-6 animate-fade-in-up stagger-4 relative z-0">
-          <h3 className="text-base font-semibold text-ink mb-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)}
+            className="w-full text-base font-semibold text-ink mb-4 flex items-center gap-2 hover:text-brand-blue transition-colors"
+          >
             <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
             Filtros Avancados
-          </h3>
-          <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong">
-            <StatusFilter
-              value={status}
-              onChange={(newStatus) => { setStatus(newStatus); setResult(null); }}
-              disabled={loading}
-            />
-            <ModalidadeFilter
-              value={modalidades}
-              onChange={(newModalidades) => { setModalidades(newModalidades); setResult(null); }}
-              disabled={loading}
-            />
-            <ValorFilter
-              valorMin={valorMin}
-              valorMax={valorMax}
-              onChange={(min, max) => { setValorMin(min); setValorMax(max); setResult(null); }}
-              disabled={loading}
-            />
-          </div>
+            <svg className={`w-4 h-4 ml-auto transition-transform ${advancedFiltersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {advancedFiltersOpen && (
+            <div className="space-y-6 p-4 bg-surface-1 rounded-card border border-strong animate-fade-in-up">
+              <StatusFilter
+                value={status}
+                onChange={(newStatus) => { setStatus(newStatus); setResult(null); }}
+                disabled={loading}
+              />
+              <ModalidadeFilter
+                value={modalidades}
+                onChange={(newModalidades) => { setModalidades(newModalidades); setResult(null); }}
+                disabled={loading}
+              />
+              <ValorFilter
+                valorMin={valorMin}
+                valorMax={valorMax}
+                onChange={(min, max) => { setValorMin(min); setValorMax(max); setResult(null); }}
+                onValidationChange={setValorValid}
+                disabled={loading}
+              />
+            </div>
+          )}
         </section>
 
-        {/* Search Buttons */}
-        <div className="space-y-3">
+        {/* Search Buttons - STORY-170 AC7 sticky on mobile */}
+        <div className="space-y-3 sm:relative sticky bottom-4 sm:bottom-auto z-20 bg-[var(--canvas)] sm:bg-transparent pt-2 sm:pt-0 -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 sm:pb-0">
           <button
             ref={searchButtonRef}
             onClick={buscar}
@@ -1160,9 +1307,20 @@ function HomePageContent() {
             className="w-full bg-brand-navy text-white py-3.5 sm:py-4 rounded-button text-base sm:text-lg font-semibold
                        hover:bg-brand-blue-hover active:bg-brand-blue
                        disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
-                       transition-all duration-200 min-h-[48px] sm:min-h-[52px]"
+                       transition-all duration-200 min-h-[48px] sm:min-h-[52px]
+                       flex items-center justify-center gap-2"
           >
-            {loading ? "Buscando..." : `Buscar ${searchLabel}`}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Buscando...
+              </>
+            ) : (
+              `Buscar ${searchLabel}`
+            )}
           </button>
 
           {/* Save Search Button - Only show if there's a result */}
@@ -1215,9 +1373,17 @@ function HomePageContent() {
             <button
               onClick={buscar}
               disabled={loading}
-              className="px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
             >
-              Tentar novamente
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Tentando...
+                </>
+              ) : "Tentar novamente"}
             </button>
           </div>
         )}
@@ -1531,6 +1697,18 @@ function HomePageContent() {
                 <span className="text-ink">Selecionar todos os estados</span>
                 <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
                   {getShortcutDisplay({ key: 'a', ctrlKey: true, action: () => {}, description: '' })}
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-strong">
+                <span className="text-ink">Executar busca (alternativo)</span>
+                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                  {getShortcutDisplay({ key: 'Enter', ctrlKey: true, action: () => {}, description: '' })}
+                </kbd>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-strong">
+                <span className="text-ink">Limpar todos os filtros</span>
+                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                  Ctrl+Shift+L
                 </kbd>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-strong">

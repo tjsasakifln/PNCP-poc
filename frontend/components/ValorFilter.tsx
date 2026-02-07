@@ -43,6 +43,7 @@ export interface ValorFilterProps {
   valorMin: number | null;
   valorMax: number | null;
   onChange: (min: number | null, max: number | null) => void;
+  onValidationChange?: (isValid: boolean) => void;
   disabled?: boolean;
 }
 
@@ -50,6 +51,7 @@ export function ValorFilter({
   valorMin,
   valorMax,
   onChange,
+  onValidationChange,
   disabled = false,
 }: ValorFilterProps) {
   // Internal state for input fields (allows typing without immediate validation)
@@ -89,6 +91,18 @@ export function ValorFilter({
     const cleaned = value.replace(/\D/g, "");
     return cleaned ? parseInt(cleaned, 10) : null;
   }
+
+  // Validation state - check if min > max
+  const isMinMaxInvalid = (() => {
+    const minParsed = parseBRL(inputMin);
+    const maxParsed = parseBRL(inputMax);
+    return minParsed !== null && maxParsed !== null && minParsed > maxParsed;
+  })();
+
+  // Notify parent of validation state changes
+  useEffect(() => {
+    onValidationChange?.(!isMinMaxInvalid);
+  }, [isMinMaxInvalid, onValidationChange]);
 
   // Identify which preset is currently selected
   const faixaSelecionada =
@@ -372,7 +386,11 @@ export function ValorFilter({
               type="text"
               inputMode="numeric"
               value={inputMin}
-              onChange={(e) => setInputMin(e.target.value)}
+              onChange={(e) => {
+                // Strip non-numeric characters except dots and commas (Brazilian formatting)
+                const raw = e.target.value.replace(/[^\d.,]/g, '');
+                setInputMin(raw);
+              }}
               onBlur={handleInputMinBlur}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -382,12 +400,16 @@ export function ValorFilter({
               }}
               placeholder="0"
               disabled={disabled}
+              aria-invalid={isMinMaxInvalid}
+              aria-describedby={isMinMaxInvalid ? "error-min-max" : undefined}
               className={`
-                w-full border border-strong rounded-input pl-10 pr-4 py-2.5 text-sm
+                w-full border rounded-input pl-10 pr-4 py-2.5 text-sm
                 bg-surface-0 text-ink
-                focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                focus:outline-none focus:ring-2 transition-colors
                 disabled:bg-surface-1 disabled:text-ink-muted disabled:cursor-not-allowed
-                transition-colors
+                ${isMinMaxInvalid
+                  ? "border-[var(--error)] focus:ring-[var(--error)] focus:border-[var(--error)]"
+                  : "border-strong focus:ring-brand-blue focus:border-brand-blue"}
               `}
             />
           </div>
@@ -409,7 +431,10 @@ export function ValorFilter({
               type="text"
               inputMode="numeric"
               value={inputMax}
-              onChange={(e) => setInputMax(e.target.value)}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^\d.,]/g, '');
+                setInputMax(raw);
+              }}
               onBlur={handleInputMaxBlur}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -419,17 +444,28 @@ export function ValorFilter({
               }}
               placeholder="Sem limite"
               disabled={disabled}
+              aria-invalid={isMinMaxInvalid}
+              aria-describedby={isMinMaxInvalid ? "error-min-max" : undefined}
               className={`
-                w-full border border-strong rounded-input pl-10 pr-4 py-2.5 text-sm
+                w-full border rounded-input pl-10 pr-4 py-2.5 text-sm
                 bg-surface-0 text-ink
-                focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue
+                focus:outline-none focus:ring-2 transition-colors
                 disabled:bg-surface-1 disabled:text-ink-muted disabled:cursor-not-allowed
-                transition-colors
+                ${isMinMaxInvalid
+                  ? "border-[var(--error)] focus:ring-[var(--error)] focus:border-[var(--error)]"
+                  : "border-strong focus:ring-brand-blue focus:border-brand-blue"}
               `}
             />
           </div>
         </div>
       </div>
+
+      {/* Validation error message */}
+      {isMinMaxInvalid && (
+        <p id="error-min-max" role="alert" aria-live="polite" className="text-sm text-[var(--error)] font-medium">
+          Valor mínimo não pode ser maior que máximo
+        </p>
+      )}
 
       {/* Helper text */}
       <p className="text-xs text-ink-muted">
