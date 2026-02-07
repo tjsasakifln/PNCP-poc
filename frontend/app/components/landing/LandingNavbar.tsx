@@ -28,17 +28,20 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all ${
+      className={`sticky top-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-sm'
+          ? 'bg-surface-0/95 backdrop-blur-sm shadow-sm border-b border-[var(--border)]'
           : 'bg-transparent'
       } ${className}`}
     >
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="max-w-landing mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link href="/" className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <Link
+              href="/"
+              className="text-2xl font-bold text-brand-navy hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded-button px-1"
+            >
               SmartLic
             </Link>
           </div>
@@ -47,19 +50,19 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
           <div className="hidden md:flex items-center space-x-8">
             <Link
               href="#planos"
-              className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+              className="text-ink-secondary hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >
               Planos
             </Link>
             <button
               onClick={() => scrollToSection('como-funciona')}
-              className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+              className="text-ink-secondary hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >
               Como Funciona
             </button>
             <Link
               href="#suporte"
-              className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+              className="text-ink-secondary hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >
               Suporte
             </Link>
@@ -69,15 +72,15 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
           <div className="flex items-center space-x-4">
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors"
+              className="text-brand-navy hover:text-brand-blue font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >
               Login
             </Link>
             <Link
-              href="/signup"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+              href="/buscar"
+              className="bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
             >
-              Cadastro
+              Acessar
             </Link>
           </div>
         </div>

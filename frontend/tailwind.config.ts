@@ -43,6 +43,12 @@ const config: Config = {
       fontSize: {
         base: ["1rem", { lineHeight: "1.6" }],
       },
+      fontWeight: {
+        display: "800",
+      },
+      letterSpacing: {
+        tighter: "-0.02em",
+      },
       borderRadius: {
         input: "4px",
         button: "6px",
@@ -51,6 +57,18 @@ const config: Config = {
       },
       spacing: {
         // Enforce 4px base: 1=4px, 2=8px, 3=12px, 4=16px, 6=24px, 8=32px, 16=64px
+      },
+      maxWidth: {
+        landing: "1200px",
+      },
+      keyframes: {
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "fade-in-up": "fade-in-up 0.4s ease-out both",
       },
     },
   },

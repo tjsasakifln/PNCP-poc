@@ -74,6 +74,33 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// Mock IntersectionObserver (not available in jsdom)
+// Required for useInView hook and landing page animations
+class MockIntersectionObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe(element) {
+    // Trigger immediately as if element is in view
+    this.callback([{ isIntersecting: true, target: element }]);
+  }
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'IntersectionObserver', {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+  Object.defineProperty(global, 'IntersectionObserver', {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+}
+
 // Global test timeout (default: 5000ms)
 jest.setTimeout(10000)
 

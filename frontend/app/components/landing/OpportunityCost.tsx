@@ -1,17 +1,28 @@
+'use client';
+
+import { useInView } from '@/app/hooks/useInView';
+
 interface OpportunityCostProps {
   className?: string;
 }
 
 export default function OpportunityCost({ className = '' }: OpportunityCostProps) {
+  const { ref, isInView } = useInView({ threshold: 0.2 });
+
   return (
     <section
-      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
+      ref={ref as React.RefObject<HTMLElement>}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
-      <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-8 rounded-lg">
-        {/* Headline Provocativa */}
+      <div
+        className={`bg-warning-subtle border-l-4 border-warning p-8 rounded-card transition-all duration-500 ${
+          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}
+      >
+        {/* Headline Provocativa — Tom institucional direto */}
         <div className="flex items-start gap-4">
           <svg
-            className="w-8 h-8 text-amber-500 flex-shrink-0 mt-1"
+            className="w-8 h-8 text-warning flex-shrink-0 mt-1"
             fill="currentColor"
             viewBox="0 0 20 20"
             role="img"
@@ -25,62 +36,25 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
           </svg>
 
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              Qual o custo de uma licitação não disputada por não ter sido encontrada?
+            <h2 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
+              Licitações não encontradas são contratos perdidos.
             </h2>
 
-            {/* 3 Pontos-Chave */}
-            <ul className="mt-6 space-y-4 text-lg text-gray-700 dark:text-gray-300">
+            {/* Bullet Points — Curtos e diretos */}
+            <ul className="mt-6 space-y-3 text-lg text-ink-secondary">
               <li className="flex items-start gap-3">
-                <svg
-                  className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <span className="text-warning font-bold">•</span>
                 <span>
-                  <strong>500 mil oportunidades</strong> publicadas mensalmente no Brasil
+                  <strong className="text-ink tabular-nums">500 mil</strong> oportunidades/mês no Brasil
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <svg
-                  className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>
-                  A maioria passa <strong>despercebida</strong> por fornecedores qualificados
-                </span>
+                <span className="text-warning font-bold">•</span>
+                <span>A maioria passa despercebida</span>
               </li>
               <li className="flex items-start gap-3">
-                <svg
-                  className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>
-                  Cada edital perdido = <strong>concorrente que venceu no seu lugar</strong>
-                </span>
+                <span className="text-warning font-bold">•</span>
+                <span>Seu concorrente pode estar encontrando agora</span>
               </li>
             </ul>
           </div>

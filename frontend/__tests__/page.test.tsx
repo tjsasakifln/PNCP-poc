@@ -4,7 +4,8 @@ process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-backend:8000';
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import HomePage from '@/app/page';
+// Import the search page (previously at root, now at /buscar)
+import HomePage from '@/app/buscar/page';
 
 // Mock Supabase client
 jest.mock('../lib/supabase', () => ({

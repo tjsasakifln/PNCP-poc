@@ -1,27 +1,45 @@
+'use client';
+
+import { useInView } from '@/app/hooks/useInView';
+
 interface DataSourcesSectionProps {
   className?: string;
 }
 
 export default function DataSourcesSection({ className = '' }: DataSourcesSectionProps) {
+  const { ref, isInView } = useInView({ threshold: 0.2 });
+
   return (
     <section
-      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
+      ref={ref as React.RefObject<HTMLElement>}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
       <div className="text-center max-w-3xl mx-auto">
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-          Desenvolvido por quem conhece a máquina pública por dentro
+        <h2
+          className={`text-3xl sm:text-4xl font-bold text-ink tracking-tight mb-6 transition-all duration-500 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          Desenvolvido por quem conhece
         </h2>
 
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-          Sistema criado por servidores públicos com anos de experiência em processos
-          licitatórios. Sabemos quais dados importam e onde encontrá-los.
+        <p
+          className={`text-lg text-ink-secondary mb-8 transition-all duration-500 delay-100 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          Servidores públicos com experiência em processos licitatórios.
         </p>
 
         {/* Fonte Primária: PNCP */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 rounded-lg mb-6">
+        <div
+          className={`bg-brand-navy text-white p-8 rounded-card mb-6 transition-all duration-500 delay-150 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
           <div className="flex items-center justify-center gap-3 mb-3">
             <svg
-              className="w-8 h-8"
+              className="w-7 h-7"
               fill="currentColor"
               viewBox="0 0 20 20"
               aria-hidden="true"
@@ -32,15 +50,15 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
                 clipRule="evenodd"
               />
             </svg>
-            <h3 className="text-2xl font-bold">Fonte Primária Oficial</h3>
+            <h3 className="text-xl font-bold">Fonte Primária Oficial</h3>
           </div>
-          <p className="text-xl font-semibold mb-2">PNCP</p>
-          <p className="text-blue-100 mb-4">Portal Nacional de Contratações Públicas</p>
+          <p className="text-2xl font-bold mb-1">PNCP</p>
+          <p className="text-white/80 text-sm mb-4">Portal Nacional de Contratações Públicas</p>
           <a
             href="https://pncp.gov.br"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+            className="inline-flex items-center gap-2 bg-white text-brand-navy px-5 py-2 rounded-button font-semibold hover:bg-surface-1 transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
             aria-label="Acessar PNCP - abre em nova aba"
           >
             Acessar PNCP
@@ -62,26 +80,25 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
         </div>
 
         {/* Fontes Complementares */}
-        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
-          <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            Fontes Complementares Integradas
+        <div
+          className={`bg-surface-1 p-6 rounded-card border border-[var(--border)] transition-all duration-500 delay-200 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          <h4 className="text-sm font-bold text-ink uppercase tracking-wide mb-4">
+            Fontes Complementares
           </h4>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-            <span className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full">BLL</span>
-            <span className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full">
-              Portal Compras Públicas
-            </span>
-            <span className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full">BNC</span>
-            <span className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full">
-              Licitar Digital
-            </span>
-            <span className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full">
-              Fontes estaduais/municipais
-            </span>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-ink-secondary">
+            {['BLL', 'Portal Compras Públicas', 'BNC', 'Licitar Digital', 'Fontes estaduais'].map((source) => (
+              <span
+                key={source}
+                className="bg-surface-0 border border-[var(--border)] px-3 py-1.5 rounded-full"
+              >
+                {source}
+              </span>
+            ))}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-            Em constante expansão
-          </p>
+          <p className="text-xs text-ink-muted mt-4">Em constante expansão</p>
         </div>
       </div>
     </section>

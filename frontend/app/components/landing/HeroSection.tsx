@@ -1,10 +1,14 @@
 'use client';
 
+import { useInView } from '@/app/hooks/useInView';
+
 interface HeroSectionProps {
   className?: string;
 }
 
 export default function HeroSection({ className = '' }: HeroSectionProps) {
+  const { ref, isInView } = useInView({ threshold: 0.1 });
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -14,37 +18,45 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
 
   return (
     <section
-      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32 ${className}`}
+      ref={ref as React.RefObject<HTMLElement>}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32 bg-gradient-to-b from-brand-blue-subtle/40 to-transparent ${className}`}
     >
-      <div className="text-center max-w-4xl mx-auto">
-        {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
-          6+ milhões de licitações por ano no Brasil.
+      <div
+        className={`text-center max-w-4xl mx-auto transition-all duration-500 ${
+          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}
+      >
+        {/* Headline — Display weight, tighter tracking */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-tighter text-ink leading-[1.1]">
+          Licitações relevantes.
           <br />
-          <span className="text-blue-600 dark:text-blue-400">
-            Encontre as que realmente importam para sua empresa.
-          </span>
+          <span className="text-brand-blue">Sem ruído.</span>
         </h1>
 
-        {/* Subheadline */}
-        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mt-6">
-          500 mil oportunidades mensais. Filtros inteligentes eliminam o ruído e destacam
-          editais relevantes para o seu setor.
+        {/* Subheadline — ink-secondary */}
+        <p className="text-lg sm:text-xl text-ink-secondary mt-6 font-medium leading-relaxed max-w-2xl mx-auto">
+          6 milhões de publicações por ano no Brasil.
+          <br className="hidden sm:block" />
+          Filtros inteligentes entregam o que importa para seu setor.
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+        <div
+          className={`flex flex-col sm:flex-row items-center justify-center gap-4 mt-10 transition-all duration-500 delay-150 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
           <a
-            href="/signup"
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-lg transition-colors text-center"
+            href="/buscar"
+            className="w-full sm:w-auto bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
-            Começar busca gratuita
+            Acessar busca
           </a>
           <button
             onClick={() => scrollToSection('como-funciona')}
-            className="w-full sm:w-auto border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold px-8 py-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full sm:w-auto border-2 border-brand-blue text-brand-blue hover:bg-brand-blue-subtle font-semibold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
-            Ver como funciona
+            Como funciona
             <svg
               className="w-4 h-4"
               fill="none"
@@ -62,10 +74,14 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           </button>
         </div>
 
-        {/* Badge de Credibilidade */}
-        <div className="mt-12 inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-700 dark:text-gray-300">
+        {/* Badge de Credibilidade — Simples e direto */}
+        <div
+          className={`mt-12 inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary transition-all duration-500 delay-300 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
           <svg
-            className="w-5 h-5 text-blue-600"
+            className="w-5 h-5 text-success"
             fill="currentColor"
             viewBox="0 0 20 20"
             aria-hidden="true"
@@ -76,9 +92,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
               clipRule="evenodd"
             />
           </svg>
-          <span>
-            Criado por servidores públicos | Dados PNCP + múltiplas fontes oficiais
-          </span>
+          <span>Dados do PNCP. Desenvolvido por servidores públicos.</span>
         </div>
       </div>
     </section>

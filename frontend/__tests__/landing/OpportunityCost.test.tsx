@@ -1,31 +1,37 @@
 import { render, screen } from '@testing-library/react';
-import OpportunityCost from '@/app/(landing)/components/OpportunityCost';
+import OpportunityCost from '@/app/components/landing/OpportunityCost';
 
 describe('OpportunityCost', () => {
-  it('renders provocative headline', () => {
+  it('renders institutional headline', () => {
     render(<OpportunityCost />);
 
     expect(
-      screen.getByText(/qual o custo de uma licitação não disputada/i)
+      screen.getByText(/Licitações não encontradas são contratos perdidos/i)
     ).toBeInTheDocument();
   });
 
-  it('renders 3 key points', () => {
+  it('renders 3 key bullet points', () => {
     render(<OpportunityCost />);
 
-    expect(screen.getByText(/500 mil oportunidades/i)).toBeInTheDocument();
-    expect(screen.getByText(/despercebida/i)).toBeInTheDocument();
-    expect(screen.getByText(/concorrente que venceu/i)).toBeInTheDocument();
+    expect(screen.getByText(/500 mil/i)).toBeInTheDocument();
+    expect(screen.getByText(/oportunidades\/mês/i)).toBeInTheDocument();
+    expect(screen.getByText(/maioria passa despercebida/i)).toBeInTheDocument();
+    expect(screen.getByText(/concorrente pode estar encontrando/i)).toBeInTheDocument();
   });
 
-  it('has warning/alert visual styling', () => {
+  it('uses design system warning colors', () => {
     const { container } = render(<OpportunityCost />);
 
-    // Check for amber/warning background and border
-    const alertBox = container.querySelector('.bg-amber-50');
-    expect(alertBox).toBeInTheDocument();
+    // Check for warning-subtle background using design tokens
+    expect(container.querySelector('.bg-warning-subtle')).toBeInTheDocument();
+    expect(container.querySelector('.border-warning')).toBeInTheDocument();
+    expect(container.querySelector('.text-warning')).toBeInTheDocument();
+  });
 
-    const alertBorder = container.querySelector('.border-amber-500');
-    expect(alertBorder).toBeInTheDocument();
+  it('has proper semantic structure', () => {
+    render(<OpportunityCost />);
+
+    // Check for heading
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
   });
 });

@@ -1,3 +1,7 @@
+'use client';
+
+import { useInView } from '@/app/hooks/useInView';
+
 interface HowItWorksProps {
   className?: string;
 }
@@ -13,124 +17,90 @@ const steps: StepCard[] = [
   {
     stepNumber: 1,
     title: 'Configure filtros',
-    description:
-      'Defina estado, setor, faixa de valor e palavras-chave relevantes para sua empresa.',
+    description: 'Estado, setor, faixa de valor e palavras-chave.',
     icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-        />
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
       </svg>
     ),
   },
   {
     stepNumber: 2,
-    title: 'Receba alertas',
-    description:
-      'Buscas automáticas diárias e relatórios com resumos IA. Alertas em tempo real para oportunidades críticas.',
+    title: 'Receba resultados',
+    description: 'Buscas automáticas com resumos IA.',
     icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-        />
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
     ),
   },
   {
     stepNumber: 3,
-    title: 'Participe e vença',
-    description:
-      'Atue antes da concorrência com vantagem competitiva. Histórico completo para análise estratégica.',
+    title: 'Baixe e atue',
+    description: 'Excel pronto. Histórico completo.',
     icon: (
-      <svg
-        className="w-8 h-8"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-        />
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
       </svg>
     ),
   },
 ];
 
 export default function HowItWorks({ className = '' }: HowItWorksProps) {
+  const { ref, isInView } = useInView({ threshold: 0.1 });
+
   return (
     <section
       id="como-funciona"
-      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 bg-gray-50 dark:bg-gray-900/50 ${className}`}
+      ref={ref as React.RefObject<HTMLElement>}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 bg-surface-1 ${className}`}
     >
-      <h2 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 dark:text-white mb-4">
+      <h2
+        className={`text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4 transition-all duration-500 ${
+          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}
+      >
         Como funciona
       </h2>
-      <p className="text-lg text-center text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto">
-        Processo simples e automatizado para encontrar licitações relevantes
+      <p
+        className={`text-lg text-center text-ink-secondary mb-12 max-w-2xl mx-auto transition-all duration-500 delay-100 ${
+          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}
+      >
+        Três passos. Resultado em minutos.
       </p>
 
       <div className="grid md:grid-cols-3 gap-8 relative">
         {steps.map((step, index) => (
-          <div key={index} className="relative">
-            {/* Arrow (desktop only) */}
+          <div
+            key={index}
+            className={`relative transition-all duration-500 ${
+              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+            style={{ transitionDelay: `${150 + index * 100}ms` }}
+          >
+            {/* Connector line (desktop only) */}
             {index < steps.length - 1 && (
-              <div className="hidden md:block absolute top-12 -right-4 z-10">
-                <svg
-                  className="w-8 h-8 text-blue-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
+              <div className="hidden md:block absolute top-8 left-[calc(50%+24px)] w-[calc(100%-48px)] h-0.5 bg-[var(--border)]" />
             )}
 
             {/* Step Card */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm h-full">
+            <div className="bg-surface-0 p-6 rounded-card border border-[var(--border)] hover:-translate-y-0.5 hover:shadow-md transition-all h-full">
               {/* Step Number Badge */}
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-brand-navy text-white rounded-full flex items-center justify-center text-lg font-bold mb-4 relative z-10">
                 {step.stepNumber}
               </div>
 
               {/* Icon */}
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
+              <div className="w-10 h-10 bg-brand-blue-subtle rounded-button flex items-center justify-center text-brand-blue mb-4">
                 {step.icon}
               </div>
 
               {/* Title */}
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-                {step.title}
-              </h3>
+              <h3 className="text-lg font-bold text-ink mb-2">{step.title}</h3>
 
               {/* Description */}
-              <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
+              <p className="text-sm text-ink-secondary">{step.description}</p>
             </div>
           </div>
         ))}
