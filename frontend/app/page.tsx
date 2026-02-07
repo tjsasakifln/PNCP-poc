@@ -87,12 +87,12 @@ export default function LandingPage() {
               <h3 className="font-bold text-lg mb-4">Legal</h3>
               <ul className="space-y-2 text-sm text-gray-300">
                 <li>
-                  <a href="#privacidade" className="hover:text-blue-400 transition-colors">
+                  <a href="/privacidade" className="hover:text-blue-400 transition-colors">
                     Política de Privacidade
                   </a>
                 </li>
                 <li>
-                  <a href="#termos" className="hover:text-blue-400 transition-colors">
+                  <a href="/termos" className="hover:text-blue-400 transition-colors">
                     Termos de Uso
                   </a>
                 </li>
