@@ -58,24 +58,26 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                const theme = localStorage.getItem('bidiq-theme');
-                if (!theme) return;
-                if (theme === 'dark' || theme === 'dim') {
-                  document.documentElement.classList.add('dark');
-                }
-                if (theme === 'paperwhite') {
-                  document.documentElement.style.setProperty('--canvas', '#F5F0E8');
-                } else if (theme === 'sepia') {
-                  document.documentElement.style.setProperty('--canvas', '#EDE0CC');
-                } else if (theme === 'dim') {
-                  document.documentElement.style.setProperty('--canvas', '#2A2A2E');
-                  document.documentElement.style.setProperty('--ink', '#e0e0e0');
-                } else if (theme === 'dark') {
-                  document.documentElement.style.setProperty('--canvas', '#121212');
-                  document.documentElement.style.setProperty('--ink', '#e0e0e0');
-                }
-              } catch(e) {}
+              (function() {
+                try {
+                  const theme = localStorage.getItem('bidiq-theme');
+                  if (!theme) return;
+                  if (theme === 'dark' || theme === 'dim') {
+                    document.documentElement.classList.add('dark');
+                  }
+                  if (theme === 'paperwhite') {
+                    document.documentElement.style.setProperty('--canvas', '#F5F0E8');
+                  } else if (theme === 'sepia') {
+                    document.documentElement.style.setProperty('--canvas', '#EDE0CC');
+                  } else if (theme === 'dim') {
+                    document.documentElement.style.setProperty('--canvas', '#2A2A2E');
+                    document.documentElement.style.setProperty('--ink', '#e0e0e0');
+                  } else if (theme === 'dark') {
+                    document.documentElement.style.setProperty('--canvas', '#121212');
+                    document.documentElement.style.setProperty('--ink', '#e0e0e0');
+                  }
+                } catch(e) {}
+              })();
             `,
           }}
         />

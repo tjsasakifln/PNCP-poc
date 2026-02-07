@@ -47,6 +47,7 @@ interface PlanFeatures {
   maxRequestsPerMonth: number;
   maxRequestsPerMin: number;
   aiLevel: string;  // Display text for AI summary level
+  unlimited?: boolean;  // P0 fix: Flag for unlimited plans (Sala de Guerra)
 }
 
 const PLAN_FEATURES: Record<string, PlanFeatures> = {
@@ -59,7 +60,7 @@ const PLAN_FEATURES: Record<string, PlanFeatures> = {
   },
   consultor_agil: {
     maxHistoryDays: 30,
-    allowExcel: false,
+    allowExcel: true,  // P1 fix: Excel enabled
     maxRequestsPerMonth: 50,
     maxRequestsPerMin: 10,
     aiLevel: "Basico",
@@ -74,9 +75,10 @@ const PLAN_FEATURES: Record<string, PlanFeatures> = {
   sala_guerra: {
     maxHistoryDays: 1825,  // 5 years
     allowExcel: true,
-    maxRequestsPerMonth: 1000,
-    maxRequestsPerMin: 60,
+    maxRequestsPerMonth: 999999,  // P0 fix: Unlimited
+    maxRequestsPerMin: 999,
     aiLevel: "Prioritario",
+    unlimited: true,  // P0 fix: Show "Ilimitado" in UI
   },
 };
 
