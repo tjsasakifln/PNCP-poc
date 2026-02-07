@@ -2,30 +2,52 @@
 # Root .dockerignore - Railway Monorepo
 # =============================================================================
 # This is for the root Dockerfile that builds the frontend service
-# We MUST include the frontend/ directory
+# IMPORTANT: We use explicit exclusions, NOT "exclude all then include"
 
-# Exclude everything first
-*
+# Git
+.git/
+.gitignore
+.gitattributes
 
-# Then explicitly include only what we need for frontend build
-!frontend/
-!frontend/**
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# But exclude node_modules and build artifacts from frontend
+# Backend (not needed for frontend build)
+backend/
+
+# Docs (not needed for build)
+docs/
+
+# AIOS (not needed for build)
+.aios-core/
+
+# Claude config (not needed for build)
+.claude/
+
+# Root-level files not needed
+README.md
+CLAUDE.md
+ROADMAP.md
+ISSUES-ROADMAP.md
+PRD.md
+*.log
+
+# Frontend exclusions (these exist in frontend/ and should not be copied)
 frontend/node_modules/
 frontend/.next/
 frontend/out/
 frontend/build/
 frontend/dist/
+frontend/coverage/
+frontend/.nyc_output/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
 
-# Exclude git and IDE
-.git/
-.gitignore
-.vscode/
-.idea/
-
-# Exclude backend
-backend/
-
-# Exclude docs
-docs/
+# Test files not needed in production
+frontend/e2e-tests/
+frontend/playwright-report/
+frontend/test-results/

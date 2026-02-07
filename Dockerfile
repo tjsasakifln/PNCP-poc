@@ -6,7 +6,7 @@
 # =============================================================================
 
 # CACHE BUST - forces Railway rebuild
-ARG CACHEBUST=20260207-story168-landing-page-routing-fix
+ARG CACHEBUST=20260207-fix-dockerignore-frontend-not-found
 
 # Stage 1: Dependencies
 FROM node:20.11-alpine3.19 AS deps
