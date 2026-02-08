@@ -62,7 +62,7 @@ export default function HistoricoPage() {
       params.set('setor', searchSession.sectors[0]);
     }
 
-    router.push(`/?${params.toString()}`);
+    router.push(`/buscar?${params.toString()}`);
   }, [router, trackEvent]);
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export default function HistoricoPage() {
             <p className="text-[var(--ink-secondary)]">{total} busca{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
           </div>
           <Link
-            href="/"
+            href="/buscar"
             className="px-4 py-2 bg-[var(--brand-navy)] text-white rounded-button
                        hover:bg-[var(--brand-blue)] transition-colors text-sm"
           >
@@ -149,7 +149,7 @@ export default function HistoricoPage() {
         ) : sessions.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-[var(--ink-muted)] text-lg mb-4">Nenhuma busca realizada ainda</p>
-            <Link href="/" className="text-[var(--brand-blue)] hover:underline">
+            <Link href="/buscar" className="text-[var(--brand-blue)] hover:underline">
               Fazer primeira busca
             </Link>
           </div>

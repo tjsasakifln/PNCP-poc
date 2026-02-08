@@ -16,16 +16,20 @@ export default function LandingPage() {
     <>
       <LandingNavbar />
 
-      <main>
+      <main id="main-content">
         <HeroSection />
         <OpportunityCost />
         <BeforeAfter />
         <DifferentialsGrid />
         <HowItWorks />
         <StatsSection />
-        <DataSourcesSection />
+        <section id="sobre">
+          <DataSourcesSection />
+        </section>
         <SectorsGrid />
-        <FinalCTA />
+        <section id="suporte">
+          <FinalCTA />
+        </section>
       </main>
 
       <footer className="bg-surface-1 text-ink border-t border-[var(--border)]">
@@ -60,7 +64,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-ink-secondary">
                 <li>
                   <a
-                    href="#planos"
+                    href="/planos"
                     className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
                   >
                     Planos e Preços
@@ -91,7 +95,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="#contato"
+                    href="#suporte"
                     className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
                   >
                     Contato

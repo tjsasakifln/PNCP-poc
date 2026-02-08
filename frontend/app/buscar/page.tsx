@@ -1852,7 +1852,7 @@ function HomePageContent() {
               <ul className="space-y-2 text-sm text-ink-secondary">
                 <li>
                   <a
-                    href="/#planos"
+                    href="/planos"
                     className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
                   >
                     Planos e Preços
@@ -1884,7 +1884,7 @@ function HomePageContent() {
                 </li>
                 <li>
                   <a
-                    href="/#contato"
+                    href="/#suporte"
                     className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
                   >
                     Contato

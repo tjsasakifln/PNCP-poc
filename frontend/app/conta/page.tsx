@@ -91,7 +91,7 @@ export default function ContaPage() {
       <div className="max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-display font-bold text-[var(--ink)]">Minha Conta</h1>
-          <Link href="/" className="text-sm text-[var(--brand-blue)] hover:underline">
+          <Link href="/buscar" className="text-sm text-[var(--brand-blue)] hover:underline">
             Voltar
           </Link>
         </div>

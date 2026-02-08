@@ -49,7 +49,7 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
             <Link
-              href="#planos"
+              href="/planos"
               className="text-ink-secondary hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >
               Planos

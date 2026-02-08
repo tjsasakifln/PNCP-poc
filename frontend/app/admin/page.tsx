@@ -235,7 +235,7 @@ export default function AdminPage() {
             Esta página é exclusiva para administradores do sistema. Se você acredita que deveria ter acesso, entre em contato com o suporte.
           </p>
           <Link
-            href="/"
+            href="/buscar"
             className="inline-block px-6 py-2 bg-[var(--brand-navy)] text-white rounded-button
                        hover:bg-[var(--brand-blue)] transition-colors"
           >
@@ -257,7 +257,7 @@ export default function AdminPage() {
             <p className="text-[var(--ink-secondary)]">{total} usuário{total !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex gap-3">
-            <Link href="/" className="px-4 py-2 border border-[var(--border)] rounded-button text-sm hover:bg-[var(--surface-1)]">
+            <Link href="/buscar" className="px-4 py-2 border border-[var(--border)] rounded-button text-sm hover:bg-[var(--surface-1)]">
               Voltar
             </Link>
             <button

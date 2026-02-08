@@ -319,7 +319,7 @@ export default function PlanosPage() {
                 </Link>
               )}
               <Link
-                href="/"
+                href="/buscar"
                 className="px-6 py-3 border border-[var(--border)] text-[var(--ink)] rounded-button font-semibold
                            hover:bg-[var(--surface-1)] transition-colors"
               >
@@ -545,7 +545,7 @@ export default function PlanosPage() {
         )}
 
         <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-[var(--ink-muted)] hover:underline">
+          <Link href="/buscar" className="text-sm text-[var(--ink-muted)] hover:underline">
             Voltar para buscas
           </Link>
         </div>
