@@ -1942,9 +1942,9 @@ function HomePageContent() {
                 <span className="text-sm text-ink-secondary">LGPD Compliant</span>
               </div>
 
-              {/* Desenvolvido por servidores públicos */}
+              {/* Sistema desenvolvido por servidores públicos */}
               <p className="text-sm text-ink-secondary">
-                Desenvolvido por servidores públicos
+                Sistema desenvolvido por servidores públicos
               </p>
             </div>
           </div>

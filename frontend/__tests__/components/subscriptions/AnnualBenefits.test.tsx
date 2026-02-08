@@ -88,7 +88,7 @@ describe('AnnualBenefits Component', () => {
       render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
 
       expect(screen.getByText('Alertas Multi-Canal')).toBeInTheDocument();
-      expect(screen.getByText(/WhatsApp, Telegram/)).toBeInTheDocument();
+      expect(screen.getByText(/Telegram, Email, notificações/)).toBeInTheDocument();
     });
 
     it('should show crown icon for exclusive section', () => {

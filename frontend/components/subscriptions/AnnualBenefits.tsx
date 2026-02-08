@@ -64,7 +64,7 @@ const ALL_BENEFITS: Benefit[] = [
   {
     key: 'alertas_multi_canal',
     title: 'Alertas Multi-Canal',
-    description: 'WhatsApp, Telegram, Email (não só in-app)',
+    description: 'Telegram, Email, notificações in-app e mais',
     status: 'future',
     planExclusive: 'sala_guerra',
   },

@@ -73,7 +73,7 @@ describe('InstitutionalSidebar', () => {
       expect(screen.getByText('Comece grátis com 3 buscas completas')).toBeInTheDocument();
       expect(screen.getByText('Sem necessidade de cartão de crédito')).toBeInTheDocument();
       expect(screen.getByText('Configuração em menos de 2 minutos')).toBeInTheDocument();
-      expect(screen.getByText('Suporte dedicado via WhatsApp')).toBeInTheDocument();
+      expect(screen.getByText('Suporte dedicado via plataforma')).toBeInTheDocument();
       expect(screen.getByText('Dados protegidos e conformidade LGPD')).toBeInTheDocument();
     });
 

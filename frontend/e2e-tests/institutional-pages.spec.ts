@@ -70,7 +70,7 @@ test.describe('Signup Page - Institutional Sidebar', () => {
     await expect(page.getByText('Comece grátis com 3 buscas completas')).toBeVisible();
     await expect(page.getByText('Sem necessidade de cartão de crédito')).toBeVisible();
     await expect(page.getByText('Configuração em menos de 2 minutos')).toBeVisible();
-    await expect(page.getByText('Suporte dedicado via WhatsApp')).toBeVisible();
+    await expect(page.getByText('Suporte dedicado via plataforma')).toBeVisible();
     await expect(page.getByText('Dados protegidos e conformidade LGPD')).toBeVisible();
   });
 

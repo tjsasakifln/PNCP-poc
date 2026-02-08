@@ -11,7 +11,7 @@ describe('DifferentialsGrid', () => {
   it('renders subtitle about developers', () => {
     render(<DifferentialsGrid />);
 
-    expect(screen.getByText(/Desenvolvido por servidores públicos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeInTheDocument();
   });
 
   it('renders 4 differential cards with new titles', () => {

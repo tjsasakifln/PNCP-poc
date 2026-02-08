@@ -49,7 +49,7 @@ function isValidPhone(phone: string): boolean {
 // Consent terms text
 const CONSENT_TERMS = `TERMOS DE CONSENTIMENTO PARA COMUNICACOES PROMOCIONAIS
 
-Ao fornecer seus dados e marcar a caixa de aceite abaixo, voce autoriza expressamente a equipe do ${APP_NAME} a enviar comunicacoes promocionais por EMAIL e WHATSAPP, incluindo:
+Ao fornecer seus dados e marcar a caixa de aceite abaixo, voce autoriza expressamente a equipe do ${APP_NAME} a enviar comunicacoes promocionais por EMAIL e pela PLATAFORMA, incluindo:
 
 1. Mensagens promocionais sobre novos recursos e funcionalidades;
 2. Ofertas especiais, descontos e pacotes promocionais;
@@ -59,10 +59,9 @@ Ao fornecer seus dados e marcar a caixa de aceite abaixo, voce autoriza expressa
 FREQUENCIA: As mensagens serao enviadas com moderacao, respeitando horarios comerciais (segunda a sexta, 9h as 18h).
 
 CANCELAMENTO: Voce pode cancelar o recebimento a qualquer momento:
-- Respondendo "PARAR" a qualquer mensagem de WhatsApp
 - Clicando em "Descadastrar" nos emails recebidos
 - Acessando as configuracoes do seu perfil
-- Entrando em contato pelo email suporte@confenge.com.br
+- Entrando em contato pela secao de suporte na plataforma
 
 PRIVACIDADE: Seus dados (email e telefone) nao serao compartilhados com terceiros e serao utilizados exclusivamente para as finalidades descritas acima.
 

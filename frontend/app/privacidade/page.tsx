@@ -128,7 +128,7 @@ export default function PrivacidadePage() {
                 <li><strong>Oposição:</strong> Se opor ao tratamento de dados em certas situações</li>
               </ul>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-                Para exercer seus direitos, envie um e-mail para <a href="mailto:privacidade@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">privacidade@smartlic.tech</a>
+                Para exercer seus direitos, entre em contato através da seção de suporte na plataforma.
               </p>
             </section>
 
@@ -192,8 +192,7 @@ export default function PrivacidadePage() {
               </h2>
               <div className="text-gray-700 dark:text-gray-300 leading-relaxed space-y-2">
                 <p><strong>Encarregado de Dados (DPO):</strong></p>
-                <p>E-mail: <a href="mailto:privacidade@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">privacidade@smartlic.tech</a></p>
-                <p>E-mail alternativo: <a href="mailto:tiago.sasaki@gmail.com" className="text-blue-600 dark:text-blue-400 hover:underline">tiago.sasaki@gmail.com</a></p>
+                <p>Entre em contato através da seção de suporte na plataforma.</p>
                 <p className="mt-4">
                   Para questões relacionadas à LGPD, você também pode contatar a Autoridade Nacional de Proteção de Dados (ANPD):
                   <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline ml-1">

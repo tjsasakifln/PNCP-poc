@@ -289,9 +289,7 @@ export default function TermosPage() {
               <div className="text-gray-700 dark:text-gray-300 leading-relaxed space-y-2">
                 <p>Para questões sobre estes Termos de Serviço:</p>
                 <p><strong>SmartLic</strong></p>
-                <p>E-mail: <a href="mailto:suporte@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">suporte@smartlic.tech</a></p>
-                <p>E-mail jurídico: <a href="mailto:legal@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">legal@smartlic.tech</a></p>
-                <p>E-mail alternativo: <a href="mailto:tiago.sasaki@gmail.com" className="text-blue-600 dark:text-blue-400 hover:underline">tiago.sasaki@gmail.com</a></p>
+                <p>Entre em contato através da nossa plataforma, na seção de suporte.</p>
               </div>
             </section>
 

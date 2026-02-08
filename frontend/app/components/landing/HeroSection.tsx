@@ -92,7 +92,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
               clipRule="evenodd"
             />
           </svg>
-          <span>Dados do PNCP. Desenvolvido por servidores públicos.</span>
+          <span>Dados oficiais em tempo real. Sistema desenvolvido por servidores públicos.</span>
         </div>
       </div>
     </section>

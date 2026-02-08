@@ -133,7 +133,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
       { icon: "gift", text: "Comece grátis com 3 buscas completas" },
       { icon: "credit-card-off", text: "Sem necessidade de cartão de crédito" },
       { icon: "zap", text: "Configuração em menos de 2 minutos" },
-      { icon: "headset", text: "Suporte dedicado via WhatsApp" },
+      { icon: "headset", text: "Suporte dedicado via plataforma" },
       { icon: "shield", text: "Dados protegidos e conformidade LGPD" },
     ],
     stats: [

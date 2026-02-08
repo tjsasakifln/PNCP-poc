@@ -73,7 +73,7 @@ export default function DifferentialsGrid({ className = '' }: DifferentialsGridP
           isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        Desenvolvido por servidores públicos
+        Sistema desenvolvido por servidores públicos
       </p>
 
       {/* Layout 1+3 Assimétrico */}

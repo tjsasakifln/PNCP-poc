@@ -24,7 +24,7 @@ test.describe('Landing Page', () => {
     await expect(secondaryCTA).toBeVisible();
 
     // Check credibility badge
-    await expect(page.getByText(/criado por servidores públicos/i)).toBeVisible();
+    await expect(page.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeVisible();
   });
 
   test('scrolls to "Como Funciona" section when clicking secondary CTA', async ({ page }) => {
@@ -107,8 +107,8 @@ test.describe('Landing Page', () => {
     // Check LGPD badge
     await expect(page.getByText(/lgpd compliant/i)).toBeVisible();
 
-    // Check "Desenvolvido por servidores públicos"
-    await expect(page.getByText(/desenvolvido por servidores públicos/i)).toBeVisible();
+    // Check "Sistema desenvolvido por servidores públicos"
+    await expect(page.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeVisible();
   });
 
   test('PNCP link opens in new tab', async ({ page, context }) => {

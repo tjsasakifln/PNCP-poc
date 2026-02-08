@@ -35,8 +35,8 @@ describe('HeroSection', () => {
   it('renders credibility badge with institutional copy', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/Dados do PNCP/i)).toBeInTheDocument();
-    expect(screen.getByText(/Desenvolvido por servidores públicos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dados oficiais em tempo real/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeInTheDocument();
   });
 
   it('scrolls to section when secondary CTA is clicked', async () => {
