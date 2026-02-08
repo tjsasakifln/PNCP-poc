@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import type { BuscaResult, ValidationErrors, Setor } from "../types";
 import { EnhancedLoadingProgress } from "../../components/EnhancedLoadingProgress";
@@ -866,59 +867,43 @@ function HomePageContent() {
       {/* Navigation Header */}
       <header className="border-b border-strong bg-[var(--surface-0)] sticky top-0 z-50 backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <Image
-              src={LOGO_URL}
-              alt={APP_NAME}
-              width={140}
-              height={67}
-              className="h-10 w-auto"
-              priority
-            />
-            <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="text-xl font-bold text-brand-navy hover:text-brand-blue transition-colors"
+            >
+              SmartLic
+            </Link>
+            <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-3">
               Busca inteligente de licitações
             </span>
           </div>
-          <div className="flex items-center gap-4">
-
-            {/* Issue #153: Show quota badge */}
-            <QuotaBadge />
-
-            {/* STORY-165: Plan badge with upgrade modal */}
-            {planInfo && (
-              <PlanBadge
-                planId={planInfo.plan_id}
-                planName={planInfo.plan_name}
-                trialExpiresAt={planInfo.trial_expires_at ?? undefined}
-                onClick={() => {
-                  setPreSelectedPlan(undefined);
-                  setUpgradeSource("plan_badge");
-                  setShowUpgradeModal(true);
-                }}
-              />
-            )}
-
-            {/* Re-trigger Onboarding Button */}
-            {!shouldShowOnboarding && (
-              <button
-                onClick={restartTour}
-                className="text-xs text-ink-muted hover:text-brand-blue transition-colors"
-                title="Ver tutorial novamente"
-                aria-label="Ver tutorial novamente"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            )}
-
+          <div className="flex items-center gap-3">
             <SavedSearchesDropdown
               onLoadSearch={handleLoadSearch}
               onAnalyticsEvent={trackEvent}
             />
             <ThemeToggle />
-            <UserMenu />
+            <UserMenu
+              onRestartTour={!shouldShowOnboarding ? restartTour : undefined}
+              statusSlot={
+                <>
+                  <QuotaBadge />
+                  {planInfo && (
+                    <PlanBadge
+                      planId={planInfo.plan_id}
+                      planName={planInfo.plan_name}
+                      trialExpiresAt={planInfo.trial_expires_at ?? undefined}
+                      onClick={() => {
+                        setPreSelectedPlan(undefined);
+                        setUpgradeSource("plan_badge");
+                        setShowUpgradeModal(true);
+                      }}
+                    />
+                  )}
+                </>
+              }
+            />
           </div>
         </div>
       </header>

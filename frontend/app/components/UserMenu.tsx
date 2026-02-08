@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { useAuth } from "./AuthProvider";
 import Link from "next/link";
 
-export function UserMenu() {
+interface UserMenuProps {
+  /** Slot for inline badges (QuotaBadge, PlanBadge) shown inside the dropdown */
+  statusSlot?: ReactNode;
+  /** Callback to restart onboarding tour */
+  onRestartTour?: () => void;
+}
+
+export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
   const { user, session, loading, signOut, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -55,33 +62,49 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-56 bg-[var(--surface-0)] border border-[var(--border)]
+        <div className="absolute right-0 top-11 w-64 bg-[var(--surface-0)] border border-[var(--border)]
                         rounded-card shadow-lg z-50 py-2">
-          <div className="px-4 py-2 border-b border-[var(--border)]">
+          <div className="px-4 py-2.5 border-b border-[var(--border)]">
             <p className="text-sm font-medium text-[var(--ink)] truncate">{user.email}</p>
           </div>
+
+          {/* Status badges (quota + plan) */}
+          {statusSlot && (
+            <div className="px-4 py-3 border-b border-[var(--border)] flex flex-wrap items-center gap-2">
+              {statusSlot}
+            </div>
+          )}
+
           <Link href="/conta" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+            className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Minha conta
           </Link>
           <Link href="/historico" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+            className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Histórico
           </Link>
           <Link href="/planos" onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+            className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Planos
           </Link>
           {isAdmin && (
             <Link href="/admin" onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+              className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
               Admin
             </Link>
+          )}
+          {onRestartTour && (
+            <button
+              onClick={() => { onRestartTour(); setOpen(false); }}
+              className="block w-full text-left px-4 py-2.5 text-sm text-[var(--ink-secondary)] hover:bg-[var(--surface-1)]"
+            >
+              Ver tutorial novamente
+            </button>
           )}
           <div className="border-t border-[var(--border)] mt-1 pt-1">
             <button
               onClick={() => { signOut(); setOpen(false); }}
-              className="block w-full text-left px-4 py-2 text-sm text-[var(--error)] hover:bg-[var(--surface-1)]"
+              className="block w-full text-left px-4 py-2.5 text-sm text-[var(--error)] hover:bg-[var(--surface-1)]"
             >
               Sair
             </button>
