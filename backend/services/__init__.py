@@ -24,9 +24,10 @@ from services.exceptions import (
     DeduplicationError,
     ConsolidationError,
 )
-from services.consolidation import ConsolidationService
-from services.deduplication import DeduplicationService
-from services.source_registry import SourceRegistry
+# Temporarily commented out - modules not yet implemented (multi-source consolidation feature)
+# from services.consolidation import ConsolidationService
+# from services.deduplication import DeduplicationService
+# from services.source_registry import SourceRegistry
 
 __all__ = [
     # Models
@@ -46,8 +47,8 @@ __all__ = [
     "SourceParseError",
     "DeduplicationError",
     "ConsolidationError",
-    # Services
-    "ConsolidationService",
-    "DeduplicationService",
-    "SourceRegistry",
+    # Services (commented out - not yet implemented)
+    # "ConsolidationService",
+    # "DeduplicationService",
+    # "SourceRegistry",
 ]

@@ -41,6 +41,9 @@ from auth import get_current_user, require_auth
 from admin import router as admin_router
 from log_sanitizer import mask_user_id, log_user_action, sanitize_string
 from rate_limiter import rate_limiter
+from routes.subscriptions import router as subscriptions_router
+from routes.features import router as features_router
+from webhooks.stripe import router as stripe_webhook_router
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -76,6 +79,9 @@ app.add_middleware(
 )
 
 app.include_router(admin_router)
+app.include_router(subscriptions_router)
+app.include_router(features_router)
+app.include_router(stripe_webhook_router)
 
 logger.info(
     "FastAPI application initialized — PORT=%s",

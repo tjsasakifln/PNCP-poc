@@ -1,0 +1,68 @@
+- generic [active] [ref=e1]:
+  - link "Pular para conteúdo principal" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - alert [ref=e3]
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - heading "Descubra oportunidades de licitação antes da concorrência" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Acesse seu painel e encontre as melhores oportunidades para sua empresa
+      - list [ref=e10]:
+        - listitem [ref=e11]:
+          - img [ref=e13]
+          - generic [ref=e15]: Monitoramento em tempo real de licitações
+        - listitem [ref=e16]:
+          - img [ref=e18]
+          - generic [ref=e20]: Filtros por estado, valor e setor
+        - listitem [ref=e21]:
+          - img [ref=e23]
+          - generic [ref=e25]: Resumo executivo gerado por IA
+        - listitem [ref=e26]:
+          - img [ref=e28]
+          - generic [ref=e30]: Exportação de relatórios em Excel
+        - listitem [ref=e31]:
+          - img [ref=e33]
+          - generic [ref=e36]: Histórico completo de buscas
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]: "27"
+          - generic [ref=e40]: estados monitorados
+        - generic [ref=e41]:
+          - generic [ref=e42]: "12"
+          - generic [ref=e43]: setores pré-configurados
+        - generic [ref=e44]:
+          - generic [ref=e45]: 24h
+          - generic [ref=e46]: atualização diária
+      - generic [ref=e48]:
+        - img [ref=e49]
+        - generic [ref=e51]: Dados oficiais em tempo real
+    - generic [ref=e53]:
+      - heading "SmartLic" [level=1] [ref=e54]
+      - paragraph [ref=e55]: Entre para acessar suas buscas
+      - button "Entrar com Google" [ref=e56] [cursor=pointer]:
+        - img [ref=e57]
+        - text: Entrar com Google
+      - generic [ref=e64]: OU
+      - generic [ref=e66]:
+        - button "Email + Senha" [ref=e67] [cursor=pointer]
+        - button "Magic Link" [ref=e68] [cursor=pointer]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: Email
+          - textbox "Email" [ref=e72]:
+            - /placeholder: seu@email.com
+        - generic [ref=e73]:
+          - generic [ref=e74]: Senha
+          - generic [ref=e75]:
+            - textbox "Senha" [ref=e76]:
+              - /placeholder: Sua senha
+            - button "Mostrar senha" [ref=e77] [cursor=pointer]:
+              - img [ref=e78]
+        - button "Entrar" [ref=e81] [cursor=pointer]
+      - paragraph [ref=e82]:
+        - text: Não tem conta?
+        - link "Criar conta" [ref=e83] [cursor=pointer]:
+          - /url: /signup
+      - link "← Ver planos disponíveis" [ref=e85] [cursor=pointer]:
+        - /url: /planos
+  - region "Notifications alt+T"

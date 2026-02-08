@@ -21,6 +21,9 @@ openai==1.109.1
 # Auth & Database
 supabase==2.13.0
 stripe==11.4.1
+redis==5.2.1  # Feature flag caching (STORY-171)
+sqlalchemy==2.0.36  # ORM for user_subscriptions, webhook events (STORY-171)
+psycopg2-binary==2.9.10  # PostgreSQL adapter for SQLAlchemy
 
 # =============================================================================
 # Development dependencies (not needed in production but included for simplicity)
