@@ -179,7 +179,27 @@ def inferir_status_licitacao(licitacao: dict) -> str:
             )
             return "em_julgamento"
         else:
-            # Prazo futuro (assume que já abriu se não temos data de abertura)
+            # Prazo futuro - mas verificar se publicação é muito antiga
+            # Licitações publicadas há mais de 90 dias com prazo ainda aberto
+            # são provavelmente dados inconsistentes da API PNCP
+            data_publicacao_str = licitacao.get("dataPublicacaoPncp") or licitacao.get("dataPublicacao")
+            if data_publicacao_str:
+                try:
+                    data_pub = datetime.fromisoformat(
+                        data_publicacao_str.replace("Z", "+00:00")
+                    )
+                    agora_pub = datetime.now(data_pub.tzinfo) if data_pub.tzinfo else agora
+                    dias_desde_publicacao = (agora_pub - data_pub).days
+                    if dias_desde_publicacao > 90:
+                        logger.debug(
+                            f"Status inferido: em_julgamento "
+                            f"(publicação antiga: {dias_desde_publicacao} dias, "
+                            f"prazo futuro suspeito: {data_encerramento.date()})"
+                        )
+                        return "em_julgamento"
+                except (ValueError, AttributeError):
+                    pass
+
             logger.debug(
                 f"Status inferido: recebendo_proposta "
                 f"(prazo futuro: {data_encerramento.date()})"

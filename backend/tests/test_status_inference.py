@@ -142,6 +142,46 @@ class TestInferirStatusLicitacao:
         # Homologação tem prioridade
         assert inferir_status_licitacao(lic) == "encerrada"
 
+    def test_fallback_publicacao_antiga_com_prazo_futuro(self):
+        """Publicação >90 dias atrás com prazo futuro deve ser em_julgamento."""
+        agora = datetime.now()
+        encerramento_futuro = (agora + timedelta(days=30)).isoformat()
+        publicacao_antiga = (agora - timedelta(days=120)).isoformat()
+
+        lic = {
+            "dataEncerramentoProposta": encerramento_futuro,
+            "dataPublicacaoPncp": publicacao_antiga,
+            "valorTotalHomologado": None,
+        }
+
+        assert inferir_status_licitacao(lic) == "em_julgamento"
+
+    def test_fallback_publicacao_recente_com_prazo_futuro(self):
+        """Publicação recente com prazo futuro deve ser recebendo_proposta."""
+        agora = datetime.now()
+        encerramento_futuro = (agora + timedelta(days=30)).isoformat()
+        publicacao_recente = (agora - timedelta(days=10)).isoformat()
+
+        lic = {
+            "dataEncerramentoProposta": encerramento_futuro,
+            "dataPublicacaoPncp": publicacao_recente,
+            "valorTotalHomologado": None,
+        }
+
+        assert inferir_status_licitacao(lic) == "recebendo_proposta"
+
+    def test_fallback_sem_publicacao_com_prazo_futuro(self):
+        """Sem data de publicação, prazo futuro → recebendo_proposta (conservador)."""
+        agora = datetime.now()
+        encerramento_futuro = (agora + timedelta(days=30)).isoformat()
+
+        lic = {
+            "dataEncerramentoProposta": encerramento_futuro,
+            "valorTotalHomologado": None,
+        }
+
+        assert inferir_status_licitacao(lic) == "recebendo_proposta"
+
 
 class TestEnriquecerComStatusInferido:
     """Tests for enriquecer_com_status_inferido() function."""
