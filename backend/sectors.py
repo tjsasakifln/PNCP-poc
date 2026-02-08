@@ -91,6 +91,12 @@ SECTORS: Dict[str, SectorConfig] = {
             "bebida alcoólica", "bebida alcoolica",
             "concessão", "concessao",
             "exploração publicitária", "exploracao publicitaria",
+            # "óleo" in non-food context (additional)
+            "óleo essencial", "oleo essencial",
+            "óleo de corte", "oleo de corte",
+            # "sal" in non-food context (additional)
+            "sal mineral",
+            "sal para piscina",
         },
     ),
     "informatica": SectorConfig(
@@ -261,6 +267,11 @@ SECTORS: Dict[str, SectorConfig] = {
             # "balcão" in non-furniture context
             "porta balcão", "porta balcao",
             "concessão", "concessao",
+            # "mesa" in non-furniture context (additional)
+            "mesa de som",
+            "mesa diretora",
+            # "banco" in non-furniture context (additional)
+            "banco de reserva",
         },
     ),
     "papelaria": SectorConfig(
@@ -352,13 +363,10 @@ SECTORS: Dict[str, SectorConfig] = {
             "construção civil", "construcao civil",
             "pavimentação", "pavimentacao",
             "recapeamento", "recapeamento asfaltico", "recapeamento asfáltico",
-            "manutenção predial", "manutencao predial",
             "impermeabilização", "impermeabilizacao",
             "pintura predial", "pintura de fachada",
             "instalação elétrica", "instalacao eletrica",
             "instalação hidráulica", "instalacao hidraulica",
-            "ar condicionado",
-            "climatização", "climatizacao",
             "saneamento básico", "saneamento basico",
             "terraplanagem",
             "projeto arquitetônico", "projeto arquitetonico",
@@ -371,21 +379,46 @@ SECTORS: Dict[str, SectorConfig] = {
             "asfalto", "asfaltamento",
             "drenagem",
             # Restored standalone terms (guarded by exclusions)
-            "obra", "obras",
             "reforma", "reformas",
             "engenharia",
             "construção", "construcao",
             "edificação", "edificacao",
             "ampliação", "ampliacao",
-            "restauração", "restauracao",
             "demolição", "demolicao",
-            "infraestrutura",
             "cimento", "aço", "aco", "ferro",
             "madeira", "tijolo", "tijolos",
             "areia", "brita", "cascalho",
-            "telhado", "cobertura",
+            "telhado",
             "piso", "revestimento",
             "elevador", "elevadores",
+
+            # Precision compound replacements for removed standalone terms
+            # Replacing "obra"/"obras" — compound forms only
+            "obra civil", "obras civis",
+            "obra pública", "obra publica",
+            "obra de reforma",
+            "fiscalização de obra", "fiscalizacao de obra",
+            "supervisão de obra", "supervisao de obra",
+            "gerenciamento de obra",
+            "contratação de obra", "contratacao de obra",
+            "material e mão de obra", "material e mao de obra",
+
+            # Replacing "cobertura" — only construction meanings
+            "cobertura metálica", "cobertura metalica",
+            "cobertura de telhado",
+            "cobertura de quadra",
+
+            # Replacing "restauração" — only construction meanings
+            "restauração de edifício", "restauracao de edificio",
+            "restauração de fachada", "restauracao de fachada",
+            "restauração de patrimônio", "restauracao de patrimonio",
+
+            # Engineering surveying
+            "sondagem geotécnica", "sondagem geotecnica",
+            "sondagem de solo", "sondagem spt",
+
+            # Additional precision compounds
+            "revitalização urbana", "revitalizacao urbana",
 
             # COMPOUND TERMS ADDED (Issue #all-sectors-expansion - 2026-02-06)
             "material de construção", "material de construcao",
@@ -407,6 +440,9 @@ SECTORS: Dict[str, SectorConfig] = {
             "reforma tributária", "reforma tributaria",
             "reforma curricular",
             "reforma política", "reforma politica",
+            "reforma agrária", "reforma agraria",
+            "reforma trabalhista",
+            "reforma previdenciária", "reforma previdenciaria",
             # "restauração" in non-construction context
             "restauração de dados",
             "restauração de arquivo",
@@ -431,18 +467,24 @@ SECTORS: Dict[str, SectorConfig] = {
             # "obra" in non-construction context (keep specific, avoid blocking legit civil works)
             # NOTE: "mão de obra" removed — too aggressive, blocks legit civil works
             # like "fornecimento de material e mão de obra para reforma"
-            # "construção" in non-civil context
+            # "construção" in abstract context
+            "construção de conhecimento", "construcao de conhecimento",
+            "construção de marca", "construcao de marca",
             "construção de cenário", "construcao de cenario",
             "construção de cenários", "construcao de cenarios",
             "cenários cenográficos", "cenarios cenograficos",
             # "madeira" in non-construction context
             "carroceria de madeira",
+            "brinquedo de madeira",
+            "espátula de madeira", "espatula de madeira",
+            "palito de madeira",
             # "cobertura" in non-construction context
             "cobertura de seguro",
             "cobertura jornalística", "cobertura jornalistica",
             "cobertura vacinal",
             # "ferro" in non-construction context
             "ferro de passar",
+            "ferro elétrico", "ferro eletrico",
             # Automotive services that mention "infraestrutura"
             "serviços de borracharia", "servicos de borracharia",
             # Sports context matching "areia" (sand courts)
@@ -804,6 +846,13 @@ SECTORS: Dict[str, SectorConfig] = {
             # "higiene" in non-product context
             "higiene ocupacional",
             "higiene do trabalho",
+            # "portaria" in non-reception context
+            "portaria ministerial",
+            "portaria normativa",
+            "portaria interministerial",
+            "portaria administrativa",
+            # "recepção" in non-reception context
+            "recepção de obra", "recepcao de obra",
         },
     ),
     "saude": SectorConfig(

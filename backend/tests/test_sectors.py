@@ -167,17 +167,17 @@ class TestEngenhariaSector:
         assert ok is True
 
     def test_matches_sondagem_geotecnica(self):
+        """Now matches via 'sondagem geotécnica' compound keyword (standalone 'obras' removed)."""
         ok, _ = self._match(
             "CONTRATAÇÃO DE EMPRESA PARA PRESTAÇÃO DE SERVIÇOS DE SONDAGEM GEOTÉCNICA — Secretaria de Obras"
         )
         assert ok is True
 
     def test_allows_mao_de_obra_civil(self):
-        """'Mão de obra' should NOT be excluded — legit civil works use this term.
+        """Now matches via 'material e mão de obra' compound (standalone 'obra' removed).
 
-        Audit 2026-01-29: Removing 'mão de obra' exclusion because it blocks
-        legitimate items like 'fornecimento de material e mão de obra para reforma'.
-        Prefer false positives over false negatives (lost opportunities).
+        Audit 2026-02-08: Standalone 'obra'/'obras' removed to eliminate ~12 FPs
+        from 'mão de obra' in staffing contexts. Compound forms preserve legitimate matches.
         """
         ok, _ = self._match(
             "CONTRATAÇÃO COM FORNECIMENTO DE MATERIAL E MÃO DE OBRA PARA REVITALIZAÇÃO DA PRAÇA"
@@ -859,3 +859,193 @@ class TestTransporteSector:
     def test_excludes_bateria_notebook(self):
         ok, _ = self._match("Substituição de bateria de notebook Dell Latitude")
         assert ok is False
+
+
+class TestEngenhariaRC1ObraFix:
+    """RC1 fix: standalone 'obra'/'obras' removed — no more 'mão de obra' false positives."""
+
+    def _match(self, texto):
+        s = SECTORS["engenharia"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    def test_excludes_mao_de_obra_limpeza(self):
+        """Cleaning staffing mentioning 'mão de obra' should NOT match engineering."""
+        ok, _ = self._match(
+            "Contratação de empresa para prestação de serviços de mão de obra terceirizada de limpeza"
+        )
+        assert ok is False
+
+    def test_excludes_mao_de_obra_vigilancia(self):
+        """Security staffing mentioning 'mão de obra' should NOT match engineering."""
+        ok, _ = self._match(
+            "Contratação de mão de obra para serviços de vigilância patrimonial"
+        )
+        assert ok is False
+
+    def test_excludes_mao_de_obra_ti(self):
+        """IT staffing mentioning 'mão de obra' should NOT match engineering."""
+        ok, _ = self._match(
+            "Prestação de serviços de mão de obra especializada em tecnologia da informação"
+        )
+        assert ok is False
+
+    def test_excludes_mao_de_obra_radiologia(self):
+        """Radiology staffing mentioning 'mão de obra' should NOT match engineering."""
+        ok, _ = self._match(
+            "Contratação de mão de obra para serviços de radiologia e diagnóstico por imagem"
+        )
+        assert ok is False
+
+    def test_still_matches_material_e_mao_de_obra(self):
+        """Civil works with 'material e mão de obra' should still match via compound."""
+        ok, _ = self._match(
+            "Contratação com fornecimento de material e mão de obra para reforma de escola"
+        )
+        assert ok is True
+
+    def test_still_matches_execucao_de_obra(self):
+        """'execução de obra' compound should still match."""
+        ok, _ = self._match(
+            "Contratação de empresa para execução de obra de ampliação do hospital"
+        )
+        assert ok is True
+
+    def test_still_matches_obra_publica(self):
+        """'obra pública' compound should match."""
+        ok, _ = self._match(
+            "Fiscalização e supervisão de obra pública de saneamento básico"
+        )
+        assert ok is True
+
+    def test_still_matches_obra_de_infraestrutura(self):
+        """'obra de infraestrutura' compound should still match."""
+        ok, _ = self._match(
+            "Contratação de empresa para execução de obra de infraestrutura viária"
+        )
+        assert ok is True
+
+
+class TestEngenhariaRC2AcFix:
+    """RC2 fix: 'ar condicionado'/'climatização' removed from engenharia (belongs in manutencao_predial)."""
+
+    def _eng_match(self, texto):
+        s = SECTORS["engenharia"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    def _mp_match(self, texto):
+        s = SECTORS["manutencao_predial"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    def test_engenharia_excludes_ar_condicionado(self):
+        """AC equipment purchase should NOT match engineering sector."""
+        ok, _ = self._eng_match(
+            "Aquisição de aparelhos de ar condicionado tipo split para as unidades de saúde"
+        )
+        assert ok is False
+
+    def test_engenharia_excludes_climatizacao(self):
+        """HVAC service should NOT match engineering sector."""
+        ok, _ = self._eng_match(
+            "Contratação de serviços de climatização para o auditório municipal"
+        )
+        assert ok is False
+
+    def test_manutencao_predial_still_matches_ac(self):
+        """AC should still match manutencao_predial sector."""
+        ok, _ = self._mp_match(
+            "Aquisição de aparelhos de ar condicionado tipo split para as unidades de saúde"
+        )
+        assert ok is True
+
+    def test_manutencao_predial_still_matches_climatizacao(self):
+        """HVAC should still match manutencao_predial sector."""
+        ok, _ = self._mp_match(
+            "Contratação de serviços de climatização para o auditório municipal"
+        )
+        assert ok is True
+
+
+class TestEngenhariaRC3GenericFix:
+    """RC3 fix: generic standalone terms removed — 'infraestrutura', 'cobertura', 'restauração'."""
+
+    def _match(self, texto):
+        s = SECTORS["engenharia"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    def test_excludes_infraestrutura_department(self):
+        """Department name containing 'infraestrutura' should NOT match."""
+        ok, _ = self._match(
+            "Aquisição de materiais de expediente para a Diretoria de Infraestrutura"
+        )
+        assert ok is False
+
+    def test_excludes_cobertura_jornalistica(self):
+        """Media/journalism coverage should NOT match engineering."""
+        ok, _ = self._match(
+            "Contratação de serviços de cobertura jornalística para eventos oficiais"
+        )
+        assert ok is False
+
+    def test_excludes_restauracao_documentos(self):
+        """Document/archive restoration should NOT match engineering."""
+        ok, _ = self._match(
+            "Contratação de serviços de restauração de arquivo e digitalização de documentos"
+        )
+        assert ok is False
+
+    def test_still_matches_cobertura_metalica(self):
+        """Metal roofing (construction) should still match via compound."""
+        ok, _ = self._match(
+            "Contratação de empresa para instalação de cobertura metálica na quadra poliesportiva"
+        )
+        assert ok is True
+
+    def test_still_matches_restauracao_edificio(self):
+        """Building restoration should still match via compound."""
+        ok, _ = self._match(
+            "Contratação de empresa para restauração de edifício tombado pelo patrimônio histórico"
+        )
+        assert ok is True
+
+    def test_still_matches_sondagem_geotecnica(self):
+        """Geotechnical survey should still match via compound."""
+        ok, _ = self._match(
+            "Contratação de empresa para sondagem geotécnica do terreno da nova escola"
+        )
+        assert ok is True
+
+    def test_still_matches_pavimentacao(self):
+        """Paving should still match (unchanged keyword)."""
+        ok, _ = self._match(
+            "Contratação de empresa para pavimentação asfáltica de vias urbanas"
+        )
+        assert ok is True
+
+
+class TestFacilitiesPortariaExclusions:
+    """Tests for facilities sector portaria/recepção exclusions."""
+
+    def _match(self, texto):
+        s = SECTORS["facilities"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    def test_excludes_portaria_ministerial(self):
+        """Administrative decree should NOT match facilities."""
+        ok, _ = self._match(
+            "Publicação de portaria ministerial regulamentando o uso de recursos federais"
+        )
+        assert ok is False
+
+    def test_excludes_portaria_normativa(self):
+        """Regulatory decree should NOT match facilities."""
+        ok, _ = self._match(
+            "Atendimento à portaria normativa sobre gestão de contratos administrativos"
+        )
+        assert ok is False
+
+    def test_still_matches_servico_portaria(self):
+        """Building reception/doorman service should still match."""
+        ok, _ = self._match(
+            "Contratação de empresa para prestação de serviços de portaria e recepção para o prédio sede"
+        )
+        assert ok is True
