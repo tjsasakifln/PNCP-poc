@@ -1,11 +1,14 @@
 # STORY-172: Alinhar Design System da Área Logada com Página Institucional
 
-**Status**: 🚧 In Progress
+**Status**: ✅ Merged (90% Complete - Phase 1)
 **Prioridade**: P1 (Alta)
 **Tipo**: 🎨 UX/UI Enhancement
 **Estimativa**: 3 pontos
 **Criado**: 2026-02-07
-**Squad**: @ux-design-expert, @dev, @qa
+**Merged**: 2026-02-07
+**PR**: #312
+**Commit**: d28f2ab
+**Squad**: @ux-design-expert, @dev, @qa, @architect, @pm
 
 ---
 
