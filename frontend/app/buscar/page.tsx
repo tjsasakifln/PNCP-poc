@@ -1778,22 +1778,135 @@ function HomePageContent() {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t mt-12 py-6 text-center text-xs text-ink-muted" role="contentinfo">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-          <span>{APP_NAME} &mdash; Busca Inteligente de Licitações</span>
-          <button
-            onClick={() => setShowKeyboardHelp(true)}
-            className="text-xs text-ink-muted hover:text-brand-blue transition-colors flex items-center gap-1"
-            title="Ver atalhos de teclado"
-            aria-label="Ver atalhos de teclado"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-            Atalhos
-          </button>
+      {/* Footer - Aligned with landing page design system */}
+      <footer className="bg-surface-1 text-ink border-t border-[var(--border)] mt-12" role="contentinfo">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Sobre */}
+            <div>
+              <h3 className="font-bold text-lg mb-4 text-ink">Sobre</h3>
+              <ul className="space-y-2 text-sm text-ink-secondary">
+                <li>
+                  <a
+                    href="/#sobre"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Quem somos
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/#como-funciona"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Como funciona
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Planos */}
+            <div>
+              <h3 className="font-bold text-lg mb-4 text-ink">Planos</h3>
+              <ul className="space-y-2 text-sm text-ink-secondary">
+                <li>
+                  <a
+                    href="/#planos"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Planos e Preços
+                  </a>
+                </li>
+                <li>
+                  <button
+                    onClick={() => setShowKeyboardHelp(true)}
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1 text-left"
+                    title="Ver atalhos de teclado"
+                  >
+                    Atalhos de Teclado
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Suporte */}
+            <div>
+              <h3 className="font-bold text-lg mb-4 text-ink">Suporte</h3>
+              <ul className="space-y-2 text-sm text-ink-secondary">
+                <li>
+                  <a
+                    href="/#suporte"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Central de Ajuda
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/#contato"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Contato
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h3 className="font-bold text-lg mb-4 text-ink">Legal</h3>
+              <ul className="space-y-2 text-sm text-ink-secondary">
+                <li>
+                  <a
+                    href="/privacidade"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Política de Privacidade
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/termos"
+                    className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
+                  >
+                    Termos de Uso
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-[var(--border-strong)] pt-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              {/* Copyright */}
+              <p className="text-sm text-ink-secondary">
+                © 2026 {APP_NAME}. Todos os direitos reservados.
+              </p>
+
+              {/* LGPD Badge */}
+              <div className="flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-success"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="text-sm text-ink-secondary">LGPD Compliant</span>
+              </div>
+
+              {/* Desenvolvido por servidores públicos */}
+              <p className="text-sm text-ink-secondary">
+                Desenvolvido por servidores públicos
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
 
