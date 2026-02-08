@@ -29,8 +29,32 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // For implicit flow, Supabase automatically handles the hash fragment
-        // and sets the session. We just need to check if we have a session.
+        // Check for authorization code (PKCE flow from OAuth providers like Google)
+        const code = params.get("code");
+
+        if (code) {
+          // Exchange authorization code for session (PKCE flow)
+          // Supabase SDK automatically handles code exchange with PKCE verifier
+          const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            console.error("Code exchange error:", exchangeError);
+            setStatus("error");
+            setErrorMessage(exchangeError.message);
+            return;
+          }
+
+          if (session) {
+            setStatus("success");
+            // Small delay to ensure cookies are set
+            setTimeout(() => {
+              router.push("/buscar");
+            }, 500);
+            return;
+          }
+        }
+
+        // Fallback: Check if we already have a session (e.g., from hash fragment or cookies)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -47,8 +71,7 @@ export default function AuthCallbackPage() {
             router.push("/buscar");
           }, 500);
         } else {
-          // No session yet - might need to wait for hash handling
-          // Listen for auth state change
+          // No session yet - listen for auth state change
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === "SIGNED_IN" && session) {
               setStatus("success");
