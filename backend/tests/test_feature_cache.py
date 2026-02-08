@@ -3,7 +3,6 @@
 Tests cache hit/miss behavior, TTL, and invalidation after billing period updates.
 """
 
-import pytest
 from unittest.mock import Mock, patch, MagicMock
 import json
 
@@ -23,7 +22,6 @@ class TestRedisCacheInvalidation:
     def test_cache_stores_json_with_ttl(self, mock_redis_client):
         """Test that cached data is stored as JSON with 5-minute TTL."""
         from routes.features import get_my_features
-        from routes.features import fetch_features_from_db
 
         redis_mock = MagicMock()
         mock_redis_client.return_value = redis_mock
@@ -48,7 +46,7 @@ class TestRedisCacheInvalidation:
             cache_key = call_args[0]
             ttl = call_args[1]
 
-            assert cache_key == f"features:test-user"
+            assert cache_key == "features:test-user"
             assert ttl == 300  # 5 minutes
 
     @patch("routes.subscriptions.get_redis_client")
@@ -143,7 +141,7 @@ class TestRedisCacheInvalidation:
             )
 
             import asyncio
-            response = asyncio.run(get_my_features(user))
+            asyncio.run(get_my_features(user))
 
             # Should fetch from DB (cache miss)
             mock_fetch.assert_called_once_with("test-user-expired")

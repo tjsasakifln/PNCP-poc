@@ -232,7 +232,7 @@ jobs:
           fi
 
           echo "2. Contains expected content..."
-          curl -sf "${STAGING_FRONTEND_URL}" | grep -q "BidIQ"
+          curl -sf "${STAGING_FRONTEND_URL}" | grep -q "SmartLic"
 
           echo "✅ All frontend smoke tests passed (Staging)"
 

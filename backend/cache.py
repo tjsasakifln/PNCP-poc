@@ -36,7 +36,6 @@ import logging
 import os
 from typing import Optional, Any
 from datetime import datetime, timedelta
-import json
 
 logger = logging.getLogger(__name__)
 

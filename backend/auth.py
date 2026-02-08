@@ -5,13 +5,12 @@ Security hardened in Issue #168:
 - Auth events logged with proper masking
 """
 
-import os
 import logging
 from typing import Optional
 
-from fastapi import Request, HTTPException, Depends
+from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from log_sanitizer import sanitize_string, log_auth_event
+from log_sanitizer import log_auth_event
 
 logger = logging.getLogger(__name__)
 

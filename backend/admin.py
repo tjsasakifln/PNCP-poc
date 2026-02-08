@@ -24,10 +24,10 @@ import re
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Request, Path
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from auth import require_auth
 from schemas import validate_uuid, validate_plan_id
-from log_sanitizer import mask_email, mask_user_id, sanitize_dict, log_admin_action
+from log_sanitizer import sanitize_dict, log_admin_action
 
 logger = logging.getLogger(__name__)
 

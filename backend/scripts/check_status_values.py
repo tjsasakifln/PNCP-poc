@@ -36,7 +36,7 @@ def main():
             break
 
     print(f"\nProcessed {count} bids")
-    print(f"\nStatus values found (top 10):")
+    print("\nStatus values found (top 10):")
     for status, cnt in status_values.most_common(10):
         print(f"  {cnt:4d}x: '{status}'")
 

@@ -10,7 +10,7 @@ Updated for:
 
 import pytest
 import os
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import Mock, patch
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 

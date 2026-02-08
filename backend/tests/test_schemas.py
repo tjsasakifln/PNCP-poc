@@ -10,9 +10,6 @@ from schemas import (
     StatusLicitacao,
     ModalidadeContratacao,
     EsferaGovernamental,
-    validate_uuid,
-    validate_plan_id,
-    sanitize_search_query,
 )
 
 

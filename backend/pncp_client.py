@@ -5,7 +5,7 @@ import logging
 import random
 import time
 from datetime import date, timedelta
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List
 
 import httpx
 import requests

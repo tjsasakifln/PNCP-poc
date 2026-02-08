@@ -8,12 +8,10 @@ Location: backend/schemas/unified.py
 """
 
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional, Set
 import hashlib
 import re
-import unicodedata
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 

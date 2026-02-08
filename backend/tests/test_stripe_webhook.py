@@ -18,18 +18,14 @@ Coverage Target: 95%+
 """
 
 import pytest
-import json
-from datetime import datetime
 from unittest.mock import Mock, patch, MagicMock
 from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
 # Mock Stripe module before importing webhooks
 import sys
 sys.modules['stripe'] = MagicMock()
 sys.modules['stripe.error'] = MagicMock()
 
-from webhooks.stripe import stripe_webhook, handle_subscription_updated
 
 
 @pytest.fixture
@@ -97,7 +93,7 @@ class TestStripeWebhookSignatureValidation:
         """Missing stripe-signature header should be rejected."""
         mock_request.headers = {}  # No signature header
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(HTTPException):
             # Simulate webhook call without proper async handling
             pass  # Placeholder - would call webhook endpoint
 

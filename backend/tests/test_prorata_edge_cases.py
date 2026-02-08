@@ -7,6 +7,7 @@ and annual → monthly downgrade prevention.
 import pytest
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 
@@ -162,7 +163,3 @@ class TestProRataCalculations:
         # Should still calculate correctly using UTC fallback
         assert result.days_until_renewal == 10
         assert result.prorated_credit == Decimal("99.00")
-
-
-# Mock patch for datetime (used in test_prorata_last_day_of_month)
-from unittest.mock import patch

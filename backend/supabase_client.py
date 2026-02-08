@@ -2,7 +2,6 @@
 
 import os
 import logging
-from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 

@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from typing import Tuple, Type, List
 import logging
+import os
 import sys
 
 
@@ -120,8 +121,6 @@ def setup_logging(level: str = "INFO") -> None:
 # ============================================
 # Feature Flags
 # ============================================
-
-import os
 
 def str_to_bool(value: str | None) -> bool:
     """

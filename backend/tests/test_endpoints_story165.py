@@ -1,6 +1,5 @@
 """Tests for /api/me and updated /api/buscar endpoints (STORY-165)."""
 
-import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone, timedelta

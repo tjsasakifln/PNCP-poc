@@ -26,7 +26,6 @@ from pncp_client import PNCPClient
 from filter import (
     aplicar_todos_filtros,
     filtrar_por_status,
-    filtrar_por_valor,
     match_keywords,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO,
@@ -46,7 +45,7 @@ def main():
     data_inicial = data_final - timedelta(days=30)
 
     print(f"  - Período: {data_inicial} a {data_final}")
-    print(f"  - UF: SP")
+    print("  - UF: SP")
 
     licitacoes_raw = []
     try:
@@ -145,10 +144,10 @@ def main():
         exclusions=KEYWORDS_EXCLUSAO,
     )
 
-    print(f"\n  📊 RESULTADO FINAL:")
+    print("\n  📊 RESULTADO FINAL:")
     print(f"    Total: {stats['total']}")
     print(f"    ✅ Aprovadas: {stats['aprovadas']} ({stats['aprovadas']/stats['total']*100:.1f}%)")
-    print(f"    ❌ Rejeitadas:")
+    print("    ❌ Rejeitadas:")
     print(f"       - UF: {stats['rejeitadas_uf']}")
     print(f"       - Status: {stats['rejeitadas_status']}")
     print(f"       - Esfera: {stats['rejeitadas_esfera']}")

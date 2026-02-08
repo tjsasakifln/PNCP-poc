@@ -1,6 +1,5 @@
 """Comprehensive tests for /api/buscar endpoint - BLOCKER 4 fix."""
 
-import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone, timedelta

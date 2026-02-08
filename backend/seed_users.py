@@ -5,8 +5,6 @@ Run once after Supabase project is configured:
     python seed_users.py
 """
 
-import os
-import sys
 
 
 def main():
@@ -60,11 +58,11 @@ def main():
                     "expires_at": None,
                     "is_active": True,
                 }).execute()
-                print(f"  Assigned master plan (unlimited)")
+                print("  Assigned master plan (unlimited)")
 
             if u["is_admin"]:
                 admin_ids.append(user_id)
-                print(f"  *** ADMIN USER ***")
+                print("  *** ADMIN USER ***")
 
         except Exception as e:
             print(f"  Error: {e}")
@@ -73,7 +71,7 @@ def main():
 
     if admin_ids:
         print(f"\n{'='*60}")
-        print(f"IMPORTANT: Add this to your .env file:")
+        print("IMPORTANT: Add this to your .env file:")
         print(f"ADMIN_USER_IDS={','.join(admin_ids)}")
         print(f"{'='*60}")
 

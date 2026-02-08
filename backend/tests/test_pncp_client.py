@@ -915,7 +915,7 @@ class TestBuscarTodasUfsParalelo:
     @patch("pncp_client.httpx.AsyncClient.get")
     async def test_parallel_fetch_handles_errors_gracefully(self, mock_get):
         """Test parallel fetch continues despite errors in individual UFs."""
-        from pncp_client import buscar_todas_ufs_paralelo, PNCPAPIError
+        from pncp_client import buscar_todas_ufs_paralelo
         import httpx
 
         call_count = 0
@@ -1015,7 +1015,7 @@ class TestBuscarTodasUfsParalelo:
     @patch("pncp_client.httpx.AsyncClient.get")
     async def test_parallel_fetch_with_status_filter(self, mock_get):
         """Test parallel fetch passes status parameter correctly."""
-        from pncp_client import buscar_todas_ufs_paralelo, STATUS_PNCP_MAP
+        from pncp_client import buscar_todas_ufs_paralelo
 
         captured_params = []
 

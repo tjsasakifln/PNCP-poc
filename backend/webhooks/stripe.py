@@ -29,7 +29,6 @@ Performance:
 import os
 import logging
 from datetime import datetime
-from typing import Dict, Any
 
 import stripe
 from fastapi import APIRouter, Request, HTTPException

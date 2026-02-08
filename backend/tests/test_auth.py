@@ -5,7 +5,7 @@ Uses mocked Supabase client to avoid external API calls.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 

@@ -8,7 +8,7 @@ accurate billing across different user timezones.
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Literal
 from pydantic import BaseModel

@@ -5,7 +5,7 @@ Provides GET /api/features/me endpoint with Redis caching (STORY-171).
 
 import logging
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel

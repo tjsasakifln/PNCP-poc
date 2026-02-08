@@ -248,7 +248,7 @@ def increment_monthly_quota(user_id: str, max_quota: Optional[int] = None) -> in
         # use the RPC function from migration 003.
 
         # First try to update existing record atomically
-        update_result = sb.rpc(
+        sb.rpc(
             "increment_existing_quota",
             {"p_user_id": user_id, "p_month_year": month_key}
         ).execute() if False else None  # Disabled - use simpler approach below

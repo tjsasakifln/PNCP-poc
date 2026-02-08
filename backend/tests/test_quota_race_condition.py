@@ -15,11 +15,8 @@ For stress testing with more concurrency:
     pytest tests/test_quota_race_condition.py::TestQuotaConcurrency -v -s
 """
 
-import asyncio
 import pytest
-from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone
+from unittest.mock import Mock, patch
 
 
 class TestAtomicIncrementUnit:
@@ -83,7 +80,7 @@ class TestAtomicIncrementUnit:
         mock_supabase.rpc.return_value.execute.return_value = mock_rpc_result
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = increment_monthly_quota("user-123", max_quota=50)
+            increment_monthly_quota("user-123", max_quota=50)
 
         # Verify max_quota was passed
         call_args = mock_supabase.rpc.call_args
@@ -311,7 +308,6 @@ class TestQuotaConcurrency:
         """
         from quota import check_and_increment_quota_atomic
         import threading
-        import time
 
         max_quota = 50
         starting_count = 49  # One away from limit

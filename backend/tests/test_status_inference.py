@@ -5,7 +5,6 @@ This module tests the intelligent status inference based on dates,
 values, and textual situation fields from PNCP API.
 """
 
-import pytest
 from datetime import datetime, timedelta
 from status_inference import inferir_status_licitacao, enriquecer_com_status_inferido
 

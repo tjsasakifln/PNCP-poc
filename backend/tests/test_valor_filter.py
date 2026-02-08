@@ -11,7 +11,6 @@ Tests cover:
 - Edge cases
 """
 
-import pytest
 from filter import filtrar_por_valor
 from schemas import BuscaRequest
 from pydantic import ValidationError

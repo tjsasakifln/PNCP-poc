@@ -9,10 +9,8 @@ Tests cover:
 - Edge cases (invalid codes, formatting)
 """
 
-import pytest
 from filter import filtrar_por_municipio
 from schemas import BuscaRequest
-from pydantic import ValidationError
 from datetime import date, timedelta
 
 

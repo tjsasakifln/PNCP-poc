@@ -14,32 +14,25 @@ This API provides endpoints for:
 import base64
 import logging
 import os
-from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
 from schemas import BuscaRequest, BuscaResponse, FilterStats, ResumoLicitacoes, UserProfileResponse, LicitacaoItem
-from pncp_client import PNCPClient, buscar_todas_ufs_paralelo, AsyncPNCPClient
+from pncp_client import PNCPClient, buscar_todas_ufs_paralelo
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import (
-    filter_batch,
     remove_stopwords,
     aplicar_todos_filtros,
-    filtrar_por_status,
-    filtrar_por_modalidade,
-    filtrar_por_valor,
-    filtrar_por_esfera,
-    filtrar_por_municipio,
 )
 from status_inference import enriquecer_com_status_inferido
 from utils.ordenacao import ordenar_licitacoes
 from excel import create_excel
 from llm import gerar_resumo, gerar_resumo_fallback
 from sectors import get_sector, list_sectors
-from auth import get_current_user, require_auth
+from auth import require_auth
 from admin import router as admin_router
-from log_sanitizer import mask_user_id, log_user_action, sanitize_string
+from log_sanitizer import mask_user_id, log_user_action
 from rate_limiter import rate_limiter
 from routes.subscriptions import router as subscriptions_router
 from routes.features import router as features_router
@@ -153,7 +146,7 @@ async def health():
     if supabase_url and supabase_key:
         try:
             from supabase_client import get_supabase
-            client = get_supabase()
+            get_supabase()
             # Quick connectivity test - just verify client is initialized
             dependencies["supabase"] = "healthy"
         except Exception as e:
@@ -243,7 +236,7 @@ async def change_password(
     sb = get_supabase()
     try:
         sb.auth.admin.update_user_by_id(user["id"], {"password": new_password})
-    except Exception as e:
+    except Exception:
         # SECURITY: Sanitize error message (Issue #168) - never log password-related details
         log_user_action(logger, "password-change-failed", user["id"], level=logging.ERROR)
         raise HTTPException(status_code=500, detail="Erro ao alterar senha")
@@ -735,7 +728,6 @@ async def buscar_licitacoes(
         >>> response.total_filtrado
         15
     """
-    import asyncio
     import time as sync_time
 
     start_time = sync_time.time()

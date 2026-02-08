@@ -5,7 +5,6 @@ Tests covering scenarios identified in GTM-READINESS-REPORT.md
 Priority: P0 (Pre-GTM Blockers)
 """
 
-import pytest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from datetime import datetime, timezone, timedelta

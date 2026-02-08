@@ -1,15 +1,13 @@
 """Tests for plan capabilities system (STORY-165)."""
 
-import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from quota import (
     PLAN_CAPABILITIES,
     PLAN_NAMES,
     PLAN_PRICES,
     UPGRADE_SUGGESTIONS,
     PlanPriority,
-    QuotaInfo,
     check_quota,
     get_current_month_key,
     get_quota_reset_date,

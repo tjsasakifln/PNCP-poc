@@ -15,7 +15,6 @@ Tests cover:
 
 import logging
 import os
-import pytest
 from unittest.mock import patch
 
 from log_sanitizer import (
@@ -294,12 +293,12 @@ class TestEnvironmentConfig:
     def test_is_production_true(self):
         # Clear the cache
         is_production.cache_clear()
-        assert is_production() == True
+        assert is_production() is True
 
     @patch.dict(os.environ, {"ENVIRONMENT": "development"}, clear=True)
     def test_is_production_false(self):
         is_production.cache_clear()
-        assert is_production() == False
+        assert is_production() is False
 
     @patch.dict(os.environ, {"LOG_LEVEL": "DEBUG"})
     def test_get_log_level(self):

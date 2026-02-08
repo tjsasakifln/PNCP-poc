@@ -4,7 +4,6 @@ Tests GET /api/features/me endpoint with feature flag retrieval,
 plan-based capabilities, and billing-period-specific features.
 """
 
-import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 

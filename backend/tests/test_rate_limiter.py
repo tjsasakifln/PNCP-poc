@@ -1,7 +1,6 @@
 """Tests for rate limiting system (STORY-165)."""
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from rate_limiter import RateLimiter
 
 

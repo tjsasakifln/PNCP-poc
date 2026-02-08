@@ -1,10 +1,10 @@
 """Pydantic schemas for API request/response validation."""
 
 import re
-from datetime import date, datetime
+from datetime import date
 from enum import Enum, IntEnum
 from pydantic import BaseModel, Field, model_validator, field_validator
-from typing import List, Optional, Dict, Any, Annotated
+from typing import List, Optional, Dict, Any
 
 
 # ============================================================================

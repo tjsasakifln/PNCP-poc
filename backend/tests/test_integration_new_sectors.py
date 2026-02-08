@@ -12,6 +12,7 @@ import logging
 import sys
 from collections import Counter
 from dataclasses import dataclass
+from datetime import date, timedelta
 from typing import List, Tuple
 
 import pytest
@@ -26,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 # Use a recent 7-day window for testing
 # Adjust if tests are run at a different time
-from datetime import date, timedelta
 
 _today = date.today()
 _end = _today - timedelta(days=1)  # yesterday (avoid incomplete day)
@@ -154,16 +154,16 @@ class TestSaudeIntegration:
         """Saúde sector should find some matches in a large enough sample."""
         result = run_sector_against_api("saude", pncp_records)
         print(f"\n{'='*60}")
-        print(f"SAÚDE SECTOR RESULTS")
+        print("SAÚDE SECTOR RESULTS")
         print(f"{'='*60}")
         print(f"Total records: {result.total_fetched}")
         print(f"Matched: {result.matched} ({result.match_rate:.1f}%)")
         print(f"Excluded (would match w/o exclusions): {result.excluded}")
-        print(f"\nSample matches:")
+        print("\nSample matches:")
         for obj in result.sample_matches[:5]:
             print(f"  [+] {obj[:120]}")
         if result.sample_excluded:
-            print(f"\nExcluded samples:")
+            print("\nExcluded samples:")
             for obj, reason in result.sample_excluded[:3]:
                 print(f"  [-] {obj[:120]}")
         # With 100+ records, saude should find at least some matches
@@ -219,7 +219,7 @@ class TestSaudeIntegration:
                 for kw in kws:
                     keyword_hits[kw] += 1
 
-        print(f"\nSaúde keyword hit distribution (top 15):")
+        print("\nSaúde keyword hit distribution (top 15):")
         for kw, count in keyword_hits.most_common(15):
             print(f"  {kw}: {count}")
 
@@ -235,16 +235,16 @@ class TestVigilanciaIntegration:
     def test_vigilancia_finds_matches(self, pncp_records):
         result = run_sector_against_api("vigilancia", pncp_records)
         print(f"\n{'='*60}")
-        print(f"VIGILÂNCIA SECTOR RESULTS")
+        print("VIGILÂNCIA SECTOR RESULTS")
         print(f"{'='*60}")
         print(f"Total records: {result.total_fetched}")
         print(f"Matched: {result.matched} ({result.match_rate:.1f}%)")
         print(f"Excluded: {result.excluded}")
-        print(f"\nSample matches:")
+        print("\nSample matches:")
         for obj in result.sample_matches[:5]:
             print(f"  [+] {obj[:120]}")
         if result.sample_excluded:
-            print(f"\nExcluded samples:")
+            print("\nExcluded samples:")
             for obj, reason in result.sample_excluded[:3]:
                 print(f"  [-] {obj[:120]}")
         # Vigilância may have low match rate with modality 6 only
@@ -282,7 +282,7 @@ class TestVigilanciaIntegration:
                 for kw in kws:
                     keyword_hits[kw] += 1
 
-        print(f"\nVigilância keyword hit distribution (top 15):")
+        print("\nVigilância keyword hit distribution (top 15):")
         for kw, count in keyword_hits.most_common(15):
             print(f"  {kw}: {count}")
 
@@ -296,16 +296,16 @@ class TestTransporteIntegration:
     def test_transporte_finds_matches(self, pncp_records):
         result = run_sector_against_api("transporte", pncp_records)
         print(f"\n{'='*60}")
-        print(f"TRANSPORTE SECTOR RESULTS")
+        print("TRANSPORTE SECTOR RESULTS")
         print(f"{'='*60}")
         print(f"Total records: {result.total_fetched}")
         print(f"Matched: {result.matched} ({result.match_rate:.1f}%)")
         print(f"Excluded: {result.excluded}")
-        print(f"\nSample matches:")
+        print("\nSample matches:")
         for obj in result.sample_matches[:5]:
             print(f"  [+] {obj[:120]}")
         if result.sample_excluded:
-            print(f"\nExcluded samples:")
+            print("\nExcluded samples:")
             for obj, reason in result.sample_excluded[:3]:
                 print(f"  [-] {obj[:120]}")
         assert result.matched > 0 or result.total_fetched < 50, (
@@ -350,7 +350,7 @@ class TestTransporteIntegration:
                 for kw in kws:
                     keyword_hits[kw] += 1
 
-        print(f"\nTransporte keyword hit distribution (top 15):")
+        print("\nTransporte keyword hit distribution (top 15):")
         for kw, count in keyword_hits.most_common(15):
             print(f"  {kw}: {count}")
 
@@ -410,12 +410,12 @@ class TestCrossSectorOverlap:
         overlap_rate = overlap_count / total_matched * 100 if total_matched else 0
 
         print(f"\n{'='*60}")
-        print(f"CROSS-SECTOR OVERLAP ANALYSIS")
+        print("CROSS-SECTOR OVERLAP ANALYSIS")
         print(f"{'='*60}")
         print(f"Total matched by any sector: {total_matched}")
         print(f"Overlap (new+old): {overlap_count} ({overlap_rate:.1f}%)")
         if overlap_examples:
-            print(f"\nOverlap examples:")
+            print("\nOverlap examples:")
             for obj, new, old in overlap_examples[:5]:
                 print(f"  {obj}")
                 print(f"    New: {new} | Old: {old}")

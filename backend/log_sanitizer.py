@@ -22,7 +22,7 @@ import logging
 import os
 import re
 from functools import lru_cache
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 
 # ============================================================================

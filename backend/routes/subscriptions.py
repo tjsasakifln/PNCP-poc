@@ -161,9 +161,9 @@ async def update_billing_period(
         # TODO: Store separate annual_price_brl or stripe_annual_price_id in plans table
         if request.new_billing_period == "annual":
             # For now, calculate annual price (future: fetch from plans table)
-            annual_price = current_price * Decimal("9.6")
+            _ = current_price * Decimal("9.6")
         else:
-            annual_price = current_price
+            _ = current_price
 
     except HTTPException:
         raise
@@ -222,7 +222,7 @@ async def update_billing_period(
     stripe_price_id_annual = stripe_price_id   # Placeholder
 
     try:
-        updated_stripe_sub = update_stripe_subscription_billing_period(
+        update_stripe_subscription_billing_period(
             stripe_subscription_id=stripe_subscription_id,
             new_billing_period=request.new_billing_period,
             stripe_price_id_monthly=stripe_price_id_monthly,

@@ -149,7 +149,7 @@ class TestFiltrarPorOrgao:
         original_len = len(sample_licitacoes)
         original_first_id = sample_licitacoes[0]["id"]
 
-        result = filtrar_por_orgao(sample_licitacoes, ["INSS"])
+        filtrar_por_orgao(sample_licitacoes, ["INSS"])
 
         assert len(sample_licitacoes) == original_len
         assert sample_licitacoes[0]["id"] == original_first_id

@@ -624,7 +624,7 @@ class TestBuscarEndpoint:
 
     def test_buscar_empty_results(self, client, valid_request, monkeypatch):
         """Should handle empty results gracefully."""
-        from unittest.mock import Mock, AsyncMock
+        from unittest.mock import Mock
         from io import BytesIO
 
         mock_client_instance = Mock()
@@ -1087,7 +1087,7 @@ class TestBuscarIntegration:
     def test_buscar_with_real_filter_and_excel(self, client, monkeypatch):
         """Test with real filter and excel modules (mock only PNCP and LLM)."""
         from unittest.mock import Mock
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         # Use a deadline within 7 days to pass the filter
         future_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%dT10:00:00")

@@ -35,7 +35,6 @@ Usage:
 
 from sqlalchemy import Column, String, Integer, Boolean, DateTime, Index, ForeignKey, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
