@@ -207,7 +207,8 @@ describe('EnhancedLoadingProgress Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/10s \/ 60s/)).toBeInTheDocument();
+        expect(screen.getByText(/10s/)).toBeInTheDocument();
+        expect(screen.getByText(/~60s/)).toBeInTheDocument();
       });
     });
 
@@ -230,7 +231,7 @@ describe('EnhancedLoadingProgress Component', () => {
       });
     });
 
-    it('should show "Finalizando..." when elapsed exceeds estimated', async () => {
+    it('should show overtime message when elapsed exceeds estimated', async () => {
       render(
         <EnhancedLoadingProgress
           currentStep={1}
@@ -245,7 +246,7 @@ describe('EnhancedLoadingProgress Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Finalizando\.\.\./)).toBeInTheDocument();
+        expect(screen.getByText(/Quase pronto, finalizando\.\.\./)).toBeInTheDocument();
       });
     });
   });

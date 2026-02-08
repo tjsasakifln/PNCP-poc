@@ -16,6 +16,34 @@ import { TextEncoder, TextDecoder } from 'util'
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
+// Polyfill crypto.randomUUID for jsdom (used by SSE search progress)
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = {};
+}
+if (!globalThis.crypto.randomUUID) {
+  globalThis.crypto.randomUUID = () => 'test-uuid-0000-0000-0000-000000000000';
+}
+
+// Mock EventSource for jsdom (used by SSE progress tracking)
+if (typeof globalThis.EventSource === 'undefined') {
+  globalThis.EventSource = class MockEventSource {
+    constructor(url) {
+      this.url = url;
+      this.readyState = 0;
+      this.onopen = null;
+      this.onmessage = null;
+      this.onerror = null;
+      // Simulate connection error after a tick (triggers fallback to simulated progress)
+      setTimeout(() => {
+        if (this.onerror) this.onerror(new Event('error'));
+      }, 0);
+    }
+    close() { this.readyState = 2; }
+    addEventListener() {}
+    removeEventListener() {}
+  };
+}
+
 // Import jest-dom matchers (when @testing-library/jest-dom is installed)
 // These provide custom matchers like .toBeInTheDocument(), .toHaveClass(), etc.
 try {

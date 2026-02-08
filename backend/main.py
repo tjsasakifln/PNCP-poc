@@ -692,6 +692,72 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
     return items
 
 
+@app.get("/buscar-progress/{search_id}")
+async def buscar_progress_stream(
+    search_id: str,
+    request: Request,
+    user: dict = Depends(require_auth),
+):
+    """
+    SSE endpoint for real-time search progress updates.
+
+    The client opens this connection simultaneously with POST /buscar,
+    using the same search_id to correlate progress events.
+
+    Events:
+        - connecting (5%): Initial setup
+        - fetching (10-55%): Per-UF progress with uf_index/uf_total
+        - filtering (60-70%): Filter application
+        - llm (75-90%): LLM summary generation
+        - excel (92-98%): Excel report generation
+        - complete (100%): Search finished
+        - error: Search failed
+    """
+    import asyncio as _asyncio
+    import json as _json
+    from progress import get_tracker
+    from starlette.responses import StreamingResponse
+
+    async def event_generator():
+        # Wait up to 30s for the tracker to be created by POST /buscar
+        tracker = None
+        for _ in range(60):  # 60 * 0.5s = 30s
+            tracker = get_tracker(search_id)
+            if tracker:
+                break
+            await _asyncio.sleep(0.5)
+
+        if not tracker:
+            yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
+            return
+
+        # Stream events from the tracker's queue
+        while True:
+            try:
+                event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
+                yield f"data: {_json.dumps(event.to_dict())}\n\n"
+
+                if event.stage in ("complete", "error"):
+                    break
+
+            except _asyncio.TimeoutError:
+                # Heartbeat to keep connection alive
+                yield ": heartbeat\n\n"
+
+            except _asyncio.CancelledError:
+                break
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @app.post("/buscar", response_model=BuscaResponse)
 async def buscar_licitacoes(
     request: BuscaRequest,
@@ -729,8 +795,15 @@ async def buscar_licitacoes(
         15
     """
     import time as sync_time
+    from progress import create_tracker, remove_tracker
 
     start_time = sync_time.time()
+
+    # SSE Progress Tracking: Create tracker if search_id provided
+    tracker = None
+    if request.search_id:
+        tracker = create_tracker(request.search_id, len(request.ufs))
+        await tracker.emit("connecting", 3, "Iniciando busca...")
 
     logger.info(
         "Starting procurement search",
@@ -927,6 +1000,10 @@ async def buscar_licitacoes(
                 )
             logger.info(f"Using sector keywords ({len(active_keywords)} terms)")
 
+        # SSE: Sector ready, starting fetch
+        if tracker:
+            await tracker.emit("connecting", 8, f"Setor '{sector.name}' configurado, conectando ao PNCP...")
+
         # Step 1: Fetch from PNCP API
         # Use parallel fetching for multiple UFs to improve performance
         logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
@@ -940,6 +1017,16 @@ async def buscar_licitacoes(
         # Get modalidades to fetch (defaults to [6] if not specified)
         modalidades_to_fetch = request.modalidades if request.modalidades else None
 
+        # SSE: Starting fetch
+        if tracker:
+            await tracker.emit("fetching", 10, f"Iniciando busca em {len(request.ufs)} estados...")
+
+        # Build per-UF progress callback for SSE
+        uf_progress_callback = None
+        if tracker:
+            async def uf_progress_callback(uf: str, items_count: int):
+                await tracker.emit_uf_complete(uf, items_count)
+
         if use_parallel:
             # Use async parallel fetching for better performance
             logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
@@ -951,6 +1038,7 @@ async def buscar_licitacoes(
                     modalidades=modalidades_to_fetch,
                     status=status_value,
                     max_concurrent=10,
+                    on_uf_complete=uf_progress_callback,
                 )
             except Exception as e:
                 logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
@@ -979,12 +1067,20 @@ async def buscar_licitacoes(
         fetch_elapsed = sync_time.time() - start_time
         logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP in {fetch_elapsed:.2f}s")
 
+        # SSE: Fetch complete
+        if tracker:
+            await tracker.emit("fetching", 55, f"Busca concluida: {len(licitacoes_raw)} licitacoes encontradas", total_raw=len(licitacoes_raw))
+
         # Step 2: Enrich with inferred status (before filtering)
         # IMPORTANTE: A API PNCP não retorna status padronizado, então inferimos
         # baseado em datas (abertura, encerramento) e valores (homologado)
         logger.info("Enriching bids with inferred status...")
         enriquecer_com_status_inferido(licitacoes_raw)
         logger.info(f"Status inference complete for {len(licitacoes_raw)} bids")
+
+        # SSE: Starting filtering
+        if tracker:
+            await tracker.emit("filtering", 60, f"Aplicando filtros em {len(licitacoes_raw)} licitacoes...")
 
         # Step 3: Apply ALL filters (fail-fast sequential)
         # Filter order (optimized for performance):
@@ -1051,6 +1147,10 @@ async def buscar_licitacoes(
             if keyword_rejected_sample:
                 logger.debug(f"  - Sample keyword-rejected objects: {keyword_rejected_sample}")
 
+        # SSE: Filtering complete
+        if tracker:
+            await tracker.emit("filtering", 70, f"Filtragem concluida: {len(licitacoes_filtradas)} resultados", total_filtered=len(licitacoes_filtradas))
+
         # Build filter stats for frontend
         fs = FilterStats(
             rejeitadas_uf=stats.get("rejeitadas_uf", 0),
@@ -1063,6 +1163,9 @@ async def buscar_licitacoes(
         # Early return if no results passed filters — skip LLM and Excel
         if not licitacoes_filtradas:
             logger.info("No bids passed filters — skipping LLM and Excel generation")
+            if tracker:
+                await tracker.emit_complete()
+                remove_tracker(request.search_id)
             resumo = ResumoLicitacoes(
                 resumo_executivo=(
                     f"Nenhuma licitação de {sector.name.lower()} encontrada "
@@ -1143,6 +1246,10 @@ async def buscar_licitacoes(
             f"{len(licitacoes_filtradas)} results ordered by '{request.ordenacao}'"
         )
 
+        # SSE: Starting LLM
+        if tracker:
+            await tracker.emit("llm", 75, "Gerando resumo executivo com IA...")
+
         # Step 3: Generate executive summary via LLM (with automatic fallback)
         logger.info("Generating executive summary")
         try:
@@ -1170,6 +1277,10 @@ async def buscar_licitacoes(
             )
         resumo.total_oportunidades = actual_total
         resumo.valor_total = actual_valor
+
+        # SSE: LLM done, starting Excel
+        if tracker:
+            await tracker.emit("excel", 92, "Gerando planilha Excel...")
 
         # Step 4: Generate Excel report (conditional based on plan)
         excel_base64 = None
@@ -1247,9 +1358,17 @@ async def buscar_licitacoes(
                     exc_info=True,
                 )
 
+        # SSE: Search complete
+        if tracker:
+            await tracker.emit_complete()
+            remove_tracker(request.search_id)
+
         return response
 
     except PNCPRateLimitError as e:
+        if tracker:
+            await tracker.emit_error(f"PNCP rate limit: {e}")
+            remove_tracker(request.search_id)
         logger.error(f"PNCP rate limit exceeded: {e}", exc_info=True)
         # Extract Retry-After header if available
         retry_after = getattr(e, "retry_after", 60)  # Default 60s if not provided
@@ -1263,6 +1382,9 @@ async def buscar_licitacoes(
         )
 
     except PNCPAPIError as e:
+        if tracker:
+            await tracker.emit_error(f"PNCP API error: {e}")
+            remove_tracker(request.search_id)
         logger.error(f"PNCP API error: {e}", exc_info=True)
         raise HTTPException(
             status_code=502,
@@ -1274,6 +1396,9 @@ async def buscar_licitacoes(
         )
 
     except Exception:
+        if tracker:
+            await tracker.emit_error("Erro interno do servidor")
+            remove_tracker(request.search_id)
         logger.exception("Internal server error during procurement search")
         raise HTTPException(
             status_code=500,

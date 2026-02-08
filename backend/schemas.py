@@ -361,6 +361,15 @@ class BuscaRequest(BaseModel):
     )
 
     # -------------------------------------------------------------------------
+    # SSE Progress Tracking (Real-Time Progress)
+    # -------------------------------------------------------------------------
+    search_id: Optional[str] = Field(
+        default=None,
+        max_length=36,
+        description="Client-generated UUID for SSE progress tracking via /buscar-progress/{search_id}.",
+    )
+
+    # -------------------------------------------------------------------------
     # Validators
     # -------------------------------------------------------------------------
     @model_validator(mode="after")

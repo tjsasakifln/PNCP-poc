@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       data_final,
       setor_id,
       termos_busca,
+      search_id,
       // New filter parameters
       status,
       modalidades,
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
           data_final,
           setor_id: setor_id || "vestuario",
           termos_busca: termos_busca || undefined,
+          search_id: search_id || undefined,
           // New filter parameters
           status: status || undefined,
           modalidades: modalidades || undefined,

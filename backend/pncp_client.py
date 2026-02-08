@@ -794,6 +794,7 @@ class AsyncPNCPClient:
         modalidades: List[int] | None = None,
         status: str | None = None,
         max_pages_per_uf: int = 50,
+        on_uf_complete: Callable[[str, int], Any] | None = None,
     ) -> List[Dict[str, Any]]:
         """
         Busca licitações em múltiplas UFs em paralelo com limite de concorrência.
@@ -837,9 +838,9 @@ class AsyncPNCPClient:
             f"(max_concurrent={self.max_concurrent}, status={status})"
         )
 
-        # Create tasks for each UF
-        tasks = [
-            self._fetch_uf_all_pages(
+        # Create tasks for each UF with optional progress callback
+        async def _fetch_with_callback(uf: str) -> List[Dict[str, Any]]:
+            result = await self._fetch_uf_all_pages(
                 uf=uf,
                 data_inicial=data_inicial,
                 data_final=data_final,
@@ -847,8 +848,16 @@ class AsyncPNCPClient:
                 status=pncp_status,
                 max_pages=max_pages_per_uf,
             )
-            for uf in ufs
-        ]
+            if on_uf_complete:
+                try:
+                    maybe_coro = on_uf_complete(uf, len(result))
+                    if asyncio.iscoroutine(maybe_coro):
+                        await maybe_coro
+                except Exception as cb_err:
+                    logger.warning(f"on_uf_complete callback error for UF={uf}: {cb_err}")
+            return result
+
+        tasks = [_fetch_with_callback(uf) for uf in ufs]
 
         # Execute all tasks concurrently (semaphore limits actual concurrency)
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -880,6 +889,7 @@ async def buscar_todas_ufs_paralelo(
     modalidades: List[int] | None = None,
     status: str | None = None,
     max_concurrent: int = 10,
+    on_uf_complete: Callable[[str, int], Any] | None = None,
 ) -> List[Dict[str, Any]]:
     """
     Convenience function for parallel UF search.
@@ -894,6 +904,7 @@ async def buscar_todas_ufs_paralelo(
         modalidades: Optional modality codes
         status: Optional status filter
         max_concurrent: Maximum concurrent requests (default 10)
+        on_uf_complete: Optional async callback(uf, items_count) called per UF
 
     Returns:
         List of procurement records
@@ -912,4 +923,5 @@ async def buscar_todas_ufs_paralelo(
             data_final=data_final,
             modalidades=modalidades,
             status=status,
+            on_uf_complete=on_uf_complete,
         )

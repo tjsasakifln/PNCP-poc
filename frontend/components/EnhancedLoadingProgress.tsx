@@ -1,7 +1,10 @@
 /**
- * EnhancedLoadingProgress Component - Feature #2
- * 5-stage loading progress indicator with performance feedback
- * Phase 3 - Day 8 Implementation
+ * EnhancedLoadingProgress Component
+ * 5-stage loading progress indicator with:
+ * - SSE real-time progress (Phase 2) with fallback to time-based simulation
+ * - Asymptotic progress cap at 95% to avoid false "100%" display
+ * - Honest overtime messaging when search takes longer than expected
+ * - Cancel button for user control
  *
  * Stages:
  * 1. Connecting to PNCP API (10%)
@@ -12,6 +15,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+import type { SearchProgressEvent } from '../hooks/useSearchProgress';
 
 export interface EnhancedLoadingProgressProps {
   currentStep: number;
@@ -20,6 +24,12 @@ export interface EnhancedLoadingProgressProps {
   onStageChange?: (stage: number) => void;
   /** Issue #109: Show "X of Y states processed" for better feedback */
   statesProcessed?: number;
+  /** Cancel button callback */
+  onCancel?: () => void;
+  /** SSE real-time progress event */
+  sseEvent?: SearchProgressEvent | null;
+  /** Whether to use real SSE data vs simulated progress */
+  useRealProgress?: boolean;
 }
 
 interface Stage {
@@ -62,22 +72,45 @@ const STAGES: Stage[] = [
   },
 ];
 
+// Map SSE stage names to stage IDs
+const SSE_STAGE_MAP: Record<string, number> = {
+  connecting: 1,
+  fetching: 2,
+  filtering: 3,
+  llm: 4,
+  excel: 5,
+  complete: 5,
+};
+
+/** Graduated honest overtime messages */
+function getOvertimeMessage(overBySeconds: number): string {
+  if (overBySeconds < 15) return 'Quase pronto, finalizando...';
+  if (overBySeconds < 45) return 'O PNCP está mais lento que o normal. Aguarde...';
+  if (overBySeconds < 90) return 'Ainda processando. Buscas com muitos estados demoram mais.';
+  return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar com menos estados.';
+}
+
 export function EnhancedLoadingProgress({
   currentStep,
   estimatedTime,
   stateCount,
   onStageChange,
   statesProcessed = 0,
+  onCancel,
+  sseEvent,
+  useRealProgress = false,
 }: EnhancedLoadingProgressProps) {
-  const [progress, setProgress] = useState(0);
+  const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Track last SSE progress for smooth fallback
+  const lastSseProgressRef = useRef(0);
 
   // Refs to avoid resetting interval on stage/callback changes
   const currentStageRef = useRef(currentStage);
   const onStageChangeRef = useRef(onStageChange);
 
-  // Keep refs in sync with state/props
   useEffect(() => {
     currentStageRef.current = currentStage;
   }, [currentStage]);
@@ -86,46 +119,78 @@ export function EnhancedLoadingProgress({
     onStageChangeRef.current = onStageChange;
   }, [onStageChange]);
 
-  // Calculate progress based on time elapsed
-  // BUG FIX: Removed currentStage from deps - was causing interval restart on every stage change
+  // Track SSE progress in ref for fallback smoothing
+  useEffect(() => {
+    if (useRealProgress && sseEvent && sseEvent.progress >= 0) {
+      lastSseProgressRef.current = sseEvent.progress;
+    }
+  }, [useRealProgress, sseEvent]);
+
+  // Calculate simulated progress based on time elapsed
   useEffect(() => {
     const startTime = Date.now();
-
-    // Bug fix P2-1: Prevent flicker for very short time (<1s) by using minimum 2s
     const safeEstimatedTime = Math.max(2, estimatedTime);
 
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000; // seconds
+      const elapsed = (Date.now() - startTime) / 1000;
       setElapsedTime(Math.floor(elapsed));
 
-      // Calculate progress: 0-100% based on safeEstimatedTime
-      const calculatedProgress = Math.min(100, (elapsed / safeEstimatedTime) * 100);
-      setProgress(calculatedProgress);
-
-      // Determine current stage based on progress
-      let newStage = 1;
-      for (const stage of STAGES) {
-        if (calculatedProgress >= stage.progressTarget) {
-          newStage = stage.id;
-        } else {
-          break;
-        }
-      }
-
-      // If progress exceeds current stage target, move to next
-      // Use refs to avoid stale closure issue
-      if (newStage !== currentStageRef.current) {
-        setCurrentStage(newStage);
-        currentStageRef.current = newStage;
-        onStageChangeRef.current?.(newStage);
-      }
-    }, 500); // Update every 500ms
+      // Asymptotic progress: approaches 95% but never reaches 100% until actually done
+      const rawProgress = (elapsed / safeEstimatedTime) * 100;
+      const asymptotic = rawProgress <= 90
+        ? rawProgress
+        : 90 + (5 * (1 - Math.exp(-(rawProgress - 90) / 30)));
+      setSimulatedProgress(Math.min(95, asymptotic));
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [estimatedTime]); // Only restart on estimatedTime change
+  }, [estimatedTime]);
+
+  // Determine effective progress, stage, and message from SSE or simulation
+  const effectiveProgress = useRealProgress && sseEvent && sseEvent.progress >= 0
+    ? sseEvent.progress
+    : Math.max(simulatedProgress, lastSseProgressRef.current); // Don't jump backwards on fallback
+
+  // Determine stage from SSE or from simulated progress
+  let effectiveStageId: number;
+  if (useRealProgress && sseEvent && SSE_STAGE_MAP[sseEvent.stage]) {
+    effectiveStageId = SSE_STAGE_MAP[sseEvent.stage];
+  } else {
+    // Derive from simulated progress
+    effectiveStageId = 1;
+    for (const stage of STAGES) {
+      if (effectiveProgress >= stage.progressTarget) {
+        effectiveStageId = stage.id;
+      } else {
+        break;
+      }
+    }
+  }
+
+  // Update stage state and fire callback
+  useEffect(() => {
+    if (effectiveStageId !== currentStageRef.current) {
+      setCurrentStage(effectiveStageId);
+      currentStageRef.current = effectiveStageId;
+      onStageChangeRef.current?.(effectiveStageId);
+    }
+  }, [effectiveStageId]);
 
   const activeStage = STAGES.find(s => s.id === currentStage) || STAGES[0];
-  const progressPercentage = Math.min(100, Math.max(0, progress));
+
+  // Use SSE message when available, otherwise stage description
+  const statusDescription = useRealProgress && sseEvent
+    ? sseEvent.message
+    : activeStage.description;
+
+  // States processed: from SSE detail or from prop
+  const effectiveStatesProcessed = useRealProgress && sseEvent?.detail?.uf_index
+    ? sseEvent.detail.uf_index
+    : statesProcessed;
+
+  const progressPercentage = Math.min(100, Math.max(0, effectiveProgress));
+  const isOvertime = elapsedTime > estimatedTime;
+  const overtimeSeconds = elapsedTime - estimatedTime;
 
   return (
     <div
@@ -162,7 +227,7 @@ export function EnhancedLoadingProgress({
               {activeStage.label}
             </p>
             <p className="text-xs sm:text-sm text-ink-secondary mt-0.5">
-              {activeStage.description}
+              {statusDescription}
             </p>
           </div>
         </div>
@@ -172,14 +237,17 @@ export function EnhancedLoadingProgress({
             {Math.floor(progressPercentage)}%
           </p>
           <p className="text-xs text-ink-muted">
-            {/* Bug fix P2-2: Handle very long time (>5min) with proper formatting */}
             {elapsedTime >= 300
               ? `${Math.floor(elapsedTime / 60)}m ${elapsedTime % 60}s`
               : `${elapsedTime}s`}
-            {' / '}
-            {estimatedTime >= 300
-              ? `${Math.floor(estimatedTime / 60)}m ${estimatedTime % 60}s`
-              : `${estimatedTime}s`}
+            {!isOvertime && (
+              <>
+                {' / '}
+                {estimatedTime >= 300
+                  ? `${Math.floor(estimatedTime / 60)}m ${estimatedTime % 60}s`
+                  : `~${estimatedTime}s`}
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -244,13 +312,19 @@ export function EnhancedLoadingProgress({
         })}
       </div>
 
+      {/* Overtime warning message */}
+      {isOvertime && (
+        <div className="mb-3 p-3 bg-warning-subtle border border-warning/20 rounded-lg text-sm text-warning-dark">
+          {getOvertimeMessage(overtimeSeconds)}
+        </div>
+      )}
+
       {/* Meta information */}
-      <div className="flex justify-between text-xs text-ink-secondary pt-3 border-t border-strong">
+      <div className="flex justify-between items-center text-xs text-ink-secondary pt-3 border-t border-strong">
         <span>
-          {/* Issue #109: Show progress "X of Y states processed" for better feedback */}
-          {statesProcessed > 0 ? (
+          {effectiveStatesProcessed > 0 ? (
             <>
-              <span className="font-semibold text-brand-blue">{statesProcessed}</span>
+              <span className="font-semibold text-brand-blue">{effectiveStatesProcessed}</span>
               {' de '}
               <span className="font-semibold">{stateCount}</span>
               {` ${stateCount === 1 ? 'estado processado' : 'estados processados'}`}
@@ -259,14 +333,36 @@ export function EnhancedLoadingProgress({
             `Processando ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`
           )}
         </span>
-        <span>
-          {elapsedTime < estimatedTime
-            ? estimatedTime - elapsedTime >= 60
-              ? `~${Math.floor((estimatedTime - elapsedTime) / 60)}m restantes`
-              : `~${estimatedTime - elapsedTime}s restantes`
-            : 'Finalizando...'}
-        </span>
+
+        <div className="flex items-center gap-3">
+          <span>
+            {!isOvertime
+              ? estimatedTime - elapsedTime >= 60
+                ? `~${Math.floor((estimatedTime - elapsedTime) / 60)}m restantes`
+                : `~${Math.max(0, estimatedTime - elapsedTime)}s restantes`
+              : ''}
+          </span>
+
+          {/* Cancel button - shown after 10s */}
+          {onCancel && elapsedTime > 10 && (
+            <button
+              onClick={onCancel}
+              className="text-xs text-ink-muted hover:text-error transition-colors underline underline-offset-2"
+              type="button"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* SSE indicator (subtle) */}
+      {useRealProgress && sseEvent && (
+        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-muted">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          Progresso em tempo real
+        </div>
+      )}
     </div>
   );
 }

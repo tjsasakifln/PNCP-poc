@@ -22,6 +22,7 @@ import { useKeyboardShortcuts, getShortcutDisplay } from "../../hooks/useKeyboar
 import { useQuota } from "../../hooks/useQuota";
 import { usePlan } from "../../hooks/usePlan";
 import { useAuth } from "../components/AuthProvider";
+import { useSearchProgress } from "../../hooks/useSearchProgress";
 import { QuotaBadge } from "../components/QuotaBadge";
 import { PlanBadge } from "../components/PlanBadge";
 import { QuotaCounter } from "../components/QuotaCounter";
@@ -239,6 +240,11 @@ function HomePageContent() {
   const [loadingStep, setLoadingStep] = useState(1);
   const [statesProcessed, setStatesProcessed] = useState(0); // Issue #109: Track state progress
   const [error, setError] = useState<string | null>(null);
+
+  // SSE real-time progress state
+  const [searchId, setSearchId] = useState<string | null>(null);
+  const [useRealProgress, setUseRealProgress] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [quotaError, setQuotaError] = useState<string | null>(null); // Issue #153: Quota exceeded
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -253,6 +259,35 @@ function HomePageContent() {
 
   // Refs for keyboard shortcuts
   const searchButtonRef = useRef<HTMLButtonElement>(null);
+
+  // SSE real-time progress hook
+  const { currentEvent: sseEvent, sseAvailable } = useSearchProgress({
+    searchId,
+    enabled: loading && !!searchId,
+    authToken: session?.access_token,
+    onError: () => setUseRealProgress(false),
+  });
+
+  // Calibrated search time estimate based on production data (Feb 2026)
+  const estimateSearchTime = (ufCount: number, dateRangeDays: number): number => {
+    const baseTime = 20;
+    const parallelUfs = Math.min(ufCount, 10);
+    const queuedUfs = Math.max(0, ufCount - 10);
+    const fetchTime = parallelUfs * 12 + queuedUfs * 6;
+    const dateMultiplier = dateRangeDays > 14 ? 1.5 : dateRangeDays > 7 ? 1.2 : 1.0;
+    const filterTime = 5;
+    const llmTime = 10;
+    const excelTime = 5;
+    return Math.ceil(baseTime + (fetchTime * dateMultiplier) + filterTime + llmTime + excelTime);
+  };
+
+  // Cancel search handler
+  const cancelSearch = () => {
+    abortControllerRef.current?.abort();
+    setLoading(false);
+    setSearchId(null);
+    setUseRealProgress(false);
+  };
 
   // Ref to store last search params for pull-to-refresh (Issue #119)
   const lastSearchParamsRef = useRef<{
@@ -486,6 +521,15 @@ function HomePageContent() {
     setResult(null);
     setRawCount(0);
 
+    // SSE: Generate search_id for real-time progress tracking
+    const newSearchId = crypto.randomUUID();
+    setSearchId(newSearchId);
+    setUseRealProgress(true);
+
+    // AbortController for cancel support
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
     const searchStartTime = Date.now();
 
     // Issue #109: Simulate progressive state processing for better UX feedback
@@ -537,12 +581,14 @@ function HomePageContent() {
       const response = await fetch("/api/buscar", {
         method: "POST",
         headers,
+        signal: abortController.signal,
         body: JSON.stringify({
           ufs: Array.from(ufsSelecionadas),
           data_inicial: dataInicial,
           data_final: dataFinal,
           setor_id: searchMode === "setor" ? setorId : null,
           termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
+          search_id: newSearchId,
           // New filter parameters
           status,
           modalidades: modalidades.length > 0 ? modalidades : undefined,
@@ -614,6 +660,10 @@ function HomePageContent() {
       });
 
     } catch (e) {
+      // User cancelled search - don't show error
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        return;
+      }
       const errorMessage = getUserFriendlyError(e instanceof Error ? e : "Erro desconhecido");
       setError(errorMessage);
 
@@ -631,6 +681,9 @@ function HomePageContent() {
       setLoading(false);
       setLoadingStep(1);
       setStatesProcessed(0); // Issue #109: Reset progress counter
+      setSearchId(null);
+      setUseRealProgress(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -1369,15 +1422,18 @@ function HomePageContent() {
           <div aria-live="polite">
             <EnhancedLoadingProgress
               currentStep={loadingStep}
-              estimatedTime={Math.max(30, ufsSelecionadas.size * 6)}
+              estimatedTime={estimateSearchTime(ufsSelecionadas.size, dateDiffInDays(dataInicial, dataFinal))}
               stateCount={ufsSelecionadas.size}
               statesProcessed={statesProcessed}
+              onCancel={cancelSearch}
+              sseEvent={sseEvent}
+              useRealProgress={useRealProgress && sseAvailable}
               onStageChange={(stage) => {
-                // Track stage changes for analytics
                 trackEvent('search_progress_stage', {
                   stage: stage,
                   ufs: Array.from(ufsSelecionadas),
                   uf_count: ufsSelecionadas.size,
+                  is_sse: useRealProgress && sseAvailable,
                 });
               }}
             />
