@@ -36,6 +36,7 @@ from log_sanitizer import mask_user_id, log_user_action
 from rate_limiter import rate_limiter
 from routes.subscriptions import router as subscriptions_router
 from routes.features import router as features_router
+from routes.messages import router as messages_router
 from webhooks.stripe import router as stripe_webhook_router
 
 # Configure structured logging
@@ -74,6 +75,7 @@ app.add_middleware(
 app.include_router(admin_router)
 app.include_router(subscriptions_router)
 app.include_router(features_router)
+app.include_router(messages_router)
 app.include_router(stripe_webhook_router)
 
 logger.info(

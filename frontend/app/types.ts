@@ -84,3 +84,54 @@ export interface ValidationErrors {
   data_final?: string;
   date_range?: string;
 }
+
+// ============================================================================
+// InMail Messaging Types
+// ============================================================================
+
+export type ConversationCategory = "suporte" | "sugestao" | "funcionalidade" | "bug" | "outro";
+export type ConversationStatus = "aberto" | "respondido" | "resolvido";
+
+export interface MessageResponse {
+  id: string;
+  sender_id: string;
+  sender_email?: string | null;
+  body: string;
+  is_admin_reply: boolean;
+  read_by_user: boolean;
+  read_by_admin: boolean;
+  created_at: string;
+}
+
+export interface ConversationSummary {
+  id: string;
+  user_id: string;
+  user_email?: string | null;
+  subject: string;
+  category: ConversationCategory;
+  status: ConversationStatus;
+  last_message_at: string;
+  created_at: string;
+  unread_count: number;
+}
+
+export interface ConversationDetail {
+  id: string;
+  user_id: string;
+  user_email?: string | null;
+  subject: string;
+  category: ConversationCategory;
+  status: ConversationStatus;
+  last_message_at: string;
+  created_at: string;
+  messages: MessageResponse[];
+}
+
+export interface ConversationsListResponse {
+  conversations: ConversationSummary[];
+  total: number;
+}
+
+export interface UnreadCountResponse {
+  unread_count: number;
+}

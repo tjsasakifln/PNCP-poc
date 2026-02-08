@@ -25,6 +25,7 @@ import { useAuth } from "../components/AuthProvider";
 import { useSearchProgress } from "../../hooks/useSearchProgress";
 import { QuotaBadge } from "../components/QuotaBadge";
 import { PlanBadge } from "../components/PlanBadge";
+import { MessageBadge } from "../components/MessageBadge";
 import { QuotaCounter } from "../components/QuotaCounter";
 import { UpgradeModal } from "../components/UpgradeModal";
 import { LicitacoesPreview } from "../components/LicitacoesPreview";
@@ -937,6 +938,7 @@ function HomePageContent() {
               onAnalyticsEvent={trackEvent}
             />
             <ThemeToggle />
+            <MessageBadge />
             <UserMenu
               onRestartTour={!shouldShowOnboarding ? restartTour : undefined}
               statusSlot={
