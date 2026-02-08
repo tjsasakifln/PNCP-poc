@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
 
 interface Plan {
   id: string;
@@ -47,7 +48,6 @@ interface PlanFeatures {
   maxRequestsPerMonth: number;
   maxRequestsPerMin: number;
   aiLevel: string;  // Display text for AI summary level
-  unlimited?: boolean;  // P0 fix: Flag for unlimited plans (Sala de Guerra)
 }
 
 const PLAN_FEATURES: Record<string, PlanFeatures> = {
@@ -60,7 +60,7 @@ const PLAN_FEATURES: Record<string, PlanFeatures> = {
   },
   consultor_agil: {
     maxHistoryDays: 30,
-    allowExcel: true,  // P1 fix: Excel enabled
+    allowExcel: false,
     maxRequestsPerMonth: 50,
     maxRequestsPerMin: 10,
     aiLevel: "Basico",
@@ -75,10 +75,9 @@ const PLAN_FEATURES: Record<string, PlanFeatures> = {
   sala_guerra: {
     maxHistoryDays: 1825,  // 5 years
     allowExcel: true,
-    maxRequestsPerMonth: 999999,  // P0 fix: Unlimited
-    maxRequestsPerMin: 999,
-    aiLevel: "Prioritario",
-    unlimited: true,  // P0 fix: Show "Ilimitado" in UI
+    maxRequestsPerMonth: 1000,
+    maxRequestsPerMin: 60,
+    aiLevel: "Prioritário",
   },
 };
 
@@ -166,6 +165,7 @@ export default function PlanosPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -360,12 +360,6 @@ export default function PlanosPage() {
   const formatPrice = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
-  const getPlanLabel = (plan: Plan) => {
-    if (plan.duration_days === 30) return "/mês";
-    if (plan.duration_days === 365) return "/ano";
-    return "";
-  };
-
   const isPopular = (id: string) => id === "maquina";
 
   return (
@@ -380,6 +374,11 @@ export default function PlanosPage() {
               ? "Comece gratis com 3 buscas. Escolha um plano para acesso completo ao monitoramento de licitacoes."
               : `Voce esta no plano ${getCurrentPlanName()}. Veja as opcoes de upgrade ou downgrade abaixo.`}
           </p>
+
+          {/* Billing Period Toggle - Monthly/Annual */}
+          <div className="mt-6">
+            <PlanToggle value={billingPeriod} onChange={setBillingPeriod} />
+          </div>
         </div>
 
         {statusMsg && (
@@ -451,9 +450,20 @@ export default function PlanosPage() {
 
                   <div className="mb-6">
                     <span className="text-3xl font-data font-bold text-[var(--ink)]">
-                      {formatPrice(plan.price_brl)}
+                      {billingPeriod === "annual"
+                        ? formatPrice(plan.price_brl * 9.6)
+                        : formatPrice(plan.price_brl)}
                     </span>
-                    <span className="text-sm text-[var(--ink-muted)]">{getPlanLabel(plan)}</span>
+                    <span className="text-sm text-[var(--ink-muted)]">
+                      {billingPeriod === "annual" ? "/ano" : "/mês"}
+                    </span>
+                    {billingPeriod === "annual" && (
+                      <div className="mt-1">
+                        <span className="text-sm text-[var(--ink-secondary)]">
+                          Equivalente a {formatPrice((plan.price_brl * 9.6) / 12)}/mês
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <ul className="space-y-2 mb-6 text-sm text-[var(--ink-secondary)]">
@@ -465,12 +475,12 @@ export default function PlanosPage() {
                           {/* Searches per month */}
                           <li className="flex items-center gap-2">
                             <span className="text-[var(--success)]">&#10003;</span>
-                            {features.maxRequestsPerMonth} buscas/mes
+                            {`${features.maxRequestsPerMonth} buscas/mês`}
                           </li>
                           {/* History period */}
                           <li className="flex items-center gap-2">
                             <span className="text-[var(--success)]">&#10003;</span>
-                            Historico de {formatHistoryDays(features.maxHistoryDays)}
+                            Histórico de {formatHistoryDays(features.maxHistoryDays)}
                           </li>
                           {/* Excel export - show as available or blocked */}
                           <li className="flex items-center gap-2">
@@ -491,10 +501,14 @@ export default function PlanosPage() {
                             <span className="text-[var(--success)]">&#10003;</span>
                             IA {features.aiLevel}
                           </li>
-                          {/* Rate limit */}
+                          {/* Processing priority */}
                           <li className="flex items-center gap-2">
                             <span className="text-[var(--success)]">&#10003;</span>
-                            {features.maxRequestsPerMin} req/min
+                            {plan.id === "sala_guerra"
+                              ? "Processamento prioritário"
+                              : plan.id === "maquina"
+                                ? "Processamento rápido"
+                                : "Processamento padrão"}
                           </li>
                         </>
                       );

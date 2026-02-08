@@ -390,7 +390,7 @@ class TestCheckQuota:
         assert result.capabilities["max_history_days"] == 1825  # 5 years
         assert result.capabilities["max_requests_per_month"] == 1000
         assert result.capabilities["max_requests_per_min"] == 60
-        assert result.capabilities["max_summary_tokens"] == 1000
+        assert result.capabilities["max_summary_tokens"] == 10000
 
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")

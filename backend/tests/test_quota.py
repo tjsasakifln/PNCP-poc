@@ -83,7 +83,7 @@ class TestPlanCapabilities:
         assert caps["allow_excel"] is True
         assert caps["max_requests_per_month"] == 1000
         assert caps["max_requests_per_min"] == 60
-        assert caps["max_summary_tokens"] == 1000
+        assert caps["max_summary_tokens"] == 10000
         assert caps["priority"] == "critical"
 
     def test_plan_names_are_defined(self):
@@ -330,7 +330,7 @@ class TestCheckQuotaPaidPlans:
         assert result.plan_id == "sala_guerra"
         assert result.capabilities["max_history_days"] == 1825
         assert result.capabilities["allow_excel"] is True
-        assert result.capabilities["max_summary_tokens"] == 1000
+        assert result.capabilities["max_summary_tokens"] == 10000
         assert result.quota_remaining == 500
 
 

@@ -70,7 +70,7 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     },
     "consultor_agil": {
         "max_history_days": 30,
-        "allow_excel": True,  # P1 fix: Excel is commodity, not premium differentiator
+        "allow_excel": False,
         "max_requests_per_month": 50,
         "max_requests_per_min": 10,
         "max_summary_tokens": 200,
@@ -87,11 +87,10 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "sala_guerra": {
         "max_history_days": 1825,  # 5 years
         "allow_excel": True,
-        "max_requests_per_month": 999999,  # P0 fix: Effectively unlimited for Master
-        "max_requests_per_min": 999,       # P0 fix: No rate limit for Master
-        "max_summary_tokens": 10000,       # P0 fix: Generous token limit
+        "max_requests_per_month": 1000,
+        "max_requests_per_min": 60,
+        "max_summary_tokens": 10000,
         "priority": PlanPriority.CRITICAL.value,
-        "unlimited": True,  # P0 fix: Flag for UI to show "Ilimitado"
     },
 }
 
