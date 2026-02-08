@@ -4,7 +4,7 @@ const backendUrl = process.env.BACKEND_URL;
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!backendUrl)
     return NextResponse.json({ message: "Servidor nao configurado" }, { status: 503 });
@@ -13,10 +13,12 @@ export async function POST(
   if (!authHeader)
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
 
+  const { id } = await params;
+
   try {
     const body = await request.json();
     const res = await fetch(
-      `${backendUrl}/api/messages/conversations/${params.id}/reply`,
+      `${backendUrl}/api/messages/conversations/${id}/reply`,
       {
         method: "POST",
         headers: { Authorization: authHeader, "Content-Type": "application/json" },

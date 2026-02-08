@@ -4,7 +4,7 @@ const backendUrl = process.env.BACKEND_URL;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!backendUrl)
     return NextResponse.json({ message: "Servidor nao configurado" }, { status: 503 });
@@ -13,9 +13,11 @@ export async function GET(
   if (!authHeader)
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
 
+  const { id } = await params;
+
   try {
     const res = await fetch(
-      `${backendUrl}/api/messages/conversations/${params.id}`,
+      `${backendUrl}/api/messages/conversations/${id}`,
       { headers: { Authorization: authHeader, "Content-Type": "application/json" } },
     );
     const data = await res.json().catch(() => ({}));
