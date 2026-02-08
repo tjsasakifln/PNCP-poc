@@ -20,9 +20,9 @@ describe('HeroSection', () => {
   it('renders primary CTA button with new text', () => {
     render(<HeroSection />);
 
-    const primaryCTA = screen.getByRole('link', { name: /Acessar busca/i });
+    const primaryCTA = screen.getByRole('link', { name: /Criar conta grátis/i });
     expect(primaryCTA).toBeInTheDocument();
-    expect(primaryCTA).toHaveAttribute('href', '/buscar');
+    expect(primaryCTA).toHaveAttribute('href', '/signup?source=landing-cta');
   });
 
   it('renders secondary CTA button with scroll functionality', () => {
