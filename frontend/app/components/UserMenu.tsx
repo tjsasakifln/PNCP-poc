@@ -75,6 +75,10 @@ export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
             </div>
           )}
 
+          <Link href="/dashboard" onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+            Dashboard
+          </Link>
           <Link href="/conta" onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Minha conta

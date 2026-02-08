@@ -17,6 +17,7 @@ const PROTECTED_ROUTES = [
   "/historico",  // Search history
   "/conta",      // Account settings
   "/admin",      // Admin dashboard
+  "/dashboard",  // Personal analytics dashboard
 ];
 
 const PUBLIC_ROUTES = [
