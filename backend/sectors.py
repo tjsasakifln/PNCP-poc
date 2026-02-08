@@ -20,6 +20,11 @@ class SectorConfig:
     description: str
     keywords: Set[str]
     exclusions: Set[str] = field(default_factory=set)
+    # Maps generic/ambiguous keywords to a set of context keywords.
+    # A generic keyword only matches if at least one of its context keywords
+    # is also found in the procurement text.  This prevents broad terms like
+    # "mesa" or "banco" from matching unrelated procurements.
+    context_required_keywords: Dict[str, Set[str]] = field(default_factory=dict)
 
 
 SECTORS: Dict[str, SectorConfig] = {
@@ -272,6 +277,100 @@ SECTORS: Dict[str, SectorConfig] = {
             "mesa diretora",
             # "banco" in non-furniture context (additional)
             "banco de reserva",
+            # "móvel/móveis" in non-furniture context (mobile services/apps/units)
+            "serviço móvel", "servico movel",
+            "serviços móveis", "servicos moveis",
+            "base móvel", "base movel",
+            "aplicativo móvel", "aplicativo movel",
+            "aplicativos móveis", "aplicativos moveis",
+            "laboratório móvel", "laboratorio movel",
+            "pré-hospitalar móvel", "pre-hospitalar movel",
+            "atendimento móvel", "atendimento movel",
+            "fixo-móvel", "fixo-movel",
+            "fixo móvel", "fixo movel",
+            "comunicação móvel", "comunicacao movel",
+            "rede móvel", "rede movel",
+            "internet móvel", "internet movel",
+            "unidades móveis", "unidades moveis",  # plural was missing (singular exists)
+            # "cadeira" in non-furniture context (medical)
+            "cadeira de rodas",
+            "cadeiras de rodas",
+            # "mesa" in non-furniture context (medical/audio/industrial)
+            "mesa ortopédica", "mesa ortopedica",
+            "mesa cirúrgica", "mesa cirurgica",
+            "mesa hospitalar",
+            "mesa digital",
+            "mesa de mixagem",
+            "mesa acumuladora",
+            "mesa de exame",
+            "mesa de exames",
+            # "banco" in non-furniture context (vehicle)
+            "banco traseiro", "banco dianteiro",
+            "banco do motorista", "banco do passageiro",
+            "banco de couro",  # car seat context
+            # "arquivo" in non-furniture context (document management)
+            "gestão de arquivos", "gestao de arquivos",
+            "tratamento de arquivos",
+            "arquivamento de documentos",
+            # Medical/pharma context (broad exclusions)
+            "medicamento", "medicamentos",
+            "oxigênio medicinal", "oxigenio medicinal",
+            "materiais médico-hospitalares", "materiais medico-hospitalares",
+            # Vehicle context
+            "viatura", "viaturas",
+            "veículo", "veiculo", "veículos", "veiculos",
+            "furgão", "furgao",
+            # Telecom context
+            "telefonia fixa", "telefone fixo",
+            "stfc",
+            # Food/beverage context (when "mesa" matches incidentally)
+            "gêneros alimentícios", "generos alimenticios",
+            "água mineral", "agua mineral",
+        },
+        context_required_keywords={
+            # "mesa" only matches if text also contains one of these furniture contexts
+            "mesa": {"escritório", "escritorio", "reunião", "reuniao", "computador",
+                     "mobiliário", "mobiliario", "móveis", "moveis", "mobília", "mobilia",
+                     "refeitório", "refeitorio"},
+            "mesas": {"escritório", "escritorio", "reunião", "reuniao", "computador",
+                      "mobiliário", "mobiliario", "móveis", "moveis", "mobília", "mobilia",
+                      "refeitório", "refeitorio"},
+            # "banco" only matches if furniture context present
+            "banco": {"praça", "praca", "jardim", "mobiliário", "mobiliario",
+                      "madeira", "concreto", "assento"},
+            "bancos": {"praça", "praca", "jardim", "mobiliário", "mobiliario",
+                       "madeira", "concreto", "assento"},
+            # "cadeira" only matches if furniture context present
+            "cadeira": {"escritório", "escritorio", "giratória", "giratoria", "executiva",
+                        "operacional", "ergonômica", "ergonomica", "mobiliário", "mobiliario",
+                        "estofada", "fixa", "longarina"},
+            "cadeiras": {"escritório", "escritorio", "giratória", "giratoria", "executiva",
+                         "operacional", "ergonômica", "ergonomica", "mobiliário", "mobiliario",
+                         "estofada", "fixa", "longarina"},
+            # "arquivo" only matches if physical furniture context
+            "arquivo": {"aço", "aco", "gaveta", "gavetas", "mobiliário", "mobiliario",
+                        "móveis", "moveis", "pasta", "pastas"},
+            "arquivos": {"aço", "aco", "gaveta", "gavetas", "mobiliário", "mobiliario",
+                         "móveis", "moveis"},
+            # "rack" only matches if furniture context
+            "rack": {"mobiliário", "mobiliario", "escritório", "escritorio",
+                     "organizador", "estante"},
+            "racks": {"mobiliário", "mobiliario", "escritório", "escritorio",
+                      "organizador", "estante"},
+            # "móvel"/"movel" standalone only matches if furniture context
+            "móvel": {"planejado", "escritório", "escritorio", "mobiliário", "mobiliario",
+                      "sob medida", "marcenaria", "mdf", "madeira"},
+            "movel": {"planejado", "escritório", "escritorio", "mobiliário", "mobiliario",
+                      "sob medida", "marcenaria", "mdf", "madeira"},
+            "móveis": {"planejado", "planejados", "escritório", "escritorio",
+                       "mobiliário", "mobiliario", "sob medida", "marcenaria", "mdf", "madeira"},
+            "moveis": {"planejado", "planejados", "escritório", "escritorio",
+                       "mobiliário", "mobiliario", "sob medida", "marcenaria", "mdf", "madeira"},
+            # "balcão" only matches if furniture/service counter context
+            "balcão": {"atendimento", "recepção", "recepcao", "mobiliário", "mobiliario",
+                       "escritório", "escritorio", "cozinha"},
+            "balcao": {"atendimento", "recepção", "recepcao", "mobiliário", "mobiliario",
+                       "escritório", "escritorio", "cozinha"},
         },
     ),
     "papelaria": SectorConfig(

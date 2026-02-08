@@ -1114,6 +1114,7 @@ async def buscar_licitacoes(
             municipios=request.municipios,
             keywords=active_keywords,
             exclusions=sector.exclusions if not custom_terms else set(),
+            context_required=sector.context_required_keywords if not custom_terms else None,
         )
 
         # Detailed logging for debugging and monitoring

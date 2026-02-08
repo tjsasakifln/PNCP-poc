@@ -3,6 +3,7 @@
 import logging
 import re
 import unicodedata
+from datetime import datetime
 from typing import Set, Tuple, List, Dict, Optional
 
 # Configure logging
@@ -392,7 +393,10 @@ def normalize_text(text: str) -> str:
 
 
 def match_keywords(
-    objeto: str, keywords: Set[str], exclusions: Set[str] | None = None
+    objeto: str,
+    keywords: Set[str],
+    exclusions: Set[str] | None = None,
+    context_required: Dict[str, Set[str]] | None = None,
 ) -> Tuple[bool, List[str]]:
     """
     Check if procurement object description contains uniform-related keywords.
@@ -403,13 +407,18 @@ def match_keywords(
     - "uniforme" does NOT match "uniformemente" or "uniformização" (different words)
 
     Algorithm:
-    1. Try exact match with word boundaries: \b{keyword}\b
-    2. If no match, try plural variations: \b{keyword}s\b or \b{keyword}es\b
+    1. Try exact match with word boundaries: \\b{keyword}\\b
+    2. If no match, try plural variations: \\b{keyword}s\\b or \\b{keyword}es\\b
+    3. If context_required is provided, validate that generic/ambiguous keywords
+       have at least one confirming context keyword present in the text.
 
     Args:
         objeto: Procurement object description (objetoCompra from PNCP API)
         keywords: Set of keywords to search for (KEYWORDS_UNIFORMES)
         exclusions: Optional set of exclusion keywords (KEYWORDS_EXCLUSAO)
+        context_required: Optional dict mapping generic keywords to sets of
+            context keywords.  A generic keyword only counts as a match if
+            at least one of its context keywords is also found in the text.
 
     Returns:
         Tuple containing:
@@ -467,6 +476,33 @@ def match_keywords(
                 matched.append(kw)
                 continue
 
+    # Context validation: generic/ambiguous keywords must have confirming context
+    if context_required and matched:
+        # Pre-compute normalized lookup: normalized_key -> set of context keywords
+        context_lookup: Dict[str, Set[str]] = {}
+        for crk, crv in context_required.items():
+            context_lookup[normalize_text(crk)] = crv
+
+        validated: List[str] = []
+        for kw in matched:
+            kw_norm = normalize_text(kw)
+            if kw_norm in context_lookup:
+                # This is a context-required keyword -- verify context exists
+                context_found = False
+                for ctx in context_lookup[kw_norm]:
+                    ctx_norm = normalize_text(ctx)
+                    if ctx_norm in objeto_norm:
+                        context_found = True
+                        break
+                if context_found:
+                    validated.append(kw)
+                # else: drop this keyword (no confirming context in text)
+            else:
+                # Not a context-required keyword -- keep unconditionally
+                validated.append(kw)
+
+        matched = validated
+
     return len(matched) > 0, matched
 
 
@@ -475,6 +511,8 @@ def filter_licitacao(
     ufs_selecionadas: Set[str],
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
+    context_required: Dict[str, Set[str]] | None = None,
+    filter_closed: bool = False,
 ) -> Tuple[bool, Optional[str]]:
     """
     Apply all filters to a single procurement bid (fail-fast sequential filtering).
@@ -524,27 +562,37 @@ def filter_licitacao(
     kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
     exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
     objeto = licitacao.get("objetoCompra", "")
-    match, keywords_found = match_keywords(objeto, kw, exc)
+    match, keywords_found = match_keywords(objeto, kw, exc, context_required)
 
     if not match:
         return False, "Não contém keywords do setor"
 
-    # 4. Deadline Filter - DESABILITADO
-    # O campo dataAberturaProposta representa a data de ABERTURA das propostas,
-    # NAO o prazo final para submissao. Licitacoes historicas sao validas para
-    # analise, planejamento e identificacao de oportunidades recorrentes.
+    # 4. Deadline Filter - OPTIONAL
+    # When filter_closed=True, reject bids whose proposal submission deadline
+    # (dataEncerramentoProposta) has already passed. This is used when the user
+    # explicitly filters by status="recebendo_proposta" to ensure only truly
+    # open bids are returned.
     #
-    # Para filtrar por prazo de submissao, seria necessario usar o campo
-    # dataFimReceberPropostas quando disponivel na API PNCP.
+    # Note: dataAberturaProposta is the OPENING date for proposals, NOT the
+    # deadline. The correct deadline field from the PNCP API is
+    # dataEncerramentoProposta.
     #
     # Referencia: Investigacao 2026-01-28 - docs/investigations/
-    #
-    # TODO: Implementar filtro OPCIONAL por prazo quando usuario solicitar:
-    # data_fim_str = licitacao.get("dataFimReceberPropostas")
-    # if data_fim_str and filtrar_encerradas:
-    #     data_fim = datetime.fromisoformat(data_fim_str.replace("Z", "+00:00"))
-    #     if data_fim < datetime.now(data_fim.tzinfo):
-    #         return False, "Prazo de submissao encerrado"
+    if filter_closed:
+        data_fim_str = licitacao.get("dataEncerramentoProposta")
+        if data_fim_str:
+            try:
+                data_fim = datetime.fromisoformat(
+                    data_fim_str.replace("Z", "+00:00")
+                )
+                agora = datetime.now(data_fim.tzinfo)
+                if data_fim < agora:
+                    return False, "Prazo de submissao encerrado"
+            except (ValueError, AttributeError):
+                # If date parsing fails, don't reject (conservative approach)
+                logger.warning(
+                    f"Data de encerramento invalida: '{data_fim_str}'"
+                )
 
     return True, None
 
@@ -554,6 +602,7 @@ def filter_batch(
     ufs_selecionadas: Set[str],
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
+    context_required: Dict[str, Set[str]] | None = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Filter a batch of procurement bids and return statistics.
@@ -605,7 +654,9 @@ def filter_batch(
     }
 
     for lic in licitacoes:
-        aprovada, motivo = filter_licitacao(lic, ufs_selecionadas, keywords, exclusions)
+        aprovada, motivo = filter_licitacao(
+            lic, ufs_selecionadas, keywords, exclusions, context_required
+        )
 
         if aprovada:
             aprovadas.append(lic)
@@ -1123,6 +1174,7 @@ def aplicar_todos_filtros(
     orgaos: List[str] | None = None,
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
+    context_required: Dict[str, Set[str]] | None = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Aplica todos os filtros em sequência otimizada (fail-fast).
@@ -1184,6 +1236,7 @@ def aplicar_todos_filtros(
         "rejeitadas_orgao": 0,
         "rejeitadas_valor": 0,
         "rejeitadas_keyword": 0,
+        "rejeitadas_prazo": 0,
         "rejeitadas_outros": 0,
     }
 
@@ -1412,15 +1465,62 @@ def aplicar_todos_filtros(
     kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
     exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
 
-    aprovadas: List[dict] = []
+    resultado_keyword: List[dict] = []
     for lic in resultado_valor:
         objeto = lic.get("objetoCompra", "")
-        match, _ = match_keywords(objeto, kw, exc)
+        match, _ = match_keywords(objeto, kw, exc, context_required)
 
         if match:
-            aprovadas.append(lic)
+            resultado_keyword.append(lic)
         else:
             stats["rejeitadas_keyword"] += 1
+
+    logger.debug(
+        f"  Após filtro Keywords: {len(resultado_keyword)} "
+        f"(rejeitadas: {stats['rejeitadas_keyword']})"
+    )
+
+    # Etapa 9: Filtro de Prazo (safety net for "recebendo_proposta")
+    # When the user explicitly filters by status="recebendo_proposta", apply a
+    # HARD deadline check using dataEncerramentoProposta. If the encerramento
+    # date is in the past, the bid is NOT open regardless of what _status_inferido
+    # says. This catches edge cases where status inference is wrong (e.g., missing
+    # dates but situacaoCompraNome says "Divulgada no PNCP" for a closed bid).
+    if status and status.lower() == "recebendo_proposta":
+        aprovadas: List[dict] = []
+        agora = datetime.now()
+
+        for lic in resultado_keyword:
+            data_enc_str = lic.get("dataEncerramentoProposta")
+            if data_enc_str:
+                try:
+                    data_enc = datetime.fromisoformat(
+                        data_enc_str.replace("Z", "+00:00")
+                    )
+                    # Use timezone-aware comparison if the date has timezone info
+                    agora_tz = datetime.now(data_enc.tzinfo) if data_enc.tzinfo else agora
+                    if data_enc < agora_tz:
+                        stats["rejeitadas_prazo"] += 1
+                        logger.debug(
+                            f"  Rejeitada por prazo: encerramento={data_enc.date()} "
+                            f"objeto={lic.get('objetoCompra', '')[:80]}"
+                        )
+                        continue
+                except (ValueError, AttributeError):
+                    # If date parsing fails, keep the bid (conservative)
+                    logger.warning(
+                        f"Data de encerramento invalida no safety net: '{data_enc_str}'"
+                    )
+
+            # No dataEncerramentoProposta or date is in the future => keep
+            aprovadas.append(lic)
+
+        logger.debug(
+            f"  Após filtro Prazo (safety net): {len(aprovadas)} "
+            f"(rejeitadas: {stats['rejeitadas_prazo']})"
+        )
+    else:
+        aprovadas = resultado_keyword
 
     stats["aprovadas"] = len(aprovadas)
 
