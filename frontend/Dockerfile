@@ -5,8 +5,8 @@
 # Optimized for Railway deployment
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
-# FORCE COMPLETE REBUILD - 20260207-190000 - clear all layers
-ARG CACHEBUST=20260207-clear-all-cache-v3
+# FORCE COMPLETE REBUILD - 20260208-020000 - design system update
+ARG CACHEBUST=20260208-design-system-v1
 
 # Stage 1: Dependencies
 # Using node:20.11-alpine3.19 instead of node:20-alpine to force layer rebuild
