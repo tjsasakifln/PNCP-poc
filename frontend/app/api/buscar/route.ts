@@ -65,52 +65,99 @@ export async function POST(request: NextRequest) {
       "Authorization": authHeader,
     };
 
-    let response: Response;
-    try {
-      // Timeout de 5 minutos — consultas com muitos estados podem demorar
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [0, 2000, 4000]; // ms delay before each attempt
+    const RETRYABLE_STATUSES = [502, 503];
 
-      response = await fetch(`${backendUrl}/buscar`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          ufs,
-          data_inicial,
-          data_final,
-          setor_id: setor_id || "vestuario",
-          termos_busca: termos_busca || undefined,
-          search_id: search_id || undefined,
-          // New filter parameters
-          status: status || undefined,
-          modalidades: modalidades || undefined,
-          valor_minimo: valor_minimo ?? undefined,
-          valor_maximo: valor_maximo ?? undefined,
-          esferas: esferas || undefined,
-          municipios: municipios || undefined,
-          ordenacao: ordenacao || undefined,
-        }),
-        signal: controller.signal,
-      });
+    let response: Response | null = null;
+    let lastError: { detail?: string; status: number } | null = null;
 
-      clearTimeout(timeout);
-    } catch (error) {
-      const isTimeout = error instanceof DOMException && error.name === "AbortError";
-      const message = isTimeout
-        ? "A consulta excedeu o tempo limite (5 min). Tente com menos estados ou um período menor."
-        : `Backend indisponível em ${backendUrl}: ${error instanceof Error ? error.message : 'conexão recusada'}`;
-      console.error(`Erro ao conectar com backend em ${backendUrl}:`, error);
-      return NextResponse.json(
-        { message },
-        { status: isTimeout ? 504 : 503 }
-      );
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        console.warn(`[buscar] Retry attempt ${attempt}/${MAX_RETRIES - 1} after ${RETRY_DELAYS[attempt]}ms delay`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+      }
+
+      try {
+        // Timeout de 5 minutos — consultas com muitos estados podem demorar
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
+        response = await fetch(`${backendUrl}/buscar`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            ufs,
+            data_inicial,
+            data_final,
+            setor_id: setor_id || "vestuario",
+            termos_busca: termos_busca || undefined,
+            search_id: search_id || undefined,
+            // New filter parameters
+            status: status || undefined,
+            modalidades: modalidades || undefined,
+            valor_minimo: valor_minimo ?? undefined,
+            valor_maximo: valor_maximo ?? undefined,
+            esferas: esferas || undefined,
+            municipios: municipios || undefined,
+            ordenacao: ordenacao || undefined,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        // If successful or non-retryable error, break out
+        if (response.ok || !RETRYABLE_STATUSES.includes(response.status)) {
+          break;
+        }
+
+        // Retryable error - log and continue loop
+        const errorBody = await response.json().catch(() => ({}));
+        lastError = { detail: errorBody.detail, status: response.status };
+        console.warn(
+          `[buscar] Backend returned ${response.status}: ${errorBody.detail || 'unknown error'}. ` +
+          `${attempt < MAX_RETRIES - 1 ? 'Will retry...' : 'No more retries.'}`
+        );
+
+      } catch (error) {
+        const isTimeout = error instanceof DOMException && error.name === "AbortError";
+        if (isTimeout || attempt >= MAX_RETRIES - 1) {
+          // Timeout or final attempt - return error
+          const message = isTimeout
+            ? "A consulta excedeu o tempo limite (5 min). Tente com menos estados ou um período menor."
+            : `Backend indisponível em ${backendUrl}: ${error instanceof Error ? error.message : 'conexão recusada'}`;
+          console.error(`Erro ao conectar com backend em ${backendUrl}:`, error);
+          return NextResponse.json(
+            { message },
+            { status: isTimeout ? 504 : 503 }
+          );
+        }
+        // Connection error - will retry
+        console.warn(`[buscar] Connection error on attempt ${attempt + 1}: ${error instanceof Error ? error.message : 'unknown'}. Will retry...`);
+        continue;
+      }
     }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+    // After retry loop - check if we got a successful response
+    if (!response || !response.ok) {
+      if (lastError) {
+        return NextResponse.json(
+          { message: lastError.detail || "Erro no backend" },
+          { status: lastError.status }
+        );
+      }
+      // Try to extract error from last response
+      if (response && !response.ok) {
+        const error = await response.json().catch(() => ({}));
+        return NextResponse.json(
+          { message: error.detail || "Erro no backend" },
+          { status: response.status }
+        );
+      }
       return NextResponse.json(
-        { message: error.detail || "Erro no backend" },
-        { status: response.status }
+        { message: "Backend indisponível após múltiplas tentativas" },
+        { status: 503 }
       );
     }
 

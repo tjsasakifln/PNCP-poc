@@ -1,6 +1,7 @@
 """Resilient HTTP client for PNCP API."""
 
 import asyncio
+import json
 import logging
 import random
 import time
@@ -201,11 +202,47 @@ class PNCPClient:
 
                 # Success case
                 if response.status_code == 200:
+                    # Validate Content-Type before parsing JSON
+                    content_type = response.headers.get("content-type", "")
+                    if "json" not in content_type.lower():
+                        logger.warning(
+                            f"PNCP returned non-JSON response (content-type: {content_type}). "
+                            f"Body preview: {response.text[:200]}. "
+                            f"Attempt {attempt + 1}/{self.config.max_retries + 1}"
+                        )
+                        if attempt < self.config.max_retries:
+                            delay = calculate_delay(attempt, self.config)
+                            time.sleep(delay)
+                            continue
+                        else:
+                            raise PNCPAPIError(
+                                f"PNCP returned non-JSON after {self.config.max_retries + 1} attempts. "
+                                f"Content-Type: {content_type}"
+                            )
+
+                    # Parse JSON with error handling
+                    try:
+                        data = response.json()
+                    except json.JSONDecodeError as e:
+                        logger.warning(
+                            f"PNCP returned invalid JSON: {e}. "
+                            f"Body preview: {response.text[:200]}. "
+                            f"Attempt {attempt + 1}/{self.config.max_retries + 1}"
+                        )
+                        if attempt < self.config.max_retries:
+                            delay = calculate_delay(attempt, self.config)
+                            time.sleep(delay)
+                            continue
+                        else:
+                            raise PNCPAPIError(
+                                f"PNCP returned invalid JSON after {self.config.max_retries + 1} attempts: {e}"
+                            ) from e
+
                     logger.debug(
                         f"Success: fetched page {pagina} "
-                        f"({len(response.json().get('data', []))} items)"
+                        f"({len(data.get('data', []))} items)"
                     )
-                    return response.json()
+                    return data
 
                 # No content - empty results (valid response)
                 if response.status_code == 204:
@@ -663,7 +700,53 @@ class AsyncPNCPClient:
 
                 # Success
                 if response.status_code == 200:
-                    return response.json()
+                    # Validate Content-Type before parsing JSON
+                    content_type = response.headers.get("content-type", "")
+                    if "json" not in content_type.lower():
+                        logger.warning(
+                            f"PNCP returned non-JSON response (content-type: {content_type}). "
+                            f"Body preview: {response.text[:200]}. "
+                            f"Attempt {attempt + 1}/{self.config.max_retries + 1}"
+                        )
+                        if attempt < self.config.max_retries:
+                            delay = min(
+                                self.config.base_delay * (self.config.exponential_base ** attempt),
+                                self.config.max_delay
+                            )
+                            if self.config.jitter:
+                                delay *= random.uniform(0.5, 1.5)
+                            await asyncio.sleep(delay)
+                            continue
+                        else:
+                            raise PNCPAPIError(
+                                f"PNCP returned non-JSON after {self.config.max_retries + 1} attempts. "
+                                f"Content-Type: {content_type}"
+                            )
+
+                    # Parse JSON with error handling
+                    try:
+                        data = response.json()
+                    except json.JSONDecodeError as e:
+                        logger.warning(
+                            f"PNCP returned invalid JSON: {e}. "
+                            f"Body preview: {response.text[:200]}. "
+                            f"Attempt {attempt + 1}/{self.config.max_retries + 1}"
+                        )
+                        if attempt < self.config.max_retries:
+                            delay = min(
+                                self.config.base_delay * (self.config.exponential_base ** attempt),
+                                self.config.max_delay
+                            )
+                            if self.config.jitter:
+                                delay *= random.uniform(0.5, 1.5)
+                            await asyncio.sleep(delay)
+                            continue
+                        else:
+                            raise PNCPAPIError(
+                                f"PNCP returned invalid JSON after {self.config.max_retries + 1} attempts: {e}"
+                            ) from e
+
+                    return data
 
                 # No content
                 if response.status_code == 204:

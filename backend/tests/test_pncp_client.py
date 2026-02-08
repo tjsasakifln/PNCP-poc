@@ -1,5 +1,6 @@
 """Unit tests for PNCP client with retry logic and rate limiting."""
 
+import json
 import time
 from unittest.mock import Mock, patch
 
@@ -11,6 +12,16 @@ from pncp_client import PNCPClient, calculate_delay
 
 # Default modalidade for tests (Pregão Eletrônico)
 DEFAULT_MODALIDADE = 6
+
+# Default JSON headers for mocking successful PNCP responses
+JSON_HEADERS = {"content-type": "application/json; charset=utf-8"}
+
+
+def _ok_response(data=None, **kwargs):
+    """Create a mock 200 response with proper JSON content-type headers."""
+    mock = Mock(status_code=200, headers=JSON_HEADERS, **kwargs)
+    mock.json.return_value = data if data is not None else {"data": []}
+    return mock
 
 
 class TestCalculateDelay:
@@ -123,15 +134,13 @@ class TestFetchPageSuccess:
     def test_fetch_page_success(self, mock_get):
         """Test successful page fetch returns correct data."""
         # Mock successful response
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        mock_response = _ok_response({
             "data": [{"id": 1}, {"id": 2}],
             "totalRegistros": 2,
             "totalPaginas": 1,
             "paginaAtual": 1,
             "paginasRestantes": 0,
-        }
+        })
         mock_get.return_value = mock_response
 
         client = PNCPClient()
@@ -146,6 +155,7 @@ class TestFetchPageSuccess:
         """Test fetch_page includes UF parameter when provided."""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = JSON_HEADERS
         mock_response.json.return_value = {"data": []}
         mock_get.return_value = mock_response
 
@@ -161,6 +171,7 @@ class TestFetchPageSuccess:
         """Test fetch_page includes modalidade parameter."""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = JSON_HEADERS
         mock_response.json.return_value = {"data": []}
         mock_get.return_value = mock_response
 
@@ -176,6 +187,7 @@ class TestFetchPageSuccess:
         """Test fetch_page sends correct pagination parameters."""
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = JSON_HEADERS
         mock_response.json.return_value = {"data": []}
         mock_get.return_value = mock_response
 
@@ -198,7 +210,7 @@ class TestFetchPageRetry:
         # First call fails with 500, second succeeds
         mock_responses = [
             Mock(status_code=500, text="Internal Server Error"),
-            Mock(status_code=200),
+            Mock(status_code=200, headers=JSON_HEADERS),
         ]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
@@ -216,7 +228,7 @@ class TestFetchPageRetry:
         """Test client retries on 503 service unavailable."""
         mock_responses = [
             Mock(status_code=503, text="Service Unavailable"),
-            Mock(status_code=200),
+            Mock(status_code=200, headers=JSON_HEADERS),
         ]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
@@ -253,7 +265,7 @@ class TestFetchPageRateLimiting:
         """Test 429 response respects Retry-After header."""
         mock_responses = [
             Mock(status_code=429, headers={"Retry-After": "5"}),
-            Mock(status_code=200),
+            Mock(status_code=200, headers=JSON_HEADERS),
         ]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
@@ -269,7 +281,7 @@ class TestFetchPageRateLimiting:
     @patch("time.sleep")
     def test_429_uses_default_wait_without_retry_after(self, mock_sleep, mock_get):
         """Test 429 uses default 60s wait when Retry-After header missing."""
-        mock_responses = [Mock(status_code=429, headers={}), Mock(status_code=200)]
+        mock_responses = [Mock(status_code=429, headers={}), Mock(status_code=200, headers=JSON_HEADERS)]
         mock_responses[1].json.return_value = {"data": []}
         mock_get.side_effect = mock_responses
 
@@ -318,7 +330,7 @@ class TestFetchPageExceptionRetry:
     def test_retry_on_connection_error(self, mock_sleep, mock_get):
         """Test client retries on ConnectionError."""
         # First call raises ConnectionError, second succeeds
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {"data": []}
         mock_get.side_effect = [ConnectionError("Network error"), mock_response]
 
@@ -332,7 +344,7 @@ class TestFetchPageExceptionRetry:
     @patch("time.sleep")
     def test_retry_on_timeout_error(self, mock_sleep, mock_get):
         """Test client retries on TimeoutError."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {"data": []}
         mock_get.side_effect = [TimeoutError("Request timeout"), mock_response]
 
@@ -366,6 +378,7 @@ class TestFetchAllPagination:
         # Mock single page response
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = JSON_HEADERS
         mock_response.json.return_value = {
             "data": [
                 {"numeroControlePNCP": "001", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
@@ -392,7 +405,7 @@ class TestFetchAllPagination:
     def test_fetch_all_multiple_pages(self, mock_get):
         """Test fetch_all correctly handles multiple pages."""
         # Mock 3 pages of data
-        page_1 = Mock(status_code=200)
+        page_1 = Mock(status_code=200, headers=JSON_HEADERS)
         page_1.json.return_value = {
             "data": [{"numeroControlePNCP": "1"}, {"numeroControlePNCP": "2"}],
             "totalRegistros": 5,
@@ -400,7 +413,7 @@ class TestFetchAllPagination:
             "paginasRestantes": 2,
         }
 
-        page_2 = Mock(status_code=200)
+        page_2 = Mock(status_code=200, headers=JSON_HEADERS)
         page_2.json.return_value = {
             "data": [{"numeroControlePNCP": "3"}, {"numeroControlePNCP": "4"}],
             "totalRegistros": 5,
@@ -408,7 +421,7 @@ class TestFetchAllPagination:
             "paginasRestantes": 1,
         }
 
-        page_3 = Mock(status_code=200)
+        page_3 = Mock(status_code=200, headers=JSON_HEADERS)
         page_3.json.return_value = {
             "data": [{"numeroControlePNCP": "5"}],
             "totalRegistros": 5,
@@ -432,7 +445,7 @@ class TestFetchAllPagination:
     def test_fetch_all_multiple_ufs(self, mock_get):
         """Test fetch_all handles multiple UFs sequentially."""
         # Mock responses for SP (2 items) and RJ (1 item)
-        sp_response = Mock(status_code=200)
+        sp_response = Mock(status_code=200, headers=JSON_HEADERS)
         sp_response.json.return_value = {
             "data": [
                 {"numeroControlePNCP": "1", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
@@ -443,7 +456,7 @@ class TestFetchAllPagination:
             "paginasRestantes": 0,
         }
 
-        rj_response = Mock(status_code=200)
+        rj_response = Mock(status_code=200, headers=JSON_HEADERS)
         rj_response.json.return_value = {
             "data": [{"numeroControlePNCP": "3", "unidadeOrgao": {"ufSigla": "RJ", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}}],
             "totalRegistros": 1,
@@ -467,7 +480,7 @@ class TestFetchAllPagination:
     def test_fetch_all_multiple_modalidades(self, mock_get):
         """Test fetch_all iterates over multiple modalidades."""
         # Mock responses for modalidade 6 and 7
-        mod_6_response = Mock(status_code=200)
+        mod_6_response = Mock(status_code=200, headers=JSON_HEADERS)
         mod_6_response.json.return_value = {
             "data": [{"numeroControlePNCP": "001", "modalidade": 6}],
             "totalRegistros": 1,
@@ -475,7 +488,7 @@ class TestFetchAllPagination:
             "paginasRestantes": 0,
         }
 
-        mod_7_response = Mock(status_code=200)
+        mod_7_response = Mock(status_code=200, headers=JSON_HEADERS)
         mod_7_response.json.return_value = {
             "data": [{"numeroControlePNCP": "002", "modalidade": 7}],
             "totalRegistros": 1,
@@ -497,7 +510,7 @@ class TestFetchAllPagination:
     def test_fetch_all_deduplicates_by_codigo_compra(self, mock_get):
         """Test fetch_all removes duplicates based on codigoCompra."""
         # Mock responses with duplicate numeroControlePNCP across modalidades
-        mod_6_response = Mock(status_code=200)
+        mod_6_response = Mock(status_code=200, headers=JSON_HEADERS)
         mod_6_response.json.return_value = {
             "data": [{"numeroControlePNCP": "001"}, {"numeroControlePNCP": "002"}],
             "totalRegistros": 2,
@@ -505,7 +518,7 @@ class TestFetchAllPagination:
             "paginasRestantes": 0,
         }
 
-        mod_7_response = Mock(status_code=200)
+        mod_7_response = Mock(status_code=200, headers=JSON_HEADERS)
         mod_7_response.json.return_value = {
             "data": [{"numeroControlePNCP": "001"}, {"numeroControlePNCP": "003"}],  # 001 is duplicate
             "totalRegistros": 2,
@@ -528,7 +541,7 @@ class TestFetchAllPagination:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_empty_results(self, mock_get):
         """Test fetch_all handles empty results gracefully."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [],
             "totalRegistros": 0,
@@ -547,7 +560,7 @@ class TestFetchAllPagination:
     def test_fetch_all_progress_callback(self, mock_get):
         """Test fetch_all calls progress callback with correct values."""
         # Mock 2 pages
-        page_1 = Mock(status_code=200)
+        page_1 = Mock(status_code=200, headers=JSON_HEADERS)
         page_1.json.return_value = {
             "data": [{"numeroControlePNCP": "1"}, {"numeroControlePNCP": "2"}, {"numeroControlePNCP": "3"}],
             "totalRegistros": 5,
@@ -555,7 +568,7 @@ class TestFetchAllPagination:
             "paginasRestantes": 1,
         }
 
-        page_2 = Mock(status_code=200)
+        page_2 = Mock(status_code=200, headers=JSON_HEADERS)
         page_2.json.return_value = {
             "data": [{"numeroControlePNCP": "4"}, {"numeroControlePNCP": "5"}],
             "totalRegistros": 5,
@@ -588,7 +601,7 @@ class TestFetchAllPagination:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_yields_individual_items(self, mock_get):
         """Test fetch_all is a generator yielding individual items, not lists."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [{"numeroControlePNCP": "1"}, {"numeroControlePNCP": "2"}],
             "totalRegistros": 2,
@@ -613,7 +626,7 @@ class TestFetchAllPagination:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_without_ufs(self, mock_get):
         """Test fetch_all works without specifying UFs (fetches all)."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [
                 {"numeroControlePNCP": "1", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
@@ -636,7 +649,7 @@ class TestFetchAllPagination:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_uses_default_modalidades(self, mock_get):
         """Test fetch_all uses DEFAULT_MODALIDADES when none specified."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [],
             "totalRegistros": 0,
@@ -659,7 +672,7 @@ class TestFetchByUFHelper:
     def test_fetch_by_uf_stops_when_tem_proxima_false(self, mock_get):
         """Test _fetch_by_uf stops pagination when temProximaPagina is False."""
         # First page has temProximaPagina=True
-        page_1 = Mock(status_code=200)
+        page_1 = Mock(status_code=200, headers=JSON_HEADERS)
         page_1.json.return_value = {
             "data": [{"id": 1}],
             "totalRegistros": 2,
@@ -669,7 +682,7 @@ class TestFetchByUFHelper:
         }
 
         # Second page has temProximaPagina=False (last page)
-        page_2 = Mock(status_code=200)
+        page_2 = Mock(status_code=200, headers=JSON_HEADERS)
         page_2.json.return_value = {
             "data": [{"id": 2}],
             "totalRegistros": 2,
@@ -691,7 +704,7 @@ class TestFetchByUFHelper:
     def test_fetch_by_uf_correct_page_numbers(self, mock_get):
         """Test _fetch_by_uf sends correct page numbers (1-indexed)."""
         # Mock 2 pages
-        page_1 = Mock(status_code=200)
+        page_1 = Mock(status_code=200, headers=JSON_HEADERS)
         page_1.json.return_value = {
             "data": [{"id": 1}],
             "totalRegistros": 2,
@@ -700,7 +713,7 @@ class TestFetchByUFHelper:
             "paginasRestantes": 1,
         }
 
-        page_2 = Mock(status_code=200)
+        page_2 = Mock(status_code=200, headers=JSON_HEADERS)
         page_2.json.return_value = {
             "data": [{"id": 2}],
             "totalRegistros": 2,
@@ -724,7 +737,7 @@ class TestFetchByUFHelper:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_by_uf_handles_uf_none(self, mock_get):
         """Test _fetch_by_uf works with uf=None (all UFs)."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [{"id": 1}],
             "totalRegistros": 1,
@@ -745,7 +758,7 @@ class TestFetchByUFHelper:
     @patch("pncp_client.requests.Session.get")
     def test_fetch_by_uf_includes_modalidade(self, mock_get):
         """Test _fetch_by_uf includes modalidade in API calls."""
-        mock_response = Mock(status_code=200)
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [{"id": 1}],
             "totalRegistros": 1,
@@ -853,6 +866,7 @@ class TestBuscarTodasUfsParalelo:
         # Mock response
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.headers = JSON_HEADERS
         mock_response.json.return_value = {
             "data": [
                 {"numeroControlePNCP": "001", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": "Sao Paulo"}, "orgaoEntidade": {"razaoSocial": "Orgao SP"}},
@@ -888,6 +902,7 @@ class TestBuscarTodasUfsParalelo:
 
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.headers = JSON_HEADERS
             mock_response.json.return_value = {
                 "data": [
                     {"numeroControlePNCP": f"{uf}-001", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
@@ -931,6 +946,7 @@ class TestBuscarTodasUfsParalelo:
 
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.headers = JSON_HEADERS
             mock_response.json.return_value = {
                 "data": [
                     {"numeroControlePNCP": f"{uf}-001", "unidadeOrgao": {"ufSigla": uf, "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
@@ -973,6 +989,7 @@ class TestBuscarTodasUfsParalelo:
 
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.headers = JSON_HEADERS
 
             if page == 1:
                 # First page returns items including a duplicate for page 2
@@ -1024,6 +1041,7 @@ class TestBuscarTodasUfsParalelo:
 
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.headers = JSON_HEADERS
             mock_response.json.return_value = {
                 "data": [],
                 "totalRegistros": 0,
@@ -1054,6 +1072,7 @@ class TestBuscarTodasUfsParalelo:
         with patch("pncp_client.httpx.AsyncClient.get") as mock_get:
             mock_response = Mock()
             mock_response.status_code = 200
+            mock_response.headers = JSON_HEADERS
             mock_response.json.return_value = {
                 "data": [],
                 "totalRegistros": 0,
@@ -1072,3 +1091,229 @@ class TestBuscarTodasUfsParalelo:
             # Should log completion with timing
             assert any("Parallel fetch complete" in record.message for record in caplog.records)
             assert any("in" in record.message and "s" in record.message for record in caplog.records)
+
+
+# ============================================================================
+# HTML Response / JSON Validation Tests (Silent Retry)
+# ============================================================================
+
+
+class TestFetchPageHTMLResponse:
+    """Test retry on HTML responses (PNCP returning HTML instead of JSON)."""
+
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
+    def test_html_response_triggers_retry(self, mock_sleep, mock_get):
+        """Test that HTML response (non-JSON content-type) triggers retry."""
+        # First call returns HTML, second returns valid JSON
+        html_response = Mock(
+            status_code=200,
+            headers={"content-type": "text/html; charset=utf-8"},
+            text="<!DOCTYPE html><html><body>Error</body></html>",
+        )
+
+        json_response = _ok_response({
+            "data": [{"id": 1}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginasRestantes": 0,
+        })
+
+        mock_get.side_effect = [html_response, json_response]
+
+        config = RetryConfig(max_retries=2)
+        client = PNCPClient(config=config)
+        result = client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
+
+        assert result["data"] == [{"id": 1}]
+        assert mock_get.call_count == 2
+        assert mock_sleep.called
+
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
+    def test_html_response_max_retries_raises_error(self, mock_sleep, mock_get):
+        """Test PNCPAPIError raised after max retries with HTML responses."""
+        html_response = Mock(
+            status_code=200,
+            headers={"content-type": "text/html"},
+            text="<!DOCTYPE html><html><body>Maintenance</body></html>",
+        )
+        mock_get.return_value = html_response
+
+        config = RetryConfig(max_retries=2)
+        client = PNCPClient(config=config)
+
+        with pytest.raises(PNCPAPIError, match="non-JSON"):
+            client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
+
+        # Should try 3 times (initial + 2 retries)
+        assert mock_get.call_count == 3
+
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
+    def test_empty_content_type_triggers_retry(self, mock_sleep, mock_get):
+        """Test empty content-type triggers retry."""
+        empty_ct_response = Mock(
+            status_code=200,
+            headers={"content-type": ""},
+            text="some garbage",
+        )
+
+        json_response = _ok_response({"data": [], "totalRegistros": 0, "totalPaginas": 0, "paginasRestantes": 0})
+
+        mock_get.side_effect = [empty_ct_response, json_response]
+
+        config = RetryConfig(max_retries=2)
+        client = PNCPClient(config=config)
+        result = client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
+
+        assert result["data"] == []
+        assert mock_get.call_count == 2
+
+
+class TestFetchPageJSONDecodeError:
+    """Test retry on invalid JSON body (correct content-type but malformed body)."""
+
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
+    def test_json_decode_error_triggers_retry(self, mock_sleep, mock_get):
+        """Test that JSONDecodeError triggers retry."""
+        # First response has correct content-type but invalid JSON body
+        bad_json_response = Mock(
+            status_code=200,
+            headers=JSON_HEADERS,
+            text="{invalid json",
+        )
+        bad_json_response.json.side_effect = json.JSONDecodeError("Expecting value", "{invalid", 0)
+
+        good_response = _ok_response({
+            "data": [{"id": 1}],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginasRestantes": 0,
+        })
+
+        mock_get.side_effect = [bad_json_response, good_response]
+
+        config = RetryConfig(max_retries=2)
+        client = PNCPClient(config=config)
+        result = client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
+
+        assert result["data"] == [{"id": 1}]
+        assert mock_get.call_count == 2
+        assert mock_sleep.called
+
+    @patch("pncp_client.requests.Session.get")
+    @patch("time.sleep")
+    def test_json_decode_error_max_retries_raises_error(self, mock_sleep, mock_get):
+        """Test PNCPAPIError raised after max retries with JSONDecodeError."""
+        bad_response = Mock(
+            status_code=200,
+            headers=JSON_HEADERS,
+            text="<!DOCTYPE html>...",
+        )
+        bad_response.json.side_effect = json.JSONDecodeError("Expecting value", "<!DOCTYPE", 0)
+        mock_get.return_value = bad_response
+
+        config = RetryConfig(max_retries=2)
+        client = PNCPClient(config=config)
+
+        with pytest.raises(PNCPAPIError, match="invalid JSON"):
+            client.fetch_page("2024-01-01", "2024-01-30", modalidade=DEFAULT_MODALIDADE)
+
+        assert mock_get.call_count == 3
+
+
+class TestAsyncFetchPageHTMLResponse:
+    """Test async retry on HTML responses."""
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_async_html_response_triggers_retry(self, mock_get):
+        """Test async client retries on HTML response."""
+        from pncp_client import AsyncPNCPClient
+
+        call_count = 0
+
+        def mock_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+
+            if call_count == 1:
+                # First call returns HTML
+                mock = Mock()
+                mock.status_code = 200
+                mock.headers = {"content-type": "text/html"}
+                mock.text = "<!DOCTYPE html><html>Error</html>"
+                return mock
+            else:
+                # Second call returns valid JSON
+                mock = Mock()
+                mock.status_code = 200
+                mock.headers = JSON_HEADERS
+                mock.json.return_value = {
+                    "data": [{"numeroControlePNCP": "001", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}}],
+                    "totalRegistros": 1,
+                    "totalPaginas": 1,
+                    "paginasRestantes": 0,
+                }
+                return mock
+
+        mock_get.side_effect = mock_side_effect
+
+        config = RetryConfig(max_retries=2)
+        async with AsyncPNCPClient(config=config) as client:
+            results = await client._fetch_uf_all_pages(
+                uf="SP",
+                data_inicial="2026-01-01",
+                data_final="2026-01-15",
+                modalidades=[6],
+            )
+
+        assert len(results) == 1
+        assert call_count == 2
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_async_json_decode_error_triggers_retry(self, mock_get):
+        """Test async client retries on JSONDecodeError."""
+        from pncp_client import AsyncPNCPClient
+
+        call_count = 0
+
+        def mock_side_effect(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+
+            if call_count == 1:
+                mock = Mock()
+                mock.status_code = 200
+                mock.headers = JSON_HEADERS
+                mock.text = "{broken json"
+                mock.json.side_effect = json.JSONDecodeError("Expecting", "{broken", 0)
+                return mock
+            else:
+                mock = Mock()
+                mock.status_code = 200
+                mock.headers = JSON_HEADERS
+                mock.json.return_value = {
+                    "data": [],
+                    "totalRegistros": 0,
+                    "totalPaginas": 1,
+                    "paginasRestantes": 0,
+                }
+                return mock
+
+        mock_get.side_effect = mock_side_effect
+
+        config = RetryConfig(max_retries=2)
+        async with AsyncPNCPClient(config=config) as client:
+            results = await client._fetch_uf_all_pages(
+                uf="SP",
+                data_inicial="2026-01-01",
+                data_final="2026-01-15",
+                modalidades=[6],
+            )
+
+        assert len(results) == 0
+        assert call_count == 2

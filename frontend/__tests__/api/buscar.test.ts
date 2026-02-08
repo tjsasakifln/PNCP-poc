@@ -20,7 +20,7 @@ describe("POST /api/buscar", () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    try { jest.runOnlyPendingTimers(); } catch { /* already using real timers */ }
     jest.useRealTimers();
   });
 
@@ -158,10 +158,13 @@ describe("POST /api/buscar", () => {
     expect(data.message).toBe("Backend error");
   });
 
-  it("should handle network errors", async () => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce(
-      new Error("Network error")
-    );
+  it("should handle network errors after all retries", async () => {
+    jest.useRealTimers(); // Use real timers for retry delays
+    // Network errors are retried 3 times before failing
+    (global.fetch as jest.Mock)
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockRejectedValueOnce(new Error("Network error"));
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
@@ -180,6 +183,86 @@ describe("POST /api/buscar", () => {
 
     expect(response.status).toBe(503);
     expect(data.message).toContain("Backend indisponível");
+    // Should have tried 3 times (initial + 2 retries)
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  }, 15000);
+
+  it("should retry on 502 and succeed on second attempt", async () => {
+    jest.useRealTimers(); // Use real timers for retry delays
+    const mockBackendResponse = {
+      resumo: { resumo_executivo: "Test", total_oportunidades: 1, valor_total: 50000, destaques: [], distribuicao_uf: { SC: 1 }, alerta_urgencia: null },
+      excel_base64: Buffer.from("test").toString("base64")
+    };
+
+    // First call returns 502, second call succeeds
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: async () => ({ detail: "PNCP unavailable" })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockBackendResponse
+      });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.resumo).toEqual(mockBackendResponse.resumo);
+    // Should have called fetch twice (initial 502 + successful retry)
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  }, 15000);
+
+  it("should retry on 503 and fail after max retries", async () => {
+    jest.useRealTimers(); // Use real timers for retry delays
+    // All 3 attempts return 503
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) })
+      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) })
+      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(data.message).toBe("Service unavailable");
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  }, 15000);
+
+  it("should not retry on non-retryable errors (400, 401, 500)", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ detail: "Bad request" })
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.message).toBe("Bad request");
+    // Should only call fetch once (no retries for non-retryable errors)
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it("should cache Excel buffer with download ID", async () => {
