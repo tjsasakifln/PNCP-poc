@@ -49,7 +49,7 @@ FALLBACK_STATS = PNCPStatsResponse(
     annualized_total=146000,
     total_value_30d=42000000.00,
     annualized_value=511000000.00,
-    total_sectors=9,
+    total_sectors=12,  # Corrected: actual number of sectors in list_sectors()
     last_updated=datetime.utcnow().isoformat() + "Z"
 )
 
