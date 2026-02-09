@@ -1438,6 +1438,8 @@ class TestAplicarTodosFiltros:
 
     def test_combined_filters(self):
         """Should apply all filters in sequence."""
+        from datetime import timedelta
+        future_deadline = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
         bids = [
             # Should pass all filters
             {
@@ -1448,6 +1450,7 @@ class TestAplicarTodosFiltros:
                 "codigoMunicipioIbge": "3550308",
                 "valorTotalEstimado": 150000,
                 "objetoCompra": "Aquisição de uniformes escolares",
+                "dataEncerramentoProposta": future_deadline,
             },
             # Rejected by UF
             {
@@ -1592,6 +1595,8 @@ class TestAplicarTodosFiltros:
 
     def test_multiple_filters_all_pass(self):
         """Bid passing all filters should be approved."""
+        from datetime import timedelta
+        future_deadline = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
         bid = {
             "uf": "SP",
             "situacaoCompra": "Recebendo propostas",
@@ -1600,6 +1605,7 @@ class TestAplicarTodosFiltros:
             "codigoMunicipioIbge": "3550308",
             "valorTotalEstimado": 150000,
             "objetoCompra": "Aquisição de uniformes escolares",
+            "dataEncerramentoProposta": future_deadline,
         }
         result, stats = aplicar_todos_filtros(
             [bid],
@@ -1646,6 +1652,8 @@ class TestAplicarTodosFiltros:
 
     def test_all_filters_applied_in_sequence(self):
         """All filters should be applied in fail-fast sequence."""
+        from datetime import timedelta
+        future_deadline = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
         bids = [
             # Fails UF
             {"uf": "RJ", "objetoCompra": "Uniformes"},
@@ -1699,7 +1707,7 @@ class TestAplicarTodosFiltros:
                 "valorTotalEstimado": 100000,
                 "objetoCompra": "Notebooks",
             },
-            # PASSES all
+            # PASSES all (has future deadline to prove it's open)
             {
                 "uf": "SP",
                 "situacaoCompra": "Recebendo propostas",
@@ -1708,6 +1716,7 @@ class TestAplicarTodosFiltros:
                 "codigoMunicipioIbge": "3550308",
                 "valorTotalEstimado": 100000,
                 "objetoCompra": "Uniformes escolares",
+                "dataEncerramentoProposta": future_deadline,
             },
         ]
 
@@ -1783,13 +1792,13 @@ class TestPrazoHeuristics:
         assert stats["rejeitadas_prazo"] == 0
 
     def test_rejects_bid_with_old_abertura_no_deadline(self):
-        """Bid with dataAberturaProposta >60 days ago and no deadline → rejected."""
+        """Bid with dataAberturaProposta >30 days ago and no deadline → rejected."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
             "objetoCompra": "Uniformes escolares",
             "_status_inferido": "recebendo_proposta",
-            "dataAberturaProposta": (agora - timedelta(days=90)).isoformat(),
+            "dataAberturaProposta": (agora - timedelta(days=45)).isoformat(),
             # No dataEncerramentoProposta
         }
         result, stats = aplicar_todos_filtros(
@@ -1798,8 +1807,8 @@ class TestPrazoHeuristics:
         assert len(result) == 0
         assert stats["rejeitadas_prazo"] == 1
 
-    def test_keeps_bid_with_recent_abertura_no_deadline(self):
-        """Bid with dataAberturaProposta <60 days ago and no deadline → kept."""
+    def test_keeps_bid_with_very_recent_abertura_no_deadline(self):
+        """Bid with dataAberturaProposta <=15 days ago and no deadline → kept."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
@@ -1814,14 +1823,48 @@ class TestPrazoHeuristics:
         assert len(result) == 1
         assert stats["rejeitadas_prazo"] == 0
 
-    def test_rejects_bid_with_old_publicacao_no_dates(self):
-        """Bid with publication >90 days ago and no other dates → rejected."""
+    def test_abertura_16_30_days_with_recebendo_kept(self):
+        """Bid 16-30 days old with 'recebendo' in situação → kept."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
             "objetoCompra": "Uniformes escolares",
             "_status_inferido": "recebendo_proposta",
-            "dataPublicacaoPncp": (agora - timedelta(days=120)).isoformat(),
+            "dataAberturaProposta": (agora - timedelta(days=20)).isoformat(),
+            "situacaoCompraNome": "Recebendo propostas",
+            # No dataEncerramentoProposta
+        }
+        result, stats = aplicar_todos_filtros(
+            [bid], {"SP"}, status="recebendo_proposta"
+        )
+        assert len(result) == 1
+        assert stats["rejeitadas_prazo"] == 0
+
+    def test_abertura_16_30_days_without_recebendo_rejected(self):
+        """Bid 16-30 days old WITHOUT 'recebendo' in situação → rejected."""
+        agora = datetime.now(timezone.utc)
+        bid = {
+            "uf": "SP",
+            "objetoCompra": "Uniformes escolares",
+            "_status_inferido": "recebendo_proposta",
+            "dataAberturaProposta": (agora - timedelta(days=20)).isoformat(),
+            "situacaoCompraNome": "Divulgada no PNCP",
+            # No dataEncerramentoProposta
+        }
+        result, stats = aplicar_todos_filtros(
+            [bid], {"SP"}, status="recebendo_proposta"
+        )
+        assert len(result) == 0
+        assert stats["rejeitadas_prazo"] == 1
+
+    def test_rejects_bid_with_old_publicacao_no_dates(self):
+        """Bid with publication >15 days ago and no other dates → rejected."""
+        agora = datetime.now(timezone.utc)
+        bid = {
+            "uf": "SP",
+            "objetoCompra": "Uniformes escolares",
+            "_status_inferido": "recebendo_proposta",
+            "dataPublicacaoPncp": (agora - timedelta(days=30)).isoformat(),
             # No dataAberturaProposta, no dataEncerramentoProposta
         }
         result, stats = aplicar_todos_filtros(
@@ -1830,14 +1873,14 @@ class TestPrazoHeuristics:
         assert len(result) == 0
         assert stats["rejeitadas_prazo"] == 1
 
-    def test_keeps_bid_with_recent_publicacao_no_dates(self):
-        """Bid with recent publication and no other dates → kept (conservative)."""
+    def test_keeps_bid_with_very_recent_publicacao_no_dates(self):
+        """Bid with publication <=15 days ago and no other dates → kept."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
             "objetoCompra": "Uniformes escolares",
             "_status_inferido": "recebendo_proposta",
-            "dataPublicacaoPncp": (agora - timedelta(days=15)).isoformat(),
+            "dataPublicacaoPncp": (agora - timedelta(days=5)).isoformat(),
             # No dataAberturaProposta, no dataEncerramentoProposta
         }
         result, stats = aplicar_todos_filtros(
@@ -1846,8 +1889,8 @@ class TestPrazoHeuristics:
         assert len(result) == 1
         assert stats["rejeitadas_prazo"] == 0
 
-    def test_keeps_bid_with_no_dates_at_all(self):
-        """Bid with no date fields at all → kept (conservative)."""
+    def test_rejects_bid_with_no_dates_at_all(self):
+        """Bid with no date fields at all → REJECTED (cannot prove it's open)."""
         bid = {
             "uf": "SP",
             "objetoCompra": "Uniformes escolares",
@@ -1856,8 +1899,8 @@ class TestPrazoHeuristics:
         result, stats = aplicar_todos_filtros(
             [bid], {"SP"}, status="recebendo_proposta"
         )
-        assert len(result) == 1
-        assert stats["rejeitadas_prazo"] == 0
+        assert len(result) == 0
+        assert stats["rejeitadas_prazo"] == 1
 
     def test_heuristic_not_applied_for_status_todos(self):
         """Heuristics should NOT apply when status is 'todos'."""
@@ -1874,14 +1917,14 @@ class TestPrazoHeuristics:
         assert len(result) == 1
         assert stats["rejeitadas_prazo"] == 0
 
-    def test_abertura_heuristic_boundary_60_days(self):
-        """Bid with dataAberturaProposta exactly 60 days ago → kept (boundary)."""
+    def test_abertura_heuristic_boundary_15_days(self):
+        """Bid with dataAberturaProposta exactly 15 days ago → kept (boundary)."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
             "objetoCompra": "Uniformes escolares",
             "_status_inferido": "recebendo_proposta",
-            "dataAberturaProposta": (agora - timedelta(days=60)).isoformat(),
+            "dataAberturaProposta": (agora - timedelta(days=15)).isoformat(),
         }
         result, stats = aplicar_todos_filtros(
             [bid], {"SP"}, status="recebendo_proposta"
@@ -1889,14 +1932,30 @@ class TestPrazoHeuristics:
         assert len(result) == 1
         assert stats["rejeitadas_prazo"] == 0
 
-    def test_publicacao_heuristic_boundary_90_days(self):
-        """Bid with publication exactly 90 days ago → kept (boundary)."""
+    def test_abertura_heuristic_boundary_16_days_no_recebendo(self):
+        """Bid with dataAberturaProposta 16 days ago without 'recebendo' → rejected."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
             "objetoCompra": "Uniformes escolares",
             "_status_inferido": "recebendo_proposta",
-            "dataPublicacaoPncp": (agora - timedelta(days=90)).isoformat(),
+            "dataAberturaProposta": (agora - timedelta(days=16)).isoformat(),
+            "situacaoCompraNome": "Divulgada no PNCP",
+        }
+        result, stats = aplicar_todos_filtros(
+            [bid], {"SP"}, status="recebendo_proposta"
+        )
+        assert len(result) == 0
+        assert stats["rejeitadas_prazo"] == 1
+
+    def test_publicacao_heuristic_boundary_15_days(self):
+        """Bid with publication exactly 15 days ago (no other dates) → kept (boundary)."""
+        agora = datetime.now(timezone.utc)
+        bid = {
+            "uf": "SP",
+            "objetoCompra": "Uniformes escolares",
+            "_status_inferido": "recebendo_proposta",
+            "dataPublicacaoPncp": (agora - timedelta(days=15)).isoformat(),
         }
         result, stats = aplicar_todos_filtros(
             [bid], {"SP"}, status="recebendo_proposta"
@@ -1904,8 +1963,23 @@ class TestPrazoHeuristics:
         assert len(result) == 1
         assert stats["rejeitadas_prazo"] == 0
 
-    def test_publicacao_heuristic_not_applied_when_abertura_exists(self):
-        """Publication check should not apply when dataAberturaProposta exists."""
+    def test_publicacao_heuristic_boundary_16_days(self):
+        """Bid with publication 16 days ago (no other dates) → rejected."""
+        agora = datetime.now(timezone.utc)
+        bid = {
+            "uf": "SP",
+            "objetoCompra": "Uniformes escolares",
+            "_status_inferido": "recebendo_proposta",
+            "dataPublicacaoPncp": (agora - timedelta(days=16)).isoformat(),
+        }
+        result, stats = aplicar_todos_filtros(
+            [bid], {"SP"}, status="recebendo_proposta"
+        )
+        assert len(result) == 0
+        assert stats["rejeitadas_prazo"] == 1
+
+    def test_abertura_takes_precedence_over_publicacao(self):
+        """When both abertura and publicacao exist, abertura logic applies."""
         agora = datetime.now(timezone.utc)
         bid = {
             "uf": "SP",
@@ -1913,7 +1987,7 @@ class TestPrazoHeuristics:
             "_status_inferido": "recebendo_proposta",
             "dataAberturaProposta": (agora - timedelta(days=10)).isoformat(),
             "dataPublicacaoPncp": (agora - timedelta(days=120)).isoformat(),
-            # Old publication but recent abertura → keep
+            # Old publication but recent abertura → keep (abertura wins)
         }
         result, stats = aplicar_todos_filtros(
             [bid], {"SP"}, status="recebendo_proposta"

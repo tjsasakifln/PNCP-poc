@@ -219,8 +219,12 @@ def inferir_status_licitacao(licitacao: dict) -> str:
     # 7. REGRA #6: RECEBENDO_PROPOSTA (situação textual)
 
     # Situação textual indica abertura
+    # IMPORTANTE: "divulgada" e "publicada" foram REMOVIDOS desta lista (2026-02-09).
+    # "Divulgada no PNCP" significa apenas que foi publicada no portal, NÃO que
+    # está aceitando propostas. Classificar essas como "recebendo_proposta" causava
+    # licitações fechadas serem exibidas como abertas, destruindo a credibilidade.
     situacoes_abertas = [
-        "divulgada", "publicada", "aberta", "recebendo",
+        "recebendo", "aberta",
         "vigente", "ativa", "em andamento"
     ]
     if any(termo in situacao_nome for termo in situacoes_abertas):
@@ -229,6 +233,7 @@ def inferir_status_licitacao(licitacao: dict) -> str:
 
     # 8. FALLBACK: Não foi possível determinar com certeza
     # Retorna "todos" para não filtrar essa licitação fora
+    # NOTA: "Divulgada no PNCP" e "Publicada" caem aqui — status indeterminado
     logger.debug(
         f"Status inferido: todos (fallback - dados insuficientes). "
         f"Situação: '{situacao_nome}', Abertura: '{data_abertura_str}', "

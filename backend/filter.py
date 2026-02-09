@@ -1484,13 +1484,21 @@ def aplicar_todos_filtros(
     # When the user explicitly filters by status="recebendo_proposta", apply a
     # HARD deadline check using dataEncerramentoProposta. If the encerramento
     # date is in the past, the bid is NOT open regardless of what _status_inferido
-    # says. This catches edge cases where status inference is wrong (e.g., missing
-    # dates but situacaoCompraNome says "Divulgada no PNCP" for a closed bid).
+    # says. This catches edge cases where status inference is wrong.
     #
-    # ENHANCED (2026-02-08): Also apply heuristics for bids missing deadline:
-    # - If dataAberturaProposta is in distant past (>60 days) with no deadline → reject
-    # - If no dates at all but publication is old (>90 days) → reject
-    # - Otherwise keep (conservative)
+    # CREDIBILITY FIX (2026-02-09): Tightened all heuristics significantly.
+    # Showing closed bids as "open" destroys user trust. It's better to miss
+    # a few legitimate open bids than to show clearly closed ones.
+    #
+    # Policy: If we can't PROVE a bid is open, don't show it as open.
+    # - Has future dataEncerramentoProposta → KEEP (proven open)
+    # - Has past dataEncerramentoProposta → REJECT (proven closed)
+    # - No deadline, abertura <= 15 days → KEEP (very likely still open)
+    # - No deadline, abertura 16-30 days → KEEP only if situação says "recebendo"
+    # - No deadline, abertura > 30 days → REJECT (probably closed)
+    # - No deadline, no abertura, publication <= 15 days → KEEP (very recent)
+    # - No deadline, no abertura, publication > 15 days → REJECT
+    # - No dates at all → REJECT (cannot prove it's open)
     if status and status.lower() == "recebendo_proposta":
         aprovadas: List[dict] = []
         agora = datetime.now()
@@ -1498,13 +1506,12 @@ def aplicar_todos_filtros(
         for lic in resultado_keyword:
             data_enc_str = lic.get("dataEncerramentoProposta")
 
-            # Case 1: dataEncerramentoProposta exists — hard deadline check
+            # Case 1: dataEncerramentoProposta exists — HARD deadline check
             if data_enc_str:
                 try:
                     data_enc = datetime.fromisoformat(
                         data_enc_str.replace("Z", "+00:00")
                     )
-                    # Use timezone-aware comparison if the date has timezone info
                     agora_tz = datetime.now(data_enc.tzinfo) if data_enc.tzinfo else agora
                     if data_enc < agora_tz:
                         stats["rejeitadas_prazo"] += 1
@@ -1514,16 +1521,14 @@ def aplicar_todos_filtros(
                         )
                         continue
                 except (ValueError, AttributeError):
-                    # If date parsing fails, keep the bid (conservative)
                     logger.warning(
                         f"Data de encerramento invalida no safety net: '{data_enc_str}'"
                     )
                 aprovadas.append(lic)
                 continue
 
-            # Case 2: No dataEncerramentoProposta — apply heuristics
-            # Check dataAberturaProposta: if it's in the distant past, the bid
-            # is almost certainly no longer accepting proposals
+            # Case 2: No dataEncerramentoProposta — strict heuristics
+            # Without a deadline, we cannot be CERTAIN the bid is open.
             data_ab_str = lic.get("dataAberturaProposta")
             if data_ab_str:
                 try:
@@ -1532,7 +1537,33 @@ def aplicar_todos_filtros(
                     )
                     agora_ab = datetime.now(data_ab.tzinfo) if data_ab.tzinfo else agora
                     dias_desde_abertura = (agora_ab - data_ab).days
-                    if dias_desde_abertura > 60:
+
+                    if dias_desde_abertura <= 15:
+                        # Very recent opening — likely still open
+                        aprovadas.append(lic)
+                        continue
+                    elif dias_desde_abertura <= 30:
+                        # Recent but not brand new — only keep if situação
+                        # explicitly says "recebendo" (actively receiving)
+                        situacao = (
+                            lic.get("situacaoCompraNome", "")
+                            or lic.get("situacao", "")
+                            or ""
+                        ).lower()
+                        if "recebendo" in situacao:
+                            aprovadas.append(lic)
+                            continue
+                        else:
+                            stats["rejeitadas_prazo"] += 1
+                            logger.debug(
+                                f"  Rejeitada por heurística (abertura 16-30d sem 'recebendo'): "
+                                f"abertura={data_ab.date()} ({dias_desde_abertura}d) "
+                                f"situação='{situacao}' "
+                                f"objeto={lic.get('objetoCompra', '')[:80]}"
+                            )
+                            continue
+                    else:
+                        # > 30 days old without deadline — almost certainly closed
                         stats["rejeitadas_prazo"] += 1
                         logger.debug(
                             f"  Rejeitada por heurística (abertura antiga): "
@@ -1543,20 +1574,23 @@ def aplicar_todos_filtros(
                 except (ValueError, AttributeError):
                     pass
 
-            # Check publication date: if published >90 days ago with no
-            # deadline info at all, likely a stale/closed opportunity
+            # Case 3: No deadline, no opening date — check publication
             data_pub_str = lic.get("dataPublicacaoPncp") or lic.get("dataPublicacao")
-            if data_pub_str and not data_ab_str:
+            if data_pub_str:
                 try:
                     data_pub = datetime.fromisoformat(
                         data_pub_str.replace("Z", "+00:00")
                     )
                     agora_pub = datetime.now(data_pub.tzinfo) if data_pub.tzinfo else agora
                     dias_desde_pub = (agora_pub - data_pub).days
-                    if dias_desde_pub > 90:
+                    if dias_desde_pub <= 15:
+                        # Very recently published, no other dates — give benefit of doubt
+                        aprovadas.append(lic)
+                        continue
+                    else:
                         stats["rejeitadas_prazo"] += 1
                         logger.debug(
-                            f"  Rejeitada por heurística (publicação antiga): "
+                            f"  Rejeitada por heurística (publicação sem datas): "
                             f"publicação={data_pub.date()} ({dias_desde_pub}d atrás) "
                             f"objeto={lic.get('objetoCompra', '')[:80]}"
                         )
@@ -1564,8 +1598,13 @@ def aplicar_todos_filtros(
                 except (ValueError, AttributeError):
                     pass
 
-            # No signals of staleness — keep (conservative)
-            aprovadas.append(lic)
+            # Case 4: No dates at all — REJECT
+            # Cannot prove this bid is open without any date information
+            stats["rejeitadas_prazo"] += 1
+            logger.debug(
+                f"  Rejeitada por falta de datas: "
+                f"objeto={lic.get('objetoCompra', '')[:80]}"
+            )
 
         logger.debug(
             f"  Após filtro Prazo (safety net + heurísticas): {len(aprovadas)} "

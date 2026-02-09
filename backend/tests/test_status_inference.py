@@ -98,8 +98,6 @@ class TestInferirStatusLicitacao:
     def test_recebendo_proposta_por_situacao_textual(self):
         """Situação textual de abertura indica 'recebendo_proposta'."""
         situacoes_abertas = [
-            "Divulgada no PNCP",
-            "Publicada",
             "Aberta",
             "Recebendo propostas",
             "Vigente",
@@ -109,6 +107,27 @@ class TestInferirStatusLicitacao:
             lic = {"situacaoCompraNome": situacao}
             result = inferir_status_licitacao(lic)
             assert result == "recebendo_proposta", f"Situação '{situacao}' deveria ser 'recebendo_proposta'"
+
+    def test_divulgada_publicada_nao_sao_recebendo_proposta(self):
+        """'Divulgada no PNCP' e 'Publicada' NÃO indicam 'recebendo_proposta'.
+
+        Estes termos significam apenas que a licitação foi publicada no portal.
+        Sem informações de data, não é possível determinar se está aberta.
+        Devem cair no fallback ('todos') para não exibir licitações fechadas
+        como abertas.
+        """
+        situacoes_ambiguas = [
+            "Divulgada no PNCP",
+            "Publicada",
+        ]
+
+        for situacao in situacoes_ambiguas:
+            lic = {"situacaoCompraNome": situacao}
+            result = inferir_status_licitacao(lic)
+            assert result == "todos", (
+                f"Situação '{situacao}' deveria ser 'todos' (indeterminado), "
+                f"não '{result}'. 'Divulgada' não prova que está recebendo propostas."
+            )
 
     def test_fallback_dados_insuficientes(self):
         """Sem dados suficientes → retorna 'todos' (não filtra)."""
@@ -126,8 +145,10 @@ class TestInferirStatusLicitacao:
             "situacaoCompraNome": "Divulgada",
         }
 
-        # Deve usar situação textual como fallback
-        assert inferir_status_licitacao(lic) == "recebendo_proposta"
+        # "Divulgada" não é mais classificada como "recebendo_proposta"
+        # (apenas indica publicação, não abertura). Com datas inválidas,
+        # cai no fallback "todos".
+        assert inferir_status_licitacao(lic) == "todos"
 
     def test_prioridade_homologacao_sobre_datas(self):
         """Valor homologado tem prioridade sobre datas (sempre encerrada)."""
