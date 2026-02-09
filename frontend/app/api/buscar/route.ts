@@ -161,7 +161,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(async () => {
+      const text = await response.text().catch(() => "");
+      console.error(`[buscar] Backend returned non-JSON response: ${text.slice(0, 200)}`);
+      return null;
+    });
+
+    if (!data) {
+      return NextResponse.json(
+        { message: "Resposta inesperada do servidor. Tente novamente." },
+        { status: 502 }
+      );
+    }
 
     // Only save Excel to filesystem if there are actual results
     let downloadId: string | null = null;

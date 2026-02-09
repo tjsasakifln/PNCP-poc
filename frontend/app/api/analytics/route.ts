@@ -36,7 +36,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
+    if (!data) {
+      return NextResponse.json(
+        { error: "Resposta inesperada do servidor" },
+        { status: 502 }
+      );
+    }
     return NextResponse.json(data);
   } catch {
     return NextResponse.json(

@@ -25,6 +25,11 @@ const ERROR_MAP: Record<string, string> = {
   "404": "Recurso não encontrado.",
   "408": "A requisição demorou muito. Tente novamente.",
 
+  // JSON parse errors (backend returned HTML instead of JSON)
+  "Unexpected token": "Erro temporário de comunicação. Tente novamente.",
+  "is not valid JSON": "Erro temporário de comunicação. Tente novamente.",
+  "Resposta inesperada": "Erro temporário de comunicação. Tente novamente.",
+
   // Backend specific
   "Backend indisponível": "Não foi possível processar sua busca. Tente novamente em instantes.",
   "Erro ao buscar licitações": "Não foi possível processar sua busca. Tente novamente em instantes.",

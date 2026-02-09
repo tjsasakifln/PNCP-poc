@@ -21,7 +21,13 @@ export async function GET() {
       );
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
+    if (!data) {
+      return NextResponse.json(
+        { message: "Resposta inesperada do servidor" },
+        { status: 502 }
+      );
+    }
     return NextResponse.json(data);
   } catch (error) {
     console.error("Erro ao buscar setores:", error);

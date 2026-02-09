@@ -35,7 +35,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
+    if (!data) {
+      return NextResponse.json(
+        { message: "Resposta inesperada do servidor" },
+        { status: 502 }
+      );
+    }
     return NextResponse.json(data);
   } catch (error) {
     console.error("Error fetching profile:", error);

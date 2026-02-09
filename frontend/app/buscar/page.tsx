@@ -579,47 +579,80 @@ function HomePageContent() {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      const response = await fetch("/api/buscar", {
-        method: "POST",
-        headers,
-        signal: abortController.signal,
-        body: JSON.stringify({
-          ufs: Array.from(ufsSelecionadas),
-          data_inicial: dataInicial,
-          data_final: dataFinal,
-          setor_id: searchMode === "setor" ? setorId : null,
-          termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
-          search_id: newSearchId,
-          // New filter parameters
-          status,
-          modalidades: modalidades.length > 0 ? modalidades : undefined,
-          valor_minimo: valorMin,
-          valor_maximo: valorMax,
-          esferas: esferas.length > 0 ? esferas : undefined,
-          municipios: municipios.length > 0 ? municipios.map(m => m.codigo) : undefined,
-          ordenacao,
-        })
-      });
+      // Auto-retry logic: retries on transient errors (502, 503) or JSON parse failures
+      const MAX_CLIENT_RETRIES = 2;
+      const CLIENT_RETRY_DELAYS = [3000, 6000]; // ms
+      let data: BuscaResult | null = null;
 
-      if (!response.ok) {
-        const err = await response.json();
-
-        // Handle authentication required (401) - redirect to login
-        if (response.status === 401) {
-          window.location.href = "/login";
-          throw new Error("Faça login para continuar");
+      for (let clientAttempt = 0; clientAttempt <= MAX_CLIENT_RETRIES; clientAttempt++) {
+        if (clientAttempt > 0) {
+          console.warn(`[buscar] Client retry ${clientAttempt}/${MAX_CLIENT_RETRIES}...`);
+          await new Promise(resolve => setTimeout(resolve, CLIENT_RETRY_DELAYS[clientAttempt - 1]));
         }
 
-        // Issue #153: Handle quota exceeded (403)
-        if (response.status === 403) {
-          setQuotaError(err.message || "Suas buscas acabaram.");
-          throw new Error(err.message || "Quota excedida");
+        const response = await fetch("/api/buscar", {
+          method: "POST",
+          headers,
+          signal: abortController.signal,
+          body: JSON.stringify({
+            ufs: Array.from(ufsSelecionadas),
+            data_inicial: dataInicial,
+            data_final: dataFinal,
+            setor_id: searchMode === "setor" ? setorId : null,
+            termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
+            search_id: newSearchId,
+            // New filter parameters
+            status,
+            modalidades: modalidades.length > 0 ? modalidades : undefined,
+            valor_minimo: valorMin,
+            valor_maximo: valorMax,
+            esferas: esferas.length > 0 ? esferas : undefined,
+            municipios: municipios.length > 0 ? municipios.map(m => m.codigo) : undefined,
+            ordenacao,
+          })
+        });
+
+        if (!response.ok) {
+          // Retryable server errors — try again before showing error
+          if ([502, 503].includes(response.status) && clientAttempt < MAX_CLIENT_RETRIES) {
+            console.warn(`[buscar] Server returned ${response.status}, will retry...`);
+            continue;
+          }
+
+          const err = await response.json().catch(() => ({ message: null }));
+
+          // Handle authentication required (401) - redirect to login
+          if (response.status === 401) {
+            window.location.href = "/login";
+            throw new Error("Faça login para continuar");
+          }
+
+          // Issue #153: Handle quota exceeded (403)
+          if (response.status === 403) {
+            setQuotaError(err.message || "Suas buscas acabaram.");
+            throw new Error(err.message || "Quota excedida");
+          }
+
+          throw new Error(err.message || "Erro ao buscar licitações");
         }
 
-        throw new Error(err.message || "Erro ao buscar licitações");
+        // Safe JSON parse — if backend returned HTML instead of JSON, retry
+        const parsed = await response.json().catch(() => null);
+        if (!parsed) {
+          if (clientAttempt < MAX_CLIENT_RETRIES) {
+            console.warn(`[buscar] Response was not valid JSON, will retry...`);
+            continue;
+          }
+          throw new Error("Resposta inesperada do servidor. Tente novamente.");
+        }
+
+        data = parsed as BuscaResult;
+        break;
       }
 
-      const data: BuscaResult = await response.json();
+      if (!data) {
+        throw new Error("Não foi possível obter os resultados. Tente novamente.");
+      }
       setResult(data);
       setRawCount(data.total_raw || 0);
 
