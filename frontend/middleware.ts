@@ -30,26 +30,10 @@ const PUBLIC_ROUTES = [
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const host = request.headers.get("host") || "";
-  const userAgent = request.headers.get("user-agent") || "";
 
-  // CRITICAL: Force canonical domain redirect (railway.app → smartlic.tech)
-  // This ensures OAuth redirects always use the correct domain
-  const canonicalDomain = process.env.NEXT_PUBLIC_CANONICAL_URL?.replace(/^https?:\/\//, "") || "smartlic.tech";
-  const isRailwayDomain = host.includes("railway.app");
-  const isLocalhost = host.includes("localhost");
-
-  // Don't redirect Railway's internal healthcheck requests
-  const isHealthcheck = pathname === "/" && (
-    userAgent.includes("railway") ||
-    userAgent.includes("healthcheck") ||
-    userAgent === "" // Internal healthchecks often have no user-agent
-  );
-
-  if (isRailwayDomain && !isLocalhost && !isHealthcheck) {
-    // Redirect railway.app to smartlic.tech with 301 (permanent)
-    const canonicalUrl = `https://${canonicalDomain}${pathname}${search}`;
-    console.log(`[Middleware] Redirecting railway.app to canonical domain: ${canonicalUrl}`);
-    return NextResponse.redirect(canonicalUrl, { status: 301 });
+  // Allow API routes first (includes /api/health for Railway healthcheck)
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
   }
 
   // Allow public routes without auth check
@@ -57,9 +41,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow API routes to handle their own auth
-  if (pathname.startsWith("/api/")) {
-    return NextResponse.next();
+  // CRITICAL: Force canonical domain redirect (railway.app → smartlic.tech)
+  // This ensures OAuth redirects always use the correct domain
+  const canonicalDomain = process.env.NEXT_PUBLIC_CANONICAL_URL?.replace(/^https?:\/\//, "") || "smartlic.tech";
+  const isRailwayDomain = host.includes("railway.app");
+  const isLocalhost = host.includes("localhost");
+
+  if (isRailwayDomain && !isLocalhost) {
+    const canonicalUrl = `https://${canonicalDomain}${pathname}${search}`;
+    return NextResponse.redirect(canonicalUrl, { status: 301 });
   }
 
   // Allow static assets and Next.js internals
