@@ -110,19 +110,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithMagicLink = useCallback(async (email: string) => {
+    // Use canonical URL for OAuth redirects (not railway.app domain)
+    const canonicalUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${canonicalUrl}/auth/callback`,
       },
     });
     if (error) throw error;
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    // Use canonical URL for OAuth redirects (not railway.app domain)
+    const canonicalUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || window.location.origin;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${canonicalUrl}/auth/callback` },
     });
     if (error) throw error;
   }, []);

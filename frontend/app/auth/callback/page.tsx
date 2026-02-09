@@ -18,12 +18,16 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        console.log("[OAuth Callback] Starting callback handler");
+        console.log("[OAuth Callback] Current URL:", window.location.href);
+
         // Check for error in URL params
         const params = new URLSearchParams(window.location.search);
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
         if (error) {
+          console.error("[OAuth Callback] Error in URL params:", error, errorDescription);
           setStatus("error");
           setErrorMessage(errorDescription || error);
           return;
@@ -33,47 +37,60 @@ export default function AuthCallbackPage() {
         const code = params.get("code");
 
         if (code) {
+          console.log("[OAuth Callback] Found authorization code, exchanging for session");
           // Exchange authorization code for session (PKCE flow)
           // Supabase SDK automatically handles code exchange with PKCE verifier
           const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
           if (exchangeError) {
-            console.error("Code exchange error:", exchangeError);
+            console.error("[OAuth Callback] Code exchange error:", exchangeError);
             setStatus("error");
             setErrorMessage(exchangeError.message);
             return;
           }
 
           if (session) {
+            console.log("[OAuth Callback] Session established, redirecting to /buscar");
+            console.log("[OAuth Callback] User:", session.user.email);
             setStatus("success");
             // Small delay to ensure cookies are set
             setTimeout(() => {
+              console.log("[OAuth Callback] Executing redirect to /buscar");
               router.push("/buscar");
             }, 500);
             return;
+          } else {
+            console.warn("[OAuth Callback] Code exchanged but no session returned");
           }
         }
 
         // Fallback: Check if we already have a session (e.g., from hash fragment or cookies)
+        console.log("[OAuth Callback] No code found, checking for existing session");
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("Session error:", sessionError);
+          console.error("[OAuth Callback] Session error:", sessionError);
           setStatus("error");
           setErrorMessage(sessionError.message);
           return;
         }
 
         if (session) {
+          console.log("[OAuth Callback] Existing session found, redirecting to /buscar");
+          console.log("[OAuth Callback] User:", session.user.email);
           setStatus("success");
           // Small delay to ensure cookies are set
           setTimeout(() => {
+            console.log("[OAuth Callback] Executing redirect to /buscar");
             router.push("/buscar");
           }, 500);
         } else {
+          console.log("[OAuth Callback] No session yet, listening for auth state change");
           // No session yet - listen for auth state change
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log("[OAuth Callback] Auth state change:", event, session?.user?.email);
             if (event === "SIGNED_IN" && session) {
+              console.log("[OAuth Callback] SIGNED_IN event, redirecting to /buscar");
               setStatus("success");
               subscription.unsubscribe();
               router.push("/buscar");
@@ -84,13 +101,14 @@ export default function AuthCallbackPage() {
           setTimeout(() => {
             subscription.unsubscribe();
             if (status === "loading") {
+              console.error("[OAuth Callback] Timeout waiting for authentication");
               setStatus("error");
               setErrorMessage("Timeout ao processar autenticação. Tente novamente.");
             }
           }, 5000);
         }
       } catch (err) {
-        console.error("Callback error:", err);
+        console.error("[OAuth Callback] Unexpected error:", err);
         setStatus("error");
         setErrorMessage("Erro inesperado. Tente novamente.");
       }

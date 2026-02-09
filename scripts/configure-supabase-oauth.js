@@ -17,12 +17,14 @@ const SUPABASE_API_URL = `https://api.supabase.com/v1/projects/${SUPABASE_PROJEC
 
 // Required redirect URLs for OAuth to work
 const REQUIRED_REDIRECT_URLS = [
-  'https://bidiq-frontend-production.up.railway.app/auth/callback',
+  'https://smartlic.tech/auth/callback',
+  'https://app.smartlic.tech/auth/callback',
   'http://localhost:3000/auth/callback',
 ];
 
-// URLs to remove (cause the bug)
+// URLs to remove (cause the bug - wrong domains or paths)
 const URLS_TO_REMOVE = [
+  'https://bidiq-frontend-production.up.railway.app/auth/callback',
   'https://bidiq-frontend-production.up.railway.app/',
   'http://localhost:3000/',
 ];
@@ -271,7 +273,9 @@ async function main() {
     console.log('  2. Verify redirect to /auth/callback (NOT homepage)');
     console.log('  3. Confirm user authentication works');
     console.log();
-    console.log('📝 Testing URL: https://bidiq-frontend-production.up.railway.app/login');
+    console.log('📝 Testing URLs:');
+    console.log('   - https://smartlic.tech/login');
+    console.log('   - https://app.smartlic.tech/login');
     console.log();
 
     process.exit(verified ? 0 : 1);
