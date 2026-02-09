@@ -46,7 +46,7 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Planos</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <FooterLink href="/pricing">Planos e Preços</FooterLink>
+                <FooterLink href="/planos">Planos e Preços</FooterLink>
               </li>
               <li>
                 <FooterLink href="/signup?source=footer">Teste Gratuito</FooterLink>
