@@ -192,7 +192,8 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
     : `${count}`;
 
   // Determine if icon is a component or string emoji (backward compatibility)
-  const isComponent = typeof icon === 'function';
+  const isComponent = typeof icon !== 'string';
+  const IconComponent = isComponent ? (icon as React.ComponentType<any>) : null;
 
   return (
     <motion.div ref={ref} variants={scaleIn} transition={{ delay }}>
@@ -213,9 +214,9 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
           cursor-default
         "
       >
-        {isComponent ? (
-          React.createElement(icon as React.ComponentType<any>, {
-            className: `
+        {isComponent && IconComponent ? (
+          <IconComponent
+            className={`
               w-6 h-6 flex-shrink-0
               text-brand-blue
               transition-all duration-300
@@ -223,14 +224,14 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
               ${label.includes('Rápido') ? 'group-hover:rotate-6' : ''}
               ${label.includes('Precisão') ? 'group-hover:scale-125' : ''}
               ${label.includes('Portais') ? 'group-hover:-rotate-6' : ''}
-            `,
-            strokeWidth: 2,
-            'aria-label': label,
-            role: 'img',
-          })
+            `}
+            strokeWidth={2}
+            aria-label={label}
+            role="img"
+          />
         ) : (
           <span className="text-lg" role="img" aria-label={label}>
-            {icon}
+            {icon as string}
           </span>
         )}
         <div className="flex flex-col items-start">
