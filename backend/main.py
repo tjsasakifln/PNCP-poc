@@ -11,6 +11,7 @@ This API provides endpoints for:
 - Creating AI-powered executive summaries (GPT-4.1-nano)
 """
 
+import asyncio
 import base64
 import logging
 import os
@@ -1032,24 +1033,36 @@ async def buscar_licitacoes(
             async def uf_progress_callback(uf: str, items_count: int):
                 await tracker.emit_uf_complete(uf, items_count)
 
-        if use_parallel:
-            # Use async parallel fetching for better performance
-            logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
-            try:
-                licitacoes_raw = await buscar_todas_ufs_paralelo(
-                    ufs=request.ufs,
-                    data_inicial=request.data_inicial,
-                    data_final=request.data_final,
-                    modalidades=modalidades_to_fetch,
-                    status=status_value,
-                    max_concurrent=10,
-                    on_uf_complete=uf_progress_callback,
-                )
-            except Exception as e:
-                logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
-                # Fallback to sequential fetch
+        # Global fetch timeout: 4 minutes max for the entire PNCP fetch phase
+        FETCH_TIMEOUT = 4 * 60  # seconds
+
+        async def _do_fetch() -> list:
+            if use_parallel:
+                logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
+                try:
+                    return await buscar_todas_ufs_paralelo(
+                        ufs=request.ufs,
+                        data_inicial=request.data_inicial,
+                        data_final=request.data_final,
+                        modalidades=modalidades_to_fetch,
+                        status=status_value,
+                        max_concurrent=10,
+                        on_uf_complete=uf_progress_callback,
+                    )
+                except Exception as e:
+                    logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
+                    client = PNCPClient()
+                    return list(
+                        client.fetch_all(
+                            data_inicial=request.data_inicial,
+                            data_final=request.data_final,
+                            ufs=request.ufs,
+                            modalidades=modalidades_to_fetch,
+                        )
+                    )
+            else:
                 client = PNCPClient()
-                licitacoes_raw = list(
+                return list(
                     client.fetch_all(
                         data_inicial=request.data_inicial,
                         data_final=request.data_final,
@@ -1057,16 +1070,20 @@ async def buscar_licitacoes(
                         modalidades=modalidades_to_fetch,
                     )
                 )
-        else:
-            # Use sequential fetch for single UF (simpler, less overhead)
-            client = PNCPClient()
-            licitacoes_raw = list(
-                client.fetch_all(
-                    data_inicial=request.data_inicial,
-                    data_final=request.data_final,
-                    ufs=request.ufs,
-                    modalidades=modalidades_to_fetch,
-                )
+
+        try:
+            licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=FETCH_TIMEOUT)
+        except asyncio.TimeoutError:
+            logger.error(f"PNCP fetch timed out after {FETCH_TIMEOUT}s for {len(request.ufs)} UFs")
+            if tracker:
+                await tracker.emit_error("Busca expirou por tempo")
+                remove_tracker(request.search_id)
+            raise HTTPException(
+                status_code=504,
+                detail=(
+                    f"A busca excedeu o tempo limite de {FETCH_TIMEOUT // 60} minutos. "
+                    f"Tente com menos estados ou um período menor."
+                ),
             )
 
         fetch_elapsed = sync_time.time() - start_time

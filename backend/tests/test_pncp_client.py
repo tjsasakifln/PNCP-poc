@@ -29,7 +29,7 @@ class TestCalculateDelay:
 
     def test_exponential_growth_without_jitter(self):
         """Test delay grows exponentially when jitter is disabled."""
-        config = RetryConfig(base_delay=2.0, exponential_base=2, jitter=False)
+        config = RetryConfig(base_delay=2.0, exponential_base=2, max_delay=60.0, jitter=False)
 
         assert calculate_delay(0, config) == 2.0
         assert calculate_delay(1, config) == 4.0
@@ -40,12 +40,12 @@ class TestCalculateDelay:
     def test_max_delay_cap(self):
         """Test delay is capped at max_delay."""
         config = RetryConfig(
-            base_delay=2.0, exponential_base=2, max_delay=60.0, jitter=False
+            base_delay=2.0, exponential_base=2, max_delay=15.0, jitter=False
         )
 
-        # 2^6 = 64, should be capped at 60
-        assert calculate_delay(5, config) == 60.0
-        assert calculate_delay(10, config) == 60.0
+        # 2^4 = 16, should be capped at 15
+        assert calculate_delay(3, config) == 15.0
+        assert calculate_delay(10, config) == 15.0
 
     def test_jitter_adds_randomness(self):
         """Test jitter adds randomness within expected range."""
@@ -66,8 +66,8 @@ class TestPNCPClient:
         """Test client initializes with default config."""
         client = PNCPClient()
 
-        assert client.config.max_retries == 5
-        assert client.config.base_delay == 2.0
+        assert client.config.max_retries == 3
+        assert client.config.base_delay == 1.5
         assert client.session is not None
         assert client._request_count == 0
 

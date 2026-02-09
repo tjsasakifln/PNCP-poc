@@ -921,16 +921,26 @@ class AsyncPNCPClient:
             f"(max_concurrent={self.max_concurrent}, status={status})"
         )
 
+        # Per-UF timeout: 90s prevents one slow state from blocking everything
+        PER_UF_TIMEOUT = 90  # seconds
+
         # Create tasks for each UF with optional progress callback
         async def _fetch_with_callback(uf: str) -> List[Dict[str, Any]]:
-            result = await self._fetch_uf_all_pages(
-                uf=uf,
-                data_inicial=data_inicial,
-                data_final=data_final,
-                modalidades=modalidades,
-                status=pncp_status,
-                max_pages=max_pages_per_uf,
-            )
+            try:
+                result = await asyncio.wait_for(
+                    self._fetch_uf_all_pages(
+                        uf=uf,
+                        data_inicial=data_inicial,
+                        data_final=data_final,
+                        modalidades=modalidades,
+                        status=pncp_status,
+                        max_pages=max_pages_per_uf,
+                    ),
+                    timeout=PER_UF_TIMEOUT,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"UF={uf} timed out after {PER_UF_TIMEOUT}s — skipping")
+                result = []
             if on_uf_complete:
                 try:
                     maybe_coro = on_uf_complete(uf, len(result))

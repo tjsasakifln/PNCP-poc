@@ -39,9 +39,9 @@ DEFAULT_MODALIDADES: List[int] = [
 class RetryConfig:
     """Configuration for HTTP retry logic."""
 
-    max_retries: int = 5
-    base_delay: float = 2.0  # seconds
-    max_delay: float = 60.0  # seconds
+    max_retries: int = 3
+    base_delay: float = 1.5  # seconds
+    max_delay: float = 15.0  # seconds
     exponential_base: int = 2
     jitter: bool = True
     timeout: int = 30  # seconds

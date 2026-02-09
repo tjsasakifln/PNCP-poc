@@ -17,7 +17,8 @@ const ERROR_MAP: Record<string, string> = {
 
   // HTTP status errors
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
-  "502": "Serviço temporariamente indisponível. Tente em alguns minutos.",
+  "502": "O portal PNCP está temporariamente indisponível. Tente novamente em instantes.",
+  "504": "A busca demorou demais. Tente com menos estados ou um período menor.",
   "500": "Erro interno do servidor. Tente novamente.",
   "429": "Muitas requisições. Aguarde um momento e tente novamente.",
   "401": "Sessão expirada. Faça login novamente.",
@@ -34,6 +35,11 @@ const ERROR_MAP: Record<string, string> = {
   "Backend indisponível": "Não foi possível processar sua busca. Tente novamente em instantes.",
   "Erro ao buscar licitações": "Não foi possível processar sua busca. Tente novamente em instantes.",
   "Quota excedida": "Suas buscas do mês acabaram. Faça upgrade para continuar.",
+
+  // Timeout / PNCP specific (from backend detail messages)
+  "excedeu o tempo limite": "A busca demorou demais. Tente com menos estados ou um período menor.",
+  "PNCP está temporariamente": "O portal PNCP está temporariamente fora do ar. Tente novamente em instantes.",
+  "tempo limite de": "A busca demorou demais. Tente com menos estados ou um período menor.",
 };
 
 /**

@@ -249,9 +249,9 @@ class TestRetryConfig:
         """Test that RetryConfig has correct default values."""
         config = RetryConfig()
 
-        assert config.max_retries == 5
-        assert config.base_delay == 2.0
-        assert config.max_delay == 60.0
+        assert config.max_retries == 3
+        assert config.base_delay == 1.5
+        assert config.max_delay == 15.0
         assert config.exponential_base == 2
         assert config.jitter is True
         assert config.timeout == 30

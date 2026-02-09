@@ -65,9 +65,10 @@ export async function POST(request: NextRequest) {
       "Authorization": authHeader,
     };
 
-    const MAX_RETRIES = 3;
-    const RETRY_DELAYS = [0, 2000, 4000]; // ms delay before each attempt
-    const RETRYABLE_STATUSES = [502, 503];
+    const MAX_RETRIES = 2;
+    const RETRY_DELAYS = [0, 3000]; // ms delay before each attempt
+    // Only retry 503 (rate limit) — 502 means backend already retried PNCP internally
+    const RETRYABLE_STATUSES = [503];
 
     let response: Response | null = null;
     let lastError: { detail?: string; status: number } | null = null;

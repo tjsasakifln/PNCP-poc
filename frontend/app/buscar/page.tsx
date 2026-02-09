@@ -579,9 +579,10 @@ function HomePageContent() {
         headers["Authorization"] = `Bearer ${session.access_token}`;
       }
 
-      // Auto-retry logic: retries on transient errors (502, 503) or JSON parse failures
-      const MAX_CLIENT_RETRIES = 2;
-      const CLIENT_RETRY_DELAYS = [3000, 6000]; // ms
+      // Auto-retry logic: retries on transient errors (503) or JSON parse failures
+      // Note: 502 is NOT retried — backend already retried PNCP internally
+      const MAX_CLIENT_RETRIES = 1;
+      const CLIENT_RETRY_DELAYS = [4000]; // ms
       let data: BuscaResult | null = null;
 
       for (let clientAttempt = 0; clientAttempt <= MAX_CLIENT_RETRIES; clientAttempt++) {
@@ -613,8 +614,8 @@ function HomePageContent() {
         });
 
         if (!response.ok) {
-          // Retryable server errors — try again before showing error
-          if ([502, 503].includes(response.status) && clientAttempt < MAX_CLIENT_RETRIES) {
+          // Retryable server errors — only 503 (rate limit/transient), NOT 502 (already retried)
+          if (response.status === 503 && clientAttempt < MAX_CLIENT_RETRIES) {
             console.warn(`[buscar] Server returned ${response.status}, will retry...`);
             continue;
           }
