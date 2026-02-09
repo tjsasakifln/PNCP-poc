@@ -179,29 +179,46 @@ export default function PlanosPage() {
   // ROI Calculator State
   const [hoursPerWeek, setHoursPerWeek] = useState(DEFAULT_VALUES.hoursPerWeek);
   const [costPerHour, setCostPerHour] = useState(DEFAULT_VALUES.costPerHour);
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'professional' | 'enterprise'>('starter');
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  // Get selected plan object and price
+  const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans.find((p) => p.id === 'maquina') || plans[0];
+  const selectedPlanPrice = billingPeriod === 'annual'
+    ? selectedPlan?.price_brl * 9.6
+    : selectedPlan?.price_brl || 149;
+
   const [roiResult, setRoiResult] = useState(
     calculateROI({
       hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
       costPerHour: DEFAULT_VALUES.costPerHour,
-      smartlicPlan: 'starter',
+      planPrice: 149, // Default to consultor_agil price
     })
   );
 
+  // Initialize selected plan when plans load
+  useEffect(() => {
+    if (plans.length > 0 && !selectedPlanId) {
+      // Default to "maquina" (most popular) if available
+      const defaultPlan = plans.find((p) => p.id === 'maquina') || plans[0];
+      setSelectedPlanId(defaultPlan.id);
+    }
+  }, [plans, selectedPlanId]);
+
   // Calculate ROI on input change
   useEffect(() => {
+    if (!selectedPlan) return;
     const inputs: ROIInputs = {
       hoursPerWeek,
       costPerHour,
-      smartlicPlan: selectedPlan,
+      planPrice: selectedPlanPrice,
     };
     setRoiResult(calculateROI(inputs));
-  }, [hoursPerWeek, costPerHour, selectedPlan]);
+  }, [hoursPerWeek, costPerHour, selectedPlan, selectedPlanPrice]);
 
   const roiMessage = getROIMessage({
     hoursPerWeek,
     costPerHour,
-    smartlicPlan: selectedPlan,
+    planPrice: selectedPlanPrice,
   });
 
   // Check URL params for success/cancelled
@@ -583,11 +600,11 @@ export default function PlanosPage() {
 
         {/* ROI Calculator Section */}
         <div className="mt-16 max-w-4xl mx-auto">
-          <div className="bg-surface-1 border border-border rounded-lg p-8">
-            <h2 className="text-3xl font-bold text-ink mb-2 text-center">
+          <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-card p-8">
+            <h2 className="text-3xl font-bold text-[var(--ink)] mb-2 text-center">
               Calcule sua Economia
             </h2>
-            <p className="text-center text-ink-secondary mb-8">
+            <p className="text-center text-[var(--ink-secondary)] mb-8">
               Calcule quanto você economiza com o SmartLic vs. busca manual
             </p>
 
@@ -597,7 +614,7 @@ export default function PlanosPage() {
               <div>
                 <label
                   htmlFor="hours-per-week"
-                  className="block text-sm font-medium text-ink mb-2"
+                  className="block text-sm font-medium text-[var(--ink)] mb-2"
                 >
                   Horas gastas por semana em buscas manuais
                 </label>
@@ -608,7 +625,7 @@ export default function PlanosPage() {
                   max="168"
                   value={hoursPerWeek}
                   onChange={(e) => setHoursPerWeek(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-surface-0 border border-border rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  className="w-full px-4 py-3 bg-[var(--surface-0)] border border-[var(--border)] rounded-button text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-blue)]"
                 />
               </div>
 
@@ -616,7 +633,7 @@ export default function PlanosPage() {
               <div>
                 <label
                   htmlFor="cost-per-hour"
-                  className="block text-sm font-medium text-ink mb-2"
+                  className="block text-sm font-medium text-[var(--ink)] mb-2"
                 >
                   Custo/hora do seu tempo (R$)
                 </label>
@@ -627,95 +644,116 @@ export default function PlanosPage() {
                   max="10000"
                   value={costPerHour}
                   onChange={(e) => setCostPerHour(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-surface-0 border border-border rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  className="w-full px-4 py-3 bg-[var(--surface-0)] border border-[var(--border)] rounded-button text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-blue)]"
                 />
               </div>
             </div>
 
-            {/* Plan Selector */}
+            {/* Plan Selector - Dynamic from real plans */}
             <div className="mb-8">
-              <label className="block text-sm font-medium text-ink mb-3">
+              <label className="block text-sm font-medium text-[var(--ink)] mb-3">
                 Selecione o plano SmartLic
               </label>
               <div className="grid md:grid-cols-3 gap-4">
-                {(['starter', 'professional', 'enterprise'] as const).map((plan) => (
-                  <button
-                    key={plan}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`px-6 py-4 rounded-lg border-2 transition-all ${
-                      selectedPlan === plan
-                        ? 'border-brand-blue bg-brand-blue/10 text-brand-blue'
-                        : 'border-border bg-surface-0 text-ink hover:border-brand-blue/50'
-                    }`}
-                  >
-                    <div className="font-semibold capitalize mb-1">
-                      {plan === 'starter' && 'Starter'}
-                      {plan === 'professional' && 'Professional'}
-                      {plan === 'enterprise' && 'Enterprise'}
-                    </div>
-                    <div className="text-2xl font-bold mb-1">
-                      {formatCurrency(DEFAULT_VALUES.plans[plan])}
-                    </div>
-                    <div className="text-xs text-ink-secondary">
-                      {plan === 'starter' && 'até 50 buscas/mês'}
-                      {plan === 'professional' && 'até 300 buscas/mês'}
-                      {plan === 'enterprise' && 'até 1.000 buscas/mês'}
-                    </div>
-                  </button>
-                ))}
+                {plans
+                  .filter((p) => ['consultor_agil', 'maquina', 'sala_guerra'].includes(p.id))
+                  .map((plan) => {
+                    const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES.consultor_agil;
+                    const isSelected = selectedPlanId === plan.id;
+                    const planPrice = billingPeriod === 'annual'
+                      ? plan.price_brl * 9.6
+                      : plan.price_brl;
+
+                    return (
+                      <button
+                        key={plan.id}
+                        onClick={() => setSelectedPlanId(plan.id)}
+                        className={`px-6 py-4 rounded-card border-2 transition-all ${
+                          isSelected
+                            ? 'border-[var(--brand-blue)] bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]'
+                            : 'border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] hover:border-[var(--brand-blue)]/50'
+                        }`}
+                      >
+                        <div className="font-semibold mb-1">
+                          {plan.name}
+                          {plan.id === 'maquina' && (
+                            <span className="ml-2 text-xs bg-[var(--brand-blue)] text-white px-2 py-0.5 rounded-full">
+                              Popular
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-2xl font-bold mb-1">
+                          {formatPrice(planPrice)}
+                        </div>
+                        <div className="text-xs text-[var(--ink-secondary)]">
+                          {billingPeriod === 'annual' ? '/ano' : '/mês'}
+                        </div>
+                        <div className="text-xs text-[var(--ink-muted)] mt-1">
+                          até {features.maxRequestsPerMonth} buscas/mês
+                        </div>
+                      </button>
+                    );
+                  })}
               </div>
+              {billingPeriod === 'annual' && (
+                <p className="text-xs text-[var(--ink-muted)] text-center mt-2">
+                  Preços com 20% de desconto (12 meses pelo preço de 9.6)
+                </p>
+              )}
             </div>
 
             {/* Divider */}
-            <div className="border-t border-border my-8"></div>
+            <div className="border-t border-[var(--border)] my-8"></div>
 
             {/* ROI Results */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-error/10 border border-error/30 rounded-lg p-6">
-                <p className="text-sm text-ink-secondary mb-1">
+              <div className="bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-card p-6">
+                <p className="text-sm text-[var(--ink-secondary)] mb-1">
                   💸 Custo Mensal da Busca Manual
                 </p>
-                <p className="text-3xl font-bold text-error">
+                <p className="text-3xl font-bold text-[var(--error)]">
                   {roiResult.formatted.manualSearchCostPerMonth}
                 </p>
-                <p className="text-xs text-ink-muted mt-2">
+                <p className="text-xs text-[var(--ink-muted)] mt-2">
                   {hoursPerWeek}h/semana × {formatCurrency(costPerHour)}/h × 4 semanas
                 </p>
               </div>
 
-              <div className="bg-success/10 border border-success/30 rounded-lg p-6">
-                <p className="text-sm text-ink-secondary mb-1">
-                  💸 Plano SmartLic
+              <div className="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-card p-6">
+                <p className="text-sm text-[var(--ink-secondary)] mb-1">
+                  💸 Plano SmartLic ({selectedPlan?.name || 'Consultor Ágil'})
                 </p>
-                <p className="text-3xl font-bold text-success">
+                <p className="text-3xl font-bold text-[var(--success)]">
                   {roiResult.formatted.smartlicPlanCost}
                 </p>
-                <p className="text-xs text-ink-muted mt-2">
-                  Fixo mensal, sem taxas ocultas
+                <p className="text-xs text-[var(--ink-muted)] mt-2">
+                  {billingPeriod === 'annual'
+                    ? `${formatPrice(selectedPlanPrice / 12)}/mês (pago anualmente)`
+                    : 'Fixo mensal, sem taxas ocultas'}
                 </p>
               </div>
             </div>
 
-            <div className="bg-brand-blue/10 border border-brand-blue/30 rounded-lg p-6">
+            <div className="bg-[var(--brand-blue)]/10 border border-[var(--brand-blue)]/30 rounded-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm text-ink-secondary mb-1">
-                    ✅ Economia Mensal
+                  <p className="text-sm text-[var(--ink-secondary)] mb-1">
+                    ✅ Economia {billingPeriod === 'annual' ? 'Anual' : 'Mensal'}
                   </p>
-                  <p className="text-4xl font-bold text-brand-blue">
+                  <p className="text-4xl font-bold text-[var(--brand-blue)]">
                     {roiResult.formatted.monthlySavings}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-ink-secondary mb-1">📊 ROI</p>
-                  <p className="text-4xl font-bold text-brand-blue">
+                  <p className="text-sm text-[var(--ink-secondary)] mb-1">📊 ROI</p>
+                  <p className="text-4xl font-bold text-[var(--brand-blue)]">
                     {roiResult.formatted.roi}
                   </p>
                 </div>
               </div>
-              <div className="border-t border-brand-blue/20 pt-4">
-                <p className="font-semibold text-ink mb-2">{roiMessage.headline}</p>
-                <p className="text-sm text-ink-secondary">{roiMessage.explanation}</p>
+              <div className="border-t border-[var(--brand-blue)]/20 pt-4">
+                <p className="font-semibold text-[var(--ink)] mb-2">{roiMessage.headline}</p>
+                <p className="text-sm text-[var(--ink-secondary)]">{roiMessage.explanation}</p>
               </div>
             </div>
           </div>

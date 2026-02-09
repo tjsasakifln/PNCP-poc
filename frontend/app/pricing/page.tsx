@@ -25,14 +25,14 @@ export default function PricingPage() {
   // ROI Calculator State
   const [hoursPerWeek, setHoursPerWeek] = useState(DEFAULT_VALUES.hoursPerWeek);
   const [costPerHour, setCostPerHour] = useState(DEFAULT_VALUES.costPerHour);
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'professional' | 'enterprise'>('starter');
+  const [selectedPlanPrice, setSelectedPlanPrice] = useState<number>(149); // Default: consultor_agil
 
   // Calculate ROI on input change
   const [roiResult, setRoiResult] = useState(
     calculateROI({
       hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
       costPerHour: DEFAULT_VALUES.costPerHour,
-      smartlicPlan: 'starter',
+      planPrice: 149,
     })
   );
 
@@ -40,15 +40,15 @@ export default function PricingPage() {
     const inputs: ROIInputs = {
       hoursPerWeek,
       costPerHour,
-      smartlicPlan: selectedPlan,
+      planPrice: selectedPlanPrice,
     };
     setRoiResult(calculateROI(inputs));
-  }, [hoursPerWeek, costPerHour, selectedPlan]);
+  }, [hoursPerWeek, costPerHour, selectedPlanPrice]);
 
   const roiMessage = getROIMessage({
     hoursPerWeek,
     costPerHour,
-    smartlicPlan: selectedPlan,
+    planPrice: selectedPlanPrice,
   });
 
   return (
@@ -70,11 +70,11 @@ export default function PricingPage() {
       {/* ROI Calculator Section */}
       <section className="py-20 bg-surface-0">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-surface-1 border border-border rounded-lg p-8">
-            <h2 className="text-3xl font-bold text-ink mb-2 text-center">
+          <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-card p-8">
+            <h2 className="text-3xl font-bold text-[var(--ink)] mb-2 text-center">
               {pricing.roi.headline}
             </h2>
-            <p className="text-center text-ink-secondary mb-8">
+            <p className="text-center text-[var(--ink)]-secondary mb-8">
               Calcule quanto você economiza com o SmartLic vs. busca manual
             </p>
 
@@ -84,7 +84,7 @@ export default function PricingPage() {
               <div>
                 <label
                   htmlFor="hours-per-week"
-                  className="block text-sm font-medium text-ink mb-2"
+                  className="block text-sm font-medium text-[var(--ink)] mb-2"
                 >
                   Horas gastas por semana em buscas manuais
                 </label>
@@ -95,7 +95,7 @@ export default function PricingPage() {
                   max="168"
                   value={hoursPerWeek}
                   onChange={(e) => setHoursPerWeek(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-surface-0 border border-border rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  className="w-full px-4 py-3 bg-[var(--surface-0)] border border-[var(--border)] rounded-button text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-brand-blue"
                 />
               </div>
 
@@ -103,7 +103,7 @@ export default function PricingPage() {
               <div>
                 <label
                   htmlFor="cost-per-hour"
-                  className="block text-sm font-medium text-ink mb-2"
+                  className="block text-sm font-medium text-[var(--ink)] mb-2"
                 >
                   Custo/hora do seu tempo (R$)
                 </label>
@@ -114,39 +114,44 @@ export default function PricingPage() {
                   max="10000"
                   value={costPerHour}
                   onChange={(e) => setCostPerHour(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-surface-0 border border-border rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                  className="w-full px-4 py-3 bg-[var(--surface-0)] border border-[var(--border)] rounded-button text-[var(--ink)] focus:outline-none focus:ring-2 focus:ring-brand-blue"
                 />
               </div>
             </div>
 
             {/* Plan Selector */}
             <div className="mb-8">
-              <label className="block text-sm font-medium text-ink mb-3">
+              <label className="block text-sm font-medium text-[var(--ink)] mb-3">
                 Selecione o plano SmartLic
               </label>
               <div className="grid md:grid-cols-3 gap-4">
-                {(['starter', 'professional', 'enterprise'] as const).map((plan) => (
+                {[
+                  { id: 'consultor_agil', name: 'Consultor Ágil', price: 149, searches: 50 },
+                  { id: 'maquina', name: 'Máquina', price: 349, searches: 300, popular: true },
+                  { id: 'sala_guerra', name: 'Sala de Guerra', price: 997, searches: 1000 },
+                ].map((plan) => (
                   <button
-                    key={plan}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`px-6 py-4 rounded-lg border-2 transition-all ${
-                      selectedPlan === plan
+                    key={plan.id}
+                    onClick={() => setSelectedPlanPrice(plan.price)}
+                    className={`px-6 py-4 rounded-card border-2 transition-all ${
+                      selectedPlanPrice === plan.price
                         ? 'border-brand-blue bg-brand-blue/10 text-brand-blue'
-                        : 'border-border bg-surface-0 text-ink hover:border-brand-blue/50'
+                        : 'border-border bg-surface-0 text-[var(--ink)] hover:border-brand-blue/50'
                     }`}
                   >
-                    <div className="font-semibold capitalize mb-1">
-                      {plan === 'starter' && 'Starter'}
-                      {plan === 'professional' && 'Professional'}
-                      {plan === 'enterprise' && 'Enterprise'}
+                    <div className="font-semibold mb-1">
+                      {plan.name}
+                      {plan.popular && (
+                        <span className="ml-2 text-xs bg-brand-blue text-white px-2 py-0.5 rounded-full">
+                          Popular
+                        </span>
+                      )}
                     </div>
                     <div className="text-2xl font-bold mb-1">
-                      {formatCurrency(DEFAULT_VALUES.plans[plan])}
+                      {formatCurrency(plan.price)}
                     </div>
-                    <div className="text-xs text-ink-secondary">
-                      {plan === 'starter' && 'até 50 buscas/mês'}
-                      {plan === 'professional' && 'até 300 buscas/mês'}
-                      {plan === 'enterprise' && 'até 1.000 buscas/mês'}
+                    <div className="text-xs text-[var(--ink)]-secondary">
+                      até {plan.searches} buscas/mês
                     </div>
                   </button>
                 ))}
@@ -158,35 +163,35 @@ export default function PricingPage() {
 
             {/* ROI Results */}
             <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-error/10 border border-error/30 rounded-lg p-6">
-                <p className="text-sm text-ink-secondary mb-1">
+              <div className="bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-card p-6">
+                <p className="text-sm text-[var(--ink)]-secondary mb-1">
                   💸 Custo Mensal da Busca Manual
                 </p>
                 <p className="text-3xl font-bold text-error">
                   {roiResult.formatted.manualSearchCostPerMonth}
                 </p>
-                <p className="text-xs text-ink-muted mt-2">
+                <p className="text-xs text-[var(--ink)]-muted mt-2">
                   {hoursPerWeek}h/semana × {formatCurrency(costPerHour)}/h × 4 semanas
                 </p>
               </div>
 
-              <div className="bg-success/10 border border-success/30 rounded-lg p-6">
-                <p className="text-sm text-ink-secondary mb-1">
+              <div className="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-card p-6">
+                <p className="text-sm text-[var(--ink)]-secondary mb-1">
                   💸 Plano SmartLic
                 </p>
                 <p className="text-3xl font-bold text-success">
                   {roiResult.formatted.smartlicPlanCost}
                 </p>
-                <p className="text-xs text-ink-muted mt-2">
+                <p className="text-xs text-[var(--ink)]-muted mt-2">
                   Fixo mensal, sem taxas ocultas
                 </p>
               </div>
             </div>
 
-            <div className="bg-brand-blue/10 border border-brand-blue/30 rounded-lg p-6">
+            <div className="bg-[var(--brand-blue)]/10 border border-[var(--brand-blue)]/30 rounded-card p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm text-ink-secondary mb-1">
+                  <p className="text-sm text-[var(--ink)]-secondary mb-1">
                     ✅ Economia Mensal
                   </p>
                   <p className="text-4xl font-bold text-brand-blue">
@@ -194,15 +199,15 @@ export default function PricingPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-ink-secondary mb-1">📊 ROI</p>
+                  <p className="text-sm text-[var(--ink)]-secondary mb-1">📊 ROI</p>
                   <p className="text-4xl font-bold text-brand-blue">
                     {roiResult.formatted.roi}
                   </p>
                 </div>
               </div>
               <div className="border-t border-brand-blue/20 pt-4">
-                <p className="font-semibold text-ink mb-2">{roiMessage.headline}</p>
-                <p className="text-sm text-ink-secondary">{roiMessage.explanation}</p>
+                <p className="font-semibold text-[var(--ink)] mb-2">{roiMessage.headline}</p>
+                <p className="text-sm text-[var(--ink)]-secondary">{roiMessage.explanation}</p>
               </div>
             </div>
 
@@ -216,7 +221,7 @@ export default function PricingPage() {
       {/* Pricing Comparison Table */}
       <section className="py-20 bg-surface-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-ink mb-8 text-center">
+          <h2 className="text-3xl font-bold text-[var(--ink)] mb-8 text-center">
             SmartLic vs Plataformas Tradicionais
           </h2>
 
@@ -224,10 +229,10 @@ export default function PricingPage() {
             <table className="w-full bg-surface-0 rounded-lg overflow-hidden shadow-lg">
               <thead className="bg-surface-2">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-ink">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--ink)]">
                     Aspecto
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-ink">
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-[var(--ink)]">
                     Plataformas Tradicionais
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-brand-blue">
@@ -237,8 +242,8 @@ export default function PricingPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 <tr>
-                  <td className="px-6 py-4 font-medium text-ink">Modelo de Preço</td>
-                  <td className="px-6 py-4 text-sm text-ink-secondary">
+                  <td className="px-6 py-4 font-medium text-[var(--ink)]">Modelo de Preço</td>
+                  <td className="px-6 py-4 text-sm text-[var(--ink)]-secondary">
                     {pricing.comparison.pricingModel.traditional}
                   </td>
                   <td className="px-6 py-4 text-sm text-success font-medium">
@@ -246,7 +251,7 @@ export default function PricingPage() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-4 font-medium text-ink">Taxas Ocultas</td>
+                  <td className="px-6 py-4 font-medium text-[var(--ink)]">Taxas Ocultas</td>
                   <td className="px-6 py-4 text-sm text-error">
                     {pricing.comparison.hiddenFees.traditional}
                   </td>
@@ -255,7 +260,7 @@ export default function PricingPage() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-4 font-medium text-ink">Cancelamento</td>
+                  <td className="px-6 py-4 font-medium text-[var(--ink)]">Cancelamento</td>
                   <td className="px-6 py-4 text-sm text-error">
                     {pricing.comparison.cancellation.traditional}
                   </td>
@@ -264,8 +269,8 @@ export default function PricingPage() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-4 font-medium text-ink">Garantia</td>
-                  <td className="px-6 py-4 text-sm text-ink-secondary">
+                  <td className="px-6 py-4 font-medium text-[var(--ink)]">Garantia</td>
+                  <td className="px-6 py-4 text-sm text-[var(--ink)]-secondary">
                     {pricing.comparison.guarantee.traditional}
                   </td>
                   <td className="px-6 py-4 text-sm text-success font-medium">
@@ -281,11 +286,11 @@ export default function PricingPage() {
       {/* Guarantee Section */}
       <section className="py-20 bg-surface-0">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-success/10 border border-success/30 rounded-lg p-8">
-            <h2 className="text-3xl font-bold text-ink mb-4">
+          <div className="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-card p-8">
+            <h2 className="text-3xl font-bold text-[var(--ink)] mb-4">
               {pricing.guarantee.headline}
             </h2>
-            <p className="text-lg text-ink-secondary mb-6">
+            <p className="text-lg text-[var(--ink)]-secondary mb-6">
               {pricing.guarantee.description}
             </p>
             <a
@@ -316,7 +321,7 @@ export default function PricingPage() {
       {/* Transparency Statement */}
       <section className="py-20 bg-surface-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-lg text-ink-secondary">
+          <p className="text-lg text-[var(--ink)]-secondary">
             {pricing.transparency}
           </p>
         </div>

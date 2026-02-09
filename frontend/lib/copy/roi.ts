@@ -19,13 +19,6 @@ export const DEFAULT_VALUES = {
   // User's hourly cost (R$ per hour)
   costPerHour: 100,
 
-  // SmartLic plan pricing (R$ per month)
-  plans: {
-    starter: 297, // up to 50 searches/month
-    professional: 697, // up to 300 searches/month
-    enterprise: 1497, // up to 1000 searches/month
-  },
-
   // Time saved per search (hours)
   timeSavedPerSearch: 8.5, // Manual (8.5h) vs SmartLic (0.05h = 3 min)
 
@@ -40,7 +33,7 @@ export const DEFAULT_VALUES = {
 export interface ROIInputs {
   hoursPerWeek: number;
   costPerHour: number;
-  smartlicPlan: "starter" | "professional" | "enterprise";
+  planPrice: number; // Monthly price in BRL (from backend plan data)
 }
 
 export interface ROIOutputs {
@@ -84,7 +77,7 @@ export interface ROIOutputs {
 // ============================================================================
 
 export function calculateROI(inputs: ROIInputs): ROIOutputs {
-  const { hoursPerWeek, costPerHour, smartlicPlan } = inputs;
+  const { hoursPerWeek, costPerHour, planPrice } = inputs;
 
   // Manual search costs
   const manualSearchCostPerWeek = hoursPerWeek * costPerHour;
@@ -92,7 +85,7 @@ export function calculateROI(inputs: ROIInputs): ROIOutputs {
   const manualSearchCostPerYear = manualSearchCostPerMonth * 12;
 
   // SmartLic costs
-  const smartlicPlanCost = DEFAULT_VALUES.plans[smartlicPlan];
+  const smartlicPlanCost = planPrice;
   const smartlicCostPerYear = smartlicPlanCost * 12;
 
   // Savings
@@ -175,13 +168,13 @@ export function formatHours(value: number): string {
 // ============================================================================
 
 /**
- * Calculate monthly savings for default scenario (10h/week @ R$100/h, Starter plan)
+ * Calculate monthly savings for default scenario (10h/week @ R$100/h, R$149/month plan)
  */
-export function getDefaultROI(): ROIOutputs {
+export function getDefaultROI(planPrice: number = 149): ROIOutputs {
   return calculateROI({
     hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
     costPerHour: DEFAULT_VALUES.costPerHour,
-    smartlicPlan: "starter",
+    planPrice,
   });
 }
 
@@ -194,18 +187,18 @@ export function hasPositiveROI(inputs: ROIInputs): boolean {
 }
 
 /**
- * Get recommended plan based on hours per week
+ * Get recommended plan ID based on hours per week
  */
-export function getRecommendedPlan(hoursPerWeek: number): "starter" | "professional" | "enterprise" {
+export function getRecommendedPlanId(hoursPerWeek: number): string {
   // Rough estimate: 1h/week = ~4 searches/month
   const estimatedSearchesPerMonth = hoursPerWeek * 4;
 
   if (estimatedSearchesPerMonth <= 50) {
-    return "starter"; // up to 50 searches
+    return "consultor_agil"; // up to 50 searches
   } else if (estimatedSearchesPerMonth <= 300) {
-    return "professional"; // up to 300 searches
+    return "maquina"; // up to 300 searches
   } else {
-    return "enterprise"; // up to 1000 searches
+    return "sala_guerra"; // up to 1000 searches
   }
 }
 
@@ -289,7 +282,7 @@ export const PRESET_SCENARIOS = {
     name: "Freelancer / Consultor",
     hoursPerWeek: 5,
     costPerHour: 150,
-    smartlicPlan: "starter" as const,
+    planId: "consultor_agil" as const,
     description: "Busca ocasional para projetos específicos",
   },
 
@@ -297,7 +290,7 @@ export const PRESET_SCENARIOS = {
     name: "Pequena/Média Empresa",
     hoursPerWeek: 10,
     costPerHour: 100,
-    smartlicPlan: "professional" as const,
+    planId: "maquina" as const,
     description: "Busca regular semanal por oportunidades",
   },
 
@@ -305,7 +298,7 @@ export const PRESET_SCENARIOS = {
     name: "Grande Empresa / Departamento Licitações",
     hoursPerWeek: 20,
     costPerHour: 80,
-    smartlicPlan: "enterprise" as const,
+    planId: "sala_guerra" as const,
     description: "Busca diária por múltiplos setores",
   },
 };
@@ -314,13 +307,14 @@ export const PRESET_SCENARIOS = {
  * Calculate ROI for a preset scenario
  */
 export function getPresetScenarioROI(
-  scenario: keyof typeof PRESET_SCENARIOS
+  scenario: keyof typeof PRESET_SCENARIOS,
+  planPrice: number
 ): ROIOutputs & { scenarioName: string; description: string } {
   const preset = PRESET_SCENARIOS[scenario];
   const roi = calculateROI({
     hoursPerWeek: preset.hoursPerWeek,
     costPerHour: preset.costPerHour,
-    smartlicPlan: preset.smartlicPlan,
+    planPrice,
   });
 
   return {
@@ -361,8 +355,8 @@ export function validateInputs(inputs: Partial<ROIInputs>): ValidationResult {
     errors.push("Custo por hora parece muito alto. Verifique o valor.");
   }
 
-  if (!inputs.smartlicPlan) {
-    errors.push("Selecione um plano SmartLic");
+  if (!inputs.planPrice || inputs.planPrice <= 0) {
+    errors.push("Preço do plano deve ser maior que zero");
   }
 
   return {
@@ -397,9 +391,9 @@ export const COMPETITOR_COSTS: CompetitorCost[] = [
   },
   {
     name: "SmartLic (All-Inclusive)",
-    baseFee: 297,
+    baseFee: 149,
     perSearchFee: 0,
-    estimatedTotalCost: 297, // R$ 297/month for up to 50 searches
+    estimatedTotalCost: 149, // R$ 149/month for up to 50 searches (consultor_agil)
   },
 ];
 
@@ -425,7 +419,7 @@ export default {
   calculateROI,
   getDefaultROI,
   hasPositiveROI,
-  getRecommendedPlan,
+  getRecommendedPlanId,
   getROIMessage,
   getTimeSavingsMessage,
   getPaybackMessage,
