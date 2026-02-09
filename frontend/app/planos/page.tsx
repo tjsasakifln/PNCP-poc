@@ -4,6 +4,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
+import {
+  calculateROI,
+  DEFAULT_VALUES,
+  formatCurrency,
+  getROIMessage,
+  type ROIInputs,
+} from '@/lib/copy/roi';
 
 interface Plan {
   id: string;
@@ -168,6 +175,34 @@ export default function PlanosPage() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+
+  // ROI Calculator State
+  const [hoursPerWeek, setHoursPerWeek] = useState(DEFAULT_VALUES.hoursPerWeek);
+  const [costPerHour, setCostPerHour] = useState(DEFAULT_VALUES.costPerHour);
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'professional' | 'enterprise'>('starter');
+  const [roiResult, setRoiResult] = useState(
+    calculateROI({
+      hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
+      costPerHour: DEFAULT_VALUES.costPerHour,
+      smartlicPlan: 'starter',
+    })
+  );
+
+  // Calculate ROI on input change
+  useEffect(() => {
+    const inputs: ROIInputs = {
+      hoursPerWeek,
+      costPerHour,
+      smartlicPlan: selectedPlan,
+    };
+    setRoiResult(calculateROI(inputs));
+  }, [hoursPerWeek, costPerHour, selectedPlan]);
+
+  const roiMessage = getROIMessage({
+    hoursPerWeek,
+    costPerHour,
+    smartlicPlan: selectedPlan,
+  });
 
   // Check URL params for success/cancelled
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -545,6 +580,146 @@ export default function PlanosPage() {
             })}
           </div>
         )}
+
+        {/* ROI Calculator Section */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <div className="bg-surface-1 border border-border rounded-lg p-8">
+            <h2 className="text-3xl font-bold text-ink mb-2 text-center">
+              Calcule sua Economia
+            </h2>
+            <p className="text-center text-ink-secondary mb-8">
+              Calcule quanto você economiza com o SmartLic vs. busca manual
+            </p>
+
+            {/* Calculator Inputs */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {/* Hours per Week Input */}
+              <div>
+                <label
+                  htmlFor="hours-per-week"
+                  className="block text-sm font-medium text-ink mb-2"
+                >
+                  Horas gastas por semana em buscas manuais
+                </label>
+                <input
+                  id="hours-per-week"
+                  type="number"
+                  min="1"
+                  max="168"
+                  value={hoursPerWeek}
+                  onChange={(e) => setHoursPerWeek(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-surface-0 border border-border rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                />
+              </div>
+
+              {/* Cost per Hour Input */}
+              <div>
+                <label
+                  htmlFor="cost-per-hour"
+                  className="block text-sm font-medium text-ink mb-2"
+                >
+                  Custo/hora do seu tempo (R$)
+                </label>
+                <input
+                  id="cost-per-hour"
+                  type="number"
+                  min="1"
+                  max="10000"
+                  value={costPerHour}
+                  onChange={(e) => setCostPerHour(Number(e.target.value))}
+                  className="w-full px-4 py-3 bg-surface-0 border border-border rounded-lg text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                />
+              </div>
+            </div>
+
+            {/* Plan Selector */}
+            <div className="mb-8">
+              <label className="block text-sm font-medium text-ink mb-3">
+                Selecione o plano SmartLic
+              </label>
+              <div className="grid md:grid-cols-3 gap-4">
+                {(['starter', 'professional', 'enterprise'] as const).map((plan) => (
+                  <button
+                    key={plan}
+                    onClick={() => setSelectedPlan(plan)}
+                    className={`px-6 py-4 rounded-lg border-2 transition-all ${
+                      selectedPlan === plan
+                        ? 'border-brand-blue bg-brand-blue/10 text-brand-blue'
+                        : 'border-border bg-surface-0 text-ink hover:border-brand-blue/50'
+                    }`}
+                  >
+                    <div className="font-semibold capitalize mb-1">
+                      {plan === 'starter' && 'Starter'}
+                      {plan === 'professional' && 'Professional'}
+                      {plan === 'enterprise' && 'Enterprise'}
+                    </div>
+                    <div className="text-2xl font-bold mb-1">
+                      {formatCurrency(DEFAULT_VALUES.plans[plan])}
+                    </div>
+                    <div className="text-xs text-ink-secondary">
+                      {plan === 'starter' && 'até 50 buscas/mês'}
+                      {plan === 'professional' && 'até 300 buscas/mês'}
+                      {plan === 'enterprise' && 'até 1.000 buscas/mês'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border my-8"></div>
+
+            {/* ROI Results */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-error/10 border border-error/30 rounded-lg p-6">
+                <p className="text-sm text-ink-secondary mb-1">
+                  💸 Custo Mensal da Busca Manual
+                </p>
+                <p className="text-3xl font-bold text-error">
+                  {roiResult.formatted.manualSearchCostPerMonth}
+                </p>
+                <p className="text-xs text-ink-muted mt-2">
+                  {hoursPerWeek}h/semana × {formatCurrency(costPerHour)}/h × 4 semanas
+                </p>
+              </div>
+
+              <div className="bg-success/10 border border-success/30 rounded-lg p-6">
+                <p className="text-sm text-ink-secondary mb-1">
+                  💸 Plano SmartLic
+                </p>
+                <p className="text-3xl font-bold text-success">
+                  {roiResult.formatted.smartlicPlanCost}
+                </p>
+                <p className="text-xs text-ink-muted mt-2">
+                  Fixo mensal, sem taxas ocultas
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-brand-blue/10 border border-brand-blue/30 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-ink-secondary mb-1">
+                    ✅ Economia Mensal
+                  </p>
+                  <p className="text-4xl font-bold text-brand-blue">
+                    {roiResult.formatted.monthlySavings}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-ink-secondary mb-1">📊 ROI</p>
+                  <p className="text-4xl font-bold text-brand-blue">
+                    {roiResult.formatted.roi}
+                  </p>
+                </div>
+              </div>
+              <div className="border-t border-brand-blue/20 pt-4">
+                <p className="font-semibold text-ink mb-2">{roiMessage.headline}</p>
+                <p className="text-sm text-ink-secondary">{roiMessage.explanation}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="mt-8 text-center">
           <Link href="/buscar" className="text-sm text-[var(--ink-muted)] hover:underline">
