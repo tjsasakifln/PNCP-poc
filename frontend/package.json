@@ -44,7 +44,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
     "@lhci/cli": "^0.15.0",
-    "@playwright/test": "^1.58.1",
+    "@playwright/test": "^1.58.2",
     "@swc/jest": "^0.2.29",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
