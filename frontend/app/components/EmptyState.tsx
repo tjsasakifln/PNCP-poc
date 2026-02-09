@@ -60,16 +60,16 @@ export function EmptyState({
         </svg>
       </div>
 
-      {/* Title */}
+      {/* Title (STORY-173 AC3) */}
       <h3 className="text-xl font-semibold font-display text-ink mb-2">
-        Nenhuma licitação de {sectorName.toLowerCase()} encontrada
+        Nenhuma Oportunidade Relevante Encontrada
       </h3>
 
-      {/* Context with filter breakdown */}
+      {/* Context with filter breakdown (STORY-173 AC3) */}
       {rawCount > 0 && rejectionBreakdown.length > 0 ? (
         <div className="mb-6">
           <p className="text-ink-secondary mb-4">
-            Encontramos {rawCount.toLocaleString("pt-BR")} licitações no PNCP, mas nenhuma passou nos filtros:
+            Nossos filtros eliminaram {rawCount.toLocaleString("pt-BR")} resultados irrelevantes para entregar apenas o que importa. Tente ajustar os filtros ou escolher outro setor:
           </p>
           <div className="text-left max-w-md mx-auto space-y-2">
             {rejectionBreakdown.map((item, i) => (
@@ -87,11 +87,11 @@ export function EmptyState({
         </div>
       ) : rawCount > 0 ? (
         <p className="text-ink-secondary mb-4">
-          Encontramos {rawCount.toLocaleString("pt-BR")} licitações no PNCP, mas nenhuma corresponde ao setor de {sectorName.toLowerCase()}.
+          Nossos filtros de precisão eliminaram {rawCount.toLocaleString("pt-BR")} resultados não relevantes para o setor de {sectorName.toLowerCase()}. Ajuste os critérios ou tente outro setor.
         </p>
       ) : (
         <p className="text-ink-secondary mb-4">
-          Não encontramos licitações publicadas no PNCP para o período e estados selecionados.
+          Nenhuma oportunidade encontrada para o período e estados selecionados. Tente ampliar a busca.
         </p>
       )}
 

@@ -26,18 +26,18 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        {/* Headline — Display weight, tighter tracking */}
+        {/* Headline — Display weight, tighter tracking (STORY-173 AC1) */}
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-tighter text-ink leading-[1.1]">
-          Licitações relevantes.
+          Encontre Oportunidades Relevantes
           <br />
-          <span className="text-brand-blue">Sem ruído.</span>
+          <span className="text-brand-blue">em 3 Minutos, Não em 8 Horas</span>
         </h1>
 
-        {/* Subheadline — ink-secondary */}
+        {/* Subheadline — ink-secondary (STORY-173 AC1) */}
         <p className="text-lg sm:text-xl text-ink-secondary mt-6 font-medium leading-relaxed max-w-2xl mx-auto">
-          6 milhões de publicações por ano no Brasil.
+          Algoritmos inteligentes filtram milhares de licitações de múltiplas fontes
           <br className="hidden sm:block" />
-          Filtros inteligentes entregam o que importa para seu setor.
+          para entregar apenas o que importa para o seu negócio.
         </p>
 
         {/* CTA Buttons */}
@@ -50,7 +50,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             href="/signup?source=landing-cta"
             className="w-full sm:w-auto bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
-            Criar conta grátis
+            Economize 10h/Semana Agora
           </a>
           <button
             onClick={() => scrollToSection('como-funciona')}
@@ -74,25 +74,24 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           </button>
         </div>
 
-        {/* Badge de Credibilidade — Simples e direto */}
+        {/* Trust Badges — (STORY-173 AC1) */}
         <div
-          className={`mt-12 inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary transition-all duration-500 delay-300 ${
+          className={`mt-12 flex flex-wrap items-center justify-center gap-4 transition-all duration-500 delay-300 ${
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          <svg
-            className="w-5 h-5 text-success"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            aria-hidden="true"
-          >
-            <path
-              fillRule="evenodd"
-              d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>Dados oficiais em tempo real. Sistema desenvolvido por servidores públicos.</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary">
+            <span className="text-lg">⚡</span>
+            <span className="font-medium">160x Mais Rápido</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary">
+            <span className="text-lg">🎯</span>
+            <span className="font-medium">95% de Precisão</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary">
+            <span className="text-lg">🌍</span>
+            <span className="font-medium">PNCP + 27 Portais</span>
+          </div>
         </div>
       </div>
     </section>
