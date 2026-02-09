@@ -544,6 +544,7 @@ class LicitacaoItem(BaseModel):
     modalidade: Optional[str] = Field(default=None, description="Procurement modality")
     data_publicacao: Optional[str] = Field(default=None, description="Publication date")
     data_abertura: Optional[str] = Field(default=None, description="Proposal opening date")
+    data_encerramento: Optional[str] = Field(default=None, description="Proposal submission deadline")
     link: str = Field(..., description="Direct link to PNCP portal")
 
     class Config:

@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         await writeFile(filePath, buffer);
         console.log(`✅ Excel saved to: ${filePath}`);
 
-        // Limpar arquivo após 10 minutos
+        // Limpar arquivo após 60 minutos (buscas longas + tempo de análise)
         setTimeout(async () => {
           try {
             const { unlink } = await import("fs/promises");
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             console.error(`Failed to clean up ${downloadId}:`, error);
           }
-        }, 10 * 60 * 1000);
+        }, 60 * 60 * 1000);
       } catch (error) {
         console.error("Failed to save Excel to filesystem:", error);
         // Continue without download_id (user will see error when trying to download)

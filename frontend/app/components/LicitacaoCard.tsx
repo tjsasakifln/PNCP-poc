@@ -329,6 +329,12 @@ export function LicitacaoCard({
             </span>
           </span>
 
+          {licitacao.data_encerramento && (
+            <span className="inline-flex items-center gap-1 text-success font-medium">
+              <CalendarIcon className="w-4 h-4" />
+              <span>Prazo: {formatDate(licitacao.data_encerramento)}</span>
+            </span>
+          )}
           {licitacao.data_abertura && (
             <span className="inline-flex items-center gap-1 text-ink-muted">
               <CalendarIcon className="w-4 h-4" />

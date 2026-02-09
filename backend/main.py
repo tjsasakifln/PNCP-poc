@@ -687,6 +687,7 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 modalidade=lic.get("modalidadeNome"),
                 data_publicacao=lic.get("dataPublicacaoPncp", "")[:10] if lic.get("dataPublicacaoPncp") else None,
                 data_abertura=lic.get("dataAberturaProposta", "")[:10] if lic.get("dataAberturaProposta") else None,
+                data_encerramento=lic.get("dataEncerramentoProposta", "")[:10] if lic.get("dataEncerramentoProposta") else None,
                 link=_build_pncp_link(lic),
             )
             items.append(item)

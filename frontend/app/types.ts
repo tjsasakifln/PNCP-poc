@@ -56,6 +56,7 @@ export interface LicitacaoItem {
   modalidade: string | null;
   data_publicacao: string | null;
   data_abertura: string | null;
+  data_encerramento: string | null;
   link: string;
   /** Status of the licitacao (e.g., "aberta", "em_julgamento", "encerrada") */
   status?: string | null;

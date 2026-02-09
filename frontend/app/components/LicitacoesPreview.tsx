@@ -84,8 +84,13 @@ export function LicitacoesPreview({
                       {item.modalidade}
                     </span>
                   )}
+                  {item.data_encerramento && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-success-subtle text-success text-xs font-medium">
+                      Prazo: {formatDate(item.data_encerramento)}
+                    </span>
+                  )}
                   {item.data_abertura && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-warning-subtle text-warning text-xs font-medium">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs">
                       Abertura: {formatDate(item.data_abertura)}
                     </span>
                   )}
@@ -209,8 +214,13 @@ export function LicitacoesPreview({
                         {item.modalidade}
                       </span>
                     )}
+                    {item.data_encerramento && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-success-subtle text-success text-xs font-medium">
+                        Prazo: {formatDate(item.data_encerramento)}
+                      </span>
+                    )}
                     {item.data_abertura && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-warning-subtle text-warning text-xs font-medium">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs">
                         Abertura: {formatDate(item.data_abertura)}
                       </span>
                     )}
