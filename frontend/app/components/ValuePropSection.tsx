@@ -57,8 +57,13 @@ export default function ValuePropSection() {
                 <motion.div variants={fadeInUp}>
                   <GlassCard hoverable={true} variant="default" className="h-full">
                     {/* Icon with gradient */}
-                    <div className="text-5xl mb-4 transform transition-transform group-hover:scale-110">
-                      {prop.icon}
+                    <div className="mb-4 transform transition-transform group-hover:scale-110">
+                      <prop.icon
+                        className="w-12 h-12 text-brand-blue"
+                        strokeWidth={2}
+                        aria-label={prop.title}
+                        role="img"
+                      />
                     </div>
 
                     {/* Metric */}

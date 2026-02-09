@@ -6,7 +6,10 @@
  *
  * @agent @ux-design-expert (Uma)
  * @date 2026-02-08
+ * @updated 2026-02-09 - Migrated from Unicode emojis to Lucide icons (@dev Felix)
  */
+
+import { Zap, Target, Globe, Bot, Search } from '@/lib/icons';
 
 // ============================================================================
 // HERO SECTION (Landing Page)
@@ -34,22 +37,22 @@ export const hero = {
   // Trust badges (displayed below hero)
   trustBadges: [
     {
-      icon: "⚡",
+      icon: Zap,
       text: "160x Mais Rápido",
       detail: "3 minutos vs. 8+ horas",
     },
     {
-      icon: "🎯",
+      icon: Target,
       text: "Precisão de 95%",
       detail: "Apenas oportunidades relevantes",
     },
     {
-      icon: "🌍",
+      icon: Globe,
       text: "Múltiplas Fontes",
       detail: "PNCP + 27 portais consolidados",
     },
     {
-      icon: "🤖",
+      icon: Bot,
       text: "IA Inteligente",
       detail: "Resumos executivos automáticos",
     },
@@ -74,7 +77,7 @@ export const valueProps = {
     shortDescription: "3 minutos vs. 8+ horas em busca manual",
     longDescription:
       "Enquanto outras plataformas exigem 8+ horas de busca manual e análise, o SmartLic entrega resultado completo em 3 minutos. Economize 10 horas por semana e use esse tempo para preparar propostas vencedoras.",
-    icon: "⚡",
+    icon: Zap,
     metric: "160x",
     proof: "Baseado em comparação: busca manual (8.5h) vs. SmartLic (3 min)",
   },
@@ -84,7 +87,7 @@ export const valueProps = {
     shortDescription: "Apenas oportunidades relevantes, zero falsos positivos",
     longDescription:
       "Outras plataformas entregam milhares de resultados irrelevantes (~20% precisão). No SmartLic, algoritmos proprietários garantem 95% de precisão. Você analisa apenas o que realmente importa. Apenas o ouro, zero ruído.",
-    icon: "🎯",
+    icon: Target,
     metric: "95%",
     proof: "*Baseado em testes internos com 10.000+ buscas",
   },
@@ -94,7 +97,7 @@ export const valueProps = {
     shortDescription: "PNCP + 27 portais estaduais e municipais",
     longDescription:
       "Enquanto outras plataformas consultam apenas o PNCP ou exigem que você busque em dezenas de portais separadamente, o SmartLic consolida automaticamente PNCP + 27 portais estaduais e municipais. Nunca perca uma oportunidade.",
-    icon: "🌍",
+    icon: Globe,
     metric: "27+",
     proof: "Cobertura nacional: 27 UFs + 5.570 municípios",
   },
@@ -104,7 +107,7 @@ export const valueProps = {
     shortDescription: "Resumos executivos em vez de editais de 50 páginas",
     longDescription:
       "Enquanto outras plataformas exigem que você leia editais de 50 páginas, o SmartLic usa IA para gerar resumos executivos de 3 linhas com destaque de valor, prazo e requisitos críticos. Decida em 30 segundos, não em 20 minutos.",
-    icon: "🤖",
+    icon: Bot,
     metric: "3 linhas",
     proof: "Powered by GPT-4 for executive summaries",
   },
@@ -299,25 +302,25 @@ export const onboarding = {
       title: "Esqueça Palavras-Chave",
       description:
         "Selecione seu setor (ex: Uniformes, TI) e nosso algoritmo encontra todas as variações automaticamente. Sem adivinhação.",
-      icon: "🔍",
+      icon: Search,
     },
     {
       title: "Apenas o Ouro, Zero Ruído",
       description:
         "Nossos filtros inteligentes eliminam milhares de resultados irrelevantes. Você vê apenas oportunidades com 95% de precisão.",
-      icon: "🎯",
+      icon: Target,
     },
     {
       title: "IA Trabalha para Você",
       description:
         "Leia resumos de 3 linhas em vez de editais de 50 páginas. Decida em 30 segundos se vale a pena.",
-      icon: "🤖",
+      icon: Bot,
     },
     {
       title: "Economize 10h/Semana",
       description:
         "3 minutos do clique ao relatório. Mais tempo para preparar propostas vencedoras.",
-      icon: "⚡",
+      icon: Zap,
     },
   ],
 

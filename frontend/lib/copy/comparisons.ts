@@ -6,7 +6,21 @@
  *
  * @agent @ux-design-expert (Uma)
  * @date 2026-02-08
+ * @updated 2026-02-09 - Migrated from Unicode emojis to Lucide icons (@dev Felix)
  */
+
+import {
+  Search,
+  Zap,
+  Target,
+  Globe,
+  Bot,
+  CircleDollarSign,
+  CheckCircle2,
+  LifeBuoy,
+  Sparkles,
+  ShieldCheck,
+} from '@/lib/icons';
 
 // ============================================================================
 // COMPARISON TABLE DATA
@@ -17,7 +31,7 @@ export interface ComparisonRow {
   traditional: string;
   smartlic: string;
   advantage: string;
-  icon?: string;
+  icon?: React.ComponentType<any>; // Lucide icon component
 }
 
 export const comparisonTable: ComparisonRow[] = [
@@ -26,70 +40,70 @@ export const comparisonTable: ComparisonRow[] = [
     traditional: "Por termos específicos (precisa adivinhar)",
     smartlic: "Por ramo de atividade (1 clique)",
     advantage: "10x mais fácil",
-    icon: "🔍",
+    icon: Search,
   },
   {
     feature: "Tempo Médio",
     traditional: "8+ horas (busca manual)",
     smartlic: "3 minutos (160x mais rápido)",
     advantage: "160x mais rápido",
-    icon: "⚡",
+    icon: Zap,
   },
   {
     feature: "Precisão",
     traditional: "~20% (muito ruído)",
     smartlic: "95% (filtros inteligentes)",
     advantage: "5x mais preciso",
-    icon: "🎯",
+    icon: Target,
   },
   {
     feature: "Fontes Consultadas",
     traditional: "Apenas PNCP",
     smartlic: "PNCP + 27 portais estaduais/municipais",
     advantage: "27x mais cobertura",
-    icon: "🌍",
+    icon: Globe,
   },
   {
     feature: "Resumos IA",
     traditional: "Não (leitura manual)",
     smartlic: "Sim (resumos executivos de 3 linhas)",
     advantage: "Insights instantâneos",
-    icon: "🤖",
+    icon: Bot,
   },
   {
     feature: "Preço",
     traditional: "Taxas ocultas ou por consulta",
     smartlic: "Fixo mensal (50-1000 buscas/mês conforme plano)",
     advantage: "Transparente",
-    icon: "💰",
+    icon: CircleDollarSign,
   },
   {
     feature: "Cancelamento",
     traditional: "Difícil (burocrático)",
     smartlic: "1 clique (sem burocracia)",
     advantage: "Trust-first",
-    icon: "✅",
+    icon: CheckCircle2,
   },
   {
     feature: "Suporte",
     traditional: "2-7 dias (resposta lenta)",
     smartlic: "4 horas (resposta garantida)",
     advantage: "40x mais rápido",
-    icon: "🛟",
+    icon: LifeBuoy,
   },
   {
     feature: "Interface",
     traditional: "Confusa (curva de aprendizado)",
     smartlic: "Intuitiva (onboarding de 30 seg)",
     advantage: "Produtividade imediata",
-    icon: "✨",
+    icon: Sparkles,
   },
   {
     feature: "Estabilidade",
     traditional: "Sistemas lentos ou instáveis",
     smartlic: "99.9% uptime (infraestrutura moderna)",
     advantage: "Confiável 24/7",
-    icon: "🛡️",
+    icon: ShieldCheck,
   },
 ];
 
@@ -356,7 +370,7 @@ export interface BeforeAfterItem {
   aspect: string;
   before: string;
   after: string;
-  icon: string;
+  icon: React.ComponentType<any>; // Lucide icon component
 }
 
 export const beforeAfter: BeforeAfterItem[] = [
@@ -364,37 +378,37 @@ export const beforeAfter: BeforeAfterItem[] = [
     aspect: "Tempo de Busca",
     before: "8+ horas por semana em buscas por termos",
     after: "3 minutos por busca (160x mais rápido)",
-    icon: "⚡",
+    icon: Zap,
   },
   {
     aspect: "Precisão dos Resultados",
     before: "~20% de precisão (muito ruído)",
     after: "95% de precisão (apenas oportunidades relevantes)",
-    icon: "🎯",
+    icon: Target,
   },
   {
     aspect: "Fontes Consultadas",
     before: "Apenas PNCP (busca manual em outros portais)",
     after: "PNCP + 27 portais em 1 busca automática",
-    icon: "🌍",
+    icon: Globe,
   },
   {
     aspect: "Análise de Documentos",
     before: "Leitura manual de editais de 50 páginas",
     after: "Resumos IA de 3 linhas",
-    icon: "🤖",
+    icon: Bot,
   },
   {
     aspect: "Custo Mensal",
     before: "Taxas ocultas e cobranças por consulta",
     after: "Fixo mensal (R$ 297-1.497)",
-    icon: "💰",
+    icon: CircleDollarSign,
   },
   {
     aspect: "Cancelamento",
     before: "Difícil (ligações, burocracia)",
     after: "1 clique (sem retenção)",
-    icon: "✅",
+    icon: CheckCircle2,
   },
 ];
 

@@ -77,7 +77,12 @@ export default function ComparisonTable() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {row.icon && (
-                          <span className="text-2xl">{row.icon}</span>
+                          <row.icon
+                            className="w-5 h-5 text-brand-blue flex-shrink-0"
+                            strokeWidth={2}
+                            aria-label={row.feature}
+                            role="img"
+                          />
                         )}
                         <span className="font-medium text-ink">
                           {row.feature}
@@ -145,7 +150,14 @@ export default function ComparisonTable() {
               >
                 {/* Feature */}
                 <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border">
-                  {row.icon && <span className="text-2xl">{row.icon}</span>}
+                  {row.icon && (
+                    <row.icon
+                      className="w-6 h-6 text-brand-blue flex-shrink-0"
+                      strokeWidth={2}
+                      aria-label={row.feature}
+                      role="img"
+                    />
+                  )}
                   <h3 className="font-semibold text-ink">{row.feature}</h3>
                 </div>
 

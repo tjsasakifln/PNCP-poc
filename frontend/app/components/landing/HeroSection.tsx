@@ -1,11 +1,11 @@
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { GradientButton } from '@/app/components/ui/GradientButton';
 import { GlassCard } from '@/app/components/ui/GlassCard';
 import { useScrollAnimation } from '@/lib/animations';
 import { fadeInUp, staggerContainer, scaleIn } from '@/lib/animations';
-import { useEffect, useState } from 'react';
 
 interface HeroSectionProps {
   className?: string;
@@ -157,7 +157,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
  * Stats Badge Component - Glassmorphism card with counter animation
  */
 interface StatsBadgeProps {
-  icon: string;
+  icon: React.ComponentType<any> | string; // Lucide component or legacy emoji string
   value: string;
   label: string;
   delay: number;
@@ -203,6 +203,9 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
     ? value // Keep "PNCP + 27" as is
     : `${count}`;
 
+  // Determine if icon is a component or string emoji (backward compatibility)
+  const isComponent = typeof icon === 'function';
+
   return (
     <motion.div ref={ref} variants={scaleIn} transition={{ delay }}>
       <GlassCard
@@ -220,9 +223,18 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
           justify-center
         "
       >
-        <span className="text-lg" role="img" aria-label={label}>
-          {icon}
-        </span>
+        {isComponent ? (
+          React.createElement(icon as React.ComponentType<any>, {
+            className: 'w-5 h-5 text-brand-blue flex-shrink-0',
+            strokeWidth: 2,
+            'aria-label': label,
+            role: 'img',
+          })
+        ) : (
+          <span className="text-lg" role="img" aria-label={label}>
+            {icon}
+          </span>
+        )}
         <div className="flex flex-col items-start">
           <span className="text-ink font-bold tabular-nums">
             {displayValue}
