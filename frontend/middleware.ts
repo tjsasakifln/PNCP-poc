@@ -36,13 +36,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow public routes without auth check
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
-  }
-
   // CRITICAL: Force canonical domain redirect (railway.app → smartlic.tech)
-  // This ensures OAuth redirects always use the correct domain
+  // Must run BEFORE public route check so OAuth callbacks also get redirected
   const canonicalDomain = process.env.NEXT_PUBLIC_CANONICAL_URL?.replace(/^https?:\/\//, "") || "smartlic.tech";
   const isRailwayDomain = host.includes("railway.app");
   const isLocalhost = host.includes("localhost");
@@ -50,6 +45,11 @@ export async function middleware(request: NextRequest) {
   if (isRailwayDomain && !isLocalhost) {
     const canonicalUrl = `https://${canonicalDomain}${pathname}${search}`;
     return NextResponse.redirect(canonicalUrl, { status: 301 });
+  }
+
+  // Allow public routes without auth check
+  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+    return NextResponse.next();
   }
 
   // Allow static assets and Next.js internals

@@ -1,33 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 /**
  * Client-side Auth Callback Handler
  *
- * Handles the implicit flow callback where tokens come in the URL hash fragment.
- * This is necessary because hash fragments are not sent to the server.
+ * Handles the PKCE flow callback where authorization code comes in URL params.
+ * Uses window.location.href for redirect (not router.push) to ensure
+ * auth cookies are sent on a full page load — avoids Next.js router cache
+ * causing the middleware to miss the session on soft navigation.
  */
 export default function AuthCallbackPage() {
-  const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log("[OAuth Callback] Starting callback handler");
-        console.log("[OAuth Callback] Current URL:", window.location.href);
-
         // Check for error in URL params
         const params = new URLSearchParams(window.location.search);
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
         if (error) {
-          console.error("[OAuth Callback] Error in URL params:", error, errorDescription);
+          console.error("[OAuth Callback] Error:", error, errorDescription);
           setStatus("error");
           setErrorMessage(errorDescription || error);
           return;
@@ -37,9 +34,6 @@ export default function AuthCallbackPage() {
         const code = params.get("code");
 
         if (code) {
-          console.log("[OAuth Callback] Found authorization code, exchanging for session");
-          // Exchange authorization code for session (PKCE flow)
-          // Supabase SDK automatically handles code exchange with PKCE verifier
           const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
           if (exchangeError) {
@@ -50,22 +44,14 @@ export default function AuthCallbackPage() {
           }
 
           if (session) {
-            console.log("[OAuth Callback] Session established, redirecting to /buscar");
-            console.log("[OAuth Callback] User:", session.user.email);
             setStatus("success");
-            // Small delay to ensure cookies are set
-            setTimeout(() => {
-              console.log("[OAuth Callback] Executing redirect to /buscar");
-              router.push("/buscar");
-            }, 500);
+            // Full page navigation ensures cookies are sent to middleware
+            window.location.href = "/buscar";
             return;
-          } else {
-            console.warn("[OAuth Callback] Code exchanged but no session returned");
           }
         }
 
-        // Fallback: Check if we already have a session (e.g., from hash fragment or cookies)
-        console.log("[OAuth Callback] No code found, checking for existing session");
+        // Fallback: Check if we already have a session (e.g., from cookies)
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -76,24 +62,15 @@ export default function AuthCallbackPage() {
         }
 
         if (session) {
-          console.log("[OAuth Callback] Existing session found, redirecting to /buscar");
-          console.log("[OAuth Callback] User:", session.user.email);
           setStatus("success");
-          // Small delay to ensure cookies are set
-          setTimeout(() => {
-            console.log("[OAuth Callback] Executing redirect to /buscar");
-            router.push("/buscar");
-          }, 500);
+          window.location.href = "/buscar";
         } else {
-          console.log("[OAuth Callback] No session yet, listening for auth state change");
           // No session yet - listen for auth state change
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log("[OAuth Callback] Auth state change:", event, session?.user?.email);
             if (event === "SIGNED_IN" && session) {
-              console.log("[OAuth Callback] SIGNED_IN event, redirecting to /buscar");
               setStatus("success");
               subscription.unsubscribe();
-              router.push("/buscar");
+              window.location.href = "/buscar";
             }
           });
 
@@ -101,7 +78,6 @@ export default function AuthCallbackPage() {
           setTimeout(() => {
             subscription.unsubscribe();
             if (status === "loading") {
-              console.error("[OAuth Callback] Timeout waiting for authentication");
               setStatus("error");
               setErrorMessage("Timeout ao processar autenticação. Tente novamente.");
             }
@@ -115,7 +91,7 @@ export default function AuthCallbackPage() {
     };
 
     handleCallback();
-  }, [router, status]);
+  }, [status]);
 
   if (status === "loading") {
     return (
