@@ -795,6 +795,8 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 data_encerramento=lic.get("dataEncerramentoProposta", "")[:10] if lic.get("dataEncerramentoProposta") else None,
                 link=_build_pncp_link(lic),
                 source=lic.get("_source"),
+                relevance_score=lic.get("_relevance_score"),
+                matched_terms=lic.get("_matched_terms"),
             )
             items.append(item)
         except Exception as e:
@@ -1105,25 +1107,45 @@ async def buscar_licitacoes(
         logger.info(f"Using sector: {sector.name} ({len(sector.keywords)} keywords)")
 
         # Determine keywords: custom terms REPLACE sector keywords (mutually exclusive)
+        # STORY-178 AC1: Use intelligent term parser with comma/phrase support
+        from term_parser import parse_search_terms
+        from relevance import calculate_min_matches
+
         custom_terms: list[str] = []
-        stopwords_removed: list[str] = []
+        stopwords_removed: list[str] = []  # kept for backward compat in response
+        min_match_floor_value: int | None = None
+
         if request.termos_busca and request.termos_busca.strip():
+            # Get raw terms (space-split lowercase) for stopword tracking
             raw_terms = [t.strip().lower() for t in request.termos_busca.strip().split() if t.strip()]
-            custom_terms = remove_stopwords(raw_terms)
-            stopwords_removed = [t for t in raw_terms if t not in custom_terms]
+            custom_terms = parse_search_terms(request.termos_busca)
+
+            # Track removed stopwords for backward compat in response
+            custom_terms_set = set(custom_terms)
+            stopwords_removed = [t for t in raw_terms if t not in custom_terms_set and t not in {
+                term for ct in custom_terms for term in ct.split()
+            }]
             if stopwords_removed:
                 logger.info(f"Removed {len(stopwords_removed)} stopwords: {stopwords_removed}")
+
+            # AC7.2: Log parsed terms
+            logger.info(
+                f"Parsed {len(custom_terms)} search terms from input: {custom_terms}"
+            )
+
+            # Calculate min_match_floor for custom terms (AC2.2)
+            if custom_terms and not request.show_all_matches:
+                min_match_floor_value = calculate_min_matches(len(custom_terms))
+                logger.info(
+                    f"Min match floor: {min_match_floor_value} "
+                    f"(total_terms={len(custom_terms)})"
+                )
 
         if custom_terms:
             active_keywords = set(custom_terms)
             logger.info(f"Using {len(custom_terms)} custom search terms: {custom_terms}")
         else:
             active_keywords = set(sector.keywords)
-            if stopwords_removed:
-                logger.warning(
-                    f"All user terms were stopwords ({stopwords_removed}), "
-                    f"falling back to sector '{sector.id}' keywords"
-                )
             logger.info(f"Using sector keywords ({len(active_keywords)} terms)")
 
         # SSE: Sector ready, starting fetch
@@ -1377,6 +1399,25 @@ async def buscar_licitacoes(
         )
 
         # Use the comprehensive filter function that applies all filters in order
+        # AC3.1: Re-enable sector exclusions when custom terms + sector selected
+        # AC3.2: No exclusions when custom terms without sector (generic/default)
+        # AC3.3: User-provided exclusion_terms override sector exclusions
+        if request.exclusion_terms:
+            active_exclusions = set(request.exclusion_terms)
+            active_context_required = None
+        elif custom_terms and request.setor_id and request.setor_id != "vestuario":
+            # AC3.1: Sector selected with custom terms — re-enable sector safety nets
+            active_exclusions = sector.exclusions
+            active_context_required = sector.context_required_keywords
+        elif not custom_terms:
+            # Sector-only mode: full exclusions (existing behavior)
+            active_exclusions = sector.exclusions
+            active_context_required = sector.context_required_keywords
+        else:
+            # AC3.2: Custom terms without specific sector — no exclusions
+            active_exclusions = set()
+            active_context_required = None
+
         licitacoes_filtradas, stats = aplicar_todos_filtros(
             licitacoes_raw,
             ufs_selecionadas=set(request.ufs),
@@ -1387,9 +1428,53 @@ async def buscar_licitacoes(
             esferas=esferas_values,
             municipios=request.municipios,
             keywords=active_keywords,
-            exclusions=sector.exclusions if not custom_terms else set(),
-            context_required=sector.context_required_keywords if not custom_terms else None,
+            exclusions=active_exclusions,
+            context_required=active_context_required,
+            min_match_floor=min_match_floor_value,
         )
+
+        # AC2.3: Degradation — if min_match_floor produced 0 results, relax to 1
+        hidden_by_min_match = stats.get("rejeitadas_min_match", 0)
+        filter_relaxed = False
+
+        if (
+            custom_terms
+            and min_match_floor_value is not None
+            and min_match_floor_value > 1
+            and len(licitacoes_filtradas) == 0
+            and hidden_by_min_match > 0
+        ):
+            logger.warning(
+                f"Min match floor relaxed from {min_match_floor_value} to 1 — "
+                f"zero results with strict filter"
+            )
+            filter_relaxed = True
+            # Re-run filter without min_match_floor
+            licitacoes_filtradas, stats = aplicar_todos_filtros(
+                licitacoes_raw,
+                ufs_selecionadas=set(request.ufs),
+                status=status_filter,
+                modalidades=request.modalidades,
+                valor_min=request.valor_minimo,
+                valor_max=request.valor_maximo,
+                esferas=esferas_values,
+                municipios=request.municipios,
+                keywords=active_keywords,
+                exclusions=active_exclusions,
+                context_required=active_context_required,
+                min_match_floor=None,  # Relaxed — no minimum
+            )
+            hidden_by_min_match = 0  # All results now shown
+
+        # STORY-178: Compute relevance scores for each bid when custom terms active
+        if custom_terms and licitacoes_filtradas:
+            from relevance import score_relevance, count_phrase_matches
+            for lic in licitacoes_filtradas:
+                matched_terms = lic.get("_matched_terms", [])
+                phrase_count = count_phrase_matches(matched_terms)
+                lic["_relevance_score"] = score_relevance(
+                    len(matched_terms), len(custom_terms), phrase_count
+                )
 
         # Detailed logging for debugging and monitoring
         logger.info(
@@ -1406,6 +1491,7 @@ async def buscar_licitacoes(
             logger.info(f"  - Rejeitadas (Município): {stats.get('rejeitadas_municipio', 0)}")
             logger.info(f"  - Rejeitadas (Valor): {stats.get('rejeitadas_valor', 0)}")
             logger.info(f"  - Rejeitadas (Keyword): {stats.get('rejeitadas_keyword', 0)}")
+            logger.info(f"  - Rejeitadas (Min Match): {stats.get('rejeitadas_min_match', 0)}")
             logger.info(f"  - Rejeitadas (Outros): {stats.get('rejeitadas_outros', 0)}")
 
         # Diagnostic: sample of keyword-rejected items for debugging
@@ -1431,6 +1517,7 @@ async def buscar_licitacoes(
             rejeitadas_uf=stats.get("rejeitadas_uf", 0),
             rejeitadas_valor=stats.get("rejeitadas_valor", 0),
             rejeitadas_keyword=stats.get("rejeitadas_keyword", 0),
+            rejeitadas_min_match=stats.get("rejeitadas_min_match", 0),
             rejeitadas_prazo=stats.get("rejeitadas_prazo", 0),
             rejeitadas_outros=stats.get("rejeitadas_outros", 0),
         )
@@ -1475,6 +1562,8 @@ async def buscar_licitacoes(
                 stopwords_removidas=stopwords_removed if stopwords_removed else None,
                 upgrade_message="Exportar Excel disponível no plano Máquina (R$ 597/mês)." if quota_info and not quota_info.capabilities["allow_excel"] else None,
                 source_stats=source_stats_data,
+                hidden_by_min_match=hidden_by_min_match if custom_terms else None,
+                filter_relaxed=filter_relaxed if custom_terms else None,
             )
             logger.info(
                 "Search completed with 0 results",
@@ -1598,6 +1687,8 @@ async def buscar_licitacoes(
             stopwords_removidas=stopwords_removed if stopwords_removed else None,
             upgrade_message=upgrade_message,
             source_stats=source_stats_data,
+            hidden_by_min_match=hidden_by_min_match if custom_terms else None,
+            filter_relaxed=filter_relaxed if custom_terms else None,
         )
 
         logger.info(

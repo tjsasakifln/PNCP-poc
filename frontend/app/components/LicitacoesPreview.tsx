@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { LicitacaoItem } from "../types";
 
 interface LicitacoesPreviewProps {
@@ -11,6 +12,8 @@ interface LicitacoesPreviewProps {
   excelAvailable: boolean;
   /** Callback when user clicks upgrade CTA */
   onUpgradeClick?: () => void;
+  /** Active search terms for highlighting in bid descriptions */
+  searchTerms?: string[];
 }
 
 /**
@@ -24,7 +27,47 @@ export function LicitacoesPreview({
   previewCount = 5,
   excelAvailable,
   onUpgradeClick,
+  searchTerms = [],
 }: LicitacoesPreviewProps) {
+  /** AC5.4: Relevance badge based on score */
+  const getRelevanceBadge = (score?: number | null) => {
+    if (score == null) return null;
+    if (score >= 0.7) {
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+          Muito relevante
+        </span>
+      );
+    }
+    if (score >= 0.4) {
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+          Relevante
+        </span>
+      );
+    }
+    return null;
+  };
+
+  /** AC5.5: Highlight matched terms in text using React elements (no innerHTML) */
+  const highlightTerms = (text: string, terms: string[]): ReactNode => {
+    if (!terms || terms.length === 0) return text;
+    // Build a regex that matches any of the search terms (case-insensitive, accent-insensitive not needed here since matching is on displayed text)
+    const escaped = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
+    const parts = text.split(pattern);
+    if (parts.length === 1) return text;
+    return parts.map((part, i) =>
+      pattern.test(part) ? (
+        <mark key={i} className="bg-yellow-200 dark:bg-yellow-800/50 text-inherit rounded-sm px-0.5">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   const getSourceBadge = (source?: string) => {
     if (!source) return null;
     const sourceConfig: Record<string, { label: string; bg: string; text: string }> = {
@@ -84,12 +127,13 @@ export function LicitacoesPreview({
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h4 className="text-base font-medium text-ink line-clamp-2 mb-1">
-                  {item.objeto}
+                  {highlightTerms(item.objeto, item.matched_terms || searchTerms)}
                 </h4>
                 <p className="text-sm text-ink-secondary truncate">
                   {item.orgao}
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
+                  {getRelevanceBadge(item.relevance_score)}
                   {getSourceBadge(item._source)}
                   <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                     {item.uf}
@@ -215,12 +259,13 @@ export function LicitacoesPreview({
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <h4 className="text-base font-medium text-ink line-clamp-2 mb-1">
-                    {item.objeto}
+                    {highlightTerms(item.objeto, item.matched_terms || searchTerms)}
                   </h4>
                   <p className="text-sm text-ink-secondary truncate">
                     {item.orgao}
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2">
+                    {getRelevanceBadge(item.relevance_score)}
                     <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                       {item.uf}
                       {item.municipio && ` - ${item.municipio}`}

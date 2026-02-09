@@ -397,6 +397,7 @@ def match_keywords(
     keywords: Set[str],
     exclusions: Set[str] | None = None,
     context_required: Dict[str, Set[str]] | None = None,
+    compiled_patterns: Dict[str, re.Pattern] | None = None,
 ) -> Tuple[bool, List[str]]:
     """
     Check if procurement object description contains uniform-related keywords.
@@ -450,31 +451,43 @@ def match_keywords(
                 return False, []
 
     # Search for matching keywords
+    # AC9.1: Use pre-compiled patterns when available for batch performance
     matched: List[str] = []
     for kw in keywords:
         kw_norm = normalize_text(kw)
 
-        # Try exact match first
-        pattern_exact = rf"\b{re.escape(kw_norm)}\b"
-        if re.search(pattern_exact, objeto_norm):
-            matched.append(kw)
-            continue
-
-        # Try plural forms if exact match failed
-        # Portuguese plurals: add -s or -es (e.g., "uniforme" -> "uniformes")
-        # English plurals: add -s (e.g., "notebook" -> "notebooks")
-        if not kw_norm.endswith('s'):  # Avoid double plural (e.g., "roupas" -> "roupass")
-            # Try -s suffix (most common plural)
-            pattern_plural_s = rf"\b{re.escape(kw_norm)}s\b"
-            if re.search(pattern_plural_s, objeto_norm):
+        # Use pre-compiled pattern if available
+        if compiled_patterns and kw in compiled_patterns:
+            if compiled_patterns[kw].search(objeto_norm):
+                matched.append(kw)
+                continue
+            # Also try plural forms with pre-compiled pattern
+            if not kw_norm.endswith('s'):
+                pattern_plural_s = rf"\b{re.escape(kw_norm)}s\b"
+                if re.search(pattern_plural_s, objeto_norm):
+                    matched.append(kw)
+                    continue
+                pattern_plural_es = rf"\b{re.escape(kw_norm)}es\b"
+                if re.search(pattern_plural_es, objeto_norm):
+                    matched.append(kw)
+                    continue
+        else:
+            # Fallback: compile on the fly (backward compatible)
+            pattern_exact = rf"\b{re.escape(kw_norm)}\b"
+            if re.search(pattern_exact, objeto_norm):
                 matched.append(kw)
                 continue
 
-            # Try -es suffix (Portuguese plural for words ending in consonants)
-            pattern_plural_es = rf"\b{re.escape(kw_norm)}es\b"
-            if re.search(pattern_plural_es, objeto_norm):
-                matched.append(kw)
-                continue
+            # Try plural forms if exact match failed
+            if not kw_norm.endswith('s'):
+                pattern_plural_s = rf"\b{re.escape(kw_norm)}s\b"
+                if re.search(pattern_plural_s, objeto_norm):
+                    matched.append(kw)
+                    continue
+                pattern_plural_es = rf"\b{re.escape(kw_norm)}es\b"
+                if re.search(pattern_plural_es, objeto_norm):
+                    matched.append(kw)
+                    continue
 
     # Context validation: generic/ambiguous keywords must have confirming context
     if context_required and matched:
@@ -1175,6 +1188,7 @@ def aplicar_todos_filtros(
     keywords: Set[str] | None = None,
     exclusions: Set[str] | None = None,
     context_required: Dict[str, Set[str]] | None = None,
+    min_match_floor: Optional[int] = None,
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Aplica todos os filtros em sequência otimizada (fail-fast).
@@ -1236,6 +1250,7 @@ def aplicar_todos_filtros(
         "rejeitadas_orgao": 0,
         "rejeitadas_valor": 0,
         "rejeitadas_keyword": 0,
+        "rejeitadas_min_match": 0,
         "rejeitadas_prazo": 0,
         "rejeitadas_outros": 0,
     }
@@ -1462,22 +1477,57 @@ def aplicar_todos_filtros(
         resultado_valor = resultado_orgao
 
     # Etapa 8: Filtro de Keywords (mais lento - regex)
+    # AC9.1: Pre-compile regex patterns once for the batch
     kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
     exc = exclusions if exclusions is not None else KEYWORDS_EXCLUSAO
+
+    compiled_patterns: Dict[str, re.Pattern] = {}
+    for keyword in kw:
+        try:
+            escaped = re.escape(keyword)
+            compiled_patterns[keyword] = re.compile(
+                rf'\b{escaped}\b', re.IGNORECASE | re.UNICODE
+            )
+        except re.error:
+            logger.warning(f"Failed to compile regex for keyword: {keyword}")
 
     resultado_keyword: List[dict] = []
     for lic in resultado_valor:
         objeto = lic.get("objetoCompra", "")
-        match, _ = match_keywords(objeto, kw, exc, context_required)
+        match, matched_terms = match_keywords(
+            objeto, kw, exc, context_required,
+            compiled_patterns=compiled_patterns,
+        )
 
         if match:
+            # Store matched terms on the bid for later scoring
+            lic["_matched_terms"] = matched_terms
             resultado_keyword.append(lic)
         else:
             stats["rejeitadas_keyword"] += 1
 
+    # Etapa 8b: Minimum Match Floor (STORY-178 AC2.2)
+    # When min_match_floor is provided, apply additional filtering
+    if min_match_floor is not None and min_match_floor > 1:
+        from relevance import should_include, count_phrase_matches
+
+        resultado_min_match: List[dict] = []
+        for lic in resultado_keyword:
+            matched_terms = lic.get("_matched_terms", [])
+            matched_count = len(matched_terms)
+            has_phrase = count_phrase_matches(matched_terms) > 0
+
+            if should_include(matched_count, len(kw), has_phrase):
+                resultado_min_match.append(lic)
+            else:
+                stats["rejeitadas_min_match"] += 1
+
+        resultado_keyword = resultado_min_match
+
     logger.debug(
         f"  Após filtro Keywords: {len(resultado_keyword)} "
-        f"(rejeitadas: {stats['rejeitadas_keyword']})"
+        f"(rejeitadas_keyword: {stats['rejeitadas_keyword']}, "
+        f"rejeitadas_min_match: {stats['rejeitadas_min_match']})"
     )
 
     # Etapa 9: Filtro de Prazo (safety net for "recebendo_proposta")

@@ -41,6 +41,7 @@ export interface FilterStats {
   rejeitadas_uf: number;
   rejeitadas_valor: number;
   rejeitadas_keyword: number;
+  rejeitadas_min_match: number;
   rejeitadas_prazo: number;
   rejeitadas_outros: number;
 }
@@ -64,6 +65,10 @@ export interface LicitacaoItem {
   matched_keywords?: string[];
   /** Source that provided this record (e.g., "PNCP", "COMPRAS_GOV", "PORTAL_COMPRAS") */
   _source?: string;
+  /** Relevance score 0.0-1.0 (only when custom terms active) */
+  relevance_score?: number | null;
+  /** List of search terms that matched this bid */
+  matched_terms?: string[] | null;
 }
 
 /** Per-source fetch metrics (multi-source mode) */
@@ -89,6 +94,10 @@ export interface BuscaResult {
   upgrade_message: string | null;
   /** Per-source metrics when multi-source is active */
   source_stats: SourceStat[] | null;
+  /** Number of bids with partial matches hidden by min match floor */
+  hidden_by_min_match?: number | null;
+  /** True if the min match filter was relaxed due to zero results */
+  filter_relaxed?: boolean | null;
 }
 
 /** Form validation errors */

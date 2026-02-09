@@ -568,7 +568,7 @@ function HomePageContent() {
       },
       search_mode: searchMode,
       setor_id: searchMode === "setor" ? setorId : null,
-      termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
+      termos_busca: searchMode === "termos" ? termosArray.join(", ") : null,
       termos_count: termosArray.length,
     });
 
@@ -600,7 +600,7 @@ function HomePageContent() {
             data_inicial: dataInicial,
             data_final: dataFinal,
             setor_id: searchMode === "setor" ? setorId : null,
-            termos_busca: searchMode === "termos" ? termosArray.join(" ") : null,
+            termos_busca: searchMode === "termos" ? termosArray.join(", ") : null,
             search_id: newSearchId,
             // New filter parameters
             status,
@@ -674,6 +674,22 @@ function HomePageContent() {
       }
       setResult(data);
       setRawCount(data.total_raw || 0);
+
+      // AC4.2: Auto-select "relevancia" sort when custom terms are active
+      if (searchMode === "termos" && termosArray.length > 0) {
+        setOrdenacao("relevancia");
+      }
+
+      // AC7: Track custom_term_search analytics event
+      if (searchMode === "termos" && termosArray.length > 0) {
+        trackEvent("custom_term_search", {
+          terms_count: termosArray.length,
+          terms: termosArray,
+          total_results: data.total_filtrado || 0,
+          hidden_by_min_match: data.hidden_by_min_match || 0,
+          filter_relaxed: data.filter_relaxed || false,
+        });
+      }
 
       // Progressive onboarding - increment step counter
       const currentStep = parseInt(localStorage.getItem('smartlic-onboarding-step') || '0', 10);
@@ -872,7 +888,7 @@ function HomePageContent() {
         dataFinal,
         searchMode,
         setorId: searchMode === "setor" ? setorId : undefined,
-        termosBusca: searchMode === "termos" ? termosArray.join(" ") : undefined,
+        termosBusca: searchMode === "termos" ? termosArray.join(", ") : undefined,
       });
 
       // Track analytics
@@ -903,7 +919,13 @@ function HomePageContent() {
     if (search.searchParams.searchMode === "setor" && search.searchParams.setorId) {
       setSetorId(search.searchParams.setorId);
     } else if (search.searchParams.searchMode === "termos" && search.searchParams.termosBusca) {
-      setTermosArray(search.searchParams.termosBusca.split(" "));
+      // AC5.8: Backward compatible — detect comma vs space format
+      const savedTerms = search.searchParams.termosBusca;
+      if (savedTerms.includes(",")) {
+        setTermosArray(savedTerms.split(",").map((t: string) => t.trim()).filter(Boolean));
+      } else {
+        setTermosArray(savedTerms.split(" ").filter(Boolean));
+      }
     }
 
     // Clear current result to show updated form
@@ -1177,19 +1199,20 @@ function HomePageContent() {
                   value={termoInput}
                   onChange={e => {
                     const val = e.target.value;
-                    // When user types a space, commit the word as a tag
-                    if (val.endsWith(" ")) {
-                      const word = val.trim().toLowerCase();
-                      if (word && isStopword(word)) {
-                        // Skip stopwords silently
-                        setTermoInput("");
-                        return;
-                      }
-                      if (word && !termosArray.includes(word)) {
-                        setTermosArray(prev => [...prev, word]);
-                        setResult(null);
-                      }
-                      setTermoInput("");
+                    // AC5.1: Comma commits chip (space does NOT commit — allows multi-word phrases)
+                    if (val.includes(",")) {
+                      const segments = val.split(",");
+                      // All segments except last are committed
+                      const toCommit = segments.slice(0, -1);
+                      const remaining = segments[segments.length - 1];
+                      toCommit.forEach(seg => {
+                        const term = seg.trim().toLowerCase();
+                        if (term && !termosArray.includes(term)) {
+                          setTermosArray(prev => [...prev, term]);
+                          setResult(null);
+                        }
+                      });
+                      setTermoInput(remaining);
                     } else {
                       setTermoInput(val);
                     }
@@ -1200,28 +1223,39 @@ function HomePageContent() {
                       setTermosArray(prev => prev.slice(0, -1));
                       setResult(null);
                     }
-                    // Enter also commits the current word
+                    // AC5.1: Enter commits the current phrase
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      const word = termoInput.trim().toLowerCase();
-                      if (word && isStopword(word)) {
-                        setTermoInput("");
-                        return;
-                      }
-                      if (word && !termosArray.includes(word)) {
-                        setTermosArray(prev => [...prev, word]);
+                      const term = termoInput.trim().toLowerCase();
+                      if (term && !termosArray.includes(term)) {
+                        setTermosArray(prev => [...prev, term]);
                         setResult(null);
                       }
                       setTermoInput("");
                     }
                   }}
-                  placeholder={termosArray.length === 0 ? "Digite um termo e pressione espaço..." : "Adicionar mais..."}
+                  onPaste={e => {
+                    // AC5.1: Paste handler — auto-split when pasted text contains commas
+                    const pasted = e.clipboardData.getData("text");
+                    if (pasted.includes(",")) {
+                      e.preventDefault();
+                      const segments = pasted.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+                      const newTerms = segments.filter(t => !termosArray.includes(t));
+                      if (newTerms.length > 0) {
+                        setTermosArray(prev => [...prev, ...newTerms]);
+                        setResult(null);
+                      }
+                      setTermoInput("");
+                    }
+                    // Without commas: default paste behavior (creates single chip on Enter/comma)
+                  }}
+                  placeholder={termosArray.length === 0 ? "Ex: terraplenagem, drenagem, levantamento topográfico" : "Adicionar mais..."}
                   className="flex-1 min-w-[120px] outline-none bg-transparent text-base text-ink
                              placeholder:text-ink-faint py-1"
                 />
               </div>
               <p className="text-sm text-ink-muted mt-1.5">
-                Digite cada termo e pressione <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">espaço</kbd> para confirmar. Artigos e preposições (de, para, com...) são ignorados automaticamente.
+                Dica: digite frases completas e separe com <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">vírgula</kbd> ou <kbd className="px-1.5 py-0.5 bg-surface-2 rounded text-xs font-mono border">Enter</kbd>. Ex: levantamento topográfico, pavimentação
                 {termosArray.length > 0 && (
                   <span className="text-brand-blue font-medium">
                     {" "}{termosArray.length} termo{termosArray.length > 1 ? "s" : ""} selecionado{termosArray.length > 1 ? "s" : ""}
@@ -1600,6 +1634,39 @@ function HomePageContent() {
               </div>
             )}
 
+            {/* AC4.3: Filter relaxed banner */}
+            {result.filter_relaxed && (
+              <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-card text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                <svg role="img" aria-label="Aviso" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>
+                  Nenhum resultado atendeu todos os critérios de relevância. Os filtros foram flexibilizados para exibir resultados parciais.
+                </span>
+              </div>
+            )}
+
+            {/* AC5.6: Hidden results indicator */}
+            {result.hidden_by_min_match != null && result.hidden_by_min_match > 0 && (
+              <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary flex items-center justify-between">
+                <span>
+                  {result.hidden_by_min_match} resultado{result.hidden_by_min_match > 1 ? "s" : ""} com correspondência parcial {result.hidden_by_min_match > 1 ? "foram ocultados" : "foi ocultado"}.
+                </span>
+                <button
+                  onClick={() => {
+                    // Re-run search with show_all_matches=true
+                    trackEvent("show_hidden_results", {
+                      hidden_count: result.hidden_by_min_match,
+                    });
+                    // For now, inform the user; full implementation would re-search with show_all_matches
+                  }}
+                  className="text-brand-navy dark:text-brand-blue font-medium hover:underline shrink-0 ml-3"
+                >
+                  Mostrar todos
+                </button>
+              </div>
+            )}
+
             {/* Summary Card */}
             <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card">
               <p className="text-base sm:text-lg leading-relaxed text-ink">
@@ -1663,6 +1730,7 @@ function HomePageContent() {
                 licitacoes={result.licitacoes}
                 previewCount={5}
                 excelAvailable={planInfo?.capabilities.allow_excel ?? false}
+                searchTerms={searchMode === "termos" ? termosArray : (result.termos_utilizados || [])}
                 onUpgradeClick={() => {
                   setPreSelectedPlan("maquina");
                   setUpgradeSource("licitacoes_preview");

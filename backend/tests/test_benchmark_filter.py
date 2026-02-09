@@ -217,6 +217,54 @@ def test_benchmark_many_ufs(benchmark, sample_licitacao):
 
 
 # ============================================================================
+# Benchmarks - STORY-178: Relevance Scoring + Sorting (AC9.2)
+# ============================================================================
+
+def test_benchmark_relevance_scoring_1000_bids(benchmark):
+    """AC9.2: Scoring + sorting 1000 bids with 10 terms must complete in < 100ms."""
+    from relevance import score_relevance, count_phrase_matches
+    from utils.ordenacao import ordenar_licitacoes
+
+    terms = [
+        "terraplenagem", "drenagem", "levantamento topográfico",
+        "pavimentação", "sinalização", "projeto executivo",
+        "meio ambiente", "geotecnia", "topografia", "terraplanagem",
+    ]
+
+    # Generate 1000 bids with varying matched terms
+    bids = []
+    for i in range(1000):
+        matched = terms[: (i % len(terms)) + 1]
+        phrase_count = count_phrase_matches(matched)
+        score = score_relevance(len(matched), len(terms), phrase_count)
+        bids.append({
+            "uf": "SP",
+            "valorTotalEstimado": 50_000 + i * 1_000,
+            "objetoCompra": f"Licitação para {', '.join(matched[:3])} variante {i}",
+            "modalidadeNome": "Pregão Eletrônico",
+            "dataPublicacaoPncp": f"2026-01-{(i % 28) + 1:02d}",
+            "_relevance_score": score,
+            "_matched_terms": matched,
+        })
+
+    def score_and_sort():
+        # Re-compute scores (simulates post-filter scoring pass)
+        for lic in bids:
+            mt = lic["_matched_terms"]
+            pc = count_phrase_matches(mt)
+            lic["_relevance_score"] = score_relevance(len(mt), len(terms), pc)
+        # Sort by relevance
+        return ordenar_licitacoes(bids, "relevancia")
+
+    sorted_bids = benchmark(score_and_sort)
+    assert len(sorted_bids) == 1000
+    # Verify sorted in non-increasing order of relevance (ties broken by date)
+    scores = [b["_relevance_score"] for b in sorted_bids]
+    for i in range(len(scores) - 1):
+        assert scores[i] >= scores[i + 1], f"Score at {i} ({scores[i]}) < score at {i+1} ({scores[i+1]})"
+
+
+# ============================================================================
 # Benchmark Configuration
 # ============================================================================
 
@@ -229,6 +277,7 @@ def test_benchmark_many_ufs(benchmark, sample_licitacao):
 # - match_keywords: < 50 μs
 # - filter_licitacao (full): < 100 μs
 # - throughput (1000 items): < 100 ms
+# - relevance scoring + sort (1000 bids, 10 terms): < 100 ms (AC9.2)
 #
 # To save baseline: pytest --benchmark-save=baseline
 # To compare: pytest --benchmark-compare=baseline

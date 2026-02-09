@@ -77,7 +77,9 @@ UUID_V4_PATTERN = re.compile(
 PLAN_ID_PATTERN = re.compile(r'^[a-z][a-z0-9_]{0,49}$', re.IGNORECASE)
 
 # Search query sanitization - allows alphanumeric, spaces, accents, common punctuation
-SAFE_SEARCH_PATTERN = re.compile(r'^[\w\s@.\-áéíóúàèìòùâêîôûãõñç]+$', re.IGNORECASE | re.UNICODE)
+# NI-1: Updated to allow commas (phrase delimiter), parentheses, +, quotes for AC1.5 edge cases
+# Note: $ deliberately excluded (command substitution risk). Currency like R$ handled by parser.
+SAFE_SEARCH_PATTERN = re.compile(r'^[\w\s@.\-áéíóúàèìòùâêîôûãõñç,()+\'"]+$', re.IGNORECASE | re.UNICODE)
 
 
 def validate_uuid(value: str, field_name: str = "id") -> str:
@@ -268,9 +270,19 @@ class BuscaRequest(BaseModel):
     )
     termos_busca: Optional[str] = Field(
         default=None,
-        description="Custom search terms separated by spaces (e.g., 'jaleco avental'). "
-                    "Each space-separated word is treated as an additional keyword.",
-        examples=["jaleco avental"],
+        description="Custom search terms. Use commas to separate multi-word phrases "
+                    "(e.g., 'levantamento topográfico, terraplenagem, drenagem'). "
+                    "Without commas, spaces separate individual keywords (legacy mode).",
+        examples=["jaleco avental", "levantamento topográfico, terraplenagem, drenagem"],
+    )
+    show_all_matches: Optional[bool] = Field(
+        default=False,
+        description="When True, bypasses minimum match floor and returns all results "
+                    "with at least 1 keyword match (for 'show hidden results' feature).",
+    )
+    exclusion_terms: Optional[List[str]] = Field(
+        default=None,
+        description="Custom exclusion terms. Overrides sector exclusions when provided.",
     )
 
     # -------------------------------------------------------------------------
@@ -523,7 +535,8 @@ class FilterStats(BaseModel):
 
     rejeitadas_uf: int = Field(default=0, description="Rejected by UF filter")
     rejeitadas_valor: int = Field(default=0, description="Rejected by value range")
-    rejeitadas_keyword: int = Field(default=0, description="Rejected by keyword match")
+    rejeitadas_keyword: int = Field(default=0, description="Rejected by keyword match (zero matches)")
+    rejeitadas_min_match: int = Field(default=0, description="Rejected by minimum match floor (had matches but below threshold)")
     rejeitadas_prazo: int = Field(default=0, description="Rejected by deadline")
     rejeitadas_outros: int = Field(default=0, description="Rejected by other reasons")
 
@@ -547,6 +560,8 @@ class LicitacaoItem(BaseModel):
     data_encerramento: Optional[str] = Field(default=None, description="Proposal submission deadline")
     link: str = Field(..., description="Direct link to PNCP portal")
     source: Optional[str] = Field(default=None, alias="_source", description="Source that provided this record")
+    relevance_score: Optional[float] = Field(default=None, description="Relevance score 0.0-1.0 (only when custom terms active)")
+    matched_terms: Optional[List[str]] = Field(default=None, description="List of search terms that matched this bid")
 
     class Config:
         populate_by_name = True
@@ -624,6 +639,14 @@ class BuscaResponse(BaseModel):
     source_stats: Optional[List[dict]] = Field(
         default=None,
         description="Per-source fetch metrics when multi-source is active"
+    )
+    hidden_by_min_match: Optional[int] = Field(
+        default=None,
+        description="Number of bids that matched at least 1 term but were below the minimum match floor"
+    )
+    filter_relaxed: Optional[bool] = Field(
+        default=None,
+        description="True if the minimum match filter was relaxed from strict to 1 due to zero results"
     )
 
     class Config:

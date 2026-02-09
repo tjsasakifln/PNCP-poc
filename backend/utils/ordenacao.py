@@ -174,13 +174,12 @@ def calcular_relevancia(licitacao: dict, termos: list[str]) -> float:
     """
     Calcula score de relevância (0.0 a 1.0) baseado nos termos de busca.
 
-    O score é calculado baseado na proporção de termos encontrados
-    nos campos principais da licitação: objetoCompra, descricao e nomeOrgao.
+    NI-5: Wrapper de alto nível que:
+    1. Extrai texto de objetoCompra, descricao, nomeOrgao
+    2. Conta termos matchados (substring matching)
+    3. Delega cálculo numérico para score_relevance() de relevance.py
 
-    Campos considerados (por ordem de peso):
-    - objetoCompra: Descrição do objeto da licitação
-    - descricao: Descrição adicional
-    - nomeOrgao: Nome do órgão contratante
+    Inclui phrase_bonus para termos multi-palavra que matcham como sequência.
 
     Args:
         licitacao: Dicionário com dados da licitação
@@ -198,6 +197,10 @@ def calcular_relevancia(licitacao: dict, termos: list[str]) -> float:
         >>> calcular_relevancia(licitacao, [])
         0.0
     """
+    # If the bid already has a pre-computed relevance_score (from main.py), use it
+    if "_relevance_score" in licitacao:
+        return licitacao["_relevance_score"]
+
     if not termos:
         return 0.0
 
@@ -214,14 +217,20 @@ def calcular_relevancia(licitacao: dict, termos: list[str]) -> float:
     if not texto_norm:
         return 0.0
 
-    # Count matching terms
+    # Count matching terms and phrase matches
     matches = 0
+    phrase_matches = 0
     for termo in termos:
         termo_norm = _normalize_text(termo)
         if termo_norm and termo_norm in texto_norm:
             matches += 1
+            # Count multi-word terms as phrase matches
+            if " " in termo:
+                phrase_matches += 1
 
-    return matches / len(termos)
+    # Delegate to score_relevance() for the numerical calculation
+    from relevance import score_relevance
+    return score_relevance(matches, len(termos), phrase_matches)
 
 
 def ordenar_licitacoes(
@@ -319,5 +328,11 @@ def ordenar_licitacoes(
         ordenacao,
         sort_functions['data_desc']
     )
+
+    # AC4.1: For relevance sort, use compound key with date tiebreaker
+    if ordenacao == 'relevancia':
+        def relevancia_with_tiebreaker(lic: dict) -> Tuple[float, datetime]:
+            return (get_relevancia(lic), get_data_publicacao(lic))
+        return sorted(licitacoes, key=relevancia_with_tiebreaker, reverse=True)
 
     return sorted(licitacoes, key=key_func, reverse=reverse)
