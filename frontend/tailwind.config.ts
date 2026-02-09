@@ -61,14 +61,55 @@ const config: Config = {
       maxWidth: {
         landing: "1200px",
       },
+      /* STORY-174: Premium shadows */
+      boxShadow: {
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
+        'xl': 'var(--shadow-xl)',
+        '2xl': 'var(--shadow-2xl)',
+        'glow': 'var(--shadow-glow)',
+        'glow-lg': 'var(--shadow-glow-lg)',
+        'glass': 'var(--glass-shadow)',
+      },
+      /* STORY-174: Premium animations */
       keyframes: {
         "fade-in-up": {
           "0%": { opacity: "0", transform: "translateY(12px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "gradient": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "shimmer": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "slide-up": {
+          "from": { opacity: "0", transform: "translateY(24px)" },
+          "to": { opacity: "1", transform: "translateY(0)" },
+        },
+        "scale-in": {
+          "from": { opacity: "0", transform: "scale(0.95)" },
+          "to": { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         "fade-in-up": "fade-in-up 0.4s ease-out both",
+        "gradient": "gradient 8s linear infinite",
+        "shimmer": "shimmer 2s linear infinite",
+        "float": "float 3s ease-in-out infinite",
+        "slide-up": "slide-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both",
+        "scale-in": "scale-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both",
+      },
+      /* STORY-174: Backdrop blur utilities */
+      backdropBlur: {
+        'xs': '2px',
       },
     },
   },

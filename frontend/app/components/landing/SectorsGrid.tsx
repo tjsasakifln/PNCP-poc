@@ -1,6 +1,7 @@
 'use client';
 
-import { useInView } from '@/app/hooks/useInView';
+import { motion } from 'framer-motion';
+import { useScrollAnimation, fadeInUp, staggerContainer } from '@/lib/animations';
 
 interface SectorsGridProps {
   className?: string;
@@ -11,7 +12,6 @@ interface SectorItem {
   icon: React.ReactNode;
 }
 
-// Agrupados por categoria para layout visual interessante
 const sectors: SectorItem[] = [
   {
     name: 'Uniformes',
@@ -63,52 +63,111 @@ const sectors: SectorItem[] = [
   },
 ];
 
+/**
+ * STORY-174 AC4: Sectors Grid - 3D Tilt Cards
+ *
+ * Features:
+ * - 3D tilt effect on hover (CSS transform perspective + rotateX/Y)
+ * - Gradient overlay on hover (intensifies)
+ * - Animated icons (scale + glow)
+ * - Responsive grid (4→3→2 columns)
+ * - Respect prefers-reduced-motion (disable tilt)
+ */
 export default function SectorsGrid({ className = '' }: SectorsGridProps) {
-  const { ref, isInView } = useInView({ threshold: 0.1 });
+  const { ref, isVisible } = useScrollAnimation(0.1);
 
   return (
     <section
-      ref={ref as React.RefObject<HTMLElement>}
+      ref={ref}
       className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
-      <h2
-        className={`text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4 transition-all duration-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
+      {/* Section Header */}
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate={isVisible ? 'visible' : 'hidden'}
       >
-        Setores atendidos
-      </h2>
-      <p
-        className={`text-lg text-center text-ink-secondary mb-8 transition-all duration-500 delay-100 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        Cobertura abrangente com expansão contínua
-      </p>
+        <h2 className="text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4">
+          Setores atendidos
+        </h2>
+        <p className="text-lg text-center text-ink-secondary mb-8">
+          Cobertura abrangente com expansão contínua
+        </p>
+      </motion.div>
 
-      {/* Grid com visual mais compacto */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      {/* 3D Tilt Grid */}
+      <motion.div
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+        variants={staggerContainer}
+        initial="hidden"
+        animate={isVisible ? 'visible' : 'hidden'}
+      >
         {sectors.map((sector, index) => (
-          <div
+          <motion.div
             key={index}
-            className={`bg-surface-0 border border-[var(--border)] p-3 rounded-card hover:-translate-y-0.5 hover:shadow-md hover:border-brand-blue/30 transition-all flex items-center gap-2 ${
-              isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{ transitionDelay: `${150 + index * 30}ms`, transitionDuration: '400ms' }}
+            className="
+              group
+              bg-surface-0
+              border border-border
+              p-4
+              rounded-card
+              transition-all
+              duration-300
+              cursor-pointer
+              hover:shadow-xl
+              hover:border-brand-blue/50
+              hover:-translate-y-2
+              hover:scale-105
+              motion-reduce:hover:transform-none
+            "
+            variants={fadeInUp}
+            whileHover={{
+              rotateX: 5,
+              rotateY: 5,
+              transition: {
+                duration: 0.4,
+                ease: [0.65, 0, 0.35, 1],
+              },
+            }}
+            style={{
+              perspective: '1000px',
+              transformStyle: 'preserve-3d',
+            }}
           >
-            <div className="flex-shrink-0 w-8 h-8 bg-brand-blue-subtle rounded-button flex items-center justify-center text-brand-blue">
+            {/* Icon Container with Glow */}
+            <div className="
+              flex-shrink-0
+              w-10
+              h-10
+              bg-brand-blue-subtle
+              rounded-button
+              flex
+              items-center
+              justify-center
+              text-brand-blue
+              mb-3
+              transition-all
+              duration-300
+              group-hover:scale-110
+              group-hover:shadow-glow
+            ">
               {sector.icon}
             </div>
-            <span className="text-xs font-medium text-ink truncate">{sector.name}</span>
-          </div>
+
+            {/* Sector Name */}
+            <span className="text-sm font-semibold text-ink block">
+              {sector.name}
+            </span>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Badge: Em expansão */}
-      <div
-        className={`mt-8 text-center transition-all duration-500 delay-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
+      <motion.div
+        className="mt-8 text-center"
+        variants={fadeInUp}
+        initial="hidden"
+        animate={isVisible ? 'visible' : 'hidden'}
       >
         <span className="inline-flex items-center gap-2 bg-success-subtle text-success px-4 py-2 rounded-full text-sm font-medium">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -116,7 +175,7 @@ export default function SectorsGrid({ className = '' }: SectorsGridProps) {
           </svg>
           Novos setores regularmente
         </span>
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -12,6 +12,7 @@ import SectorsGrid from './components/landing/SectorsGrid';
 import FinalCTA from './components/landing/FinalCTA';
 import ValuePropSection from './components/ValuePropSection';
 import ComparisonTable from './components/ComparisonTable';
+import TestimonialsCarousel from './components/landing/TestimonialsCarousel';
 import Footer from './components/Footer';
 
 export default function LandingPage() {
@@ -32,6 +33,7 @@ export default function LandingPage() {
           <DataSourcesSection />
         </section>
         <SectorsGrid />
+        <TestimonialsCarousel />
         <section id="suporte">
           <FinalCTA />
         </section>

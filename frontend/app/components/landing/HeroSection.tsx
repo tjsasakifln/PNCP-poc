@@ -1,13 +1,28 @@
 'use client';
 
-import { useInView } from '@/app/hooks/useInView';
+import { motion } from 'framer-motion';
+import { GradientButton } from '@/app/components/ui/GradientButton';
+import { GlassCard } from '@/app/components/ui/GlassCard';
+import { useScrollAnimation } from '@/lib/animations';
+import { fadeInUp, staggerContainer, scaleIn } from '@/lib/animations';
+import { useEffect, useState } from 'react';
 
 interface HeroSectionProps {
   className?: string;
 }
 
+/**
+ * STORY-174 AC1: Hero Section Redesign - Premium SaaS Aesthetic
+ *
+ * Features:
+ * - Gradient text headline (background-clip: text)
+ * - Animated CTAs (gradient + glow effect)
+ * - Glassmorphism stats badges with counter animation
+ * - Subtle gradient mesh background
+ * - Scroll-triggered animations (fade-in + slide-up)
+ */
 export default function HeroSection({ className = '' }: HeroSectionProps) {
-  const { ref, isInView } = useInView({ threshold: 0.1 });
+  const { ref, isVisible } = useScrollAnimation(0.1);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -18,47 +33,97 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
 
   return (
     <section
-      ref={ref as React.RefObject<HTMLElement>}
-      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32 bg-gradient-to-b from-brand-blue-subtle/40 to-transparent ${className}`}
+      ref={ref}
+      className={`
+        relative
+        max-w-landing
+        mx-auto
+        px-4 sm:px-6 lg:px-8
+        py-20 sm:py-32
+        overflow-hidden
+        ${className}
+      `}
     >
+      {/* Background gradient mesh */}
       <div
-        className={`text-center max-w-4xl mx-auto transition-all duration-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
-        {/* Headline — Display weight, tighter tracking (STORY-173 AC1) */}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display tracking-tighter text-ink leading-[1.1]">
-          Encontre Oportunidades Relevantes
-          <br />
-          <span className="text-brand-blue">em 3 Minutos, Não em 8 Horas</span>
-        </h1>
+        className="absolute inset-0 -z-10 opacity-40"
+        style={{
+          background: `
+            radial-gradient(circle at 20% 50%, var(--brand-blue-subtle) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, var(--brand-blue-subtle) 0%, transparent 40%)
+          `,
+        }}
+      />
 
-        {/* Subheadline — ink-secondary (STORY-173 AC1) */}
-        <p className="text-lg sm:text-xl text-ink-secondary mt-6 font-medium leading-relaxed max-w-2xl mx-auto">
+      <motion.div
+        className="text-center max-w-4xl mx-auto"
+        variants={staggerContainer}
+        initial="hidden"
+        animate={isVisible ? 'visible' : 'hidden'}
+      >
+        {/* Headline with gradient text */}
+        <motion.h1
+          className="
+            text-4xl sm:text-5xl lg:text-6xl
+            font-display
+            font-black
+            tracking-tighter
+            leading-[1.1]
+          "
+          variants={fadeInUp}
+        >
+          <span className="text-ink">
+            Encontre Oportunidades Relevantes
+          </span>
+          <br />
+          <span className="text-gradient">
+            em 3 Minutos, Não em 8 Horas
+          </span>
+        </motion.h1>
+
+        {/* Subheadline with delayed fade-in */}
+        <motion.p
+          className="
+            text-lg sm:text-xl
+            text-ink-secondary
+            mt-6
+            font-medium
+            leading-relaxed
+            max-w-2xl
+            mx-auto
+          "
+          variants={fadeInUp}
+        >
           Algoritmos inteligentes filtram milhares de licitações de múltiplas fontes
           <br className="hidden sm:block" />
           para entregar apenas o que importa para o seu negócio.
-        </p>
+        </motion.p>
 
         {/* CTA Buttons */}
-        <div
-          className={`flex flex-col sm:flex-row items-center justify-center gap-4 mt-10 transition-all duration-500 delay-150 ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+        <motion.div
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
+          variants={fadeInUp}
         >
-          <a
-            href="/signup?source=landing-cta"
-            className="w-full sm:w-auto bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+          {/* Primary CTA with gradient + glow */}
+          <GradientButton
+            variant="primary"
+            size="lg"
+            glow={true}
+            onClick={() => window.location.href = '/signup?source=landing-cta'}
           >
             Economize 10h/Semana Agora
-          </a>
-          <button
+          </GradientButton>
+
+          {/* Secondary CTA with border fill animation */}
+          <GradientButton
+            variant="secondary"
+            size="lg"
+            glow={false}
             onClick={() => scrollToSection('como-funciona')}
-            className="w-full sm:w-auto border-2 border-brand-blue text-brand-blue hover:bg-brand-blue-subtle font-semibold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
           >
             Como funciona
             <svg
-              className="w-4 h-4"
+              className="w-4 h-4 ml-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -71,29 +136,102 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
                 d="M19 9l-7 7-7-7"
               />
             </svg>
-          </button>
-        </div>
+          </GradientButton>
+        </motion.div>
 
-        {/* Trust Badges — (STORY-173 AC1) */}
-        <div
-          className={`mt-12 flex flex-wrap items-center justify-center gap-4 transition-all duration-500 delay-300 ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+        {/* Stats badges with glassmorphism */}
+        <motion.div
+          className="mt-12 flex flex-wrap items-center justify-center gap-4"
+          variants={fadeInUp}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary">
-            <span className="text-lg">⚡</span>
-            <span className="font-medium">160x Mais Rápido</span>
-          </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary">
-            <span className="text-lg">🎯</span>
-            <span className="font-medium">95% de Precisão</span>
-          </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-surface-1 border border-[var(--border)] rounded-full text-sm text-ink-secondary">
-            <span className="text-lg">🌍</span>
-            <span className="font-medium">PNCP + 27 Portais</span>
-          </div>
-        </div>
-      </div>
+          <StatsBadge icon="⚡" value="160x" label="Mais Rápido" delay={0} />
+          <StatsBadge icon="🎯" value="95%" label="de Precisão" delay={0.1} />
+          <StatsBadge icon="🌍" value="PNCP + 27" label="Portais" delay={0.2} />
+        </motion.div>
+      </motion.div>
     </section>
+  );
+}
+
+/**
+ * Stats Badge Component - Glassmorphism card with counter animation
+ */
+interface StatsBadgeProps {
+  icon: string;
+  value: string;
+  label: string;
+  delay: number;
+}
+
+function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
+  const { ref, isVisible } = useScrollAnimation(0.1);
+  const [count, setCount] = useState(0);
+
+  // Counter animation for numbers
+  useEffect(() => {
+    if (!isVisible) return;
+
+    // Extract numeric part from value (e.g., "160x" -> 160, "95%" -> 95)
+    const numericValue = parseInt(value.match(/\d+/)?.[0] || '0');
+
+    if (numericValue === 0) return;
+
+    const duration = 1000; // 1 second
+    const steps = 30;
+    const increment = numericValue / steps;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= numericValue) {
+        setCount(numericValue);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [isVisible, value]);
+
+  // Format value with counter
+  const displayValue = value.includes('%')
+    ? `${count}%`
+    : value.includes('x')
+    ? `${count}x`
+    : value.includes('+')
+    ? value // Keep "PNCP + 27" as is
+    : `${count}`;
+
+  return (
+    <motion.div ref={ref} variants={scaleIn} transition={{ delay }}>
+      <GlassCard
+        hoverable={true}
+        variant="subtle"
+        className="
+          inline-flex
+          items-center
+          gap-2
+          px-4
+          py-2
+          rounded-full
+          text-sm
+          min-w-[140px]
+          justify-center
+        "
+      >
+        <span className="text-lg" role="img" aria-label={label}>
+          {icon}
+        </span>
+        <div className="flex flex-col items-start">
+          <span className="text-ink font-bold tabular-nums">
+            {displayValue}
+          </span>
+          <span className="text-ink-muted text-xs font-medium">
+            {label}
+          </span>
+        </div>
+      </GlassCard>
+    </motion.div>
   );
 }

@@ -1,16 +1,30 @@
-/**
- * Footer Component with Transparency Disclaimer
- *
- * Updated for STORY-173: Adds data source transparency and legal disclaimer
- *
- * @component
- */
+'use client';
 
+import { motion } from 'framer-motion';
+import { fadeInUp } from '@/lib/animations';
 import { footer } from '@/lib/copy/valueProps';
 
+/**
+ * STORY-174 AC6: Footer - Refined Layout with Animations
+ *
+ * Features:
+ * - Gradient border-top separator
+ * - Link underline animations (width: 0 → 100%)
+ * - Social icons with glow effect on hover
+ * - 4-column grid layout
+ * - Transparency disclaimer (STORY-173)
+ */
 export default function Footer() {
   return (
-    <footer className="bg-surface-1 text-ink border-t border-[var(--border)]">
+    <footer className="relative bg-surface-1 text-ink">
+      {/* Gradient border-top separator */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, var(--brand-blue) 50%, transparent 100%)',
+        }}
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Main Footer Grid */}
         <div className="grid md:grid-cols-4 gap-8 mb-8">
@@ -19,20 +33,10 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Sobre</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <a
-                  href="#sobre"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Quem somos
-                </a>
+                <FooterLink href="#sobre">Quem somos</FooterLink>
               </li>
               <li>
-                <a
-                  href="#como-funciona"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Como funciona
-                </a>
+                <FooterLink href="#como-funciona">Como funciona</FooterLink>
               </li>
             </ul>
           </div>
@@ -42,20 +46,10 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Planos</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <a
-                  href="/pricing"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Planos e Preços
-                </a>
+                <FooterLink href="/pricing">Planos e Preços</FooterLink>
               </li>
               <li>
-                <a
-                  href="/signup?source=footer"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Teste Gratuito
-                </a>
+                <FooterLink href="/signup?source=footer">Teste Gratuito</FooterLink>
               </li>
             </ul>
           </div>
@@ -65,20 +59,10 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Suporte</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <a
-                  href="#suporte"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Central de Ajuda
-                </a>
+                <FooterLink href="#suporte">Central de Ajuda</FooterLink>
               </li>
               <li>
-                <a
-                  href="#suporte"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Contato
-                </a>
+                <FooterLink href="#suporte">Contato</FooterLink>
               </li>
             </ul>
           </div>
@@ -88,20 +72,10 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Legal</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <a
-                  href="/privacidade"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Política de Privacidade
-                </a>
+                <FooterLink href="/privacidade">Política de Privacidade</FooterLink>
               </li>
               <li>
-                <a
-                  href="/termos"
-                  className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
-                >
-                  Termos de Uso
-                </a>
+                <FooterLink href="/termos">Termos de Uso</FooterLink>
               </li>
             </ul>
           </div>
@@ -111,7 +85,7 @@ export default function Footer() {
         <div className="border-t border-[var(--border-strong)] pt-8 mb-8">
           <div className="bg-surface-2 rounded-lg p-6 border border-border">
             <div className="flex items-start gap-4">
-              {/* Info Icon */}
+              {/* Info Icon with Glow */}
               <div className="flex-shrink-0">
                 <svg
                   className="w-6 h-6 text-brand-blue"
@@ -158,6 +132,13 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Social Links with Glow Effect (Optional) */}
+        <div className="flex justify-center gap-4 mb-8">
+          <SocialIcon href="#" label="LinkedIn" />
+          <SocialIcon href="#" label="Twitter" />
+          <SocialIcon href="#" label="GitHub" />
+        </div>
+
         {/* Bottom Bar */}
         <div className="border-t border-[var(--border-strong)] pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -191,5 +172,86 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+/**
+ * Footer Link with Underline Animation
+ */
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="
+        relative
+        inline-block
+        hover:text-brand-blue
+        transition-colors
+        focus-visible:outline-none
+        focus-visible:ring-[3px]
+        focus-visible:ring-[var(--ring)]
+        focus-visible:ring-offset-2
+        rounded
+        px-1
+        group
+      "
+    >
+      {children}
+      {/* Animated underline */}
+      <span className="
+        absolute
+        bottom-0
+        left-0
+        w-0
+        h-[2px]
+        bg-brand-blue
+        transition-all
+        duration-300
+        group-hover:w-full
+      " />
+    </a>
+  );
+}
+
+/**
+ * Social Icon with Glow Effect
+ */
+function SocialIcon({ href, label }: { href: string; label: string }) {
+  return (
+    <motion.a
+      href={href}
+      aria-label={label}
+      className="
+        w-10
+        h-10
+        flex
+        items-center
+        justify-center
+        rounded-full
+        border-2
+        border-ink-faint
+        text-ink-secondary
+        transition-all
+        duration-300
+        hover:border-brand-blue
+        hover:text-brand-blue
+        hover:shadow-glow
+        focus-visible:outline-none
+        focus-visible:ring-[3px]
+        focus-visible:ring-[var(--ring)]
+        focus-visible:ring-offset-2
+      "
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <svg
+        className="w-5 h-5"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
+      </svg>
+    </motion.a>
   );
 }

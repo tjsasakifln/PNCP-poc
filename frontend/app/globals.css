@@ -38,6 +38,44 @@
 
   /* Focus Ring */
   --ring: #116dff;  /* Focus indicator - vs canvas: 4.8:1 (AA ✅) */
+
+  /* ========================================
+     STORY-174: Premium SaaS Design System
+     Landing Page Visual Redesign
+     ======================================== */
+
+  /* Fluid Typography Scale */
+  --text-hero: clamp(2.5rem, 5vw + 1rem, 4.5rem);     /* 40-72px */
+  --text-h1: clamp(2rem, 4vw + 1rem, 3.5rem);         /* 32-56px */
+  --text-h2: clamp(1.5rem, 3vw + 0.5rem, 2.5rem);     /* 24-40px */
+  --text-h3: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);   /* 20-28px */
+  --text-body-lg: clamp(1.125rem, 1vw + 0.5rem, 1.25rem); /* 18-20px */
+
+  /* Premium Gradients */
+  --gradient-brand: linear-gradient(135deg, #116dff 0%, #0a1e3f 100%);
+  --gradient-brand-hover: linear-gradient(135deg, #0d5ad4 0%, #081732 100%);
+  --gradient-hero-bg: linear-gradient(180deg, #ffffff 0%, #f0f4ff 100%);
+  --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  --gradient-text: linear-gradient(135deg, #116dff 0%, #0a1e3f 100%);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+
+  /* Premium Shadows (Layered for depth) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 20px rgba(17, 109, 255, 0.5);
+  --shadow-glow-lg: 0 0 40px rgba(17, 109, 255, 0.4);
+
+  /* Section Spacing (8pt grid) */
+  --section-padding-sm: 4rem;   /* 64px - Mobile */
+  --section-padding-lg: 6rem;   /* 96px - Desktop */
+  --section-gap: 8rem;          /* 128px - Between sections */
 }
 
 /* Dark mode overrides - WCAG Contrast Documentation */
@@ -67,6 +105,12 @@
   --border-accent: rgba(17, 109, 255, 0.4);  /* Brand borders */
 
   --ring: #3b8bff;  /* Focus indicator - vs canvas: 6.2:1 (AA ✅) */
+
+  /* STORY-174: Dark mode premium variables */
+  --gradient-hero-bg: linear-gradient(180deg, #121212 0%, #1a1d22 100%);
+  --glass-bg: rgba(26, 29, 34, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 body {
@@ -157,6 +201,80 @@ select {
   .stagger-3 { animation-delay: 150ms; }
   .stagger-4 { animation-delay: 200ms; }
   .stagger-5 { animation-delay: 250ms; }
+
+  /* STORY-174: Premium hover effects */
+  .hover-lift {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-8px);
+  }
+
+  .hover-glow {
+    transition: box-shadow 0.3s ease-out;
+  }
+
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .hover-scale {
+    transition: transform 0.2s ease-out;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  /* Gradient text utility */
+  .text-gradient {
+    background: var(--gradient-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* ========================================
+   STORY-174: Premium Animations
+   ======================================== */
+
+@keyframes gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Respect reduced motion preference */

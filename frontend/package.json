@@ -27,6 +27,7 @@
     "@supabase/supabase-js": "^2.93.3",
     "@types/uuid": "^10.0.0",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.33.0",
     "mixpanel-browser": "^2.74.0",
     "next": "^16.1.6",
     "react": "^18.3.1",
