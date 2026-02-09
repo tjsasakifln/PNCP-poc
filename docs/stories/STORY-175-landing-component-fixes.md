@@ -1,7 +1,7 @@
 # STORY-175: Landing Page Component Modernization & Fixes
 
 **Created:** 2026-02-09
-**Status:** 📝 Backlog
+**Status:** ✅ Completed
 **Priority:** 🟡 Medium-High (Visual Polish)
 **Type:** 🎨 UI/UX Refinement
 **Estimated Effort:** 2-3 hours
@@ -97,13 +97,13 @@ Modernizar esses 3 componentes específicos para alinhar com o design system pre
 **WHEN** box está visível
 **THEN** deve ter:
 
-- [ ] **Background**: Gradiente sutil (amarelo 50 → amarelo 100, não amarelo sólido)
-- [ ] **Border**: 1px com gradiente sutil ou cor semitransparente
-- [ ] **Icon**: ⚠️ substituído por Lucide `<AlertTriangle />` com cor warning
-- [ ] **Glassmorphism sutil**: backdrop-blur-sm (opcional)
-- [ ] **Shadow**: shadow-md (não shadow-lg)
-- [ ] **Padding**: py-6 px-8 (espaçamento generoso)
-- [ ] **Border-radius**: rounded-2xl (consistente com design system)
+- [x] **Background**: Gradiente sutil (amarelo 50 → amarelo 100, não amarelo sólido)
+- [x] **Border**: 1px com gradiente sutil ou cor semitransparente
+- [x] **Icon**: ⚠️ substituído por Lucide `<AlertTriangle />` com cor warning
+- [x] **Glassmorphism sutil**: backdrop-blur-sm (opcional)
+- [x] **Shadow**: shadow-md (não shadow-lg)
+- [x] **Padding**: py-6 px-8 (espaçamento generoso)
+- [x] **Border-radius**: rounded-2xl (consistente com design system)
 
 **Visual Reference:**
 ```tsx
@@ -127,23 +127,23 @@ Modernizar esses 3 componentes específicos para alinhar com o design system pre
 **THEN** devem ter:
 
 #### Caixa Vermelha (Busca Manual - Negativo)
-- [ ] **Background**: Gradiente sutil (red-50 → red-100)
-- [ ] **Border**: 1px red-200/50
-- [ ] **Icon**: ❌ substituído por Lucide `<X />` ou `<AlertCircle />`
-- [ ] **Hover**: Lift animation (translateY: -4px)
-- [ ] **Items**: Lucide `<X />` para cada item negativo (vermelho)
+- [x] **Background**: Gradiente sutil (red-50 → red-100)
+- [x] **Border**: 1px red-200/50
+- [x] **Icon**: ❌ substituído por Lucide `<X />` ou `<AlertCircle />`
+- [x] **Hover**: Lift animation (translateY: -4px)
+- [x] **Items**: Lucide `<X />` para cada item negativo (vermelho)
 
 #### Caixa Azul (Com SmartLic - Positivo)
-- [ ] **Background**: Gradiente sutil (blue-50 → blue-100)
-- [ ] **Border**: 1px blue-200/50
-- [ ] **Icon**: ✅ substituído por Lucide `<CheckCircle2 />` ou `<Sparkles />`
-- [ ] **Hover**: Lift animation (translateY: -4px)
-- [ ] **Items**: Lucide `<Check />` para cada item positivo (verde/azul)
+- [x] **Background**: Gradiente sutil (blue-50 → blue-100)
+- [x] **Border**: 1px blue-200/50
+- [x] **Icon**: ✅ substituído por Lucide `<CheckCircle2 />` ou `<Sparkles />`
+- [x] **Hover**: Lift animation (translateY: -4px)
+- [x] **Items**: Lucide `<Check />` para cada item positivo (verde/azul)
 
 **Visual Consistency:**
-- [ ] Mesma altura entre as duas caixas (grid ou flex com align-stretch)
-- [ ] Mesmos border-radius, padding, shadow
-- [ ] Transições suaves (transition-all duration-300)
+- [x] Mesma altura entre as duas caixas (grid ou flex com align-stretch)
+- [x] Mesmos border-radius, padding, shadow
+- [x] Transições suaves (transition-all duration-300)
 
 ---
 
@@ -152,17 +152,17 @@ Modernizar esses 3 componentes específicos para alinhar com o design system pre
 **WHEN** stats estão visíveis
 **THEN** ícones devem ser:
 
-- [ ] **160x Mais Rápido**:
+- [x] **160x Mais Rápido**:
   - Emoji ⚡ → Lucide `<Zap />` ou `<Rocket />`
   - Cor: Gradiente (yellow-500 → orange-500)
   - Animação: pulse sutil ou rotate on hover
 
-- [ ] **95% de Precisão**:
+- [x] **95% de Precisão**:
   - Emoji 🎯 → Lucide `<Target />` ou `<Award />`
   - Cor: Gradiente (blue-500 → purple-500)
   - Animação: scale on hover
 
-- [ ] **PNCP + 27 Portais**:
+- [x] **PNCP + 27 Portais**:
   - Emoji 🌐 → Lucide `<Globe />` ou `<Network />`
   - Cor: Gradiente (green-500 → teal-500)
   - Animação: rotate-slow on hover
@@ -190,13 +190,13 @@ import { Zap, Target, Globe } from 'lucide-react';
 **WHEN** botão é renderizado
 **THEN** deve ter:
 
-- [ ] **Layout**: Flexbox horizontal (flex-row items-center)
-- [ ] **Text**: "Como funciona"
-- [ ] **Icon**: Lucide `<ChevronDown />` ao lado direito do texto (não embaixo)
-- [ ] **Spacing**: gap-2 entre texto e ícone
-- [ ] **Alignment**: items-center (verticalmente centralizado)
-- [ ] **Padding**: px-6 py-3 (proporcional)
-- [ ] **Hover State**: ChevronDown rotaciona 180deg quando expandido
+- [x] **Layout**: Flexbox horizontal (flex-row items-center)
+- [x] **Text**: "Como funciona"
+- [x] **Icon**: Lucide `<ChevronDown />` ao lado direito do texto (não embaixo)
+- [x] **Spacing**: gap-2 entre texto e ícone
+- [x] **Alignment**: items-center (verticalmente centralizado)
+- [x] **Padding**: px-6 py-3 (proporcional)
+- [x] **Hover State**: ChevronDown rotaciona 180deg quando expandido
 
 **Visual Reference:**
 ```tsx

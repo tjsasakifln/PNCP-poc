@@ -1,5 +1,6 @@
 'use client';
 
+import { X, CheckCircle2, AlertCircle, Check } from 'lucide-react';
 import { useInView } from '@/app/hooks/useInView';
 
 interface BeforeAfterProps {
@@ -26,45 +27,39 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
       <div className="grid md:grid-cols-5 gap-6">
         {/* Sem SmartLic — 40% (2 cols) */}
         <div
-          className={`md:col-span-2 bg-error-subtle p-6 sm:p-8 rounded-card border border-[var(--border)] transition-all duration-500 delay-100 ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+          className={`
+            md:col-span-2
+            bg-gradient-to-br from-red-50 to-red-100
+            dark:from-red-900/20 dark:to-red-800/20
+            border border-red-200/50 dark:border-red-700/50
+            rounded-2xl p-6 sm:p-8 shadow-md
+            transition-all duration-500 delay-100
+            hover:-translate-y-1 hover:shadow-lg
+            ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+          `}
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-error/10 rounded-full flex items-center justify-center">
-              <svg
-              role="img"
-              aria-label="Ícone"
-                className="w-5 h-5 text-error"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
+            <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-red-600" aria-label="Busca Manual" />
             </div>
-            <h3 className="text-lg font-bold text-ink uppercase tracking-wide">Busca Manual</h3>
+            <h3 className="text-lg font-bold text-red-900 dark:text-red-100 uppercase tracking-wide">Busca Manual</h3>
           </div>
 
-          <ul className="space-y-3 text-ink-secondary text-sm">
+          <ul className="space-y-3 text-red-800 dark:text-red-200 text-sm">
             <li className="flex items-start gap-2">
-              <span className="text-error flex-shrink-0">✕</span>
-              <span><strong className="text-ink">8h/dia</strong> em portais</span>
+              <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
+              <span><strong className="text-red-900 dark:text-red-100">8h/dia</strong> em portais</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-error flex-shrink-0">✕</span>
+              <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
               <span>Editais perdidos</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-error flex-shrink-0">✕</span>
+              <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
               <span>27 fontes fragmentadas</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-error flex-shrink-0">✕</span>
+              <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
               <span>Sem histórico</span>
             </li>
           </ul>
@@ -72,45 +67,39 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
 
         {/* Com SmartLic — 60% (3 cols) — Destaque */}
         <div
-          className={`md:col-span-3 bg-gradient-to-br from-brand-blue-subtle to-surface-1 p-6 sm:p-8 rounded-card border-2 border-brand-blue/30 transition-all duration-500 delay-200 hover:-translate-y-0.5 hover:shadow-lg ${
-            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
+          className={`
+            md:col-span-3
+            bg-gradient-to-br from-blue-50 to-blue-100
+            dark:from-blue-900/20 dark:to-blue-800/20
+            border-2 border-blue-200/50 dark:border-blue-700/50
+            rounded-2xl p-6 sm:p-8 shadow-md
+            transition-all duration-500 delay-200
+            hover:-translate-y-1 hover:shadow-lg
+            ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+          `}
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-brand-blue/10 rounded-full flex items-center justify-center">
-              <svg
-              role="img"
-              aria-label="Ícone"
-                className="w-5 h-5 text-brand-blue"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
+            <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-blue-600" aria-label="Com SmartLic" />
             </div>
-            <h3 className="text-lg font-bold text-ink uppercase tracking-wide">Com SmartLic</h3>
+            <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wide">Com SmartLic</h3>
           </div>
 
-          <ul className="space-y-3 text-ink-secondary">
+          <ul className="space-y-3 text-blue-800 dark:text-blue-200">
             <li className="flex items-start gap-2">
-              <span className="text-success flex-shrink-0 font-bold">✓</span>
-              <span><strong className="text-ink">15min/dia</strong> automatizado</span>
+              <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
+              <span><strong className="text-blue-900 dark:text-blue-100">15min/dia</strong> automatizado</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-success flex-shrink-0 font-bold">✓</span>
+              <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
               <span>Alertas em tempo real</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-success flex-shrink-0 font-bold">✓</span>
+              <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
               <span>Busca unificada</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-success flex-shrink-0 font-bold">✓</span>
+              <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
               <span>Histórico completo</span>
             </li>
           </ul>

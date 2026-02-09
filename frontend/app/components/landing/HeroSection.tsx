@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Zap, Target, Globe, ChevronDown } from 'lucide-react';
 import { GradientButton } from '@/app/components/ui/GradientButton';
 import { GlassCard } from '@/app/components/ui/GlassCard';
 import { useScrollAnimation } from '@/lib/animations';
@@ -122,22 +123,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             onClick={() => scrollToSection('como-funciona')}
           >
             Como funciona
-            <svg
-              role="img"
-              aria-label="Ícone"
-              className="w-4 h-4 ml-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <ChevronDown size={20} className="ml-2 transition-transform" aria-hidden="true" />
           </GradientButton>
         </motion.div>
 
@@ -146,9 +132,9 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           className="mt-12 flex flex-wrap items-center justify-center gap-4"
           variants={fadeInUp}
         >
-          <StatsBadge icon="⚡" value="160x" label="Mais Rápido" delay={0} />
-          <StatsBadge icon="🎯" value="95%" label="de Precisão" delay={0.1} />
-          <StatsBadge icon="🌍" value="PNCP + 27" label="Portais" delay={0.2} />
+          <StatsBadge icon={Zap} value="160x" label="Mais Rápido" delay={0} />
+          <StatsBadge icon={Target} value="95%" label="de Precisão" delay={0.1} />
+          <StatsBadge icon={Globe} value="PNCP + 27" label="Portais" delay={0.2} />
         </motion.div>
       </motion.div>
     </section>
@@ -214,6 +200,7 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
         hoverable={true}
         variant="subtle"
         className="
+          group
           inline-flex
           items-center
           gap-2
@@ -223,11 +210,20 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
           text-sm
           min-w-[140px]
           justify-center
+          cursor-default
         "
       >
         {isComponent ? (
           React.createElement(icon as React.ComponentType<any>, {
-            className: 'w-5 h-5 text-brand-blue flex-shrink-0',
+            className: `
+              w-6 h-6 flex-shrink-0
+              text-brand-blue
+              transition-all duration-300
+              group-hover:scale-110
+              ${label.includes('Rápido') ? 'group-hover:rotate-6' : ''}
+              ${label.includes('Precisão') ? 'group-hover:scale-125' : ''}
+              ${label.includes('Portais') ? 'group-hover:-rotate-6' : ''}
+            `,
             strokeWidth: 2,
             'aria-label': label,
             role: 'img',

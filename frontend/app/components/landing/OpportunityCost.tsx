@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
 import { useInView } from '@/app/hooks/useInView';
 
 interface OpportunityCostProps {
@@ -15,25 +16,22 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
       className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
     >
       <div
-        className={`bg-warning-subtle border-l-4 border-warning p-8 rounded-card transition-all duration-500 ${
-          isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
+        className={`
+          bg-gradient-to-br from-yellow-50 to-yellow-100
+          dark:from-yellow-900/20 dark:to-yellow-800/20
+          border border-yellow-200/50 dark:border-yellow-700/50
+          rounded-2xl p-8 shadow-md
+          transition-all duration-500
+          hover:shadow-lg hover:-translate-y-0.5
+          ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+        `}
       >
         {/* Headline Provocativa — Tom institucional direto */}
         <div className="flex items-start gap-4">
-          <svg
-            className="w-8 h-8 text-warning flex-shrink-0 mt-1"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            role="img"
+          <AlertTriangle
+            className="w-8 h-8 text-yellow-600 flex-shrink-0 mt-1"
             aria-label="Alerta"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
+          />
 
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
