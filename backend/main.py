@@ -45,6 +45,16 @@ from webhooks.stripe import router as stripe_webhook_router
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
+# Error codes for structured error responses (UX clarity)
+class ErrorCode:
+    """Structured error codes for better frontend error handling"""
+    DATE_RANGE_EXCEEDED = "DATE_RANGE_EXCEEDED"
+    RATE_LIMIT = "RATE_LIMIT"
+    QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+    INVALID_SECTOR = "INVALID_SECTOR"
+    INVALID_UF = "INVALID_UF"
+    INVALID_DATE_RANGE = "INVALID_DATE_RANGE"
+
 # Initialize FastAPI application
 app = FastAPI(
     title="BidIQ Uniformes API",
@@ -964,7 +974,22 @@ async def buscar_licitacoes(
                 f"Date range validation failed for user {mask_user_id(user['id'])}: "
                 f"requested={date_range_days} days, max_allowed={max_history_days} days"
             )
-            raise HTTPException(status_code=400, detail=error_msg)
+            # UX FIX: Structured error response for frontend error handling
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error_code": ErrorCode.DATE_RANGE_EXCEEDED,
+                    "message": error_msg,
+                    "data": {
+                        "requested_days": date_range_days,
+                        "max_allowed_days": max_history_days,
+                        "plan_name": quota_info.plan_name,
+                        "suggested_plan": suggested_name if suggested_plan else None,
+                        "suggested_price": suggested_price if suggested_plan else None,
+                        "suggested_max_days": suggested_max_days if suggested_plan else None,
+                    }
+                }
+            )
 
         logger.debug(
             f"Date range validation passed: {date_range_days} days <= {max_history_days} days allowed"

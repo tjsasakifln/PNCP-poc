@@ -52,25 +52,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Get initial user - SECURITY FIX: Use getUser() for validated user data
+    // getUser() ensures the user is authenticated by Supabase server (not just from cookies)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
       setLoading(false);
-      if (session?.access_token) {
-        fetchAdminStatus(session.access_token);
+      // Get session for access token (after user is validated)
+      if (user) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session);
+          if (session?.access_token) {
+            fetchAdminStatus(session.access_token);
+          }
+        });
       }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
         setLoading(false);
-        if (session?.access_token) {
-          fetchAdminStatus(session.access_token);
+        if (session) {
+          // SECURITY FIX: Revalidate user on auth state change
+          const { data: { user } } = await supabase.auth.getUser();
+          setUser(user);
+          if (session.access_token) {
+            fetchAdminStatus(session.access_token);
+          }
         } else {
+          setUser(null);
           setIsAdmin(false);
         }
       }

@@ -40,6 +40,11 @@ const ERROR_MAP: Record<string, string> = {
   "excedeu o tempo limite": "A busca demorou demais. Tente com menos estados ou um período menor.",
   "PNCP está temporariamente": "O portal PNCP está temporariamente fora do ar. Tente novamente em instantes.",
   "tempo limite de": "A busca demorou demais. Tente com menos estados ou um período menor.",
+
+  // UX FIX: Plan limit errors (date range)
+  "período de busca não pode exceder": "keep_original", // Let the full message through
+  "excede o limite de": "keep_original", // Let the full message through
+  "Período de": "keep_original", // Let the full message through
 };
 
 /**
@@ -55,6 +60,10 @@ export function getUserFriendlyError(error: string | Error): string {
   // Check partial matches
   for (const [key, value] of Object.entries(ERROR_MAP)) {
     if (message.toLowerCase().includes(key.toLowerCase())) {
+      // UX FIX: "keep_original" means pass the full message through
+      if (value === "keep_original") {
+        return message;
+      }
       return value;
     }
   }
@@ -62,10 +71,27 @@ export function getUserFriendlyError(error: string | Error): string {
   // Strip URLs from the message
   const stripped = message.replace(/https?:\/\/[^\s]+/g, '').trim();
 
-  // If the stripped message is still too technical, return generic
-  if (stripped.includes('Error') || stripped.includes('error') || stripped.includes('failed') || stripped.length > 100) {
+  // Check if message has stack traces or technical jargon (TypeError, ReferenceError, etc.)
+  const hasTechnicalJargon =
+    stripped.includes('Error:') ||
+    stripped.includes('TypeError') ||
+    stripped.includes('ReferenceError') ||
+    stripped.includes('at ') || // stack trace
+    stripped.includes('Line ') || // stack trace
+    stripped.match(/\w+Error:/); // any XxxError:
+
+  // UX FIX: Only treat as technical if it contains actual technical jargon
+  // Allow longer user-friendly messages (up to 200 chars) to pass through
+  if (hasTechnicalJargon) {
     return "Algo deu errado. Tente novamente em instantes.";
   }
 
-  return stripped || "Algo deu errado. Tente novamente em instantes.";
+  // If message is user-friendly (even if long), keep it
+  // Example: "O período de busca não pode exceder 7 dias..." (>100 chars but clear)
+  if (stripped.length <= 200) {
+    return stripped;
+  }
+
+  // Message is too long and possibly not user-friendly
+  return "Algo deu errado. Tente novamente em instantes.";
 }

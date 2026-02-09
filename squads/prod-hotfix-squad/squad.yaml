@@ -1,0 +1,44 @@
+name: prod-hotfix-squad
+version: 1.0.0
+description: Squad for diagnosing and fixing critical production issues
+author: Tiago Sasaki
+license: MIT
+slashPrefix: prod-hotfix
+aios:
+  minVersion: 2.1.0
+  type: squad
+components:
+  tasks:
+    - audit-auth-calls.md
+    - replace-getsession.md
+    - validate-auth-security.md
+    - audit-error-messages.md
+    - map-backend-to-frontend.md
+    - fix-generic-errors.md
+    - test-error-scenarios.md
+  agents:
+    - auth-security-fixer.md
+    - error-message-improver.md
+  workflows: []
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+config:
+  extends: extend
+  coding-standards: ../../docs/framework/CODING-STANDARDS.md
+  tech-stack: ../../docs/framework/TECH-STACK.md
+  source-tree: ../../docs/framework/SOURCE-TREE.md
+dependencies:
+  node: []
+  python: []
+  squads: []
+tags:
+  - custom
+blueprint:
+  source:
+    - Production logs (2026-02-09)
+    - Supabase security warnings
+    - Date range validation errors
+  created_at: 2026-02-09T19:30:00.000Z
+  confidence: 0.91

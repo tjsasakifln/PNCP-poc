@@ -51,17 +51,18 @@ export default function AuthCallbackPage() {
           }
         }
 
-        // Fallback: Check if we already have a session (e.g., from cookies)
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Fallback: Check if we have a validated user (SECURITY FIX)
+        // Use getUser() instead of getSession() for secure validation
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-        if (sessionError) {
-          console.error("[OAuth Callback] Session error:", sessionError);
+        if (userError) {
+          console.error("[OAuth Callback] User validation error:", userError);
           setStatus("error");
-          setErrorMessage(sessionError.message);
+          setErrorMessage(userError.message);
           return;
         }
 
-        if (session) {
+        if (user) {
           setStatus("success");
           window.location.href = "/buscar";
         } else {

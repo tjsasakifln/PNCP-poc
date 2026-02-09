@@ -620,7 +620,7 @@ function HomePageContent() {
             continue;
           }
 
-          const err = await response.json().catch(() => ({ message: null }));
+          const err = await response.json().catch(() => ({ message: null, error_code: null, data: null }));
 
           // Handle authentication required (401) - redirect to login
           if (response.status === 401) {
@@ -632,6 +632,24 @@ function HomePageContent() {
           if (response.status === 403) {
             setQuotaError(err.message || "Suas buscas acabaram.");
             throw new Error(err.message || "Quota excedida");
+          }
+
+          // UX FIX: Handle structured error codes from backend
+          if (err.error_code === 'DATE_RANGE_EXCEEDED') {
+            const { requested_days, max_allowed_days, plan_name } = err.data || {};
+            throw new Error(
+              `O período de busca não pode exceder ${max_allowed_days} dias (seu plano: ${plan_name}). ` +
+              `Você tentou buscar ${requested_days} dias. ` +
+              `Reduza o período e tente novamente.`
+            );
+          }
+
+          if (err.error_code === 'RATE_LIMIT') {
+            const wait_seconds = err.data?.wait_seconds || 60;
+            throw new Error(
+              `Limite de requisições excedido (2/min). ` +
+              `Aguarde ${wait_seconds} segundos e tente novamente.`
+            );
           }
 
           throw new Error(err.message || "Erro ao buscar licitações");

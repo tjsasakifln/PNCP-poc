@@ -118,13 +118,13 @@ export async function middleware(request: NextRequest) {
   });
 
   try {
-    // Get session - this automatically refreshes if needed using refresh token
-    // IMPORTANT: Use getSession() not getUser() to enable automatic token refresh
-    // getUser() fails immediately on expired token, getSession() tries refresh first
-    const { data: { session }, error } = await supabase.auth.getSession();
+    // Get user - this validates the session with Supabase server (secure)
+    // SECURITY FIX: Use getUser() instead of getSession() to ensure user is authentic
+    // getUser() validates the session by contacting Supabase Auth server
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !session) {
-      // No valid session and refresh failed - redirect to login
+    if (error || !user) {
+      // No valid session - redirect to login
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
 
@@ -135,8 +135,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Extract user from session
-    const user = session.user;
+    // User is now validated by Supabase server (secure)
 
     // Valid session - add user info to headers and allow access
     const requestHeaders = new Headers(request.headers);
