@@ -782,3 +782,44 @@ class UserProfileResponse(BaseModel):
     is_admin: bool = Field(
         default=False, description="Whether user has admin privileges"
     )
+
+
+class PNCPStatsResponse(BaseModel):
+    """
+    PNCP platform-wide statistics for landing page hero section.
+
+    Shows real-time data about the scale of procurement opportunities
+    in the PNCP system to demonstrate platform value.
+
+    Cached for 24 hours to minimize API load while maintaining freshness.
+    """
+    total_bids_30d: int = Field(
+        ..., ge=0, description="Total bids published in last 30 days (modalidade=6 only)"
+    )
+    annualized_total: int = Field(
+        ..., ge=0, description="Annualized bid count projection (total_bids_30d * 365/30)"
+    )
+    total_value_30d: float = Field(
+        ..., ge=0.0, description="Total estimated value (R$) in last 30 days"
+    )
+    annualized_value: float = Field(
+        ..., ge=0.0, description="Annualized value projection (R$)"
+    )
+    total_sectors: int = Field(
+        ..., ge=0, description="Number of available sectors in platform"
+    )
+    last_updated: str = Field(
+        ..., description="ISO 8601 timestamp of last data refresh"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "total_bids_30d": 12500,
+                "annualized_total": 152083,
+                "total_value_30d": 45000000.00,
+                "annualized_value": 547500000.00,
+                "total_sectors": 9,
+                "last_updated": "2026-02-09T14:30:00Z"
+            }
+        }

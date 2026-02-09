@@ -3,7 +3,7 @@
 import LandingNavbar from './components/landing/LandingNavbar';
 import HeroSection from './components/landing/HeroSection';
 import OpportunityCost from './components/landing/OpportunityCost';
-import BeforeAfter from './components/landing/BeforeAfter';
+import PNCPStatsSection from './components/landing/PNCPStatsSection';
 import DifferentialsGrid from './components/landing/DifferentialsGrid';
 import HowItWorks from './components/landing/HowItWorks';
 import StatsSection from './components/landing/StatsSection';
@@ -24,7 +24,7 @@ export default function LandingPage() {
         <HeroSection />
         <ValuePropSection />
         <OpportunityCost />
-        <BeforeAfter />
+        <PNCPStatsSection />
         <ComparisonTable />
         <DifferentialsGrid />
         <HowItWorks />
