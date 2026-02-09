@@ -84,9 +84,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
-
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -106,9 +103,8 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+# Railway has its own healthcheck system - no need for Docker HEALTHCHECK
+# This avoids conflicts and lets Railway manage the health monitoring
 
 # Start the application
 CMD ["node", "server.js"]
