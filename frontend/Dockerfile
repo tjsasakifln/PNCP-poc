@@ -96,11 +96,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Switch to non-root user
 USER nextjs
 
-# Expose port (Railway will inject PORT env var)
+# Expose port (Railway will inject PORT env var at runtime)
 EXPOSE 3000
 
-# Set default port
-ENV PORT=3000
+# IMPORTANT: Do NOT set ENV PORT here - let Railway inject it at runtime
+# Next.js standalone server.js respects process.env.PORT automatically
 ENV HOSTNAME="0.0.0.0"
 
 # Railway has its own healthcheck system - no need for Docker HEALTHCHECK
