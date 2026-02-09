@@ -136,13 +136,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Social Links with Glow Effect (Optional) */}
-        <div className="flex justify-center gap-4 mb-8">
-          <SocialIcon href="#" label="LinkedIn" />
-          <SocialIcon href="#" label="Twitter" />
-          <SocialIcon href="#" label="GitHub" />
-        </div>
-
         {/* Bottom Bar */}
         <div className="border-t border-[var(--border-strong)] pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -219,47 +212,3 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-/**
- * Social Icon with Glow Effect
- */
-function SocialIcon({ href, label }: { href: string; label: string }) {
-  return (
-    <motion.a
-      href={href}
-      aria-label={label}
-      className="
-        w-10
-        h-10
-        flex
-        items-center
-        justify-center
-        rounded-full
-        border-2
-        border-ink-faint
-        text-ink-secondary
-        transition-all
-        duration-300
-        hover:border-brand-blue
-        hover:text-brand-blue
-        hover:shadow-glow
-        focus-visible:outline-none
-        focus-visible:ring-[3px]
-        focus-visible:ring-[var(--ring)]
-        focus-visible:ring-offset-2
-      "
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <svg
-              role="img"
-              aria-label="Ícone"
-        className="w-5 h-5"
-        fill="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
-      </svg>
-    </motion.a>
-  );
-}
