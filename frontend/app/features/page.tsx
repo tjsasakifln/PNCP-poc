@@ -43,6 +43,8 @@ export default function FeaturesPage() {
             >
               <span>Começar Teste Grátis</span>
               <svg
+              role="img"
+              aria-label="Ícone"
                 className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
@@ -109,6 +111,8 @@ export default function FeaturesPage() {
                       {feature.benefits.map((benefit, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <svg
+              role="img"
+              aria-label="Ícone"
                             className="w-5 h-5 text-success flex-shrink-0 mt-0.5"
                             fill="currentColor"
                             viewBox="0 0 20 20"
@@ -166,6 +170,8 @@ export default function FeaturesPage() {
           >
             <span>Ver Tabela Comparativa</span>
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-5 h-5"
               fill="none"
               stroke="currentColor"
@@ -197,6 +203,8 @@ export default function FeaturesPage() {
           >
             <span>Começar Agora</span>
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-5 h-5"
               fill="none"
               stroke="currentColor"

@@ -194,6 +194,8 @@ export function CustomSelect({
           {selectedOption?.label || placeholder}
         </span>
         <svg
+              role="img"
+              aria-label="Expandir seção"
           className={`w-5 h-5 text-ink-secondary transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"

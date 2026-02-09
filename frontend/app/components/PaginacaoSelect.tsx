@@ -181,6 +181,8 @@ export function PaginacaoSelect({
           {selectedOption?.label || "Selecionar..."}
         </span>
         <svg
+              role="img"
+              aria-label="Ícone"
           className={`w-4 h-4 text-ink-secondary transition-transform duration-200 flex-shrink-0 ${
             isOpen ? "rotate-180" : ""
           }`}
@@ -303,6 +305,8 @@ export function PaginationControls({
           aria-label="Primeira pagina"
         >
           <svg
+              role="img"
+              aria-label="Ícone"
             className="w-4 h-4"
             fill="none"
             viewBox="0 0 24 24"
@@ -328,6 +332,8 @@ export function PaginationControls({
           aria-label="Pagina anterior"
         >
           <svg
+              role="img"
+              aria-label="Ícone"
             className="w-4 h-4"
             fill="none"
             viewBox="0 0 24 24"
@@ -358,6 +364,8 @@ export function PaginationControls({
           aria-label="Proxima pagina"
         >
           <svg
+              role="img"
+              aria-label="Ícone"
             className="w-4 h-4"
             fill="none"
             viewBox="0 0 24 24"
@@ -383,6 +391,8 @@ export function PaginationControls({
           aria-label="Ultima pagina"
         >
           <svg
+              role="img"
+              aria-label="Ícone"
             className="w-4 h-4"
             fill="none"
             viewBox="0 0 24 24"

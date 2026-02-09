@@ -223,10 +223,13 @@ export default function ComparisonTable() {
           >
             Começar Teste Grátis de 7 Dias
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-5 h-5 ml-2"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"

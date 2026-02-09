@@ -313,7 +313,9 @@ export function LoadingProgress({
       <div className="p-4 bg-surface-0 rounded-card border transition-all duration-300">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-8 h-8 bg-brand-blue-subtle rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              role="img"
+              aria-label="Informação" className="w-4 h-4 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>

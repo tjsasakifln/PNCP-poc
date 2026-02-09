@@ -236,7 +236,8 @@ export default function MensagensPage() {
                 className="md:hidden p-1 -ml-1 text-[var(--ink-secondary)] hover:text-[var(--ink)]"
                 aria-label="Voltar"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg
+              aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                 </svg>
               </button>
@@ -354,7 +355,9 @@ export default function MensagensPage() {
               </div>
             ) : conversations.length === 0 ? (
               <div className="p-8 text-center text-[var(--ink-secondary)] text-sm">
-                <svg className="w-10 h-10 mx-auto mb-3 text-[var(--ink-muted)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <svg
+              role="img"
+              aria-label="Ícone" className="w-10 h-10 mx-auto mb-3 text-[var(--ink-muted)]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                 </svg>
                 Nenhuma mensagem ainda.

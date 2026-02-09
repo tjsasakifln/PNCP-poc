@@ -33,6 +33,8 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-error/10 rounded-full flex items-center justify-center">
               <svg
+              role="img"
+              aria-label="Ícone"
                 className="w-5 h-5 text-error"
                 fill="currentColor"
                 viewBox="0 0 20 20"
@@ -77,6 +79,8 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-brand-blue/10 rounded-full flex items-center justify-center">
               <svg
+              role="img"
+              aria-label="Ícone"
                 className="w-5 h-5 text-brand-blue"
                 fill="currentColor"
                 viewBox="0 0 20 20"

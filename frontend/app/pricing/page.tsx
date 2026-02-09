@@ -294,6 +294,8 @@ export default function PricingPage() {
             >
               <span>Começar Teste Grátis de 7 Dias</span>
               <svg
+              role="img"
+              aria-label="Ícone"
                 className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"

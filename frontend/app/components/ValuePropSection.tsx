@@ -114,6 +114,8 @@ export default function ValuePropSection() {
           >
             Economize 10h/Semana Agora
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-5 h-5 ml-2"
               fill="none"
               stroke="currentColor"

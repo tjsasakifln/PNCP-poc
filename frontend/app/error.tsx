@@ -23,6 +23,8 @@ export default function Error({
       <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
         <div className="mb-6">
           <svg
+              role="img"
+              aria-label="Ícone"
             className="mx-auto h-16 w-16 text-red-500"
             fill="none"
             viewBox="0 0 24 24"

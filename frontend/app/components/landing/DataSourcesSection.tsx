@@ -39,6 +39,8 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
         >
           <div className="flex items-center justify-center gap-3 mb-3">
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-7 h-7"
               fill="currentColor"
               viewBox="0 0 20 20"
@@ -63,6 +65,8 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
           >
             Acessar PNCP
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-4 h-4"
               fill="none"
               stroke="currentColor"

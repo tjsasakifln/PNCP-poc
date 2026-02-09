@@ -88,6 +88,8 @@ export default function Footer() {
               {/* Info Icon with Glow */}
               <div className="flex-shrink-0">
                 <svg
+              role="img"
+              aria-label="Ícone"
                   className="w-6 h-6 text-brand-blue"
                   fill="none"
                   stroke="currentColor"
@@ -115,6 +117,8 @@ export default function Footer() {
                 </p>
                 <div className="flex items-center gap-2 text-sm text-brand-blue">
                   <svg
+              role="img"
+              aria-label="Ícone"
                     className="w-4 h-4"
                     fill="currentColor"
                     viewBox="0 0 20 20"
@@ -150,6 +154,8 @@ export default function Footer() {
             {/* LGPD Badge */}
             <div className="flex items-center gap-2">
               <svg
+              role="img"
+              aria-label="Ícone"
                 className="w-5 h-5 text-success"
                 fill="currentColor"
                 viewBox="0 0 20 20"
@@ -245,6 +251,8 @@ function SocialIcon({ href, label }: { href: string; label: string }) {
       whileTap={{ scale: 0.95 }}
     >
       <svg
+              role="img"
+              aria-label="Ícone"
         className="w-5 h-5"
         fill="currentColor"
         viewBox="0 0 24 24"

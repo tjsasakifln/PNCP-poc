@@ -134,6 +134,8 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
             aria-label="Fechar modal"
           >
             <svg
+              role="img"
+              aria-label="Fechar"
               className="w-6 h-6 text-ink-secondary"
               fill="none"
               viewBox="0 0 24 24"

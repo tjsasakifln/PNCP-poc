@@ -43,6 +43,8 @@ interface TimeRemaining {
 function ClockIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -62,6 +64,8 @@ function ClockIcon({ className }: { className?: string }) {
 function AlertIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -81,6 +85,8 @@ function AlertIcon({ className }: { className?: string }) {
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"

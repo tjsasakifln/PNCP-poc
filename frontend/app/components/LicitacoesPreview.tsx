@@ -50,7 +50,9 @@ export function LicitacoesPreview({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-ink flex items-center gap-2">
-        <svg className="w-5 h-5 text-brand-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg
+              role="img"
+              aria-label="Ícone" className="w-5 h-5 text-brand-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
@@ -101,7 +103,9 @@ export function LicitacoesPreview({
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+              role="img"
+              aria-label="Ícone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
@@ -155,7 +159,9 @@ export function LicitacoesPreview({
           <div className="absolute inset-0 z-20 flex items-center justify-center">
             <div className="bg-surface-0 border border-brand-navy shadow-lg rounded-card p-6 max-w-sm text-center mx-4">
               <div className="w-12 h-12 mx-auto mb-4 bg-brand-blue-subtle rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-brand-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+              role="img"
+              aria-label="Ícone" className="w-6 h-6 text-brand-navy" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
@@ -222,7 +228,9 @@ export function LicitacoesPreview({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg
+              role="img"
+              aria-label="Ícone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                               d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>

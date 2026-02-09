@@ -92,6 +92,8 @@ const DEFAULT_CONFIG = {
 function CircleIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="currentColor"
       viewBox="0 0 8 8"
@@ -105,6 +107,8 @@ function CircleIcon({ className }: { className?: string }) {
 function ClockIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -124,6 +128,8 @@ function ClockIcon({ className }: { className?: string }) {
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -143,6 +149,8 @@ function CheckIcon({ className }: { className?: string }) {
 function XIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -162,6 +170,8 @@ function XIcon({ className }: { className?: string }) {
 function PauseIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"

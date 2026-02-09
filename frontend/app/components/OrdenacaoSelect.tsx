@@ -70,6 +70,8 @@ const ORDENACAO_OPTIONS: OrdenacaoItem[] = [
 function ArrowDownIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -89,6 +91,8 @@ function ArrowDownIcon({ className }: { className?: string }) {
 function ArrowUpIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -108,6 +112,8 @@ function ArrowUpIcon({ className }: { className?: string }) {
 function DollarIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -127,6 +133,8 @@ function DollarIcon({ className }: { className?: string }) {
 function CalendarIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -146,6 +154,8 @@ function CalendarIcon({ className }: { className?: string }) {
 function SparklesIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -353,6 +363,8 @@ export function OrdenacaoSelect({
           </span>
         </div>
         <svg
+              role="img"
+              aria-label="Ícone"
           className={`w-4 h-4 text-ink-secondary transition-transform duration-200 flex-shrink-0 ${
             isOpen ? "rotate-180" : ""
           }`}

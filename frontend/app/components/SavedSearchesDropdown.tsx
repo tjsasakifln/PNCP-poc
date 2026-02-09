@@ -185,7 +185,8 @@ export function SavedSearchesDropdown({
             {searches.length}
           </span>
         )}
-        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        <svg
+              className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
              fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -207,8 +208,9 @@ export function SavedSearchesDropdown({
             {searches.length === 0 ? (
               // Empty State
               <div className="p-6 text-center">
-                <svg className="mx-auto w-12 h-12 text-ink-faint mb-3" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" aria-label="Nenhuma busca salva">
+                <svg
+              className="mx-auto w-12 h-12 text-ink-faint mb-3" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" role="img" aria-label="Nenhuma busca salva">
                   <title>Nenhuma busca salva</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -235,7 +237,9 @@ export function SavedSearchesDropdown({
                       aria-label="Filtrar buscas salvas"
                     />
                     {/* Search Icon */}
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none"
+                    <svg
+              role="img"
+              aria-label="Pesquisar" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

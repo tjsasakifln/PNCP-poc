@@ -141,6 +141,8 @@ export function CustomDateInput({
             tabIndex={-1}
           >
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-5 h-5 text-ink-secondary"
               fill="none"
               viewBox="0 0 24 24"

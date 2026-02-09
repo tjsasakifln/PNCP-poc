@@ -40,6 +40,8 @@ interface LicitacaoCardProps {
 function DocumentIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -59,6 +61,8 @@ function DocumentIcon({ className }: { className?: string }) {
 function ExternalLinkIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -78,6 +82,8 @@ function ExternalLinkIcon({ className }: { className?: string }) {
 function HeartIcon({ className, filled }: { className?: string; filled?: boolean }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill={filled ? "currentColor" : "none"}
       viewBox="0 0 24 24"
@@ -97,6 +103,8 @@ function HeartIcon({ className, filled }: { className?: string; filled?: boolean
 function ShareIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -116,6 +124,8 @@ function ShareIcon({ className }: { className?: string }) {
 function LocationIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -140,6 +150,8 @@ function LocationIcon({ className }: { className?: string }) {
 function CalendarIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"

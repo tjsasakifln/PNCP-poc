@@ -123,6 +123,8 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           >
             Como funciona
             <svg
+              role="img"
+              aria-label="Ícone"
               className="w-4 h-4 ml-2"
               fill="none"
               stroke="currentColor"

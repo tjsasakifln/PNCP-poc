@@ -41,6 +41,8 @@ const ESFERAS: EsferaOption[] = [
 function BuildingIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -60,6 +62,8 @@ function BuildingIcon({ className }: { className?: string }) {
 function Building2Icon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"
@@ -79,6 +83,8 @@ function Building2Icon({ className }: { className?: string }) {
 function HomeIcon({ className }: { className?: string }) {
   return (
     <svg
+              role="img"
+              aria-label="Ícone"
       className={className}
       fill="none"
       viewBox="0 0 24 24"

@@ -86,6 +86,8 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
 
       {/* Chevron indicator */}
       <svg
+              role="img"
+              aria-label="Ícone"
         className="w-4 h-4"
         fill="none"
         viewBox="0 0 24 24"

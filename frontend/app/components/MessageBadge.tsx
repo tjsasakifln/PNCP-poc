@@ -19,6 +19,8 @@ export function MessageBadge() {
     >
       {/* Envelope icon (Heroicons outline style) */}
       <svg
+              role="img"
+              aria-label="Ícone"
         className="w-5 h-5 text-[var(--ink-secondary)]"
         fill="none"
         viewBox="0 0 24 24"

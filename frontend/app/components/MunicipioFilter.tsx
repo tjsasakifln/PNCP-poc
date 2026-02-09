@@ -311,6 +311,8 @@ export function MunicipioFilter({
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg
+              role="img"
+              aria-label="Ícone"
             className="h-5 w-5 text-ink-muted"
             fill="none"
             viewBox="0 0 24 24"
@@ -360,6 +362,7 @@ export function MunicipioFilter({
             <svg
               className="animate-spin h-5 w-5 text-brand-blue"
               viewBox="0 0 24 24"
+              role="img"
               aria-label="Carregando"
             >
               <circle
@@ -448,6 +451,8 @@ export function MunicipioFilter({
                 aria-label={`Remover ${municipio.nome}`}
               >
                 <svg
+              role="img"
+              aria-label="Ícone"
                   className="w-3.5 h-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
