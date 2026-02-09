@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-02-09T20:31:21.975Z",
+  "totalLogs": 562,
+  "authLogs": 503,
+  "suspiciousIPs": [
+    "100.64.0.3",
+    "100.64.0.7",
+    "100.64.0.8",
+    "100.64.0.6",
+    "100.64.0.4",
+    "100.64.0.13",
+    "100.64.0.10",
+    "100.64.0.12",
+    "100.64.0.11",
+    "100.64.0.9",
+    "100.64.0.5"
+  ],
+  "warningReasons": {
+    "AuthApiError": 215
+  },
+  "conclusion": "Detectado padrão inconsistente: mesmo IP consegue autenticar em /me mas falha em /api/messages"
+}

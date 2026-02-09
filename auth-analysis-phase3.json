@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-02-09T20:31:29.544Z",
+  "objective": "Reproduzir bug de token inconsistente entre endpoints",
+  "hypothesis": "Mesmo token válido para /me falha em /api/messages/unread-count",
+  "testScenarios": [
+    {
+      "id": "TC-001",
+      "name": "Validar token em múltiplos endpoints",
+      "preconditions": [
+        "Usuário autenticado via login",
+        "Token JWT armazenado em localStorage/cookie"
+      ],
+      "steps": [
+        "1. Fazer login na aplicação",
+        "2. Capturar token de autenticação (DevTools → Application → localStorage)",
+        "3. Testar GET /me com o token capturado",
+        "4. Testar GET /api/messages/unread-count com o MESMO token",
+        "5. Comparar responses e status codes"
+      ],
+      "expectedResult": "Ambos endpoints devem retornar 200 OK com mesmo token",
+      "tools": [
+        "cURL",
+        "Postman",
+        "Browser DevTools"
+      ]
+    },
+    {
+      "id": "TC-002",
+      "name": "Detectar race condition entre endpoints",
+      "steps": [
+        "1. Fazer login",
+        "2. Fazer requisição para /me",
+        "3. IMEDIATAMENTE (< 100ms) fazer requisição para /api/messages/unread-count",
+        "4. Observar se segundo endpoint falha",
+        "5. Repetir teste com delay de 1s, 5s, 10s"
+      ],
+      "expectedResult": "Token deve funcionar independente do timing"
+    },
+    {
+      "id": "TC-003",
+      "name": "Comparar headers enviados para cada endpoint",
+      "steps": [
+        "1. Abrir DevTools → Network",
+        "2. Fazer requisição para /me",
+        "3. Copiar TODOS os headers (Authorization, Cookie, etc)",
+        "4. Fazer requisição para /api/messages/unread-count",
+        "5. Copiar TODOS os headers",
+        "6. Comparar lado a lado"
+      ],
+      "lookFor": [
+        "Authorization header diferente?",
+        "Cookie sendo enviado em um mas não no outro?",
+        "Formato do token diferente (Bearer vs sem prefixo)?"
+      ]
+    }
+  ],
+  "reproductionSteps": [],
+  "expectedResults": {},
+  "actualResults": {},
+  "curlScripts": {
+    "testMe": "# Teste /me endpoint\ncurl -X GET 'https://api.smartlic.tech/me' \\\n  -H 'Authorization: Bearer YOUR_TOKEN_HERE' \\\n  -H 'Content-Type: application/json' \\\n  -v",
+    "testMessages": "# Teste /api/messages/unread-count endpoint\ncurl -X GET 'https://api.smartlic.tech/api/messages/unread-count' \\\n  -H 'Authorization: Bearer YOUR_TOKEN_HERE' \\\n  -H 'Content-Type: application/json' \\\n  -v"
+  },
+  "reproductionChecklist": [
+    "[ ] Login realizado com sucesso",
+    "[ ] Token capturado do localStorage/cookie",
+    "[ ] Teste /me executado → resultado esperado: 200 OK",
+    "[ ] Teste /api/messages executado → resultado esperado: 401?",
+    "[ ] Headers comparados entre requisições",
+    "[ ] Formato do token verificado (Bearer prefix?)",
+    "[ ] Network traces capturados",
+    "[ ] Logs do backend revisados para mesmo timestamp"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-02-09T20:31:32.329Z",
+  "authHooks": [],
+  "storageUsage": [],
+  "uiComponents": [
+    "frontend/__tests__/auth/oauth-google-callback.test.tsx",
+    "frontend/__tests__/components/AuthProvider.test.tsx",
+    "frontend/__tests__/pages/LoginPage.test.tsx",
+    "frontend/__tests__/pages/SignupPage.test.tsx",
+    "frontend/app/auth/callback/page.tsx",
+    "frontend/app/components/AuthProvider.tsx",
+    "frontend/app/components/landing/LandingNavbar.tsx",
+    "frontend/app/login/page.tsx",
+    "frontend/app/signup/page.tsx"
+  ],
+  "stateManagement": {
+    "React Context": false,
+    "Redux": false,
+    "Zustand": false,
+    "React Query": false,
+    "SWR": true
+  },
+  "issues": [],
+  "recommendations": [
+    "Verificar se estado de autenticação está sendo propagado corretamente via Context/Redux",
+    "Confirmar que token é atualizado no storage ANTES de fazer requisições",
+    "Verificar se existe race condition entre atualização de estado e requisições API",
+    "Inspecionar se botão \"Entrar\" usa mesmo estado que valida requisições",
+    "Testar se refresh da página mantém estado de autenticação"
+  ],
+  "diagnosis": [
+    "⚠️  Nenhum hook de autenticação detectado - possível problema na estrutura"
+  ]
+}
