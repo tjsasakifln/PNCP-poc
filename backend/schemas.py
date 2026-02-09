@@ -546,8 +546,10 @@ class LicitacaoItem(BaseModel):
     data_abertura: Optional[str] = Field(default=None, description="Proposal opening date")
     data_encerramento: Optional[str] = Field(default=None, description="Proposal submission deadline")
     link: str = Field(..., description="Direct link to PNCP portal")
+    source: Optional[str] = Field(default=None, alias="_source", description="Source that provided this record")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "pncp_id": "12345678000190-1-000001/2026",
@@ -618,6 +620,10 @@ class BuscaResponse(BaseModel):
     upgrade_message: Optional[str] = Field(
         default=None,
         description="Message shown when Excel is blocked, encouraging upgrade"
+    )
+    source_stats: Optional[List[dict]] = Field(
+        default=None,
+        description="Per-source fetch metrics when multi-source is active"
     )
 
     class Config:

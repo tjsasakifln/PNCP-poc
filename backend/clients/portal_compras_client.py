@@ -316,11 +316,8 @@ class PortalComprasAdapter(SourceAdapter):
             as per Portal de Compras API limitations.
         """
         if not self._api_key:
-            logger.error("[PORTAL_COMPRAS] No API key configured - cannot fetch")
-            raise SourceAuthError(
-                self.code,
-                "PORTAL_COMPRAS_API_KEY environment variable not set"
-            )
+            logger.warning("[PORTAL_COMPRAS] No API key configured - skipping fetch")
+            return
 
         # Build base parameters
         # TODO: Verify exact parameter names from API documentation

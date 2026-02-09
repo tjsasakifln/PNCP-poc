@@ -41,6 +41,7 @@ class SourceCode(str, Enum):
     PNCP = "PNCP"
     PORTAL = "Portal"
     LICITAR = "Licitar"
+    COMPRAS_GOV = "ComprasGov"
     BLL = "BLL"
     BNC = "BNC"
 
@@ -101,8 +102,8 @@ class SingleSourceConfig:
         """Check if source is enabled and has required credentials."""
         if not self.enabled:
             return False
-        # PNCP doesn't require credentials
-        if self.code == SourceCode.PNCP:
+        # PNCP and ComprasGov don't require credentials (open data)
+        if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV):
             return True
         # Other sources may require API keys
         return True  # For now, allow even without credentials
@@ -176,6 +177,16 @@ class SourceConfig:
         priority=3,
     ))
 
+    compras_gov: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
+        code=SourceCode.COMPRAS_GOV,
+        name="ComprasGov - Dados Abertos Federal",
+        base_url="https://compras.dados.gov.br",
+        enabled=True,  # No auth required (open government data)
+        timeout=30,
+        rate_limit_rps=2.0,
+        priority=4,
+    ))
+
     bll: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
         code=SourceCode.BLL,
         name="BLL Compras",
@@ -230,6 +241,9 @@ class SourceConfig:
         config.licitar.enabled = (
             os.getenv("ENABLE_SOURCE_LICITAR", "true").lower() == "true"
         )
+        config.compras_gov.enabled = (
+            os.getenv("ENABLE_SOURCE_COMPRAS_GOV", "true").lower() == "true"
+        )
         config.bll.enabled = os.getenv("ENABLE_SOURCE_BLL", "false").lower() == "true"
         config.bnc.enabled = os.getenv("ENABLE_SOURCE_BNC", "false").lower() == "true"
 
@@ -261,7 +275,7 @@ class SourceConfig:
             List of enabled source code strings
         """
         sources = []
-        for source in [self.pncp, self.portal, self.licitar, self.bll, self.bnc]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.bll, self.bnc]:
             if source.enabled:
                 sources.append(source.code.value)
         return sources
@@ -280,6 +294,7 @@ class SourceConfig:
             "PNCP": self.pncp,
             "Portal": self.portal,
             "Licitar": self.licitar,
+            "ComprasGov": self.compras_gov,
             "BLL": self.bll,
             "BNC": self.bnc,
         }
@@ -293,7 +308,7 @@ class SourceConfig:
             List of SingleSourceConfig objects for enabled sources
         """
         configs = []
-        for source in [self.pncp, self.portal, self.licitar, self.bll, self.bnc]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.bll, self.bnc]:
             if source.enabled:
                 configs.append(source)
         return sorted(configs, key=lambda s: s.priority)

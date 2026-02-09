@@ -1728,11 +1728,19 @@ function HomePageContent() {
             )}
 
             {/* Stats */}
-            <div className="text-xs sm:text-sm text-ink-muted text-center">
+            <div className="text-xs sm:text-sm text-ink-muted text-center space-y-1">
               {rawCount > 0 && (
                 <p>
                   Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitações
                   ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% do setor {sectorName.toLowerCase()})
+                </p>
+              )}
+              {result.source_stats && result.source_stats.length > 1 && (
+                <p className="text-ink-faint">
+                  Fontes: {result.source_stats
+                    .filter((s: { status: string }) => s.status === "success")
+                    .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count}`)
+                    .join(", ")}
                 </p>
               )}
             </div>

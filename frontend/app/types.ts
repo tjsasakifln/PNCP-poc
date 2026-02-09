@@ -62,6 +62,17 @@ export interface LicitacaoItem {
   status?: string | null;
   /** Keywords that matched this item during search */
   matched_keywords?: string[];
+  /** Source that provided this record (e.g., "PNCP", "COMPRAS_GOV", "PORTAL_COMPRAS") */
+  _source?: string;
+}
+
+/** Per-source fetch metrics (multi-source mode) */
+export interface SourceStat {
+  source_code: string;
+  record_count: number;
+  duration_ms: number;
+  error: string | null;
+  status: string;
 }
 
 /** API response from POST /api/buscar */
@@ -76,6 +87,8 @@ export interface BuscaResult {
   stopwords_removidas: string[] | null;
   excel_available: boolean;
   upgrade_message: string | null;
+  /** Per-source metrics when multi-source is active */
+  source_stats: SourceStat[] | null;
 }
 
 /** Form validation errors */

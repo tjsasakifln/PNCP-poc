@@ -25,6 +25,21 @@ export function LicitacoesPreview({
   excelAvailable,
   onUpgradeClick,
 }: LicitacoesPreviewProps) {
+  const getSourceBadge = (source?: string) => {
+    if (!source) return null;
+    const sourceConfig: Record<string, { label: string; bg: string; text: string }> = {
+      PNCP: { label: "PNCP", bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300" },
+      COMPRAS_GOV: { label: "ComprasGov", bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300" },
+      PORTAL_COMPRAS: { label: "Portal", bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300" },
+    };
+    const cfg = sourceConfig[source] || { label: source, bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600 dark:text-gray-400" };
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${cfg.bg} ${cfg.text}`}>
+        {cfg.label}
+      </span>
+    );
+  };
+
   if (!licitacoes || licitacoes.length === 0) {
     return null;
   }
@@ -75,6 +90,7 @@ export function LicitacoesPreview({
                   {item.orgao}
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
+                  {getSourceBadge(item._source)}
                   <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                     {item.uf}
                     {item.municipio && ` - ${item.municipio}`}

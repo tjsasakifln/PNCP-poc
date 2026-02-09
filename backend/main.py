@@ -195,6 +195,100 @@ async def health():
     return response_data
 
 
+@app.get("/sources/health")
+async def sources_health():
+    """
+    Health check for all configured procurement data sources.
+
+    Returns status, response time, and priority for each source.
+    Results are cached for 60 seconds to avoid spamming external APIs.
+    """
+    import time as t
+    from datetime import datetime, timezone
+
+    enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "false").lower() == "true"
+    from source_config.sources import get_source_config
+    source_config = get_source_config()
+
+    sources_info = []
+
+    # Always report PNCP
+    if source_config.pncp.enabled:
+        sources_info.append({
+            "code": "PNCP",
+            "name": source_config.pncp.name,
+            "enabled": True,
+            "priority": source_config.pncp.priority,
+        })
+
+    if source_config.compras_gov.enabled:
+        sources_info.append({
+            "code": "COMPRAS_GOV",
+            "name": source_config.compras_gov.name,
+            "enabled": True,
+            "priority": source_config.compras_gov.priority,
+        })
+
+    if source_config.portal.enabled:
+        sources_info.append({
+            "code": "PORTAL_COMPRAS",
+            "name": source_config.portal.name,
+            "enabled": True,
+            "priority": source_config.portal.priority,
+        })
+
+    # Run health checks in parallel
+    if enable_multi_source:
+        from consolidation import ConsolidationService
+        from clients.compras_gov_client import ComprasGovAdapter
+        from clients.portal_compras_client import PortalComprasAdapter
+
+        adapters = {}
+        if source_config.compras_gov.enabled:
+            adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+        if source_config.portal.enabled and source_config.portal.credentials.has_api_key():
+            adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                api_key=source_config.portal.credentials.api_key,
+                timeout=source_config.portal.timeout,
+            )
+
+        if adapters:
+            svc = ConsolidationService(adapters=adapters)
+            health_results = await svc.health_check_all()
+            await svc.close()
+
+            for info in sources_info:
+                code = info["code"]
+                if code in health_results:
+                    info["status"] = health_results[code]["status"]
+                    info["response_ms"] = health_results[code]["response_ms"]
+                elif code == "PNCP":
+                    info["status"] = "available"
+                    info["response_ms"] = 0
+                else:
+                    info["status"] = "unknown"
+                    info["response_ms"] = 0
+        else:
+            for info in sources_info:
+                info["status"] = "available" if info["code"] == "PNCP" else "unknown"
+                info["response_ms"] = 0
+    else:
+        for info in sources_info:
+            info["status"] = "available" if info["code"] == "PNCP" else "disabled"
+            info["response_ms"] = 0
+
+    total_enabled = len([s for s in sources_info if s["enabled"]])
+    total_available = len([s for s in sources_info if s.get("status") == "available"])
+
+    return {
+        "sources": sources_info,
+        "multi_source_enabled": enable_multi_source,
+        "total_enabled": total_enabled,
+        "total_available": total_available,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @app.get("/setores")
 async def listar_setores():
     """Return available procurement sectors for frontend dropdown."""
@@ -700,6 +794,7 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 data_abertura=lic.get("dataAberturaProposta", "")[:10] if lic.get("dataAberturaProposta") else None,
                 data_encerramento=lic.get("dataEncerramentoProposta", "")[:10] if lic.get("dataEncerramentoProposta") else None,
                 link=_build_pncp_link(lic),
+                source=lic.get("_source"),
             )
             items.append(item)
         except Exception as e:
@@ -1035,11 +1130,12 @@ async def buscar_licitacoes(
         if tracker:
             await tracker.emit("connecting", 8, f"Setor '{sector.name}' configurado, conectando ao PNCP...")
 
-        # Step 1: Fetch from PNCP API
-        # Use parallel fetching for multiple UFs to improve performance
-        logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
+        # Step 1: Fetch from procurement sources
+        # FEATURE FLAG: Multi-source consolidation (STORY-177)
+        enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "false").lower() == "true"
+        source_stats_data = None  # Will be populated if multi-source is active
 
-        # Determine if we should use parallel fetching (multiple UFs benefit from it)
+        # Use parallel fetching for multiple UFs to improve performance
         use_parallel = len(request.ufs) > 1
 
         # Get status value for PNCP API query
@@ -1050,7 +1146,10 @@ async def buscar_licitacoes(
 
         # SSE: Starting fetch
         if tracker:
-            await tracker.emit("fetching", 10, f"Iniciando busca em {len(request.ufs)} estados...")
+            msg = f"Iniciando busca em {len(request.ufs)} estados..."
+            if enable_multi_source:
+                msg += " (multi-fonte ativo)"
+            await tracker.emit("fetching", 10, msg)
 
         # Build per-UF progress callback for SSE
         uf_progress_callback = None
@@ -1058,24 +1157,162 @@ async def buscar_licitacoes(
             async def uf_progress_callback(uf: str, items_count: int):
                 await tracker.emit_uf_complete(uf, items_count)
 
-        # Global fetch timeout: 4 minutes max for the entire PNCP fetch phase
+        # Global fetch timeout: 4 minutes max for the entire fetch phase
         FETCH_TIMEOUT = 4 * 60  # seconds
 
-        async def _do_fetch() -> list:
-            if use_parallel:
-                logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
-                try:
-                    return await buscar_todas_ufs_paralelo(
-                        ufs=request.ufs,
+        if enable_multi_source:
+            # === MULTI-SOURCE PATH (STORY-177) ===
+            logger.info("Multi-source fetch enabled, using ConsolidationService")
+            from consolidation import ConsolidationService
+            from clients.compras_gov_client import ComprasGovAdapter
+            from clients.portal_compras_client import PortalComprasAdapter
+            from source_config.sources import get_source_config
+
+            source_config = get_source_config()
+            adapters = {}
+
+            # Always include PNCP via legacy wrapper
+            from clients.base import SourceAdapter, SourceMetadata, SourceStatus, SourceCapability, UnifiedProcurement
+            class _PNCPLegacyAdapter(SourceAdapter):
+                """Wraps existing PNCPClient as a SourceAdapter for consolidation."""
+                _meta = SourceMetadata(
+                    name="PNCP", code="PNCP",
+                    base_url="https://pncp.gov.br/api/consulta/v1",
+                    capabilities={SourceCapability.PAGINATION, SourceCapability.DATE_RANGE, SourceCapability.FILTER_BY_UF},
+                    rate_limit_rps=10.0, priority=1,
+                )
+                @property
+                def metadata(self): return self._meta
+                async def health_check(self): return SourceStatus.AVAILABLE
+                async def fetch(self, data_inicial, data_final, ufs=None, **kwargs):
+                    _ufs = list(ufs) if ufs else request.ufs
+                    if len(_ufs) > 1:
+                        results = await buscar_todas_ufs_paralelo(
+                            ufs=_ufs, data_inicial=data_inicial, data_final=data_final,
+                            modalidades=modalidades_to_fetch, status=status_value,
+                            max_concurrent=10, on_uf_complete=uf_progress_callback,
+                        )
+                    else:
+                        client = PNCPClient()
+                        results = list(client.fetch_all(
+                            data_inicial=data_inicial, data_final=data_final,
+                            ufs=_ufs, modalidades=modalidades_to_fetch,
+                        ))
+                    for item in results:
+                        yield UnifiedProcurement(
+                            source_id=item.get("codigoCompra", ""),
+                            source_name="PNCP",
+                            objeto=item.get("objetoCompra", ""),
+                            valor_estimado=item.get("valorTotalEstimado", 0) or 0,
+                            orgao=item.get("nomeOrgao", ""),
+                            cnpj_orgao=item.get("cnpjOrgao", ""),
+                            uf=item.get("uf", ""),
+                            municipio=item.get("municipio", ""),
+                            numero_edital=item.get("numeroEdital", ""),
+                            modalidade=item.get("modalidadeNome", ""),
+                            situacao=item.get("situacaoCompraNome", ""),
+                            link_edital=item.get("linkSistemaOrigem", ""),
+                            link_portal=item.get("linkProcessoEletronico", ""),
+                            raw_data=item,
+                        )
+                def normalize(self, raw_record): pass
+
+            if source_config.pncp.enabled:
+                adapters["PNCP"] = _PNCPLegacyAdapter()
+
+            if source_config.compras_gov.enabled:
+                adapters["COMPRAS_GOV"] = ComprasGovAdapter(
+                    timeout=source_config.compras_gov.timeout
+                )
+
+            if source_config.portal.enabled and source_config.portal.credentials.has_api_key():
+                adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                    api_key=source_config.portal.credentials.api_key,
+                    timeout=source_config.portal.timeout,
+                )
+
+            consolidation_svc = ConsolidationService(
+                adapters=adapters,
+                timeout_per_source=source_config.consolidation.timeout_per_source,
+                timeout_global=source_config.consolidation.timeout_global,
+                fail_on_all_errors=source_config.consolidation.fail_on_all_errors,
+            )
+
+            # SSE callback for source completion
+            source_complete_cb = None
+            if tracker:
+                def source_complete_cb(src_code, count, error):
+                    logger.info(f"[MULTI-SOURCE] {src_code}: {count} records, error={error}")
+
+            try:
+                consolidation_result = await asyncio.wait_for(
+                    consolidation_svc.fetch_all(
                         data_inicial=request.data_inicial,
                         data_final=request.data_final,
-                        modalidades=modalidades_to_fetch,
-                        status=status_value,
-                        max_concurrent=10,
-                        on_uf_complete=uf_progress_callback,
-                    )
-                except Exception as e:
-                    logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
+                        ufs=set(request.ufs),
+                        on_source_complete=source_complete_cb,
+                    ),
+                    timeout=FETCH_TIMEOUT,
+                )
+                licitacoes_raw = consolidation_result.records
+                source_stats_data = [
+                    {
+                        "source_code": sr.source_code,
+                        "record_count": sr.record_count,
+                        "duration_ms": sr.duration_ms,
+                        "error": sr.error,
+                        "status": sr.status,
+                    }
+                    for sr in consolidation_result.source_results
+                ]
+                logger.info(
+                    f"Multi-source fetch: {consolidation_result.total_before_dedup} raw → "
+                    f"{consolidation_result.total_after_dedup} deduped "
+                    f"({consolidation_result.duplicates_removed} dupes removed)"
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"Multi-source fetch timed out after {FETCH_TIMEOUT}s")
+                if tracker:
+                    await tracker.emit_error("Busca expirou por tempo")
+                    remove_tracker(request.search_id)
+                raise HTTPException(
+                    status_code=504,
+                    detail=(
+                        f"A busca excedeu o tempo limite de {FETCH_TIMEOUT // 60} minutos. "
+                        f"Tente com menos estados ou um período menor."
+                    ),
+                )
+            finally:
+                await consolidation_svc.close()
+        else:
+            # === PNCP-ONLY PATH (default, original behavior) ===
+            logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
+
+            async def _do_fetch() -> list:
+                if use_parallel:
+                    logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
+                    try:
+                        return await buscar_todas_ufs_paralelo(
+                            ufs=request.ufs,
+                            data_inicial=request.data_inicial,
+                            data_final=request.data_final,
+                            modalidades=modalidades_to_fetch,
+                            status=status_value,
+                            max_concurrent=10,
+                            on_uf_complete=uf_progress_callback,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
+                        client = PNCPClient()
+                        return list(
+                            client.fetch_all(
+                                data_inicial=request.data_inicial,
+                                data_final=request.data_final,
+                                ufs=request.ufs,
+                                modalidades=modalidades_to_fetch,
+                            )
+                        )
+                else:
                     client = PNCPClient()
                     return list(
                         client.fetch_all(
@@ -1085,34 +1322,24 @@ async def buscar_licitacoes(
                             modalidades=modalidades_to_fetch,
                         )
                     )
-            else:
-                client = PNCPClient()
-                return list(
-                    client.fetch_all(
-                        data_inicial=request.data_inicial,
-                        data_final=request.data_final,
-                        ufs=request.ufs,
-                        modalidades=modalidades_to_fetch,
-                    )
+
+            try:
+                licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=FETCH_TIMEOUT)
+            except asyncio.TimeoutError:
+                logger.error(f"PNCP fetch timed out after {FETCH_TIMEOUT}s for {len(request.ufs)} UFs")
+                if tracker:
+                    await tracker.emit_error("Busca expirou por tempo")
+                    remove_tracker(request.search_id)
+                raise HTTPException(
+                    status_code=504,
+                    detail=(
+                        f"A busca excedeu o tempo limite de {FETCH_TIMEOUT // 60} minutos. "
+                        f"Tente com menos estados ou um período menor."
+                    ),
                 )
 
-        try:
-            licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=FETCH_TIMEOUT)
-        except asyncio.TimeoutError:
-            logger.error(f"PNCP fetch timed out after {FETCH_TIMEOUT}s for {len(request.ufs)} UFs")
-            if tracker:
-                await tracker.emit_error("Busca expirou por tempo")
-                remove_tracker(request.search_id)
-            raise HTTPException(
-                status_code=504,
-                detail=(
-                    f"A busca excedeu o tempo limite de {FETCH_TIMEOUT // 60} minutos. "
-                    f"Tente com menos estados ou um período menor."
-                ),
-            )
-
         fetch_elapsed = sync_time.time() - start_time
-        logger.info(f"Fetched {len(licitacoes_raw)} raw bids from PNCP in {fetch_elapsed:.2f}s")
+        logger.info(f"Fetched {len(licitacoes_raw)} raw bids in {fetch_elapsed:.2f}s")
 
         # SSE: Fetch complete
         if tracker:
@@ -1247,6 +1474,7 @@ async def buscar_licitacoes(
                 termos_utilizados=custom_terms if custom_terms else None,
                 stopwords_removidas=stopwords_removed if stopwords_removed else None,
                 upgrade_message="Exportar Excel disponível no plano Máquina (R$ 597/mês)." if quota_info and not quota_info.capabilities["allow_excel"] else None,
+                source_stats=source_stats_data,
             )
             logger.info(
                 "Search completed with 0 results",
@@ -1369,6 +1597,7 @@ async def buscar_licitacoes(
             termos_utilizados=custom_terms if custom_terms else None,
             stopwords_removidas=stopwords_removed if stopwords_removed else None,
             upgrade_message=upgrade_message,
+            source_stats=source_stats_data,
         )
 
         logger.info(
