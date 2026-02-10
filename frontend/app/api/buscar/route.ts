@@ -215,6 +215,7 @@ export async function POST(request: NextRequest) {
       stopwords_removidas: data.stopwords_removidas || null,
       excel_available: data.excel_available || false,
       upgrade_message: data.upgrade_message || null,
+      ultima_atualizacao: data.ultima_atualizacao || null,
     });
 
   } catch (error) {

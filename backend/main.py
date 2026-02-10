@@ -783,6 +783,33 @@ def _build_pncp_link(lic: dict) -> str:
     return link or ""
 
 
+def _calcular_urgencia(dias_restantes: int | None) -> str | None:
+    """Classify urgency based on days remaining until deadline."""
+    if dias_restantes is None:
+        return None
+    if dias_restantes < 0:
+        return "encerrada"
+    if dias_restantes < 7:
+        return "critica"
+    if dias_restantes < 14:
+        return "alta"
+    if dias_restantes <= 30:
+        return "media"
+    return "baixa"
+
+
+def _calcular_dias_restantes(data_encerramento_str: str | None) -> int | None:
+    """Calculate days remaining from today to the deadline date."""
+    if not data_encerramento_str:
+        return None
+    try:
+        from datetime import date
+        enc = date.fromisoformat(data_encerramento_str[:10])
+        return (enc - date.today()).days
+    except (ValueError, TypeError):
+        return None
+
+
 def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
     """
     Convert raw bid dictionaries to LicitacaoItem objects for frontend display.
@@ -790,6 +817,8 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
     items = []
     for lic in licitacoes:
         try:
+            data_enc = lic.get("dataEncerramentoProposta", "")[:10] if lic.get("dataEncerramentoProposta") else None
+            dias_rest = _calcular_dias_restantes(data_enc)
             item = LicitacaoItem(
                 pncp_id=lic.get("codigoCompra", lic.get("numeroControlePNCP", "")),
                 objeto=lic.get("objetoCompra", "")[:500],  # Truncate long descriptions
@@ -800,7 +829,9 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 modalidade=lic.get("modalidadeNome"),
                 data_publicacao=lic.get("dataPublicacaoPncp", "")[:10] if lic.get("dataPublicacaoPncp") else None,
                 data_abertura=lic.get("dataAberturaProposta", "")[:10] if lic.get("dataAberturaProposta") else None,
-                data_encerramento=lic.get("dataEncerramentoProposta", "")[:10] if lic.get("dataEncerramentoProposta") else None,
+                data_encerramento=data_enc,
+                dias_restantes=dias_rest,
+                urgencia=_calcular_urgencia(dias_rest),
                 link=_build_pncp_link(lic),
                 source=lic.get("_source"),
                 relevance_score=lic.get("_relevance_score"),
@@ -1709,6 +1740,7 @@ async def buscar_licitacoes(
             source_stats=source_stats_data,
             hidden_by_min_match=hidden_by_min_match if custom_terms else None,
             filter_relaxed=filter_relaxed if custom_terms else None,
+            ultima_atualizacao=datetime.now().isoformat() + "Z",
         )
 
         logger.info(

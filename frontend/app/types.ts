@@ -58,6 +58,10 @@ export interface LicitacaoItem {
   data_publicacao: string | null;
   data_abertura: string | null;
   data_encerramento: string | null;
+  /** Days remaining until proposal deadline (negative if past) */
+  dias_restantes?: number | null;
+  /** Urgency level: critica (<7d), alta (7-14d), media (14-30d), baixa (>30d), encerrada (past) */
+  urgencia?: string | null;
   link: string;
   /** Status of the licitacao (e.g., "aberta", "em_julgamento", "encerrada") */
   status?: string | null;
@@ -107,6 +111,8 @@ export interface BuscaResult {
   filter_relaxed?: boolean | null;
   /** Term validation metadata (new format for ignored terms) */
   metadata?: TermValidationMetadata | null;
+  /** ISO timestamp of when search results were generated */
+  ultima_atualizacao?: string | null;
 }
 
 /** Form validation errors */

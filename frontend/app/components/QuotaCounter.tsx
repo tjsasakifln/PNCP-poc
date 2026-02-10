@@ -73,7 +73,10 @@ export function QuotaCounter({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-ink">
-          {isFreeTier ? `Buscas gratuitas: ${quotaUsed}/${quotaLimit}` : `Buscas este mês: ${quotaUsed}/${quotaLimit}`}
+          {isFreeTier
+            ? `${Math.max(0, quotaLimit - quotaUsed)} ${quotaLimit - quotaUsed === 1 ? 'busca gratuita restante' : 'buscas gratuitas restantes'}`
+            : `${Math.max(0, quotaLimit - quotaUsed)} ${quotaLimit - quotaUsed === 1 ? 'busca restante' : 'buscas restantes'} neste mês`
+          }
         </span>
         <span className="text-xs text-ink-muted">
           {isFreeTier ? "Plano gratuito" : `Renovação: ${formattedResetDate}`}

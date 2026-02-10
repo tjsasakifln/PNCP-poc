@@ -558,6 +558,8 @@ class LicitacaoItem(BaseModel):
     data_publicacao: Optional[str] = Field(default=None, description="Publication date")
     data_abertura: Optional[str] = Field(default=None, description="Proposal opening date")
     data_encerramento: Optional[str] = Field(default=None, description="Proposal submission deadline")
+    dias_restantes: Optional[int] = Field(default=None, description="Days remaining until proposal deadline (negative if past)")
+    urgencia: Optional[str] = Field(default=None, description="Urgency level: critica (<7d), alta (7-14d), media (14-30d), baixa (>30d), encerrada (past)")
     link: str = Field(..., description="Direct link to PNCP portal")
     source: Optional[str] = Field(default=None, alias="_source", description="Source that provided this record")
     relevance_score: Optional[float] = Field(default=None, description="Relevance score 0.0-1.0 (only when custom terms active)")
@@ -648,6 +650,10 @@ class BuscaResponse(BaseModel):
         default=None,
         description="True if the minimum match filter was relaxed from strict to 1 due to zero results"
     )
+    ultima_atualizacao: Optional[str] = Field(
+        default=None,
+        description="ISO timestamp of when search results were generated"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -668,6 +674,7 @@ class BuscaResponse(BaseModel):
                 "total_raw": 523,
                 "total_filtrado": 15,
                 "upgrade_message": None,
+                "ultima_atualizacao": "2026-02-10T14:30:00Z",
             }
         }
 

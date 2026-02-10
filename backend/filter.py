@@ -1377,6 +1377,217 @@ def filtrar_por_municipio(
     return resultado
 
 
+# ============================================================================
+# Semantic Sector Context Analysis (STORY-183 AC3)
+# ============================================================================
+# These functions analyze search terms to determine the dominant sector based
+# on semantic similarity to sector-specific vocabularies. This enables better
+# filtering and result ranking based on user intent.
+# ============================================================================
+
+# Sector-specific vocabulary mapping
+SETOR_VOCABULARIOS = {
+    "rodoviário": {
+        "pavimentação",
+        "asfalto",
+        "estrada",
+        "rodovia",
+        "terraplanagem",
+        "terraplenagem",
+        "drenagem",
+        "sinalização viária",
+        "sinalizacao viaria",
+        "ponte",
+        "viaduto",
+        "acostamento",
+        "meio-fio",
+        "meio fio",
+        "guia",
+        "sarjeta",
+        "base",
+        "sub-base",
+        "sub base",
+        "cbuq",
+        "tsd",
+        "imprimação",
+        "imprimacao",
+    },
+    "hidroviário": {
+        "dragagem",
+        "porto",
+        "atracação",
+        "atracacao",
+        "terminal hidroviário",
+        "terminal hidroviario",
+        "cais",
+        "molhe",
+        "píer",
+        "pier",
+        "dique",
+        "eclusa",
+        "bacia",
+        "calado",
+    },
+    "edificações": {
+        "construção civil",
+        "construcao civil",
+        "edificação",
+        "edificacao",
+        "reforma",
+        "pintura",
+        "alvenaria",
+        "esquadria",
+        "cobertura",
+        "piso",
+        "revestimento",
+        "impermeabilização",
+        "impermeabilizacao",
+    },
+    "elétrica": {
+        "subestação",
+        "subestacao",
+        "transformador",
+        "rede elétrica",
+        "rede eletrica",
+        "iluminação",
+        "iluminacao",
+        "poste",
+        "cabo",
+        "eletroduto",
+        "disjuntor",
+        "quadro elétrico",
+        "quadro eletrico",
+    },
+    "saneamento": {
+        "esgoto",
+        "água",
+        "agua",
+        "tratamento",
+        "estação elevatória",
+        "estacao elevatoria",
+        "rede coletora",
+        "adutora",
+        "reservatório",
+        "reservatorio",
+        "ete",
+        "eta",
+    },
+    "tecnologia": {
+        "software",
+        "hardware",
+        "computador",
+        "servidor",
+        "rede",
+        "telecomunicação",
+        "telecomunicacao",
+        "fibra óptica",
+        "fibra otica",
+        "datacenter",
+        "data center",
+    },
+}
+
+
+def analisar_contexto_setor(termos_busca: list[str]) -> dict[str, float]:
+    """
+    Analyze search terms and return sector relevance scores.
+
+    This function compares the normalized search terms against sector-specific
+    vocabularies to determine which sectors are most relevant to the user's query.
+
+    Args:
+        termos_busca: List of search terms provided by the user
+
+    Returns:
+        Dictionary mapping sector names to relevance scores (0.0 to 1.0)
+
+    Example:
+        >>> analisar_contexto_setor(["pavimentação", "asfalto", "rodovia"])
+        {"rodoviário": 1.0, "edificações": 0.0, ...}
+    """
+    if not termos_busca:
+        return {}
+
+    # Normalize all search terms
+    termos_normalizados = [normalize_text(termo) for termo in termos_busca]
+
+    # Calculate relevance score for each sector
+    setor_scores: dict[str, float] = {}
+
+    for setor_nome, vocabulario in SETOR_VOCABULARIOS.items():
+        # Normalize vocabulary terms
+        vocab_normalizado = {normalize_text(termo) for termo in vocabulario}
+
+        # Count matches
+        matches = 0
+        for termo in termos_normalizados:
+            # Check for exact matches or substring matches
+            for vocab_term in vocab_normalizado:
+                if termo in vocab_term or vocab_term in termo:
+                    matches += 1
+                    break
+
+        # Calculate score as percentage of search terms that matched
+        if termos_normalizados:
+            score = matches / len(termos_normalizados)
+        else:
+            score = 0.0
+
+        setor_scores[setor_nome] = score
+
+    logger.debug(
+        f"analisar_contexto_setor: termos={termos_busca} scores={setor_scores}"
+    )
+
+    return setor_scores
+
+
+def obter_setor_dominante(
+    termos_busca: list[str], threshold: float = 0.3
+) -> str | None:
+    """
+    Return the dominant sector name or None if no clear sector detected.
+
+    A sector is considered dominant if its relevance score exceeds the threshold
+    and is higher than all other sectors.
+
+    Args:
+        termos_busca: List of search terms provided by the user
+        threshold: Minimum score required to identify a dominant sector (default 0.3)
+
+    Returns:
+        Name of the dominant sector, or None if no sector is clearly dominant
+
+    Example:
+        >>> obter_setor_dominante(["pavimentação", "asfalto"])
+        "rodoviário"
+        >>> obter_setor_dominante(["software"])
+        "tecnologia"
+        >>> obter_setor_dominante(["algo genérico"])
+        None
+    """
+    setor_scores = analisar_contexto_setor(termos_busca)
+
+    if not setor_scores:
+        return None
+
+    # Find the sector with the highest score
+    max_setor = max(setor_scores.items(), key=lambda x: x[1])
+    setor_nome, score = max_setor
+
+    # Only return if score meets threshold
+    if score >= threshold:
+        logger.debug(
+            f"obter_setor_dominante: dominant sector='{setor_nome}' score={score:.2f}"
+        )
+        return setor_nome
+
+    logger.debug(
+        f"obter_setor_dominante: no dominant sector (max score={score:.2f} < {threshold})"
+    )
+    return None
+
+
 def aplicar_todos_filtros(
     licitacoes: List[dict],
     ufs_selecionadas: Set[str],

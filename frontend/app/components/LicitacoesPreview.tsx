@@ -106,6 +106,39 @@ export function LicitacoesPreview({
     return `${day}/${month}/${year}`;
   };
 
+  /** AC2: Get urgency color classes based on urgencia level */
+  const getUrgenciaBadge = (item: LicitacaoItem) => {
+    if (!item.data_encerramento) return null;
+    const dias = item.dias_restantes;
+    const urgencia = item.urgencia;
+
+    let colorClasses = "bg-surface-2 text-ink-secondary"; // default gray
+    let label = `Prazo final: ${formatDate(item.data_encerramento)}`;
+
+    if (urgencia === "encerrada" || (dias != null && dias < 0)) {
+      colorClasses = "bg-gray-100 dark:bg-gray-800 text-gray-500 line-through";
+      label = `Encerrada: ${formatDate(item.data_encerramento)}`;
+    } else if (urgencia === "critica" || (dias != null && dias < 7)) {
+      colorClasses = "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300";
+      label = `Urgente: ${formatDate(item.data_encerramento)} (${dias}d)`;
+    } else if (urgencia === "alta" || (dias != null && dias < 14)) {
+      colorClasses = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300";
+      label = `Atenção: ${formatDate(item.data_encerramento)} (${dias}d)`;
+    } else if (urgencia === "media" || (dias != null && dias <= 30)) {
+      colorClasses = "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
+      label = `Prazo final: ${formatDate(item.data_encerramento)} (${dias}d)`;
+    } else {
+      colorClasses = "bg-surface-2 text-ink-secondary";
+      label = `Prazo final: ${formatDate(item.data_encerramento)}${dias != null ? ` (${dias}d)` : ''}`;
+    }
+
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClasses}`}>
+        {label}
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-ink flex items-center gap-2">
@@ -145,14 +178,10 @@ export function LicitacoesPreview({
                       {item.modalidade}
                     </span>
                   )}
-                  {item.data_encerramento && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-success-subtle text-success text-xs font-medium">
-                      Prazo: {formatDate(item.data_encerramento)}
-                    </span>
-                  )}
+                  {getUrgenciaBadge(item)}
                   {item.data_abertura && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs">
-                      Início: {formatDate(item.data_abertura)}
+                      Propostas desde: {formatDate(item.data_abertura)}
                     </span>
                   )}
                 </div>
@@ -167,15 +196,14 @@ export function LicitacoesPreview({
                     href={item.link}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Ver no PNCP (abre em nova janela)"
                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
                   >
-                    <svg
-              role="img"
-              aria-label="Ícone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    Ver no PNCP
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                    Ver no PNCP
                   </a>
                 )}
               </div>
@@ -233,7 +261,7 @@ export function LicitacoesPreview({
                 </svg>
               </div>
               <h4 className="text-lg font-semibold text-ink mb-2">
-                +{blurredItems.length} oportunidades ocultas
+                +{blurredItems.length} {blurredItems.length === 1 ? 'oportunidade oculta' : 'oportunidades ocultas'}
               </h4>
               <p className="text-sm text-ink-secondary mb-4">
                 Assine para ver todas as oportunidades com links diretos e exportar para Excel.
@@ -276,14 +304,10 @@ export function LicitacoesPreview({
                         {item.modalidade}
                       </span>
                     )}
-                    {item.data_encerramento && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-success-subtle text-success text-xs font-medium">
-                        Prazo: {formatDate(item.data_encerramento)}
-                      </span>
-                    )}
+                    {getUrgenciaBadge(item)}
                     {item.data_abertura && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs">
-                        Início: {formatDate(item.data_abertura)}
+                        Propostas desde: {formatDate(item.data_abertura)}
                       </span>
                     )}
                   </div>
@@ -298,15 +322,14 @@ export function LicitacoesPreview({
                       href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label="Ver no PNCP (abre em nova janela)"
                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
                     >
-                      <svg
-              role="img"
-              aria-label="Ícone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      Ver no PNCP
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                               d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
-                      Ver no PNCP
                     </a>
                   )}
                 </div>

@@ -78,7 +78,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas este mês: 23\/50/i)).toBeInTheDocument();
+      expect(screen.getByText(/27 buscas restantes neste mês/i)).toBeInTheDocument();
     });
 
     it('formats reset date correctly (pt-BR)', () => {
@@ -290,7 +290,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/0\/0/i)).toBeInTheDocument();
+      expect(screen.getByText(/0 buscas gratuitas restantes/i)).toBeInTheDocument();
     });
 
     it('handles quota used exceeding limit', () => {
@@ -335,7 +335,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas este mês: 250\/1000/i)).toBeInTheDocument();
+      expect(screen.getByText(/750 buscas restantes neste mês/i)).toBeInTheDocument();
     });
 
     it('shows remaining searches clearly', () => {
@@ -349,7 +349,7 @@ describe('QuotaCounter', () => {
       );
 
       // 50 - 30 = 20 remaining
-      expect(screen.getByText(/30\/50/i)).toBeInTheDocument();
+      expect(screen.getByText(/20 buscas restantes neste mês/i)).toBeInTheDocument();
     });
 
     it('handles single search remaining', () => {
@@ -363,7 +363,7 @@ describe('QuotaCounter', () => {
       );
 
       // 1 search remaining should trigger warning
-      expect(screen.getByText(/49\/50/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 busca restante neste mês/i)).toBeInTheDocument();
     });
   });
 
@@ -378,7 +378,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas gratuitas: 1\/3/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 buscas gratuitas restantes/i)).toBeInTheDocument();
       expect(screen.getByText(/Plano gratuito/i)).toBeInTheDocument();
       expect(screen.queryByText(/Renovação:/i)).not.toBeInTheDocument();
     });
@@ -393,7 +393,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas gratuitas: 2\/5/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 buscas gratuitas restantes/i)).toBeInTheDocument();
       expect(screen.getByText(/Plano gratuito/i)).toBeInTheDocument();
       expect(screen.queryByText(/Renovação:/i)).not.toBeInTheDocument();
     });
@@ -410,7 +410,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas este mês: 10\/50/i)).toBeInTheDocument();
+      expect(screen.getByText(/40 buscas restantes neste mês/i)).toBeInTheDocument();
       expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
 
@@ -424,7 +424,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas este mês: 100\/300/i)).toBeInTheDocument();
+      expect(screen.getByText(/200 buscas restantes neste mês/i)).toBeInTheDocument();
       expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
 
@@ -438,7 +438,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Buscas este mês: 500\/1000/i)).toBeInTheDocument();
+      expect(screen.getByText(/500 buscas restantes neste mês/i)).toBeInTheDocument();
       expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
   });

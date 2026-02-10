@@ -30,6 +30,7 @@ import { QuotaCounter } from "../components/QuotaCounter";
 import { UpgradeModal } from "../components/UpgradeModal";
 import GoogleSheetsExportButton from "../../components/GoogleSheetsExportButton";
 import { LicitacoesPreview } from "../components/LicitacoesPreview";
+import { Tooltip } from "../components/ui/Tooltip";
 import type { SavedSearch } from "../../lib/savedSearches";
 import { getUserFriendlyError } from "../../lib/error-messages";
 
@@ -1153,7 +1154,7 @@ function HomePageContent() {
                 Busca de Licitações
               </h1>
               <p className="text-ink-secondary mt-1 text-sm sm:text-base">
-                Encontre oportunidades de contratação pública no Portal Nacional (PNCP)
+                Encontre oportunidades de contratação pública no Portal Nacional (<Tooltip content="PNCP = Portal Nacional de Contratações Públicas. É o sistema oficial do governo federal para publicação de licitações.">PNCP</Tooltip>)
               </p>
             </div>
 
@@ -1389,7 +1390,7 @@ function HomePageContent() {
         <section className="mb-6 animate-fade-in-up stagger-2 relative z-10">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
             <label className="text-base sm:text-lg font-semibold text-ink">
-              Estados (UFs):
+              Estados (<Tooltip content="UF = Unidade Federativa (Estado brasileiro). Selecione os estados onde deseja buscar licitações.">UFs</Tooltip>):
             </label>
             <div className="flex gap-3">
               <button
@@ -1834,7 +1835,7 @@ function HomePageContent() {
                   <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
                     {result.resumo.total_oportunidades}
                   </span>
-                  <span className="text-sm sm:text-base text-ink-secondary block mt-1">licitações</span>
+                  <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}</span>
                 </div>
                 <div>
                   <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
@@ -1900,7 +1901,7 @@ function HomePageContent() {
               <button
                 onClick={handleDownload}
                 disabled={downloadLoading}
-                aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} licitações`}
+                aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} ${result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}`}
                 className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
                            hover:bg-brand-blue-hover active:bg-brand-blue
                            disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
@@ -1920,7 +1921,7 @@ function HomePageContent() {
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Baixar Excel ({result.resumo.total_oportunidades} licitações)
+                    Baixar Excel ({result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'})
                   </>
                 )}
               </button>
@@ -1956,12 +1957,12 @@ function HomePageContent() {
               </div>
             )}
 
-            {/* Stats */}
+            {/* Stats + Timestamp */}
             <div className="text-xs sm:text-sm text-ink-muted text-center space-y-1">
               {rawCount > 0 && (
                 <p>
-                  Encontradas {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} licitações
-                  ({((result.resumo.total_oportunidades / rawCount) * 100).toFixed(1)}% do setor {sectorName.toLowerCase()})
+                  Mostrando {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitação encontrada' : 'licitações encontradas'}
+                  {' '}no setor {sectorName.toLowerCase()}
                 </p>
               )}
               {result.source_stats && result.source_stats.length > 1 && (
@@ -1970,6 +1971,14 @@ function HomePageContent() {
                     .filter((s: { status: string }) => s.status === "success")
                     .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count}`)
                     .join(", ")}
+                </p>
+              )}
+              {result.ultima_atualizacao && (
+                <p className="text-ink-faint">
+                  <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Última atualização: {new Date(result.ultima_atualizacao).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </p>
               )}
             </div>
