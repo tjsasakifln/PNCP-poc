@@ -47,6 +47,7 @@ def classify_contract_primary_match(
     valor: float,
     setor_name: Optional[str] = None,
     termos_busca: Optional[list[str]] = None,
+    prompt_level: str = "standard",
 ) -> bool:
     """
     Use GPT-4o-mini to determine if contract is PRIMARILY about sector or custom terms.
@@ -104,11 +105,39 @@ def classify_contract_primary_match(
     # Truncate objeto to 500 chars (AC3.7 - save tokens)
     objeto_truncated = objeto[:500]
 
-    # Determine mode and build prompt
+    # STORY-181 AC3: Determine mode and build prompt (dual-level)
     if setor_name:
         mode = "setor"
         context = setor_name
-        user_prompt = f"""Setor: {setor_name}
+
+        if prompt_level == "conservative":
+            # STORY-181 AC3.2: Conservative prompt with examples (density 1-3%)
+            user_prompt = f"""Você é um classificador de licitações públicas. Analise se o contrato é PRIMARIAMENTE sobre o setor especificado (> 80% do valor e escopo).
+
+SETOR: {setor_name}
+DESCRIÇÃO DO SETOR: Aquisição de uniformes, fardas, roupas profissionais para servidores, estudantes, agentes públicos. NÃO inclui EPIs médicos (aventais hospitalares, luvas, máscaras).
+
+CONTRATO:
+Valor: R$ {valor:,.2f}
+Objeto: {objeto_truncated}
+
+EXEMPLOS DE CLASSIFICAÇÃO:
+
+SIM:
+- "Uniformes escolares para rede municipal"
+- "Fardamento para guardas municipais"
+- "Camisas polo e calças para agentes de trânsito"
+
+NAO:
+- "Material de saúde incluindo aventais hospitalares e luvas"
+- "Processo seletivo para contratação de servidores"
+- "Obra de infraestrutura com fornecimento de uniformes para operários"
+
+Este contrato é PRIMARIAMENTE sobre {setor_name}?
+Responda APENAS: SIM ou NAO"""
+        else:
+            # Standard prompt (density 3-8%)
+            user_prompt = f"""Setor: {setor_name}
 Valor: R$ {valor:,.2f}
 Objeto: {objeto_truncated}
 
@@ -124,9 +153,9 @@ Objeto: {objeto_truncated}
 Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secundários)?
 Responda APENAS: SIM ou NAO"""
 
-    # AC3.5: Check cache (MD5 hash of mode:context:valor:objeto)
+    # AC3.5: Check cache (MD5 hash of mode:context:valor:objeto:prompt_level)
     cache_key = hashlib.md5(
-        f"{mode}:{context}:{valor}:{objeto_truncated}".encode()
+        f"{mode}:{context}:{valor}:{objeto_truncated}:{prompt_level}".encode()
     ).hexdigest()
 
     if cache_key in _arbiter_cache:
@@ -138,9 +167,11 @@ Responda APENAS: SIM ou NAO"""
 
     # AC3.6: Fallback on LLM failure
     try:
-        # AC3.4: Call GPT-4o-mini with strict parameters
+        # STORY-181 AC3.5: More restrictive system message
         system_prompt = (
-            "Você é um classificador de licitações. "
+            "Você é um classificador conservador de licitações. "
+            "Em caso de dúvida, responda NAO. "
+            "Apenas responda SIM se o contrato é CLARAMENTE e PRIMARIAMENTE sobre o setor. "
             "Responda APENAS 'SIM' ou 'NAO'."
         )
 

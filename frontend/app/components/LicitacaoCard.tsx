@@ -338,7 +338,7 @@ export function LicitacaoCard({
           {licitacao.data_abertura && (
             <span className="inline-flex items-center gap-1 text-ink-muted">
               <CalendarIcon className="w-4 h-4" />
-              <span>Abertura: {formatDate(licitacao.data_abertura)}</span>
+              <span>Início: {formatDate(licitacao.data_abertura)}</span>
             </span>
           )}
         </div>

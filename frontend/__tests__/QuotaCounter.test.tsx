@@ -367,6 +367,38 @@ describe('QuotaCounter', () => {
     });
   });
 
+  describe('Free tier displays', () => {
+    it('shows "Buscas gratuitas" for free tier (planId="free")', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={1}
+          quotaLimit={3}
+          resetDate={mockResetDate}
+          planId="free"
+        />
+      );
+
+      expect(screen.getByText(/Buscas gratuitas: 1\/3/i)).toBeInTheDocument();
+      expect(screen.getByText(/Plano gratuito/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Renovação:/i)).not.toBeInTheDocument();
+    });
+
+    it('shows "Buscas gratuitas" for free tier (quotaLimit <= 5)', () => {
+      render(
+        <QuotaCounter
+          quotaUsed={2}
+          quotaLimit={5}
+          resetDate={mockResetDate}
+          planId="some_plan"
+        />
+      );
+
+      expect(screen.getByText(/Buscas gratuitas: 2\/5/i)).toBeInTheDocument();
+      expect(screen.getByText(/Plano gratuito/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Renovação:/i)).not.toBeInTheDocument();
+    });
+  });
+
   describe('Plan-specific displays', () => {
     it('correctly displays Consultor Ágil quota', () => {
       render(
@@ -378,7 +410,8 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/10\/50/i)).toBeInTheDocument();
+      expect(screen.getByText(/Buscas este mês: 10\/50/i)).toBeInTheDocument();
+      expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
 
     it('correctly displays Máquina quota', () => {
@@ -391,7 +424,8 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/100\/300/i)).toBeInTheDocument();
+      expect(screen.getByText(/Buscas este mês: 100\/300/i)).toBeInTheDocument();
+      expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
 
     it('correctly displays Sala de Guerra quota', () => {
@@ -404,7 +438,8 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/500\/1000/i)).toBeInTheDocument();
+      expect(screen.getByText(/Buscas este mês: 500\/1000/i)).toBeInTheDocument();
+      expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
   });
 });

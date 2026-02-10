@@ -1770,23 +1770,18 @@ function HomePageContent() {
                 )}
               </button>
             ) : (
-              <button
-                onClick={() => {
-                  setPreSelectedPlan("maquina");
-                  setUpgradeSource("excel_button");
-                  setShowUpgradeModal(true);
-                }}
+              <Link
+                href="/planos"
                 className="w-full bg-surface-0 border-2 border-brand-navy text-brand-navy py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
                            hover:bg-brand-blue-subtle transition-all duration-200
                            flex items-center justify-center gap-3"
-                aria-label="Export Excel feature locked. Available on Máquina plan at R$ 597 per month. Click to view plans"
-                title="Exportar Excel disponível no plano Máquina (R$ 597/mês)"
+                aria-label="Assine um plano para exportar resultados em Excel e Google Sheets"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                🔒 Exportar Excel (Disponível no plano Máquina)
-              </button>
+                Assine para exportar resultados e acessar funcionalidades premium
+              </Link>
             )}
 
             {/* Google Sheets Export - STORY-180 */}

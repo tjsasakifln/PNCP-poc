@@ -50,6 +50,9 @@ export function QuotaCounter({
   // Handle unlimited quota (free trial)
   const isUnlimited = quotaLimit >= 999999;
 
+  // Detect free tier (planId "free" or quotaLimit <= 5)
+  const isFreeTier = planId === "free" || quotaLimit <= 5;
+
   if (isUnlimited) {
     return (
       <div className="p-4 bg-surface-1 rounded-card border border-border">
@@ -70,9 +73,11 @@ export function QuotaCounter({
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-ink">
-          Buscas este mês: {quotaUsed}/{quotaLimit}
+          {isFreeTier ? `Buscas gratuitas: ${quotaUsed}/${quotaLimit}` : `Buscas este mês: ${quotaUsed}/${quotaLimit}`}
         </span>
-        <span className="text-xs text-ink-muted">Renovação: {formattedResetDate}</span>
+        <span className="text-xs text-ink-muted">
+          {isFreeTier ? "Plano gratuito" : `Renovação: ${formattedResetDate}`}
+        </span>
       </div>
 
       {/* Progress bar */}

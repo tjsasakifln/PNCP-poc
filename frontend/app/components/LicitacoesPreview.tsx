@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { LicitacaoItem } from "../types";
 
 interface LicitacoesPreviewProps {
@@ -151,7 +152,7 @@ export function LicitacoesPreview({
                   )}
                   {item.data_abertura && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs">
-                      Abertura: {formatDate(item.data_abertura)}
+                      Início: {formatDate(item.data_abertura)}
                     </span>
                   )}
                 </div>
@@ -235,14 +236,14 @@ export function LicitacoesPreview({
                 +{blurredItems.length} oportunidades ocultas
               </h4>
               <p className="text-sm text-ink-secondary mb-4">
-                Faça upgrade para ver todas as oportunidades com links diretos e exportar para Excel.
+                Assine para ver todas as oportunidades com links diretos e exportar para Excel.
               </p>
-              <button
-                onClick={onUpgradeClick}
-                className="w-full py-2.5 bg-brand-navy text-white rounded-button font-semibold hover:bg-brand-blue-hover transition-colors"
+              <Link
+                href="/planos"
+                className="block w-full py-2.5 bg-brand-navy text-white rounded-button font-semibold hover:bg-brand-blue-hover transition-colors text-center"
               >
                 Ver Planos
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -282,7 +283,7 @@ export function LicitacoesPreview({
                     )}
                     {item.data_abertura && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs">
-                        Abertura: {formatDate(item.data_abertura)}
+                        Início: {formatDate(item.data_abertura)}
                       </span>
                     )}
                   </div>

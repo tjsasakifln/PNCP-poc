@@ -1,8 +1,11 @@
 """Keyword matching engine for uniform/apparel procurement filtering."""
 
 import logging
+import os
+import random
 import re
 import unicodedata
+import uuid
 from datetime import datetime
 from typing import Set, Tuple, List, Dict, Optional
 
@@ -343,6 +346,58 @@ KEYWORDS_EXCLUSAO: Set[str] = {
     "sinalizacao",
     "sinalização visual",
     "sinalizacao visual",
+
+    # --- STORY-181 AC5.1: Medical/health context (EPI != uniforme profissional) ---
+    "assistencia ao paciente",
+    "assistência ao paciente",
+    "material hospitalar",
+    "materiais hospitalares",
+    "material de saude",
+    "material de saúde",
+    "materiais de saude",
+    "materiais de saúde",
+    "uti",
+    "unidade de terapia intensiva",
+    "centro cirurgico",
+    "centro cirúrgico",
+    "ambulatorio",
+    "ambulatório",
+    "pronto-socorro",
+    "pronto socorro",
+    "produtos para saude",
+    "produtos para saúde",
+    "equipamento medico",
+    "equipamento médico",
+    "equipamentos medicos",
+    "equipamentos médicos",
+    "equipamento hospitalar",
+    "equipamentos hospitalares",
+
+    # --- STORY-181 AC5.2: HR/Administrative context ---
+    "processo seletivo",
+    "selecao de pessoal",
+    "seleção de pessoal",
+    "recrutamento",
+    "contratacao de pessoal",
+    "contratação de pessoal",
+    "concurso publico",
+    "concurso público",
+    "teste seletivo",
+    "avaliacao de candidatos",
+    "avaliação de candidatos",
+    "admissão de pessoal",
+    "admissao de pessoal",
+
+    # --- STORY-181 AC5.3: Engineering/infrastructure context ---
+    "obra de infraestrutura",
+    "obra de pavimentacao",
+    "obra de pavimentação",
+    "obra de drenagem",
+    "obra de saneamento",
+    "execucao de obra",
+    "execução de obra",
+    "servicos de engenharia",
+    "serviços de engenharia",
 }
 
 
@@ -390,6 +445,57 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
 
     return text.strip()
+
+
+# =============================================================================
+# STORY-181 AC6: Red Flags Secondary Validation
+# =============================================================================
+# After keyword matching passes, check for "red flag" terms that indicate
+# the contract is NOT primarily about the matched sector.
+
+RED_FLAGS_MEDICAL: Set[str] = {
+    "paciente", "hospitalar", "ambulatorial", "medicamento",
+    "cirurgico", "diagnostico", "tratamento", "terapia",
+    "clinica", "enfermagem", "leito", "internacao",
+}
+
+RED_FLAGS_ADMINISTRATIVE: Set[str] = {
+    "processo licitatorio", "processo administrativo",
+    "auditoria", "consultoria", "assessoria", "capacitacao",
+    "treinamento", "curso", "palestra", "seminario",
+}
+
+RED_FLAGS_INFRASTRUCTURE: Set[str] = {
+    "pavimentacao", "drenagem", "saneamento", "terraplanagem",
+    "recapeamento", "asfalto", "esgoto", "bueiro",
+}
+
+
+def has_red_flags(
+    objeto_norm: str,
+    red_flag_sets: List[Set[str]],
+    threshold: int = 2,
+) -> Tuple[bool, List[str]]:
+    """
+    Check if a contract description contains red flag terms (STORY-181 AC6).
+
+    A contract is flagged when it contains 2+ terms from any single red flag
+    category, indicating the object is probably NOT about the matched sector.
+
+    Args:
+        objeto_norm: Normalized procurement object description
+        red_flag_sets: List of red flag term sets to check
+        threshold: Minimum matches in any single set to trigger flag
+
+    Returns:
+        Tuple of (has_flags, matched_flags)
+    """
+    all_matched: List[str] = []
+    for red_flags in red_flag_sets:
+        matches = [flag for flag in red_flags if flag in objeto_norm]
+        if len(matches) >= threshold:
+            all_matched.extend(matches)
+    return len(all_matched) > 0, all_matched
 
 
 def match_keywords(
@@ -1568,41 +1674,89 @@ def aplicar_todos_filtros(
         else:
             stats["rejeitadas_keyword"] += 1
 
-    # STORY-179 AC2.2: Camada 2A - Term Density Decision Thresholds
-    # Apply density-based filtering (only if we have keyword matches)
-    # High density (>5%): Auto-accept (dominant term, high confidence)
-    # Low density (<1%): Auto-reject (peripheral term, false positive)
-    # Middle (1-5%): Uncertain, send to LLM arbiter (Camada 3A)
-    DENSITY_HIGH_THRESHOLD = 0.05  # 5%
-    DENSITY_LOW_THRESHOLD = 0.01  # 1%
+    # STORY-181 AC2: Camada 2A - Calibrated Term Density Decision Thresholds
+    # Using configurable thresholds from config.py (env-var adjustable)
+    from config import (
+        TERM_DENSITY_HIGH_THRESHOLD,
+        TERM_DENSITY_MEDIUM_THRESHOLD,
+        TERM_DENSITY_LOW_THRESHOLD,
+        FILTER_DEBUG_MODE,
+        QA_AUDIT_SAMPLE_RATE,
+    )
 
     resultado_densidade: List[dict] = []
-    resultado_llm_candidates: List[dict] = []  # Contratos na zona duvidosa (1-5%)
+    resultado_llm_standard: List[dict] = []  # density 3-8%: LLM standard prompt
+    resultado_llm_conservative: List[dict] = []  # density 1-3%: LLM conservative prompt
+    stats["rejeitadas_red_flags"] = 0
 
     for lic in resultado_keyword:
         density = lic.get("_term_density", 0)
+        trace_id = str(uuid.uuid4())[:8]
+        lic["_trace_id"] = trace_id
+        objeto_preview = lic.get("objetoCompra", "")[:100]
 
-        if density > DENSITY_HIGH_THRESHOLD:
-            # High confidence - termo dominante, aceitar sem LLM
+        if density > TERM_DENSITY_HIGH_THRESHOLD:
+            # High confidence (>8%) - dominant term, accept without LLM
             stats["aprovadas_alta_densidade"] += 1
-            resultado_densidade.append(lic)
-        elif density < DENSITY_LOW_THRESHOLD:
-            # Low confidence - termo periférico, rejeitar
-            stats["rejeitadas_baixa_densidade"] += 1
-            logger.debug(
-                f"  Rejeitada por Camada 2A (densidade < 1%): "
-                f"densidade={density:.1%} "
-                f"objeto={lic.get('objetoCompra', '')[:80]}"
+            logger.info(
+                f"[{trace_id}] Camada 2A: ACCEPT (alta densidade) "
+                f"density={density:.1%} objeto={objeto_preview}"
             )
-        else:
-            # Uncertain zone (1% ≤ density ≤ 5%) - needs LLM arbiter
+            resultado_densidade.append(lic)
+        elif density < TERM_DENSITY_LOW_THRESHOLD:
+            # Low confidence (<1%) - peripheral term, reject
+            stats["rejeitadas_baixa_densidade"] += 1
+            logger.info(
+                f"[{trace_id}] Camada 2A: REJECT (baixa densidade) "
+                f"density={density:.1%} objeto={objeto_preview}"
+            )
+        elif density >= TERM_DENSITY_MEDIUM_THRESHOLD:
+            # Medium-high zone (3-8%) - LLM with standard prompt
+            # STORY-181 AC6: Check red flags BEFORE sending to LLM
+            objeto_norm = normalize_text(lic.get("objetoCompra", ""))
+            flagged, flag_terms = has_red_flags(
+                objeto_norm,
+                [RED_FLAGS_MEDICAL, RED_FLAGS_ADMINISTRATIVE, RED_FLAGS_INFRASTRUCTURE],
+            )
+            if flagged:
+                stats["rejeitadas_red_flags"] += 1
+                logger.info(
+                    f"[{trace_id}] Camada 2A: REJECT (red flags: {flag_terms}) "
+                    f"density={density:.1%} objeto={objeto_preview}"
+                )
+                continue
+
             stats["duvidosas_llm_arbiter"] += 1
-            resultado_llm_candidates.append(lic)
+            lic["_llm_prompt_level"] = "standard"
+            resultado_llm_standard.append(lic)
+        else:
+            # Low-medium zone (1-3%) - LLM with conservative prompt
+            # STORY-181 AC6: Check red flags BEFORE sending to LLM
+            objeto_norm = normalize_text(lic.get("objetoCompra", ""))
+            flagged, flag_terms = has_red_flags(
+                objeto_norm,
+                [RED_FLAGS_MEDICAL, RED_FLAGS_ADMINISTRATIVE, RED_FLAGS_INFRASTRUCTURE],
+            )
+            if flagged:
+                stats["rejeitadas_red_flags"] += 1
+                logger.info(
+                    f"[{trace_id}] Camada 2A: REJECT (red flags: {flag_terms}) "
+                    f"density={density:.1%} objeto={objeto_preview}"
+                )
+                continue
+
+            stats["duvidosas_llm_arbiter"] += 1
+            lic["_llm_prompt_level"] = "conservative"
+            resultado_llm_conservative.append(lic)
+
+    resultado_llm_candidates = resultado_llm_standard + resultado_llm_conservative
 
     logger.debug(
         f"  Após Camada 2A (Term Density): "
         f"{len(resultado_densidade)} aprovadas (alta densidade), "
-        f"{len(resultado_llm_candidates)} duvidosas (LLM necessário), "
+        f"{len(resultado_llm_standard)} duvidosas (LLM standard), "
+        f"{len(resultado_llm_conservative)} duvidosas (LLM conservative), "
+        f"{stats.get('rejeitadas_red_flags', 0)} rejeitadas (red flags), "
         f"{stats['rejeitadas_baixa_densidade']} rejeitadas (baixa densidade)"
     )
 
@@ -1619,6 +1773,8 @@ def aplicar_todos_filtros(
         for lic in resultado_llm_candidates:
             objeto = lic.get("objetoCompra", "")
             valor = lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0
+            trace_id = lic.get("_trace_id", "unknown")
+            prompt_level = lic.get("_llm_prompt_level", "standard")
 
             # Convert valor to float if needed
             if isinstance(valor, str):
@@ -1630,7 +1786,6 @@ def aplicar_todos_filtros(
                 valor = float(valor) if valor else 0.0
 
             # Determine mode: sector-based or custom-terms-based
-            # If setor is provided, use sector mode; otherwise use custom terms
             setor_name = None
             termos = None
 
@@ -1642,34 +1797,49 @@ def aplicar_todos_filtros(
                 except KeyError:
                     logger.warning(f"Setor '{setor}' não encontrado para LLM arbiter")
 
-            # If no sector, use matched keywords as custom terms
             if not setor_name:
                 termos = lic.get("_matched_terms", [])
 
-            # Call LLM arbiter
+            # STORY-181 AC3: Call LLM arbiter with prompt level
             stats["llm_arbiter_calls"] += 1
             is_primary = classify_contract_primary_match(
                 objeto=objeto,
                 valor=valor,
                 setor_name=setor_name,
                 termos_busca=termos,
+                prompt_level=prompt_level,
             )
 
             if is_primary:
-                # LLM says YES - this is PRIMARILY about the sector/terms
                 stats["aprovadas_llm_arbiter"] += 1
                 resultado_densidade.append(lic)
-            else:
-                # LLM says NO - this is a FALSE POSITIVE (tangential mention)
-                stats["rejeitadas_llm_arbiter"] += 1
-                logger.debug(
-                    f"  Rejeitada por Camada 3A (LLM arbiter: NAO): "
-                    f"valor=R$ {valor:,.2f} densidade={lic.get('_term_density', 0):.1%} "
+                logger.info(
+                    f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
+                    f"density={lic.get('_term_density', 0):.1%} "
                     f"objeto={objeto[:80]}"
                 )
+            else:
+                stats["rejeitadas_llm_arbiter"] += 1
+                logger.info(
+                    f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
+                    f"density={lic.get('_term_density', 0):.1%} "
+                    f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"
+                )
 
-        logger.debug(
-            f"  Após Camada 3A (LLM Arbiter): "
+            # STORY-181 AC7: QA Audit sampling
+            if random.random() < QA_AUDIT_SAMPLE_RATE:
+                lic["_qa_audit"] = True
+                lic["_qa_audit_decision"] = {
+                    "trace_id": trace_id,
+                    "llm_response": "SIM" if is_primary else "NAO",
+                    "prompt_level": prompt_level,
+                    "density": lic.get("_term_density", 0),
+                    "matched_terms": lic.get("_matched_terms", []),
+                    "valor": valor,
+                }
+
+        logger.info(
+            f"Camada 3A resultado: "
             f"{stats['aprovadas_llm_arbiter']} aprovadas, "
             f"{stats['rejeitadas_llm_arbiter']} rejeitadas, "
             f"{stats['llm_arbiter_calls']} chamadas LLM"

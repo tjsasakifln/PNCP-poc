@@ -111,7 +111,7 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
         ("Valor Estimado", 18),
         ("Modalidade", 20),
         ("Publicação", 12),
-        ("Abertura", 16),
+        ("Início", 16),
         ("Situação", 15),
         ("Link", 15),
     ]

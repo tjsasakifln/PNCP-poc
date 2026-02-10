@@ -15,7 +15,7 @@ Coverage:
 """
 
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -51,7 +51,7 @@ class TestRealWorldCases:
         Expected: REJECTED by Camada 1A (value threshold)
         LLM should NOT be called (rejected before reaching Camada 3A)
         """
-        mock_response = Mock()
+        mock_response = MagicMock()
         mock_response.choices[0].message.content = "NAO"
         mock_openai_client.chat.completions.create.return_value = mock_response
 

@@ -16,8 +16,25 @@
  */
 
 import { useState } from 'react';
-import { FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+/**
+ * Google Sheets Brand Icon Component
+ * Official Google Sheets logo with brand colors
+ */
+function GoogleSheetsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="#0F9D58"/>
+      <path d="M14 2V8H20L14 2Z" fill="#87CEAC"/>
+      <rect x="7" y="11" width="10" height="2" rx="0.5" fill="white"/>
+      <rect x="7" y="14" width="10" height="2" rx="0.5" fill="white"/>
+      <rect x="7" y="17" width="6" height="2" rx="0.5" fill="white"/>
+      <line x1="11" y1="11" x2="11" y2="19" stroke="white" strokeWidth="1"/>
+    </svg>
+  );
+}
 
 interface GoogleSheetsExportButtonProps {
   /** List of licitações to export */
@@ -159,7 +176,7 @@ export default function GoogleSheetsExportButton({
         </>
       ) : (
         <>
-          <FileSpreadsheet className="w-4 h-4 text-[#4285F4]" aria-hidden="true" />
+          <GoogleSheetsIcon className="w-4 h-4" aria-hidden="true" />
           <span>Exportar para Google Sheets</span>
         </>
       )}

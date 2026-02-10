@@ -40,6 +40,35 @@ SECTORS: Dict[str, SectorConfig] = {
         keywords=KEYWORDS_UNIFORMES,
         exclusions=KEYWORDS_EXCLUSAO,
         max_contract_value=5_000_000,  # R$ 5M - largest municipal uniform contract ~R$ 3M
+        # STORY-181 AC4.1: Context-required keywords for vestuario
+        # Ambiguous terms only count as matches if confirming context is present
+        context_required_keywords={
+            # "avental" matches hospital EPIs — require uniform/clothing context
+            "avental": {"uniforme", "fardamento", "vestuario", "escolar", "profissional",
+                        "cozinha", "cozinheiro", "merendeira", "copa"},
+            "aventais": {"uniforme", "fardamento", "vestuario", "escolar", "profissional",
+                         "cozinha", "cozinheiro", "merendeira", "copa"},
+            # "jaleco" can appear in medical/lab contexts — require clothing procurement context
+            "jaleco": {"uniforme", "escolar", "profissional", "vestuario", "fardamento",
+                       "servidor", "funcionario"},
+            "jalecos": {"uniforme", "escolar", "profissional", "vestuario", "fardamento",
+                        "servidor", "funcionario"},
+            # "epi"/"epis" are too broad — require vestimenta/clothing context
+            "epi": {"vestuario", "vestimenta", "uniforme", "fardamento", "roupa",
+                    "calca", "camisa", "bota", "botina"},
+            "epis": {"vestuario", "vestimenta", "uniforme", "fardamento", "roupa",
+                     "calca", "camisa", "bota", "botina"},
+            # "macacão" can appear in PPE/safety contexts
+            "macacão": {"uniforme", "fardamento", "vestuario", "profissional",
+                        "operacional", "servidor"},
+            "macacoes": {"uniforme", "fardamento", "vestuario", "profissional",
+                         "operacional", "servidor"},
+            # "colete" can appear in safety/ballistic contexts
+            "colete": {"uniforme", "fardamento", "vestuario", "profissional",
+                       "identificacao", "refletivo"},
+            "coletes": {"uniforme", "fardamento", "vestuario", "profissional",
+                        "identificacao", "refletivo"},
+        },
     ),
     "alimentos": SectorConfig(
         id="alimentos",
