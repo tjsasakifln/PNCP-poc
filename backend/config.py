@@ -174,21 +174,22 @@ LLM_ARBITER_MAX_TOKENS: int = int(os.getenv("LLM_ARBITER_MAX_TOKENS", "1"))
 LLM_ARBITER_TEMPERATURE: float = float(os.getenv("LLM_ARBITER_TEMPERATURE", "0"))
 
 # Term density thresholds (adjustable without code changes)
-# STORY-181 AC2: Calibrated thresholds based on real production data
+# HOTFIX 2026-02-10: Adjusted based on bug-investigation-squad findings
+# Reduced thresholds to minimize false positives while maintaining precision
 # High threshold: density > X% = auto-accept without LLM (high confidence)
 TERM_DENSITY_HIGH_THRESHOLD: float = float(
-    os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.08")
-)  # 8% (was 5%, raised to reduce false auto-approvals)
+    os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.05")
+)  # 5% (reduced from 8% to reduce false auto-approvals)
 
 # Medium threshold: density between MEDIUM and HIGH = LLM with standard prompt
 TERM_DENSITY_MEDIUM_THRESHOLD: float = float(
-    os.getenv("TERM_DENSITY_MEDIUM_THRESHOLD", "0.03")
-)  # 3% (new - contracts in 3-8% use standard LLM prompt)
+    os.getenv("TERM_DENSITY_MEDIUM_THRESHOLD", "0.02")
+)  # 2% (reduced from 3% - contracts in 2-5% use standard LLM prompt)
 
 # Low threshold: density < X% = auto-reject without LLM (low confidence)
 TERM_DENSITY_LOW_THRESHOLD: float = float(
     os.getenv("TERM_DENSITY_LOW_THRESHOLD", "0.01")
-)  # 1%
+)  # 1% (kept - contracts < 1% auto-rejected)
 
 # ============================================
 # Filter Debugging & QA (STORY-181 AC1.3, AC7)

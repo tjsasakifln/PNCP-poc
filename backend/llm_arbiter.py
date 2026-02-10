@@ -192,9 +192,11 @@ Responda APENAS: SIM ou NAO"""
         # Cache the decision
         _arbiter_cache[cache_key] = is_primary
 
-        logger.debug(
+        # HOTFIX 2026-02-10: Enhanced logging with prompt_level for debugging
+        logger.info(
             f"LLM arbiter decision: {llm_response} | "
-            f"mode={mode} context={context[:50]}... valor={valor:,.2f}"
+            f"mode={mode} prompt_level={prompt_level} "
+            f"context={context[:50]}... valor=R${valor:,.2f}"
         )
 
         return is_primary
