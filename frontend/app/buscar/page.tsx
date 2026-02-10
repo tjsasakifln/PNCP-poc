@@ -1961,8 +1961,8 @@ function HomePageContent() {
             <div className="text-xs sm:text-sm text-ink-muted text-center space-y-1">
               {rawCount > 0 && (
                 <p>
-                  Mostrando {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitação encontrada' : 'licitações encontradas'}
-                  {' '}no setor {sectorName.toLowerCase()}
+                  {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitação compatível' : 'licitações compatíveis'} com os filtros selecionados nesta busca
+                  {searchMode === "setor" && sectorName !== "Licitações" ? ` para o setor ${sectorName.toLowerCase()}` : ''}
                 </p>
               )}
               {result.source_stats && result.source_stats.length > 1 && (

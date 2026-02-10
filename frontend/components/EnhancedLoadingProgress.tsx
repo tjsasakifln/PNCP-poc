@@ -85,7 +85,7 @@ const SSE_STAGE_MAP: Record<string, number> = {
 /** Graduated honest overtime messages */
 function getOvertimeMessage(overBySeconds: number): string {
   if (overBySeconds < 15) return 'Quase pronto, finalizando...';
-  if (overBySeconds < 45) return 'O PNCP está mais lento que o normal. Aguarde...';
+  if (overBySeconds < 45) return 'Estamos trabalhando nisso, só mais um instante!';
   if (overBySeconds < 90) return 'Ainda processando. Buscas com muitos estados demoram mais.';
   return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar com menos estados.';
 }
