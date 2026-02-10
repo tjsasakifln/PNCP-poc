@@ -1,0 +1,727 @@
+# MEGA-SQUAD DESIGN: STORY-183 Multi-Frente Parallel Execution
+# Generated: 2026-02-10
+# Strategy: Maximum parallelization with specialized reinforcements
+
+squad:
+  name: story-183-mega-squad
+  description: "Multi-front parallel squad for STORY-183 with maximum resource allocation"
+  domain: hotfix-critical-bugs
+  strategy: multi-front-parallel
+  priority: P0
+  estimated_duration: 1h55min
+
+analysis:
+  story_id: STORY-183
+  entities:
+    - SearchPagination
+    - GoogleSheetsExport
+    - PNCPClient
+    - FastAPIRouter
+    - OAuthFlow
+
+  workflows:
+    - diagnostic-execution
+    - search-bug-fix
+    - export-bug-fix
+    - parallel-testing
+    - deployment-coordination
+    - post-deployment-validation
+
+  integrations:
+    - PNCP API
+    - Google Sheets API
+    - FastAPI
+    - OAuth2
+
+  stakeholders:
+    - paying-users
+    - free-users
+    - admin
+    - pm
+
+  critical_files:
+    - backend/pncp_client.py
+    - backend/routes/export_sheets.py
+    - backend/main.py
+    - frontend/components/GoogleSheetsExportButton.tsx
+
+architecture:
+  fronts:
+    - id: front-1
+      name: Search Bug Squad
+      priority: P0
+      agents: [backend-dev-1, backend-dev-2, performance-engineer, qa-search]
+      tasks:
+        - diagnose-search-bug
+        - implement-search-fix
+        - performance-test-search
+        - validate-search-fix
+      estimated_duration: 60min
+
+    - id: front-2
+      name: Export Bug Squad
+      priority: P0
+      agents: [fullstack-dev-1, fullstack-dev-2, google-api-specialist, qa-export]
+      tasks:
+        - diagnose-export-bug
+        - implement-export-fix
+        - oauth-flow-test
+        - validate-export-fix
+      estimated_duration: 60min
+
+    - id: front-3
+      name: Quality Assurance & Testing Squad
+      priority: P0
+      agents: [qa-lead, test-automation-engineer, security-auditor, code-reviewer]
+      tasks:
+        - comprehensive-code-review
+        - security-audit
+        - setup-test-automation
+        - regression-testing
+        - performance-validation
+      estimated_duration: 90min
+
+    - id: front-4
+      name: Deployment & Documentation Squad
+      priority: P1
+      agents: [devops-engineer, docs-specialist, pm-coordinator]
+      tasks:
+        - prepare-deployment
+        - monitor-deployment
+        - update-documentation
+        - user-communication
+      estimated_duration: 45min
+
+  coordination:
+    tech_lead: orchestrator-agent
+    pm: morgan
+    sync_points:
+      - time: 15min
+        checkpoint: diagnostic-complete
+      - time: 60min
+        checkpoint: implementation-complete
+      - time: 90min
+        checkpoint: testing-complete
+
+recommendations:
+  agents:
+    # COORDINATION LAYER
+    - id: orchestrator-agent
+      name: Tech Lead Orchestrator
+      title: Technical Lead & Coordination
+      icon: "🎯"
+      role: "Orchestrates 3 parallel fronts, resolves blockers, ensures timeline adherence"
+      persona:
+        archetype: Leader
+        tone: decisive
+        emoji_frequency: low
+      commands:
+        - sync-checkpoint
+        - resolve-blocker
+        - adjust-timeline
+        - escalate-issue
+        - approve-deployment
+      confidence: 0.95
+      layer: coordination
+
+    # FRONT 1: SEARCH BUG SQUAD
+    - id: backend-dev-1
+      name: Search Backend Developer (Primary)
+      title: Python Backend Engineer
+      icon: "🐍"
+      role: "Primary developer for search pagination fix in pncp_client.py"
+      persona:
+        archetype: Builder
+        tone: technical
+      commands:
+        - fix-pagination
+        - add-logging
+        - implement-warning
+      confidence: 0.98
+      layer: implementation
+      front: front-1
+
+    - id: backend-dev-2
+      name: Search Backend Developer (Support)
+      title: Python Backend Engineer
+      icon: "🔧"
+      role: "Supports primary dev, handles error handling and parallel fetch improvements"
+      persona:
+        archetype: Builder
+        tone: technical
+      commands:
+        - improve-error-handling
+        - optimize-parallel-fetch
+        - add-metrics
+      confidence: 0.95
+      layer: implementation
+      front: front-1
+
+    - id: performance-engineer
+      name: Performance Engineer
+      title: Performance & Optimization Specialist
+      icon: "⚡"
+      role: "Ensures fix doesn't degrade performance, monitors resource usage"
+      persona:
+        archetype: Analyst
+        tone: analytical
+      commands:
+        - profile-performance
+        - benchmark-pagination
+        - analyze-memory
+      confidence: 0.92
+      layer: validation
+      front: front-1
+
+    - id: qa-search
+      name: QA Search Tester
+      title: Quality Assurance Engineer
+      icon: "✅"
+      role: "Validates search fix with comprehensive test scenarios"
+      persona:
+        archetype: Guardian
+        tone: methodical
+      commands:
+        - test-wide-search
+        - validate-all-ufs
+        - check-logging
+      confidence: 0.96
+      layer: validation
+      front: front-1
+
+    # FRONT 2: EXPORT BUG SQUAD
+    - id: fullstack-dev-1
+      name: Export FullStack Developer (Primary)
+      title: FastAPI + React Engineer
+      icon: "🌐"
+      role: "Primary developer for export 404 fix (backend + frontend)"
+      persona:
+        archetype: Builder
+        tone: technical
+      commands:
+        - fix-route-registration
+        - fix-cors-config
+        - add-health-check
+      confidence: 0.97
+      layer: implementation
+      front: front-2
+
+    - id: fullstack-dev-2
+      name: Export FullStack Developer (Support)
+      title: FastAPI + React Engineer
+      icon: "🔨"
+      role: "Supports primary dev, handles edge cases and timing issues"
+      persona:
+        archetype: Builder
+        tone: technical
+      commands:
+        - fix-timing-issues
+        - improve-error-messages
+        - add-retry-logic
+      confidence: 0.94
+      layer: implementation
+      front: front-2
+
+    - id: google-api-specialist
+      name: Google APIs Specialist
+      title: OAuth & Google Sheets Expert
+      icon: "📊"
+      role: "Ensures OAuth flow works correctly, validates Google Sheets API integration"
+      persona:
+        archetype: Expert
+        tone: authoritative
+      commands:
+        - validate-oauth-flow
+        - test-token-refresh
+        - verify-api-quotas
+      confidence: 0.96
+      layer: validation
+      front: front-2
+
+    - id: qa-export
+      name: QA Export Tester
+      title: Quality Assurance Engineer
+      icon: "✅"
+      role: "Validates export fix with OAuth scenarios and edge cases"
+      persona:
+        archetype: Guardian
+        tone: methodical
+      commands:
+        - test-export-flow
+        - validate-spreadsheet
+        - check-permissions
+      confidence: 0.95
+      layer: validation
+      front: front-2
+
+    # FRONT 3: QUALITY ASSURANCE & TESTING SQUAD
+    - id: qa-lead
+      name: QA Lead
+      title: Quality Assurance Team Leader
+      icon: "👑"
+      role: "Leads quality validation, sets standards, coordinates testing activities"
+      persona:
+        archetype: Guardian
+        tone: authoritative
+        emoji_frequency: low
+      commands:
+        - define-quality-gates
+        - coordinate-testing
+        - approve-quality
+        - reject-if-fails
+      confidence: 0.98
+      layer: validation
+      front: front-3
+
+    - id: test-automation-engineer
+      name: Test Automation Engineer
+      title: Automated Testing Specialist
+      icon: "🤖"
+      role: "Writes and executes automated tests for both fixes with 100% coverage target"
+      persona:
+        archetype: Builder
+        tone: systematic
+      commands:
+        - write-unit-tests
+        - write-integration-tests
+        - write-e2e-tests
+        - run-regression-suite
+        - generate-coverage-report
+      confidence: 0.96
+      layer: validation
+      front: front-3
+
+    - id: security-auditor
+      name: Security Auditor
+      title: Security & Compliance Expert
+      icon: "🔒"
+      role: "Audits fixes for security vulnerabilities, validates OAuth security"
+      persona:
+        archetype: Guardian
+        tone: rigorous
+      commands:
+        - audit-code-security
+        - validate-oauth-security
+        - check-injection-risks
+        - verify-auth-flow
+      confidence: 0.94
+      layer: validation
+      front: front-3
+
+    - id: code-reviewer
+      name: Senior Code Reviewer
+      title: Code Quality Expert
+      icon: "🔍"
+      role: "Performs comprehensive code review with AIOS standards enforcement"
+      persona:
+        archetype: Guardian
+        tone: meticulous
+      commands:
+        - review-code-quality
+        - enforce-standards
+        - check-patterns
+        - validate-error-handling
+      confidence: 0.97
+      layer: validation
+      front: front-3
+
+    # FRONT 4: DEPLOYMENT & DOCUMENTATION SQUAD
+    - id: devops-engineer
+      name: DevOps Engineer
+      title: Deployment & Infrastructure
+      icon: "🚀"
+      role: "Prepares and executes deployment, monitors production, manages rollback"
+      persona:
+        archetype: Guardian
+        tone: cautious
+      commands:
+        - prepare-deployment
+        - execute-rollout
+        - monitor-production
+        - execute-rollback
+        - validate-smoke-tests
+      confidence: 0.98
+      layer: deployment
+      front: front-4
+
+    - id: docs-specialist
+      name: Documentation Specialist
+      title: Technical Writer
+      icon: "📝"
+      role: "Updates documentation, writes deployment guides, communicates to users"
+      persona:
+        archetype: Communicator
+        tone: clear
+      commands:
+        - update-story
+        - write-changelog
+        - prepare-user-communication
+        - document-fixes
+      confidence: 0.92
+      layer: documentation
+      front: front-4
+
+    - id: pm-coordinator
+      name: PM Coordinator
+      title: Product Manager Assistant
+      icon: "📊"
+      role: "Coordinates with stakeholders, validates acceptance criteria, approves deployment"
+      persona:
+        archetype: Coordinator
+        tone: diplomatic
+      commands:
+        - validate-acceptance-criteria
+        - coordinate-stakeholders
+        - approve-deployment
+        - communicate-status
+      confidence: 0.95
+      layer: coordination
+      front: front-4
+
+  tasks:
+    # FRONT 1 TASKS: SEARCH BUG
+    - name: diagnose-search-bug-comprehensive
+      agent: backend-dev-1
+      entrada:
+        - story-183-docs
+        - pncp_client.py-source
+        - recent-logs
+      saida:
+        - root-cause-confirmed
+        - fix-plan
+        - performance-baseline
+      duration: 15min
+      confidence: 0.98
+
+    - name: implement-search-pagination-fix
+      agent: backend-dev-1
+      entrada:
+        - root-cause-analysis
+        - fix-plan
+      saida:
+        - updated-pncp_client.py
+        - warning-system-added
+        - logging-enhanced
+      duration: 25min
+      confidence: 0.97
+      dependencies: [diagnose-search-bug-comprehensive]
+
+    - name: improve-parallel-fetch-error-handling
+      agent: backend-dev-2
+      entrada:
+        - current-error-handling
+        - failure-scenarios
+      saida:
+        - enhanced-error-handling
+        - fallback-mechanism
+      duration: 20min
+      confidence: 0.95
+      parallel_with: [implement-search-pagination-fix]
+
+    - name: performance-benchmark-search
+      agent: performance-engineer
+      entrada:
+        - updated-code
+        - test-scenarios
+      saida:
+        - performance-report
+        - memory-analysis
+        - bottleneck-identification
+      duration: 15min
+      confidence: 0.92
+      dependencies: [implement-search-pagination-fix]
+
+    - name: validate-search-fix-comprehensive
+      agent: qa-search
+      entrada:
+        - implemented-fix
+        - test-checklist
+      saida:
+        - validation-report
+        - edge-cases-tested
+        - regression-check
+      duration: 20min
+      confidence: 0.96
+      dependencies: [implement-search-pagination-fix, improve-parallel-fetch-error-handling]
+
+    # FRONT 2 TASKS: EXPORT BUG
+    - name: diagnose-export-404-bug
+      agent: fullstack-dev-1
+      entrada:
+        - story-183-docs
+        - export-route-source
+        - backend-logs
+      saida:
+        - root-cause-identified
+        - fix-strategy
+      duration: 15min
+      confidence: 0.96
+
+    - name: implement-export-route-fix
+      agent: fullstack-dev-1
+      entrada:
+        - root-cause
+        - fix-strategy
+      saida:
+        - updated-routes
+        - cors-config-fixed
+        - health-check-added
+      duration: 25min
+      confidence: 0.97
+      dependencies: [diagnose-export-404-bug]
+
+    - name: implement-frontend-resilience
+      agent: fullstack-dev-2
+      entrada:
+        - frontend-component
+        - timing-issues
+      saida:
+        - updated-component
+        - retry-logic-added
+        - better-error-messages
+      duration: 20min
+      confidence: 0.94
+      parallel_with: [implement-export-route-fix]
+
+    - name: validate-oauth-integration
+      agent: google-api-specialist
+      entrada:
+        - oauth-flow-code
+        - google-api-credentials
+      saida:
+        - oauth-validated
+        - token-refresh-tested
+        - quota-checked
+      duration: 15min
+      confidence: 0.96
+      dependencies: [implement-export-route-fix]
+
+    - name: validate-export-fix-comprehensive
+      agent: qa-export
+      entrada:
+        - implemented-fix
+        - oauth-scenarios
+      saida:
+        - validation-report
+        - oauth-flow-tested
+        - edge-cases-covered
+      duration: 20min
+      confidence: 0.95
+      dependencies: [implement-export-route-fix, implement-frontend-resilience]
+
+    # FRONT 3 TASKS: QUALITY ASSURANCE (RIGOR MÁXIMO)
+    - name: comprehensive-code-review
+      agent: code-reviewer
+      entrada:
+        - implemented-fixes
+        - AIOS-coding-standards
+        - existing-patterns
+      saida:
+        - code-review-report
+        - quality-score
+        - improvement-recommendations
+      duration: 30min
+      confidence: 0.97
+      dependencies: [implement-search-pagination-fix, implement-export-route-fix]
+
+    - name: security-audit-comprehensive
+      agent: security-auditor
+      entrada:
+        - implemented-fixes
+        - oauth-flow
+        - api-endpoints
+      saida:
+        - security-audit-report
+        - vulnerability-assessment
+        - compliance-check
+      duration: 25min
+      confidence: 0.94
+      dependencies: [implement-search-pagination-fix, implement-export-route-fix]
+
+    - name: write-automated-tests-comprehensive
+      agent: test-automation-engineer
+      entrada:
+        - implemented-fixes
+        - test-scenarios
+        - edge-cases
+      saida:
+        - unit-tests-100-coverage
+        - integration-tests
+        - e2e-tests
+        - stress-tests
+      duration: 40min
+      confidence: 0.96
+      dependencies: [comprehensive-code-review]
+
+    - name: run-regression-suite-complete
+      agent: test-automation-engineer
+      entrada:
+        - all-tests
+        - codebase
+      saida:
+        - regression-report
+        - coverage-report-100-percent
+        - performance-metrics
+      duration: 20min
+      confidence: 0.95
+      dependencies: [write-automated-tests-comprehensive]
+
+    - name: qa-lead-final-validation
+      agent: qa-lead
+      entrada:
+        - all-test-reports
+        - code-review-report
+        - security-audit
+      saida:
+        - quality-gate-decision
+        - deployment-approval
+        - risk-assessment
+      duration: 15min
+      confidence: 0.98
+      dependencies: [comprehensive-code-review, security-audit-comprehensive, run-regression-suite-complete]
+
+    # FRONT 4 TASKS: DEPLOYMENT & DOCUMENTATION
+    - name: validate-acceptance-criteria
+      agent: pm-coordinator
+      entrada:
+        - story-183-acceptance-criteria
+        - implementation-results
+        - test-reports
+      saida:
+        - criteria-validation-report
+        - stakeholder-approval
+      duration: 15min
+      confidence: 0.96
+      dependencies: [qa-lead-final-validation]
+
+    - name: prepare-deployment-package
+      agent: devops-engineer
+      entrada:
+        - validated-fixes
+        - qa-approval
+        - security-approval
+      saida:
+        - deployment-plan
+        - rollback-procedure
+        - monitoring-config
+      duration: 20min
+      confidence: 0.98
+      dependencies: [qa-lead-final-validation, validate-acceptance-criteria]
+
+    - name: execute-production-deployment
+      agent: devops-engineer
+      entrada:
+        - deployment-package
+        - approval
+      saida:
+        - deployed-version
+        - deployment-logs
+        - smoke-test-results
+      duration: 15min
+      confidence: 0.98
+      dependencies: [prepare-deployment-package]
+
+    - name: monitor-production-health
+      agent: devops-engineer
+      entrada:
+        - deployment-complete
+        - monitoring-dashboards
+      saida:
+        - health-report
+        - metrics-baseline
+      duration: 10min
+      confidence: 0.95
+      dependencies: [execute-production-deployment]
+
+    - name: update-all-documentation
+      agent: docs-specialist
+      entrada:
+        - story-183
+        - implementation-details
+        - test-results
+      saida:
+        - updated-story
+        - changelog-entry
+        - user-communication
+      duration: 25min
+      confidence: 0.90
+      parallel_with: [prepare-deployment-package]
+
+    # COORDINATION TASKS
+    - name: checkpoint-diagnostic-complete
+      agent: orchestrator-agent
+      entrada:
+        - diagnostic-reports
+      saida:
+        - go-no-go-decision
+        - blocker-resolution
+      duration: 5min
+      confidence: 0.95
+      dependencies: [diagnose-search-bug-comprehensive, diagnose-export-404-bug]
+
+    - name: checkpoint-implementation-complete
+      agent: orchestrator-agent
+      entrada:
+        - implementation-reports
+      saida:
+        - quality-check
+        - proceed-to-testing
+      duration: 5min
+      confidence: 0.96
+      dependencies: [implement-search-pagination-fix, implement-export-route-fix]
+
+    - name: checkpoint-testing-complete
+      agent: orchestrator-agent
+      entrada:
+        - validation-reports
+        - regression-results
+        - qa-lead-approval
+        - security-audit
+      saida:
+        - final-deployment-approval
+      duration: 5min
+      confidence: 0.98
+      dependencies: [qa-lead-final-validation]
+
+  template: basic
+  config_mode: extend
+
+  squad_config:
+    tech_stack:
+      - Python (FastAPI, uvicorn)
+      - TypeScript/React
+      - Google APIs
+      - PNCP API
+
+    coding_standards:
+      - Follow existing patterns in codebase
+      - Add comprehensive error handling
+      - Include detailed logging
+      - Write self-documenting code
+
+    testing_standards:
+      - Unit tests for all new functions
+      - Integration tests for API routes
+      - E2E tests for critical flows
+      - 100% pass rate required for deployment
+
+metadata:
+  created_at: "2026-02-10T00:00:00Z"
+  source_docs:
+    - docs/stories/STORY-183-hotfix-search-export-critical-bugs.md
+    - docs/stories/STORY-183-EXECUTIVE-SUMMARY.md
+    - STORY-183-INDEX.md
+  user_request: "full squad com multiplas frentes em paralelo alocando reforços máximos"
+  design_strategy: multi-front-parallel-execution-maximum-quality
+  quality_policy: rigor-maximo
+  total_agents: 15
+  total_tasks: 22
+  estimated_timeline: 2h30min
+  parallelization_factor: 4
+  confidence_score: 0.98
+  quality_gates:
+    - code-review-approval-required
+    - security-audit-pass-required
+    - 100-percent-test-coverage-required
+    - qa-lead-sign-off-required
+    - pm-acceptance-criteria-validated

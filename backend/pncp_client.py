@@ -458,7 +458,7 @@ class PNCPClient:
         modalidade: int,
         uf: str | None,
         on_progress: Callable[[int, int, int], None] | None,
-        max_pages: int = 50,  # Increased from 10 to 50 to fetch more results (50 pages = 1000 records)
+        max_pages: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500 (10,000 records per UF+modality)
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all pages for a specific modality and UF combination.
@@ -473,7 +473,7 @@ class PNCPClient:
             modalidade: Modality code (codigoModalidadeContratacao)
             uf: State code (e.g., "SP") or None for all states
             on_progress: Optional progress callback
-            max_pages: Maximum number of pages to fetch (prevents timeouts, default 50)
+            max_pages: Maximum number of pages to fetch (prevents timeouts, default 500)
 
         Yields:
             Dict[str, Any]: Individual procurement record
@@ -522,17 +522,20 @@ class PNCPClient:
             # Check if there are more pages
             if not tem_proxima:
                 logger.info(
-                    f"Finished fetching modalidade={modalidade}, UF={uf or 'ALL'}: "
+                    f"✅ Fetch complete for modalidade={modalidade}, UF={uf or 'ALL'}: "
                     f"{items_fetched} total items across {pagina} pages"
                 )
                 break
 
-            # Check if we've reached max_pages limit
+            # HOTFIX STORY-183: Enhanced warning when max_pages limit reached
             if pagina >= max_pages:
                 logger.warning(
-                    f"Reached max_pages limit ({max_pages}) for modalidade={modalidade}, UF={uf or 'ALL'}. "
+                    f"⚠️ MAX_PAGES ({max_pages}) ATINGIDO! "
+                    f"UF={uf or 'ALL'}, modalidade={modalidade}. "
                     f"Fetched {items_fetched} items out of {total_registros} total. "
-                    f"Remaining pages: {paginas_restantes}"
+                    f"Remaining pages: {paginas_restantes}. "
+                    f"Resultados podem estar incompletos. "
+                    f"Considere aumentar max_pages ou otimizar filtros."
                 )
                 break
 
@@ -812,7 +815,7 @@ class AsyncPNCPClient:
         data_final: str,
         modalidades: List[int],
         status: str | None = None,
-        max_pages: int = 50,
+        max_pages: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
     ) -> List[Dict[str, Any]]:
         """
         Fetch all pages for a single UF across all modalities.
@@ -860,6 +863,14 @@ class AsyncPNCPClient:
                         if paginas_restantes <= 0:
                             break
 
+                        # HOTFIX STORY-183: Enhanced warning when approaching max_pages
+                        if pagina >= max_pages and paginas_restantes > 0:
+                            logger.warning(
+                                f"⚠️ MAX_PAGES ({max_pages}) reached for UF={uf}, modalidade={modalidade}. "
+                                f"Fetched {len([i for i in all_items if i.get('uf') == uf])} items. "
+                                f"Remaining pages: {paginas_restantes}"
+                            )
+
                         pagina += 1
 
                     except PNCPAPIError as e:
@@ -876,7 +887,7 @@ class AsyncPNCPClient:
         data_final: str,
         modalidades: List[int] | None = None,
         status: str | None = None,
-        max_pages_per_uf: int = 50,
+        max_pages_per_uf: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
         on_uf_complete: Callable[[str, int], Any] | None = None,
     ) -> List[Dict[str, Any]]:
         """

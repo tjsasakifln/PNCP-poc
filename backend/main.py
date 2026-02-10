@@ -111,6 +111,32 @@ logger.info(
     ENABLE_NEW_PRICING,
 )
 
+
+# HOTFIX STORY-183: Diagnostic logging for route registration
+# Log all registered routes at startup to help diagnose export 404
+@app.on_event("startup")
+async def log_registered_routes():
+    """Log all registered routes for debugging route 404 issues."""
+    logger.info("=" * 60)
+    logger.info("REGISTERED ROUTES:")
+    logger.info("=" * 60)
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            methods = ','.join(route.methods) if route.methods else 'N/A'
+            logger.info(f"  {methods:8s} {route.path}")
+    logger.info("=" * 60)
+    
+    # Specifically check for export route
+    export_routes = [r for r in app.routes if hasattr(r, 'path') and '/export' in r.path]
+    if export_routes:
+        logger.info(f"✅ Export routes found: {len(export_routes)}")
+        for r in export_routes:
+            methods = ','.join(r.methods) if hasattr(r, 'methods') and r.methods else 'N/A'
+            logger.info(f"   {methods:8s} {r.path}")
+    else:
+        logger.error("❌ NO EXPORT ROUTES FOUND - /api/export/google-sheets will return 404!")
+    logger.info("=" * 60)
+
 @app.get("/")
 async def root():
     """

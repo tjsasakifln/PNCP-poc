@@ -1,0 +1,74 @@
+name: story-183-mega-squad
+version: 1.0.0
+description: Multi-front parallel squad for STORY-183 with maximum resource allocation
+author: Tiago Sasaki
+license: MIT
+slashPrefix: story-183-mega
+aios:
+  minVersion: 2.1.0
+  type: squad
+components:
+  tasks:
+    - diagnose-search-bug-comprehensive.md
+    - implement-search-pagination-fix.md
+    - improve-parallel-fetch-error-handling.md
+    - performance-benchmark-search.md
+    - validate-search-fix-comprehensive.md
+    - diagnose-export-404-bug.md
+    - implement-export-route-fix.md
+    - implement-frontend-resilience.md
+    - validate-oauth-integration.md
+    - validate-export-fix-comprehensive.md
+    - comprehensive-code-review.md
+    - security-audit-comprehensive.md
+    - write-automated-tests-comprehensive.md
+    - run-regression-suite-complete.md
+    - qa-lead-final-validation.md
+    - validate-acceptance-criteria.md
+    - prepare-deployment-package.md
+    - execute-production-deployment.md
+    - monitor-production-health.md
+    - update-all-documentation.md
+    - checkpoint-diagnostic-complete.md
+    - checkpoint-implementation-complete.md
+    - checkpoint-testing-complete.md
+  agents:
+    - orchestrator-agent.md
+    - backend-dev-1.md
+    - backend-dev-2.md
+    - performance-engineer.md
+    - qa-search.md
+    - fullstack-dev-1.md
+    - fullstack-dev-2.md
+    - google-api-specialist.md
+    - qa-export.md
+    - qa-lead.md
+    - test-automation-engineer.md
+    - security-auditor.md
+    - code-reviewer.md
+    - devops-engineer.md
+    - docs-specialist.md
+    - pm-coordinator.md
+  workflows: []
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+config:
+  extends: extend
+  coding-standards: ../../docs/framework/CODING-STANDARDS.md
+  tech-stack: ../../docs/framework/TECH-STACK.md
+  source-tree: ../../docs/framework/SOURCE-TREE.md
+dependencies:
+  node: []
+  python: []
+  squads: []
+tags:
+  - custom
+blueprint:
+  source:
+    - docs/stories/STORY-183-hotfix-search-export-critical-bugs.md
+    - docs/stories/STORY-183-EXECUTIVE-SUMMARY.md
+    - STORY-183-INDEX.md
+  created_at: "2026-02-10T00:00:00Z"
+  confidence: 0
