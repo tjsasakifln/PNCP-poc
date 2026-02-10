@@ -80,6 +80,13 @@ export interface SourceStat {
   status: string;
 }
 
+/** Validation metadata for search terms */
+export interface TermValidationMetadata {
+  termos_utilizados: string[];
+  termos_ignorados: string[];
+  motivos_ignorados: Record<string, string>;
+}
+
 /** API response from POST /api/buscar */
 export interface BuscaResult {
   resumo: Resumo;
@@ -98,6 +105,8 @@ export interface BuscaResult {
   hidden_by_min_match?: number | null;
   /** True if the min match filter was relaxed due to zero results */
   filter_relaxed?: boolean | null;
+  /** Term validation metadata (new format for ignored terms) */
+  metadata?: TermValidationMetadata | null;
 }
 
 /** Form validation errors */

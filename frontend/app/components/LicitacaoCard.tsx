@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import type { LicitacaoItem } from "../types";
 import { StatusBadge, parseStatus, type LicitacaoStatus } from "./StatusBadge";
 import { CountdownStatic, daysUntil } from "./Countdown";
+import { differenceInDays, differenceInHours, isPast, parseISO, format } from "date-fns";
 
 /**
  * LicitacaoCard Component
@@ -168,6 +169,52 @@ function CalendarIcon({ className }: { className?: string }) {
   );
 }
 
+function ClockIconSmall({ className }: { className?: string }) {
+  return (
+    <svg
+      role="img"
+      aria-label="Ícone"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+  );
+}
+
+// Simple inline tooltip component
+function InfoTooltip({ content, children }: { content: string | React.ReactNode; children: React.ReactNode }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <div
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className="cursor-help"
+      >
+        {children}
+      </div>
+      {isVisible && (
+        <div className="absolute z-50 w-64 p-3 bg-surface-0 border border-strong rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 mb-2">
+          <div className="text-sm text-ink">{content}</div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+            <div className="w-2 h-2 bg-surface-0 border-r border-b border-strong transform rotate-45"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Utility functions
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -191,6 +238,35 @@ function formatDate(dateStr: string | null): string {
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength).trim() + "...";
+}
+
+/**
+ * Calculate time remaining until deadline with clear messaging
+ */
+function calculateTimeRemaining(deadline: string): string {
+  try {
+    const deadlineDate = parseISO(deadline);
+    const now = new Date();
+
+    if (isPast(deadlineDate)) {
+      return "⛔ Prazo encerrado";
+    }
+
+    const days = differenceInDays(deadlineDate, now);
+    const hours = differenceInHours(deadlineDate, now) % 24;
+
+    if (days === 0) {
+      return `⏰ Você tem ${hours}h restantes`;
+    }
+
+    if (days === 1) {
+      return `⏰ Você tem 1 dia e ${hours}h restantes`;
+    }
+
+    return `⏰ Você tem ${days} dias e ${hours}h restantes`;
+  } catch {
+    return "-";
+  }
 }
 
 export function LicitacaoCard({
@@ -319,27 +395,98 @@ export function LicitacaoCard({
         {/* Orgao */}
         <p className="text-sm text-ink-secondary truncate">{licitacao.orgao}</p>
 
-        {/* Location and Date Info */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span className="inline-flex items-center gap-1 text-ink-muted">
-            <LocationIcon className="w-4 h-4" />
-            <span>
-              {licitacao.uf}
-              {licitacao.municipio && ` - ${licitacao.municipio}`}
-            </span>
+        {/* Location Info */}
+        <div className="flex items-center gap-1 text-sm text-ink-muted">
+          <LocationIcon className="w-4 h-4" />
+          <span>
+            {licitacao.uf}
+            {licitacao.municipio && ` - ${licitacao.municipio}`}
           </span>
+        </div>
 
-          {licitacao.data_encerramento && (
-            <span className="inline-flex items-center gap-1 text-success font-medium">
-              <CalendarIcon className="w-4 h-4" />
-              <span>Prazo: {formatDate(licitacao.data_encerramento)}</span>
-            </span>
-          )}
+        {/* Clear Deadline Information */}
+        <div className="space-y-2 p-3 border border-strong rounded-lg bg-surface-1/30">
+          {/* Data de início */}
           {licitacao.data_abertura && (
-            <span className="inline-flex items-center gap-1 text-ink-muted">
-              <CalendarIcon className="w-4 h-4" />
-              <span>Início: {formatDate(licitacao.data_abertura)}</span>
-            </span>
+            <div className="flex items-start gap-2">
+              <span className="text-lg">🟢</span>
+              <div className="flex-1 min-w-0">
+                <InfoTooltip
+                  content={
+                    <div>
+                      <p className="font-semibold mb-1">Data de início</p>
+                      <p className="text-xs">
+                        Esta é a data em que a licitação começa a receber propostas.
+                        Você pode enviar sua proposta a partir deste momento.
+                      </p>
+                    </div>
+                  }
+                >
+                  <div>
+                    <p className="text-xs font-semibold text-green-700">
+                      Recebe propostas
+                    </p>
+                    <p className="text-sm">
+                      {(() => {
+                        try {
+                          return format(parseISO(licitacao.data_abertura), "dd/MM/yyyy 'às' HH:mm");
+                        } catch {
+                          return formatDate(licitacao.data_abertura);
+                        }
+                      })()}
+                    </p>
+                  </div>
+                </InfoTooltip>
+              </div>
+            </div>
+          )}
+
+          {/* Prazo final */}
+          {licitacao.data_encerramento && (
+            <div className="flex items-start gap-2">
+              <span className="text-lg">🔴</span>
+              <div className="flex-1 min-w-0">
+                <InfoTooltip
+                  content={
+                    <div>
+                      <p className="font-semibold mb-1">Data limite</p>
+                      <p className="text-xs mb-2">
+                        Esta é a data e hora limite para envio de propostas.
+                        Após este momento, o sistema não aceita mais submissões.
+                      </p>
+                      <p className="text-xs text-yellow-600">
+                        ⚠️ Importante: Envie com antecedência para evitar problemas técnicos de última hora.
+                      </p>
+                    </div>
+                  }
+                >
+                  <div>
+                    <p className="text-xs font-semibold text-red-700">
+                      Prazo final para propostas
+                    </p>
+                    <p className="text-sm">
+                      {(() => {
+                        try {
+                          return format(parseISO(licitacao.data_encerramento), "dd/MM/yyyy 'às' HH:mm");
+                        } catch {
+                          return formatDate(licitacao.data_encerramento);
+                        }
+                      })()}
+                    </p>
+                  </div>
+                </InfoTooltip>
+              </div>
+            </div>
+          )}
+
+          {/* Tempo restante */}
+          {licitacao.data_encerramento && (
+            <div className="flex items-center gap-2 pt-1 border-t border-strong">
+              <ClockIconSmall className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs text-ink-secondary font-medium">
+                {calculateTimeRemaining(licitacao.data_encerramento)}
+              </span>
+            </div>
           )}
         </div>
 

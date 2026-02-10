@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Any
 import json
 import os
+import logging
 
 from openai import OpenAI
 
@@ -108,13 +109,35 @@ def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes
     system_prompt = f"""Você é um analista de licitações especializado em {sector_name}.
 Analise as licitações fornecidas e gere um resumo executivo.
 
-REGRAS:
-- Seja direto e objetivo
-- Destaque as maiores oportunidades por valor
-- Alerte sobre prazos próximos (< 7 dias)
-- Mencione a distribuição geográfica
-- Use linguagem profissional, não técnica demais
-- Valores sempre em reais (R$) formatados
+REGRAS CRÍTICAS DE TERMINOLOGIA:
+
+1. NUNCA use estes termos ambíguos:
+   - ❌ "prazo de abertura"
+   - ❌ "abertura em [data]"
+   - ❌ "prazo em [data]" (sem contexto claro)
+
+2. SEMPRE use estes termos claros para datas:
+   - ✅ "recebe propostas a partir de [data_início]"
+   - ✅ "prazo final para propostas em [data_fim]"
+   - ✅ "você tem X dias para enviar proposta até [data_fim]"
+   - ✅ "encerra em [data_fim]"
+
+3. FORMATO DO RESUMO:
+   - Seja direto e objetivo
+   - Destaque as maiores oportunidades por valor
+   - Para prazos urgentes (< 7 dias), use: "encerra em X dias (prazo final: [data])"
+   - Mencione a distribuição geográfica
+   - Use linguagem profissional, não técnica demais
+   - Valores sempre em reais (R$) formatados
+
+EXEMPLO CORRETO:
+"Há 3 oportunidades em uniformes escolares no RS totalizando R$ 150.000.
+Maior licitação: R$ 75.000 da Prefeitura de Porto Alegre, recebe propostas
+até 15/02/2026 (você tem 8 dias para enviar)."
+
+EXEMPLO INCORRETO (NUNCA FAÇA):
+"Prazo de abertura em 5 de fevereiro" ❌
+"Abertura em 5 de fevereiro" ❌
 """
 
     # User prompt with context
@@ -142,6 +165,26 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
 
     if not resumo:
         raise ValueError("OpenAI API returned empty response")
+
+    # CRITICAL: Validate that ambiguous deadline terminology is not present
+    forbidden_terms = [
+        "prazo de abertura",
+        "abertura em",
+        "abertura:",
+    ]
+    resumo_text = resumo.resumo_executivo.lower()
+    for term in forbidden_terms:
+        if term in resumo_text:
+            # Log the error for monitoring
+            import logging
+            logging.warning(
+                f"LLM generated ambiguous term '{term}' in summary: {resumo.resumo_executivo}"
+            )
+            # Fail fast to prevent user confusion
+            raise ValueError(
+                f"LLM output contains ambiguous deadline terminology: '{term}'. "
+                "This violates UX clarity rules. Please regenerate summary."
+            )
 
     return resumo
 
@@ -311,7 +354,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "
             dias_restantes = (abertura - hoje).days
             if dias_restantes < 7:
                 orgao = lic.get("nomeOrgao", "Órgão não informado")
-                alerta = f"Licitação com prazo em menos de 7 dias: {orgao}"
+                alerta = f"⚠️ Licitação encerra em {dias_restantes} dia(s) - {orgao}"
                 break  # First urgent bid found
 
     return ResumoLicitacoes(

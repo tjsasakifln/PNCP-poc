@@ -95,6 +95,66 @@ function dateDiffInDays(date1: string, date2: string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+/** Term validation result for client-side feedback */
+interface TermValidation {
+  valid: string[];
+  ignored: string[];
+  reasons: Record<string, string>;
+}
+
+/**
+ * Validate search terms client-side before search execution.
+ * Mirrors backend validation logic from filter.py:validate_terms()
+ */
+const validateTermsClientSide = (terms: string[]): TermValidation => {
+  const MIN_LENGTH = 4;
+  const valid: string[] = [];
+  const ignored: string[] = [];
+  const reasons: Record<string, string> = {};
+
+  terms.forEach(term => {
+    const cleaned = term.trim().toLowerCase();
+
+    // VALIDAÇÃO 1: Termo vazio
+    if (!cleaned) {
+      ignored.push(term);
+      reasons[term] = 'Termo vazio ou apenas espaços';
+      return;
+    }
+
+    // VALIDAÇÃO 2: Stopword (apenas single-word terms)
+    const words = cleaned.split(/\s+/);
+    if (words.length === 1 && isStopword(cleaned)) {
+      ignored.push(term);
+      reasons[term] = 'Palavra comum não indexada (stopword)';
+      return;
+    }
+
+    // VALIDAÇÃO 3: Comprimento mínimo (apenas single-word terms)
+    if (words.length === 1 && cleaned.length < MIN_LENGTH) {
+      ignored.push(term);
+      reasons[term] = `Muito curto (mínimo ${MIN_LENGTH} caracteres)`;
+      return;
+    }
+
+    // VALIDAÇÃO 4: Caracteres especiais perigosos
+    // Permite: letras, números, espaços, hífens, acentos comuns
+    const hasInvalidChars = !Array.from(cleaned).every(c =>
+      /[a-z0-9\s\-áéíóúàèìòùâêîôûãõñç]/i.test(c)
+    );
+    if (hasInvalidChars) {
+      ignored.push(term);
+      reasons[term] = 'Contém caracteres especiais não permitidos';
+      return;
+    }
+
+    // Termo válido
+    valid.push(term);
+  });
+
+  return { valid, ignored, reasons };
+};
+
 // Inner component that uses searchParams
 function HomePageContent() {
   // URL search params for re-run search (Issue #154)
@@ -152,6 +212,7 @@ function HomePageContent() {
   const [searchMode, setSearchMode] = useState<"setor" | "termos">("setor");
   const [termosArray, setTermosArray] = useState<string[]>([]);
   const [termoInput, setTermoInput] = useState("");
+  const [termValidation, setTermValidation] = useState<TermValidation | null>(null);
 
   // P0 Filter states
   const [status, setStatus] = useState<StatusLicitacao>("recebendo_proposta");
@@ -375,12 +436,21 @@ function HomePageContent() {
   }
 
   const canSearch = Object.keys(validateForm()).length === 0
-    && (searchMode === "setor" || termosArray.length > 0)
+    && (searchMode === "setor" || (termosArray.length > 0 && (!termValidation || termValidation.valid.length > 0)))
     && valorValid;
 
   useEffect(() => {
     setValidationErrors(validateForm());
   }, [ufsSelecionadas, dataInicial, dataFinal]);
+
+  // Validate terms when switching to termos mode or when terms change
+  useEffect(() => {
+    if (searchMode === "termos") {
+      updateTermValidation(termosArray);
+    } else {
+      setTermValidation(null);
+    }
+  }, [searchMode, termosArray]);
 
   // Keyboard shortcuts - Issue #122
   useKeyboardShortcuts({
@@ -480,6 +550,32 @@ function HomePageContent() {
 
   const selecionarTodos = () => { setUfsSelecionadas(new Set(UFS)); setResult(null); };
   const limparSelecao = () => { setUfsSelecionadas(new Set()); setResult(null); };
+
+  // Validate and update terms whenever termosArray changes
+  const updateTermValidation = (terms: string[]) => {
+    if (searchMode === "termos" && terms.length > 0) {
+      const validation = validateTermsClientSide(terms);
+      setTermValidation(validation);
+    } else {
+      setTermValidation(null);
+    }
+  };
+
+  // Helper function to add terms with automatic validation
+  const addTerms = (newTerms: string[]) => {
+    const updated = [...termosArray, ...newTerms.filter(t => !termosArray.includes(t))];
+    setTermosArray(updated);
+    updateTermValidation(updated);
+    setResult(null);
+  };
+
+  // Helper function to remove term with automatic validation update
+  const removeTerm = (termToRemove: string) => {
+    const updated = termosArray.filter(t => t !== termToRemove);
+    setTermosArray(updated);
+    updateTermValidation(updated);
+    setResult(null);
+  };
 
   const sectorName = searchMode === "setor"
     ? (setores.find(s => s.id === setorId)?.name || "Licitações")
@@ -1168,6 +1264,35 @@ function HomePageContent() {
           {/* Custom Terms Input with Tags */}
           {searchMode === "termos" && (
             <div>
+              {/* Term Validation Warning - Show if there are ignored terms */}
+              {termValidation && termValidation.ignored.length > 0 && (
+                <div className="mb-4 border border-warning/30 bg-warning-subtle rounded-card p-4 animate-fade-in-up">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm text-warning mb-2">
+                        Atenção: {termValidation.ignored.length} termo{termValidation.ignored.length > 1 ? 's' : ''} não será{termValidation.ignored.length > 1 ? 'ão' : ''} utilizado{termValidation.ignored.length > 1 ? 's' : ''} na busca
+                      </p>
+                      <ul className="space-y-1.5 text-sm text-ink-secondary">
+                        {termValidation.ignored.map(term => (
+                          <li key={term} className="flex items-start gap-2">
+                            <span className="text-warning font-medium">•</span>
+                            <span>
+                              <strong className="text-ink font-medium">"{term}"</strong>: {termValidation.reasons[term]}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-ink-muted mt-3">
+                        Dica: Use termos com pelo menos 4 caracteres e evite palavras muito comuns como "de", "para", "com".
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="border border-strong rounded-input bg-surface-0 px-3 py-2 flex flex-wrap gap-2 items-center
                               focus-within:ring-2 focus-within:ring-brand-blue focus-within:border-brand-blue
                               transition-colors min-h-[48px]">
@@ -1181,10 +1306,7 @@ function HomePageContent() {
                     {termo}
                     <button
                       type="button"
-                      onClick={() => {
-                        setTermosArray(prev => prev.filter((_, idx) => idx !== i));
-                        setResult(null);
-                      }}
+                      onClick={() => removeTerm(termo)}
                       className="ml-0.5 hover:text-error transition-colors"
                       aria-label={`Remover termo ${termo}`}
                     >
@@ -1206,13 +1328,12 @@ function HomePageContent() {
                       // All segments except last are committed
                       const toCommit = segments.slice(0, -1);
                       const remaining = segments[segments.length - 1];
-                      toCommit.forEach(seg => {
-                        const term = seg.trim().toLowerCase();
-                        if (term && !termosArray.includes(term)) {
-                          setTermosArray(prev => [...prev, term]);
-                          setResult(null);
-                        }
-                      });
+                      const validTerms = toCommit
+                        .map(seg => seg.trim().toLowerCase())
+                        .filter(term => term && !termosArray.includes(term));
+                      if (validTerms.length > 0) {
+                        addTerms(validTerms);
+                      }
                       setTermoInput(remaining);
                     } else {
                       setTermoInput(val);
@@ -1221,16 +1342,14 @@ function HomePageContent() {
                   onKeyDown={e => {
                     // Backspace on empty input removes last tag
                     if (e.key === "Backspace" && termoInput === "" && termosArray.length > 0) {
-                      setTermosArray(prev => prev.slice(0, -1));
-                      setResult(null);
+                      removeTerm(termosArray[termosArray.length - 1]);
                     }
                     // AC5.1: Enter commits the current phrase
                     if (e.key === "Enter") {
                       e.preventDefault();
                       const term = termoInput.trim().toLowerCase();
                       if (term && !termosArray.includes(term)) {
-                        setTermosArray(prev => [...prev, term]);
-                        setResult(null);
+                        addTerms([term]);
                       }
                       setTermoInput("");
                     }
@@ -1243,8 +1362,7 @@ function HomePageContent() {
                       const segments = pasted.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
                       const newTerms = segments.filter(t => !termosArray.includes(t));
                       if (newTerms.length > 0) {
-                        setTermosArray(prev => [...prev, ...newTerms]);
-                        setResult(null);
+                        addTerms(newTerms);
                       }
                       setTermoInput("");
                     }
@@ -1482,6 +1600,10 @@ function HomePageContent() {
                 </svg>
                 Consultando múltiplas fontes e aplicando filtros inteligentes...
               </>
+            ) : searchMode === "termos" && termValidation ? (
+              termValidation.valid.length === 0
+                ? "Adicione termos válidos para buscar"
+                : `Buscar ${termValidation.valid.length} termo${termValidation.valid.length > 1 ? 's' : ''}`
             ) : (
               `Buscar ${searchLabel}`
             )}
@@ -1614,24 +1736,57 @@ function HomePageContent() {
               />
             </div>
 
-            {/* Stopword / terms transparency banner */}
-            {(result.termos_utilizados || result.stopwords_removidas) && (
-              <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary">
-                {result.termos_utilizados && result.termos_utilizados.length > 0 && (
-                  <span>
-                    Termos utilizados na busca:{" "}
-                    {result.termos_utilizados.map(t => (
-                      <span key={t} className="inline-block px-2 py-0.5 mr-1 bg-brand-blue-subtle text-brand-navy dark:text-brand-blue rounded font-medium text-xs">
-                        {t}
-                      </span>
-                    ))}
-                  </span>
-                )}
-                {result.stopwords_removidas && result.stopwords_removidas.length > 0 && (
-                  <span className="ml-2 text-ink-faint">
-                    (ignorados: {result.stopwords_removidas.join(", ")})
-                  </span>
-                )}
+            {/* Search terms metadata banner - New format with validation details */}
+            {(result.metadata || result.termos_utilizados || result.stopwords_removidas) && (
+              <div className="bg-surface-1 border border-border rounded-card p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-ink mb-2">
+                      Termos utilizados na busca:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(result.metadata?.termos_utilizados || result.termos_utilizados || []).map(term => (
+                        <span
+                          key={term}
+                          className="inline-flex items-center px-2.5 py-1 bg-brand-blue-subtle text-brand-navy rounded-full text-xs font-medium border border-brand-blue/20"
+                        >
+                          {term}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Show ignored terms with reasons (new metadata format) */}
+                    {result.metadata && result.metadata.termos_ignorados.length > 0 && (
+                      <details className="mt-3 cursor-pointer group">
+                        <summary className="text-sm text-ink-muted hover:text-ink transition-colors list-none flex items-center gap-2">
+                          <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span className="font-medium">
+                            {result.metadata.termos_ignorados.length} termo{result.metadata.termos_ignorados.length > 1 ? 's' : ''} não utilizado{result.metadata.termos_ignorados.length > 1 ? 's' : ''}
+                          </span>
+                        </summary>
+                        <div className="mt-2 pl-6 space-y-1">
+                          {result.metadata.termos_ignorados.map(term => (
+                            <div key={term} className="text-xs text-ink-secondary">
+                              <strong className="text-ink">"{term}"</strong>: {result.metadata!.motivos_ignorados[term]}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+
+                    {/* Fallback: Old stopwords format (backward compatibility) */}
+                    {!result.metadata && result.stopwords_removidas && result.stopwords_removidas.length > 0 && (
+                      <p className="text-xs text-ink-muted mt-2">
+                        Termos ignorados (stopwords): {result.stopwords_removidas.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

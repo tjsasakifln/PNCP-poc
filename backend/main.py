@@ -1118,27 +1118,39 @@ async def buscar_licitacoes(
         # STORY-178 AC1: Use intelligent term parser with comma/phrase support
         from term_parser import parse_search_terms
         from relevance import calculate_min_matches
+        from filter import validate_terms  # NEW: Robust term validation
 
         custom_terms: list[str] = []
         stopwords_removed: list[str] = []  # kept for backward compat in response
         min_match_floor_value: int | None = None
 
         if request.termos_busca and request.termos_busca.strip():
-            # Get raw terms (space-split lowercase) for stopword tracking
-            raw_terms = [t.strip().lower() for t in request.termos_busca.strip().split() if t.strip()]
-            custom_terms = parse_search_terms(request.termos_busca)
+            # STEP 1: Parse terms (comma-delimited phrases + stopword removal)
+            parsed_terms = parse_search_terms(request.termos_busca)
 
-            # Track removed stopwords for backward compat in response
-            custom_terms_set = set(custom_terms)
-            stopwords_removed = [t for t in raw_terms if t not in custom_terms_set and t not in {
-                term for ct in custom_terms for term in ct.split()
-            }]
-            if stopwords_removed:
-                logger.info(f"Removed {len(stopwords_removed)} stopwords: {stopwords_removed}")
+            # STEP 2: CRITICAL - Validate terms with robust logic
+            # This eliminates the bug where terms appear in BOTH "used" and "ignored"
+            validated = validate_terms(parsed_terms)
 
-            # AC7.2: Log parsed terms
+            if not validated['valid']:
+                # ALL terms rejected - return helpful error
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": "Nenhum termo válido para busca",
+                        "termos_ignorados": validated['ignored'],
+                        "motivos_ignorados": validated['reasons'],
+                        "sugestao": "Use termos mais específicos (mínimo 4 caracteres, evite palavras comuns como 'de', 'da', etc.)"
+                    }
+                )
+
+            # Use only VALIDATED terms for search
+            custom_terms = validated['valid']
+            stopwords_removed = validated['ignored']  # For response transparency
+
             logger.info(
-                f"Parsed {len(custom_terms)} search terms from input: {custom_terms}"
+                f"Term validation: {len(custom_terms)} valid, {len(stopwords_removed)} ignored. "
+                f"Valid={custom_terms}, Ignored={list(validated['reasons'].keys())}"
             )
 
             # Calculate min_match_floor for custom terms (AC2.2)

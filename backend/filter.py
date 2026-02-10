@@ -50,8 +50,104 @@ STOPWORDS_PT: Set[str] = {
 }
 
 
+def validate_terms(terms: list[str]) -> dict:
+    """
+    Valida termos de busca e retorna válidos/ignorados com motivos.
+
+    CRITICAL: Esta função garante que cada termo está OU em 'valid' OU em 'ignored',
+    NUNCA em ambos. Isso elimina o bug de mostrar termos como "usados" e "ignorados"
+    simultaneamente.
+
+    Args:
+        terms: Lista de termos digitados pelo usuário (pode ter espaços extras)
+
+    Returns:
+        {
+            'valid': [...],      # Termos que serão usados (normalizados)
+            'ignored': [...],    # Termos que não serão usados (originais)
+            'reasons': {...}     # {termo_original: motivo_da_rejeição}
+        }
+
+    Examples:
+        >>> validate_terms(['uniforme escolar', ' jaleco', '  de', 'abc'])
+        {
+            'valid': ['uniforme escolar', 'jaleco'],
+            'ignored': ['de', 'abc'],
+            'reasons': {
+                'de': 'Palavra comum não indexada (stopword)',
+                'abc': 'Termo muito curto (mínimo 4 caracteres)'
+            }
+        }
+    """
+    MIN_LENGTH = 4
+
+    valid = []
+    ignored = []
+    reasons = {}
+
+    for term in terms:
+        term_original = term  # Preserva para mensagens de erro
+        term_clean = term.strip().lower()  # Normaliza para validação
+
+        # VALIDAÇÃO 1: Termo vazio após strip
+        if not term_clean:
+            ignored.append(term_original)
+            reasons[term_original] = 'Termo vazio ou apenas espaços'
+            continue
+
+        # VALIDAÇÃO 2: Stopword (word-boundary check para frases)
+        # Para frases como "uniforme escolar", verifica se alguma palavra é stopword pura
+        words = term_clean.split()
+        if len(words) == 1 and normalize_text(term_clean) in STOPWORDS_PT:
+            ignored.append(term_original)
+            reasons[term_original] = 'Palavra comum não indexada (stopword)'
+            continue
+
+        # VALIDAÇÃO 3: Comprimento mínimo (para termos únicos)
+        # Frases multi-palavra são permitidas mesmo se contiverem palavras curtas
+        if len(words) == 1 and len(term_clean) < MIN_LENGTH:
+            ignored.append(term_original)
+            reasons[term_original] = f'Termo muito curto (mínimo {MIN_LENGTH} caracteres)'
+            continue
+
+        # VALIDAÇÃO 4: Caracteres especiais perigosos
+        # Permite: letras, números, espaços, hífens, acentos
+        if not all(c.isalnum() or c.isspace() or c in '-áéíóúàèìòùâêîôûãõñç' for c in term_clean):
+            ignored.append(term_original)
+            reasons[term_original] = 'Contém caracteres especiais não permitidos'
+            continue
+
+        # TERMO VÁLIDO: Adiciona normalizado (sem espaços extras)
+        valid.append(term_clean)
+
+    # INVARIANTE CRÍTICO: Garantir que não há interseção entre valid e ignored
+    # Compara versões normalizadas para detectar duplicatas
+    valid_normalized = {t.strip().lower() for t in valid}
+    ignored_normalized = {t.strip().lower() for t in ignored}
+    intersection = valid_normalized.intersection(ignored_normalized)
+
+    if intersection:
+        # BUG DETECTADO - deve ser IMPOSSÍVEL chegar aqui
+        logger.error(
+            f"CRITICAL BUG: Termos em ambas as listas (valid E ignored): {intersection}. "
+            f"valid={valid}, ignored={ignored}"
+        )
+        raise AssertionError(
+            f"BUG: Termo não pode estar em 'valid' E 'ignored': {intersection}"
+        )
+
+    return {
+        'valid': valid,
+        'ignored': ignored,
+        'reasons': reasons
+    }
+
+
 def remove_stopwords(terms: list[str]) -> list[str]:
     """Remove Portuguese stopwords from a list of search terms.
+
+    DEPRECATED: Use validate_terms() for new code. This function is kept
+    for backward compatibility with existing code.
 
     Terms are normalized (lowercased, accent-stripped) before comparison
     so that 'à', 'É', 'após' etc. are correctly identified as stopwords.
