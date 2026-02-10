@@ -39,6 +39,8 @@ from routes.subscriptions import router as subscriptions_router
 from routes.features import router as features_router
 from routes.messages import router as messages_router
 from routes.analytics import router as analytics_router
+from routes.auth_oauth import router as oauth_router  # STORY-180: Google OAuth
+from routes.export_sheets import router as export_sheets_router  # STORY-180: Google Sheets Export
 from webhooks.stripe import router as stripe_webhook_router
 
 # Configure structured logging
@@ -89,6 +91,8 @@ app.include_router(subscriptions_router)
 app.include_router(features_router)
 app.include_router(messages_router)
 app.include_router(analytics_router)
+app.include_router(oauth_router)  # STORY-180: Google OAuth routes
+app.include_router(export_sheets_router)  # STORY-180: Google Sheets Export routes
 app.include_router(stripe_webhook_router)
 
 logger.info(
