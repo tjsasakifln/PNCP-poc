@@ -1154,7 +1154,7 @@ function HomePageContent() {
                 Busca de Licitações
               </h1>
               <p className="text-ink-secondary mt-1 text-sm sm:text-base">
-                Encontre oportunidades de contratação pública no Portal Nacional (<Tooltip content="PNCP = Portal Nacional de Contratações Públicas. É o sistema oficial do governo federal para publicação de licitações.">PNCP</Tooltip>)
+                Encontre oportunidades de contratação pública de acordo com o momento do seu negócio.
               </p>
             </div>
 

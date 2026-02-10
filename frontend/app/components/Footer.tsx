@@ -59,10 +59,10 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Suporte</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <FooterLink href="#suporte">Central de Ajuda</FooterLink>
+                <FooterLink href="/mensagens">Central de Ajuda</FooterLink>
               </li>
               <li>
-                <FooterLink href="#suporte">Contato</FooterLink>
+                <FooterLink href="/mensagens">Contato</FooterLink>
               </li>
             </ul>
           </div>
@@ -211,4 +211,3 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
     </a>
   );
 }
-
