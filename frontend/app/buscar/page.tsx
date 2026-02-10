@@ -773,7 +773,7 @@ function HomePageContent() {
           // Handle authentication required (401) - redirect to login
           if (response.status === 401) {
             // Save search state before redirect (UX error fix)
-            if (result && data?.download_id) {
+            if (result && result.download_id) {
               const formState = {
                 ufs: Array.from(ufsSelecionadas),
                 startDate: dataInicial,
@@ -781,7 +781,7 @@ function HomePageContent() {
                 setor: searchMode === 'setor' ? setorId : undefined,
                 includeKeywords: searchMode === 'termos' ? termosArray : undefined,
               };
-              saveSearchState(result, data.download_id, formState);
+              saveSearchState(result, result.download_id, formState);
               console.log('[buscar] Search state saved before auth redirect');
             }
             window.location.href = "/login";
