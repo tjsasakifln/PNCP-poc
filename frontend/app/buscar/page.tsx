@@ -1076,11 +1076,15 @@ function HomePageContent() {
         termos_count: termosArray.length,
       });
 
+      // HOTFIX 2026-02-10: Show success toast to improve UX feedback
+      alert(`✓ Busca "${saveSearchName || "Busca sem nome"}" salva com sucesso!`);
+
       setShowSaveDialog(false);
       setSaveSearchName("");
       setSaveError(null);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Erro ao salvar busca");
+      alert(`✗ Erro ao salvar: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
   };
 
