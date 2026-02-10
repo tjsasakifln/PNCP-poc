@@ -99,7 +99,7 @@ async def google_oauth_initiate(
 
 @router.get("/google/callback")
 async def google_oauth_callback(
-    code: str = Query(..., description="Authorization code from Google"),
+    code: Optional[str] = Query(default=None, description="Authorization code from Google"),
     state: str = Query(..., description="CSRF state token"),
     error: Optional[str] = Query(default=None, description="OAuth error (if any)")
 ):
@@ -109,7 +109,7 @@ async def google_oauth_callback(
     This endpoint is called by Google after user authorizes access.
 
     Query Parameters:
-        code: Authorization code (exchanged for tokens)
+        code: Authorization code (exchanged for tokens), absent on error
         state: CSRF state token (contains user_id + redirect path)
         error: OAuth error code (if authorization failed)
 
@@ -127,11 +127,18 @@ async def google_oauth_callback(
         - Code exchange failed → Redirect with error=oauth_failed
         - Database error → Redirect with error=storage_failed
     """
-    # Handle OAuth error
+    # Handle OAuth error (Google sends error without code when user denies)
     if error:
         logger.warning(f"OAuth callback error: {error}")
         return RedirectResponse(
             f"{FRONTEND_URL}/buscar?error=oauth_denied&detail={error}"
+        )
+
+    # code is required for token exchange (absent only on error)
+    if not code:
+        logger.warning("OAuth callback missing authorization code")
+        return RedirectResponse(
+            f"{FRONTEND_URL}/buscar?error=missing_code"
         )
 
     try:
