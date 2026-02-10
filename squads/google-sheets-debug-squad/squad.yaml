@@ -1,0 +1,211 @@
+# Google Sheets Debug Squad
+# Squad especializado em investigação e correção de bugs da exportação Google Sheets
+
+name: google-sheets-debug-squad
+version: 1.0.0
+description: >
+  Squad completo para investigação e correção de bugs relacionados à exportação
+  de licitações para Google Sheets. Especializado em debugging de OAuth, API errors,
+  e integração Google Sheets API.
+
+created_by: Craft (squad-creator)
+created_at: 2026-02-10
+
+# Agents
+agents:
+  - id: api-detective
+    name: API Detective
+    role: Investigador de erros de API
+    description: >
+      Especialista em debugging de APIs REST, análise de logs HTTP, headers,
+      status codes, e identificação de causas raiz de erros de integração.
+    responsibilities:
+      - Analisar logs de erro da API
+      - Investigar responses HTTP (headers, body, status)
+      - Diagnosticar problemas de autenticação OAuth
+      - Identificar erros de parsing JSON/HTML
+    tools:
+      - curl
+      - postman
+      - chrome devtools
+      - backend logs
+
+  - id: oauth-specialist
+    name: OAuth Specialist
+    role: Especialista em autenticação OAuth 2.0
+    description: >
+      Expert em fluxos OAuth, token management, refresh logic, e debugging
+      de problemas de autorização com Google APIs.
+    responsibilities:
+      - Validar fluxo OAuth completo
+      - Debugar token refresh failures
+      - Verificar scopes e permissões
+      - Testar cenários de token expirado/revogado
+    tools:
+      - google oauth playground
+      - jwt.io
+      - oauth debugger
+
+  - id: error-handler
+    name: Error Handler
+    role: Especialista em error handling
+    description: >
+      Especialista em tratamento de erros robusto, mensagens user-friendly,
+      e implementação de fallbacks para cenários de erro.
+    responsibilities:
+      - Implementar error handling robusto
+      - Adicionar validações de Content-Type
+      - Criar mensagens de erro user-friendly
+      - Implementar retry logic e circuit breakers
+    tools:
+      - sentry
+      - error tracking
+
+  - id: test-engineer
+    name: Test Engineer
+    role: Engenheiro de testes
+    description: >
+      Especialista em testes de regressão, unit tests, integration tests,
+      e validação de correções implementadas.
+    responsibilities:
+      - Criar testes para cenários de erro
+      - Validar correções implementadas
+      - Testar edge cases
+      - Garantir cobertura de testes
+    tools:
+      - pytest
+      - jest
+      - playwright
+
+# Tasks
+tasks:
+  - name: diagnose-sheets-error
+    agent: api-detective
+    description: Diagnosticar causa raiz do erro de exportação
+    steps:
+      - Coletar logs de erro do backend
+      - Analisar response headers e body
+      - Identificar se erro é HTML vs JSON
+      - Verificar status codes retornados
+      - Documentar findings em report
+    outputs:
+      - investigation-report.md
+    estimated_time: 2h
+
+  - name: fix-oauth-flow
+    agent: oauth-specialist
+    description: Corrigir problemas no fluxo OAuth
+    steps:
+      - Verificar token refresh logic
+      - Testar cenários de token expirado
+      - Validar error handling em oauth.py
+      - Implementar logging detalhado
+      - Testar com tokens revogados
+    outputs:
+      - oauth-fixes.md
+    estimated_time: 3h
+
+  - name: improve-error-handling
+    agent: error-handler
+    description: Melhorar tratamento de erros no frontend e backend
+    steps:
+      - Adicionar verificação de Content-Type
+      - Implementar fallbacks para HTML responses
+      - Melhorar mensagens de erro ao usuário
+      - Adicionar try-catch em parsing JSON
+      - Garantir que backend sempre retorna JSON
+    outputs:
+      - frontend/components/GoogleSheetsExportButton.tsx
+      - backend/routes/export_sheets.py
+    estimated_time: 4h
+
+  - name: add-regression-tests
+    agent: test-engineer
+    description: Adicionar testes para cenários de erro HTML
+    steps:
+      - Criar teste para response HTML vs JSON
+      - Testar parsing errors
+      - Testar token refresh failures
+      - Validar error handling robusto
+      - Garantir 100% cobertura dos novos fixes
+    outputs:
+      - backend/tests/test_html_error_response.py
+      - frontend/__tests__/GoogleSheetsExportButton.error.test.tsx
+    estimated_time: 3h
+
+  - name: validate-fixes
+    agent: test-engineer
+    description: Validar todas as correções implementadas
+    steps:
+      - Rodar todos os testes (unit + integration)
+      - Testar manualmente no ambiente dev
+      - Verificar que erro original foi resolvido
+      - Validar mensagens de erro ao usuário
+      - Criar checklist de validação
+    outputs:
+      - validation-checklist.md
+    estimated_time: 2h
+
+# Templates
+templates:
+  - name: api-investigation-report
+    file: api-investigation-report.md
+    description: Template para documentar investigação de erros de API
+
+  - name: error-handling-pattern
+    file: error-handling-pattern.md
+    description: Padrão de error handling robusto para APIs
+
+  - name: test-case-template
+    file: test-case-template.md
+    description: Template para documentar casos de teste
+
+# Checklists
+checklists:
+  - name: error-handling-checklist
+    file: error-handling-checklist.md
+    description: Checklist de validação de error handling
+
+  - name: oauth-debug-checklist
+    file: oauth-debug-checklist.md
+    description: Checklist para debugging de OAuth
+
+# Data
+data:
+  - name: known-google-errors
+    file: known-google-errors.json
+    description: Mapeamento de erros comuns da Google API
+
+  - name: http-status-codes
+    file: http-status-codes.json
+    description: Referência de HTTP status codes e significados
+
+# Scripts
+scripts:
+  - name: test-oauth-flow
+    file: test-oauth-flow.sh
+    description: Script para testar fluxo OAuth end-to-end
+
+  - name: simulate-api-errors
+    file: simulate-api-errors.py
+    description: Simular erros da Google API para testes
+
+# Dependencies
+dependencies:
+  squad: null
+  tools:
+    - pytest
+    - jest
+    - playwright
+    - curl
+  libraries:
+    - google-api-python-client
+    - httpx
+    - fastapi
+
+# Configuration
+config:
+  priority: P0 - Critical Bug
+  estimated_duration: 1 sprint (3-5 days)
+  complexity: medium
+  risk: medium

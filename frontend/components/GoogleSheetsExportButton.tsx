@@ -86,9 +86,18 @@ export default function GoogleSheetsExportButton({
         })
       });
 
+      // CRITICAL FIX: Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      const isJson = contentType && contentType.includes('application/json');
+
       // Handle OAuth required (401)
       if (response.status === 401) {
-        const error = await response.json();
+        let error;
+        try {
+          error = isJson ? await response.json() : { detail: 'Autenticação necessária' };
+        } catch {
+          error = { detail: 'Autenticação necessária' };
+        }
 
         // Check if it's OAuth-specific error
         if (error.detail?.includes('Google Sheets') || error.detail?.includes('autorizado')) {
@@ -111,7 +120,15 @@ export default function GoogleSheetsExportButton({
 
       // Handle other HTTP errors
       if (!response.ok) {
-        const error = await response.json();
+        let error;
+        try {
+          // CRITICAL FIX: Only parse JSON if Content-Type is correct
+          error = isJson ? await response.json() : { detail: `Erro HTTP ${response.status}` };
+        } catch (parseError) {
+          // If JSON parsing fails (HTML response), provide fallback error
+          console.error('Failed to parse error response:', parseError);
+          error = { detail: 'Erro ao exportar para Google Sheets. Tente novamente.' };
+        }
 
         // Handle specific error codes
         if (response.status === 403) {
@@ -130,7 +147,16 @@ export default function GoogleSheetsExportButton({
       }
 
       // Success - get spreadsheet URL
-      const result = await response.json();
+      let result;
+      try {
+        result = isJson ? await response.json() : null;
+        if (!result || !result.spreadsheet_url) {
+          throw new Error('Resposta inválida do servidor');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse success response:', parseError);
+        throw new Error('Erro ao processar resposta. Tente novamente.');
+      }
 
       // Open spreadsheet in new tab
       window.open(result.spreadsheet_url, '_blank', 'noopener,noreferrer');
