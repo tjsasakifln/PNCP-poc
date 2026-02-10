@@ -180,6 +180,25 @@ class GoogleSheetsExporter:
         try:
             logger.info(f"Updating spreadsheet {spreadsheet_id} with {len(licitacoes)} rows")
 
+            # HOTFIX 2026-02-10: Validate spreadsheet exists before update
+            # Prevents 404 errors when spreadsheet was deleted or user lost access
+            try:
+                self.service.spreadsheets().get(
+                    spreadsheetId=spreadsheet_id
+                ).execute()
+            except HttpError as validation_error:
+                if validation_error.resp.status == 404:
+                    # Spreadsheet not found - automatic fallback to CREATE
+                    logger.warning(
+                        f"Spreadsheet {spreadsheet_id} not found (deleted or no access). "
+                        f"Falling back to CREATE new spreadsheet."
+                    )
+                    # Generate title from timestamp
+                    title = f"SmartLic - Atualizado - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                    return await self.create_spreadsheet(licitacoes, title)
+                # Re-raise other errors (403 Forbidden, etc)
+                raise
+
             # 1. Clear old data (preserve header)
             self._clear_data(spreadsheet_id)
 
