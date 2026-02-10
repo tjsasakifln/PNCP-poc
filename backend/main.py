@@ -1068,73 +1068,14 @@ async def buscar_licitacoes(
         )
 
     # ==========================================================================
-    # DATE RANGE VALIDATION (based on plan's max_history_days)
+    # DATE RANGE: No restrictions - users can search any period
     # ==========================================================================
-    # This MUST happen BEFORE calling the PNCP API to prevent unauthorized
-    # access to historical data beyond the user's plan limits.
-    from datetime import date
-    from quota import PLAN_NAMES, UPGRADE_SUGGESTIONS, PLAN_PRICES
-
-    try:
-        d_ini = date.fromisoformat(request.data_inicial)
-        d_fin = date.fromisoformat(request.data_final)
-        date_range_days = (d_fin - d_ini).days + 1  # +1 because both dates are inclusive
-
-        max_history_days = quota_info.capabilities.get("max_history_days", 7)
-
-        if date_range_days > max_history_days:
-            # Build helpful error message with upgrade suggestion
-            plan_id = quota_info.plan_id
-            suggested_plan = UPGRADE_SUGGESTIONS.get("max_history_days", {}).get(plan_id)
-
-            if suggested_plan:
-                suggested_name = PLAN_NAMES.get(suggested_plan, suggested_plan)
-                suggested_price = PLAN_PRICES.get(suggested_plan, "")
-                suggested_max_days = PLAN_CAPABILITIES.get(suggested_plan, {}).get("max_history_days", 0)
-
-                error_msg = (
-                    f"Período de {date_range_days} dias excede o limite de {max_history_days} dias "
-                    f"do seu plano {quota_info.plan_name}. "
-                    f"Faça upgrade para o plano {suggested_name} ({suggested_price}) "
-                    f"para consultar até {suggested_max_days} dias de histórico."
-                )
-            else:
-                # No upgrade available (already at highest tier or unknown plan)
-                error_msg = (
-                    f"Período de {date_range_days} dias excede o limite de {max_history_days} dias "
-                    f"do seu plano {quota_info.plan_name}. "
-                    f"Por favor, reduza o período de busca."
-                )
-
-            logger.warning(
-                f"Date range validation failed for user {mask_user_id(user['id'])}: "
-                f"requested={date_range_days} days, max_allowed={max_history_days} days"
-            )
-            # UX FIX: Structured error response for frontend error handling
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "error_code": ErrorCode.DATE_RANGE_EXCEEDED,
-                    "message": error_msg,
-                    "data": {
-                        "requested_days": date_range_days,
-                        "max_allowed_days": max_history_days,
-                        "plan_name": quota_info.plan_name,
-                        "suggested_plan": suggested_name if suggested_plan else None,
-                        "suggested_price": suggested_price if suggested_plan else None,
-                        "suggested_max_days": suggested_max_days if suggested_plan else None,
-                    }
-                }
-            )
-
-        logger.debug(
-            f"Date range validation passed: {date_range_days} days <= {max_history_days} days allowed"
-        )
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions
-    except ValueError as e:
-        # Invalid date format (should be caught by Pydantic, but just in case)
-        raise HTTPException(status_code=400, detail=f"Data inválida: {e}")
+    # HOTFIX 2026-02-10: Removed date_range validation that was blocking paying users.
+    # Essential validations (data_inicial <= data_final) are handled by Pydantic
+    # in schemas.py BuscaRequest.validate_dates_and_values()
+    #
+    # Previously blocked users with 400 errors for searches > max_history_days.
+    # Now unlimited date ranges allowed per user requirement.
 
     try:
         # Load sector configuration

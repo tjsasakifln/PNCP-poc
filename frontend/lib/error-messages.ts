@@ -50,12 +50,59 @@ const ERROR_MAP: Record<string, string> = {
 /**
  * Converts a technical error message to a user-friendly Portuguese message.
  * Strips URLs, stack traces, and technical jargon.
+ *
+ * HOTFIX 2026-02-10: Enhanced to properly extract error messages from API responses,
+ * fixing "[object Object]" display bug that was showing to paying users.
  */
-export function getUserFriendlyError(error: string | Error): string {
-  const message = error instanceof Error ? error.message : error;
+export function getUserFriendlyError(error: any): string {
+  // HOTFIX: Handle API error responses (Axios/fetch error objects)
+  // This fixes the "[object Object]" bug
+  let message: string;
 
+  if (typeof error === 'string') {
+    message = error;
+  } else if (error instanceof Error) {
+    message = error.message;
+  } else if (error?.response?.data) {
+    // Axios error with structured response
+    const data = error.response.data;
+
+    // Try to extract message from various formats
+    if (data.detail?.message) {
+      // FastAPI HTTPException with structured detail
+      message = data.detail.message;
+    } else if (typeof data.detail === 'string') {
+      // FastAPI HTTPException with string detail
+      message = data.detail;
+    } else if (data.message) {
+      // Simple message field
+      message = data.message;
+    } else if (typeof data === 'string') {
+      // Entire data is a string
+      message = data;
+    } else {
+      // Fallback: couldn't extract message from object
+      console.error('Could not extract error message from:', data);
+      message = "Não foi possível processar sua busca. Tente novamente em instantes.";
+    }
+  } else if (error?.request && !error?.response) {
+    // Network error (request sent but no response)
+    message = "Erro de conexão. Verifique sua internet.";
+  } else if (error?.message) {
+    // Error object with message
+    message = error.message;
+  } else {
+    // Unknown error format
+    console.error('Unknown error format:', error);
+    message = "Erro desconhecido. Por favor, tente novamente.";
+  }
+
+  // Now apply user-friendly mappings to the extracted message
   // Check exact matches first
-  if (ERROR_MAP[message]) return ERROR_MAP[message];
+  if (ERROR_MAP[message]) {
+    const mapped = ERROR_MAP[message];
+    return mapped === "keep_original" ? message : mapped;
+  }
 
   // Check partial matches
   for (const [key, value] of Object.entries(ERROR_MAP)) {

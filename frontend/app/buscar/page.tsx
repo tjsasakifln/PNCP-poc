@@ -831,7 +831,10 @@ function HomePageContent() {
       if (e instanceof DOMException && e.name === 'AbortError') {
         return;
       }
-      const errorMessage = getUserFriendlyError(e instanceof Error ? e : "Erro desconhecido");
+      // HOTFIX 2026-02-10: Pass full error object to extract message properly
+      // This fixes "[object Object]" bug by allowing getUserFriendlyError to
+      // extract message from error.response.data.detail.message
+      const errorMessage = getUserFriendlyError(e);
       setError(errorMessage);
 
       // Track search_failed event
