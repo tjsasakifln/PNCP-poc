@@ -1,0 +1,58 @@
+name: ux-error-fix-squad
+version: 1.0.0
+description: Squad to investigate and fix free user search persistence and balance consumption bugs
+author: Tiago Sasaki
+license: MIT
+slashPrefix: ux-error-fix
+aios:
+  minVersion: 2.1.0
+  type: squad
+components:
+  tasks:
+    - coordinate-investigation.md
+    - prioritize-fixes.md
+    - consolidate-findings.md
+    - create-fix-plan.md
+    - analyze-user-flow.md
+    - trace-navigation-state.md
+    - identify-ux-breakpoints.md
+    - validate-session-persistence.md
+    - analyze-auth-logs.md
+    - debug-api-failures.md
+    - verify-balance-consumption.md
+    - trace-database-writes.md
+    - test-free-user-flow.md
+    - validate-balance-deduction.md
+    - verify-history-save.md
+    - test-navigation-persistence.md
+  agents:
+    - lead-investigator.md
+    - ux-analyst.md
+    - backend-debugger.md
+    - qa-validator.md
+  workflows: []
+  checklists: []
+  templates: []
+  tools: []
+  scripts: []
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+dependencies:
+  node: []
+  python: []
+  squads: []
+tags:
+  - custom
+  - ux-bug-fix
+  - free-user
+  - search-persistence
+blueprint:
+  source:
+    - Free user search persistence bug
+    - Auth inconsistency reports
+    - Balance consumption tracking issues
+  created_at: 2026-02-10T21:52:00.000Z
+  confidence: 0.87

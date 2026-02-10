@@ -33,6 +33,7 @@ import { LicitacoesPreview } from "../components/LicitacoesPreview";
 import { Tooltip } from "../components/ui/Tooltip";
 import type { SavedSearch } from "../../lib/savedSearches";
 import { getUserFriendlyError } from "../../lib/error-messages";
+import { saveSearchState, restoreSearchState } from "../../lib/searchStatePersistence";
 
 // P0 Filters
 import { StatusFilter, type StatusLicitacao } from "../../components/StatusFilter";
@@ -249,6 +250,55 @@ function HomePageContent() {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     return now.toISOString().split("T")[0];
   });
+
+  // Restore search state from sessionStorage after auth redirect (UX error fix)
+  useEffect(() => {
+    const restored = restoreSearchState();
+    if (restored) {
+      console.log('[buscar] Restoring search state after auth...', {
+        downloadId: restored.downloadId,
+        hasResult: !!restored.result,
+      });
+
+      // Restore search result
+      if (restored.result) {
+        setResult(restored.result);
+      }
+
+      // Restore form state
+      const { formState } = restored;
+      if (formState.ufs?.length) {
+        setUfsSelecionadas(new Set(formState.ufs));
+      }
+      if (formState.startDate) setDataInicial(formState.startDate);
+      if (formState.endDate) setDataFinal(formState.endDate);
+      if (formState.setor) {
+        setSearchMode('setor');
+        setSetorId(formState.setor);
+      }
+      if (formState.includeKeywords?.length) {
+        setSearchMode('termos');
+        setTermosArray(formState.includeKeywords);
+      }
+
+      // Show success banner
+      const banner = document.createElement('div');
+      banner.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-[var(--success)] text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+      banner.textContent = '✓ Resultados da busca restaurados! Você pode fazer o download agora.';
+      banner.style.animation = 'fadeIn 0.3s ease-in';
+      document.body.appendChild(banner);
+      setTimeout(() => {
+        banner.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => banner.remove(), 300);
+      }, 5000);
+
+      // Track restoration
+      trackEvent('search_state_auto_restored', {
+        download_id: restored.downloadId,
+        age_seconds: (Date.now() - restored.timestamp) / 1000,
+      });
+    }
+  }, [trackEvent]);
 
   // Apply URL params on mount (Issue #154: Re-run search from history)
   useEffect(() => {
@@ -722,6 +772,18 @@ function HomePageContent() {
 
           // Handle authentication required (401) - redirect to login
           if (response.status === 401) {
+            // Save search state before redirect (UX error fix)
+            if (result && data?.download_id) {
+              const formState = {
+                ufs: Array.from(ufsSelecionadas),
+                startDate: dataInicial,
+                endDate: dataFinal,
+                setor: searchMode === 'setor' ? setorId : undefined,
+                includeKeywords: searchMode === 'termos' ? termosArray : undefined,
+              };
+              saveSearchState(result, data.download_id, formState);
+              console.log('[buscar] Search state saved before auth redirect');
+            }
             window.location.href = "/login";
             throw new Error("Faça login para continuar");
           }
@@ -802,9 +864,9 @@ function HomePageContent() {
         setOnboardingStep(3);
       }
 
-      // Issue #153: Refresh quota after successful search
+      // Issue #153: Refresh quota after successful search (P0 FIX: await the refresh)
       if (session?.access_token) {
-        refreshQuota();
+        await refreshQuota();
       }
 
       const searchEndTime = Date.now();
@@ -887,6 +949,18 @@ function HomePageContent() {
 
       if (!response.ok) {
         if (response.status === 401) {
+          // Save search state before redirect (UX error fix)
+          if (result && result.download_id) {
+            const formState = {
+              ufs: Array.from(ufsSelecionadas),
+              startDate: dataInicial,
+              endDate: dataFinal,
+              setor: searchMode === 'setor' ? setorId : undefined,
+              includeKeywords: searchMode === 'termos' ? termosArray : undefined,
+            };
+            saveSearchState(result, result.download_id, formState);
+            console.log('[buscar] Search state saved before download auth redirect');
+          }
           window.location.href = "/login";
           throw new Error('Faça login para continuar');
         }
