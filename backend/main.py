@@ -1049,11 +1049,35 @@ async def buscar_licitacoes(
     elif ENABLE_NEW_PRICING:
         logger.debug("New pricing enabled, checking quota and plan capabilities")
         try:
+            # HOTFIX 2026-02-10: Use atomic check-and-increment to prevent race conditions
+            # Issue #189: TOCTOU vulnerability fix
+            from quota import check_quota, check_and_increment_quota_atomic
+
             quota_info = check_quota(user["id"])
 
+            # Pre-check trial expiration and quota availability
             if not quota_info.allowed:
                 # Quota exhausted or trial expired
                 raise HTTPException(status_code=403, detail=quota_info.error_message)
+
+            # ATOMIC: Check and increment quota BEFORE search execution
+            # This prevents race condition where multiple concurrent requests
+            # could exceed the quota limit
+            allowed, new_quota_used, quota_remaining_after = check_and_increment_quota_atomic(
+                user["id"],
+                quota_info.capabilities["max_requests_per_month"]
+            )
+
+            if not allowed:
+                # Quota was exhausted atomically (another request consumed last credit)
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Limite de {quota_info.capabilities['max_requests_per_month']} buscas mensais atingido. Renova em {quota_info.quota_reset_date.strftime('%d/%m/%Y')}."
+                )
+
+            # Update quota_info with atomic values for response
+            quota_info.quota_used = new_quota_used
+            quota_info.quota_remaining = quota_remaining_after
         except HTTPException:
             raise  # Re-raise HTTP exceptions
         except RuntimeError as e:
@@ -1557,14 +1581,10 @@ async def buscar_licitacoes(
                 alerta_urgencia=None,
             )
 
-            # Increment quota and get updated values
-            from quota import increment_monthly_quota
-            try:
-                new_quota_used = increment_monthly_quota(user["id"])
-            except Exception as e:
-                logger.warning(f"Failed to increment quota (using fallback): {e}")
-                new_quota_used = quota_info.quota_used + 1 if quota_info else 0
-            quota_remaining = max(0, quota_info.capabilities["max_requests_per_month"] - new_quota_used) if quota_info else 0
+            # Quota already incremented atomically at request start (check_and_increment_quota_atomic)
+            # Use values from quota_info which were updated after atomic increment
+            new_quota_used = quota_info.quota_used if quota_info else 0
+            quota_remaining = quota_info.quota_remaining if quota_info else 0
 
             response = BuscaResponse(
                 resumo=resumo,
@@ -1679,14 +1699,10 @@ async def buscar_licitacoes(
             logger.info("Excel generation skipped (not allowed for user's plan)")
             upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
 
-        # Increment quota and get updated values
-        from quota import increment_monthly_quota
-        try:
-            new_quota_used = increment_monthly_quota(user["id"])
-        except Exception as e:
-            logger.warning(f"Failed to increment quota (using fallback): {e}")
-            new_quota_used = quota_info.quota_used + 1 if quota_info else 0
-        quota_remaining = max(0, quota_info.capabilities["max_requests_per_month"] - new_quota_used) if quota_info else 0
+        # Quota already incremented atomically at request start (check_and_increment_quota_atomic)
+        # Use values from quota_info which were updated after atomic increment
+        new_quota_used = quota_info.quota_used if quota_info else 0
+        quota_remaining = quota_info.quota_remaining if quota_info else 0
 
         # Step 5: Return response with individual bid items for preview
         licitacao_items = _convert_to_licitacao_items(licitacoes_filtradas)
