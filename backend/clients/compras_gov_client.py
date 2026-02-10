@@ -55,6 +55,65 @@ class ComprasGovAdapter(SourceAdapter):
     RATE_LIMIT_DELAY = 0.5  # 500ms between requests (~2 req/s)
     PAGE_SIZE = 500
 
+    # Modalidade name normalization mapping (Lei 14.133/2021)
+    MODALIDADE_MAPPING = {
+        # Exact Lei 14.133 names (preferred output)
+        "Pregao Eletronico": "Pregao Eletronico",
+        "Pregao Presencial": "Pregao Presencial",
+        "Concorrencia": "Concorrencia",
+        "Concurso": "Concurso",
+        "Leilao": "Leilao",
+        "Dispensa de Licitacao": "Dispensa de Licitacao",
+        "Inexigibilidade": "Inexigibilidade",
+        "Dialogo Competitivo": "Dialogo Competitivo",
+        # Common variations (input normalization)
+        "PREGAO ELETRONICO": "Pregao Eletronico",
+        "PREGÃO ELETRÔNICO": "Pregao Eletronico",
+        "Pregão Eletrônico": "Pregao Eletronico",
+        "pregão eletrônico": "Pregao Eletronico",
+        "Pregão - Eletrônico": "Pregao Eletronico",
+        "PE": "Pregao Eletronico",
+        "PREGAO PRESENCIAL": "Pregao Presencial",
+        "PREGÃO PRESENCIAL": "Pregao Presencial",
+        "Pregão Presencial": "Pregao Presencial",
+        "pregão presencial": "Pregao Presencial",
+        "Pregão - Presencial": "Pregao Presencial",
+        "PP": "Pregao Presencial",
+        "CONCORRENCIA": "Concorrencia",
+        "CONCORRÊNCIA": "Concorrencia",
+        "Concorrência": "Concorrencia",
+        "concorrência": "Concorrencia",
+        "CONCURSO": "Concurso",
+        "concurso": "Concurso",
+        "LEILAO": "Leilao",
+        "LEILÃO": "Leilao",
+        "Leilão": "Leilao",
+        "leilão": "Leilao",
+        "DISPENSA DE LICITACAO": "Dispensa de Licitacao",
+        "DISPENSA DE LICITAÇÃO": "Dispensa de Licitacao",
+        "Dispensa de Licitação": "Dispensa de Licitacao",
+        "dispensa de licitação": "Dispensa de Licitacao",
+        "Dispensa": "Dispensa de Licitacao",
+        "DISPENSA": "Dispensa de Licitacao",
+        "INEXIGIBILIDADE": "Inexigibilidade",
+        "Inexigibilidade": "Inexigibilidade",
+        "inexigibilidade": "Inexigibilidade",
+        "Inexigível": "Inexigibilidade",
+        "INEXIGIVEL": "Inexigibilidade",
+        "DIALOGO COMPETITIVO": "Dialogo Competitivo",
+        "DIÁLOGO COMPETITIVO": "Dialogo Competitivo",
+        "Diálogo Competitivo": "Dialogo Competitivo",
+        "diálogo competitivo": "Dialogo Competitivo",
+        # Deprecated (Lei 8.666/93) - flag for logging
+        "Tomada de Precos": "DEPRECATED_TOMADA_PRECOS",
+        "TOMADA DE PREÇOS": "DEPRECATED_TOMADA_PRECOS",
+        "Tomada de Preços": "DEPRECATED_TOMADA_PRECOS",
+        "TP": "DEPRECATED_TOMADA_PRECOS",
+        "Convite": "DEPRECATED_CONVITE",
+        "CONVITE": "DEPRECATED_CONVITE",
+        "convite": "DEPRECATED_CONVITE",
+    }
+
     _metadata = SourceMetadata(
         name="ComprasGov - Dados Abertos Federal",
         code="COMPRAS_GOV",
@@ -191,6 +250,44 @@ class ComprasGovAdapter(SourceAdapter):
         delay = min(2.0 * (2 ** attempt), 60.0)
         delay *= random.uniform(0.5, 1.5)
         return delay
+
+    def _normalize_modalidade_name(self, raw_name: str) -> str:
+        """
+        Normalize modalidade name to Lei 14.133 standard.
+
+        Args:
+            raw_name: Raw modalidade name from API
+
+        Returns:
+            Normalized modalidade name or empty string
+        """
+        if not raw_name:
+            return ""
+
+        # Try direct mapping first
+        normalized = self.MODALIDADE_MAPPING.get(raw_name)
+        if normalized:
+            if normalized.startswith("DEPRECATED_"):
+                logger.warning(
+                    f"[COMPRAS_GOV] Deprecated modalidade found: {raw_name}. "
+                    "This modality was revoked by Lei 14.133/2021."
+                )
+                # Return normalized name without DEPRECATED_ prefix for legacy data
+                return normalized.replace("DEPRECATED_", "").replace("_", " ").title()
+            return normalized
+
+        # Try case-insensitive match
+        raw_upper = raw_name.upper()
+        for key, value in self.MODALIDADE_MAPPING.items():
+            if key.upper() == raw_upper:
+                return value
+
+        # Unknown modalidade - log warning
+        logger.warning(
+            f"[COMPRAS_GOV] Unknown modalidade name: {raw_name}. "
+            "Please add to MODALIDADE_MAPPING if valid."
+        )
+        return raw_name  # Return as-is for debugging
 
     async def health_check(self) -> SourceStatus:
         """
@@ -417,12 +514,15 @@ class ComprasGovAdapter(SourceAdapter):
             )
 
             # Extract modalidade
-            modalidade = (
+            modalidade_raw = (
                 raw_record.get("modalidade_licitacao")
                 or raw_record.get("modalidade")
                 or raw_record.get("tipo")
                 or ""
             )
+
+            # Normalize modalidade name
+            modalidade = self._normalize_modalidade_name(modalidade_raw)
 
             # Extract situacao
             situacao = (

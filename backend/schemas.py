@@ -29,24 +29,27 @@ class StatusLicitacao(str, Enum):
 
 class ModalidadeContratacao(IntEnum):
     """
-    Modalidades de contratação conforme legislação brasileira.
+    Modalidades de contratação conforme Lei 14.133/2021 (Nova Lei de Licitações).
 
-    Códigos padronizados pela API PNCP para tipos de licitação:
-    - 1-2: Pregões (eletrônico/presencial) - mais comuns
-    - 3-5: Modalidades tradicionais por valor
-    - 6-7: Contratação direta
-    - 8-10: Modalidades especiais
+    Códigos oficiais das modalidades de licitação vigentes:
+    - 1-2: Pregões (eletrônico/presencial) - Art. 6º XLIII
+    - 3: Concorrência - Art. 6º XLII
+    - 6-7: Contratação direta (Dispensa/Inexigibilidade) - Arts. 75 e 74
+    - 9: Leilão - Art. 6º XLV
+    - 10: Diálogo Competitivo - Art. 6º XLVI
+    - 11: Concurso - Art. 6º XLIV
+
+    IMPORTANTE: Códigos 4 (Tomada de Preços) e 5 (Convite) foram REMOVIDOS
+    pois são modalidades da Lei 8.666/93, revogada pela Lei 14.133/2021.
     """
-    PREGAO_ELETRONICO = 1
-    PREGAO_PRESENCIAL = 2
-    CONCORRENCIA = 3
-    TOMADA_PRECOS = 4
-    CONVITE = 5
-    DISPENSA = 6
-    INEXIGIBILIDADE = 7
-    CREDENCIAMENTO = 8
-    LEILAO = 9
-    DIALOGO_COMPETITIVO = 10
+    PREGAO_ELETRONICO = 1      # Art. 6º XLIII
+    PREGAO_PRESENCIAL = 2      # Art. 6º XLIII
+    CONCORRENCIA = 3           # Art. 6º XLII
+    DISPENSA = 6               # Art. 75
+    INEXIGIBILIDADE = 7        # Art. 74
+    LEILAO = 9                 # Art. 6º XLV
+    DIALOGO_COMPETITIVO = 10   # Art. 6º XLVI
+    CONCURSO = 11              # Art. 6º XLIV
 
 
 class EsferaGovernamental(str, Enum):
@@ -300,10 +303,13 @@ class BuscaRequest(BaseModel):
 
     modalidades: Optional[List[int]] = Field(
         default=None,
-        description="Lista de códigos de modalidade de contratação (1=Pregão Eletrônico, "
-                    "2=Pregão Presencial, 3=Concorrência, 4=Tomada de Preços, 5=Convite, "
-                    "6=Dispensa, 7=Inexigibilidade, 8=Credenciamento, 9=Leilão, "
-                    "10=Diálogo Competitivo). None = todas as modalidades.",
+        description="Lista de códigos de modalidade conforme Lei 14.133/2021. "
+                    "Códigos válidos: 1 (Pregão Eletrônico), 2 (Pregão Presencial), "
+                    "3 (Concorrência), 6 (Dispensa), 7 (Inexigibilidade), "
+                    "9 (Leilão), 10 (Diálogo Competitivo), 11 (Concurso). "
+                    "None = todas as modalidades. "
+                    "NOTA: Códigos 4 (Tomada de Preços) e 5 (Convite) foram removidos "
+                    "por serem da Lei 8.666/93 (revogada).",
         examples=[[1, 2, 6]],
     )
 
@@ -416,15 +422,27 @@ class BuscaRequest(BaseModel):
     @field_validator('modalidades')
     @classmethod
     def validate_modalidades(cls, v: Optional[List[int]]) -> Optional[List[int]]:
-        """Validate that modalidade codes are within valid range (1-10)."""
-        if v is not None:
-            valid_codes = set(m.value for m in ModalidadeContratacao)
-            invalid_codes = [code for code in v if code not in valid_codes]
-            if invalid_codes:
-                raise ValueError(
-                    f"Códigos de modalidade inválidos: {invalid_codes}. "
-                    f"Valores válidos: {sorted(valid_codes)}"
-                )
+        """
+        Validate that modalidade codes conform to Lei 14.133/2021.
+
+        Valid codes: 1, 2, 3, 6, 7, 9, 10, 11
+        DEPRECATED codes 4 (Tomada de Preços) and 5 (Convite) are REJECTED.
+        """
+        if v is None:
+            return v
+
+        # Valid codes per Lei 14.133/2021
+        valid_codes = {1, 2, 3, 6, 7, 9, 10, 11}
+
+        # Check for invalid codes
+        invalid_codes = [code for code in v if code not in valid_codes]
+        if invalid_codes:
+            raise ValueError(
+                f"Códigos de modalidade inválidos: {invalid_codes}. "
+                f"Valores válidos (Lei 14.133/2021): {sorted(valid_codes)}. "
+                f"NOTA: Códigos 4 e 5 foram removidos (Lei 8.666/93 revogada)."
+            )
+
         return v
 
     @field_validator('ordenacao')

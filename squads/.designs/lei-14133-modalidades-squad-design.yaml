@@ -1,0 +1,507 @@
+# Squad Design Blueprint
+# Generated: 2026-02-10
+# Purpose: Implement all procurement modalities from Lei 14.133/2021
+
+squad:
+  name: lei-14133-modalidades-squad
+  description: "Full implementation of all procurement modalities defined in Lei 14.133/2021 across all data sources"
+  domain: procurement-compliance
+  version: "1.0.0"
+
+analysis:
+  entities:
+    - Modalidade (Procurement Modality)
+    - ModalidadeFilter
+    - UnifiedProcurement
+    - SourceAdapter
+    - ComprasGovAdapter
+    - PortalComprasAdapter
+    - LicitarAdapter
+    - PNCP (Portal Nacional de Contratações Públicas)
+    - API Client
+    - Backend Filter
+    - Frontend Component
+
+  workflows:
+    - modalidade-research: Research Lei 14.133/2021 official modalities
+    - backend-implementation: Add modalidade support to source adapters
+    - frontend-update: Update ModalidadeFilter component
+    - schema-update: Update unified schemas with new modalities
+    - validation-setup: Add validation for new modalities
+    - legacy-cleanup: Remove/deprecate old Lei 8.666/93 modalities
+    - testing: Comprehensive testing across all sources
+    - documentation: Update user-facing documentation
+
+  integrations:
+    - PNCP API (official federal procurement portal)
+    - ComprasGov API (federal open data)
+    - Portal de Compras Públicas API
+    - Licitar.com API
+    - Frontend React components
+    - Backend FastAPI endpoints
+    - PostgreSQL database schema
+
+  stakeholders:
+    - Government procurement managers (users)
+    - Bid monitoring professionals (users)
+    - Legal compliance officers (validators)
+    - System administrators (operators)
+    - Development team (implementers)
+
+legal_requirements:
+  lei_14133:
+    enacted: "2021-04-01"
+    full_enforcement: "2024-01-01"
+    revokes: "Lei 8.666/93, Lei 10.520/02"
+
+    modalidades_oficiais:
+      - id: 1
+        nome: "Pregão Eletrônico"
+        artigo: "Art. 6º, XLIII"
+        descricao: "Modalidade obrigatória para aquisição de bens e serviços comuns"
+        criterio: "Menor preço ou maior desconto"
+        status: implemented
+
+      - id: 2
+        nome: "Pregão Presencial"
+        artigo: "Art. 6º, XLIII"
+        descricao: "Forma presencial do pregão, apenas quando motivado"
+        criterio: "Menor preço ou maior desconto"
+        status: implemented
+
+      - id: 3
+        nome: "Concorrência"
+        artigo: "Art. 6º, XLII"
+        descricao: "Para contratação de bens e serviços especiais e obras/serviços de engenharia"
+        criterio: "Variados (menor preço, melhor técnica, técnica e preço)"
+        status: partial
+
+      - id: 11
+        nome: "Concurso"
+        artigo: "Art. 6º, XLIV"
+        descricao: "Escolha de trabalho técnico, científico ou artístico"
+        criterio: "Melhor técnica ou conteúdo artístico"
+        status: not_implemented
+
+      - id: 9
+        nome: "Leilão"
+        artigo: "Art. 6º, XLV"
+        descricao: "Alienação de bens imóveis ou móveis inservíveis/apreendidos"
+        criterio: "Maior lance"
+        status: partial
+
+      - id: 6
+        nome: "Dispensa de Licitação"
+        artigo: "Art. 75"
+        descricao: "Contratação direta quando competição é dispensável"
+        valores_2026:
+          obras_servicos_engenharia: 125451.15
+          outros_servicos_compras: 62725.59
+        status: implemented
+
+      - id: 7
+        nome: "Inexigibilidade"
+        artigo: "Art. 74"
+        descricao: "Contratação direta quando há inviabilidade de competição"
+        status: partial
+
+      - id: 10
+        nome: "Diálogo Competitivo"
+        artigo: "Art. 6º, XLVI"
+        descricao: "Para soluções inovadoras mediante diálogos com licitantes"
+        status: partial
+
+    modalidades_extintas:
+      - id: 4
+        nome: "Tomada de Preços"
+        lei_antiga: "Lei 8.666/93"
+        status: deprecated
+        migration_target: "Concorrência ou Pregão"
+
+      - id: 5
+        nome: "Convite"
+        lei_antiga: "Lei 8.666/93"
+        status: deprecated
+        migration_target: "Pregão ou Dispensa"
+
+      - id: 8
+        nome: "Credenciamento"
+        observacao: "Não é modalidade pela Lei 14.133, mas procedimento auxiliar"
+        status: review_needed
+
+recommendations:
+  agents:
+    - id: backend-engineer
+      role: "Implements backend changes for modalidade support across all source adapters"
+      commands:
+        - "*update-compras-gov-adapter"
+        - "*update-portal-compras-adapter"
+        - "*update-licitar-adapter"
+        - "*update-unified-schemas"
+        - "*add-modalidade-validation"
+      confidence: 0.95
+      user_added: false
+      user_modified: false
+      justification: "Backend changes are complex and require adapter-by-adapter implementation"
+
+    - id: frontend-engineer
+      role: "Updates frontend ModalidadeFilter component and related UI"
+      commands:
+        - "*update-modalidade-filter-component"
+        - "*update-modalidade-constants"
+        - "*update-frontend-types"
+        - "*remove-legacy-modalidades"
+      confidence: 0.92
+      user_added: false
+      user_modified: false
+      justification: "Frontend already has most modalities defined, needs cleanup and validation"
+
+    - id: qa-engineer
+      role: "Tests modalidade filtering across all sources and validates compliance"
+      commands:
+        - "*test-backend-filters"
+        - "*test-frontend-filters"
+        - "*test-source-adapters"
+        - "*validate-lei-compliance"
+        - "*test-edge-cases"
+      confidence: 0.90
+      user_added: false
+      user_modified: false
+      justification: "Critical to ensure all modalities work correctly across multi-source system"
+
+    - id: legal-compliance-auditor
+      role: "Validates implementation against Lei 14.133/2021 requirements"
+      commands:
+        - "*audit-modalidades"
+        - "*verify-artigo-references"
+        - "*check-deprecated-removal"
+        - "*validate-user-documentation"
+      confidence: 0.88
+      user_added: false
+      user_modified: false
+      justification: "Legal compliance is critical for government procurement system"
+
+    - id: data-migration-specialist
+      role: "Handles migration of existing data with old modalidade codes"
+      commands:
+        - "*analyze-existing-data"
+        - "*create-migration-script"
+        - "*map-legacy-to-new"
+        - "*validate-migration"
+      confidence: 0.85
+      user_added: false
+      user_modified: false
+      justification: "Existing data may use old codes that need to be migrated"
+
+  tasks:
+    # Research & Planning
+    - name: research-lei-14133-modalidades
+      agent: legal-compliance-auditor
+      entrada:
+        - Lei 14.133/2021 official text
+        - Decree 12.807/2025 (updated values)
+        - TCU guidelines
+        - PNCP documentation
+      saida:
+        - Complete list of official modalities
+        - Article references for each
+        - Deprecation list for Lei 8.666/93 modalities
+        - Legal validation criteria
+      confidence: 0.95
+
+    - name: audit-current-implementation
+      agent: qa-engineer
+      entrada:
+        - Current backend code (clients/*.py)
+        - Current frontend code (ModalidadeFilter.tsx)
+        - Current schema definitions
+        - Test files
+      saida:
+        - Gap analysis report
+        - List of implemented vs missing modalities
+        - List of deprecated modalities to remove
+        - Risk assessment
+      confidence: 0.92
+
+    # Backend Implementation
+    - name: update-unified-schema-modalidades
+      agent: backend-engineer
+      entrada:
+        - unified.py current schema
+        - Official modalidade list from research
+        - Enum definition requirements
+      saida:
+        - Updated UnifiedProcurement schema
+        - Modalidade enum with all official values
+        - Validation rules
+        - Migration guide
+      confidence: 0.93
+
+    - name: implement-compras-gov-modalidades
+      agent: backend-engineer
+      entrada:
+        - ComprasGovAdapter current code
+        - ComprasGov API modalidade field mapping
+        - Normalization requirements
+      saida:
+        - Updated normalize() method
+        - Modalidade mapping logic
+        - Unit tests
+        - Integration tests
+      confidence: 0.88
+
+    - name: implement-portal-compras-modalidades
+      agent: backend-engineer
+      entrada:
+        - PortalComprasAdapter current code
+        - Portal Compras API modalidade field mapping
+        - Normalization requirements
+      saida:
+        - Updated normalize() method
+        - Modalidade mapping logic
+        - Unit tests
+        - Integration tests
+      confidence: 0.88
+
+    - name: implement-licitar-modalidades
+      agent: backend-engineer
+      entrada:
+        - LicitarAdapter current code
+        - Licitar API modalidade field mapping
+        - Normalization requirements
+      saida:
+        - Updated normalize() method
+        - Modalidade mapping logic
+        - Unit tests
+        - Integration tests
+      confidence: 0.88
+
+    - name: add-modalidade-backend-validation
+      agent: backend-engineer
+      entrada:
+        - BuscaRequest schema
+        - ModalidadeContratacao enum (1-11 valid codes)
+        - Filter validation requirements
+      saida:
+        - Updated validation rules
+        - Error messages
+        - Validation tests
+      confidence: 0.90
+
+    # Frontend Implementation
+    - name: update-modalidade-filter-ui
+      agent: frontend-engineer
+      entrada:
+        - Current ModalidadeFilter.tsx
+        - Official modalidade list
+        - UI/UX requirements from Lei specs
+      saida:
+        - Updated MODALIDADES constant
+        - Removed deprecated modalities (Tomada de Preços, Convite)
+        - Added missing modalities (Concurso)
+        - Updated descriptions per Lei 14.133
+        - Maintained popular flags for common ones
+      confidence: 0.92
+
+    - name: update-frontend-types
+      agent: frontend-engineer
+      entrada:
+        - Current TypeScript interfaces
+        - Backend schema alignment
+      saida:
+        - Updated Modalidade interface
+        - Type safety for new codes
+        - Removed deprecated types
+      confidence: 0.90
+
+    # Testing
+    - name: test-modalidade-filtering-backend
+      agent: qa-engineer
+      entrada:
+        - Updated filter.py
+        - Updated test_modalidade_filter.py
+        - All new modalidade codes
+      saida:
+        - Comprehensive test suite
+        - Tests for codes 1-11 (excluding deprecated 4, 5)
+        - Edge case tests
+        - Integration tests with real data
+      confidence: 0.88
+
+    - name: test-modalidade-filtering-frontend
+      agent: qa-engineer
+      entrada:
+        - Updated ModalidadeFilter.tsx
+        - User interaction scenarios
+      saida:
+        - Component tests
+        - Integration tests
+        - Accessibility tests
+        - Visual regression tests
+      confidence: 0.85
+
+    - name: test-cross-source-consistency
+      agent: qa-engineer
+      entrada:
+        - All source adapters
+        - Sample data from each source
+      saida:
+        - Consistency validation report
+        - Modalidade normalization verification
+        - Cross-source mapping validation
+      confidence: 0.87
+
+    # Legal Compliance
+    - name: validate-lei-compliance
+      agent: legal-compliance-auditor
+      entrada:
+        - Implementation code
+        - Lei 14.133/2021 text
+        - Test results
+      saida:
+        - Compliance certification
+        - Article-by-article validation
+        - Non-compliance issues (if any)
+        - Remediation recommendations
+      confidence: 0.90
+
+    # Data Migration
+    - name: analyze-legacy-data
+      agent: data-migration-specialist
+      entrada:
+        - Existing database records
+        - Historical modalidade usage
+      saida:
+        - Usage statistics per modalidade code
+        - Migration impact assessment
+        - Data quality report
+      confidence: 0.85
+
+    - name: migrate-legacy-modalidades
+      agent: data-migration-specialist
+      entrada:
+        - Legacy codes (4, 5, 8)
+        - Migration mapping rules
+        - Existing data
+      saida:
+        - Migration script
+        - Backup strategy
+        - Rollback plan
+        - Migration validation
+      confidence: 0.83
+
+    # Documentation
+    - name: update-user-documentation
+      agent: frontend-engineer
+      entrada:
+        - Updated modalidade list
+        - Lei 14.133 references
+        - User guide template
+      saida:
+        - Updated help documentation
+        - Modalidade descriptions for users
+        - FAQ about changes
+        - Migration guide for existing users
+      confidence: 0.88
+
+  template: full-stack
+  config_mode: extend
+
+implementation_plan:
+  phases:
+    - phase: 1
+      name: "Research & Planning"
+      duration: "1 day"
+      tasks:
+        - research-lei-14133-modalidades
+        - audit-current-implementation
+
+    - phase: 2
+      name: "Backend Core Updates"
+      duration: "2 days"
+      tasks:
+        - update-unified-schema-modalidades
+        - add-modalidade-backend-validation
+      dependencies: [1]
+
+    - phase: 3
+      name: "Source Adapter Implementation"
+      duration: "3 days"
+      tasks:
+        - implement-compras-gov-modalidades
+        - implement-portal-compras-modalidades
+        - implement-licitar-modalidades
+      dependencies: [2]
+      parallel: true
+
+    - phase: 4
+      name: "Frontend Updates"
+      duration: "1 day"
+      tasks:
+        - update-modalidade-filter-ui
+        - update-frontend-types
+      dependencies: [2]
+
+    - phase: 5
+      name: "Testing & Validation"
+      duration: "2 days"
+      tasks:
+        - test-modalidade-filtering-backend
+        - test-modalidade-filtering-frontend
+        - test-cross-source-consistency
+        - validate-lei-compliance
+      dependencies: [3, 4]
+
+    - phase: 6
+      name: "Data Migration & Documentation"
+      duration: "1 day"
+      tasks:
+        - analyze-legacy-data
+        - migrate-legacy-modalidades
+        - update-user-documentation
+      dependencies: [5]
+
+  total_estimated_days: 6
+  complexity: high
+  risk_level: medium
+
+technical_considerations:
+  breaking_changes:
+    - Removal of Tomada de Preços (code 4)
+    - Removal of Convite (code 5)
+    - Possible renumbering of Credenciamento (code 8)
+    - Addition of Concurso (new code 11)
+
+  backward_compatibility:
+    strategy: "Graceful migration with warnings"
+    steps:
+      - Deprecation warnings for codes 4, 5
+      - Auto-mapping to equivalent new modalities
+      - 6-month sunset period for legacy codes
+      - Database migration scripts
+
+  api_changes:
+    - BuscaRequest modalidades field: now accepts 1-3, 6-7, 9-11
+    - Rejects deprecated codes 4, 5 with clear error message
+    - Frontend filter updated to hide deprecated options
+
+  testing_strategy:
+    - Unit tests for each modalidade code
+    - Integration tests across all source adapters
+    - Legal compliance validation
+    - User acceptance testing
+    - Performance testing with real data volumes
+
+metadata:
+  created_at: "2026-02-10T00:00:00Z"
+  created_by: "squad-creator (Craft)"
+  source_docs:
+    - "Lei 14.133/2021 (Planalto.gov.br)"
+    - "Decreto 12.807/2025 (updated values)"
+    - "backend/unified_schemas/unified.py"
+    - "frontend/components/ModalidadeFilter.tsx"
+    - "backend/tests/test_modalidade_filter.py"
+  user_adjustments: 0
+  overall_confidence: 0.89
+  legal_validation: required
+  compliance_standard: "Lei 14.133/2021"

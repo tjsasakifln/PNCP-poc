@@ -7,6 +7,7 @@ Tests cover:
 - Empty list returns all
 - Invalid/inexistent modalidade handling
 - Alternative field names
+- Lei 14.133/2021 compliance (valid codes: 1,2,3,6,7,9,10,11)
 """
 
 import pytest
@@ -23,29 +24,37 @@ def _recent_dates(days_back: int = 7) -> tuple[str, str]:
 
 
 class TestModalidadeEnumDefinition:
-    """Tests for ModalidadeContratacao enum definition."""
+    """Tests for ModalidadeContratacao enum definition (Lei 14.133/2021)."""
 
-    def test_all_modalidade_codes_exist(self):
-        """All 10 modalidade codes should be defined."""
+    def test_all_lei_14133_modalidade_codes_exist(self):
+        """All 8 Lei 14.133/2021 modalidade codes should be defined."""
         assert ModalidadeContratacao.PREGAO_ELETRONICO == 1
         assert ModalidadeContratacao.PREGAO_PRESENCIAL == 2
         assert ModalidadeContratacao.CONCORRENCIA == 3
-        assert ModalidadeContratacao.TOMADA_PRECOS == 4
-        assert ModalidadeContratacao.CONVITE == 5
         assert ModalidadeContratacao.DISPENSA == 6
         assert ModalidadeContratacao.INEXIGIBILIDADE == 7
-        assert ModalidadeContratacao.CREDENCIAMENTO == 8
         assert ModalidadeContratacao.LEILAO == 9
         assert ModalidadeContratacao.DIALOGO_COMPETITIVO == 10
+        assert ModalidadeContratacao.CONCURSO == 11
+
+    def test_deprecated_codes_removed(self):
+        """Codes 4 (TOMADA_PRECOS) and 5 (CONVITE) should NOT exist."""
+        with pytest.raises(AttributeError):
+            _ = ModalidadeContratacao.TOMADA_PRECOS
+        with pytest.raises(AttributeError):
+            _ = ModalidadeContratacao.CONVITE
+        # Also verify CREDENCIAMENTO (8) is removed
+        with pytest.raises(AttributeError):
+            _ = ModalidadeContratacao.CREDENCIAMENTO
 
     def test_modalidade_enum_count(self):
-        """Should have exactly 10 modalidade options."""
-        assert len(ModalidadeContratacao) == 10
+        """Should have exactly 8 Lei 14.133/2021 modalidade options."""
+        assert len(ModalidadeContratacao) == 8
 
-    def test_modalidade_codes_are_sequential(self):
-        """Modalidade codes should be 1-10."""
-        codes = [m.value for m in ModalidadeContratacao]
-        assert codes == list(range(1, 11))
+    def test_modalidade_codes_match_lei_14133(self):
+        """Modalidade codes should be 1,2,3,6,7,9,10,11 only."""
+        codes = sorted([m.value for m in ModalidadeContratacao])
+        assert codes == [1, 2, 3, 6, 7, 9, 10, 11]
 
 
 class TestSingleModalidadeFilter:
@@ -72,6 +81,16 @@ class TestSingleModalidadeFilter:
         assert len(result) == 1
         assert result[0]["modalidadeId"] == 6
 
+    def test_single_modalidade_concurso(self):
+        """Should filter by Concurso (code 11) - NEW in Lei 14.133/2021."""
+        bids = [
+            {"modalidadeId": 1, "objeto": "Pregao"},
+            {"modalidadeId": 11, "objeto": "Concurso"},
+        ]
+        result = filtrar_por_modalidade(bids, [11])
+        assert len(result) == 1
+        assert result[0]["modalidadeId"] == 11
+
     def test_single_modalidade_no_matches(self):
         """Should return empty when no bids match."""
         bids = [
@@ -97,14 +116,20 @@ class TestMultipleModalidadesFilter:
         assert len(result) == 3
         assert all(b["modalidadeId"] in [1, 2, 6] for b in result)
 
-    def test_all_modalidades_filter(self):
-        """Should return all when filtering by all codes."""
+    def test_all_lei_14133_modalidades_filter(self):
+        """Should return all when filtering by all Lei 14.133/2021 codes."""
         bids = [
-            {"modalidadeId": i, "objeto": f"Modalidade {i}"}
-            for i in range(1, 11)
+            {"modalidadeId": 1, "objeto": "Modalidade 1"},
+            {"modalidadeId": 2, "objeto": "Modalidade 2"},
+            {"modalidadeId": 3, "objeto": "Modalidade 3"},
+            {"modalidadeId": 6, "objeto": "Modalidade 6"},
+            {"modalidadeId": 7, "objeto": "Modalidade 7"},
+            {"modalidadeId": 9, "objeto": "Modalidade 9"},
+            {"modalidadeId": 10, "objeto": "Modalidade 10"},
+            {"modalidadeId": 11, "objeto": "Modalidade 11"},
         ]
-        result = filtrar_por_modalidade(bids, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-        assert len(result) == 10
+        result = filtrar_por_modalidade(bids, [1, 2, 3, 6, 7, 9, 10, 11])
+        assert len(result) == 8
 
 
 class TestEmptyListReturnsAll:
@@ -129,11 +154,69 @@ class TestEmptyListReturnsAll:
         assert len(result) == 2
 
 
+class TestDeprecatedModalidadeCodesRejection:
+    """Tests for rejecting deprecated Lei 8.666/93 modalidade codes."""
+
+    def test_deprecated_code_4_rejected_in_schema(self):
+        """Modalidade code 4 (Tomada de Preços) should be rejected in schema."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[4],
+            )
+        error_msg = str(exc_info.value).lower()
+        assert "inválidos" in error_msg or "invalid" in error_msg
+        assert "4" in str(exc_info.value)
+
+    def test_deprecated_code_5_rejected_in_schema(self):
+        """Modalidade code 5 (Convite) should be rejected in schema."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[5],
+            )
+        error_msg = str(exc_info.value).lower()
+        assert "inválidos" in error_msg or "invalid" in error_msg
+        assert "5" in str(exc_info.value)
+
+    def test_deprecated_code_8_rejected_in_schema(self):
+        """Modalidade code 8 (Credenciamento) should be rejected in schema."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[8],
+            )
+        error_msg = str(exc_info.value).lower()
+        assert "inválidos" in error_msg or "invalid" in error_msg
+        assert "8" in str(exc_info.value)
+
+    def test_mixed_valid_and_deprecated_codes_rejected(self):
+        """Mix of valid and deprecated codes should be rejected."""
+        d_ini, d_fin = _recent_dates(7)
+        with pytest.raises(ValidationError) as exc_info:
+            BuscaRequest(
+                ufs=["SP"],
+                data_inicial=d_ini,
+                data_final=d_fin,
+                modalidades=[1, 4, 6],  # 4 is deprecated
+            )
+        assert "4" in str(exc_info.value)
+
+
 class TestInexistentModalidadeHandling:
     """Tests for handling inexistent/invalid modalidade codes."""
 
-    def test_inexistent_modalidade_code(self):
-        """Filtering by non-existent code should return empty."""
+    def test_inexistent_modalidade_code_99(self):
+        """Filtering by non-existent code 99 should return empty."""
         bids = [
             {"modalidadeId": 1},
             {"modalidadeId": 6},
@@ -151,19 +234,19 @@ class TestInexistentModalidadeHandling:
                 data_final=d_fin,
                 modalidades=[0, 1],
             )
-        assert "inválidos" in str(exc_info.value).lower()
+        assert "0" in str(exc_info.value)
 
-    def test_invalid_modalidade_code_eleven_in_schema(self):
-        """Modalidade code 11 should be rejected in schema."""
+    def test_invalid_modalidade_code_twelve_in_schema(self):
+        """Modalidade code 12 should be rejected in schema."""
         d_ini, d_fin = _recent_dates(7)
         with pytest.raises(ValidationError) as exc_info:
             BuscaRequest(
                 ufs=["SP"],
                 data_inicial=d_ini,
                 data_final=d_fin,
-                modalidades=[11],
+                modalidades=[12],
             )
-        assert "inválidos" in str(exc_info.value).lower()
+        assert "12" in str(exc_info.value)
 
     def test_invalid_modalidade_negative_in_schema(self):
         """Negative modalidade code should be rejected in schema."""
@@ -258,7 +341,7 @@ class TestModalidadeSchemaValidation:
     """Tests for modalidade validation in BuscaRequest schema."""
 
     def test_valid_modalidade_codes_accepted(self):
-        """Valid modalidade codes (1-10) should be accepted."""
+        """Valid modalidade codes (1,2,3,6,7,9,10,11) should be accepted."""
         d_ini, d_fin = _recent_dates(7)
         request = BuscaRequest(
             ufs=["SP"],
@@ -268,16 +351,17 @@ class TestModalidadeSchemaValidation:
         )
         assert request.modalidades == [1, 2, 6]
 
-    def test_all_modalidade_codes_accepted(self):
-        """All 10 modalidade codes should be accepted together."""
+    def test_all_lei_14133_codes_accepted(self):
+        """All 8 Lei 14.133/2021 modalidade codes should be accepted together."""
         d_ini, d_fin = _recent_dates(7)
         request = BuscaRequest(
             ufs=["SP"],
             data_inicial=d_ini,
             data_final=d_fin,
-            modalidades=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            modalidades=[1, 2, 3, 6, 7, 9, 10, 11],
         )
-        assert len(request.modalidades) == 10
+        assert len(request.modalidades) == 8
+        assert set(request.modalidades) == {1, 2, 3, 6, 7, 9, 10, 11}
 
     def test_modalidades_none_accepted(self):
         """None modalidades should be accepted (means all)."""
@@ -300,3 +384,14 @@ class TestModalidadeSchemaValidation:
             modalidades=[],
         )
         assert request.modalidades == []
+
+    def test_concurso_code_11_accepted(self):
+        """Code 11 (Concurso) should be accepted - NEW in Lei 14.133/2021."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=[11],
+        )
+        assert request.modalidades == [11]

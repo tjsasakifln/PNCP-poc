@@ -6,6 +6,7 @@ import { useState } from "react";
  * ModalidadeFilter Component
  *
  * Multi-select filter for procurement modality types.
+ * Complies with Lei 14.133/2021 (Nova Lei de Licitacoes e Contratos).
  * Based on specs from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
  *
  * Features:
@@ -30,55 +31,45 @@ const MODALIDADES: Modalidade[] = [
   {
     codigo: 1,
     nome: "Pregao Eletronico",
-    descricao: "Licitacao eletronica para bens e servicos comuns",
+    descricao: "Licitacao eletronica para bens e servicos comuns (Lei 14.133/21, Art. 6º XL)",
     popular: true,
   },
   {
     codigo: 2,
     nome: "Pregao Presencial",
-    descricao: "Licitacao presencial para bens e servicos comuns",
+    descricao: "Licitacao presencial para bens e servicos comuns (Lei 14.133/21, Art. 6º XL)",
     popular: true,
   },
   {
     codigo: 6,
     nome: "Dispensa de Licitacao",
-    descricao: "Contratacao direta sem processo licitatorio",
+    descricao: "Contratacao direta sem processo licitatorio (Lei 14.133/21, Art. 75)",
     popular: true,
   },
   {
     codigo: 3,
     nome: "Concorrencia",
-    descricao: "Para obras e servicos de grande valor",
-  },
-  {
-    codigo: 4,
-    nome: "Tomada de Precos",
-    descricao: "Modalidade para valores intermediarios",
-  },
-  {
-    codigo: 5,
-    nome: "Convite",
-    descricao: "Para contratacoes de menor valor",
+    descricao: "Para obras e servicos de grande valor (Lei 14.133/21, Art. 28 I)",
   },
   {
     codigo: 7,
     nome: "Inexigibilidade",
-    descricao: "Quando ha inviabilidade de competicao",
-  },
-  {
-    codigo: 8,
-    nome: "Credenciamento",
-    descricao: "Cadastro de fornecedores interessados",
+    descricao: "Quando ha inviabilidade de competicao (Lei 14.133/21, Art. 74)",
   },
   {
     codigo: 9,
     nome: "Leilao",
-    descricao: "Para alienacao de bens",
+    descricao: "Para alienacao de bens (Lei 14.133/21, Art. 28 V)",
   },
   {
     codigo: 10,
     nome: "Dialogo Competitivo",
-    descricao: "Para solucoes inovadoras",
+    descricao: "Para solucoes inovadoras (Lei 14.133/21, Art. 32 VII)",
+  },
+  {
+    codigo: 11,
+    nome: "Concurso",
+    descricao: "Escolha de trabalho tecnico, cientifico ou artistico (Lei 14.133/21, Art. 6º XLIV)",
   },
 ];
 

@@ -224,3 +224,224 @@ class TestCleanup:
     async def test_close(self, adapter):
         """Test close without client."""
         await adapter.close()  # Should not raise
+
+
+class TestComprasGovModalidadeNormalization:
+    """Test modalidade normalization for ComprasGov adapter (Lei 14.133/2021)."""
+
+    def test_pregao_eletronico_variations(self, adapter):
+        """Test various forms of Pregão Eletrônico."""
+        variations = [
+            "Pregao Eletronico",
+            "PREGÃO ELETRÔNICO",
+            "Pregão Eletrônico",
+            "pregão eletrônico",
+            "Pregão - Eletrônico",
+            "PE",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Pregao Eletronico", \
+                f"Failed for variation: {var}"
+
+    def test_pregao_presencial_variations(self, adapter):
+        """Test various forms of Pregão Presencial."""
+        variations = [
+            "Pregao Presencial",
+            "PREGÃO PRESENCIAL",
+            "Pregão Presencial",
+            "pregão presencial",
+            "Pregão - Presencial",
+            "PP",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Pregao Presencial", \
+                f"Failed for variation: {var}"
+
+    def test_concorrencia_variations(self, adapter):
+        """Test various forms of Concorrência."""
+        variations = [
+            "Concorrencia",
+            "CONCORRÊNCIA",
+            "Concorrência",
+            "concorrência",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Concorrencia", \
+                f"Failed for variation: {var}"
+
+    def test_dispensa_variations(self, adapter):
+        """Test various forms of Dispensa de Licitação."""
+        variations = [
+            "Dispensa de Licitacao",
+            "DISPENSA DE LICITAÇÃO",
+            "Dispensa de Licitação",
+            "dispensa de licitação",
+            "Dispensa",
+            "DISPENSA",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Dispensa de Licitacao", \
+                f"Failed for variation: {var}"
+
+    def test_inexigibilidade_variations(self, adapter):
+        """Test various forms of Inexigibilidade."""
+        variations = [
+            "Inexigibilidade",
+            "INEXIGIBILIDADE",
+            "inexigibilidade",
+            "Inexigível",
+            "INEXIGIVEL",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Inexigibilidade", \
+                f"Failed for variation: {var}"
+
+    def test_leilao_variations(self, adapter):
+        """Test various forms of Leilão."""
+        variations = [
+            "Leilao",
+            "LEILÃO",
+            "Leilão",
+            "leilão",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Leilao", \
+                f"Failed for variation: {var}"
+
+    def test_dialogo_competitivo_variations(self, adapter):
+        """Test various forms of Diálogo Competitivo."""
+        variations = [
+            "Dialogo Competitivo",
+            "DIÁLOGO COMPETITIVO",
+            "Diálogo Competitivo",
+            "diálogo competitivo",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Dialogo Competitivo", \
+                f"Failed for variation: {var}"
+
+    def test_concurso_variations(self, adapter):
+        """Test various forms of Concurso."""
+        variations = [
+            "Concurso",
+            "CONCURSO",
+            "concurso",
+        ]
+        for var in variations:
+            assert adapter._normalize_modalidade_name(var) == "Concurso", \
+                f"Failed for variation: {var}"
+
+    def test_all_lei_14133_modalities(self, adapter):
+        """Test all 8 official Lei 14.133 modalities."""
+        modalities = {
+            "Pregao Eletronico": "Pregao Eletronico",
+            "Pregao Presencial": "Pregao Presencial",
+            "Concorrencia": "Concorrencia",
+            "Concurso": "Concurso",
+            "Leilao": "Leilao",
+            "Dispensa de Licitacao": "Dispensa de Licitacao",
+            "Inexigibilidade": "Inexigibilidade",
+            "Dialogo Competitivo": "Dialogo Competitivo",
+        }
+        for input_name, expected in modalities.items():
+            assert adapter._normalize_modalidade_name(input_name) == expected
+
+    def test_deprecated_modalities_logged(self, adapter, caplog):
+        """Deprecated modalities should trigger warning logs."""
+        import logging
+        caplog.set_level(logging.WARNING)
+
+        result = adapter._normalize_modalidade_name("Tomada de Preços")
+
+        # Check warning was logged
+        assert any("deprecated" in record.message.lower() for record in caplog.records)
+        assert any("14.133" in record.message or "revoked" in record.message.lower() for record in caplog.records)
+
+        # Check normalized result (title() removes underscores and capitalizes)
+        assert result == "Tomada Precos"
+
+    def test_deprecated_convite_logged(self, adapter, caplog):
+        """Test deprecated Convite modality."""
+        import logging
+        caplog.set_level(logging.WARNING)
+
+        result = adapter._normalize_modalidade_name("CONVITE")
+
+        # Check warning was logged
+        assert any("deprecated" in record.message.lower() for record in caplog.records)
+
+        # Check normalized result
+        assert result == "Convite"
+
+    def test_unknown_modalidade_logged(self, adapter, caplog):
+        """Unknown modalities should trigger warning logs."""
+        import logging
+        caplog.set_level(logging.WARNING)
+
+        result = adapter._normalize_modalidade_name("Unknown Modality")
+
+        # Check warning was logged
+        assert any("unknown modalidade" in record.message.lower() for record in caplog.records)
+
+        # Returned as-is for debugging
+        assert result == "Unknown Modality"
+
+    def test_empty_modalidade(self, adapter):
+        """Test empty modalidade returns empty string."""
+        assert adapter._normalize_modalidade_name("") == ""
+        assert adapter._normalize_modalidade_name(None) == ""
+
+    def test_normalize_with_modalidade_normalization(self, adapter):
+        """Test normalize() method applies modalidade normalization."""
+        raw_record = {
+            "identificador": "12345",
+            "objeto": "Aquisição de uniformes",
+            "valor_licitacao": 150000.0,
+            "orgao_nome": "Prefeitura Municipal",
+            "orgao_cnpj": "12.345.678/0001-90",
+            "uf": "SP",
+            "municipio": "São Paulo",
+            "data_publicacao": "2026-02-10T10:00:00Z",
+            "modalidade_licitacao": "Pregão Eletrônico",  # Should normalize
+            "situacao": "Publicada",
+        }
+
+        result = adapter.normalize(raw_record)
+
+        assert result.modalidade == "Pregao Eletronico"
+        assert result.source_name == "COMPRAS_GOV"
+
+    def test_normalize_with_alternative_modalidade_field(self, adapter):
+        """Test normalize() tries alternative field names for modalidade."""
+        raw_record = {
+            "identificador": "12345",
+            "tipo": "CONCORRÊNCIA",  # Alternative field name
+        }
+
+        result = adapter.normalize(raw_record)
+
+        assert result.modalidade == "Concorrencia"
+
+    def test_normalize_all_8_modalities_in_records(self, adapter):
+        """Test normalize() handles all 8 Lei 14.133 modalities in record format."""
+        modalities_to_test = [
+            ("PREGÃO ELETRÔNICO", "Pregao Eletronico"),
+            ("Pregão Presencial", "Pregao Presencial"),
+            ("CONCORRÊNCIA", "Concorrencia"),
+            ("Concurso", "Concurso"),
+            ("LEILÃO", "Leilao"),
+            ("Dispensa de Licitação", "Dispensa de Licitacao"),
+            ("Inexigibilidade", "Inexigibilidade"),
+            ("Diálogo Competitivo", "Dialogo Competitivo"),
+        ]
+
+        for raw_modalidade, expected_normalized in modalities_to_test:
+            raw_record = {
+                "identificador": "test-id",
+                "modalidade_licitacao": raw_modalidade,
+            }
+
+            result = adapter.normalize(raw_record)
+
+            assert result.modalidade == expected_normalized, \
+                f"Failed for {raw_modalidade}: got {result.modalidade}, expected {expected_normalized}"

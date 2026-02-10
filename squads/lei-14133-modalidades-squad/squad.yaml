@@ -1,0 +1,91 @@
+name: lei-14133-modalidades-squad
+version: 1.0.0
+description: "Full implementation of all procurement modalities from Lei 14.133/2021"
+author: "Tiago Sasaki"
+license: MIT
+slashPrefix: lei14133
+
+aios:
+  minVersion: "2.1.0"
+  type: squad
+
+components:
+  agents:
+    - backend-engineer.md
+    - frontend-engineer.md
+    - qa-engineer.md
+    - legal-compliance-auditor.md
+    - data-migration-specialist.md
+
+  tasks:
+    # Research & Planning
+    - research-lei-14133-modalidades.md
+    - audit-current-implementation.md
+
+    # Backend Implementation
+    - update-unified-schema-modalidades.md
+    - implement-compras-gov-modalidades.md
+    - implement-portal-compras-modalidades.md
+    - implement-licitar-modalidades.md
+    - add-modalidade-backend-validation.md
+
+    # Frontend Implementation
+    - update-modalidade-filter-ui.md
+    - update-frontend-types.md
+
+    # Testing
+    - test-modalidade-filtering-backend.md
+    - test-modalidade-filtering-frontend.md
+    - test-cross-source-consistency.md
+    - validate-lei-compliance.md
+
+    # Data Migration
+    - analyze-legacy-data.md
+    - migrate-legacy-modalidades.md
+
+    # Documentation
+    - update-user-documentation.md
+
+  workflows:
+    - full-implementation-workflow.md
+
+  checklists:
+    - lei-14133-compliance-checklist.md
+    - modalidade-testing-checklist.md
+
+  templates: []
+  tools: []
+  scripts: []
+
+config:
+  extends: extend
+  coding-standards: config/coding-standards.md
+  tech-stack: config/tech-stack.md
+  source-tree: config/source-tree.md
+
+dependencies:
+  node: []
+  python:
+    - pydantic>=2.0.0
+    - httpx>=0.24.0
+    - pytest>=7.0.0
+  squads: []
+
+tags:
+  - compliance
+  - lei-14133
+  - modalidades
+  - procurement
+  - government
+  - backend
+  - frontend
+  - full-stack
+
+metadata:
+  legal_compliance: required
+  compliance_standard: "Lei 14.133/2021"
+  decree_reference: "Decreto 12.807/2025"
+  created_from_design: "squads/.designs/lei-14133-modalidades-squad-design.yaml"
+  estimated_duration: "6 days"
+  complexity: "high"
+  risk_level: "medium"
