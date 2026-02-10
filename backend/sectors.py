@@ -6,7 +6,7 @@ to identify relevant procurement opportunities in PNCP data.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 from filter import KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO
 
@@ -25,6 +25,11 @@ class SectorConfig:
     # is also found in the procurement text.  This prevents broad terms like
     # "mesa" or "banco" from matching unrelated procurements.
     context_required_keywords: Dict[str, Set[str]] = field(default_factory=dict)
+    # STORY-179 AC1: Maximum contract value threshold (anti-false positive)
+    # Contracts above this value are rejected as likely multi-sector infrastructure
+    # projects with tangential mentions of this sector (e.g., R$ 47.6M "melhorias
+    # urbanas" with R$ 50K uniformes). None = no limit (e.g., engenharia).
+    max_contract_value: Optional[int] = None
 
 
 SECTORS: Dict[str, SectorConfig] = {
@@ -34,11 +39,13 @@ SECTORS: Dict[str, SectorConfig] = {
         description="Uniformes, fardamentos, roupas profissionais, EPIs de vestuário",
         keywords=KEYWORDS_UNIFORMES,
         exclusions=KEYWORDS_EXCLUSAO,
+        max_contract_value=5_000_000,  # R$ 5M - largest municipal uniform contract ~R$ 3M
     ),
     "alimentos": SectorConfig(
         id="alimentos",
         name="Alimentos e Merenda",
         description="Gêneros alimentícios, merenda escolar, refeições, rancho",
+        max_contract_value=10_000_000,  # R$ 10M - large school meal programs: R$ 5-8M
         keywords={
             # High precision compound terms
             "genero alimenticio", "generos alimenticios",
@@ -108,6 +115,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="informatica",
         name="Informática e Tecnologia",
         description="Computadores, servidores, software, periféricos, redes",
+        max_contract_value=20_000_000,  # R$ 20M - large datacenter: R$ 15M
         keywords={
             "computador", "computadores",
             "notebook", "notebooks",
@@ -194,6 +202,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="mobiliario",
         name="Mobiliário",
         description="Mesas, cadeiras, armários, estantes, móveis de escritório",
+        max_contract_value=8_000_000,  # R$ 8M - state school furniture: R$ 5-6M
         keywords={
             "mobiliário", "mobiliario", "mobília", "mobilia",
             "móvel", "movel", "móveis", "moveis",
@@ -377,6 +386,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="papelaria",
         name="Papelaria e Material de Escritório",
         description="Papel, canetas, material de escritório, suprimentos administrativos",
+        max_contract_value=5_000_000,  # R$ 5M - large stationery procurement
         keywords={
             "papelaria", "material de escritório", "material de escritorio",
             "papel a4", "papel sulfite",
@@ -457,6 +467,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="engenharia",
         name="Engenharia e Construção",
         description="Obras, reformas, construção civil, pavimentação, infraestrutura",
+        max_contract_value=None,  # No limit - civil works can be billions
         keywords={
             # High precision compound terms
             "construção civil", "construcao civil",
@@ -594,6 +605,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="software",
         name="Software e Sistemas",
         description="Licenças de software, SaaS, desenvolvimento de sistemas, consultoria de TI",
+        max_contract_value=20_000_000,  # R$ 20M - large software project
         keywords={
             # Software licenses (high precision)
             "licença de software", "licenca de software",
@@ -785,6 +797,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="facilities",
         name="Facilities (Limpeza e Zeladoria)",
         description="Limpeza predial, produtos de limpeza, conservação, copa/cozinha, segurança patrimonial, portaria, recepção, zeladoria, jardinagem",
+        max_contract_value=30_000_000,  # R$ 30M - multi-year building cleaning: R$ 20-25M
         keywords={
             # Core facilities management (English + Portuguese)
             "facilities", "facilities management", "fm",
@@ -958,6 +971,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="saude",
         name="Saúde",
         description="Medicamentos, equipamentos hospitalares, insumos médicos, materiais de laboratório, órteses e próteses",
+        max_contract_value=50_000_000,  # R$ 50M - hospital equipment: R$ 30-40M
         keywords={
             # High precision compound terms
             "medicamento", "medicamentos",
@@ -1196,6 +1210,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="vigilancia",
         name="Vigilância e Segurança",
         description="Vigilância patrimonial, segurança eletrônica, CFTV, alarmes, controle de acesso, portaria armada/desarmada",
+        max_contract_value=40_000_000,  # R$ 40M - multi-year building security: R$ 30M
         keywords={
             # Core security services
             "vigilância", "vigilancia",
@@ -1305,6 +1320,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="transporte",
         name="Transporte e Veículos",
         description="Aquisição/locação de veículos, combustíveis, manutenção de frota, pneus, peças automotivas, gerenciamento de frota",
+        max_contract_value=100_000_000,  # R$ 100M - municipal bus fleet: R$ 80M
         keywords={
             # Vehicle acquisition
             "veículo", "veiculo", "veículos", "veiculos",
@@ -1439,6 +1455,7 @@ SECTORS: Dict[str, SectorConfig] = {
         id="manutencao_predial",
         name="Manutenção Predial",
         description="Manutenção preventiva/corretiva de edificações, PMOC, ar condicionado, elevadores, instalações elétricas/hidráulicas, pintura predial, impermeabilização",
+        max_contract_value=30_000_000,  # R$ 30M - multi-year building maintenance
         keywords={
             # Building maintenance (HIGH PRECISION)
             "manutenção predial", "manutencao predial",

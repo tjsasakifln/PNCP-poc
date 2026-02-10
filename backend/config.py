@@ -155,9 +155,49 @@ def str_to_bool(value: str | None) -> bool:
 # Default: True (enabled - new pricing is production-ready)
 ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "true"))
 
+# ============================================
+# LLM Arbiter Configuration (STORY-179 AC6)
+# ============================================
+# GPT-4o-mini for false positive/negative elimination
+# Cost: ~R$ 0.00003 per classification (~R$ 0.50/month for 10K contracts)
+
+# Feature flag to enable/disable LLM arbiter (both FP and FN flows)
+LLM_ARBITER_ENABLED: bool = str_to_bool(os.getenv("LLM_ARBITER_ENABLED", "true"))
+
+# LLM model for contract classification
+LLM_ARBITER_MODEL: str = os.getenv("LLM_ARBITER_MODEL", "gpt-4o-mini")
+
+# Max tokens for LLM output (1 token forces "SIM" or "NAO" response)
+LLM_ARBITER_MAX_TOKENS: int = int(os.getenv("LLM_ARBITER_MAX_TOKENS", "1"))
+
+# Temperature (0 = deterministic, 1 = creative)
+LLM_ARBITER_TEMPERATURE: float = float(os.getenv("LLM_ARBITER_TEMPERATURE", "0"))
+
+# Term density thresholds (adjustable without code changes)
+# High threshold: density > X% = auto-accept without LLM (high confidence)
+TERM_DENSITY_HIGH_THRESHOLD: float = float(
+    os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.05")
+)  # 5%
+
+# Low threshold: density < X% = auto-reject without LLM (low confidence)
+TERM_DENSITY_LOW_THRESHOLD: float = float(
+    os.getenv("TERM_DENSITY_LOW_THRESHOLD", "0.01")
+)  # 1%
+
+# Synonym matching feature flag (STORY-179 AC12)
+SYNONYM_MATCHING_ENABLED: bool = str_to_bool(os.getenv("SYNONYM_MATCHING_ENABLED", "true"))
+
+# Zero results relaxation feature flag (STORY-179 AC14)
+ZERO_RESULTS_RELAXATION_ENABLED: bool = str_to_bool(
+    os.getenv("ZERO_RESULTS_RELAXATION_ENABLED", "true")
+)
+
 # Log feature flag state on import
 logger = logging.getLogger(__name__)
 logger.info(f"Feature Flag - ENABLE_NEW_PRICING: {ENABLE_NEW_PRICING}")
+logger.info(f"Feature Flag - LLM_ARBITER_ENABLED: {LLM_ARBITER_ENABLED}")
+logger.info(f"Feature Flag - SYNONYM_MATCHING_ENABLED: {SYNONYM_MATCHING_ENABLED}")
+logger.info(f"Feature Flag - ZERO_RESULTS_RELAXATION_ENABLED: {ZERO_RESULTS_RELAXATION_ENABLED}")
 
 
 # ============================================

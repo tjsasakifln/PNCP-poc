@@ -1189,6 +1189,7 @@ def aplicar_todos_filtros(
     exclusions: Set[str] | None = None,
     context_required: Dict[str, Set[str]] | None = None,
     min_match_floor: Optional[int] = None,
+    setor: Optional[str] = None,  # STORY-179 AC1: sector ID for max_contract_value check
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Aplica todos os filtros em sequência otimizada (fail-fast).
@@ -1249,10 +1250,15 @@ def aplicar_todos_filtros(
         "rejeitadas_municipio": 0,
         "rejeitadas_orgao": 0,
         "rejeitadas_valor": 0,
+        "rejeitadas_valor_alto": 0,  # STORY-179 AC1: Camada 1A (value threshold)
         "rejeitadas_keyword": 0,
         "rejeitadas_min_match": 0,
         "rejeitadas_prazo": 0,
         "rejeitadas_outros": 0,
+        # STORY-179 AC2: Camada 2A (term density ratio)
+        "aprovadas_alta_densidade": 0,  # density > 5% (high confidence, no LLM)
+        "rejeitadas_baixa_densidade": 0,  # density < 1% (low confidence, reject)
+        "duvidosas_llm_arbiter": 0,  # 1% ≤ density ≤ 5% (send to LLM)
     }
 
     logger.info(
@@ -1476,6 +1482,48 @@ def aplicar_todos_filtros(
     else:
         resultado_valor = resultado_orgao
 
+    # STORY-179 AC1.3: Camada 1A - Value Threshold (Anti-False Positive)
+    # Apply sector-specific max_contract_value check BEFORE keyword matching
+    # to reject obvious false positives (e.g., R$ 47.6M "melhorias urbanas" + uniformes)
+    if setor:
+        from sectors import get_sector
+
+        try:
+            setor_config = get_sector(setor)
+            max_value = setor_config.max_contract_value
+
+            if max_value is not None:
+                resultado_valor_teto: List[dict] = []
+                for lic in resultado_valor:
+                    valor = lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0
+
+                    if isinstance(valor, str):
+                        try:
+                            valor = float(valor.replace(".", "").replace(",", "."))
+                        except ValueError:
+                            valor = 0.0
+                    else:
+                        valor = float(valor) if valor else 0.0
+
+                    if valor > max_value:
+                        stats["rejeitadas_valor_alto"] += 1
+                        logger.debug(
+                            f"  Rejeitada por Camada 1A (valor > R$ {max_value:,.2f}): "
+                            f"valor=R$ {valor:,.2f} setor={setor} "
+                            f"objeto={lic.get('objetoCompra', '')[:80]}"
+                        )
+                        continue
+
+                    resultado_valor_teto.append(lic)
+
+                logger.debug(
+                    f"  Após Camada 1A (Value Threshold): {len(resultado_valor_teto)} "
+                    f"(rejeitadas_valor_alto: {stats['rejeitadas_valor_alto']})"
+                )
+                resultado_valor = resultado_valor_teto
+        except KeyError:
+            logger.warning(f"Setor '{setor}' não encontrado - pulando Camada 1A")
+
     # Etapa 8: Filtro de Keywords (mais lento - regex)
     # AC9.1: Pre-compile regex patterns once for the batch
     kw = keywords if keywords is not None else KEYWORDS_UNIFORMES
@@ -1502,9 +1550,132 @@ def aplicar_todos_filtros(
         if match:
             # Store matched terms on the bid for later scoring
             lic["_matched_terms"] = matched_terms
+
+            # STORY-179 AC2.1: Calculate term density ratio
+            # Count how many times matched terms appear in the text
+            objeto_norm = normalize_text(objeto)
+            total_words = len(objeto_norm.split())
+            term_count = 0
+            for term in matched_terms:
+                term_norm = normalize_text(term)
+                # Count exact occurrences of this term in the text
+                term_count += objeto_norm.count(term_norm)
+
+            term_density = term_count / total_words if total_words > 0 else 0
+            lic["_term_density"] = term_density
+
             resultado_keyword.append(lic)
         else:
             stats["rejeitadas_keyword"] += 1
+
+    # STORY-179 AC2.2: Camada 2A - Term Density Decision Thresholds
+    # Apply density-based filtering (only if we have keyword matches)
+    # High density (>5%): Auto-accept (dominant term, high confidence)
+    # Low density (<1%): Auto-reject (peripheral term, false positive)
+    # Middle (1-5%): Uncertain, send to LLM arbiter (Camada 3A)
+    DENSITY_HIGH_THRESHOLD = 0.05  # 5%
+    DENSITY_LOW_THRESHOLD = 0.01  # 1%
+
+    resultado_densidade: List[dict] = []
+    resultado_llm_candidates: List[dict] = []  # Contratos na zona duvidosa (1-5%)
+
+    for lic in resultado_keyword:
+        density = lic.get("_term_density", 0)
+
+        if density > DENSITY_HIGH_THRESHOLD:
+            # High confidence - termo dominante, aceitar sem LLM
+            stats["aprovadas_alta_densidade"] += 1
+            resultado_densidade.append(lic)
+        elif density < DENSITY_LOW_THRESHOLD:
+            # Low confidence - termo periférico, rejeitar
+            stats["rejeitadas_baixa_densidade"] += 1
+            logger.debug(
+                f"  Rejeitada por Camada 2A (densidade < 1%): "
+                f"densidade={density:.1%} "
+                f"objeto={lic.get('objetoCompra', '')[:80]}"
+            )
+        else:
+            # Uncertain zone (1% ≤ density ≤ 5%) - needs LLM arbiter
+            stats["duvidosas_llm_arbiter"] += 1
+            resultado_llm_candidates.append(lic)
+
+    logger.debug(
+        f"  Após Camada 2A (Term Density): "
+        f"{len(resultado_densidade)} aprovadas (alta densidade), "
+        f"{len(resultado_llm_candidates)} duvidosas (LLM necessário), "
+        f"{stats['rejeitadas_baixa_densidade']} rejeitadas (baixa densidade)"
+    )
+
+    # STORY-179 AC3: Camada 3A - LLM Arbiter (GPT-4o-mini)
+    # For contracts in the uncertain zone (1-5% density), use LLM to determine
+    # if the contract is PRIMARILY about the sector/terms or just a tangential mention
+    stats["aprovadas_llm_arbiter"] = 0
+    stats["rejeitadas_llm_arbiter"] = 0
+    stats["llm_arbiter_calls"] = 0
+
+    if resultado_llm_candidates:
+        from llm_arbiter import classify_contract_primary_match
+
+        for lic in resultado_llm_candidates:
+            objeto = lic.get("objetoCompra", "")
+            valor = lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0
+
+            # Convert valor to float if needed
+            if isinstance(valor, str):
+                try:
+                    valor = float(valor.replace(".", "").replace(",", "."))
+                except ValueError:
+                    valor = 0.0
+            else:
+                valor = float(valor) if valor else 0.0
+
+            # Determine mode: sector-based or custom-terms-based
+            # If setor is provided, use sector mode; otherwise use custom terms
+            setor_name = None
+            termos = None
+
+            if setor:
+                from sectors import get_sector
+                try:
+                    setor_config = get_sector(setor)
+                    setor_name = setor_config.name
+                except KeyError:
+                    logger.warning(f"Setor '{setor}' não encontrado para LLM arbiter")
+
+            # If no sector, use matched keywords as custom terms
+            if not setor_name:
+                termos = lic.get("_matched_terms", [])
+
+            # Call LLM arbiter
+            stats["llm_arbiter_calls"] += 1
+            is_primary = classify_contract_primary_match(
+                objeto=objeto,
+                valor=valor,
+                setor_name=setor_name,
+                termos_busca=termos,
+            )
+
+            if is_primary:
+                # LLM says YES - this is PRIMARILY about the sector/terms
+                stats["aprovadas_llm_arbiter"] += 1
+                resultado_densidade.append(lic)
+            else:
+                # LLM says NO - this is a FALSE POSITIVE (tangential mention)
+                stats["rejeitadas_llm_arbiter"] += 1
+                logger.debug(
+                    f"  Rejeitada por Camada 3A (LLM arbiter: NAO): "
+                    f"valor=R$ {valor:,.2f} densidade={lic.get('_term_density', 0):.1%} "
+                    f"objeto={objeto[:80]}"
+                )
+
+        logger.debug(
+            f"  Após Camada 3A (LLM Arbiter): "
+            f"{stats['aprovadas_llm_arbiter']} aprovadas, "
+            f"{stats['rejeitadas_llm_arbiter']} rejeitadas, "
+            f"{stats['llm_arbiter_calls']} chamadas LLM"
+        )
+
+    resultado_keyword = resultado_densidade
 
     # Etapa 8b: Minimum Match Floor (STORY-178 AC2.2)
     # When min_match_floor is provided, apply additional filtering
@@ -1663,10 +1834,46 @@ def aplicar_todos_filtros(
     else:
         aprovadas = resultado_keyword
 
+    # ========================================================================
+    # STORY-179 FLUXO 2: Anti-False Negative Recovery Pipeline
+    # ========================================================================
+    # Recover contracts that were incorrectly rejected by filters.
+    # This happens when:
+    # 1. Exclusion keywords reject legitimate contracts (e.g., "servidor público"
+    #    rejecting "servidor de rede" for IT)
+    # 2. Synonym near-misses (e.g., "fardamento" not matching "uniforme")
+    # 3. Zero results due to overly strict filters
+
+    # Track rejected contracts for potential recovery
+    rejeitados_totais = stats["total"] - len(aprovadas)
+    logger.debug(f"FLUXO 2 iniciando: {rejeitados_totais} contratos rejeitados, "
+                 f"tentando recuperar falsos negativos")
+
+    # Initialize FLUXO 2 stats
+    stats["recuperadas_exclusion_recovery"] = 0
+    stats["aprovadas_synonym_match"] = 0
+    stats["recuperadas_llm_fn"] = 0
+    stats["recuperadas_zero_results"] = 0
+    stats["llm_arbiter_calls_fn_flow"] = 0
+    stats["zero_results_relaxation_triggered"] = False
+
+    # TODO AC11-AC14: Implement full recovery pipeline
+    # For now, this is a placeholder structure. Full implementation:
+    # 1. Track rejection reasons during keyword matching (need to modify match_keywords)
+    # 2. Identify exclusion recovery candidates (rejected + high density)
+    # 3. Apply synonym matching (synonyms.py)
+    # 4. LLM recovery for ambiguous cases (llm_arbiter.classify_contract_recovery)
+    # 5. Zero results relaxation if len(aprovadas) == 0
+
+    # FLUXO 2 will be completed in next commit (AC11-AC14 full implementation)
+    # ========================================================================
+
     stats["aprovadas"] = len(aprovadas)
 
     logger.info(
-        f"aplicar_todos_filtros: concluído - {stats['aprovadas']}/{stats['total']} aprovadas"
+        f"aplicar_todos_filtros: concluído - {stats['aprovadas']}/{stats['total']} aprovadas "
+        f"(FLUXO 1: {stats.get('aprovadas_llm_arbiter', 0)} via LLM arbiter, "
+        f"FLUXO 2: {stats.get('recuperadas_llm_fn', 0)} recuperadas)"
     )
     logger.debug(f"  Estatísticas completas: {stats}")
 
