@@ -150,7 +150,7 @@ export default function GoogleSheetsExportButton({
         disabled:opacity-50 disabled:cursor-not-allowed
         focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2
       `}
-      aria-label="Exportar resultados para Google Sheets"
+      aria-label="Exportar para Google Sheets"
     >
       {exporting ? (
         <>

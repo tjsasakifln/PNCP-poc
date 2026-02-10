@@ -28,6 +28,7 @@ import { PlanBadge } from "../components/PlanBadge";
 import { MessageBadge } from "../components/MessageBadge";
 import { QuotaCounter } from "../components/QuotaCounter";
 import { UpgradeModal } from "../components/UpgradeModal";
+import GoogleSheetsExportButton from "../../components/GoogleSheetsExportButton";
 import { LicitacoesPreview } from "../components/LicitacoesPreview";
 import type { SavedSearch } from "../../lib/savedSearches";
 import { getUserFriendlyError } from "../../lib/error-messages";
@@ -1786,6 +1787,16 @@ function HomePageContent() {
                 </svg>
                 🔒 Exportar Excel (Disponível no plano Máquina)
               </button>
+            )}
+
+            {/* Google Sheets Export - STORY-180 */}
+            {planInfo?.capabilities.allow_excel && (
+              <GoogleSheetsExportButton
+                licitacoes={result.licitacoes}
+                searchLabel={`${sectorName} - ${Array.from(ufsSelecionadas).join(', ')}`}
+                disabled={downloadLoading}
+                session={session}
+              />
             )}
 
             {/* Download Error */}

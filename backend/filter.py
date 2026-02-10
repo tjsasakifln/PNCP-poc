@@ -1837,17 +1837,12 @@ def aplicar_todos_filtros(
     # ========================================================================
     # STORY-179 FLUXO 2: Anti-False Negative Recovery Pipeline
     # ========================================================================
-    # Recover contracts that were incorrectly rejected by filters.
+    # Recover contracts that were incorrectly rejected by keyword filters.
     # This happens when:
-    # 1. Exclusion keywords reject legitimate contracts (e.g., "servidor público"
-    #    rejecting "servidor de rede" for IT)
-    # 2. Synonym near-misses (e.g., "fardamento" not matching "uniforme")
-    # 3. Zero results due to overly strict filters
-
-    # Track rejected contracts for potential recovery
-    rejeitados_totais = stats["total"] - len(aprovadas)
-    logger.debug(f"FLUXO 2 iniciando: {rejeitados_totais} contratos rejeitados, "
-                 f"tentando recuperar falsos negativos")
+    # 1. Exclusion keywords reject legitimate contracts (Camada 1B)
+    # 2. Synonym near-misses not covered by keyword set (Camada 2B)
+    # 3. LLM recovery for ambiguous rejections (Camada 3B)
+    # 4. Zero results relaxation (Camada 4)
 
     # Initialize FLUXO 2 stats
     stats["recuperadas_exclusion_recovery"] = 0
@@ -1857,15 +1852,180 @@ def aplicar_todos_filtros(
     stats["llm_arbiter_calls_fn_flow"] = 0
     stats["zero_results_relaxation_triggered"] = False
 
-    # TODO AC11-AC14: Implement full recovery pipeline
-    # For now, this is a placeholder structure. Full implementation:
-    # 1. Track rejection reasons during keyword matching (need to modify match_keywords)
-    # 2. Identify exclusion recovery candidates (rejected + high density)
-    # 3. Apply synonym matching (synonyms.py)
-    # 4. LLM recovery for ambiguous cases (llm_arbiter.classify_contract_recovery)
-    # 5. Zero results relaxation if len(aprovadas) == 0
+    # Only run recovery when we have a sector (synonym dictionaries are sector-specific)
+    if setor:
+        from synonyms import find_synonym_matches, should_auto_approve_by_synonyms
+        from sectors import get_sector as _get_sector
 
-    # FLUXO 2 will be completed in next commit (AC11-AC14 full implementation)
+        try:
+            setor_config = _get_sector(setor)
+            setor_keywords = setor_config.keywords
+            setor_name = setor_config.name
+
+            # Collect IDs of already-approved contracts to avoid duplicates
+            aprovadas_ids = {id(lic) for lic in aprovadas}
+
+            # ------------------------------------------------------------------
+            # Camada 1B + 2B: Re-scan contracts rejected at keyword stage
+            # ------------------------------------------------------------------
+            # We look at contracts that passed UF/status/value filters but were
+            # rejected by keyword matching (they exist in resultado_valor but
+            # not in resultado_keyword).
+            rejeitadas_keyword_pool: List[dict] = []
+            for lic in resultado_valor:
+                if id(lic) not in aprovadas_ids:
+                    rejeitadas_keyword_pool.append(lic)
+
+            logger.debug(
+                f"FLUXO 2 iniciando: {len(rejeitadas_keyword_pool)} contratos no pool de "
+                f"recuperação (rejeitados após filtros rápidos)"
+            )
+
+            recuperadas: List[dict] = []
+            llm_candidates_fn: List[dict] = []
+
+            for lic in rejeitadas_keyword_pool:
+                objeto = lic.get("objetoCompra", "")
+                if not objeto:
+                    continue
+
+                # Camada 2B: Check synonym matches
+                synonym_matches = find_synonym_matches(
+                    objeto=objeto,
+                    setor_keywords=setor_keywords,
+                    setor_id=setor,
+                )
+
+                if not synonym_matches:
+                    continue  # No synonyms found, skip
+
+                # Check if auto-approve threshold is met (2+ synonyms)
+                should_approve, matches = should_auto_approve_by_synonyms(
+                    objeto=objeto,
+                    setor_keywords=setor_keywords,
+                    setor_id=setor,
+                    min_synonyms=2,
+                )
+
+                if should_approve:
+                    # High confidence: 2+ synonym matches → auto-approve
+                    stats["aprovadas_synonym_match"] += 1
+                    lic["_recovered_by"] = "synonym_auto_approve"
+                    lic["_synonym_matches"] = [
+                        f"{canon}≈{syn}" for canon, syn in matches
+                    ]
+                    recuperadas.append(lic)
+                    logger.debug(
+                        f"  Recuperada por sinônimos (auto): {matches} "
+                        f"objeto={objeto[:80]}"
+                    )
+                else:
+                    # 1 synonym match → ambiguous, send to LLM (Camada 3B)
+                    lic["_near_miss_synonyms"] = synonym_matches
+                    llm_candidates_fn.append(lic)
+
+            # ------------------------------------------------------------------
+            # Camada 3B: LLM Recovery for ambiguous synonym matches
+            # ------------------------------------------------------------------
+            if llm_candidates_fn:
+                from llm_arbiter import classify_contract_recovery
+
+                for lic in llm_candidates_fn:
+                    objeto = lic.get("objetoCompra", "")
+                    valor = lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0
+                    if isinstance(valor, str):
+                        try:
+                            valor = float(valor.replace(".", "").replace(",", "."))
+                        except ValueError:
+                            valor = 0.0
+                    else:
+                        valor = float(valor) if valor else 0.0
+
+                    near_miss = lic.get("_near_miss_synonyms", [])
+                    near_miss_info = ", ".join(
+                        f"{canon}≈{syn}" for canon, syn in near_miss
+                    )
+
+                    stats["llm_arbiter_calls_fn_flow"] += 1
+                    should_recover = classify_contract_recovery(
+                        objeto=objeto,
+                        valor=valor,
+                        rejection_reason="keyword_no_match + synonym_near_miss",
+                        setor_name=setor_name,
+                        near_miss_info=near_miss_info,
+                    )
+
+                    if should_recover:
+                        stats["recuperadas_llm_fn"] += 1
+                        lic["_recovered_by"] = "llm_recovery"
+                        lic["_synonym_matches"] = [
+                            f"{canon}≈{syn}" for canon, syn in near_miss
+                        ]
+                        recuperadas.append(lic)
+                        logger.debug(
+                            f"  Recuperada por LLM (FN flow): near_miss={near_miss_info} "
+                            f"objeto={objeto[:80]}"
+                        )
+
+            # Add recovered contracts to approved list
+            if recuperadas:
+                aprovadas.extend(recuperadas)
+                logger.info(
+                    f"FLUXO 2: {len(recuperadas)} contratos recuperados "
+                    f"(synonym_auto: {stats['aprovadas_synonym_match']}, "
+                    f"llm_recovery: {stats['recuperadas_llm_fn']})"
+                )
+
+            # ------------------------------------------------------------------
+            # Camada 4: Zero Results Relaxation
+            # ------------------------------------------------------------------
+            if len(aprovadas) == 0 and len(rejeitadas_keyword_pool) > 0:
+                stats["zero_results_relaxation_triggered"] = True
+                logger.info(
+                    "FLUXO 2 Camada 4: Zero results detected, attempting relaxation"
+                )
+
+                # Relaxation: accept any contract with at least 1 synonym match
+                for lic in rejeitadas_keyword_pool:
+                    if id(lic) in {id(r) for r in recuperadas}:
+                        continue  # Already recovered
+
+                    objeto = lic.get("objetoCompra", "")
+                    if not objeto:
+                        continue
+
+                    synonym_matches = find_synonym_matches(
+                        objeto=objeto,
+                        setor_keywords=setor_keywords,
+                        setor_id=setor,
+                    )
+
+                    if synonym_matches:
+                        stats["recuperadas_zero_results"] += 1
+                        lic["_recovered_by"] = "zero_results_relaxation"
+                        lic["_synonym_matches"] = [
+                            f"{canon}≈{syn}" for canon, syn in synonym_matches
+                        ]
+                        aprovadas.append(lic)
+
+                if stats["recuperadas_zero_results"] > 0:
+                    logger.info(
+                        f"Camada 4 relaxation: recovered {stats['recuperadas_zero_results']} "
+                        f"contracts via single-synonym matching"
+                    )
+
+        except KeyError:
+            logger.warning(f"Setor '{setor}' não encontrado - pulando FLUXO 2")
+        except Exception as e:
+            logger.error(f"FLUXO 2 recovery failed: {e}", exc_info=True)
+
+    logger.debug(
+        f"FLUXO 2 resultado: "
+        f"synonym_auto={stats['aprovadas_synonym_match']}, "
+        f"llm_recovery={stats['recuperadas_llm_fn']}, "
+        f"zero_results={stats['recuperadas_zero_results']}, "
+        f"llm_calls_fn={stats['llm_arbiter_calls_fn_flow']}"
+    )
     # ========================================================================
 
     stats["aprovadas"] = len(aprovadas)
