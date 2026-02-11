@@ -1,983 +1,766 @@
-# BidIQ Uniformes - Frontend Specification & Audit
+# Frontend Specification - SmartLic/BidIQ
 
-**Project:** BidIQ Uniformes - POC v0.2
-**Date:** January 2026
-**Version:** 1.0
-**Status:** BROWNFIELD DISCOVERY - PHASE 3
-**Documented by:** @ux-design-expert
+> **Generated:** 2026-02-11 | **Auditor:** @ux-design-expert (Uma)
+> **Codebase Path:** `D:\pncp-poc\frontend\`
+> **Production URL:** `https://bidiq-frontend-production.up.railway.app/`
 
 ---
 
-## Executive Summary
+## 1. Executive Summary
 
-The BidIQ frontend is designed as a **single-page application (SPA)** using Next.js 14+ with App Router. Current status: **Partial implementation** - dependencies configured but application structure incomplete. This specification documents the intended architecture, components, and current gaps.
+SmartLic.tech is a Brazilian SaaS product for automated procurement opportunity discovery from PNCP (Portal Nacional de Contratacoes Publicas). The frontend is a Next.js 16 App Router application with Supabase authentication (PKCE flow with Google OAuth), Tailwind CSS design system, framer-motion animations, Mixpanel analytics, and a tiered subscription model (Stripe billing). The codebase is in Portuguese (pt-BR), targeting Brazilian procurement professionals.
 
-**Key Characteristics:**
-- Minimal, focused UI for B2B procurement search
-- Multi-select UF (state) filter with 27 options
-- Date range picker with smart defaults (last 7 days)
-- Results display with GPT-powered summaries
-- Direct Excel export to browser
-- Mobile-responsive design via Tailwind CSS
+**Key Metrics:**
+- **Pages:** 16 distinct routes (8 public, 8 protected)
+- **Components:** ~55 React components across `app/components/` and `components/`
+- **Hooks:** 10 custom hooks in `hooks/`
+- **API Routes:** 10 Next.js API proxy routes
+- **Test Files:** 55 test files in `__tests__/`
+- **Dependencies:** 14 production, 15 dev dependencies
 
-**Current Status:** Package dependencies configured, but Next.js app structure not yet created (Issue #21)
-
----
-
-## 1. Frontend Technology Stack
-
-### 1.1 Core Framework
-
-| Technology | Version | Purpose | Status |
-|------------|---------|---------|--------|
-| Next.js | 14+ | Full-stack React framework, App Router | ✅ Configured (Issue #21) |
-| React | 18+ | UI component library | ✅ Configured |
-| TypeScript | 5.3+ | Type-safe development | ✅ Configured |
-| Tailwind CSS | 3.4+ | Utility-first styling | ✅ Configured |
-| Node.js | 18+ | Runtime | ✅ Required |
-
-### 1.2 Development Dependencies
-
-```json
-{
-  "devDependencies": {
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/jest-dom": "^6.1.4",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "prettier": "^3.0.3",
-    "eslint": "^8",
-    "eslint-config-next": "^14"
-  }
-}
-```
-
-### 1.3 Build & Deployment
-
-- **Build Tool:** Next.js built-in
-- **Output:** Standalone server + static assets
-- **Target:** Vercel or self-hosted Node.js
-- **Bundle Optimization:** Next.js automatic code splitting
+**Overall Assessment:**
+The frontend is feature-rich and reflects rapid iteration. The design system (CSS custom properties + Tailwind) is well-structured with proper WCAG contrast documentation. The main search page (`buscar/page.tsx`) is a monolithic ~1100-line component that concentrates most business logic and represents the single largest source of technical debt. Component duplication exists between `app/components/` and root `components/` directories. Accessibility foundations are solid (skip nav, ARIA labels, focus states, `prefers-reduced-motion`), but several areas lack keyboard operability.
 
 ---
 
-## 2. Application Structure (Intended)
+## 2. Tech Stack
 
-### 2.1 Directory Layout
+### 2.1 Framework (Next.js version, app router)
 
-```
-frontend/
-├── app/                          # App Router directory
-│   ├── layout.tsx                # Root layout (global styles, providers)
-│   ├── page.tsx                  # Main search page (/)
-│   ├── api/                      # API route handlers
-│   │   ├── buscar/
-│   │   │   └── route.ts          # POST /api/buscar → proxy to backend
-│   │   └── download/
-│   │       └── route.ts          # GET /api/download → serve Excel
-│   └── [components]/             # (To be created)
-│       ├── UFSelector.tsx        # Multi-select UF buttons
-│       ├── DateRangePicker.tsx   # Date range input
-│       ├── ResultsTable.tsx      # Results display
-│       ├── SummaryCard.tsx       # GPT summary display
-│       ├── LoadingSkeletons.tsx  # Loading states
-│       └── ErrorBoundary.tsx     # Error handling
-│
-├── styles/                       # (Optional if needed beyond Tailwind)
-│   └── globals.css               # Global Tailwind imports
-│
-├── hooks/                        # Custom React hooks
-│   ├── useSearch.ts              # Encapsulate search logic
-│   └── usePagination.ts          # Pagination state (future)
-│
-├── lib/                          # Utilities
-│   ├── api-client.ts             # API communication
-│   ├── constants.ts              # UFs, defaults, colors
-│   └── utils.ts                  # Helper functions
-│
-├── types/                        # TypeScript type definitions
-│   ├── api.ts                    # API response types
-│   └── domain.ts                 # Domain models
-│
-├── __tests__/                    # Test files
-│   ├── components/
-│   ├── hooks/
-│   ├── pages/
-│   └── integration/
-│
-├── public/                       # Static assets
-│   └── favicon.ico
-│
-├── next.config.js                # Next.js configuration
-├── tsconfig.json                 # TypeScript configuration
-├── jest.config.js                # Jest testing configuration
-├── tailwind.config.js            # Tailwind configuration
-└── package.json
-```
+| Aspect | Detail |
+|---|---|
+| **Framework** | Next.js 16.1.6 (App Router) |
+| **React** | 18.3.1 |
+| **TypeScript** | 5.9.3, strict mode enabled |
+| **Build Output** | Standalone (`output: 'standalone'` in `next.config.js`) |
+| **Deployment** | Railway (containerized Node.js standalone server) |
+| **Language** | `lang="pt-BR"` on `<html>` |
 
----
+**next.config.js** (`D:\pncp-poc\frontend\next.config.js`):
+- `reactStrictMode: true`
+- `output: 'standalone'` (optimized for Docker/Railway)
+- Remote image pattern: `static.wixstatic.com` only
+- No `i18n` configuration (single-locale app)
+- No custom `headers` or `rewrites`
 
-## 3. Component Architecture
+**tsconfig.json** (`D:\pncp-poc\frontend\tsconfig.json`):
+- Target: ES2020
+- Module: ESNext with bundler resolution
+- Strict mode: `true`
+- Path alias: `@/*` maps to `./*`
+- Test files excluded from compilation
 
-### 3.1 Page Structure: Main Search Page (`page.tsx`)
+### 2.2 Styling (Tailwind config, design tokens)
 
-```typescript
-// Main SPA with all search functionality on single page
+**Tailwind CSS 3.4.19** with a comprehensive CSS custom properties design system.
 
-export default function SearchPage() {
-  const [ufs, setUfs] = useState<Set<string>>(new Set());
-  const [dateRange, setDateRange] = useState({
-    start: getLastNDays(7), // Default: last 7 days
-    end: new Date().toISOString().split('T')[0]
-  });
-  const [results, setResults] = useState<Licitacao[]>([]);
-  const [summary, setSummary] = useState<ResumoLicitacoes | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [downloadId, setDownloadId] = useState<string | null>(null);
+**Design Tokens** (`D:\pncp-poc\frontend\app\globals.css`):
 
-  const handleSearch = async () => {
-    // POST to /api/buscar
-  };
+| Category | Tokens |
+|---|---|
+| **Canvas/Ink** | `--canvas`, `--ink`, `--ink-secondary`, `--ink-muted`, `--ink-faint` |
+| **Brand** | `--brand-navy` (#0a1e3f), `--brand-blue` (#116dff), `--brand-blue-hover`, `--brand-blue-subtle` |
+| **Surfaces** | `--surface-0`, `--surface-1`, `--surface-2`, `--surface-elevated` |
+| **Semantic** | `--success`, `--error`, `--warning` (each with `-subtle` variant) |
+| **Borders** | `--border`, `--border-strong`, `--border-accent` |
+| **Focus** | `--ring` (#116dff light, #3b8bff dark) |
+| **Typography** | `--text-hero` (clamp 40-72px), `--text-h1` through `--text-body-lg` (fluid) |
+| **Premium** | Gradients (`--gradient-brand`, `--gradient-hero-bg`), glassmorphism (`--glass-bg`, `--glass-border`, `--glass-shadow`), premium shadows (sm through 2xl + glow) |
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <h1>BidIQ Uniformes</h1>
-        <p>Descoberta Automática de Oportunidades de Compra Pública</p>
-      </header>
+**Tailwind Extensions** (`D:\pncp-poc\frontend\tailwind.config.ts`):
+- Dark mode: `class` strategy
+- Custom font families: `body` (DM Sans), `display` (Fahkwang), `data` (DM Mono)
+- Custom border radii: `input` (4px), `button` (6px), `card` (8px), `modal` (12px)
+- Custom keyframe animations: `fade-in-up`, `gradient`, `shimmer`, `float`, `slide-up`, `scale-in`
+- `maxWidth.landing`: 1200px
 
-      <main className="max-w-7xl mx-auto p-6">
-        {/* Filters Section */}
-        <section className="bg-white rounded-lg shadow p-6 mb-6">
-          <UFSelector ufs={ufs} onChange={setUfs} />
-          <DateRangePicker dateRange={dateRange} onChange={setDateRange} />
-          <button onClick={handleSearch} disabled={loading}>
-            {loading ? "Buscando..." : "Buscar Oportunidades"}
-          </button>
-        </section>
+**Dark Mode:** Full implementation via CSS custom properties. Theme toggle in header. Flash prevention via inline `<script>` in `layout.tsx` that reads `localStorage('bidiq-theme')` before paint.
 
-        {/* Summary Card (if results) */}
-        {summary && <SummaryCard resumo={summary} />}
+**Fonts:**
+- DM Sans (body text) - Google Font with `display: swap`
+- Fahkwang (display/headings) - Google Font with `display: swap`
+- DM Mono (data/numbers) - Google Font with `display: swap`
 
-        {/* Results Section */}
-        {results.length > 0 && (
-          <section className="mt-6">
-            <h2>Resultados ({results.length})</h2>
-            <ResultsTable results={results} downloadId={downloadId} />
-          </section>
-        )}
+### 2.3 Dependencies (key packages)
 
-        {/* Loading State */}
-        {loading && <LoadingSkeletons count={5} />}
+| Package | Version | Purpose |
+|---|---|---|
+| `@supabase/ssr` | ^0.8.0 | Supabase SSR client (cookie-based auth) |
+| `@supabase/supabase-js` | ^2.93.3 | Supabase browser client |
+| `framer-motion` | ^12.33.0 | Landing page animations |
+| `lucide-react` | ^0.563.0 | Icon library (landing page) |
+| `mixpanel-browser` | ^2.74.0 | Product analytics |
+| `react-day-picker` | ^9.13.0 | Date picker (mobile-optimized) |
+| `react-simple-pull-to-refresh` | ^1.3.4 | Mobile pull-to-refresh |
+| `recharts` | ^3.7.0 | Dashboard charts |
+| `shepherd.js` | ^14.5.1 | Interactive onboarding tour |
+| `sonner` | ^2.0.7 | Toast notifications |
+| `use-debounce` | ^10.1.0 | Input debouncing |
+| `date-fns` | ^4.1.0 | Date manipulation |
+| `uuid` | ^13.0.0 | UUID generation |
 
-        {/* Error State */}
-        {error && <ErrorAlert message={error} />}
-      </main>
-    </div>
-  );
-}
-```
-
-### 3.2 Component: UF Selector
-
-```typescript
-interface UFSelectorProps {
-  ufs: Set<string>;
-  onChange: (ufs: Set<string>) => void;
-}
-
-export function UFSelector({ ufs, onChange }: UFSelectorProps) {
-  const UFS = [
-    // 27 Brazilian states
-    { code: 'AC', name: 'Acre' },
-    { code: 'AL', name: 'Alagoas' },
-    { code: 'AP', name: 'Amapá' },
-    { code: 'AM', name: 'Amazonas' },
-    { code: 'BA', name: 'Bahia' },
-    // ... 22 more states
-    { code: 'TO', name: 'Tocantins' }
-  ];
-
-  const toggleUF = (code: string) => {
-    const newUFs = new Set(ufs);
-    if (newUFs.has(code)) {
-      newUFs.delete(code);
-    } else {
-      newUFs.add(code);
-    }
-    onChange(newUFs);
-  };
-
-  return (
-    <div className="mb-6">
-      <label className="block text-sm font-medium mb-2">
-        Estados (Selecione um ou mais)
-      </label>
-      <div className="grid grid-cols-9 gap-2">
-        {UFS.map(uf => (
-          <button
-            key={uf.code}
-            onClick={() => toggleUF(uf.code)}
-            className={`
-              px-3 py-2 rounded text-sm font-medium transition-colors
-              ${ufs.has(uf.code)
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }
-            `}
-            title={uf.name}
-          >
-            {uf.code}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-```
-
-### 3.3 Component: Date Range Picker
-
-```typescript
-interface DateRangePickerProps {
-  dateRange: { start: string; end: string };
-  onChange: (range: { start: string; end: string }) => void;
-}
-
-export function DateRangePicker({ dateRange, onChange }: DateRangePickerProps) {
-  return (
-    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Data Inicial</label>
-        <input
-          type="date"
-          value={dateRange.start}
-          onChange={e => onChange({ ...dateRange, start: e.target.value })}
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Data Final</label>
-        <input
-          type="date"
-          value={dateRange.end}
-          onChange={e => onChange({ ...dateRange, end: e.target.value })}
-          className="w-full px-3 py-2 border rounded"
-        />
-      </div>
-    </div>
-  );
-}
-```
-
-### 3.4 Component: Results Table
-
-```typescript
-interface ResultsTableProps {
-  results: Licitacao[];
-  downloadId: string | null;
-}
-
-export function ResultsTable({ results, downloadId }: ResultsTableProps) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-100 border-b">
-          <tr>
-            <th className="px-4 py-2 text-left">Código</th>
-            <th className="px-4 py-2 text-left">Objeto</th>
-            <th className="px-4 py-2 text-left">Órgão</th>
-            <th className="px-4 py-2 text-left">UF</th>
-            <th className="px-4 py-2 text-right">Valor</th>
-            <th className="px-4 py-2 text-left">Status</th>
-            <th className="px-4 py-2 text-left">Link</th>
-          </tr>
-        </thead>
-        <tbody>
-          {results.map(licitacao => (
-            <tr key={licitacao.codigo} className="border-b hover:bg-gray-50">
-              <td className="px-4 py-2 font-mono text-xs">{licitacao.codigo}</td>
-              <td className="px-4 py-2">{licitacao.objeto}</td>
-              <td className="px-4 py-2">{licitacao.orgao}</td>
-              <td className="px-4 py-2 font-semibold">{licitacao.uf}</td>
-              <td className="px-4 py-2 text-right font-semibold">
-                R$ {(licitacao.valor / 1000).toFixed(1)}k
-              </td>
-              <td className="px-4 py-2">
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                  {licitacao.status}
-                </span>
-              </td>
-              <td className="px-4 py-2">
-                <a
-                  href={licitacao.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  PNCP ↗
-                </a>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {downloadId && (
-        <button
-          onClick={() => window.location.href = `/api/download?id=${downloadId}`}
-          className="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-        >
-          📥 Baixar Excel
-        </button>
-      )}
-    </div>
-  );
-}
-```
-
-### 3.5 Component: Summary Card
-
-```typescript
-export function SummaryCard({ resumo }: { resumo: ResumoLicitacoes }) {
-  return (
-    <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded mb-6">
-      <h2 className="font-bold text-lg mb-3">📊 Resumo Executivo (IA)</h2>
-
-      <p className="text-gray-700 mb-4">{resumo.resumo_executivo}</p>
-
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">
-            {resumo.total_oportunidades}
-          </div>
-          <div className="text-sm text-gray-600">Oportunidades</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-600">
-            R$ {(resumo.valor_total / 1_000_000).toFixed(1)}M
-          </div>
-          <div className="text-sm text-gray-600">Valor Total</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-orange-600">
-            {(resumo.valor_total / resumo.total_oportunidades / 1000).toFixed(0)}k
-          </div>
-          <div className="text-sm text-gray-600">Valor Médio</div>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <h3 className="font-semibold text-sm mb-2">🎯 Destaques:</h3>
-        <ul className="list-disc list-inside text-sm text-gray-700">
-          {resumo.destaques.map((destaque, i) => (
-            <li key={i}>{destaque}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div>
-        <h3 className="font-semibold text-sm mb-2">💡 Recomendações:</h3>
-        <ul className="list-disc list-inside text-sm text-gray-700">
-          {resumo.recomendacoes.map((rec, i) => (
-            <li key={i}>{rec}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-```
+**Dev Dependencies of Note:**
+- `@axe-core/playwright` (accessibility testing)
+- `@lhci/cli` (Lighthouse CI)
+- `@playwright/test` ^1.58.1 (E2E testing)
+- `jest` + `@testing-library/react` (unit testing)
 
 ---
 
-## 4. API Integration
+## 3. Page Inventory
 
-### 4.1 API Route: `/api/buscar` (POST)
+### 3.1 Public Pages
 
-```typescript
-// frontend/app/api/buscar/route.ts
+| Route | File | Description |
+|---|---|---|
+| `/` | `app/page.tsx` | Landing page (12 sections: Hero, ValueProp, OpportunityCost, BeforeAfter, ComparisonTable, DifferentialsGrid, HowItWorks, StatsSection, DataSources, SectorsGrid, Testimonials, FinalCTA) |
+| `/login` | `app/login/page.tsx` | Login with Google OAuth, email+password, magic link. Suspense boundary for `useSearchParams`. |
+| `/signup` | `app/signup/page.tsx` | Registration with name, company, sector, phone, consent scroll box. Google OAuth. |
+| `/pricing` | `app/pricing/page.tsx` | ROI calculator, plan comparison table, guarantee section |
+| `/features` | `app/features/page.tsx` | Detailed feature descriptions with defensive positioning. Server component with metadata. |
+| `/termos` | `app/termos/page.tsx` | Terms of service. Server component with metadata. |
+| `/privacidade` | `app/privacidade/page.tsx` | Privacy policy. Server component with metadata. |
+| `/auth/callback` | `app/auth/callback/page.tsx` | OAuth PKCE callback handler (code exchange) |
 
-export async function POST(request: Request) {
-  const body = await request.json();
+### 3.2 Protected Pages
 
-  try {
-    const response = await fetch('http://localhost:8000/api/buscar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+| Route | File | Description | Auth Check |
+|---|---|---|---|
+| `/buscar` | `app/buscar/page.tsx` | **Main search page** - UF selector, date range, sector/custom terms, filters, results preview, download. ~1100 lines. | `useAuth()` session check |
+| `/dashboard` | `app/dashboard/page.tsx` | Analytics dashboard with Recharts (bar, line, pie charts), summary stats, time series. | `useAuth()` session check |
+| `/historico` | `app/historico/page.tsx` | Search history with re-run capability. Paginated list from backend `/sessions`. | `useAuth()` session check |
+| `/conta` | `app/conta/page.tsx` | Account management (password change, user info display, logout). | `useAuth()` session check |
+| `/planos` | `app/planos/page.tsx` | Plan management with Stripe checkout, monthly/annual toggle, upgrade/downgrade. Dynamic plan fetching from backend. | `useAuth()` session check |
+| `/planos/obrigado` | `app/planos/obrigado/page.tsx` | Post-checkout thank-you page | `useAuth()` session check |
+| `/mensagens` | `app/mensagens/page.tsx` | InMail messaging system (conversations list + thread view, admin mode). | `useAuth()` session check |
+| `/admin` | `app/admin/page.tsx` | Admin panel: user list, plan management, credit editing, user creation. | `useAuth()` + `isAdmin` check |
 
-    if (!response.ok) {
-      throw new Error(`Backend error: ${response.status}`);
-    }
+### 3.3 API Routes
 
-    return response.json();
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Backend unavailable' },
-      { status: 500 }
-    );
-  }
-}
+| Route | File | Method | Purpose |
+|---|---|---|---|
+| `/api/buscar` | `app/api/buscar/route.ts` | POST | Proxy to backend `/buscar`. Auth required. 5-min timeout. Retry on 503. Saves Excel to `tmpdir()`. |
+| `/api/download` | `app/api/download/route.ts` | GET | Serves Excel files from temp dir. Auth required. 60-min auto-cleanup. |
+| `/api/buscar-progress` | `app/api/buscar-progress/route.ts` | GET | SSE proxy for real-time search progress. `runtime: "nodejs"`, `dynamic: "force-dynamic"`. |
+| `/api/setores` | `app/api/setores/route.ts` | GET | Proxy to backend `/setores`. No auth. |
+| `/api/me` | `app/api/me/route.ts` | GET | Proxy to backend `/me`. Auth required. |
+| `/api/analytics` | `app/api/analytics/route.ts` | GET | Proxy to backend `/analytics/{endpoint}`. Auth required. Supports `summary`, `searches-over-time`, `top-dimensions`. |
+| `/api/health` | `app/api/health/route.ts` | GET | Health check (returns `{status: "ok"}`). |
+| `/api/messages/conversations` | `app/api/messages/conversations/route.ts` | GET, POST | Conversations list and creation. Auth required. |
+| `/api/messages/conversations/[id]` | `app/api/messages/conversations/[id]/route.ts` | GET | Single conversation detail. Auth required. |
+| `/api/messages/conversations/[id]/reply` | `app/api/messages/conversations/[id]/reply/route.ts` | POST | Reply to conversation. Auth required. |
+| `/api/messages/conversations/[id]/status` | `app/api/messages/conversations/[id]/status/route.ts` | PATCH | Update conversation status. Auth required. |
+| `/api/messages/unread-count` | `app/api/messages/unread-count/route.ts` | GET | Unread message count. Auth required. |
+
+**Critical Note:** The `/api/analytics` route uses `http://localhost:8000` as a fallback for `BACKEND_URL`, which is inconsistent with other routes that return 503 when unconfigured. This is a potential security issue (see Section 11).
+
+---
+
+## 4. Component Architecture
+
+### 4.1 Layout Components
+
+| Component | File | Description |
+|---|---|---|
+| `RootLayout` | `app/layout.tsx` | Root HTML with Google Fonts, skip-nav link, providers (Analytics > Auth > Theme), Toaster |
+| `ThemeProvider` | `app/components/ThemeProvider.tsx` | CSS custom property theme switching (light/system/dark) with localStorage persistence |
+| `AuthProvider` | `app/components/AuthProvider.tsx` | Supabase auth context (PKCE flow). Provides: `user`, `session`, `loading`, `isAdmin`, sign-in/up/out methods |
+| `AnalyticsProvider` | `app/components/AnalyticsProvider.tsx` | Mixpanel initialization, page_load/page_exit tracking |
+| `Footer` | `app/components/Footer.tsx` | 4-column grid, transparency disclaimer, LGPD badge, animated links |
+| `LandingNavbar` | `app/components/landing/LandingNavbar.tsx` | Landing page navigation bar |
+| `InstitutionalSidebar` | `app/components/InstitutionalSidebar.tsx` | Split-screen sidebar for login/signup pages |
+
+### 4.2 Feature Components
+
+**Search Page Components:**
+
+| Component | File | Description |
+|---|---|---|
+| `RegionSelector` | `app/components/RegionSelector.tsx` | Brazilian region-based state multi-selector |
+| `CustomSelect` | `app/components/CustomSelect.tsx` | Custom dropdown select with design system styling |
+| `CustomDateInput` | `app/components/CustomDateInput.tsx` | Styled date input with design system tokens |
+| `SavedSearchesDropdown` | `app/components/SavedSearchesDropdown.tsx` | Saved search management dropdown |
+| `EnhancedLoadingProgress` | `components/EnhancedLoadingProgress.tsx` | 5-stage loading indicator with SSE real-time progress, cancel button |
+| `LoadingResultsSkeleton` | `app/components/LoadingResultsSkeleton.tsx` | Animated skeleton placeholder for results |
+| `EmptyState` | `app/components/EmptyState.tsx` | Zero-results state with filter breakdown and suggestions |
+| `LicitacaoCard` | `app/components/LicitacaoCard.tsx` | Individual bid card with status badge, countdown, value, share, favorite |
+| `LicitacoesPreview` | `app/components/LicitacoesPreview.tsx` | Paginated list of LicitacaoCards |
+| `StatusBadge` | `app/components/StatusBadge.tsx` | Visual status indicator (green/yellow/red) |
+| `Countdown` | `app/components/Countdown.tsx` | Countdown timer to bid deadline |
+| `GoogleSheetsExportButton` | `components/GoogleSheetsExportButton.tsx` | Export results to Google Sheets |
+
+**Filter Components (two locations -- duplication exists):**
+
+In `app/components/` (P1 filters):
+- `EsferaFilter`, `MunicipioFilter`, `OrgaoFilter`, `OrdenacaoSelect`, `PaginacaoSelect`
+
+In `components/` (P0 filters):
+- `StatusFilter`, `ModalidadeFilter`, `ValorFilter`
+- `EsferaFilter` (DUPLICATE), `MunicipioFilter` (DUPLICATE)
+
+**Billing & Subscription Components:**
+
+| Component | File |
+|---|---|
+| `PlanBadge` | `app/components/PlanBadge.tsx` |
+| `QuotaBadge` | `app/components/QuotaBadge.tsx` |
+| `QuotaCounter` | `app/components/QuotaCounter.tsx` |
+| `UpgradeModal` | `app/components/UpgradeModal.tsx` |
+| `MessageBadge` | `app/components/MessageBadge.tsx` |
+| `PlanToggle` | `components/subscriptions/PlanToggle.tsx` |
+| `PlanCard` | `components/subscriptions/PlanCard.tsx` |
+| `FeatureBadge` | `components/subscriptions/FeatureBadge.tsx` |
+| `TrustSignals` | `components/subscriptions/TrustSignals.tsx` |
+| `DowngradeModal` | `components/subscriptions/DowngradeModal.tsx` |
+| `AnnualBenefits` | `components/subscriptions/AnnualBenefits.tsx` |
+
+### 4.3 UI Components (reusable)
+
+| Component | File |
+|---|---|
+| `GlassCard` | `app/components/ui/GlassCard.tsx` |
+| `BentoGrid` | `app/components/ui/BentoGrid.tsx` |
+| `GradientButton` | `app/components/ui/GradientButton.tsx` |
+| `Tooltip` | `app/components/ui/Tooltip.tsx` |
+
+### 4.4 Component Dependency Graph
+
+**Search Page (`buscar/page.tsx`) -- the central component:**
+
+```
+buscar/page.tsx (HomePageContent - ~1100 lines)
+  +-- AuthProvider (useAuth)
+  +-- useAnalytics
+  +-- useSavedSearches
+  +-- useOnboarding (shepherd.js)
+  +-- useKeyboardShortcuts
+  +-- useQuota
+  +-- usePlan
+  +-- useSearchProgress (SSE)
+  +-- RegionSelector
+  +-- CustomSelect (sector dropdown)
+  +-- CustomDateInput (x2)
+  +-- SavedSearchesDropdown
+  +-- StatusFilter
+  +-- ModalidadeFilter
+  +-- ValorFilter
+  +-- EsferaFilter
+  +-- MunicipioFilter
+  +-- OrdenacaoSelect
+  +-- PlanBadge
+  +-- QuotaBadge
+  +-- QuotaCounter
+  +-- MessageBadge
+  +-- ThemeToggle
+  +-- UserMenu
+  +-- UpgradeModal
+  +-- EnhancedLoadingProgress
+  +-- LoadingResultsSkeleton
+  +-- EmptyState
+  +-- LicitacoesPreview
+  +--   LicitacaoCard (per item)
+  +-- GoogleSheetsExportButton
+  +-- Tooltip
 ```
 
-### 4.2 API Route: `/api/download` (GET)
+**Landing Page (`page.tsx`):**
 
-```typescript
-// frontend/app/api/download/route.ts
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const downloadId = searchParams.get('id');
-
-  if (!downloadId) {
-    return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:8000/api/download?id=${downloadId}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Backend error: ${response.status}`);
-    }
-
-    const buffer = await response.arrayBuffer();
-
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="licitacoes-${downloadId}.xlsx"`
-      }
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Download failed' },
-      { status: 500 }
-    );
-  }
-}
+```
+page.tsx
+  +-- LandingNavbar
+  +-- HeroSection (framer-motion, lucide-react, GlassCard, GradientButton)
+  +-- ValuePropSection
+  +-- OpportunityCost
+  +-- BeforeAfter
+  +-- ComparisonTable
+  +-- DifferentialsGrid
+  +-- HowItWorks
+  +-- StatsSection
+  +-- DataSourcesSection
+  +-- SectorsGrid
+  +-- TestimonialsCarousel
+  +-- FinalCTA
+  +-- Footer
 ```
 
 ---
 
 ## 5. State Management
 
-### 5.1 Component-Level State (React Hooks)
+**Approach:** React hooks (useState/useEffect/useContext) exclusively. No external state library (Redux, Zustand, Jotai).
 
-```typescript
-// No Redux or Context API used (keep simple for POC)
-// All state co-located in page.tsx
+### 5.1 Context Providers
 
-const [ufs, setUfs] = useState<Set<string>>(new Set());
-const [dateRange, setDateRange] = useState({ ... });
-const [results, setResults] = useState<Licitacao[]>([]);
-const [summary, setSummary] = useState<ResumoLicitacoes | null>(null);
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState<string | null>(null);
+| Context | File | State Managed |
+|---|---|---|
+| `AuthContext` | `app/components/AuthProvider.tsx` | `user`, `session`, `loading`, `isAdmin` |
+| `ThemeContext` | `app/components/ThemeProvider.tsx` | `theme` (ThemeId), `config` |
+
+### 5.2 Custom Hooks
+
+| Hook | File | Purpose |
+|---|---|---|
+| `useAnalytics` | `hooks/useAnalytics.ts` | Mixpanel event tracking wrapper |
+| `useOnboarding` | `hooks/useOnboarding.tsx` | Shepherd.js onboarding tour management |
+| `useSavedSearches` | `hooks/useSavedSearches.ts` | localStorage-based saved searches CRUD |
+| `useServiceWorker` | `hooks/useServiceWorker.ts` | Service worker registration |
+| `useKeyboardShortcuts` | `hooks/useKeyboardShortcuts.ts` | Global keyboard shortcut system (Ctrl+K, Ctrl+A, Escape, /) |
+| `useFeatureFlags` | `hooks/useFeatureFlags.ts` | Feature flag management |
+| `useSearchProgress` | `hooks/useSearchProgress.ts` | SSE connection for real-time search progress |
+| `useUnreadCount` | `hooks/useUnreadCount.ts` | Unread message polling |
+| `usePlan` | `hooks/usePlan.ts` | Current user plan info fetching |
+| `useQuota` | `hooks/useQuota.ts` | Search quota tracking and refresh |
+
+### 5.3 Persistence
+
+| What | Where | TTL |
+|---|---|---|
+| Theme preference | `localStorage('bidiq-theme')` | Permanent |
+| Saved searches | `localStorage` via `useSavedSearches` | Permanent |
+| Onboarding step | `localStorage('smartlic-onboarding-step')` | Permanent |
+| Filter panel state | `localStorage('smartlic-location-filters')`, `localStorage('smartlic-advanced-filters')` | Permanent |
+| Search state (auth redirect) | `sessionStorage` via `searchStatePersistence.ts` | Session |
+| Plan cache | `localStorage` (1hr TTL) | 1 hour |
+| Excel downloads | Server-side `tmpdir()` filesystem | 60 minutes |
+
+---
+
+## 6. API Integration Patterns
+
+### 6.1 Backend Proxy Routes
+
+All primary backend communication goes through Next.js API routes (`/api/*`), which proxy to the Python FastAPI backend. This pattern:
+- Hides `BACKEND_URL` from the browser (server-side only env var)
+- Allows auth header forwarding
+- Enables retry logic at the proxy layer
+- Adds Excel file caching to temp filesystem
+
+**Proxy Pattern:**
+```
+Browser -> /api/buscar (Next.js route) -> BACKEND_URL/buscar (FastAPI)
 ```
 
-### 5.2 Download Cache Strategy
+### 6.2 Direct External Calls
 
-**Current:** Implicit via API backend (10min TTL)
-**Future:** React SWR or TanStack Query for client-side caching
+| Destination | From | Purpose |
+|---|---|---|
+| Supabase Auth | `lib/supabase.ts` (browser client) | Authentication (PKCE), session management |
+| `NEXT_PUBLIC_BACKEND_URL/me` | `AuthProvider.tsx` | Admin status check (direct to backend) |
+| `NEXT_PUBLIC_BACKEND_URL/change-password` | `conta/page.tsx` | Password change (direct) |
+| `NEXT_PUBLIC_BACKEND_URL/sessions` | `historico/page.tsx` | Search history (direct) |
+| `NEXT_PUBLIC_BACKEND_URL/admin/*` | `admin/page.tsx` | Admin operations (direct) |
+
+**Inconsistency:** Protected pages like `historico`, `conta`, and `admin` call `NEXT_PUBLIC_BACKEND_URL` directly from the browser, while `buscar` and `setores` use the proxy pattern. This creates two different auth forwarding patterns and exposes the backend URL to the client.
+
+### 6.3 Error Handling
+
+**`lib/error-messages.ts`** (`D:\pncp-poc\frontend\lib\error-messages.ts`):
+- Comprehensive `getUserFriendlyError()` function
+- Maps technical errors to Portuguese user-friendly messages
+- Handles: network errors, SSL errors, HTTP status codes, JSON parse errors, PNCP-specific errors
+- Strips URLs and stack traces from messages
+- Supports `keep_original` sentinel for plan-limit messages
+
+**Search page error handling:**
+- Client-side retry (1 retry, 4s delay) for transient 503 errors
+- Quota exceeded (403) handling with dedicated `quotaError` state
+- Auth required (401) redirects to `/login` with search state preservation
+- Date range exceeded and rate limit with structured error codes
+- AbortController for user-initiated search cancellation
+
+**API proxy retry logic** (`app/api/buscar/route.ts`):
+- Server-side retry (2 attempts) for 503 status only (502 NOT retried -- backend already retried PNCP)
+- 5-minute timeout with AbortController
+- Safe JSON parsing with fallback
 
 ---
 
-## 6. Styling & Design System
+## 7. UX Audit
 
-### 6.1 Tailwind CSS Configuration
+### 7.1 User Flows
 
-```javascript
-// tailwind.config.js
-module.exports = {
-  content: [
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}'
-  ],
-  theme: {
-    extend: {
-      colors: {
-        // BidIQ color palette
-        'bidiq-green': '#2E7D32',  // Primary (from AIOS standard)
-        'bidiq-blue': '#1976D2',   // Secondary
-      }
-    }
-  }
-};
+**Primary Flow: Search -> Preview -> Download**
+1. User selects states (UF multi-select with region grouping)
+2. User selects date range (defaults: last 7 days)
+3. User chooses sector or enters custom search terms
+4. User optionally sets advanced filters (status, modalidade, valor, esfera, municipio)
+5. User clicks "Buscar" (Ctrl+K shortcut available)
+6. EnhancedLoadingProgress shows 5-stage progress with SSE real-time updates
+7. Results displayed: AI summary card + individual LicitacaoCards
+8. User can download Excel, export to Google Sheets, or save search
+
+**Secondary Flows:**
+- Login -> Search (with `?redirect=/buscar` support)
+- Signup -> Email Verification -> Login
+- Search History -> Re-run Search (URL params passed to `/buscar`)
+- Plan Upgrade -> Stripe Checkout -> Thank You
+- Admin -> User Management -> Plan/Credit editing
+- InMail messaging (conversations with admin replies)
+
+### 7.2 Loading States
+
+| Context | Implementation | Quality |
+|---|---|---|
+| Search execution | `EnhancedLoadingProgress` - 5-stage with SSE + time-based fallback | Excellent - Honest overtime messaging, cancel button, stage descriptions |
+| Results rendering | `LoadingResultsSkeleton` - pulse animation, 3 card placeholders | Good - `role="status"`, `aria-label`, sr-only text |
+| Auth check | Centered spinner with "Verificando autenticacao..." text | Adequate |
+| Sector loading | Retry with exponential backoff (3 attempts), then fallback list | Good - Graceful degradation |
+| Page transitions | No loading indicators | Missing - Could benefit from NProgress or similar |
+| Modal/dropdown data | Individual loading states per component | Adequate |
+
+### 7.3 Error States
+
+| Context | Implementation | Quality |
+|---|---|---|
+| Global error boundary | `app/error.tsx` - card with error message + retry button | Good - But uses hardcoded Tailwind colors instead of design system tokens |
+| Search errors | Inline error banner with user-friendly translation | Excellent - Comprehensive error mapping |
+| Auth errors | Inline alerts with `role="alert"`, Portuguese translations | Good |
+| Quota exceeded | Dedicated `quotaError` state with upgrade prompt | Good |
+| Download errors | Inline error with retry guidance | Adequate |
+| Network errors | Mapped to "Verifique sua internet" | Good |
+| API 502/503 | Mapped to "portal PNCP temporariamente indisponivel" | Good - Context-appropriate |
+
+### 7.4 Empty States
+
+**EmptyState component** (`D:\pncp-poc\frontend\app\components\EmptyState.tsx`):
+- Icon (document with magnifying glass)
+- Title: "Nenhuma Oportunidade Relevante Encontrada"
+- Context-aware message with filter rejection breakdown (keyword, value, UF counts)
+- Actionable suggestions: expand date range, add states, adjust filters
+- "Ajustar criterios de busca" CTA button
+- Animation: fade-in-up with staggered items
+- **Quality:** Excellent. Informative, actionable, and visually refined.
+
+### 7.5 Form UX
+
+**Login** (`D:\pncp-poc\frontend\app\login\page.tsx`):
+- Google OAuth + email/password + magic link toggle
+- Password visibility toggle with aria-label
+- Disabled state on submit button during loading
+- Error/success inline alerts with icons
+- `minLength={6}` on password
+- "Already logged in" state with redirect
+
+**Signup** (`D:\pncp-poc\frontend\app\signup\page.tsx`):
+- Multi-field form (name, company, sector, phone, email, password, confirm)
+- Phone input with Brazilian mask formatting (`(XX) XXXXX-XXXX`)
+- Consent scroll box requiring scroll-to-bottom before checkbox activation
+- Real-time password match validation with visual indicator (border color change)
+- Conditional "Outro" sector field
+- Comprehensive form-level validation via `isFormValid` computed property
+
+**Search** (`D:\pncp-poc\frontend\app\buscar\page.tsx`):
+- Client-side term validation (stopwords, min length 4, special chars) with real-time feedback
+- Form validation on date range and UF selection
+- `canSearch` computed property prevents submission when invalid
+- Keyboard shortcuts (Ctrl+K search, Ctrl+A select all, Escape clear, / help)
+- Pull-to-refresh on mobile
+
+**Validation Approach:** Client-side with useState. No form library (react-hook-form). Validation is ad-hoc per form.
+
+### 7.6 Navigation & Wayfinding
+
+- **Header:** Logo + ThemeToggle + UserMenu (with plan badge, quota badge, message badge) -- only on search page
+- **Landing navbar:** Separate component with scroll-to-section links + Login/Signup CTAs
+- **Footer:** 4-column grid with links to Sobre, Planos, Suporte, Legal sections
+- **Skip navigation:** Present in root layout (`<a href="#main-content">`) -- WCAG 2.4.1 compliant
+- **Breadcrumbs:** Not implemented
+- **No shared app shell:** Protected pages do not share a common sidebar or top-nav. Each manages its own header independently.
+
+---
+
+## 8. Accessibility Audit
+
+### 8.1 Semantic HTML
+
+| Element | Usage | Quality |
+|---|---|---|
+| `<main id="main-content">` | Landing page, search page | Good |
+| `<article>` | LicitacaoCard | Good - with `aria-labelledby` |
+| `<nav>` | Not consistently used | Needs improvement |
+| `<section>` | Landing page sections | Good |
+| `<h1>-<h3>` | Heading hierarchy present | Mostly correct |
+| `<form>` | Login, signup, search | Good |
+| `<label htmlFor>` | Consistent on form inputs | Good |
+| `<footer>` | Footer component | Good |
+
+### 8.2 ARIA Usage
+
+| Pattern | Implementation |
+|---|---|
+| `role="alert"` | Error messages in login page |
+| `role="status"` | Success messages, loading skeleton |
+| `role="img" aria-label` | SVG icons throughout |
+| `aria-hidden="true"` | Decorative SVGs |
+| `aria-label` | Password toggle, share/favorite buttons, loading skeleton |
+| `aria-pressed` | Favorite button toggle |
+| `aria-labelledby` | LicitacaoCard titles |
+| `<title>` | EmptyState SVG icon |
+
+**Issues Found:**
+- `role="img"` with `aria-label="Icone"` is overly generic on many SVGs -- should be descriptive
+- Missing `aria-live` regions for dynamic content updates (search results, progress)
+- No `aria-expanded` on collapsible filter panels
+- No `aria-describedby` linking form fields to validation error messages
+
+### 8.3 Keyboard Navigation
+
+**Implemented:**
+- Skip navigation link (sr-only, visible on focus)
+- Focus-visible outlines (3px solid, WCAG 2.2 Level AAA)
+- Keyboard shortcuts: Ctrl+K (search), Ctrl+A (select all), Escape (clear), / (help), Ctrl+Shift+L (clear all), Ctrl+Enter (search)
+- Escape closes modals (UpgradeModal, keyboard help dialog)
+- Tab navigation through form fields
+
+**Issues Found:**
+- No roving tabindex for the 27-state UF grid (each is a separate tab stop)
+- Custom dropdown components may not implement full ARIA listbox keyboard pattern
+- No visible focus indicator on LicitacaoCard hover-only state transitions
+
+### 8.4 Color Contrast
+
+WCAG compliance is well-documented in `globals.css` with inline contrast ratio comments:
+
+| Token | Contrast vs Canvas | Rating |
+|---|---|---|
+| `--ink` (#1e2d3b) | 12.6:1 | AAA |
+| `--ink-secondary` (#3d5975) | 5.5:1 | AA |
+| `--ink-muted` (#6b7a8a) | 5.1:1 | AA (improved from 4.48:1) |
+| `--brand-navy` (#0a1e3f) | 14.8:1 | AAA |
+| `--brand-blue` (#116dff) | 4.8:1 | AA |
+| `--success` (#16a34a) | 4.7:1 | AA |
+| `--error` (#dc2626) | 5.9:1 | AA |
+| `--warning` (#ca8a04) | 5.2:1 | AA |
+
+Dark mode ratios also documented and pass AA/AAA.
+
+**Issue:** `app/error.tsx` uses hardcoded Tailwind colors (`bg-gray-50`, `text-red-500`, `bg-green-600`) instead of design tokens, breaking dark mode.
+
+**Reduced Motion:** `@media (prefers-reduced-motion: reduce)` in `globals.css` disables all CSS animations. Framer-motion animations may not respect this unless explicitly configured.
+
+---
+
+## 9. Performance Analysis
+
+### 9.1 Bundle Analysis
+
+| Factor | Detail | Bundle Impact |
+|---|---|---|
+| `framer-motion` | ^12.33.0 (~40KB gzipped) | High - Only used on landing page |
+| `recharts` | ^3.7.0 (~70KB gzipped) | High - Only on dashboard (route-split) |
+| `shepherd.js` | ^14.5.1 (~30KB gzipped) | Medium - Only on search page |
+| `mixpanel-browser` | ^2.74.0 (~20KB gzipped) | Medium - Every page via AnalyticsProvider |
+| `react-day-picker` | ^9.13.0 | Low - Tree-shakeable |
+| `lucide-react` | ^0.563.0 | Low - Tree-shakeable |
+
+### 9.2 Code Splitting
+
+- Next.js App Router provides automatic route-based splitting
+- `'use client'` boundaries placed correctly
+- **Issue:** No `next/dynamic` usage for heavy components (EnhancedLoadingProgress, UpgradeModal, framer-motion sections)
+- `recharts` is route-split to `/dashboard` (no issue)
+
+### 9.3 Image Optimization
+
+- Next.js `<Image>` used for logo in search page
+- Remote pattern: `static.wixstatic.com` only
+- Landing page uses SVG icons (lucide-react) -- good
+- No lazy loading of below-fold images observed
+
+**Font Optimization:**
+- Three Google Fonts loaded via `next/font/google` (self-hosted, optimized)
+- `display: "swap"` prevents FOIT
+- Fahkwang (specialty display font) could benefit from subsetting
+
+**Caching:**
+- Excel files in `tmpdir()` with 60-min setTimeout cleanup (lost on restart)
+- No client-side caching for sector list (re-fetched per visit)
+- No service worker active caching
+
+---
+
+## 10. Responsive Design
+
+**Approach:** Tailwind responsive prefixes (`sm:`, `md:`, `lg:`) throughout.
+
+**Breakpoints (default Tailwind):** sm=640px, md=768px, lg=1024px, xl=1280px
+
+**Mobile-Specific Features:**
+- Pull-to-refresh enabled only below 768px
+- Mobile date picker with 44px touch targets
+- Login/signup: `flex-col md:flex-row` stacking
+- Messages: mobile thread view toggle
+- All buttons/inputs: `min-height: 44px` (touch-friendly)
+- Landing page: `max-w-landing` (1200px) with responsive padding
+
+**Issues:**
+- Admin page responsive behavior not well-defined for small screens
+- No specific tablet optimization beyond md breakpoint
+
+---
+
+## 11. Technical Debt Inventory
+
+### 11.1 Critical
+
+| ID | Issue | File(s) |
+|---|---|---|
+| **TD-C1** | **Monolithic search page** - `buscar/page.tsx` is ~1100 lines with 30+ useState hooks, all business logic inline | `app/buscar/page.tsx` |
+| **TD-C2** | **localhost fallback in analytics route** - `http://localhost:8000` as BACKEND_URL fallback | `app/api/analytics/route.ts` line 4 |
+| **TD-C3** | **Mixed API patterns** - Some pages use proxy, others call backend directly from browser | `historico/page.tsx`, `conta/page.tsx`, `admin/page.tsx` |
+
+### 11.2 High
+
+| ID | Issue | File(s) |
+|---|---|---|
+| **TD-H1** | **Duplicated filter components** - EsferaFilter and MunicipioFilter in two directories | `app/components/` + `components/` |
+| **TD-H2** | **Direct DOM manipulation** in search state restoration (document.createElement) | `app/buscar/page.tsx` lines 285-293 |
+| **TD-H3** | **Error boundary ignores design system** - hardcoded Tailwind colors break dark mode | `app/error.tsx` |
+| **TD-H4** | **Native alert() for user feedback** instead of sonner toast system | `app/buscar/page.tsx` line 1080 |
+| **TD-H5** | **Duplicate UF_NAMES** mapping in multiple files | `buscar/page.tsx`, `dashboard/page.tsx` |
+| **TD-H6** | **Excel storage in tmpdir()** - lost on restart, no horizontal scaling | `app/api/buscar/route.ts`, `app/api/download/route.ts` |
+
+### 11.3 Medium
+
+| ID | Issue | File(s) |
+|---|---|---|
+| **TD-M1** | No shared app shell for protected pages | All protected pages |
+| **TD-M2** | Feature flag system underused | `lib/config.ts` |
+| **TD-M3** | No form validation library | Login, signup, search pages |
+| **TD-M4** | STOPWORDS_PT list duplicated from backend | `app/buscar/page.tsx` lines 70-82 |
+| **TD-M5** | SETORES_FALLBACK must be manually synced | `app/buscar/page.tsx` lines 429-442 |
+| **TD-M6** | Stale file: `dashboard-old.tsx` | `app/dashboard-old.tsx` |
+| **TD-M7** | Stale file: `landing-layout-backup.tsx` | `app/landing-layout-backup.tsx` |
+| **TD-M8** | No middleware-based auth guards (flash of unprotected content) | All protected pages |
+| **TD-M9** | Deprecated `performance.timing` usage | `app/components/AnalyticsProvider.tsx` line 53 |
+
+### 11.4 Low
+
+| ID | Issue | File(s) |
+|---|---|---|
+| **TD-L1** | SVG icons not componentized (generic `aria-label="Icone"`) | Multiple pages |
+| **TD-L2** | useEffect with serialized Set dependency | `app/buscar/page.tsx` line 426 |
+| **TD-L3** | Hardcoded plan prices differ between pages (149/349/997 vs 297/597/1497) | `pricing/page.tsx`, `lib/plans.ts` |
+| **TD-L4** | Unused barrel file `components/filters/index.ts` | `components/filters/index.ts` |
+| **TD-L5** | No robots.txt or sitemap | N/A |
+| **TD-L6** | No OpenGraph images configured | `app/layout.tsx` |
+| **TD-L7** | Test coverage ~49.46% vs 60% threshold (70 pre-existing failures) | `__tests__/` |
+
+---
+
+## 12. Recommendations
+
+### Priority 1: Structural
+
+1. **Decompose `buscar/page.tsx`** into sub-components:
+   - `SearchForm` (UF selector, dates, sector, terms)
+   - `FilterPanel` (status, modalidade, valor, esfera, municipio, ordenacao)
+   - `SearchResults` (summary, cards, download, export)
+   - `useSearch` hook (execution, retry, error handling, analytics)
+   - `useSearchFilters` hook (all filter state)
+
+2. **Unify API access pattern** -- route all backend calls through `/api/*` proxy. Eliminate direct `NEXT_PUBLIC_BACKEND_URL` browser calls.
+
+3. **Add Next.js middleware auth guard** -- redirect unauthenticated users before page render.
+
+4. **Create shared app layout** -- `(app)/layout.tsx` group with consistent header/nav for all protected pages.
+
+### Priority 2: Quality
+
+5. **Resolve component duplication** -- consolidate EsferaFilter and MunicipioFilter to single locations.
+
+6. **Fix error boundary** -- replace hardcoded colors with design system tokens for dark mode support.
+
+7. **Replace alert() with sonner toast** -- use the existing toast system for all user feedback.
+
+8. **Fix analytics route fallback** -- remove localhost:8000 default, return 503 when unconfigured.
+
+9. **Adopt form validation library** -- zod schemas + react-hook-form for all forms.
+
+### Priority 3: Performance
+
+10. **Dynamic imports** -- use `next/dynamic` for EnhancedLoadingProgress, UpgradeModal, framer-motion landing sections.
+
+11. **Cache sector list client-side** -- prevent redundant fetches.
+
+12. **Move Excel storage to object storage** -- Supabase Storage or S3 for restart persistence and scaling.
+
+### Priority 4: Polish
+
+13. Add breadcrumbs to protected pages.
+
+14. Improve ARIA: `aria-expanded` on filter panels, `aria-live="polite"` on results, `aria-describedby` for validation errors.
+
+15. Remove stale files: `dashboard-old.tsx`, `landing-layout-backup.tsx`.
+
+16. Reconcile plan pricing across `lib/plans.ts` and `pricing/page.tsx`.
+
+17. Add `robots.txt`, sitemap, and OpenGraph images.
+
+18. Increase test coverage to meet 60% threshold.
+
+---
+
+## Appendix A: File Tree Summary
+
+```
+frontend/
+  app/
+    layout.tsx                          # Root layout
+    page.tsx                            # Landing page (/)
+    globals.css                         # Design system tokens
+    error.tsx                           # Global error boundary
+    types.ts                            # Shared TypeScript interfaces
+    dashboard-old.tsx                   # [DEAD CODE]
+    landing-layout-backup.tsx           # [DEAD CODE]
+    buscar/page.tsx                     # Main search (~1100 lines)
+    login/page.tsx                      # Login
+    signup/page.tsx                     # Registration
+    dashboard/page.tsx                  # Analytics dashboard
+    historico/page.tsx                  # Search history
+    conta/page.tsx                      # Account management
+    planos/page.tsx                     # Plan management + Stripe
+    planos/obrigado/page.tsx            # Post-checkout
+    mensagens/page.tsx                  # InMail messaging
+    admin/page.tsx                      # Admin panel
+    pricing/page.tsx                    # ROI calculator
+    features/page.tsx                   # Feature descriptions
+    termos/page.tsx                     # Terms of service
+    privacidade/page.tsx                # Privacy policy
+    auth/callback/page.tsx              # OAuth callback
+    api/                                # 10+ proxy routes
+    components/                         # ~35 components
+      landing/                          # 10 landing sections
+      ui/                               # 4 UI primitives
+    hooks/
+      useInView.ts                      # Scroll visibility
+  components/                           # ~15 shared components
+    subscriptions/                      # 6 subscription components
+    filters/index.ts                    # Barrel file
+  hooks/                                # 10 custom hooks
+  lib/                                  # Utilities, config, copy
+    animations/                         # Animation utilities
+    copy/                               # Marketing copy
+    icons/                              # Icon components
+  __tests__/                            # 55 test files
+  e2e-tests/                            # Playwright E2E
+  next.config.js
+  tailwind.config.ts
+  tsconfig.json
+  package.json
 ```
 
-### 6.2 Global Styles
-
-```css
-/* app/globals.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer components {
-  .btn-primary {
-    @apply px-4 py-2 bg-bidiq-green text-white rounded hover:bg-green-700 transition-colors;
-  }
-
-  .btn-secondary {
-    @apply px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors;
-  }
-}
-```
-
-### 6.3 Design Principles
-
-- **Minimalist:** Focus on functionality over decoration
-- **Data-driven:** Tables > visualizations (better for procurement data)
-- **Accessible:** WCAG 2.1 AA compliance
-- **Responsive:** Mobile-first approach
-- **Performance:** No heavy libraries (Tailwind only)
-
----
-
-## 7. Type Safety (TypeScript)
-
-### 7.1 API Types
-
-```typescript
-// types/api.ts
-
-export interface BuscaRequest {
-  ufs: string[];
-  data_inicio: string;  // YYYY-MM-DD
-  data_fim: string;     // YYYY-MM-DD
-  valor_minimo?: number;
-  valor_maximo?: number;
-}
-
-export interface Licitacao {
-  codigo: string;
-  objeto: string;
-  orgao: string;
-  uf: string;
-  municipio: string;
-  valor: number;
-  status: string;
-  link: string;
-}
-
-export interface ResumoLicitacoes {
-  resumo_executivo: string;
-  total_oportunidades: number;
-  valor_total: number;
-  destaques: string[];
-  recomendacoes: string[];
-}
-
-export interface BuscaResponse {
-  id: string;
-  total: int;
-  resultados: Licitacao[];
-  resumo: ResumoLicitacoes | null;
-  gerado_em: string;
-}
-```
-
-### 7.2 No `any` Types Policy
-
-- ✅ Strict TypeScript enabled
-- ✅ All function parameters typed
-- ✅ All return types explicit
-- ✅ No implicit `any`
-
----
-
-## 8. Testing Strategy
-
-### 8.1 Test Coverage Requirements
-
-| Layer | Threshold | Status |
-|-------|-----------|--------|
-| Components | 60%+ | ⚠️ Not implemented (Issue #21) |
-| Hooks | 60%+ | ⚠️ Not implemented |
-| Pages | 60%+ | ⚠️ Not implemented |
-| Integration | 40%+ | ⚠️ Not implemented |
-
-### 8.2 Test Examples (To Be Implemented)
-
-```typescript
-// __tests__/components/UFSelector.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { UFSelector } from '@/components/UFSelector';
-
-describe('UFSelector', () => {
-  it('renders all 27 states', () => {
-    const mockOnChange = jest.fn();
-    render(<UFSelector ufs={new Set()} onChange={mockOnChange} />);
-    expect(screen.getAllByRole('button')).toHaveLength(27);
-  });
-
-  it('toggles UF on click', () => {
-    const mockOnChange = jest.fn();
-    render(<UFSelector ufs={new Set()} onChange={mockOnChange} />);
-
-    const spButton = screen.getByText('SP');
-    fireEvent.click(spButton);
-
-    expect(mockOnChange).toHaveBeenCalledWith(new Set(['SP']));
-  });
-
-  it('highlights selected UFs', () => {
-    const mockOnChange = jest.fn();
-    const selected = new Set(['SP']);
-    render(<UFSelector ufs={selected} onChange={mockOnChange} />);
-
-    const spButton = screen.getByText('SP');
-    expect(spButton).toHaveClass('bg-green-600');
-  });
-});
-```
-
----
-
-## 9. Performance Targets
-
-### 9.1 Core Web Vitals
-
-| Metric | Target | Status |
-|--------|--------|--------|
-| First Contentful Paint (FCP) | <1.5s | ⚠️ TBD |
-| Largest Contentful Paint (LCP) | <2.5s | ⚠️ TBD |
-| Cumulative Layout Shift (CLS) | <0.1 | ⚠️ TBD |
-| First Input Delay (FID) | <100ms | ⚠️ TBD |
-
-### 9.2 Bundle Size
-
-| Chunk | Target | Status |
-|-------|--------|--------|
-| Main | <100KB | ⚠️ TBD |
-| Tailwind CSS | <50KB | ✅ Likely (PurgeCSS active) |
-| Total Initial | <200KB gzipped | ⚠️ TBD |
-
-### 9.3 Optimization Strategies
-
-- ✅ Code splitting (Next.js automatic)
-- ✅ Image optimization (next/image)
-- ✅ Lazy loading (React.lazy for components)
-- ✅ CSS purging (Tailwind production mode)
-- ⚠️ Font optimization (TBD)
-- ⚠️ Prefetching (TBD)
-
----
-
-## 10. UX/UI Debt & Gaps
-
-### Current Gaps (POC)
-
-#### CRITICAL
-1. **Frontend Structure Missing**
-   - Issue #21: Create Next.js app structure
-   - Status: Not started
-   - Impact: Cannot develop/test UI
-   - Effort: 4-6 hours
-
-2. **Components Not Implemented**
-   - Missing: UFSelector, DateRangePicker, ResultsTable, SummaryCard
-   - Status: Designed but not coded
-   - Impact: No UI
-   - Effort: 8-10 hours
-
-3. **API Routes Missing**
-   - Missing: /api/buscar, /api/download route handlers
-   - Status: Not started
-   - Impact: Cannot communicate with backend
-   - Effort: 2-3 hours
-
-#### HIGH
-
-4. **Error Handling UI**
-   - Missing: Error boundaries, error messages, retry buttons
-   - Status: Not designed
-   - Impact: Poor user experience on errors
-   - Effort: 3-4 hours
-
-5. **Loading States**
-   - Missing: Skeleton loaders, progress indicators
-   - Status: Not implemented
-   - Impact: Unclear to users what's happening
-   - Effort: 2-3 hours
-
-6. **Form Validation**
-   - Missing: Client-side validation feedback
-   - Status: Not implemented
-   - Impact: Users can submit invalid dates
-   - Effort: 2-3 hours
-
-7. **Mobile Responsiveness**
-   - Missing: Mobile testing, responsive refinements
-   - Status: Tailwind responsive classes planned but untested
-   - Impact: Poor mobile experience
-   - Effort: 4-5 hours
-
-8. **Accessibility**
-   - Missing: ARIA labels, keyboard navigation, screen reader testing
-   - Status: Basic HTML semantics only
-   - Impact: Not WCAG compliant
-   - Effort: 4-5 hours
-
-#### MEDIUM
-
-9. **Help/Documentation UI**
-   - Missing: Tooltips, help text, inline documentation
-   - Status: Not implemented
-   - Impact: Users unclear on how to use
-   - Effort: 2-3 hours
-
-10. **Download Management**
-    - Missing: Download history, multiple simultaneous downloads
-    - Status: Single download supported
-    - Impact: Users can't track multiple searches
-    - Effort: 4-5 hours (future)
-
-11. **Advanced Filters**
-    - Missing: Value range slider, keyword search, status filters
-    - Status: Only UF and date range available
-    - Impact: Limited filtering capability
-    - Effort: 6-8 hours (future)
-
-12. **Pagination/Virtualization**
-    - Missing: Handling large result sets (100+ results)
-    - Status: All results rendered at once
-    - Impact: Performance degradation with many results
-    - Effort: 4-6 hours (future)
-
----
-
-## 11. Frontend Security Considerations
-
-### 11.1 Input Validation
-
-- ✅ Date validation (HTML5 date input)
-- ⚠️ Missing: Client-side validation feedback
-- ✅ UF validation (predefined list)
-- ✅ No user-generated content displayed without sanitization
-
-### 11.2 API Security
-
-- ⚠️ No authentication (public API - acceptable for POC)
-- ⚠️ CORS not configured (must fix for production)
-- ✅ HTTPS required (production deployment)
-- ⚠️ Missing: Rate limiting on frontend (backend handles)
-
-### 11.3 Data Protection
-
-- ✅ PNCP data is public (no privacy concerns)
-- ✅ No sensitive user data stored
-- ⚠️ Download cache TTL (10min should be fine)
-
----
-
-## 12. Browser Support
-
-### Minimum Requirements
-
-| Browser | Minimum Version |
-|---------|-----------------|
-| Chrome | 90+ |
-| Firefox | 88+ |
-| Safari | 14+ |
-| Edge | 90+ |
-
-**Note:** ES2020+ features used (requires transpilation via Next.js)
-
----
-
-## 13. Accessibility Audit
-
-### WCAG 2.1 AA Compliance Checklist
-
-- [ ] Color contrast ≥4.5:1 for text
-- [ ] Keyboard navigation fully functional
-- [ ] ARIA labels on form inputs
-- [ ] Alt text on images
-- [ ] Focus indicators visible
-- [ ] Semantic HTML (headings, lists, etc.)
-- [ ] Page language declared
-- [ ] Screen reader tested
-
-**Status:** ⚠️ Not audited (Issue needed for a11y review)
-
----
-
-## 14. Monitoring & Analytics (Future)
-
-### Metrics to Track
-
-- Page load time (CLS, FCP, LCP)
-- Search frequency by UF
-- Average results per search
-- Excel download rate
-- Error rates by endpoint
-- User session duration
-
-### Tools (Future)
-
-- Google Analytics 4
-- Sentry for error tracking
-- Web Vitals Core measurement
-
----
-
-## 15. UX/UI Debt Priority Matrix
-
-| Item | Effort | Impact | Priority |
-|------|--------|--------|----------|
-| Frontend structure (Issue #21) | 4-6h | CRITICAL | 1 |
-| Components implementation | 8-10h | CRITICAL | 2 |
-| API routes | 2-3h | CRITICAL | 3 |
-| Error handling UI | 3-4h | HIGH | 4 |
-| Loading states | 2-3h | HIGH | 5 |
-| Form validation | 2-3h | HIGH | 6 |
-| Mobile responsiveness | 4-5h | HIGH | 7 |
-| Accessibility | 4-5h | HIGH | 8 |
-
-**Total MVP Effort:** ~30-40 hours
-
----
-
-## 16. Frontend Architecture Strengths
-
-✅ **Type-Safe**
-- TypeScript strict mode
-- No `any` types
-- Interfaces for all API contracts
-
-✅ **Minimal Dependencies**
-- Tailwind only for styling
-- No heavy UI libraries
-- React hooks for state (no Redux)
-
-✅ **Performance-Conscious**
-- Code splitting automatic (Next.js)
-- CSS purging (Tailwind)
-- No render-blocking CSS
-
-✅ **SEO-Friendly**
-- Next.js server-side rendering capable
-- Semantic HTML
-- Meta tags configurable
-
----
-
-## 17. Frontend Architecture Weaknesses
-
-⚠️ **Incomplete Implementation**
-- No components built yet
-- No API routes implemented
-- No tests written
-- No error boundaries
-
-⚠️ **Limited State Management**
-- No global state (future: Context API or Zustand)
-- No caching strategy (future: SWR or React Query)
-- No persistence layer
-
-⚠️ **Missing Error Handling**
-- No error boundaries
-- No retry logic UI
-- No offline support
-
-⚠️ **Accessibility Gaps**
-- Not WCAG audited
-- Missing ARIA labels
-- Keyboard navigation untested
-
----
-
-## 18. Roadmap: Frontend Development
-
-### Phase 1: MVP (Weeks 1-2)
-- [ ] Issue #21: Create Next.js app structure
-- [ ] Build all core components
-- [ ] Implement API routes (/api/buscar, /api/download)
-- [ ] Basic error handling
-- [ ] Mobile responsive layout
-- **Result:** Functional SPA
-
-### Phase 2: Polish (Week 3)
-- [ ] Comprehensive error UI
-- [ ] Loading states + skeletons
-- [ ] Form validation feedback
-- [ ] Help text + tooltips
-- [ ] Issue #27: Write component tests
-- **Result:** Production-ready UI
-
-### Phase 3: Enhancement (Post-MVP)
-- [ ] Advanced filters (value range, keywords)
-- [ ] Pagination/virtualization for large result sets
-- [ ] Download history
-- [ ] User accounts + saved searches
-- [ ] WCAG 2.1 AA compliance
-- **Result:** Enterprise-grade frontend
-
----
-
-## 19. Component Checklist
-
-### Core Components (Must Have)
-
-- [ ] UFSelector
-- [ ] DateRangePicker
-- [ ] ResultsTable
-- [ ] SummaryCard
-- [ ] LoadingSkeletons
-- [ ] ErrorBoundary
-- [ ] ErrorAlert
-- [ ] Main page.tsx
-
-### Future Components
-
-- [ ] AdvancedFilters
-- [ ] DownloadHistory
-- [ ] Pagination
-- [ ] UserProfile
-- [ ] SavedSearches
-- [ ] Analytics Dashboard
-
----
-
-## 20. Frontend QA Checklist
-
-### Functional Testing
-
-- [ ] UF selection works
-- [ ] Date picker validation
-- [ ] Search submission
-- [ ] Results display
-- [ ] Excel download
-- [ ] Error handling
-
-### Non-Functional
-
-- [ ] Responsive on mobile (320px, 768px, 1024px)
-- [ ] Core Web Vitals: FCP <1.5s, LCP <2.5s
-- [ ] Bundle size <200KB gzipped
-- [ ] WCAG 2.1 AA compliance
-- [ ] Keyboard navigation
-- [ ] Screen reader compatible
-
----
-
-## Document Information
-
-**Created:** January 26, 2026
-**Last Updated:** January 26, 2026
-**Status:** APPROVED FOR TECHNICAL DEBT REVIEW
-**Related Issue:** #21 (Frontend Setup)
-
----
-
-**Next Step:** Implement Issue #21 - Create Next.js app structure and begin component development.
+## Appendix B: Environment Variables
+
+| Variable | Side | Required | Purpose |
+|---|---|---|---|
+| `BACKEND_URL` | Server | Yes | Backend API URL for proxy routes |
+| `NEXT_PUBLIC_BACKEND_URL` | Client | No* | Direct backend calls (*should be eliminated) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Client | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client | Yes | Supabase anonymous key |
+| `NEXT_PUBLIC_CANONICAL_URL` | Client | No | Canonical URL for OAuth redirects |
+| `NEXT_PUBLIC_APP_NAME` | Client | No | White-label app name (default: SmartLic.tech) |
+| `NEXT_PUBLIC_LOGO_URL` | Client | No | White-label logo URL (default: /logo.svg) |
+| `NEXT_PUBLIC_API_URL` | Client | No | API URL in config.ts |
+| `NEXT_PUBLIC_MIXPANEL_TOKEN` | Client | No | Mixpanel analytics token |
+| `NEXT_PUBLIC_ENABLE_NEW_PRICING` | Client | No | Feature flag for pricing UI |
