@@ -18,13 +18,43 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleCallback = async () => {
       // CRITICAL: Add timeout at the start to prevent infinite loading
+      // Community recommends 30s+ for slow networks (auth code valid for 5 minutes)
       const callbackTimeout = setTimeout(() => {
-        console.error("[OAuth Callback] TIMEOUT after 15 seconds - forcing error state");
+        console.error("[OAuth Callback] TIMEOUT after 30 seconds - forcing error state");
         setStatus("error");
         setErrorMessage("Timeout ao processar login com Google. Use email/senha ou tente novamente.");
-      }, 15000); // 15 second timeout
+      }, 30000); // 30 second timeout (was 15s)
 
       try {
+        // COMMUNITY FIX: Clear any stale auth storage that might interfere
+        // Source: https://github.com/orgs/supabase/discussions/20353
+        try {
+          console.log("[OAuth Callback] Clearing stale auth storage...");
+          const keysToRemove = [
+            'supabase.auth.token',
+            'sb-auth-token',
+            'supabase.auth.expires_at',
+          ];
+
+          // Clear from both localStorage and sessionStorage
+          keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+          });
+
+          // Clear any Supabase-specific keys
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('sb-') && !key.includes('code_verifier')) {
+              console.log("[OAuth Callback] Removing stale key:", key);
+              localStorage.removeItem(key);
+            }
+          });
+
+          console.log("[OAuth Callback] ✅ Stale storage cleared");
+        } catch (storageError) {
+          console.warn("[OAuth Callback] Could not clear storage:", storageError);
+        }
+
         // Check for error in URL params
         const params = new URLSearchParams(window.location.search);
         const error = params.get("error");
@@ -50,11 +80,35 @@ export default function AuthCallbackPage() {
           console.log("[OAuth Callback] Authorization code found, length:", code.length);
           console.log("[OAuth Callback] Exchanging code for session...");
 
-          const startTime = Date.now();
-          const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          const duration = Date.now() - startTime;
+          // COMMUNITY FIX: Retry logic with exponential backoff for slow networks
+          // Source: https://github.com/supabase/auth-js/issues/782
+          let session = null;
+          let exchangeError = null;
+          let retries = 0;
+          const maxRetries = 3;
 
-          console.log("[OAuth Callback] Code exchange took:", duration, "ms");
+          const startTime = Date.now();
+
+          while (retries < maxRetries && !session && !exchangeError) {
+            if (retries > 0) {
+              const backoff = Math.pow(2, retries) * 1000; // 2s, 4s, 8s
+              console.log(`[OAuth Callback] Retry ${retries}/${maxRetries} after ${backoff}ms...`);
+              await new Promise(resolve => setTimeout(resolve, backoff));
+            }
+
+            const result = await supabase.auth.exchangeCodeForSession(code);
+            session = result.data.session;
+            exchangeError = result.error;
+
+            if (!exchangeError && !session) {
+              console.warn(`[OAuth Callback] No session and no error on attempt ${retries + 1}`);
+            }
+
+            retries++;
+          }
+
+          const duration = Date.now() - startTime;
+          console.log("[OAuth Callback] Code exchange took:", duration, "ms", `(${retries} attempts)`);
           clearTimeout(callbackTimeout);
 
           if (exchangeError) {
@@ -68,6 +122,27 @@ export default function AuthCallbackPage() {
           if (session) {
             console.log("[OAuth Callback] ✅ Session obtained successfully!");
             console.log("[OAuth Callback] User:", session.user.email);
+            console.log("[OAuth Callback] Access Token (first 20 chars):", session.access_token.substring(0, 20) + "...");
+            console.log("[OAuth Callback] Refresh Token exists:", !!session.refresh_token);
+            console.log("[OAuth Callback] Expires at:", new Date(session.expires_at! * 1000).toISOString());
+
+            // COMMUNITY FIX: Force set session in supabase client to ensure it's available
+            // Source: https://github.com/supabase/auth-js/issues/762
+            await supabase.auth.setSession({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+            });
+
+            console.log("[OAuth Callback] Session manually set in Supabase client");
+
+            // Verify session was set correctly
+            const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+            if (verifiedSession) {
+              console.log("[OAuth Callback] ✅ Session verification passed!");
+            } else {
+              console.error("[OAuth Callback] ❌ Session verification failed!");
+            }
+
             setStatus("success");
             // Full page navigation ensures cookies are sent to middleware
             console.log("[OAuth Callback] Redirecting to /buscar");
