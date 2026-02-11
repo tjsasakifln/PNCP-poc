@@ -1,0 +1,48 @@
+name: ux-copy-update-squad
+version: 1.0.0
+description: Specialized squad for managing UX copy updates, content changes, and microcopy across the BidiQ application
+author: Craft (squad-creator)
+license: MIT
+slashPrefix: ux-copy
+
+aios:
+  minVersion: "2.1.0"
+  type: squad
+
+components:
+  tasks:
+    - update-copy.md
+    - find-copy.md
+    - validate-text.md
+    - validate-ux.md
+    - check-accessibility.md
+    - test-ui-changes.md
+  agents:
+    - copy-editor.md
+    - ux-validator.md
+    - frontend-tester.md
+  workflows:
+    - copy-update-workflow.md
+  checklists:
+    - ux-copy-checklist.md
+  templates: []
+  tools: []
+  scripts: []
+
+config:
+  extends: extend
+  coding-standards: ../../docs/framework/coding-standards.md
+  tech-stack: ../../docs/framework/tech-stack.md
+  source-tree: ../../docs/framework/source-tree.md
+
+dependencies:
+  node: []
+  python: []
+  squads: []
+
+tags:
+  - ux
+  - copy
+  - content
+  - frontend
+  - accessibility

@@ -1,0 +1,107 @@
+# Squad Manifest: Search & Export Bugfix Squad
+# AIOS 2.1 Format
+
+metadata:
+  name: search-export-bugfix-squad
+  title: "Equipe de Correção de Busca e Exportação"
+  version: "1.0.0"
+  description: "Squad especializado em diagnóstico e correção de bugs críticos no sistema de busca e exportação do SmartLic"
+  author: "Tiago Sasaki <tiago.sasaki@synkra.dev>"
+  tags: ["bugfix", "search", "export", "critical", "p0"]
+  created_at: "2026-02-10T21:30:00Z"
+  aios_version: "2.1"
+
+agents:
+  - id: lead-investigator
+    file: agents/lead-investigator.md
+    whenToUse: "Coordenar investigação de bugs críticos"
+
+  - id: search-specialist
+    file: agents/search-specialist.md
+    whenToUse: "Diagnosticar e corrigir bugs no sistema de busca PNCP"
+
+  - id: export-specialist
+    file: agents/export-specialist.md
+    whenToUse: "Diagnosticar e corrigir bugs no sistema de exportação Google Sheets"
+
+  - id: qa-validator
+    file: agents/qa-validator.md
+    whenToUse: "Validar correções e criar testes de regressão"
+
+tasks:
+  - id: diagnose-search-bug
+    file: tasks/diagnose-search-bug.md
+    agent: search-specialist
+    priority: p0
+
+  - id: diagnose-export-bug
+    file: tasks/diagnose-export-bug.md
+    agent: export-specialist
+    priority: p0
+
+  - id: fix-search-bug
+    file: tasks/fix-search-bug.md
+    agent: search-specialist
+    priority: p0
+    dependencies: [diagnose-search-bug]
+
+  - id: fix-export-bug
+    file: tasks/fix-export-bug.md
+    agent: export-specialist
+    priority: p0
+    dependencies: [diagnose-export-bug]
+
+  - id: test-search-fix
+    file: tasks/test-search-fix.md
+    agent: qa-validator
+    priority: p0
+    dependencies: [fix-search-bug]
+
+  - id: test-export-fix
+    file: tasks/test-export-fix.md
+    agent: qa-validator
+    priority: p0
+    dependencies: [fix-export-bug]
+
+workflows:
+  - id: emergency-bugfix-workflow
+    file: workflows/emergency-bugfix-workflow.md
+    description: "Workflow acelerado para correção de bugs críticos em produção"
+
+templates:
+  - id: bug-diagnosis-report
+    file: templates/bug-diagnosis-report.md
+    description: "Template para relatórios de diagnóstico de bugs"
+
+  - id: hotfix-pr-template
+    file: templates/hotfix-pr-template.md
+    description: "Template para PRs de hotfix"
+
+checklists:
+  - id: pre-deploy-checklist
+    file: checklists/pre-deploy-checklist.md
+    description: "Checklist obrigatório antes de deploy de hotfix"
+
+tools:
+  - id: logs-analyzer
+    type: script
+    file: tools/logs-analyzer.py
+    description: "Analisa logs do backend para identificar erros"
+
+  - id: pncp-api-tester
+    type: script
+    file: tools/pncp-api-tester.py
+    description: "Testa API PNCP diretamente"
+
+data:
+  - id: wide-search-params
+    file: data/wide-search-params.json
+    description: "Parâmetros de busca ampla para reproduzir bug"
+
+config:
+  coding-standards:
+    file: config/coding-standards.md
+  tech-stack:
+    file: config/tech-stack.md
+  source-tree:
+    file: config/source-tree.md

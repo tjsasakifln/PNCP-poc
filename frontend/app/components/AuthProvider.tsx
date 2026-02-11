@@ -52,21 +52,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // CRITICAL FIX: Add timeout to prevent infinite loading from stale cache/network issues
+    const authTimeout = setTimeout(() => {
+      console.warn("[AuthProvider] Auth check timeout - forcing loading=false");
+      setLoading(false);
+    }, 10000); // 10 second timeout
+
     // Get initial user - SECURITY FIX: Use getUser() for validated user data
     // getUser() ensures the user is authenticated by Supabase server (not just from cookies)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      setLoading(false);
-      // Get session for access token (after user is validated)
-      if (user) {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          if (session?.access_token) {
-            fetchAdminStatus(session.access_token);
-          }
-        });
-      }
-    });
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => {
+        clearTimeout(authTimeout);
+        setUser(user);
+        setLoading(false);
+        // Get session for access token (after user is validated)
+        if (user) {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            if (session?.access_token) {
+              fetchAdminStatus(session.access_token);
+            }
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("[AuthProvider] Auth check failed:", error);
+        clearTimeout(authTimeout);
+        setUser(null);
+        setSession(null);
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -87,7 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(authTimeout);
+      subscription.unsubscribe();
+    };
   }, [fetchAdminStatus]);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
