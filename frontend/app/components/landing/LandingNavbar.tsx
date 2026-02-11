@@ -42,7 +42,7 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
               href="/"
               className="text-2xl font-bold text-brand-navy hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded-button px-1"
             >
-              SmartLic
+              SmartLic<span className="text-brand-blue">.tech</span>
             </Link>
           </div>
 

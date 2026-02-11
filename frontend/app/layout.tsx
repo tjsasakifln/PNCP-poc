@@ -26,8 +26,8 @@ const dmMono = DM_Mono({
   display: "swap",
 });
 
-// Force rebuild to pick up NEXT_PUBLIC_APP_NAME from Railway (SmartLic)
-const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
+// Force rebuild to pick up NEXT_PUBLIC_APP_NAME from Railway (SmartLic.tech)
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
 export const metadata: Metadata = {
   title: `${appName} - Busca Inteligente de Licitações`,

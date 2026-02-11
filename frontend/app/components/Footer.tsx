@@ -141,7 +141,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Copyright */}
             <p className="text-sm text-ink-secondary">
-              © 2026 SmartLic. Todos os direitos reservados.
+              © 2026 SmartLic.tech. Todos os direitos reservados.
             </p>
 
             {/* LGPD Badge */}

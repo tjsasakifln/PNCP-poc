@@ -5,7 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
 // Available sectors
 const SECTORS = [

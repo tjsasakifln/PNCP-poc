@@ -243,7 +243,7 @@ export default function MensagensPage() {
               </button>
             )}
             <Link href="/buscar" className="text-lg font-bold text-[var(--brand-navy)] hover:text-[var(--brand-blue)] transition-colors">
-              SmartLic
+              SmartLic<span className="text-[var(--brand-blue)]">.tech</span>
             </Link>
             <span className="text-sm text-[var(--ink-secondary)] font-medium border-l border-[var(--border)] pl-3">
               Mensagens

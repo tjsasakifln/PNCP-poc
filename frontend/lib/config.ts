@@ -80,7 +80,7 @@ export const config = {
    * Branding (white-label configuration)
    */
   branding: {
-    appName: process.env.NEXT_PUBLIC_APP_NAME || 'SmartLic',
+    appName: process.env.NEXT_PUBLIC_APP_NAME || 'SmartLic.tech',
     logoUrl: process.env.NEXT_PUBLIC_LOGO_URL || '/logo.svg',
   },
 } as const;

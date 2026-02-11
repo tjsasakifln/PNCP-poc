@@ -102,7 +102,7 @@ test.describe('Landing Page', () => {
     await expect(page.getByRole('heading', { name: /legal/i })).toBeVisible();
 
     // Check copyright
-    await expect(page.getByText(/© 2026 SmartLic/i)).toBeVisible();
+    await expect(page.getByText(/© 2026 SmartLic\.tech/i)).toBeVisible();
 
     // Check LGPD badge
     await expect(page.getByText(/lgpd compliant/i)).toBeVisible();

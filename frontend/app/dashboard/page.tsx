@@ -19,7 +19,7 @@ import {
   Cell,
 } from "recharts";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
 // ============================================================================
 // Types

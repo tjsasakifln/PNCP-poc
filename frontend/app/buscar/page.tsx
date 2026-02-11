@@ -46,7 +46,7 @@ import { MunicipioFilter, type Municipio } from "../components/MunicipioFilter";
 import { OrdenacaoSelect, type OrdenacaoOption } from "../components/OrdenacaoSelect";
 
 // White label branding configuration
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
 
 const UFS = [
@@ -1179,7 +1179,7 @@ function HomePageContent() {
               href="/"
               className="text-xl font-bold text-brand-navy hover:text-brand-blue transition-colors"
             >
-              SmartLic
+              SmartLic<span className="text-brand-blue">.tech</span>
             </Link>
             <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-3">
               Busca inteligente de licitações

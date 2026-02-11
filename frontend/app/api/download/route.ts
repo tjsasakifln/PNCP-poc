@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const buffer = await readFile(filePath);
-    const appNameSlug = (process.env.NEXT_PUBLIC_APP_NAME || "SmartLic").replace(/\s+/g, '_');
+    const appNameSlug = (process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech").replace(/[\s.]+/g, '_');
     const filename = `${appNameSlug}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
     console.log(`✅ Download served: ${id} (${buffer.length} bytes)`);

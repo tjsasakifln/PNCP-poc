@@ -7,7 +7,7 @@ import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 import { toast } from "sonner";
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic";
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
 // Map error codes to user-friendly messages
 const ERROR_MESSAGES: Record<string, string> = {
