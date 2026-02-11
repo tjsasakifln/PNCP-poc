@@ -161,9 +161,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("[AuthProvider] window.location.origin:", window.location.origin);
     console.log("[AuthProvider] Final redirect URL:", redirectUrl);
 
+    // CRITICAL FIX: Force consent screen to avoid session conflicts in logged-in browsers
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: redirectUrl },
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent', // Force new consent, ignore existing Google session
+        },
+      },
     });
     if (error) {
       console.error("[AuthProvider] Google OAuth error:", error);
