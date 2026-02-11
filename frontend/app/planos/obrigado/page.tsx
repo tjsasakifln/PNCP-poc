@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../components/AuthProvider";
 import Link from "next/link";
@@ -8,22 +8,22 @@ import Link from "next/link";
 const PLAN_DETAILS: Record<string, { name: string; emoji: string; message: string }> = {
   consultor_agil: {
     name: "Consultor Agil",
-    emoji: "🚀",
+    emoji: "\u{1F680}",
     message: "Voce agora tem 50 buscas/mes e historico de 30 dias.",
   },
   maquina: {
     name: "Maquina",
-    emoji: "⚡",
+    emoji: "\u{26A1}",
     message: "Voce agora tem 300 buscas/mes, download Excel e historico de 1 ano.",
   },
   sala_guerra: {
     name: "Sala de Guerra",
-    emoji: "🏆",
+    emoji: "\u{1F3C6}",
     message: "Voce agora tem 1.000 buscas/mes, processamento prioritario e historico de 5 anos.",
   },
 };
 
-export default function ObrigadoPage() {
+function ObrigadoContent() {
   const searchParams = useSearchParams();
   const { session } = useAuth();
   const [planId, setPlanId] = useState<string | null>(null);
@@ -96,5 +96,17 @@ export default function ObrigadoPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ObrigadoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--canvas)] flex items-center justify-center">
+        <div className="animate-pulse text-[var(--ink-muted)]">Carregando...</div>
+      </div>
+    }>
+      <ObrigadoContent />
+    </Suspense>
   );
 }
