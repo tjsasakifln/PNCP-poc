@@ -18,38 +18,38 @@ class TestCalcularDiasRestantes:
     """Test days remaining calculation from deadline date."""
 
     def test_future_deadline_positive_days(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         # 30 days from today
         future = (date.today() + timedelta(days=30)).isoformat()
         result = _calcular_dias_restantes(future)
         assert result == 30
 
     def test_past_deadline_negative_days(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         past = (date.today() - timedelta(days=5)).isoformat()
         result = _calcular_dias_restantes(past)
         assert result == -5
 
     def test_today_deadline_zero(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         today = date.today().isoformat()
         result = _calcular_dias_restantes(today)
         assert result == 0
 
     def test_none_returns_none(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         assert _calcular_dias_restantes(None) is None
 
     def test_empty_string_returns_none(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         assert _calcular_dias_restantes("") is None
 
     def test_invalid_date_returns_none(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         assert _calcular_dias_restantes("not-a-date") is None
 
     def test_datetime_string_truncated_to_date(self):
-        from main import _calcular_dias_restantes
+        from routes.search import _calcular_dias_restantes
         # Full ISO datetime with time component
         future = (date.today() + timedelta(days=10)).isoformat() + "T14:30:00Z"
         result = _calcular_dias_restantes(future)
@@ -60,36 +60,36 @@ class TestCalcularUrgencia:
     """Test urgency level classification."""
 
     def test_encerrada_negative_days(self):
-        from main import _calcular_urgencia
+        from routes.search import _calcular_urgencia
         assert _calcular_urgencia(-1) == "encerrada"
         assert _calcular_urgencia(-100) == "encerrada"
 
     def test_critica_under_7_days(self):
-        from main import _calcular_urgencia
+        from routes.search import _calcular_urgencia
         assert _calcular_urgencia(0) == "critica"
         assert _calcular_urgencia(3) == "critica"
         assert _calcular_urgencia(6) == "critica"
 
     def test_alta_7_to_13_days(self):
-        from main import _calcular_urgencia
+        from routes.search import _calcular_urgencia
         assert _calcular_urgencia(7) == "alta"
         assert _calcular_urgencia(10) == "alta"
         assert _calcular_urgencia(13) == "alta"
 
     def test_media_14_to_30_days(self):
-        from main import _calcular_urgencia
+        from routes.search import _calcular_urgencia
         assert _calcular_urgencia(14) == "media"
         assert _calcular_urgencia(20) == "media"
         assert _calcular_urgencia(30) == "media"
 
     def test_baixa_over_30_days(self):
-        from main import _calcular_urgencia
+        from routes.search import _calcular_urgencia
         assert _calcular_urgencia(31) == "baixa"
         assert _calcular_urgencia(100) == "baixa"
         assert _calcular_urgencia(365) == "baixa"
 
     def test_none_returns_none(self):
-        from main import _calcular_urgencia
+        from routes.search import _calcular_urgencia
         assert _calcular_urgencia(None) is None
 
 
@@ -97,7 +97,7 @@ class TestConvertToLicitacaoItems:
     """Test that _convert_to_licitacao_items populates dias_restantes and urgencia."""
 
     def test_items_have_dias_restantes(self):
-        from main import _convert_to_licitacao_items
+        from routes.search import _convert_to_licitacao_items
         future = (date.today() + timedelta(days=15)).isoformat()
         raw = [{
             "codigoCompra": "TEST-001",
@@ -113,7 +113,7 @@ class TestConvertToLicitacaoItems:
         assert items[0].urgencia == "media"
 
     def test_items_without_deadline(self):
-        from main import _convert_to_licitacao_items
+        from routes.search import _convert_to_licitacao_items
         raw = [{
             "codigoCompra": "TEST-002",
             "objetoCompra": "Test object",
@@ -128,7 +128,7 @@ class TestConvertToLicitacaoItems:
 
     def test_uses_data_encerramento_not_abertura(self):
         """AC1: System must use dataEncerramentoProposta, NOT dataAberturaProposta."""
-        from main import _convert_to_licitacao_items
+        from routes.search import _convert_to_licitacao_items
         abertura = (date.today() - timedelta(days=30)).isoformat()  # past
         encerramento = (date.today() + timedelta(days=60)).isoformat()  # future
         raw = [{

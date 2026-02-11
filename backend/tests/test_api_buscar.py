@@ -28,11 +28,11 @@ def setup_auth_override(user_id="user-123"):
 class TestBuscarFeatureFlagEnabled:
     """Test /api/buscar with ENABLE_NEW_PRICING=true (feature flag enabled)."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_enforces_quota_when_feature_flag_enabled(
         self,
         mock_pncp_client_class,
@@ -72,12 +72,12 @@ class TestBuscarFeatureFlagEnabled:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_allows_request_when_quota_available(
         self,
         mock_pncp_client_class,
@@ -130,10 +130,10 @@ class TestBuscarFeatureFlagEnabled:
 class TestBuscarFeatureFlagDisabled:
     """Test /api/buscar with ENABLE_NEW_PRICING=false (legacy behavior)."""
 
-    @patch("main.ENABLE_NEW_PRICING", False)
+    @patch("routes.search.ENABLE_NEW_PRICING", False)
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_no_quota_enforcement_when_disabled(
         self,
         mock_pncp_client_class,
@@ -171,11 +171,11 @@ class TestBuscarFeatureFlagDisabled:
 class TestBuscarDateRangeValidation:
     """Test date range validation based on plan capabilities."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_accepts_date_range_within_plan_limit(
         self,
         mock_pncp_client_class,
@@ -219,8 +219,8 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_rejects_date_range_exceeding_plan_limit(
         self,
@@ -264,8 +264,8 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_rejects_date_range_exceeding_consultor_agil_limit(
         self,
@@ -311,8 +311,8 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_rejects_date_range_exceeding_maquina_limit(
         self,
@@ -358,12 +358,12 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_accepts_full_range_for_sala_guerra(
         self,
         mock_pncp_client_class,
@@ -410,8 +410,8 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_rejects_date_range_exceeding_sala_guerra_limit(
         self,
@@ -456,12 +456,12 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_accepts_exact_limit_boundary(
         self,
         mock_pncp_client_class,
@@ -508,8 +508,8 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_rejects_one_day_over_limit(
         self,
@@ -552,12 +552,12 @@ class TestBuscarDateRangeValidation:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_accepts_single_day_range(
         self,
         mock_pncp_client_class,
@@ -608,13 +608,13 @@ class TestBuscarDateRangeValidation:
 class TestBuscarExcelGating:
     """Test Excel export gating based on plan capabilities."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
-    @patch("main.aplicar_todos_filtros")
-    @patch("main.create_excel")
+    @patch("routes.search.PNCPClient")
+    @patch("routes.search.aplicar_todos_filtros")
+    @patch("routes.search.create_excel")
     def test_generates_excel_for_maquina_plan(
         self,
         mock_create_excel,
@@ -690,11 +690,11 @@ class TestBuscarExcelGating:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_blocks_excel_for_consultor_plan(
         self,
         mock_pncp_client_class,
@@ -747,8 +747,8 @@ class TestBuscarExcelGating:
 class TestBuscarPNCPRateLimiting:
     """Test PNCP API rate limiting scenarios (external API)."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_returns_503_when_pncp_rate_limit_exceeded(
         self,
@@ -775,7 +775,7 @@ class TestBuscarPNCPRateLimiting:
             )
 
             # Mock PNCP client to raise rate limit error
-            with patch("main.PNCPClient") as mock_pncp_class:
+            with patch("routes.search.PNCPClient") as mock_pncp_class:
                 mock_client = MagicMock()
                 mock_pncp_class.return_value = mock_client
                 error = PNCPRateLimitError("Rate limit exceeded")
@@ -802,8 +802,8 @@ class TestBuscarPNCPRateLimiting:
 class TestBuscarUserRateLimiting:
     """Test per-user, plan-based rate limiting."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_returns_429_when_user_rate_limit_exceeded(
         self,
@@ -846,12 +846,12 @@ class TestBuscarUserRateLimiting:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_allows_request_within_rate_limit(
         self,
         mock_pncp_client_class,
@@ -899,8 +899,8 @@ class TestBuscarUserRateLimiting:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_uses_plan_specific_rate_limit(
         self,
@@ -941,13 +941,13 @@ class TestBuscarUserRateLimiting:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main._check_user_roles")
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search._check_user_roles")
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_admin_bypasses_rate_limit(
         self,
         mock_pncp_client_class,
@@ -984,13 +984,13 @@ class TestBuscarUserRateLimiting:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main._check_user_roles")
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search._check_user_roles")
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_master_bypasses_rate_limit(
         self,
         mock_pncp_client_class,
@@ -1027,12 +1027,12 @@ class TestBuscarUserRateLimiting:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_rate_limit_fallback_on_quota_check_failure(
         self,
         mock_pncp_client_class,
@@ -1086,8 +1086,8 @@ class TestBuscarUserRateLimiting:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_rate_limit_check_happens_before_quota_check(
         self,
@@ -1134,8 +1134,8 @@ class TestBuscarUserRateLimiting:
 class TestBuscarErrorHandling:
     """Test error handling scenarios."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_returns_403_on_quota_exhausted(
         self,
@@ -1177,7 +1177,7 @@ class TestBuscarErrorHandling:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     def test_returns_503_on_runtime_error(
         self,
@@ -1204,11 +1204,11 @@ class TestBuscarErrorHandling:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_continues_on_quota_increment_failure(
         self,
         mock_pncp_client_class,
@@ -1261,11 +1261,11 @@ class TestBuscarErrorHandling:
 class TestBuscarQuotaIncrementScenarios:
     """Test quota increment behavior in different scenarios."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_increments_quota_on_successful_search(
         self,
         mock_pncp_client_class,
@@ -1313,11 +1313,11 @@ class TestBuscarQuotaIncrementScenarios:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_increments_quota_even_with_no_results(
         self,
         mock_pncp_client_class,
@@ -1366,8 +1366,8 @@ class TestBuscarQuotaIncrementScenarios:
 class TestBuscarInvalidSector:
     """Test invalid sector handling."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_returns_500_on_invalid_sector_id(
         self,
@@ -1416,12 +1416,12 @@ class TestBuscarInvalidSector:
 class TestBuscarCustomSearchTerms:
     """Test custom search terms and stopword removal."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_uses_custom_terms_instead_of_sector_keywords(
         self,
         mock_pncp_client_class,
@@ -1472,11 +1472,11 @@ class TestBuscarCustomSearchTerms:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_removes_stopwords_from_custom_terms(
         self,
         mock_pncp_client_class,
@@ -1528,12 +1528,12 @@ class TestBuscarCustomSearchTerms:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_fallback_to_sector_keywords_when_all_stopwords(
         self,
         mock_pncp_client_class,

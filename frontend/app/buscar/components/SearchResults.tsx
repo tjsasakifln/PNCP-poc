@@ -1,0 +1,417 @@
+"use client";
+
+import Link from "next/link";
+import type { BuscaResult } from "../../types";
+import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
+import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
+import { EmptyState } from "../../components/EmptyState";
+import { QuotaCounter } from "../../components/QuotaCounter";
+import { LicitacoesPreview } from "../../components/LicitacoesPreview";
+import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/OrdenacaoSelect";
+import GoogleSheetsExportButton from "../../../components/GoogleSheetsExportButton";
+
+export interface SearchResultsProps {
+  // Loading state
+  loading: boolean;
+  loadingStep: number;
+  estimatedTime: number;
+  stateCount: number;
+  statesProcessed: number;
+  onCancel: () => void;
+  sseEvent: any;
+  useRealProgress: boolean;
+  sseAvailable: boolean;
+  onStageChange: (stage: number) => void;
+
+  // Error state
+  error: string | null;
+  quotaError: string | null;
+
+  // Result
+  result: BuscaResult | null;
+  rawCount: number;
+
+  // Empty state
+  ufsSelecionadas: Set<string>;
+  sectorName: string;
+
+  // Results display
+  searchMode: "setor" | "termos";
+  termosArray: string[];
+  ordenacao: OrdenacaoOption;
+  onOrdenacaoChange: (ord: OrdenacaoOption) => void;
+
+  // Download
+  downloadLoading: boolean;
+  downloadError: string | null;
+  onDownload: () => void;
+  onSearch: () => void;
+
+  // Plan & auth
+  planInfo: {
+    plan_id: string;
+    plan_name: string;
+    quota_used: number;
+    quota_reset_date: string;
+    trial_expires_at?: string | null;
+    capabilities: {
+      max_history_days: number;
+      max_requests_per_month: number;
+      allow_excel: boolean;
+    };
+  } | null;
+  session: { access_token: string } | null;
+  onShowUpgradeModal: (plan?: string, source?: string) => void;
+
+  // Analytics
+  onTrackEvent: (name: string, data: Record<string, any>) => void;
+}
+
+export default function SearchResults({
+  loading, loadingStep, estimatedTime, stateCount, statesProcessed,
+  onCancel, sseEvent, useRealProgress, sseAvailable, onStageChange,
+  error, quotaError,
+  result, rawCount,
+  ufsSelecionadas, sectorName,
+  searchMode, termosArray, ordenacao, onOrdenacaoChange,
+  downloadLoading, downloadError, onDownload, onSearch,
+  planInfo, session, onShowUpgradeModal, onTrackEvent,
+}: SearchResultsProps) {
+  return (
+    <>
+      {/* Loading State */}
+      {loading && (
+        <div aria-live="polite">
+          <EnhancedLoadingProgress
+            currentStep={loadingStep}
+            estimatedTime={estimatedTime}
+            stateCount={stateCount}
+            statesProcessed={statesProcessed}
+            onCancel={onCancel}
+            sseEvent={sseEvent}
+            useRealProgress={useRealProgress && sseAvailable}
+            onStageChange={onStageChange}
+          />
+          <LoadingResultsSkeleton count={1} />
+        </div>
+      )}
+
+      {/* Error Display with Retry */}
+      {error && !quotaError && (
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
+          <p className="text-sm sm:text-base font-medium text-error mb-3">{error}</p>
+          <button
+            onClick={onSearch}
+            disabled={loading}
+            className="px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Tentando...
+              </>
+            ) : "Tentar novamente"}
+          </button>
+        </div>
+      )}
+
+      {/* Quota Exceeded Display */}
+      {quotaError && (
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-warning-subtle border border-warning/20 rounded-card animate-fade-in-up" role="alert">
+          <div className="flex items-start gap-3">
+            <svg role="img" aria-label="Aviso" className="w-6 h-6 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="text-sm sm:text-base font-medium text-warning mb-2">{quotaError}</p>
+              <p className="text-sm text-ink-secondary mb-4">
+                Escolha um plano para continuar buscando oportunidades de licitacao.
+              </p>
+              <a
+                href="/planos"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded-button text-sm font-medium
+                           hover:bg-brand-blue-hover transition-colors"
+              >
+                <svg role="img" aria-label="Ícone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                Ver Planos
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {result && result.resumo.total_oportunidades === 0 && (
+        <EmptyState
+          onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          rawCount={rawCount}
+          stateCount={ufsSelecionadas.size}
+          filterStats={result.filter_stats}
+          sectorName={sectorName}
+        />
+      )}
+
+      {/* Result Display */}
+      {result && result.resumo.total_oportunidades > 0 && (
+        <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in-up">
+          {/* Results header with ordering */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong">
+            <h2 className="text-lg font-semibold text-ink">
+              Resultados da Busca
+            </h2>
+            <OrdenacaoSelect
+              value={ordenacao}
+              onChange={onOrdenacaoChange}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Search terms metadata banner */}
+          {(result.metadata || result.termos_utilizados || result.stopwords_removidas) && (
+            <div className="bg-surface-1 border border-border rounded-card p-4">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-ink mb-2">
+                    Termos utilizados na busca:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(result.metadata?.termos_utilizados || result.termos_utilizados || []).map(term => (
+                      <span
+                        key={term}
+                        className="inline-flex items-center px-2.5 py-1 bg-brand-blue-subtle text-brand-navy rounded-full text-xs font-medium border border-brand-blue/20"
+                      >
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+
+                  {result.metadata && result.metadata.termos_ignorados.length > 0 && (
+                    <details className="mt-3 cursor-pointer group">
+                      <summary className="text-sm text-ink-muted hover:text-ink transition-colors list-none flex items-center gap-2">
+                        <svg className="w-4 h-4 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span className="font-medium">
+                          {result.metadata.termos_ignorados.length} termo{result.metadata.termos_ignorados.length > 1 ? 's' : ''} não utilizado{result.metadata.termos_ignorados.length > 1 ? 's' : ''}
+                        </span>
+                      </summary>
+                      <div className="mt-2 pl-6 space-y-1">
+                        {result.metadata.termos_ignorados.map(term => (
+                          <div key={term} className="text-xs text-ink-secondary">
+                            <strong className="text-ink">&quot;{term}&quot;</strong>: {result.metadata!.motivos_ignorados[term]}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+
+                  {!result.metadata && result.stopwords_removidas && result.stopwords_removidas.length > 0 && (
+                    <p className="text-xs text-ink-muted mt-2">
+                      Termos ignorados (stopwords): {result.stopwords_removidas.join(", ")}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Filter relaxed banner */}
+          {result.filter_relaxed && (
+            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40 rounded-card text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+              <svg role="img" aria-label="Aviso" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                Nenhum resultado atendeu todos os critérios de relevância. Os filtros foram flexibilizados para exibir resultados parciais.
+              </span>
+            </div>
+          )}
+
+          {/* Hidden results indicator */}
+          {result.hidden_by_min_match != null && result.hidden_by_min_match > 0 && (
+            <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary flex items-center justify-between">
+              <span>
+                {result.hidden_by_min_match} resultado{result.hidden_by_min_match > 1 ? "s" : ""} com correspondência parcial {result.hidden_by_min_match > 1 ? "foram ocultados" : "foi ocultado"}.
+              </span>
+              <button
+                onClick={() => {
+                  onTrackEvent("show_hidden_results", {
+                    hidden_count: result.hidden_by_min_match,
+                  });
+                }}
+                className="text-brand-navy dark:text-brand-blue font-medium hover:underline shrink-0 ml-3"
+              >
+                Mostrar todos
+              </button>
+            </div>
+          )}
+
+          {/* Summary Card */}
+          <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card">
+            <p className="text-base sm:text-lg leading-relaxed text-ink">
+              {result.resumo.resumo_executivo}
+            </p>
+
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 mt-4 sm:mt-6">
+              <div>
+                <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
+                  {result.resumo.total_oportunidades}
+                </span>
+                <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}</span>
+              </div>
+              <div>
+                <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
+                  R$ {result.resumo.valor_total.toLocaleString("pt-BR")}
+                </span>
+                <span className="text-sm sm:text-base text-ink-secondary block mt-1">valor total</span>
+              </div>
+            </div>
+
+            {result.resumo.alerta_urgencia && (
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
+                <p className="text-sm sm:text-base font-medium text-warning">
+                  <span aria-hidden="true">Atenção: </span>
+                  {result.resumo.alerta_urgencia}
+                </p>
+              </div>
+            )}
+
+            {result.resumo.destaques.length > 0 && (
+              <div className="mt-4 sm:mt-6">
+                <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-2 sm:mb-3">Destaques:</h4>
+                <ul className="list-disc list-inside text-sm sm:text-base space-y-2 text-ink-secondary">
+                  {result.resumo.destaques.map((d, i) => (
+                    <li key={i} className="animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>{d}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Quota Counter */}
+          {planInfo && (
+            <QuotaCounter
+              quotaUsed={planInfo.quota_used}
+              quotaLimit={planInfo.capabilities.max_requests_per_month}
+              resetDate={planInfo.quota_reset_date}
+              planId={planInfo.plan_id}
+              onUpgradeClick={() => {
+                onShowUpgradeModal(undefined, "quota_counter");
+              }}
+            />
+          )}
+
+          {/* Licitacoes Preview */}
+          {result.licitacoes && result.licitacoes.length > 0 && (
+            <LicitacoesPreview
+              licitacoes={result.licitacoes}
+              previewCount={5}
+              excelAvailable={planInfo?.capabilities.allow_excel ?? false}
+              searchTerms={searchMode === "termos" ? termosArray : (result.termos_utilizados || [])}
+              onUpgradeClick={() => {
+                onShowUpgradeModal("maquina", "licitacoes_preview");
+              }}
+            />
+          )}
+
+          {/* Download Button */}
+          {planInfo?.capabilities.allow_excel ? (
+            <button
+              onClick={onDownload}
+              disabled={downloadLoading}
+              aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} ${result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}`}
+              className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                         hover:bg-brand-blue-hover active:bg-brand-blue
+                         disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                         transition-all duration-200
+                         flex items-center justify-center gap-3"
+            >
+              {downloadLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Preparando download...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Baixar Excel ({result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'})
+                </>
+              )}
+            </button>
+          ) : (
+            <Link
+              href="/planos"
+              className="w-full bg-surface-0 border-2 border-brand-navy text-brand-navy py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                         hover:bg-brand-blue-subtle transition-all duration-200
+                         flex items-center justify-center gap-3"
+              aria-label="Assine um plano para exportar resultados em Excel e Google Sheets"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Assine para exportar resultados e acessar funcionalidades premium
+            </Link>
+          )}
+
+          {/* Google Sheets Export */}
+          {planInfo?.capabilities.allow_excel && (
+            <GoogleSheetsExportButton
+              licitacoes={result.licitacoes}
+              searchLabel={`${sectorName} - ${Array.from(ufsSelecionadas).join(', ')}`}
+              disabled={downloadLoading}
+              session={session}
+            />
+          )}
+
+          {/* Download Error */}
+          {downloadError && (
+            <div className="p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card" role="alert">
+              <p className="text-sm sm:text-base font-medium text-error">{downloadError}</p>
+            </div>
+          )}
+
+          {/* Stats + Timestamp */}
+          <div className="text-xs sm:text-sm text-ink-muted text-center space-y-1">
+            {rawCount > 0 && (
+              <p>
+                {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitação compatível' : 'licitações compatíveis'} com os filtros selecionados nesta busca
+                {searchMode === "setor" && sectorName !== "Licitações" ? ` para o setor ${sectorName.toLowerCase()}` : ''}
+              </p>
+            )}
+            {result.source_stats && result.source_stats.length > 1 && (
+              <p className="text-ink-faint">
+                Fontes: {result.source_stats
+                  .filter((s: { status: string }) => s.status === "success")
+                  .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count}`)
+                  .join(", ")}
+              </p>
+            )}
+            {result.ultima_atualizacao && (
+              <p className="text-ink-faint">
+                <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Última atualização: {new Date(result.ultima_atualizacao).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

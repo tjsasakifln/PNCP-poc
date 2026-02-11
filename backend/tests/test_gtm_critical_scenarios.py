@@ -38,14 +38,14 @@ def setup_auth_override(user_id="test-user"):
 class TestLargeFileDownload:
     """Test Excel generation with 1000+ bids."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("main.PNCPClient")
-    @patch("main.aplicar_todos_filtros")
-    @patch("main.create_excel")
-    @patch("main.gerar_resumo")
+    @patch("routes.search.PNCPClient")
+    @patch("routes.search.aplicar_todos_filtros")
+    @patch("routes.search.create_excel")
+    @patch("routes.search.gerar_resumo")
     def test_download_1000_plus_bids(
         self,
         mock_gerar_resumo,
@@ -148,10 +148,10 @@ class TestLargeFileDownload:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_large_download_respects_timeout(
         self,
         mock_pncp_client_class,
@@ -215,8 +215,8 @@ class TestLargeFileDownload:
 class TestQuotaLimitReached:
     """Test user hitting quota limit during usage."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_quota_exhausted_returns_403(
         self,
@@ -259,8 +259,8 @@ class TestQuotaLimitReached:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     def test_free_trial_expired_upgrade_message(
         self,
@@ -314,7 +314,7 @@ class TestQuotaLimitReached:
 class TestSessionExpiration:
     """Test session expiration scenarios."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("supabase_client.get_supabase")
     def test_expired_session_returns_401(
         self,
@@ -340,12 +340,12 @@ class TestSessionExpiration:
         # Should return 401 Unauthorized (auth middleware rejects expired token)
         assert response.status_code == 401
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
-    @patch("main.PNCPClient")
+    @patch("routes.search.PNCPClient")
     def test_session_valid_throughout_search(
         self,
         mock_pncp_client_class,
@@ -400,13 +400,13 @@ class TestSessionExpiration:
 class TestConcurrentUsers:
     """Test concurrent usage of same account (race conditions)."""
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("main.PNCPClient")
-    @patch("main.gerar_resumo")
-    @patch("main.aplicar_todos_filtros")
+    @patch("routes.search.PNCPClient")
+    @patch("routes.search.gerar_resumo")
+    @patch("routes.search.aplicar_todos_filtros")
     def test_concurrent_searches_same_user_race_condition(
         self,
         mock_aplicar_todos_filtros,
@@ -479,13 +479,13 @@ class TestConcurrentUsers:
         finally:
             cleanup()
 
-    @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("main.rate_limiter")
+    @patch("routes.search.ENABLE_NEW_PRICING", True)
+    @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.check_and_increment_quota_atomic")
-    @patch("main.PNCPClient")
-    @patch("main.gerar_resumo")
-    @patch("main.aplicar_todos_filtros")
+    @patch("routes.search.PNCPClient")
+    @patch("routes.search.gerar_resumo")
+    @patch("routes.search.aplicar_todos_filtros")
     def test_concurrent_quota_check_race_condition(
         self,
         mock_aplicar_todos_filtros,
