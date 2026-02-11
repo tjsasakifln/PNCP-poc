@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch, MagicMock
 class TestFeatureFlagsAPI:
     """Test feature flags API endpoint."""
 
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_get_features_annual_consultor_agil(self, mock_supabase):
         """Test feature retrieval for annual Consultor Ágil subscriber."""
         from routes.features import get_my_features
@@ -48,7 +48,7 @@ class TestFeatureFlagsAPI:
         assert any(f.key == "early_access" for f in response.features)
         assert any(f.key == "proactive_search" for f in response.features)
 
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_get_features_monthly_consultor_agil_no_annual_features(self, mock_supabase):
         """Test that monthly subscribers don't get annual-exclusive features."""
         from routes.features import get_my_features
@@ -80,7 +80,7 @@ class TestFeatureFlagsAPI:
         assert response.billing_period == "monthly"
         assert len(response.features) == 0  # No annual features
 
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_get_features_sala_guerra_annual_includes_ai_analysis(self, mock_supabase):
         """Test that annual Sala de Guerra gets AI edital analysis feature."""
         from routes.features import get_my_features
@@ -117,7 +117,7 @@ class TestFeatureFlagsAPI:
         assert len(response.features) == 3
         assert any(f.key == "ai_edital_analysis" for f in response.features)
 
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_get_features_no_active_subscription_defaults_to_free_trial(self, mock_supabase):
         """Test that users with no active subscription default to free_trial."""
         from routes.features import get_my_features
@@ -145,7 +145,7 @@ class TestFeatureCacheRedis:
     """Test Redis caching for feature flags."""
 
     @patch("routes.features.get_redis_client")
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_cache_hit_returns_cached_features(self, mock_supabase, mock_redis_client):
         """Test that cache hit returns cached data without DB query."""
         from routes.features import get_my_features
@@ -178,7 +178,7 @@ class TestFeatureCacheRedis:
         mock_supabase.assert_not_called()
 
     @patch("routes.features.get_redis_client")
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_cache_miss_queries_db_and_caches_result(self, mock_supabase, mock_redis_client):
         """Test that cache miss queries DB and stores result in Redis."""
         from routes.features import get_my_features
@@ -218,7 +218,7 @@ class TestFeatureCacheRedis:
         assert call_args[0][1] == 300  # TTL
 
     @patch("routes.features.get_redis_client")
-    @patch("routes.features.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_redis_unavailable_falls_back_to_db(self, mock_supabase, mock_redis_client):
         """Test graceful degradation when Redis is unavailable."""
         from routes.features import get_my_features

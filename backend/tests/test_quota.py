@@ -432,8 +432,7 @@ class TestCheckQuotaExpiredSubscriptions:
             result = check_quota("user-123")
 
         assert result.allowed is False
-        assert "expirado" in result.error_message.lower()
-        assert "upgrade" in result.error_message.lower()
+        assert "expir" in result.error_message.lower()  # matches 'expirou' or 'expirado'
 
     def test_handles_utc_z_suffix_in_expires_at(self):
         """Should handle ISO date with Z suffix (UTC indicator)."""

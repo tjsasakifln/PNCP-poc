@@ -663,7 +663,7 @@ async def get_plans():
 
     result = (
         sb.table("plans")
-        .select("id, name, description, max_searches, price_brl, duration_days")
+        .select("id, name, description, max_searches, price_brl, duration_days, stripe_price_id_monthly, stripe_price_id_annual")
         .eq("is_active", True)
         .order("price_brl")
         .execute()
@@ -674,10 +674,14 @@ async def get_plans():
 @app.post("/checkout")
 async def create_checkout(
     plan_id: str = Query(...),
+    billing_period: str = Query("monthly"),
     user: dict = Depends(require_auth),
 ):
     """Create Stripe Checkout session for a plan purchase."""
     import stripe as stripe_lib
+
+    if billing_period not in ("monthly", "annual"):
+        raise HTTPException(status_code=400, detail="billing_period deve ser 'monthly' ou 'annual'")
 
     stripe_key = os.getenv("STRIPE_SECRET_KEY")
     if not stripe_key:
@@ -693,21 +697,25 @@ async def create_checkout(
         raise HTTPException(status_code=404, detail="Plano nao encontrado")
 
     plan = plan_result.data
-    if not plan.get("stripe_price_id"):
+
+    # Pick the correct Stripe price ID based on billing period
+    price_id_key = f"stripe_price_id_{billing_period}"
+    stripe_price_id = plan.get(price_id_key) or plan.get("stripe_price_id")
+    if not stripe_price_id:
         raise HTTPException(status_code=400, detail="Plano sem preco Stripe configurado")
 
-    # Determine if subscription or one-time
-    is_recurring = plan_id in ("monthly", "annual")
+    # All 3 subscription plans are recurring
+    is_subscription = plan_id in ("consultor_agil", "maquina", "sala_guerra")
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     session_params = {
         "payment_method_types": ["card"],
-        "line_items": [{"price": plan["stripe_price_id"], "quantity": 1}],
-        "mode": "subscription" if is_recurring else "payment",
-        "success_url": f"{frontend_url}/planos?success=true&plan={plan_id}",
+        "line_items": [{"price": stripe_price_id, "quantity": 1}],
+        "mode": "subscription" if is_subscription else "payment",
+        "success_url": f"{frontend_url}/planos/obrigado?plan={plan_id}",
         "cancel_url": f"{frontend_url}/planos?cancelled=true",
         "client_reference_id": user["id"],
-        "metadata": {"plan_id": plan_id, "user_id": user["id"]},
+        "metadata": {"plan_id": plan_id, "user_id": user["id"], "billing_period": billing_period},
     }
 
     # Attach customer email for receipt

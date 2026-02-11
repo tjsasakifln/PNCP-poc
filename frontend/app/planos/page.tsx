@@ -394,7 +394,7 @@ export default function PlanosPage() {
     setCheckoutLoading(planId);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const res = await fetch(`${backendUrl}/checkout?plan_id=${planId}`, {
+      const res = await fetch(`${backendUrl}/checkout?plan_id=${planId}&billing_period=${billingPeriod}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });

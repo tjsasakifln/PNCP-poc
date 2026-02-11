@@ -49,25 +49,20 @@ class TestRedisCacheInvalidation:
             assert cache_key == "features:test-user"
             assert ttl == 300  # 5 minutes
 
-    @patch("routes.subscriptions.get_redis_client")
-    def test_billing_period_update_invalidates_cache(self, mock_redis_client):
+    def test_billing_period_update_invalidates_cache(self):
         """Test that successful billing period update deletes cache key."""
-        # This would be tested in the update_billing_period endpoint
-        # Simulating the cache invalidation logic
+        # Simulating the cache invalidation logic from routes/subscriptions.py
+        # (which creates redis client inline, not via get_redis_client)
 
         redis_mock = MagicMock()
-        mock_redis_client.return_value = redis_mock
 
         user_id = "test-user-123"
         cache_key = f"features:{user_id}"
 
-        # Simulate cache invalidation (from routes/subscriptions.py)
-        try:
-            redis_mock.delete(cache_key)
-        except Exception:
-            pass  # Non-critical
+        # Simulate cache invalidation
+        redis_mock.delete(cache_key)
 
-        # Verify delete was called
+        # Verify delete was called with correct key format
         redis_mock.delete.assert_called_once_with(cache_key)
 
     def test_cache_value_serialization(self):

@@ -137,7 +137,7 @@ async def update_billing_period(
     try:
         plan_result = (
             sb.table("plans")
-            .select("price_brl, stripe_price_id")
+            .select("price_brl, stripe_price_id, stripe_price_id_monthly, stripe_price_id_annual")
             .eq("id", plan_id)
             .single()
             .execute()
@@ -216,10 +216,8 @@ async def update_billing_period(
         )
 
     # Step 4: Update Stripe subscription
-    # TODO: Fetch stripe_price_id_monthly and stripe_price_id_annual from plans table
-    # For now, use placeholder (requires migration to add these columns)
-    stripe_price_id_monthly = stripe_price_id  # Placeholder
-    stripe_price_id_annual = stripe_price_id   # Placeholder
+    stripe_price_id_monthly = plan_result.data.get("stripe_price_id_monthly") or stripe_price_id
+    stripe_price_id_annual = plan_result.data.get("stripe_price_id_annual") or stripe_price_id
 
     try:
         update_stripe_subscription_billing_period(

@@ -13,7 +13,7 @@ from decimal import Decimal
 class TestBillingPeriodUpdateSuccess:
     """Test successful billing period updates."""
 
-    @patch("routes.subscriptions.get_supabase")
+    @patch("supabase_client.get_supabase")
     @patch("routes.subscriptions.update_stripe_subscription_billing_period")
     @patch("routes.subscriptions.get_next_billing_date")
     def test_update_monthly_to_annual_15_days_remaining(
@@ -78,7 +78,7 @@ class TestBillingPeriodUpdateSuccess:
         assert response.deferred is False
         assert Decimal(response.prorated_credit) > 0  # Should have credit for 15 days
 
-    @patch("routes.subscriptions.get_supabase")
+    @patch("supabase_client.get_supabase")
     @patch("routes.subscriptions.get_next_billing_date")
     def test_update_deferred_when_less_than_7_days(
         self,
@@ -127,7 +127,7 @@ class TestBillingPeriodUpdateSuccess:
         assert response.prorated_credit == "0.00"
         assert "próximo ciclo" in response.message.lower()
 
-    @patch("routes.subscriptions.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_error_when_no_active_subscription(self, mock_supabase):
         """Test 404 error when user has no active subscription."""
         from routes.subscriptions import update_billing_period, UpdateBillingPeriodRequest
@@ -150,7 +150,7 @@ class TestBillingPeriodUpdateSuccess:
         assert exc_info.value.status_code == 404
         assert "assinatura ativa" in exc_info.value.detail.lower()
 
-    @patch("routes.subscriptions.get_supabase")
+    @patch("supabase_client.get_supabase")
     def test_error_when_already_on_target_billing_period(self, mock_supabase):
         """Test 400 error when already on target billing period."""
         from routes.subscriptions import update_billing_period, UpdateBillingPeriodRequest

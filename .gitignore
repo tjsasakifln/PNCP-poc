@@ -123,6 +123,15 @@ service-account*.json
 gcp-key*.json
 aws-credentials*
 
+# Stripe & API keys (belt-and-suspenders)
+*stripe*.key
+*stripe*.secret
+*sk_live_*
+*sk_test_*
+*pk_live_*
+*pk_test_*
+*whsec_*
+
 # =============================================================================
 # IDEs & Editors
 # =============================================================================
