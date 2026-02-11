@@ -1,0 +1,25 @@
+# =============================================================================
+# Development dependencies
+# Install with: pip install -r requirements-dev.txt
+# =============================================================================
+
+# Include production dependencies
+-r requirements.txt
+
+# Testing
+pytest==8.4.2
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0
+pytest-benchmark==5.2.3
+faker==37.1.0
+
+# Load testing
+locust==2.43.2
+
+# Legacy ORM (kept for test backward compat, deprecated in STORY-201)
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+
+# Code quality
+ruff==0.9.6
+mypy==1.15.0

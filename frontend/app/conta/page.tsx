@@ -51,11 +51,7 @@ export default function ContaPage() {
 
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-      if (!backendUrl) {
-        throw new Error("Backend não configurado. Contate o suporte.");
-      }
-      const res = await fetch(`${backendUrl}/change-password`, {
+      const res = await fetch("/api/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

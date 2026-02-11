@@ -77,15 +77,18 @@ class TestStripeWebhookSignatureValidation:
     """Test webhook signature validation."""
 
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
-    @patch('webhooks.stripe.get_db')
-    def test_valid_signature_accepted(self, mock_get_db, mock_construct, mock_request, mock_stripe_event, mock_db_session):
+    @patch('webhooks.stripe.get_supabase')
+    def test_valid_signature_accepted(self, mock_get_sb, mock_construct, mock_request, mock_stripe_event):
         """Valid signature should be accepted."""
         mock_construct.return_value = mock_stripe_event
-        mock_get_db.return_value = iter([mock_db_session])
-        mock_db_session.query().filter().first.return_value = None  # No existing event
+        mock_sb = MagicMock()
+        mock_get_sb.return_value = mock_sb
+        # Mock idempotency check - no existing event
+        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = Mock(data=[])
+        # Mock insert for event logging
+        mock_sb.table.return_value.insert.return_value.execute.return_value = Mock(data=[])
 
         # Should not raise exception
-        # Note: Full test requires running the endpoint
         assert mock_construct.called or True  # Placeholder assertion
 
     def test_missing_signature_header_rejected(self, mock_request):
@@ -116,28 +119,30 @@ class TestStripeWebhookIdempotency:
     """Test webhook idempotency (duplicate event handling)."""
 
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
-    @patch('webhooks.stripe.get_db')
-    def test_duplicate_event_returns_already_processed(self, mock_get_db, mock_construct, mock_request, mock_stripe_event, mock_db_session):
+    @patch('webhooks.stripe.get_supabase')
+    def test_duplicate_event_returns_already_processed(self, mock_get_sb, mock_construct, mock_request, mock_stripe_event):
         """Duplicate webhook event should return 'already_processed'."""
         mock_construct.return_value = mock_stripe_event
-        mock_get_db.return_value = iter([mock_db_session])
-
-        # Mock existing event in DB (idempotency check)
-        existing_event = Mock()
-        existing_event.id = "evt_test_123"
-        mock_db_session.query().filter().first.return_value = existing_event
+        mock_sb = MagicMock()
+        mock_get_sb.return_value = mock_sb
+        # Mock idempotency check - existing event found
+        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = Mock(data=[{"id": "evt_test_123"}])
 
         # Expected: {"status": "already_processed"}
 
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
-    @patch('webhooks.stripe.get_db')
-    def test_new_event_processed_and_recorded(self, mock_get_db, mock_construct, mock_request, mock_stripe_event, mock_db_session):
+    @patch('webhooks.stripe.get_supabase')
+    def test_new_event_processed_and_recorded(self, mock_get_sb, mock_construct, mock_request, mock_stripe_event):
         """New webhook event should be processed and recorded in DB."""
         mock_construct.return_value = mock_stripe_event
-        mock_get_db.return_value = iter([mock_db_session])
-
-        # Mock no existing event (idempotency check passes)
-        mock_db_session.query().filter().first.return_value = None
+        mock_sb = MagicMock()
+        mock_get_sb.return_value = mock_sb
+        # Mock idempotency check - no existing event
+        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = Mock(data=[])
+        # Mock insert for event logging
+        mock_sb.table.return_value.insert.return_value.execute.return_value = Mock(data=[])
+        # Mock update for subscription
+        mock_sb.table.return_value.update.return_value.eq.return_value.execute.return_value = Mock(data=[])
 
         # Expected:
         # 1. Event processed (handle_subscription_updated called)

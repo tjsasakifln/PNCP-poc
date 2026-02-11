@@ -10,22 +10,15 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to console in development
     console.error("Application error:", error);
-
-    // In production, you would send this to an error tracking service
-    // Example: Sentry, LogRocket, Datadog, etc.
-    // errorTracker.captureException(error);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--surface-0)] px-4">
+      <div className="max-w-md w-full bg-[var(--surface-1)] shadow-lg rounded-lg p-8 text-center">
         <div className="mb-6">
           <svg
-              role="img"
-              aria-label="Ícone"
-            className="mx-auto h-16 w-16 text-red-500"
+            className="mx-auto h-16 w-16 text-[var(--error)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -40,17 +33,17 @@ export default function Error({
           </svg>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl font-bold text-[var(--ink)] mb-2">
           Ops! Algo deu errado
         </h1>
 
-        <p className="text-gray-600 mb-6">
+        <p className="text-[var(--ink-secondary)] mb-6">
           Ocorreu um erro inesperado. Por favor, tente novamente.
         </p>
 
         {error.message && (
-          <div className="mb-6 p-4 bg-gray-100 rounded-md text-left">
-            <p className="text-sm text-gray-700 font-mono break-words">
+          <div className="mb-6 p-4 bg-[var(--surface-2)] rounded-md text-left">
+            <p className="text-sm text-[var(--ink-secondary)] font-mono break-words">
               {error.message}
             </p>
           </div>
@@ -58,12 +51,12 @@ export default function Error({
 
         <button
           onClick={reset}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          className="w-full bg-[var(--brand-green)] hover:opacity-90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-2"
         >
           Tentar novamente
         </button>
 
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-[var(--ink-muted)]">
           Se o problema persistir, entre em contato com o suporte.
         </p>
       </div>

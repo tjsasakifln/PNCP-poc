@@ -185,13 +185,13 @@ export default function PlanosPage() {
   const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans.find((p) => p.id === 'maquina') || plans[0];
   const selectedPlanPrice = billingPeriod === 'annual'
     ? selectedPlan?.price_brl * 9.6
-    : selectedPlan?.price_brl || 149;
+    : selectedPlan?.price_brl || 297;
 
   const [roiResult, setRoiResult] = useState(
     calculateROI({
       hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
       costPerHour: DEFAULT_VALUES.costPerHour,
-      planPrice: 149, // Default to consultor_agil price
+      planPrice: 297, // Default to consultor_agil price
     })
   );
 

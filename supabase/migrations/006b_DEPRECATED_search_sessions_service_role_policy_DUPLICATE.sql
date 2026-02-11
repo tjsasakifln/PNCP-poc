@@ -1,5 +1,10 @@
 -- ============================================================================
--- COPY AND PASTE THIS SQL INTO SUPABASE DASHBOARD SQL EDITOR
+-- DEPRECATED: This is a duplicate of 006b_search_sessions_service_role_policy.sql
+-- Renamed from 006_APPLY_ME.sql during STORY-200 cleanup (2026-02-11)
+-- The canonical version is 006b_search_sessions_service_role_policy.sql
+-- This file is kept for reference only - DO NOT APPLY
+-- ============================================================================
+-- ORIGINAL CONTENT BELOW (for reference):
 -- ============================================================================
 -- Migration 006: Add Service Role Policy for search_sessions
 -- Date: 2026-02-10

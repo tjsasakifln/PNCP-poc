@@ -25,14 +25,14 @@ export default function PricingPage() {
   // ROI Calculator State
   const [hoursPerWeek, setHoursPerWeek] = useState(DEFAULT_VALUES.hoursPerWeek);
   const [costPerHour, setCostPerHour] = useState(DEFAULT_VALUES.costPerHour);
-  const [selectedPlanPrice, setSelectedPlanPrice] = useState<number>(149); // Default: consultor_agil
+  const [selectedPlanPrice, setSelectedPlanPrice] = useState<number>(297); // Default: consultor_agil
 
   // Calculate ROI on input change
   const [roiResult, setRoiResult] = useState(
     calculateROI({
       hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
       costPerHour: DEFAULT_VALUES.costPerHour,
-      planPrice: 149,
+      planPrice: 297,
     })
   );
 
@@ -126,9 +126,9 @@ export default function PricingPage() {
               </label>
               <div className="grid md:grid-cols-3 gap-4">
                 {[
-                  { id: 'consultor_agil', name: 'Consultor Ágil', price: 149, searches: 50 },
-                  { id: 'maquina', name: 'Máquina', price: 349, searches: 300, popular: true },
-                  { id: 'sala_guerra', name: 'Sala de Guerra', price: 997, searches: 1000 },
+                  { id: 'consultor_agil', name: 'Consultor Ágil', price: 297, searches: 50 },
+                  { id: 'maquina', name: 'Máquina', price: 597, searches: 300, popular: true },
+                  { id: 'sala_guerra', name: 'Sala de Guerra', price: 1497, searches: 1000 },
                 ].map((plan) => (
                   <button
                     key={plan.id}

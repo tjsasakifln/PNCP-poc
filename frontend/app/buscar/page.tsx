@@ -34,6 +34,7 @@ import { Tooltip } from "../components/ui/Tooltip";
 import type { SavedSearch } from "../../lib/savedSearches";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../lib/searchStatePersistence";
+import { toast } from "sonner";
 
 // P0 Filters
 import { StatusFilter, type StatusLicitacao } from "../../components/StatusFilter";
@@ -281,16 +282,8 @@ function HomePageContent() {
         setTermosArray(formState.includeKeywords);
       }
 
-      // Show success banner
-      const banner = document.createElement('div');
-      banner.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-[var(--success)] text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
-      banner.textContent = '✓ Resultados da busca restaurados! Você pode fazer o download agora.';
-      banner.style.animation = 'fadeIn 0.3s ease-in';
-      document.body.appendChild(banner);
-      setTimeout(() => {
-        banner.style.animation = 'fadeOut 0.3s ease-out';
-        setTimeout(() => banner.remove(), 300);
-      }, 5000);
+      // Show success toast
+      toast.success('Resultados da busca restaurados! Você pode fazer o download agora.');
 
       // Track restoration
       trackEvent('search_state_auto_restored', {
@@ -1076,15 +1069,14 @@ function HomePageContent() {
         termos_count: termosArray.length,
       });
 
-      // HOTFIX 2026-02-10: Show success toast to improve UX feedback
-      alert(`✓ Busca "${saveSearchName || "Busca sem nome"}" salva com sucesso!`);
+      toast.success(`Busca "${saveSearchName || "Busca sem nome"}" salva com sucesso!`);
 
       setShowSaveDialog(false);
       setSaveSearchName("");
       setSaveError(null);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Erro ao salvar busca");
-      alert(`✗ Erro ao salvar: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      toast.error(`Erro ao salvar: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
   };
 
@@ -1627,6 +1619,7 @@ function HomePageContent() {
           <button
             type="button"
             onClick={() => setAdvancedFiltersOpen(!advancedFiltersOpen)}
+            aria-expanded={advancedFiltersOpen}
             className="w-full text-base font-semibold text-ink mb-4 flex items-center gap-2 hover:text-brand-blue transition-colors"
           >
             <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

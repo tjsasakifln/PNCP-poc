@@ -1,5 +1,5 @@
 # =============================================================================
-# Core dependencies - PINNED for Railway compatibility
+# Production dependencies - PINNED for Railway compatibility
 # =============================================================================
 fastapi==0.115.9
 uvicorn[standard]==0.40.0
@@ -22,8 +22,8 @@ openai==1.109.1
 supabase==2.13.0
 stripe==11.4.1
 redis==5.2.1  # Feature flag caching (STORY-171)
-sqlalchemy==2.0.36  # ORM for user_subscriptions, webhook events (STORY-171)
-psycopg2-binary==2.9.10  # PostgreSQL adapter for SQLAlchemy
+# sqlalchemy and psycopg2-binary moved to requirements-dev.txt (STORY-201)
+# Kept in database.py for test backward compat only
 
 # Google Sheets API integration (STORY-180)
 google-api-python-client==2.150.0
@@ -31,19 +31,3 @@ google-auth==2.35.0
 google-auth-oauthlib==1.2.1
 google-auth-httplib2==0.2.0
 cryptography==43.0.3
-
-# =============================================================================
-# Development dependencies (not needed in production but included for simplicity)
-# =============================================================================
-pytest==8.4.2
-pytest-asyncio==0.25.0
-pytest-cov==6.0.0
-pytest-benchmark==5.2.3
-faker==37.1.0
-
-# Load testing
-locust==2.43.2
-
-# Code quality
-ruff==0.9.6
-mypy==1.15.0

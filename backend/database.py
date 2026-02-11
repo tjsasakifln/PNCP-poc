@@ -1,4 +1,11 @@
 """
+DEPRECATED: SQLAlchemy database layer — replaced by Supabase client in STORY-201.
+
+All DB operations now use supabase_client.py (get_supabase()).
+This file is kept only for backward compatibility with tests.
+DO NOT add new code that imports from this module.
+
+Original description:
 Database Configuration and Session Management
 
 Provides SQLAlchemy Base and session factory for database operations.

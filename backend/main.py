@@ -29,6 +29,9 @@ from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import (
     remove_stopwords,
     aplicar_todos_filtros,
+    match_keywords,
+    KEYWORDS_UNIFORMES,
+    KEYWORDS_EXCLUSAO,
 )
 from status_inference import enriquecer_com_status_inferido
 from utils.ordenacao import ordenar_licitacoes
@@ -768,158 +771,10 @@ def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):
     log_user_action(logger, "plan-activated", user_id, details={"plan_id": plan_id})
 
 
-def _deactivate_stripe_subscription(stripe_sub_id: str):
-    """Deactivate subscription when cancelled in Stripe.
 
-    Also updates profiles.plan_type to free_trial so the profile-based
-    fallback correctly reflects the cancellation.
-    """
-    from supabase_client import get_supabase
-    sb = get_supabase()
-
-    # Find subscription to get user_id before deactivating
-    try:
-        sub_result = (
-            sb.table("user_subscriptions")
-            .select("user_id")
-            .eq("stripe_subscription_id", stripe_sub_id)
-            .limit(1)
-            .execute()
-        )
-        user_id = sub_result.data[0]["user_id"] if sub_result.data else None
-    except Exception as e:
-        logger.warning(f"Could not find user for stripe subscription {stripe_sub_id[:8]}***: {e}")
-        user_id = None
-
-    # Deactivate subscription
-    sb.table("user_subscriptions").update({"is_active": False}).eq("stripe_subscription_id", stripe_sub_id).execute()
-
-    # Sync profiles.plan_type so fallback reflects cancellation
-    if user_id:
-        sb.table("profiles").update({"plan_type": "free_trial"}).eq("id", user_id).execute()
-        logger.info(f"Deactivated subscription and updated profile for user {mask_user_id(user_id)}")
-    else:
-        logger.info(f"Deactivated Stripe subscription {stripe_sub_id[:8]}***")
-
-
-def _handle_subscription_updated(sub_data: dict):
-    """Handle Stripe subscription updated (plan change, billing period update).
-
-    Syncs user_subscriptions and profiles.plan_type so the profile-based
-    fallback always reflects the user's current plan.
-
-    Ready to plug: requires Stripe metadata to contain plan_id.
-    """
-    from supabase_client import get_supabase
-    sb = get_supabase()
-    stripe_sub_id = sub_data.get("id", "")
-
-    try:
-        # Find the local subscription
-        sub_result = (
-            sb.table("user_subscriptions")
-            .select("id, user_id, plan_id")
-            .eq("stripe_subscription_id", stripe_sub_id)
-            .limit(1)
-            .execute()
-        )
-
-        if not sub_result.data:
-            logger.warning(f"No local subscription for Stripe sub {stripe_sub_id[:8]}***")
-            return
-
-        local_sub = sub_result.data[0]
-        user_id = local_sub["user_id"]
-
-        # Check if plan changed (Stripe metadata should contain plan_id)
-        new_plan_id = (sub_data.get("metadata") or {}).get("plan_id")
-
-        if new_plan_id and new_plan_id != local_sub["plan_id"]:
-            # Plan upgrade/downgrade — update both subscription and profile
-            sb.table("user_subscriptions").update({
-                "plan_id": new_plan_id,
-                "is_active": True,
-            }).eq("id", local_sub["id"]).execute()
-
-            sb.table("profiles").update({
-                "plan_type": new_plan_id,
-            }).eq("id", user_id).execute()
-
-            logger.info(
-                f"Plan changed for user {mask_user_id(user_id)}: "
-                f"{local_sub['plan_id']} → {new_plan_id}"
-            )
-        else:
-            # Ensure subscription is active (covers reactivation after past_due)
-            sb.table("user_subscriptions").update({
-                "is_active": True,
-            }).eq("id", local_sub["id"]).execute()
-            logger.info(f"Subscription updated for user {mask_user_id(user_id)}")
-
-    except Exception as e:
-        logger.error(f"Error handling subscription.updated for {stripe_sub_id[:8]}***: {e}")
-
-
-def _handle_invoice_paid(invoice_data: dict):
-    """Handle successful invoice payment (subscription renewal).
-
-    Reactivates the subscription and extends expiry. Critical for preventing
-    billing-gap downgrades: when a payment succeeds, the subscription must
-    be marked active immediately.
-
-    Also syncs profiles.plan_type to ensure the profile-based fallback
-    reflects the renewed plan.
-    """
-    from supabase_client import get_supabase
-    from datetime import datetime, timezone, timedelta
-    sb = get_supabase()
-
-    stripe_sub_id = invoice_data.get("subscription")
-    if not stripe_sub_id:
-        logger.debug("Invoice has no subscription_id, skipping")
-        return
-
-    try:
-        sub_result = (
-            sb.table("user_subscriptions")
-            .select("id, user_id, plan_id")
-            .eq("stripe_subscription_id", stripe_sub_id)
-            .limit(1)
-            .execute()
-        )
-
-        if not sub_result.data:
-            logger.warning(f"No local subscription for invoice stripe_sub {stripe_sub_id[:8]}***")
-            return
-
-        local_sub = sub_result.data[0]
-        user_id = local_sub["user_id"]
-        plan_id = local_sub["plan_id"]
-
-        # Get plan duration for new expiry
-        plan_result = sb.table("plans").select("duration_days").eq("id", plan_id).single().execute()
-        duration_days = plan_result.data["duration_days"] if plan_result.data else 30
-
-        new_expires = (datetime.now(timezone.utc) + timedelta(days=duration_days)).isoformat()
-
-        # Reactivate and extend
-        sb.table("user_subscriptions").update({
-            "is_active": True,
-            "expires_at": new_expires,
-        }).eq("id", local_sub["id"]).execute()
-
-        # Ensure profile reflects active plan
-        sb.table("profiles").update({
-            "plan_type": plan_id,
-        }).eq("id", user_id).execute()
-
-        logger.info(
-            f"Invoice payment processed for user {mask_user_id(user_id)}: "
-            f"plan={plan_id}, new_expires={new_expires[:10]}"
-        )
-
-    except Exception as e:
-        logger.error(f"Error handling invoice.paid for sub {stripe_sub_id[:8]}***: {e}")
+# NOTE: Stripe webhook handler functions (_deactivate_stripe_subscription,
+# _handle_subscription_updated, _handle_invoice_paid) were consolidated into
+# webhooks/stripe.py as part of STORY-201 ORM unification.
 
 
 def _build_pncp_link(lic: dict) -> str:
@@ -1690,7 +1545,6 @@ async def buscar_licitacoes(
             keyword_rejected_sample = []
             for lic in licitacoes_raw[:200]:
                 obj = lic.get("objetoCompra", "")
-                from filter import match_keywords, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO
                 matched, _ = match_keywords(obj, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
                 if not matched:
                     keyword_rejected_sample.append(obj[:120])

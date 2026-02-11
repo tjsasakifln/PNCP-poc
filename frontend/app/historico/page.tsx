@@ -73,9 +73,8 @@ export default function HistoricoPage() {
   const fetchSessions = async () => {
     setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
       const res = await fetch(
-        `${backendUrl}/sessions?limit=${limit}&offset=${page * limit}`,
+        `/api/sessions?limit=${limit}&offset=${page * limit}`,
         { headers: { Authorization: `Bearer ${session!.access_token}` } }
       );
       if (!res.ok) throw new Error("Erro ao carregar histórico");

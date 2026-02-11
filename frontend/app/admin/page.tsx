@@ -59,16 +59,14 @@ export default function AdminPage() {
   const [editCreditsValue, setEditCreditsValue] = useState<string>("");
   const [savingCredits, setSavingCredits] = useState(false);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
   const fetchUsers = useCallback(async () => {
-    if (!session || !backendUrl) return;
+    if (!session) return;
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ limit: String(limit), offset: String(page * limit) });
       if (search) params.set("search", search);
-      const res = await fetch(`${backendUrl}/admin/users?${params}`, {
+      const res = await fetch(`/api/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.status === 403) {
@@ -84,30 +82,18 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [session, page, search, backendUrl]);
+  }, [session, page, search]);
 
   useEffect(() => {
     if (!authLoading && session) fetchUsers();
   }, [authLoading, session, fetchUsers]);
-
-  // Show error if backend URL not configured (must be after all hooks)
-  if (!backendUrl) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <div className="text-center p-8">
-          <h1 className="text-xl font-bold text-ink mb-2">Configuração Necessária</h1>
-          <p className="text-ink-secondary">Backend URL não configurado. Configure NEXT_PUBLIC_BACKEND_URL.</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session) return;
     setCreating(true);
     try {
-      const res = await fetch(`${backendUrl}/admin/users`, {
+      const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,7 +130,7 @@ export default function AdminPage() {
     if (!confirm(`Excluir usuário ${email}? Esta ação não pode ser desfeita.`)) return;
 
     try {
-      const res = await fetch(`${backendUrl}/admin/users/${userId}`, {
+      const res = await fetch(`/api/admin/users/${userId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -161,7 +147,7 @@ export default function AdminPage() {
   const handleAssignPlan = async (userId: string, planId: string) => {
     if (!session) return;
     try {
-      const res = await fetch(`${backendUrl}/admin/users/${userId}/assign-plan?plan_id=${planId}`, {
+      const res = await fetch(`/api/admin/users/${userId}/assign-plan?plan_id=${planId}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -193,7 +179,7 @@ export default function AdminPage() {
 
     setSavingCredits(true);
     try {
-      const res = await fetch(`${backendUrl}/admin/users/${userId}/credits`, {
+      const res = await fetch(`/api/admin/users/${userId}/credits`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
