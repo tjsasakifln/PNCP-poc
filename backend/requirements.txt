@@ -20,6 +20,7 @@ openai==1.109.1
 
 # Auth & Database
 supabase==2.13.0
+PyJWT==2.9.0  # Local JWT validation (HOTFIX 2026-02-11)
 stripe==11.4.1
 redis==5.2.1  # Feature flag caching (STORY-171)
 # sqlalchemy and psycopg2-binary moved to requirements-dev.txt (STORY-201)

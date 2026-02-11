@@ -7,10 +7,17 @@ Security hardened in Issue #168:
 Performance optimization:
 - Token validation cache (60s TTL) to reduce Supabase Auth API calls
 - Eliminates intermittent auth failures from remote validation timeouts
+
+CRITICAL FIX (2026-02-11): Use local JWT validation instead of Supabase API
+- Fixes: token_verification success=False AuthApiError
+- Source: https://github.com/orgs/supabase/discussions/20763
+- Much faster (no API call) and more reliable
 """
 
 import logging
 import time
+import os
+import jwt
 from typing import Optional, Dict, Tuple
 
 from fastapi import HTTPException, Depends
@@ -56,24 +63,56 @@ async def get_current_user(
             del _token_cache[token_hash]
             logger.debug(f"Auth cache EXPIRED (age={age:.1f}s)")
 
-    # SLOW PATH: Cache miss or expired - validate remotely
-    logger.debug("Auth cache MISS - validating with Supabase")
+    # SLOW PATH: Cache miss or expired - validate locally with JWT
+    logger.debug("Auth cache MISS - validating JWT locally")
     try:
-        from supabase_client import get_supabase
-        sb = get_supabase()
-        user_response = sb.auth.get_user(token)
-        if not user_response or not user_response.user:
+        # CRITICAL FIX: Validate JWT locally instead of calling Supabase API
+        # This is MUCH faster and eliminates AuthApiError issues
+        # Source: https://github.com/orgs/supabase/discussions/20763
+        jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
+        if not jwt_secret:
+            logger.error("SUPABASE_JWT_SECRET not configured!")
+            raise HTTPException(status_code=500, detail="Auth not configured")
+
+        # Decode and verify JWT signature locally
+        # audience is the Supabase project URL without protocol
+        supabase_url = os.getenv("SUPABASE_URL", "")
+        audience = supabase_url.replace("https://", "").replace("http://", "")
+
+        try:
+            payload = jwt.decode(
+                token,
+                jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",  # Supabase default audience
+                options={"verify_aud": False}  # Relax audience check for compatibility
+            )
+        except jwt.ExpiredSignatureError:
+            logger.warning("JWT token expired")
+            raise HTTPException(status_code=401, detail="Token expirado")
+        except jwt.InvalidTokenError as e:
+            logger.warning(f"Invalid JWT token: {type(e).__name__}")
             raise HTTPException(status_code=401, detail="Token invalido")
 
+        # Extract user data from JWT claims
+        user_id = payload.get("sub")
+        email = payload.get("email")
+        role = payload.get("role", "authenticated")
+
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token sem user ID")
+
+        # Build user data from JWT claims (no API call needed!)
         user_data = {
-            "id": str(user_response.user.id),
-            "email": user_response.user.email,
-            "role": user_response.user.role,
+            "id": user_id,
+            "email": email or "unknown",
+            "role": role,
         }
 
         # Cache validated token
         _token_cache[token_hash] = (user_data, time.time())
         logger.debug(f"Auth cache STORED for user {user_data['id'][:8]}")
+        logger.info(f"JWT validation SUCCESS for user {user_data['id'][:8]} ({email})")
 
         return user_data
 
