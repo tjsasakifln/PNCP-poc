@@ -153,11 +153,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     // Use canonical URL for OAuth redirects (not railway.app domain)
     const canonicalUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || window.location.origin;
+    const redirectUrl = `${canonicalUrl}/auth/callback`;
+
+    // DEBUG: Log OAuth configuration
+    console.log("[AuthProvider] Google OAuth Login Starting");
+    console.log("[AuthProvider] NEXT_PUBLIC_CANONICAL_URL:", process.env.NEXT_PUBLIC_CANONICAL_URL);
+    console.log("[AuthProvider] window.location.origin:", window.location.origin);
+    console.log("[AuthProvider] Final redirect URL:", redirectUrl);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${canonicalUrl}/auth/callback` },
+      options: { redirectTo: redirectUrl },
     });
-    if (error) throw error;
+    if (error) {
+      console.error("[AuthProvider] Google OAuth error:", error);
+      throw error;
+    }
+    console.log("[AuthProvider] OAuth redirect initiated");
   }, []);
 
   const signOut = useCallback(async () => {

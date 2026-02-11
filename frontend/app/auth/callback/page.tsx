@@ -17,14 +17,27 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // CRITICAL: Add timeout at the start to prevent infinite loading
+      const callbackTimeout = setTimeout(() => {
+        console.error("[OAuth Callback] TIMEOUT after 15 seconds - forcing error state");
+        setStatus("error");
+        setErrorMessage("Timeout ao processar login com Google. Use email/senha ou tente novamente.");
+      }, 15000); // 15 second timeout
+
       try {
         // Check for error in URL params
         const params = new URLSearchParams(window.location.search);
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
+        // DEBUG: Log everything for troubleshooting
+        console.log("[OAuth Callback] ===== STARTING OAUTH CALLBACK =====");
+        console.log("[OAuth Callback] Full URL:", window.location.href);
+        console.log("[OAuth Callback] Query params:", Object.fromEntries(params.entries()));
+
         if (error) {
-          console.error("[OAuth Callback] Error:", error, errorDescription);
+          console.error("[OAuth Callback] OAuth error parameter found:", error, errorDescription);
+          clearTimeout(callbackTimeout);
           setStatus("error");
           setErrorMessage(errorDescription || error);
           return;
@@ -34,22 +47,40 @@ export default function AuthCallbackPage() {
         const code = params.get("code");
 
         if (code) {
+          console.log("[OAuth Callback] Authorization code found, length:", code.length);
+          console.log("[OAuth Callback] Exchanging code for session...");
+
+          const startTime = Date.now();
           const { data: { session }, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const duration = Date.now() - startTime;
+
+          console.log("[OAuth Callback] Code exchange took:", duration, "ms");
+          clearTimeout(callbackTimeout);
 
           if (exchangeError) {
-            console.error("[OAuth Callback] Code exchange error:", exchangeError);
+            console.error("[OAuth Callback] Code exchange FAILED:", exchangeError);
+            console.error("[OAuth Callback] Error details:", JSON.stringify(exchangeError));
             setStatus("error");
             setErrorMessage(exchangeError.message);
             return;
           }
 
           if (session) {
+            console.log("[OAuth Callback] ✅ Session obtained successfully!");
+            console.log("[OAuth Callback] User:", session.user.email);
             setStatus("success");
             // Full page navigation ensures cookies are sent to middleware
+            console.log("[OAuth Callback] Redirecting to /buscar");
             window.location.href = "/buscar";
             return;
+          } else {
+            console.warn("[OAuth Callback] ⚠️  No session returned after code exchange");
           }
+        } else {
+          console.warn("[OAuth Callback] ⚠️  No authorization code found in URL");
         }
+
+        clearTimeout(callbackTimeout);
 
         // Fallback: Check if we have a validated user (SECURITY FIX)
         // Use getUser() instead of getSession() for secure validation
