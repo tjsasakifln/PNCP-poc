@@ -46,16 +46,16 @@ describe('PlanCard Component', () => {
     it('should calculate annual price correctly (9.6x monthly)', () => {
       render(<PlanCard {...defaultProps} billingPeriod="annual" />);
 
-      // 297 * 9.6 = 2,851.20
-      expect(screen.getByText(/R\$\s*2\.851,20/)).toBeInTheDocument();
+      // 297 * 9.6 = 2,851.20 (may appear multiple times in the card)
+      expect(screen.getAllByText(/R\$\s*2\.851,20/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('/ano')).toBeInTheDocument();
     });
 
     it('should show monthly equivalent', () => {
       render(<PlanCard {...defaultProps} billingPeriod="annual" />);
 
-      // 2,851.20 / 12 = 237.60
-      expect(screen.getByText(/R\$\s*237,60\/mês/)).toBeInTheDocument();
+      // 2,851.20 / 12 = 237.60 (may appear multiple times)
+      expect(screen.getAllByText(/R\$\s*237,60\/mês/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should show 20% savings badge', () => {
@@ -88,8 +88,8 @@ describe('PlanCard Component', () => {
         />
       );
 
-      // 597 * 9.6 = 5,731.20
-      expect(screen.getByText(/R\$\s*5\.731,20/)).toBeInTheDocument();
+      // 597 * 9.6 = 5,731.20 (may appear multiple times)
+      expect(screen.getAllByText(/R\$\s*5\.731,20/).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should calculate Sala de Guerra annual price correctly', () => {
@@ -103,8 +103,8 @@ describe('PlanCard Component', () => {
         />
       );
 
-      // 1497 * 9.6 = 14,371.20
-      expect(screen.getByText(/R\$\s*14\.371,20/)).toBeInTheDocument();
+      // 1497 * 9.6 = 14,371.20 (may appear multiple times)
+      expect(screen.getAllByText(/R\$\s*14\.371,20/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -194,8 +194,8 @@ describe('PlanCard Component', () => {
     it('should use dot as thousands separator', () => {
       render(<PlanCard {...defaultProps} monthlyPrice={1497} billingPeriod="annual" />);
 
-      // 1497 * 9.6 = 14,371.20
-      expect(screen.getByText(/14\.371,20/)).toBeInTheDocument();
+      // 1497 * 9.6 = 14,371.20 (may appear multiple times)
+      expect(screen.getAllByText(/14\.371,20/).length).toBeGreaterThanOrEqual(1);
     });
   });
 

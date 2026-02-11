@@ -725,48 +725,9 @@ async def create_checkout(
     return {"checkout_url": checkout_session.url}
 
 
-@app.post("/webhooks/stripe")
-async def stripe_webhook(request: Request):
-    """Handle Stripe webhook events (checkout completed, subscription updated)."""
-    import stripe as stripe_lib
 
-    stripe_key = os.getenv("STRIPE_SECRET_KEY")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-    if not stripe_key or not webhook_secret:
-        raise HTTPException(status_code=500, detail="Stripe not configured")
-    stripe_lib.api_key = stripe_key
-
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-
-    try:
-        event = stripe_lib.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid webhook signature")
-
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        user_id = session.get("client_reference_id") or session["metadata"].get("user_id")
-        plan_id = session["metadata"].get("plan_id")
-
-        if user_id and plan_id:
-            _activate_plan(user_id, plan_id, session)
-
-    elif event["type"] == "customer.subscription.deleted":
-        sub = event["data"]["object"]
-        _deactivate_stripe_subscription(sub["id"])
-
-    elif event["type"] == "customer.subscription.updated":
-        # Handles plan changes and billing period updates
-        sub = event["data"]["object"]
-        _handle_subscription_updated(sub)
-
-    elif event["type"] == "invoice.payment_succeeded":
-        # Handles successful payment (renewal) — reactivates subscription
-        invoice = event["data"]["object"]
-        _handle_invoice_paid(invoice)
-
-    return {"status": "ok"}
+# NOTE: /webhooks/stripe endpoint is defined in webhooks/stripe.py router
+# (removed duplicate from main.py to fix OpenAPI duplicate operation ID warning)
 
 
 def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):

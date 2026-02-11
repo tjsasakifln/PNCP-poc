@@ -5,7 +5,7 @@ Tests covering scenarios identified in GTM-READINESS-REPORT.md
 Priority: P0 (Pre-GTM Blockers)
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, Mock, MagicMock
 from fastapi.testclient import TestClient
 from datetime import datetime, timezone, timedelta
 from main import app
@@ -41,18 +41,18 @@ class TestLargeFileDownload:
     @patch("main.ENABLE_NEW_PRICING", True)
     @patch("main.rate_limiter")
     @patch("quota.check_quota")
-    @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.check_and_increment_quota_atomic")
     @patch("main.PNCPClient")
     @patch("main.aplicar_todos_filtros")
     @patch("main.create_excel")
+    @patch("main.gerar_resumo")
     def test_download_1000_plus_bids(
         self,
+        mock_gerar_resumo,
         mock_create_excel,
         mock_aplicar_todos_filtros,
         mock_pncp_client_class,
-        mock_save_session,
-        mock_increment_quota,
+        mock_atomic_quota,
         mock_check_quota,
         mock_rate_limiter,
     ):
@@ -76,6 +76,9 @@ class TestLargeFileDownload:
                 quota_reset_date=datetime.now(timezone.utc),
             )
 
+            # Atomic quota check passes
+            mock_atomic_quota.return_value = (True, 101, 899)
+
             # Generate 1200 mock bids
             large_bid_set = []
             for i in range(1200):
@@ -93,7 +96,6 @@ class TestLargeFileDownload:
             mock_client_instance = MagicMock()
             mock_pncp_client_class.return_value = mock_client_instance
             mock_client_instance.fetch_all.return_value = large_bid_set
-            mock_increment_quota.return_value = 101
 
             # Mock filter to return all bids
             mock_aplicar_todos_filtros.return_value = (large_bid_set, {
@@ -109,6 +111,15 @@ class TestLargeFileDownload:
             # Mock Excel generation (should handle large dataset)
             mock_excel_buffer = BytesIO(b"fake excel data with 1200 rows")
             mock_create_excel.return_value = mock_excel_buffer
+
+            # Mock LLM summary
+            from schemas import ResumoLicitacoes
+            mock_gerar_resumo.return_value = ResumoLicitacoes(
+                resumo_executivo="1200 licitações encontradas",
+                total_oportunidades=1200,
+                valor_total=60000000.0,
+                destaques=["SP: 1200 licitações"],
+            )
 
             # Execute search
             response = client.post(
@@ -304,17 +315,16 @@ class TestSessionExpiration:
     """Test session expiration scenarios."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
-    @patch("auth.verify_session_token")
+    @patch("supabase_client.get_supabase")
     def test_expired_session_returns_401(
         self,
-        mock_verify_session,
+        mock_get_supabase,
     ):
-        """Should return 401 when session expires mid-request."""
-        # Don't use auth override - test actual auth
-        from exceptions import AuthenticationError
-
-        # Mock expired session
-        mock_verify_session.side_effect = AuthenticationError("Session expired")
+        """Should return 401 when token is invalid/expired."""
+        # Mock Supabase to reject the token
+        mock_sb = Mock()
+        mock_sb.auth.get_user.side_effect = Exception("Token expired")
+        mock_get_supabase.return_value = mock_sb
 
         response = client.post(
             "/buscar",
@@ -327,11 +337,8 @@ class TestSessionExpiration:
             headers={"Authorization": "Bearer expired-token"},
         )
 
-        # Should return 401 Unauthorized
-        assert response.status_code in [401, 500]  # Depends on error handling
-        # If 500, check error message mentions authentication
-        if response.status_code == 500:
-            assert "authentication" in response.json()["detail"].lower() or "session" in response.json()["detail"].lower()
+        # Should return 401 Unauthorized (auth middleware rejects expired token)
+        assert response.status_code == 401
 
     @patch("main.ENABLE_NEW_PRICING", True)
     @patch("main.rate_limiter")
@@ -396,14 +403,16 @@ class TestConcurrentUsers:
     @patch("main.ENABLE_NEW_PRICING", True)
     @patch("main.rate_limiter")
     @patch("quota.check_quota")
-    @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.check_and_increment_quota_atomic")
     @patch("main.PNCPClient")
+    @patch("main.gerar_resumo")
+    @patch("main.aplicar_todos_filtros")
     def test_concurrent_searches_same_user_race_condition(
         self,
+        mock_aplicar_todos_filtros,
+        mock_gerar_resumo,
         mock_pncp_client_class,
-        mock_save_session,
-        mock_increment_quota,
+        mock_atomic_quota,
         mock_check_quota,
         mock_rate_limiter,
     ):
@@ -411,6 +420,7 @@ class TestConcurrentUsers:
         cleanup = setup_auth_override("user-concurrent")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+            from schemas import ResumoLicitacoes
 
             mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
@@ -429,16 +439,15 @@ class TestConcurrentUsers:
             mock_pncp_client_class.return_value = mock_client_instance
             mock_client_instance.fetch_all.return_value = []
 
-            # Simulate race: both requests see 48 used, both try to increment to 49
-            call_count = [0]
-            def increment_with_race(*args):
-                call_count[0] += 1
-                if call_count[0] == 1:
-                    return 49  # First request: 48 → 49
-                else:
-                    return 50  # Second request: 49 → 50 (or should detect race and fail?)
+            mock_aplicar_todos_filtros.return_value = ([], {"total_raw": 0})
+            mock_gerar_resumo.return_value = ResumoLicitacoes(
+                resumo_executivo="Nenhuma",
+                total_oportunidades=0,
+                valor_total=0.0,
+            )
 
-            mock_increment_quota.side_effect = increment_with_race
+            # Both requests succeed atomically
+            mock_atomic_quota.return_value = (True, 49, 1)
 
             # Execute two searches "simultaneously"
             response1 = client.post(
@@ -457,24 +466,32 @@ class TestConcurrentUsers:
                     "ufs": ["RJ"],
                     "data_inicial": "2026-01-01",
                     "data_final": "2026-01-07",
-                    "setor_id": "tecnologia",
+                    "setor_id": "vestuario",
                 },
             )
 
-            # Both should succeed (no hard quota enforcement at DB level)
+            # Both should succeed
             assert response1.status_code == 200
             assert response2.status_code == 200
 
-            # Verify both incremented quota
-            assert mock_increment_quota.call_count == 2
+            # Verify atomic quota was called for both
+            assert mock_atomic_quota.call_count == 2
         finally:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
     @patch("main.rate_limiter")
     @patch("quota.check_quota")
+    @patch("quota.check_and_increment_quota_atomic")
+    @patch("main.PNCPClient")
+    @patch("main.gerar_resumo")
+    @patch("main.aplicar_todos_filtros")
     def test_concurrent_quota_check_race_condition(
         self,
+        mock_aplicar_todos_filtros,
+        mock_gerar_resumo,
+        mock_pncp_client_class,
+        mock_atomic_quota,
         mock_check_quota,
         mock_rate_limiter,
     ):
@@ -482,15 +499,27 @@ class TestConcurrentUsers:
         cleanup = setup_auth_override("user-race-quota")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
+            from schemas import ResumoLicitacoes
 
             mock_rate_limiter.check_rate_limit.return_value = (True, 0)
 
-            # First check: 1 remaining
-            # Second check: 0 remaining (other request consumed it)
+            mock_client_instance = MagicMock()
+            mock_pncp_client_class.return_value = mock_client_instance
+            mock_client_instance.fetch_all.return_value = []
+
+            mock_aplicar_todos_filtros.return_value = ([], {"total_raw": 0})
+            mock_gerar_resumo.return_value = ResumoLicitacoes(
+                resumo_executivo="Nenhuma",
+                total_oportunidades=0,
+                valor_total=0.0,
+            )
+
+            # First check_quota call: 1 remaining (allowed)
+            # Second check_quota call: 0 remaining (blocked by pre-check)
             call_count = [0]
             def quota_check_with_race(*args):
                 call_count[0] += 1
-                if call_count[0] == 1:
+                if call_count[0] <= 2:  # check_quota is called twice per request (rate limit + main)
                     return QuotaInfo(
                         allowed=True,
                         plan_id="consultor_agil",
@@ -514,6 +543,10 @@ class TestConcurrentUsers:
 
             mock_check_quota.side_effect = quota_check_with_race
 
+            # First atomic increment succeeds
+            # Second never reaches atomic (blocked by check_quota pre-check)
+            mock_atomic_quota.return_value = (True, 50, 0)
+
             # First request should succeed
             response1 = client.post(
                 "/buscar",
@@ -525,14 +558,14 @@ class TestConcurrentUsers:
                 },
             )
 
-            # Second request should fail (quota exhausted)
+            # Second request should fail (quota exhausted at pre-check)
             response2 = client.post(
                 "/buscar",
                 json={
                     "ufs": ["RJ"],
                     "data_inicial": "2026-01-01",
                     "data_final": "2026-01-07",
-                    "setor_id": "tecnologia",
+                    "setor_id": "vestuario",
                 },
             )
 

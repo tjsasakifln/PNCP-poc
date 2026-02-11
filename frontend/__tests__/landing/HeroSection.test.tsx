@@ -6,23 +6,23 @@ describe('HeroSection', () => {
   it('renders headline with new copy', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/Licitações relevantes/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sem ruído/i)).toBeInTheDocument();
+    expect(screen.getByText(/Encontre Oportunidades Relevantes/i)).toBeInTheDocument();
+    expect(screen.getByText(/em 3 Minutos/i)).toBeInTheDocument();
   });
 
   it('renders subheadline with stats', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/6 milhões de publicações por ano/i)).toBeInTheDocument();
-    expect(screen.getByText(/Filtros inteligentes entregam/i)).toBeInTheDocument();
+    expect(screen.getByText(/Algoritmos inteligentes filtram milhares de licitações/i)).toBeInTheDocument();
+    expect(screen.getByText(/entregar apenas o que importa/i)).toBeInTheDocument();
   });
 
   it('renders primary CTA button with new text', () => {
     render(<HeroSection />);
 
-    const primaryCTA = screen.getByRole('link', { name: /Criar conta grátis/i });
+    // Primary CTA is now a GradientButton (renders as <button>) not a link
+    const primaryCTA = screen.getByRole('button', { name: /Economize 10h\/Semana Agora/i });
     expect(primaryCTA).toBeInTheDocument();
-    expect(primaryCTA).toHaveAttribute('href', '/signup?source=landing-cta');
   });
 
   it('renders secondary CTA button with scroll functionality', () => {
@@ -32,11 +32,13 @@ describe('HeroSection', () => {
     expect(secondaryCTA).toBeInTheDocument();
   });
 
-  it('renders credibility badge with institutional copy', () => {
+  it('renders stats badges with values', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/Dados oficiais em tempo real/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeInTheDocument();
+    // Stats badges show Mais Rapido, Precisao, Portais
+    expect(screen.getByText(/Mais Rápido/i)).toBeInTheDocument();
+    expect(screen.getByText(/Precisão/i)).toBeInTheDocument();
+    expect(screen.getByText(/Portais/i)).toBeInTheDocument();
   });
 
   it('scrolls to section when secondary CTA is clicked', async () => {
@@ -64,7 +66,6 @@ describe('HeroSection', () => {
 
     // Check for design token classes
     expect(container.querySelector('.text-ink')).toBeInTheDocument();
-    expect(container.querySelector('.text-brand-blue')).toBeInTheDocument();
-    expect(container.querySelector('.bg-brand-navy')).toBeInTheDocument();
+    expect(container.querySelector('.text-gradient')).toBeInTheDocument();
   });
 });

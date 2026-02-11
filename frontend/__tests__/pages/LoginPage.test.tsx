@@ -60,7 +60,8 @@ describe('LoginPage Component', () => {
     it('should render login form', () => {
       render(<LoginPage />);
 
-      expect(screen.getByRole('heading')).toBeInTheDocument();
+      // Multiple headings may exist; just check at least one is present
+      expect(screen.getAllByRole('heading').length).toBeGreaterThan(0);
       expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
     });
 

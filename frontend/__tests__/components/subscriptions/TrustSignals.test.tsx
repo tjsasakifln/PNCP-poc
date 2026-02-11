@@ -170,7 +170,7 @@ describe('TrustSignals Component', () => {
       const { container } = render(<TrustSignals />);
 
       const checkmarks = container.querySelectorAll('svg');
-      expect(checkmarks.length).toBeGreaterThan(3); // At least 3 checkmarks
+      expect(checkmarks.length).toBeGreaterThanOrEqual(3); // At least 3 checkmarks
     });
   });
 
@@ -216,22 +216,24 @@ describe('TrustSignals Component', () => {
     it('should apply success styling to social proof badge', () => {
       render(<TrustSignals annualConversionRate={65} />);
 
-      const badge = screen.getByText(/65%/).closest('div');
-      expect(badge).toHaveClass('bg-success-subtle', 'border-success');
+      const badge = screen.getByText(/65%/).closest('.bg-success-subtle');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveClass('border-success');
     });
 
     it('should apply warning styling to launch offer', () => {
       render(<TrustSignals currentAnnualSignups={50} />);
 
-      const launchOffer = screen.getByText(/Oferta de Lançamento/i).closest('div');
-      expect(launchOffer).toHaveClass('bg-warning-subtle', 'border-warning');
+      const launchOffer = screen.getByText(/Oferta de Lançamento/i).closest('.bg-warning-subtle');
+      expect(launchOffer).toBeInTheDocument();
+      expect(launchOffer).toHaveClass('border-warning');
     });
 
     it('should animate launch offer appearance', () => {
       render(<TrustSignals currentAnnualSignups={50} />);
 
-      const launchOffer = screen.getByText(/Oferta de Lançamento/i).closest('div');
-      expect(launchOffer).toHaveClass('animate-fade-in');
+      const launchOffer = screen.getByText(/Oferta de Lançamento/i).closest('.animate-fade-in');
+      expect(launchOffer).toBeInTheDocument();
     });
   });
 });

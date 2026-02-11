@@ -354,7 +354,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "
             dias_restantes = (abertura - hoje).days
             if dias_restantes < 7:
                 orgao = lic.get("nomeOrgao", "Órgão não informado")
-                alerta = f"⚠️ Licitação encerra em {dias_restantes} dia(s) - {orgao}"
+                alerta = f"⚠️ Atenção: menos de 7 dias! Licitação encerra em {dias_restantes} dia(s) - {orgao}"
                 break  # First urgent bid found
 
     return ResumoLicitacoes(

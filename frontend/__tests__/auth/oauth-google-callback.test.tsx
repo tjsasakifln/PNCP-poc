@@ -25,6 +25,7 @@ jest.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       getSession: jest.fn(),
+      getUser: jest.fn(),
       exchangeCodeForSession: jest.fn(),
       onAuthStateChange: jest.fn(),
     },
@@ -39,9 +40,9 @@ describe('AuthCallbackPage - OAuth Google Bug Regression', () => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue({ push: mockPush });
 
-    // Mock window.location.search
+    // Mock window.location with both search and href
     delete (window as any).location;
-    (window as any).location = { search: '' };
+    (window as any).location = { search: '', href: '' };
   });
 
   describe('PKCE Flow - Authorization Code Exchange', () => {
@@ -81,9 +82,9 @@ describe('AuthCallbackPage - OAuth Google Bug Regression', () => {
         expect(screen.getByText(/autenticação bem-sucedida/i)).toBeInTheDocument();
       });
 
-      // Should redirect to /buscar after successful authentication
+      // Should redirect to /buscar after successful authentication (uses window.location.href)
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/buscar');
+        expect(window.location.href).toBe('/buscar');
       }, { timeout: 1000 });
     });
 
@@ -111,9 +112,9 @@ describe('AuthCallbackPage - OAuth Google Bug Regression', () => {
     it('should handle missing code parameter', async () => {
       (window as any).location.search = ''; // No code parameter
 
-      // Mock getSession returning no session
-      (supabase.auth.getSession as jest.Mock).mockResolvedValue({
-        data: { session: null },
+      // Mock getUser returning no user (component uses getUser instead of getSession)
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
         error: null,
       });
 
@@ -164,9 +165,9 @@ describe('AuthCallbackPage - OAuth Google Bug Regression', () => {
 
       render(<AuthCallbackPage />);
 
-      // Wait for redirect (includes 500ms delay in component)
+      // Wait for redirect (component uses window.location.href)
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/buscar');
+        expect(window.location.href).toBe('/buscar');
       }, { timeout: 1000 });
     });
   });
@@ -177,8 +178,8 @@ describe('AuthCallbackPage - OAuth Google Bug Regression', () => {
 
       (window as any).location.search = ''; // No code
 
-      (supabase.auth.getSession as jest.Mock).mockResolvedValue({
-        data: { session: null },
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
         error: null,
       });
 

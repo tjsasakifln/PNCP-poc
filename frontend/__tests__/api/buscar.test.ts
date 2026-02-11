@@ -160,9 +160,8 @@ describe("POST /api/buscar", () => {
 
   it("should handle network errors after all retries", async () => {
     jest.useRealTimers(); // Use real timers for retry delays
-    // Network errors are retried 3 times before failing
+    // Network errors are retried MAX_RETRIES=2 times before failing
     (global.fetch as jest.Mock)
-      .mockRejectedValueOnce(new Error("Network error"))
       .mockRejectedValueOnce(new Error("Network error"))
       .mockRejectedValueOnce(new Error("Network error"));
 
@@ -183,27 +182,17 @@ describe("POST /api/buscar", () => {
 
     expect(response.status).toBe(503);
     expect(data.message).toContain("Backend indisponível");
-    // Should have tried 3 times (initial + 2 retries)
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    // Should have tried 2 times (MAX_RETRIES=2)
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   }, 15000);
 
-  it("should retry on 502 and succeed on second attempt", async () => {
-    jest.useRealTimers(); // Use real timers for retry delays
-    const mockBackendResponse = {
-      resumo: { resumo_executivo: "Test", total_oportunidades: 1, valor_total: 50000, destaques: [], distribuicao_uf: { SC: 1 }, alerta_urgencia: null },
-      excel_base64: Buffer.from("test").toString("base64")
-    };
-
-    // First call returns 502, second call succeeds
+  it("should not retry on 502 (only 503 is retryable)", async () => {
+    // 502 is NOT retryable — backend already retried PNCP internally
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: false,
         status: 502,
         json: async () => ({ detail: "PNCP unavailable" })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockBackendResponse
       });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
@@ -215,17 +204,16 @@ describe("POST /api/buscar", () => {
     const response = await POST(request);
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data.resumo).toEqual(mockBackendResponse.resumo);
-    // Should have called fetch twice (initial 502 + successful retry)
-    expect(global.fetch).toHaveBeenCalledTimes(2);
-  }, 15000);
+    expect(response.status).toBe(502);
+    expect(data.message).toBe("PNCP unavailable");
+    // Should only call fetch once (no retries for 502)
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 
   it("should retry on 503 and fail after max retries", async () => {
     jest.useRealTimers(); // Use real timers for retry delays
-    // All 3 attempts return 503
+    // All 2 attempts return 503 (MAX_RETRIES=2)
     (global.fetch as jest.Mock)
-      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) })
       .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) })
       .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) });
 
@@ -240,7 +228,7 @@ describe("POST /api/buscar", () => {
 
     expect(response.status).toBe(503);
     expect(data.message).toBe("Service unavailable");
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   }, 15000);
 
   it("should not retry on non-retryable errors (400, 401, 500)", async () => {
@@ -305,7 +293,7 @@ describe("POST /api/buscar", () => {
     );
   });
 
-  it("should schedule cache clearing after 10 minutes", async () => {
+  it("should schedule cache clearing after 60 minutes", async () => {
     const mockBackendResponse = {
       resumo: {
         resumo_executivo: "Test",
@@ -339,10 +327,10 @@ describe("POST /api/buscar", () => {
 
     await POST(request);
 
-    // Verify setTimeout was called with 10 minutes (600000ms)
+    // Verify setTimeout was called with 60 minutes (3600000ms)
     expect(setTimeoutSpy).toHaveBeenCalledWith(
       expect.any(Function),
-      10 * 60 * 1000
+      60 * 60 * 1000
     );
 
     setTimeoutSpy.mockRestore();

@@ -26,9 +26,12 @@ const mockSignInWithOtp = jest.fn();
 const mockSignInWithOAuth = jest.fn();
 const mockSignOut = jest.fn();
 
+const mockGetUser = jest.fn();
+
 jest.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
+      getUser: () => mockGetUser(),
       getSession: () => mockGetSession(),
       onAuthStateChange: (callback: (event: string, session: unknown) => void) => {
         mockOnAuthStateChange(callback);
@@ -75,6 +78,7 @@ describe('AuthProvider Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRouterPush.mockClear();
+    mockGetUser.mockResolvedValue({ data: { user: null } });
     mockGetSession.mockResolvedValue({ data: { session: null } });
     mockFetch.mockResolvedValue({
       ok: true,
@@ -83,7 +87,7 @@ describe('AuthProvider Component', () => {
   });
 
   it('should provide loading state initially', async () => {
-    mockGetSession.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockGetUser.mockImplementation(() => new Promise(() => {})); // Never resolves
 
     render(
       <AuthProvider>
@@ -95,7 +99,7 @@ describe('AuthProvider Component', () => {
   });
 
   it('should set loading to false after session check', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+    mockGetUser.mockResolvedValue({ data: { user: null } });
 
     render(
       <AuthProvider>
@@ -109,7 +113,7 @@ describe('AuthProvider Component', () => {
   });
 
   it('should provide null user when not authenticated', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+    mockGetUser.mockResolvedValue({ data: { user: null } });
 
     render(
       <AuthProvider>
@@ -124,11 +128,13 @@ describe('AuthProvider Component', () => {
   });
 
   it('should provide user data when authenticated', async () => {
+    const mockUser = { email: 'test@example.com', id: '123' };
     const mockSession = {
-      user: { email: 'test@example.com', id: '123' },
+      user: mockUser,
       access_token: 'token123',
     };
 
+    mockGetUser.mockResolvedValue({ data: { user: mockUser } });
     mockGetSession.mockResolvedValue({ data: { session: mockSession } });
 
     render(
@@ -144,7 +150,7 @@ describe('AuthProvider Component', () => {
   });
 
   it('should subscribe to auth state changes', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+    mockGetUser.mockResolvedValue({ data: { user: null } });
 
     render(
       <AuthProvider>
@@ -160,7 +166,7 @@ describe('AuthProvider Component', () => {
   it('should update state when auth changes', async () => {
     let authCallback: ((event: string, session: unknown) => void) | null = null;
 
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+    mockGetUser.mockResolvedValue({ data: { user: null } });
     mockOnAuthStateChange.mockImplementation((callback) => {
       authCallback = callback;
       return { data: { subscription: { unsubscribe: jest.fn() } } };
@@ -177,10 +183,14 @@ describe('AuthProvider Component', () => {
     });
 
     // Simulate auth state change
+    const newUser = { email: 'new@example.com', id: '456' };
     const newSession = {
-      user: { email: 'new@example.com', id: '456' },
+      user: newUser,
       access_token: 'new-token',
     };
+
+    // The onAuthStateChange callback calls getUser() to revalidate
+    mockGetUser.mockResolvedValue({ data: { user: newUser } });
 
     await act(async () => {
       if (authCallback) {
@@ -197,10 +207,11 @@ describe('AuthProvider Component', () => {
 describe('Admin status', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetUser.mockResolvedValue({ data: { user: null } });
   });
 
   it('should set isAdmin to false when not authenticated', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+    mockGetUser.mockResolvedValue({ data: { user: null } });
 
     render(
       <AuthProvider>
@@ -214,11 +225,13 @@ describe('Admin status', () => {
   });
 
   it('should fetch admin status when authenticated', async () => {
+    const mockUser = { email: 'test@example.com', id: '123' };
     const mockSession = {
-      user: { email: 'test@example.com', id: '123' },
+      user: mockUser,
       access_token: 'token123',
     };
 
+    mockGetUser.mockResolvedValue({ data: { user: mockUser } });
     mockGetSession.mockResolvedValue({ data: { session: mockSession } });
     mockFetch.mockResolvedValue({
       ok: true,
@@ -242,11 +255,13 @@ describe('Admin status', () => {
   });
 
   it('should set isAdmin to true when backend returns is_admin true', async () => {
+    const mockUser = { email: 'admin@example.com', id: '123' };
     const mockSession = {
-      user: { email: 'admin@example.com', id: '123' },
+      user: mockUser,
       access_token: 'admin-token',
     };
 
+    mockGetUser.mockResolvedValue({ data: { user: mockUser } });
     mockGetSession.mockResolvedValue({ data: { session: mockSession } });
     mockFetch.mockResolvedValue({
       ok: true,
@@ -265,11 +280,13 @@ describe('Admin status', () => {
   });
 
   it('should set isAdmin to false when backend returns error', async () => {
+    const mockUser = { email: 'test@example.com', id: '123' };
     const mockSession = {
-      user: { email: 'test@example.com', id: '123' },
+      user: mockUser,
       access_token: 'token123',
     };
 
+    mockGetUser.mockResolvedValue({ data: { user: mockUser } });
     mockGetSession.mockResolvedValue({ data: { session: mockSession } });
     mockFetch.mockResolvedValue({
       ok: false,
@@ -291,6 +308,7 @@ describe('Admin status', () => {
 describe('useAuth hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetUser.mockResolvedValue({ data: { user: null } });
     mockGetSession.mockResolvedValue({ data: { session: null } });
   });
 
@@ -308,6 +326,7 @@ describe('useAuth hook', () => {
 describe('Auth methods', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetUser.mockResolvedValue({ data: { user: null } });
     mockGetSession.mockResolvedValue({ data: { session: null } });
     mockFetch.mockResolvedValue({
       ok: true,
@@ -439,6 +458,9 @@ describe('Auth methods', () => {
 
     expect(mockSignInWithOtp).toHaveBeenCalledWith({
       email: 'magic@example.com',
+      options: expect.objectContaining({
+        emailRedirectTo: expect.stringContaining('/auth/callback'),
+      }),
     });
   });
 

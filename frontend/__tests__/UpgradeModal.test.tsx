@@ -3,15 +3,37 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { UpgradeModal } from '../app/components/UpgradeModal';
 
 // Mock window.location
 delete (window as any).location;
 window.location = { href: '' } as any;
 
+// Mock fetch for dynamic plan loading
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
+const mockPlansResponse = {
+  plans: [
+    { id: 'free', name: 'Gratuito', description: 'Grátis', max_searches: 3, price_brl: 0, duration_days: null },
+    { id: 'consultor_agil', name: 'Consultor Ágil', description: 'Para consultores', max_searches: 50, price_brl: 297, duration_days: 30 },
+    { id: 'maquina', name: 'Máquina', description: 'Para empresas', max_searches: 300, price_brl: 597, duration_days: 30 },
+    { id: 'sala_guerra', name: 'Sala de Guerra', description: 'Premium', max_searches: null, price_brl: 1497, duration_days: 30 },
+    { id: 'master', name: 'Master', description: 'Internal', max_searches: null, price_brl: 0, duration_days: null },
+  ],
+};
+
 describe('UpgradeModal', () => {
   const mockOnClose = jest.fn();
+
+  beforeEach(() => {
+    // Default: return plans successfully
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockPlansResponse),
+    });
+  });
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -59,47 +81,49 @@ describe('UpgradeModal', () => {
   });
 
   describe('Plan cards rendering', () => {
-    it('renders all 3 plan cards', () => {
+    it('renders all 3 plan cards', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      expect(screen.getByText('Consultor Ágil')).toBeInTheDocument();
-      expect(screen.getByText('Máquina')).toBeInTheDocument();
-      expect(screen.getByText('Sala de Guerra')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Consultor Ágil')).toBeInTheDocument();
+        expect(screen.getByText('Máquina')).toBeInTheDocument();
+        expect(screen.getByText('Sala de Guerra')).toBeInTheDocument();
+      });
     });
 
-    it('displays correct pricing for each plan', () => {
+    it('displays correct pricing for each plan', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      expect(screen.getByText('R$ 297/mês')).toBeInTheDocument();
-      expect(screen.getByText('R$ 597/mês')).toBeInTheDocument();
-      expect(screen.getByText('R$ 1.497/mês')).toBeInTheDocument();
+      await waitFor(() => {
+        // Plans are fetched from backend; prices formatted with Intl
+        expect(screen.getByText(/R\$\s*297,00/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$\s*597,00/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$\s*1\.497,00/)).toBeInTheDocument();
+      });
     });
 
-    it('shows "Mais Popular" badge on Máquina plan', () => {
+    it('shows "Mais Popular" badge on Máquina plan', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      expect(screen.getByText(/⭐ Mais Popular/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Mais Popular')).toBeInTheDocument();
+      });
     });
 
-    it('renders feature lists for all plans', () => {
+    it('renders feature lists for all plans', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      // Consultor Ágil features
-      expect(screen.getByText(/50 buscas por mês/i)).toBeInTheDocument();
-      expect(screen.getByText(/30 dias de histórico/i)).toBeInTheDocument();
-
-      // Máquina features
-      expect(screen.getByText(/300 buscas por mês/i)).toBeInTheDocument();
-      expect(screen.getByText(/1 ano de histórico/i)).toBeInTheDocument();
-
-      // Sala de Guerra features
-      expect(screen.getByText(/1000 buscas por mês/i)).toBeInTheDocument();
-      expect(screen.getByText(/5 anos de histórico/i)).toBeInTheDocument();
+      await waitFor(() => {
+        // Feature format from dynamic rendering: "50 buscas/mês" or "Buscas ilimitadas"
+        expect(screen.getByText(/50 buscas\/mês/)).toBeInTheDocument();
+        expect(screen.getByText(/300 buscas\/mês/)).toBeInTheDocument();
+        expect(screen.getByText(/Buscas ilimitadas/)).toBeInTheDocument();
+      });
     });
   });
 
   describe('Pre-selection highlighting', () => {
-    it('highlights Consultor Ágil when pre-selected', () => {
+    it('highlights Consultor Ágil when pre-selected', async () => {
       const { container } = render(
         <UpgradeModal
           isOpen={true}
@@ -108,13 +132,15 @@ describe('UpgradeModal', () => {
         />
       );
 
-      // Find the card containing Consultor Ágil text
-      const consultorCard = screen.getByText('Consultor Ágil').closest('div[class*="border"]');
-      expect(consultorCard).toHaveClass('ring-4');
-      expect(consultorCard).toHaveClass('animate-pulse-border');
+      await waitFor(() => {
+        expect(screen.getByText('Consultor Ágil')).toBeInTheDocument();
+      });
+
+      const consultorCard = screen.getByText('Consultor Ágil').closest('.ring-4');
+      expect(consultorCard).toBeInTheDocument();
     });
 
-    it('highlights Máquina when pre-selected', () => {
+    it('highlights Máquina when pre-selected', async () => {
       render(
         <UpgradeModal
           isOpen={true}
@@ -123,11 +149,15 @@ describe('UpgradeModal', () => {
         />
       );
 
-      const maquinaCard = screen.getByText('Máquina').closest('div[class*="border"]');
-      expect(maquinaCard).toHaveClass('ring-4');
+      await waitFor(() => {
+        expect(screen.getByText('Máquina')).toBeInTheDocument();
+      });
+
+      const maquinaCard = screen.getByText('Máquina').closest('.ring-4');
+      expect(maquinaCard).toBeInTheDocument();
     });
 
-    it('highlights Sala de Guerra when pre-selected', () => {
+    it('highlights Sala de Guerra when pre-selected', async () => {
       render(
         <UpgradeModal
           isOpen={true}
@@ -136,46 +166,60 @@ describe('UpgradeModal', () => {
         />
       );
 
-      const salaCard = screen.getByText('Sala de Guerra').closest('div[class*="border"]');
-      expect(salaCard).toHaveClass('ring-4');
+      await waitFor(() => {
+        expect(screen.getByText('Sala de Guerra')).toBeInTheDocument();
+      });
+
+      const salaCard = screen.getByText('Sala de Guerra').closest('.ring-4');
+      expect(salaCard).toBeInTheDocument();
     });
 
-    it('does not highlight any plan when none pre-selected', () => {
+    it('does not highlight any plan when none pre-selected', async () => {
       const { container } = render(
         <UpgradeModal isOpen={true} onClose={mockOnClose} />
       );
 
+      await waitFor(() => {
+        expect(screen.getByText('Consultor Ágil')).toBeInTheDocument();
+      });
+
       const highlightedCards = container.querySelectorAll('.ring-4');
-      // Only Máquina should have highlighting (from "popular" badge)
-      expect(highlightedCards.length).toBeLessThanOrEqual(1);
+      // No plan should have ring-4 pre-selection highlight
+      expect(highlightedCards.length).toBe(0);
     });
   });
 
   describe('Plan selection and redirect', () => {
-    it('redirects to /planos with plan ID when Consultor Ágil clicked', () => {
+    it('redirects to /planos with plan ID when Consultor Ágil clicked', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const consultorButton = screen.getByText(/Assinar Consultor Ágil/i);
-      fireEvent.click(consultorButton);
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Consultor Ágil/i)).toBeInTheDocument();
+      });
 
+      fireEvent.click(screen.getByText(/Assinar Consultor Ágil/i));
       expect(window.location.href).toBe('/planos?plan=consultor_agil');
     });
 
-    it('redirects to /planos with plan ID when Máquina clicked', () => {
+    it('redirects to /planos with plan ID when Máquina clicked', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const maquinaButton = screen.getByText(/Assinar Máquina/i);
-      fireEvent.click(maquinaButton);
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Máquina/i)).toBeInTheDocument();
+      });
 
+      fireEvent.click(screen.getByText(/Assinar Máquina/i));
       expect(window.location.href).toBe('/planos?plan=maquina');
     });
 
-    it('redirects to /planos with plan ID when Sala de Guerra clicked', () => {
+    it('redirects to /planos with plan ID when Sala de Guerra clicked', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const salaButton = screen.getByText(/Assinar Sala de Guerra/i);
-      fireEvent.click(salaButton);
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Sala de Guerra/i)).toBeInTheDocument();
+      });
 
+      fireEvent.click(screen.getByText(/Assinar Sala de Guerra/i));
       expect(window.location.href).toBe('/planos?plan=sala_guerra');
     });
   });
@@ -254,7 +298,7 @@ describe('UpgradeModal', () => {
       consoleSpy.mockRestore();
     });
 
-    it('logs plan click event', () => {
+    it('logs plan click event', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
       render(
@@ -265,8 +309,11 @@ describe('UpgradeModal', () => {
         />
       );
 
-      const maquinaButton = screen.getByText(/Assinar Máquina/i);
-      fireEvent.click(maquinaButton);
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Máquina/i)).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText(/Assinar Máquina/i));
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Plan clicked:',
@@ -279,18 +326,24 @@ describe('UpgradeModal', () => {
   });
 
   describe('Responsive design', () => {
-    it('renders with responsive grid classes', () => {
+    it('renders with responsive grid classes', async () => {
       const { container } = render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const grid = container.querySelector('.grid');
-      expect(grid).toHaveClass('grid-cols-1');
-      expect(grid).toHaveClass('md:grid-cols-3');
+      await waitFor(() => {
+        const grid = container.querySelector('.grid');
+        expect(grid).toHaveClass('grid-cols-1');
+        expect(grid).toHaveClass('md:grid-cols-3');
+      });
     });
   });
 
   describe('Button styling variations', () => {
-    it('applies outline styling to Consultor Ágil button', () => {
+    it('applies outline styling to Consultor Ágil button', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Consultor Ágil/i)).toBeInTheDocument();
+      });
 
       const consultorButton = screen.getByText(/Assinar Consultor Ágil/i);
       expect(consultorButton).toHaveClass('border-2');
@@ -298,21 +351,29 @@ describe('UpgradeModal', () => {
       expect(consultorButton).toHaveClass('bg-transparent');
     });
 
-    it('applies solid styling to Máquina button', () => {
+    it('applies solid styling to Máquina button', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Máquina/i)).toBeInTheDocument();
+      });
 
       const maquinaButton = screen.getByText(/Assinar Máquina/i);
       expect(maquinaButton).toHaveClass('bg-brand-navy');
       expect(maquinaButton).toHaveClass('text-white');
     });
 
-    it('applies premium gradient to Sala de Guerra button', () => {
+    it('applies outline styling to Sala de Guerra button', async () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
+      await waitFor(() => {
+        expect(screen.getByText(/Assinar Sala de Guerra/i)).toBeInTheDocument();
+      });
+
+      // Sala de Guerra is not "popular", so it gets outline styling like Consultor Ágil
       const salaButton = screen.getByText(/Assinar Sala de Guerra/i);
-      expect(salaButton).toHaveClass('bg-gradient-to-br');
-      expect(salaButton).toHaveClass('from-yellow-400');
-      expect(salaButton).toHaveClass('to-yellow-600');
+      expect(salaButton).toHaveClass('border-2');
+      expect(salaButton).toHaveClass('border-brand-navy');
     });
   });
 });

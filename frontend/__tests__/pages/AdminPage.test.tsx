@@ -177,7 +177,7 @@ describe('AdminPage Component', () => {
       await waitFor(() => {
         const backLink = screen.getByRole('link', { name: /Voltar para início/i });
         expect(backLink).toBeInTheDocument();
-        expect(backLink).toHaveAttribute('href', '/');
+        expect(backLink).toHaveAttribute('href', '/buscar');
       });
     });
   });
@@ -729,12 +729,12 @@ describe('AdminPage Component', () => {
       const planSelect = selects.find(s => s.classList.contains('text-xs'));
 
       await act(async () => {
-        fireEvent.change(planSelect!, { target: { value: 'monthly' } });
+        fireEvent.change(planSelect!, { target: { value: 'maquina' } });
       });
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/admin/users/1/assign-plan?plan_id=monthly'),
+          expect.stringContaining('/admin/users/1/assign-plan?plan_id=maquina'),
           expect.objectContaining({
             method: 'POST',
           })

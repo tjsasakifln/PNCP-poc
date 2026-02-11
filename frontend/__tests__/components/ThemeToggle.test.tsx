@@ -94,7 +94,8 @@ describe('ThemeToggle Component', () => {
       expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
     });
 
-    const darkOption = screen.getAllByRole('button').find(btn => btn.textContent === 'Dark');
+    // Button textContent includes the label AND description, so use includes()
+    const darkOption = screen.getAllByRole('button').find(btn => btn.textContent?.includes('Dark'));
     fireEvent.click(darkOption!);
 
     // Check localStorage (correct key is 'bidiq-theme')

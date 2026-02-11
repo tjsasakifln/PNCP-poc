@@ -166,7 +166,9 @@ describe('LoadingProgress Component', () => {
     });
 
     it('should format elapsed time as "Xmin XXs" after 60 seconds', () => {
-      render(<LoadingProgress />);
+      // Need estimatedTime large enough so that 65s does NOT exceed it
+      // (otherwise the component displays "Finalizando..." instead of the time)
+      render(<LoadingProgress estimatedTime={120} />);
 
       act(() => {
         jest.advanceTimersByTime(65000); // 65 seconds

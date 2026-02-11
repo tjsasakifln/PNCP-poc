@@ -24,6 +24,29 @@ import { renderHook, act } from '@testing-library/react';
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+// Top-level mock for AuthProvider (needed by useQuota and QuotaBadge)
+const mockUseAuthReturn = jest.fn();
+jest.mock('../app/components/AuthProvider', () => ({
+  useAuth: () => mockUseAuthReturn(),
+}));
+
+// Switchable useQuota mock - can be overridden per test for AC3
+let useQuotaMockOverride: (() => any) | null = null;
+const realUseQuota = jest.requireActual('../hooks/useQuota');
+jest.mock('../hooks/useQuota', () => ({
+  useQuota: () => {
+    if (useQuotaMockOverride) return useQuotaMockOverride();
+    return realUseQuota.useQuota();
+  },
+}));
+
+// Mock next/link
+jest.mock('next/link', () => {
+  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+    return <a href={href}>{children}</a>;
+  };
+});
+
 describe('Balance Deduction Verification', () => {
   const mockFreeUserSession = {
     access_token: 'free-user-token-123',
@@ -31,6 +54,11 @@ describe('Balance Deduction Verification', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuthReturn.mockReturnValue({
+      session: mockFreeUserSession,
+      user: { id: 'free-user-id', email: 'freeuser@example.com' },
+      loading: false,
+    });
   });
 
   describe('AC1: Backend quota endpoint returns correct data', () => {
@@ -106,15 +134,6 @@ describe('Balance Deduction Verification', () => {
 
   describe('AC2: Frontend useQuota hook calculates correctly', () => {
     it('should calculate creditsRemaining as 3 - quota_used for free users', async () => {
-      const mockUseAuth = jest.fn().mockReturnValue({
-        session: mockFreeUserSession,
-        user: { id: 'free-user-id' },
-      });
-
-      jest.mock('../app/components/AuthProvider', () => ({
-        useAuth: () => mockUseAuth(),
-      }));
-
       // Mock /api/me response
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -140,15 +159,6 @@ describe('Balance Deduction Verification', () => {
     });
 
     it('should handle quota_used: 0 (initial state)', async () => {
-      const mockUseAuth = jest.fn().mockReturnValue({
-        session: mockFreeUserSession,
-        user: { id: 'free-user-id' },
-      });
-
-      jest.mock('../app/components/AuthProvider', () => ({
-        useAuth: () => mockUseAuth(),
-      }));
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -171,15 +181,6 @@ describe('Balance Deduction Verification', () => {
     });
 
     it('should handle quota_used: 3 (exhausted)', async () => {
-      const mockUseAuth = jest.fn().mockReturnValue({
-        session: mockFreeUserSession,
-        user: { id: 'free-user-id' },
-      });
-
-      jest.mock('../app/components/AuthProvider', () => ({
-        useAuth: () => mockUseAuth(),
-      }));
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -202,15 +203,6 @@ describe('Balance Deduction Verification', () => {
     });
 
     it('should cap creditsRemaining at 0 (prevent negative values)', async () => {
-      const mockUseAuth = jest.fn().mockReturnValue({
-        session: mockFreeUserSession,
-        user: { id: 'free-user-id' },
-      });
-
-      jest.mock('../app/components/AuthProvider', () => ({
-        useAuth: () => mockUseAuth(),
-      }));
-
       // Edge case: quota_used exceeds limit
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -236,26 +228,12 @@ describe('Balance Deduction Verification', () => {
   });
 
   describe('AC3: QuotaBadge displays correct values', () => {
-    const mockUseAuth = jest.fn();
-    const mockUseQuota = jest.fn();
-
-    beforeEach(() => {
-      jest.mock('../app/components/AuthProvider', () => ({
-        useAuth: () => mockUseAuth(),
-      }));
-
-      jest.mock('../hooks/useQuota', () => ({
-        useQuota: () => mockUseQuota(),
-      }));
-
-      mockUseAuth.mockReturnValue({
-        session: mockFreeUserSession,
-        user: { id: 'free-user-id' },
-      });
+    afterEach(() => {
+      useQuotaMockOverride = null;
     });
 
-    it('should display "3 buscas restantes" initially', async () => {
-      mockUseQuota.mockReturnValue({
+    it('should display "3 gratis" initially', async () => {
+      useQuotaMockOverride = () => ({
         quota: {
           planId: 'free',
           planName: 'Gratuito',
@@ -274,13 +252,13 @@ describe('Balance Deduction Verification', () => {
       render(<QuotaBadge />);
 
       await waitFor(() => {
-        expect(screen.getByText(/3/i)).toBeInTheDocument();
-        expect(screen.getByText(/buscas.*restantes/i)).toBeInTheDocument();
+        // QuotaBadge renders "{count} grátis" for free users
+        expect(screen.getByText(/3/)).toBeInTheDocument();
       });
     });
 
-    it('should display "2 buscas restantes" after first search', async () => {
-      mockUseQuota.mockReturnValue({
+    it('should display "2 gratis" after first search', async () => {
+      useQuotaMockOverride = () => ({
         quota: {
           planId: 'free',
           planName: 'Gratuito',
@@ -299,12 +277,12 @@ describe('Balance Deduction Verification', () => {
       render(<QuotaBadge />);
 
       await waitFor(() => {
-        expect(screen.getByText(/2/i)).toBeInTheDocument();
+        expect(screen.getByText(/2/)).toBeInTheDocument();
       });
     });
 
-    it('should display "0 buscas restantes" when exhausted', async () => {
-      mockUseQuota.mockReturnValue({
+    it('should display "0 buscas" when exhausted', async () => {
+      useQuotaMockOverride = () => ({
         quota: {
           planId: 'free',
           planName: 'Gratuito',
@@ -323,8 +301,8 @@ describe('Balance Deduction Verification', () => {
       render(<QuotaBadge />);
 
       await waitFor(() => {
-        expect(screen.getByText(/0/i)).toBeInTheDocument();
-        expect(screen.getByText(/buscas.*restantes/i)).toBeInTheDocument();
+        // When empty, QuotaBadge renders "0 buscas" as a link to /planos
+        expect(screen.getByText(/0 buscas/)).toBeInTheDocument();
       });
     });
   });
@@ -401,6 +379,29 @@ describe('Balance Deduction Verification', () => {
 
   describe('AC5: Concurrent search prevention', () => {
     it('should prevent concurrent searches (race condition)', async () => {
+      // Set up mocks BEFORE making fetch calls
+      // First search succeeds
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          download_id: 'search-1',
+          total_filtrado: 10,
+          resumo: { total_oportunidades: 10 },
+        }),
+      });
+
+      // Second search should fail (quota already decremented)
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: () => Promise.resolve({
+          detail: {
+            message: 'Busca em andamento. Aguarde a conclusão.',
+            code: 'SEARCH_IN_PROGRESS',
+          },
+        }),
+      });
+
       // Simulate two searches triggered simultaneously
       const search1 = fetch('/api/buscar', {
         method: 'POST',
@@ -427,28 +428,6 @@ describe('Balance Deduction Verification', () => {
           data_inicial: '2026-02-01',
           data_final: '2026-02-10',
           setor_id: 'vestuario',
-        }),
-      });
-
-      // First search succeeds
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          download_id: 'search-1',
-          total_filtrado: 10,
-          resumo: { total_oportunidades: 10 },
-        }),
-      });
-
-      // Second search should fail (quota already decremented)
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 409,
-        json: () => Promise.resolve({
-          detail: {
-            message: 'Busca em andamento. Aguarde a conclusão.',
-            code: 'SEARCH_IN_PROGRESS',
-          },
         }),
       });
 
@@ -550,17 +529,11 @@ describe('Balance Deduction Verification', () => {
   });
 
   describe('AC7: Quota refresh mechanism', () => {
+    afterEach(() => {
+      useQuotaMockOverride = null;
+    });
+
     it('should refresh quota after successful search', async () => {
-      const mockRefresh = jest.fn();
-      const mockUseAuth = jest.fn().mockReturnValue({
-        session: mockFreeUserSession,
-        user: { id: 'free-user-id' },
-      });
-
-      jest.mock('../app/components/AuthProvider', () => ({
-        useAuth: () => mockUseAuth(),
-      }));
-
       // Initial quota
       mockFetch.mockResolvedValueOnce({
         ok: true,

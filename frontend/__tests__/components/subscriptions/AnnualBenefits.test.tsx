@@ -94,7 +94,7 @@ describe('AnnualBenefits Component', () => {
     it('should show crown icon for exclusive section', () => {
       const { container } = render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
 
-      const exclusiveSection = screen.getByText('Exclusivo Sala de Guerra').closest('div');
+      const exclusiveSection = screen.getByText('Exclusivo Sala de Guerra').closest('.border-2');
       expect(exclusiveSection).toHaveClass('border-brand-blue');
     });
   });
@@ -162,15 +162,18 @@ describe('AnnualBenefits Component', () => {
     it('should apply gradient background to Sala de Guerra section', () => {
       render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
 
-      const exclusiveSection = screen.getByText('Exclusivo Sala de Guerra').closest('div');
-      expect(exclusiveSection).toHaveClass('bg-gradient-to-br');
+      // The gradient class is on the outer wrapper div, not the immediate parent of the text
+      const exclusiveHeading = screen.getByText('Exclusivo Sala de Guerra');
+      const outerDiv = exclusiveHeading.closest('.bg-gradient-to-br');
+      expect(outerDiv).toBeInTheDocument();
     });
 
     it('should apply border to general benefits section', () => {
       render(<AnnualBenefits billingPeriod="annual" />);
 
-      const generalSection = screen.getByText('Benefícios para Todos os Planos Anuais').closest('div');
-      expect(generalSection).toHaveClass('border');
+      const generalHeading = screen.getByText('Benefícios para Todos os Planos Anuais');
+      const outerDiv = generalHeading.closest('.border');
+      expect(outerDiv).toBeInTheDocument();
     });
   });
 });

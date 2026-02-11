@@ -54,7 +54,8 @@ describe('RegionSelector Component', () => {
       const selected = new Set(['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO']); // All Norte UFs
       render(<RegionSelector selected={selected} onToggleRegion={mockOnToggleRegion} />);
 
-      const norteButton = screen.getByRole('button', { name: /Norte/i });
+      // When fully selected, there's a nested remove button, so use getAllByRole and pick the parent
+      const norteButton = screen.getByRole('button', { name: /Selecionar região Norte/i });
       expect(norteButton).toHaveClass('bg-brand-navy');
       expect(norteButton).toHaveClass('text-white');
     });
@@ -78,12 +79,13 @@ describe('RegionSelector Component', () => {
 
     it('should not display count when region is fully selected', () => {
       const selected = new Set(['SC', 'PR', 'RS']); // All Sul UFs
-      const { container } = render(
+      render(
         <RegionSelector selected={selected} onToggleRegion={mockOnToggleRegion} />
       );
 
-      const sulButton = screen.getByText('Sul').closest('button');
-      expect(sulButton?.textContent).not.toContain('(3/3)');
+      // When fully selected, the button shows "Sul ✓" with a remove button, not a count
+      const sulButton = screen.getByRole('button', { name: /Selecionar região Sul/i });
+      expect(sulButton.textContent).not.toContain('(3/3)');
     });
 
     it('should not display count when region is not selected', () => {
@@ -175,18 +177,18 @@ describe('RegionSelector Component', () => {
 
       render(<RegionSelector selected={selected} onToggleRegion={mockOnToggleRegion} />);
 
-      // Full selection (Sul)
-      const sulButton = screen.getByRole('button', { name: /Sul/i });
+      // Full selection (Sul) - use aria-label to avoid matching nested remove button
+      const sulButton = screen.getByRole('button', { name: /Selecionar região Sul/i });
       expect(sulButton).toHaveClass('bg-brand-navy');
       expect(sulButton).toHaveClass('border-brand-navy');
 
-      // Partial selection (Norte)
-      const norteButton = screen.getByRole('button', { name: /Norte/i });
+      // Partial selection (Norte) - use aria-label
+      const norteButton = screen.getByRole('button', { name: /Selecionar região Norte/i });
       expect(norteButton).toHaveClass('bg-brand-blue-subtle');
       expect(norteButton).toHaveClass('border-accent');
 
       // No selection (Nordeste)
-      const nordesteButton = screen.getByRole('button', { name: /Nordeste/i });
+      const nordesteButton = screen.getByRole('button', { name: /Selecionar região Nordeste/i });
       expect(nordesteButton).toHaveClass('bg-surface-1');
       expect(nordesteButton).toHaveClass('border-transparent');
     });
@@ -280,8 +282,10 @@ describe('RegionSelector Component', () => {
 
       render(<RegionSelector selected={allUFs} onToggleRegion={mockOnToggleRegion} />);
 
-      const buttons = screen.getAllByRole('button');
-      buttons.forEach(button => {
+      // When all are fully selected, each region button has bg-brand-navy
+      // Use aria-label to get just the parent region buttons (not remove buttons)
+      const regionButtons = screen.getAllByRole('button', { name: /Selecionar região/i });
+      regionButtons.forEach(button => {
         expect(button).toHaveClass('bg-brand-navy');
       });
     });

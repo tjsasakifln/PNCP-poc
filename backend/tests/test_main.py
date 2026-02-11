@@ -1,8 +1,16 @@
 """Tests for FastAPI application structure and base endpoints."""
 
 import pytest
+from unittest.mock import patch, Mock
 from fastapi.testclient import TestClient
 from main import app
+
+
+@pytest.fixture(autouse=True)
+def mock_supabase_for_health():
+    """Mock get_supabase to prevent 503 in health endpoint tests."""
+    with patch("supabase_client.get_supabase", return_value=Mock()):
+        yield
 
 
 @pytest.fixture
@@ -474,6 +482,10 @@ class TestBuscarEndpoint:
         from quota import QuotaInfo, PLAN_CAPABILITIES
         from datetime import datetime, timezone
 
+        # Ensure user is NOT detected as admin/master (otherwise admin bypass kicks in)
+        monkeypatch.setattr("main._check_user_roles", lambda user_id: (False, False))
+        monkeypatch.setattr("main._get_admin_ids", lambda: set())
+
         # Mock rate limiter to always allow
         mock_rate_limiter = Mock()
         mock_rate_limiter.check_rate_limit.return_value = (True, 0)
@@ -491,6 +503,8 @@ class TestBuscarEndpoint:
             quota_reset_date=datetime.now(timezone.utc),
         )
         monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota_free)
+        # Mock atomic quota check (non-admin path uses this)
+        monkeypatch.setattr("quota.check_and_increment_quota_atomic", lambda user_id, max_q: (True, 1, max_q - 1))
 
         mock_client_instance = Mock()
         mock_client_instance.fetch_all.return_value = iter([mock_licitacao])

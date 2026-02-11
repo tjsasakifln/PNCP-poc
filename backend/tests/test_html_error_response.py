@@ -115,8 +115,8 @@ class TestTokenRefreshWithHTMLError:
     """Test suite for token refresh failures returning HTML."""
 
     @pytest.mark.asyncio
-    async def test_refresh_token_returns_none_on_html_error(self, mock_async_http_client):
-        """Should return None when token refresh fails with HTML response."""
+    async def test_refresh_token_returns_none_on_html_error(self):
+        """Should raise 401 HTTPException when token refresh fails with HTML response."""
         from oauth import get_user_google_token
 
         mock_supabase = Mock()
@@ -132,28 +132,25 @@ class TestTokenRefreshWithHTMLError:
             "scope": "https://www.googleapis.com/auth/spreadsheets"
         }
 
-        mock_supabase.execute.return_value = Mock(data=[mock_token_data])
+        # Mock Supabase chain: table().select().eq().eq().limit().execute()
+        mock_chain = Mock()
+        mock_chain.execute.return_value = Mock(data=[mock_token_data])
+        mock_supabase.table.return_value.select.return_value.eq.return_value.eq.return_value.limit.return_value = mock_chain
 
-        # Mock HTTP client to return HTML error page instead of JSON
-        html_response = '<!DOCTYPE html><html><body>Error</body></html>'
-        mock_async_http_client.post.return_value = Mock(
-            status_code=401,
-            json=lambda: None,  # Will raise exception when called
-            text=html_response,
-            content=html_response.encode()
-        )
+        # Mock HTTP client as async context manager
+        mock_response = Mock(status_code=401, text='<!DOCTYPE html><html><body>Error</body></html>')
+        mock_http_client = AsyncMock()
+        mock_http_client.__aenter__.return_value = mock_http_client
+        mock_http_client.__aexit__.return_value = None
+        mock_http_client.post.return_value = mock_response
 
         with patch("oauth.get_supabase", return_value=mock_supabase):
             with patch("oauth.decrypt_aes256", side_effect=["old_token", "refresh_token"]):
-                with patch("oauth.httpx.AsyncClient", return_value=mock_async_http_client):
-                    # Should either return None or raise HTTPException
-                    try:
-                        result = await get_user_google_token(user_id="user-123")
-                        # If it returns, should be None (requires re-auth)
-                        assert result is None
-                    except HTTPException as e:
-                        # Or it can raise 401 (both are acceptable)
-                        assert e.status_code == 401
+                with patch("oauth.httpx.AsyncClient", return_value=mock_http_client):
+                    # Should raise HTTPException 401 (refresh_google_token raises on non-200)
+                    with pytest.raises(HTTPException) as exc_info:
+                        await get_user_google_token(user_id="user-123")
+                    assert exc_info.value.status_code == 401
 
 
 class TestExportEndpointHTMLError:

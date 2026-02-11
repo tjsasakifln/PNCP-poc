@@ -11,6 +11,10 @@ import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 // Mock fetch
 global.fetch = jest.fn();
 
+// Track test number to advance system time past cache TTL between tests
+let testTimeOffset = 0;
+const CACHE_TTL = 5 * 60 * 1000 + 1000; // 5min + 1s buffer
+
 describe('useFeatureFlags Hook', () => {
   const mockFeaturesData = {
     features: ['early_access', 'proactive_search'],
@@ -21,9 +25,9 @@ describe('useFeatureFlags Hook', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
-    // Clear in-memory cache between tests
-    // Note: This is a limitation - in real tests we'd export cache for testing
+    // Advance system time past cache TTL to ensure cache misses
+    testTimeOffset += CACHE_TTL;
+    jest.useFakeTimers({ now: new Date(Date.now() + testTimeOffset) });
   });
 
   afterEach(() => {

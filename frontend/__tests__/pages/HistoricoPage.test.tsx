@@ -148,7 +148,7 @@ describe('HistoricoPage Component', () => {
       await waitFor(() => {
         const searchLink = screen.getByRole('link', { name: /Fazer primeira busca/i });
         expect(searchLink).toBeInTheDocument();
-        expect(searchLink).toHaveAttribute('href', '/');
+        expect(searchLink).toHaveAttribute('href', '/buscar');
       });
     });
 
@@ -281,7 +281,7 @@ describe('HistoricoPage Component', () => {
       await waitFor(() => {
         const newSearchLink = screen.getByRole('link', { name: /Nova busca/i });
         expect(newSearchLink).toBeInTheDocument();
-        expect(newSearchLink).toHaveAttribute('href', '/');
+        expect(newSearchLink).toHaveAttribute('href', '/buscar');
       });
     });
   });

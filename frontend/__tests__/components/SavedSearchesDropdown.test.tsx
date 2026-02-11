@@ -684,7 +684,8 @@ describe('SavedSearchesDropdown Component', () => {
 
       expect(screen.getByText('Calçados RJ')).toBeInTheDocument();
       expect(screen.queryByText('Uniformes SC')).not.toBeInTheDocument();
-      expect(screen.getByText(/\(1\/3\)/i)).toBeInTheDocument(); // Counter
+      // Counter shows total saved searches out of max 10
+      expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
     });
 
     it('should filter searches by UF', () => {
@@ -780,17 +781,17 @@ describe('SavedSearchesDropdown Component', () => {
       const button = screen.getByRole('button', { name: /Buscas salvas/i });
       fireEvent.click(button);
 
-      // Initial: 3/10
+      // Counter always shows total saved searches out of max 10
       expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
 
-      // Filter to 2 results
+      // Filter to 2 results - counter stays the same (shows total/max)
       const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
       fireEvent.change(filterInput, { target: { value: 'Uniformes' } });
-      expect(screen.getByText(/\(2\/3\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
 
-      // Filter to 1 result
+      // Filter to 1 result - counter stays the same
       fireEvent.change(filterInput, { target: { value: 'SC' } });
-      expect(screen.getByText(/\(1\/3\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
 
       // Clear filter: back to 3/10
       fireEvent.change(filterInput, { target: { value: '' } });

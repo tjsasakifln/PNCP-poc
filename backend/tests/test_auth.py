@@ -10,6 +10,15 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 
+@pytest.fixture(autouse=True)
+def clear_auth_cache():
+    """Clear auth token cache before each test to prevent cache poisoning."""
+    from auth import _token_cache
+    _token_cache.clear()
+    yield
+    _token_cache.clear()
+
+
 class TestGetCurrentUser:
     """Test suite for get_current_user dependency."""
 

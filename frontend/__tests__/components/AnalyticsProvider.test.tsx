@@ -128,8 +128,10 @@ describe('AnalyticsProvider Component', () => {
     });
 
     it('should log warning when token is missing', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      // The component now only logs in development mode, and uses console.log not console.warn
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+      process.env.NODE_ENV = 'development';
 
       render(
         <AnalyticsProvider>
@@ -138,7 +140,7 @@ describe('AnalyticsProvider Component', () => {
       );
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        '⚠️ NEXT_PUBLIC_MIXPANEL_TOKEN not found. Analytics disabled.'
+        expect.stringContaining('Mixpanel token not configured')
       );
       consoleSpy.mockRestore();
     });
@@ -555,8 +557,11 @@ describe('AnalyticsProvider Component', () => {
     });
 
     it('should handle empty MIXPANEL_TOKEN string', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      // Empty string is falsy, so Mixpanel should not init
+      // In development mode, it logs an info message instead of a warning
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       process.env.NEXT_PUBLIC_MIXPANEL_TOKEN = '';
+      process.env.NODE_ENV = 'development';
 
       render(
         <AnalyticsProvider>
@@ -566,7 +571,7 @@ describe('AnalyticsProvider Component', () => {
 
       expect(mockMixpanel.init).not.toHaveBeenCalled();
       expect(consoleSpy).toHaveBeenCalledWith(
-        '⚠️ NEXT_PUBLIC_MIXPANEL_TOKEN not found. Analytics disabled.'
+        expect.stringContaining('Mixpanel token not configured')
       );
       consoleSpy.mockRestore();
     });

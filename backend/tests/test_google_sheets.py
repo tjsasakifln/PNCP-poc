@@ -250,17 +250,16 @@ class TestUpdateSpreadsheet:
             assert "updated_at" in result
 
     @pytest.mark.asyncio
-    async def test_raises_404_when_spreadsheet_not_found(self, mock_licitacoes):
-        """Should raise 404 HTTPException when spreadsheet doesn't exist."""
+    async def test_fallback_to_create_when_spreadsheet_not_found(self, mock_licitacoes):
+        """Should fallback to create new spreadsheet when update target is 404 (HOTFIX behavior)."""
         from google_sheets import GoogleSheetsExporter
         from googleapiclient.errors import HttpError
-        from fastapi import HTTPException
 
         mock_service = Mock()
         mock_spreadsheets = Mock()
         mock_service.spreadsheets.return_value = mock_spreadsheets
 
-        # Mock HttpError 404
+        # Mock HttpError 404 on get (spreadsheet not found)
         mock_error_response = Mock()
         mock_error_response.status = 404
         mock_error_response.reason = "Not Found"
@@ -268,16 +267,27 @@ class TestUpdateSpreadsheet:
 
         mock_spreadsheets.get.return_value.execute.side_effect = http_error
 
+        # Mock create (fallback path)
+        mock_create_response = {
+            "spreadsheetId": "new-fallback-id",
+            "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/new-fallback-id",
+            "sheets": [{"properties": {"sheetId": 0}}]
+        }
+        mock_spreadsheets.create.return_value.execute.return_value = mock_create_response
+        mock_spreadsheets.values.return_value.update.return_value.execute.return_value = {}
+        mock_spreadsheets.batchUpdate.return_value.execute.return_value = {}
+
         with patch("google_sheets.build", return_value=mock_service):
             exporter = GoogleSheetsExporter(access_token="ya29.test_token")
 
-            with pytest.raises(HTTPException) as exc_info:
-                await exporter.update_spreadsheet(
-                    spreadsheet_id="non-existent-id",
-                    licitacoes=mock_licitacoes
-                )
+            result = await exporter.update_spreadsheet(
+                spreadsheet_id="non-existent-id",
+                licitacoes=mock_licitacoes
+            )
 
-            assert exc_info.value.status_code == 404
+            # Should have fallen back to create
+            assert result["spreadsheet_id"] == "new-fallback-id"
+            assert result["total_rows"] == 1
 
 
 class TestPopulateData:

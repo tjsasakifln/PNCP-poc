@@ -299,6 +299,14 @@ class GoogleSheetsExporter:
             spreadsheet_id: Google Sheets ID
             total_rows: Number of data rows (excludes header)
         """
+        try:
+            self._do_apply_formatting(spreadsheet_id, total_rows)
+        except Exception as e:
+            # Formatting is non-critical — log and continue
+            logger.warning(f"Formatting failed for {spreadsheet_id}: {type(e).__name__}: {e}")
+
+    def _do_apply_formatting(self, spreadsheet_id: str, total_rows: int):
+        """Internal: apply formatting requests (may raise)."""
         requests = [
             # 1. Format header row (green background, white bold text)
             {

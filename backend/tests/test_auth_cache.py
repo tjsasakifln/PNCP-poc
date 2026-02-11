@@ -32,7 +32,7 @@ def mock_credentials():
 @pytest.fixture
 def mock_supabase_success():
     """Mock successful Supabase get_user response."""
-    with patch('auth.get_supabase') as mock_get_sb:
+    with patch('supabase_client.get_supabase') as mock_get_sb:
         mock_sb_instance = MagicMock()
         mock_user_response = Mock()
         mock_user_response.user = Mock(
@@ -105,7 +105,7 @@ async def test_auth_cache_expiry_revalidates(mock_credentials, mock_supabase_suc
 @pytest.mark.asyncio
 async def test_auth_cache_invalid_token_not_cached(mock_credentials):
     """Invalid token should raise 401 and not be cached."""
-    with patch('auth.get_supabase') as mock_get_sb:
+    with patch('supabase_client.get_supabase') as mock_get_sb:
         mock_sb_instance = MagicMock()
         mock_sb_instance.auth.get_user.return_value = Mock(user=None)
         mock_get_sb.return_value = mock_sb_instance
@@ -123,7 +123,7 @@ async def test_auth_cache_invalid_token_not_cached(mock_credentials):
 @pytest.mark.asyncio
 async def test_auth_cache_exception_not_cached(mock_credentials):
     """Token validation exception should raise 401 and not be cached."""
-    with patch('auth.get_supabase') as mock_get_sb:
+    with patch('supabase_client.get_supabase') as mock_get_sb:
         mock_sb_instance = MagicMock()
         mock_sb_instance.auth.get_user.side_effect = Exception("Connection timeout")
         mock_get_sb.return_value = mock_sb_instance

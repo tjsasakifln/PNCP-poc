@@ -39,12 +39,12 @@ describe('BeforeAfter', () => {
   it('uses design system semantic colors', () => {
     const { container } = render(<BeforeAfter />);
 
-    // "Busca Manual" has error colors
-    expect(container.querySelector('.bg-error-subtle')).toBeInTheDocument();
-    expect(container.querySelector('.text-error')).toBeInTheDocument();
+    // "Busca Manual" has red error-like colors
+    expect(container.querySelector('.text-red-600')).toBeInTheDocument();
+    expect(container.querySelector('.text-red-500')).toBeInTheDocument();
 
-    // "Com SmartLic" has brand/success colors
-    expect(container.querySelector('.text-success')).toBeInTheDocument();
-    expect(container.querySelector('.from-brand-blue-subtle')).toBeInTheDocument();
+    // "Com SmartLic" has blue/green positive colors
+    expect(container.querySelector('.text-green-500')).toBeInTheDocument();
+    expect(container.querySelector('.text-blue-600')).toBeInTheDocument();
   });
 });

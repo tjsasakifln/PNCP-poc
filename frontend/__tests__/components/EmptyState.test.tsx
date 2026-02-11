@@ -19,14 +19,15 @@ describe('EmptyState Component', () => {
   it('should display main message with sector name', () => {
     render(<EmptyState sectorName="Vestuário" />);
 
-    const message = screen.getByText(/Nenhuma licitação de vestuário encontrada/i);
+    // Title is now static: "Nenhuma Oportunidade Relevante Encontrada"
+    const message = screen.getByText(/Nenhuma Oportunidade Relevante Encontrada/i);
     expect(message).toBeInTheDocument();
   });
 
   it('should display default message when no rawCount', () => {
     render(<EmptyState />);
 
-    const message = screen.getByText(/Não encontramos licitações publicadas no PNCP/i);
+    const message = screen.getByText(/Nenhuma oportunidade encontrada para o período e estados selecionados/i);
     expect(message).toBeInTheDocument();
   });
 
@@ -40,14 +41,14 @@ describe('EmptyState Component', () => {
   it('should list suggestion items', () => {
     render(<EmptyState />);
 
-    // Check for specific suggestion text
+    // Check for specific suggestion text (updated copy)
     const expandDates = screen.getByText(/Amplie o período/i);
     const moreStates = screen.getByText(/Selecione mais estados/i);
-    const changeSector = screen.getByText(/Troque o setor/i);
+    const adjustFilters = screen.getByText(/Ajuste os filtros/i);
 
     expect(expandDates).toBeInTheDocument();
     expect(moreStates).toBeInTheDocument();
-    expect(changeSector).toBeInTheDocument();
+    expect(adjustFilters).toBeInTheDocument();
   });
 
   it('should render adjust search button', () => {
