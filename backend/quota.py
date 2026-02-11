@@ -15,7 +15,7 @@ All user IDs in logs are sanitized to prevent PII exposure.
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional, TypedDict
 from enum import Enum
 from pydantic import BaseModel
@@ -347,6 +347,66 @@ def check_and_increment_quota_atomic(
 
 
 # ============================================================================
+# Profile-Based Plan Fallback (prevents "fail to free" anti-pattern)
+# ============================================================================
+
+# Grace period for subscription expiry (covers Stripe billing gaps)
+SUBSCRIPTION_GRACE_DAYS = 3
+
+
+def get_plan_from_profile(user_id: str, sb=None) -> Optional[str]:
+    """Get user's plan from profiles.plan_type (reliable fallback).
+
+    This is the safety net: profiles.plan_type is updated synchronously
+    during plan activation (_activate_plan) and by admin actions, so it
+    reflects the user's LAST KNOWN paid plan even when user_subscriptions
+    has transient issues (billing gaps, Stripe webhook delays, DB errors).
+
+    Returns valid plan_id or None if lookup fails.
+    """
+    try:
+        if sb is None:
+            from supabase_client import get_supabase
+            sb = get_supabase()
+
+        result = (
+            sb.table("profiles")
+            .select("plan_type")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+
+        if not result.data:
+            return None
+
+        plan_type = result.data.get("plan_type", "free")
+
+        # Map legacy profile values to current plan IDs
+        PLAN_TYPE_MAP = {
+            "master": "sala_guerra",
+            "premium": "maquina",
+            "basic": "consultor_agil",
+            "free": "free_trial",
+        }
+        mapped = PLAN_TYPE_MAP.get(plan_type, plan_type)
+
+        # Only return if it maps to a known plan
+        if mapped in PLAN_CAPABILITIES:
+            return mapped
+
+        logger.warning(
+            f"Unknown plan_type '{plan_type}' in profile for user {mask_user_id(user_id)}, "
+            f"mapped to '{mapped}' which is not in PLAN_CAPABILITIES"
+        )
+        return None
+
+    except Exception as e:
+        logger.warning(f"Failed to get plan from profile for user {mask_user_id(user_id)}: {e}")
+        return None
+
+
+# ============================================================================
 # Main Quota Check
 # ============================================================================
 
@@ -355,11 +415,22 @@ def check_quota(user_id: str) -> QuotaInfo:
     Check user's plan and quota status.
 
     Returns complete quota info including capabilities and usage.
+
+    RESILIENCE: Uses a multi-layer lookup to prevent paid users from
+    being downgraded to free_trial due to transient errors:
+      1. Active subscription in user_subscriptions (primary)
+      2. Recently-expired subscription within grace period (billing gap)
+      3. profiles.plan_type (last known plan - reliable fallback)
+      4. free_trial (absolute last resort - only for truly new users)
     """
     from supabase_client import get_supabase
     sb = get_supabase()
 
-    # Get user's current plan from subscriptions
+    plan_id = None
+    expires_at_dt: Optional[datetime] = None
+    subscription_found = False
+
+    # --- Layer 1: Active subscription ---
     try:
         result = (
             sb.table("user_subscriptions")
@@ -371,44 +442,110 @@ def check_quota(user_id: str) -> QuotaInfo:
             .execute()
         )
 
-        if not result.data or len(result.data) == 0:
-            # No active subscription - default to free_trial
-            plan_id = "free_trial"
-            trial_expires_at = None  # TODO: Get from users table
-        else:
+        if result.data and len(result.data) > 0:
             sub = result.data[0]
-            plan_id = sub.get("plan_id", "free_trial")
+            plan_id = sub.get("plan_id", None)
             expires_at_str = sub.get("expires_at")
-            trial_expires_at = (
+            expires_at_dt = (
                 datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
                 if expires_at_str
                 else None
             )
+            subscription_found = True
 
     except Exception as e:
-        # SECURITY: Sanitize user ID in logs (Issue #168)
-        logger.error(f"Error fetching subscription for user {mask_user_id(user_id)}: {e}")
-        # Fail open with free_trial
-        plan_id = "free_trial"
-        trial_expires_at = None
+        logger.error(f"Error fetching active subscription for user {mask_user_id(user_id)}: {e}")
+
+    # --- Layer 2: Recently-expired subscription (grace period for billing gaps) ---
+    if not subscription_found:
+        try:
+            grace_cutoff = (datetime.now(timezone.utc) - timedelta(days=SUBSCRIPTION_GRACE_DAYS)).isoformat()
+            result = (
+                sb.table("user_subscriptions")
+                .select("id, plan_id, expires_at")
+                .eq("user_id", user_id)
+                .gte("expires_at", grace_cutoff)
+                .order("expires_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+
+            if result.data and len(result.data) > 0:
+                sub = result.data[0]
+                plan_id = sub.get("plan_id", None)
+                expires_at_str = sub.get("expires_at")
+                expires_at_dt = (
+                    datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+                    if expires_at_str
+                    else None
+                )
+                subscription_found = True
+                logger.info(
+                    f"Using grace-period subscription for user {mask_user_id(user_id)}: "
+                    f"plan={plan_id}, expires_at={expires_at_str}"
+                )
+        except Exception as e:
+            logger.warning(f"Error fetching grace-period subscription for user {mask_user_id(user_id)}: {e}")
+
+    # --- Layer 3: Profile-based fallback (last known plan) ---
+    if not subscription_found or not plan_id:
+        profile_plan = get_plan_from_profile(user_id, sb)
+        if profile_plan and profile_plan != "free_trial":
+            logger.warning(
+                f"FALLBACK ACTIVATED for user {mask_user_id(user_id)}: "
+                f"no active subscription found, using profiles.plan_type='{profile_plan}'. "
+                f"This may indicate a Stripe billing gap or webhook failure."
+            )
+            plan_id = profile_plan
+            expires_at_dt = None  # No expiry data available from profile
+        elif not plan_id:
+            # Layer 4: Absolute last resort
+            plan_id = "free_trial"
+            expires_at_dt = None
 
     # Get plan capabilities
     caps = PLAN_CAPABILITIES.get(plan_id, PLAN_CAPABILITIES["free_trial"])
     plan_name = PLAN_NAMES.get(plan_id, "FREE Trial")
 
-    # Check trial expiration
-    if trial_expires_at and datetime.now(timezone.utc) > trial_expires_at:
-        return QuotaInfo(
-            allowed=False,
-            plan_id=plan_id,
-            plan_name=plan_name,
-            capabilities=caps,
-            quota_used=0,
-            quota_remaining=0,
-            quota_reset_date=get_quota_reset_date(),
-            trial_expires_at=trial_expires_at,
-            error_message="Trial expirado. Faça upgrade para continuar usando o SmartLic.",
-        )
+    # Check expiry — ONLY for free_trial (trial expiry) vs paid (billing grace)
+    if expires_at_dt and datetime.now(timezone.utc) > expires_at_dt:
+        if plan_id == "free_trial":
+            # Free trial expired: block immediately
+            return QuotaInfo(
+                allowed=False,
+                plan_id=plan_id,
+                plan_name=plan_name,
+                capabilities=caps,
+                quota_used=0,
+                quota_remaining=0,
+                quota_reset_date=get_quota_reset_date(),
+                trial_expires_at=expires_at_dt,
+                error_message="Trial expirado. Faça upgrade para continuar usando o SmartLic.",
+            )
+        else:
+            # Paid plan expired: allow grace period before blocking
+            grace_end = expires_at_dt + timedelta(days=SUBSCRIPTION_GRACE_DAYS)
+            if datetime.now(timezone.utc) > grace_end:
+                return QuotaInfo(
+                    allowed=False,
+                    plan_id=plan_id,
+                    plan_name=plan_name,
+                    capabilities=caps,
+                    quota_used=0,
+                    quota_remaining=0,
+                    quota_reset_date=get_quota_reset_date(),
+                    trial_expires_at=expires_at_dt,
+                    error_message=(
+                        f"Sua assinatura {plan_name} expirou. "
+                        f"Renove para continuar com acesso completo."
+                    ),
+                )
+            # Within grace period: allow with full capabilities
+            logger.info(
+                f"User {mask_user_id(user_id)} in billing grace period "
+                f"(plan={plan_id}, expired={expires_at_dt.isoformat()}, "
+                f"grace_until={grace_end.isoformat()})"
+            )
 
     # Check monthly quota
     quota_used = get_monthly_quota_used(user_id)
@@ -425,7 +562,7 @@ def check_quota(user_id: str) -> QuotaInfo:
             quota_used=quota_used,
             quota_remaining=0,
             quota_reset_date=reset_date,
-            trial_expires_at=trial_expires_at,
+            trial_expires_at=expires_at_dt,
             error_message=f"Limite de {quota_limit} buscas mensais atingido. Renovação em {reset_date.strftime('%d/%m/%Y')} ou faça upgrade.",
         )
 
@@ -438,7 +575,7 @@ def check_quota(user_id: str) -> QuotaInfo:
         quota_used=quota_used,
         quota_remaining=quota_remaining,
         quota_reset_date=get_quota_reset_date(),
-        trial_expires_at=trial_expires_at,
+        trial_expires_at=expires_at_dt,
         error_message=None,
     )
 

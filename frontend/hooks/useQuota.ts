@@ -22,6 +22,13 @@ interface UseQuotaReturn {
 
 const FREE_SEARCHES_LIMIT = 3;
 const UNLIMITED_THRESHOLD = 999990; // Lowered threshold to catch near-unlimited values
+const CACHE_KEY = "smartlic_cached_quota";
+const CACHE_TTL = 3600000; // 1 hour in milliseconds
+
+interface CachedQuota {
+  data: QuotaInfo;
+  timestamp: number;
+}
 
 export function useQuota(): UseQuotaReturn {
   const { session, user } = useAuth();
@@ -58,6 +65,37 @@ export function useQuota(): UseQuotaReturn {
       const quotaUsed = data.quota_used || 0;
       const isAdmin = data.is_admin === true;
 
+      // Check if backend returned degraded data (free_trial) but we have a cached paid plan
+      if (planId === "free_trial" && typeof window !== "undefined") {
+        try {
+          const cached = localStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const parsedCache: CachedQuota = JSON.parse(cached);
+            const cacheAge = Date.now() - parsedCache.timestamp;
+
+            // If cache is valid (< 1 hour) and contains a paid plan, use cached data
+            if (
+              cacheAge < CACHE_TTL &&
+              parsedCache.data.planId !== "free_trial" &&
+              parsedCache.data.planId !== "free"
+            ) {
+              console.warn(
+                "[useQuota] Backend returned free_trial but cached paid plan exists. Using cached data to prevent transient downgrade.",
+                {
+                  cachedPlan: parsedCache.data.planId,
+                  cacheAge: Math.round(cacheAge / 1000) + "s",
+                }
+              );
+              setQuota(parsedCache.data);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (cacheErr) {
+          console.error("[useQuota] Error reading cache:", cacheErr);
+        }
+      }
+
       // Free user detection: plan_id starts with "free" and not admin
       const isFreeUser = !isAdmin && (planId === "free" || planId === "free_trial");
 
@@ -78,7 +116,7 @@ export function useQuota(): UseQuotaReturn {
         creditsRemaining = quotaRemaining;
       }
 
-      setQuota({
+      const quotaInfo: QuotaInfo = {
         planId,
         planName,
         creditsRemaining,
@@ -86,7 +124,22 @@ export function useQuota(): UseQuotaReturn {
         isUnlimited,
         isFreeUser,
         isAdmin,
-      });
+      };
+
+      // If data is from a paid plan (not free_trial, not free), cache it
+      if (planId !== "free_trial" && planId !== "free" && typeof window !== "undefined") {
+        try {
+          const cacheData: CachedQuota = {
+            data: quotaInfo,
+            timestamp: Date.now(),
+          };
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        } catch (cacheErr) {
+          console.error("[useQuota] Error writing cache:", cacheErr);
+        }
+      }
+
+      setQuota(quotaInfo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
       setQuota(null);

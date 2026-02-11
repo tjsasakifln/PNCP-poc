@@ -231,6 +231,7 @@ class TestBuscarEndpointQuotaValidation:
 
     @patch("main.ENABLE_NEW_PRICING", True)
     @patch("main.rate_limiter")
+    @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -239,6 +240,7 @@ class TestBuscarEndpointQuotaValidation:
         mock_pncp_client_class,
         mock_increment_quota,
         mock_check_quota,
+        mock_atomic_increment,
         mock_rate_limiter,
     ):
         """Should increment quota after successful search."""
@@ -257,6 +259,8 @@ class TestBuscarEndpointQuotaValidation:
                 quota_remaining=27,
                 quota_reset_date=datetime.now(timezone.utc),
             )
+            # Mock atomic increment: allowed=True, new_count=24, remaining=26
+            mock_atomic_increment.return_value = (True, 24, 26)
 
             # Mock PNCP client instance
             mock_client_instance = MagicMock()
@@ -277,8 +281,8 @@ class TestBuscarEndpointQuotaValidation:
             assert response.status_code == 200
             data = response.json()
 
-            # Verify quota was incremented
-            mock_increment_quota.assert_called_once_with("user-increment-quota-story165")
+            # Verify atomic quota check was called
+            mock_atomic_increment.assert_called_once()
             assert data["quota_used"] == 24
             assert data["quota_remaining"] == 26  # 50 - 24
         finally:
@@ -289,6 +293,7 @@ class TestBuscarEndpointExcelGating:
     """Test Excel export gating by plan."""
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("main.PNCPClient")
@@ -299,6 +304,7 @@ class TestBuscarEndpointExcelGating:
         mock_pncp_client_class,
         mock_increment_quota,
         mock_check_quota,
+        mock_atomic_increment,
     ):
         """Should generate Excel for Máquina plan (allow_excel=True)."""
         cleanup = setup_auth_override("user-123")
@@ -313,6 +319,8 @@ class TestBuscarEndpointExcelGating:
                 quota_remaining=200,
                 quota_reset_date=datetime.now(timezone.utc),
             )
+            # Mock atomic increment: allowed=True, new_count=101, remaining=199
+            mock_atomic_increment.return_value = (True, 101, 199)
 
             # Mock PNCP client
             mock_client_instance = MagicMock()

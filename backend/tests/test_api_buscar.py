@@ -73,6 +73,7 @@ class TestBuscarFeatureFlagEnabled:
             cleanup()
 
     @patch("main.ENABLE_NEW_PRICING", True)
+    @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session")
@@ -83,6 +84,7 @@ class TestBuscarFeatureFlagEnabled:
         mock_save_session,
         mock_increment_quota,
         mock_check_quota,
+        mock_atomic_increment,
     ):
         """Should allow request when quota is available."""
         cleanup = setup_auth_override("user-123")
@@ -98,6 +100,8 @@ class TestBuscarFeatureFlagEnabled:
                 quota_remaining=27,
                 quota_reset_date=datetime.now(timezone.utc),
             )
+            # Mock atomic increment: allowed=True, new_count=24, remaining=26
+            mock_atomic_increment.return_value = (True, 24, 26)
 
             # Mock PNCP client
             mock_client_instance = MagicMock()

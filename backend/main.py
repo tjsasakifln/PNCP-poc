@@ -407,48 +407,58 @@ def _check_user_roles(user_id: str) -> tuple[bool, bool]:
     Hierarchy: admin > master > regular users
     Admins automatically get master privileges.
     """
-    try:
-        from supabase_client import get_supabase
-        sb = get_supabase()
-
-        # Get profile - try with is_admin first, fallback to just plan_type
+    import time
+    for attempt in range(2):
         try:
-            profile = (
-                sb.table("profiles")
-                .select("is_admin, plan_type")
-                .eq("id", user_id)
-                .single()
-                .execute()
-            )
-        except Exception:
-            # is_admin column might not exist yet - fallback
-            profile = (
-                sb.table("profiles")
-                .select("plan_type")
-                .eq("id", user_id)
-                .single()
-                .execute()
-            )
+            from supabase_client import get_supabase
+            sb = get_supabase()
 
-        if not profile.data:
+            # Get profile - try with is_admin first, fallback to just plan_type
+            try:
+                profile = (
+                    sb.table("profiles")
+                    .select("is_admin, plan_type")
+                    .eq("id", user_id)
+                    .single()
+                    .execute()
+                )
+            except Exception:
+                # is_admin column might not exist yet - fallback
+                profile = (
+                    sb.table("profiles")
+                    .select("plan_type")
+                    .eq("id", user_id)
+                    .single()
+                    .execute()
+                )
+
+            if not profile.data:
+                return (False, False)
+
+            is_admin = profile.data.get("is_admin", False)
+            plan_type = profile.data.get("plan_type", "")
+
+            # Admin implies master access
+            is_master = is_admin or plan_type == "master"
+
+            if is_admin:
+                logger.debug(f"User {mask_user_id(user_id)} is ADMIN (profiles.is_admin)")
+            elif is_master:
+                logger.debug(f"User {mask_user_id(user_id)} is MASTER (profiles.plan_type)")
+
+            return (is_admin, is_master)
+
+        except Exception as e:
+            if attempt == 0:
+                logger.debug(f"Retry user roles check for {mask_user_id(user_id)} after error: {type(e).__name__}")
+                time.sleep(0.3)
+                continue
+            logger.warning(
+                f"ROLE CHECK FAILED for user {mask_user_id(user_id)} after 2 attempts: {type(e).__name__}. "
+                f"User will be treated as regular (non-admin/non-master)."
+            )
             return (False, False)
-
-        is_admin = profile.data.get("is_admin", False)
-        plan_type = profile.data.get("plan_type", "")
-
-        # Admin implies master access
-        is_master = is_admin or plan_type == "master"
-
-        if is_admin:
-            logger.debug(f"User {mask_user_id(user_id)} is ADMIN (profiles.is_admin)")
-        elif is_master:
-            logger.debug(f"User {mask_user_id(user_id)} is MASTER (profiles.plan_type)")
-
-        return (is_admin, is_master)
-
-    except Exception as e:
-        logger.warning(f"Failed to check user roles from Supabase: {e}")
-        return (False, False)
+    return (False, False)
 
 
 def _is_admin(user_id: str) -> bool:
@@ -528,7 +538,7 @@ async def get_profile(user: dict = Depends(require_auth)):
 
     Note: Admin users automatically receive "Sala de Guerra" tier with unlimited access.
     """
-    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
+    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES, get_plan_from_profile, PLAN_NAMES
     from supabase_client import get_supabase
     from datetime import datetime, timezone
 
@@ -550,12 +560,20 @@ async def get_profile(user: dict = Depends(require_auth)):
             quota_info = check_quota(user["id"])
         except Exception as e:
             logger.error(f"Failed to check quota for user {user['id']}: {e}")
-            # Return safe fallback
+            # RESILIENCE: Use profile's plan_type instead of hardcoded free_trial
+            fallback_plan = get_plan_from_profile(user["id"]) or "free_trial"
+            fallback_caps = PLAN_CAPABILITIES.get(fallback_plan, PLAN_CAPABILITIES["free_trial"])
+            fallback_name = PLAN_NAMES.get(fallback_plan, "FREE Trial") if fallback_plan != "free_trial" else "FREE Trial"
+            if fallback_plan != "free_trial":
+                logger.warning(
+                    f"PLAN FALLBACK for user {mask_user_id(user['id'])}: "
+                    f"subscription check failed, using profiles.plan_type='{fallback_plan}'"
+                )
             quota_info = QuotaInfo(
                 allowed=True,
-                plan_id="free_trial",
-                plan_name="FREE Trial",
-                capabilities=PLAN_CAPABILITIES["free_trial"],
+                plan_id=fallback_plan,
+                plan_name=fallback_name,
+                capabilities=fallback_caps,
                 quota_used=0,
                 quota_remaining=999999,
                 quota_reset_date=datetime.now(timezone.utc),
@@ -730,6 +748,16 @@ async def stripe_webhook(request: Request):
         sub = event["data"]["object"]
         _deactivate_stripe_subscription(sub["id"])
 
+    elif event["type"] == "customer.subscription.updated":
+        # Handles plan changes and billing period updates
+        sub = event["data"]["object"]
+        _handle_subscription_updated(sub)
+
+    elif event["type"] == "invoice.payment_succeeded":
+        # Handles successful payment (renewal) — reactivates subscription
+        invoice = event["data"]["object"]
+        _handle_invoice_paid(invoice)
+
     return {"status": "ok"}
 
 
@@ -772,13 +800,157 @@ def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):
 
 
 def _deactivate_stripe_subscription(stripe_sub_id: str):
-    """Deactivate subscription when cancelled in Stripe."""
+    """Deactivate subscription when cancelled in Stripe.
+
+    Also updates profiles.plan_type to free_trial so the profile-based
+    fallback correctly reflects the cancellation.
+    """
     from supabase_client import get_supabase
     sb = get_supabase()
+
+    # Find subscription to get user_id before deactivating
+    try:
+        sub_result = (
+            sb.table("user_subscriptions")
+            .select("user_id")
+            .eq("stripe_subscription_id", stripe_sub_id)
+            .limit(1)
+            .execute()
+        )
+        user_id = sub_result.data[0]["user_id"] if sub_result.data else None
+    except Exception as e:
+        logger.warning(f"Could not find user for stripe subscription {stripe_sub_id[:8]}***: {e}")
+        user_id = None
+
+    # Deactivate subscription
     sb.table("user_subscriptions").update({"is_active": False}).eq("stripe_subscription_id", stripe_sub_id).execute()
-    # SECURITY: Sanitize subscription ID in logs (Issue #168)
-    # Stripe subscription IDs are not PII but mask for consistency
-    logger.info(f"Deactivated Stripe subscription {stripe_sub_id[:8]}***")
+
+    # Sync profiles.plan_type so fallback reflects cancellation
+    if user_id:
+        sb.table("profiles").update({"plan_type": "free_trial"}).eq("id", user_id).execute()
+        logger.info(f"Deactivated subscription and updated profile for user {mask_user_id(user_id)}")
+    else:
+        logger.info(f"Deactivated Stripe subscription {stripe_sub_id[:8]}***")
+
+
+def _handle_subscription_updated(sub_data: dict):
+    """Handle Stripe subscription updated (plan change, billing period update).
+
+    Syncs user_subscriptions and profiles.plan_type so the profile-based
+    fallback always reflects the user's current plan.
+
+    Ready to plug: requires Stripe metadata to contain plan_id.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+    stripe_sub_id = sub_data.get("id", "")
+
+    try:
+        # Find the local subscription
+        sub_result = (
+            sb.table("user_subscriptions")
+            .select("id, user_id, plan_id")
+            .eq("stripe_subscription_id", stripe_sub_id)
+            .limit(1)
+            .execute()
+        )
+
+        if not sub_result.data:
+            logger.warning(f"No local subscription for Stripe sub {stripe_sub_id[:8]}***")
+            return
+
+        local_sub = sub_result.data[0]
+        user_id = local_sub["user_id"]
+
+        # Check if plan changed (Stripe metadata should contain plan_id)
+        new_plan_id = (sub_data.get("metadata") or {}).get("plan_id")
+
+        if new_plan_id and new_plan_id != local_sub["plan_id"]:
+            # Plan upgrade/downgrade — update both subscription and profile
+            sb.table("user_subscriptions").update({
+                "plan_id": new_plan_id,
+                "is_active": True,
+            }).eq("id", local_sub["id"]).execute()
+
+            sb.table("profiles").update({
+                "plan_type": new_plan_id,
+            }).eq("id", user_id).execute()
+
+            logger.info(
+                f"Plan changed for user {mask_user_id(user_id)}: "
+                f"{local_sub['plan_id']} → {new_plan_id}"
+            )
+        else:
+            # Ensure subscription is active (covers reactivation after past_due)
+            sb.table("user_subscriptions").update({
+                "is_active": True,
+            }).eq("id", local_sub["id"]).execute()
+            logger.info(f"Subscription updated for user {mask_user_id(user_id)}")
+
+    except Exception as e:
+        logger.error(f"Error handling subscription.updated for {stripe_sub_id[:8]}***: {e}")
+
+
+def _handle_invoice_paid(invoice_data: dict):
+    """Handle successful invoice payment (subscription renewal).
+
+    Reactivates the subscription and extends expiry. Critical for preventing
+    billing-gap downgrades: when a payment succeeds, the subscription must
+    be marked active immediately.
+
+    Also syncs profiles.plan_type to ensure the profile-based fallback
+    reflects the renewed plan.
+    """
+    from supabase_client import get_supabase
+    from datetime import datetime, timezone, timedelta
+    sb = get_supabase()
+
+    stripe_sub_id = invoice_data.get("subscription")
+    if not stripe_sub_id:
+        logger.debug("Invoice has no subscription_id, skipping")
+        return
+
+    try:
+        sub_result = (
+            sb.table("user_subscriptions")
+            .select("id, user_id, plan_id")
+            .eq("stripe_subscription_id", stripe_sub_id)
+            .limit(1)
+            .execute()
+        )
+
+        if not sub_result.data:
+            logger.warning(f"No local subscription for invoice stripe_sub {stripe_sub_id[:8]}***")
+            return
+
+        local_sub = sub_result.data[0]
+        user_id = local_sub["user_id"]
+        plan_id = local_sub["plan_id"]
+
+        # Get plan duration for new expiry
+        plan_result = sb.table("plans").select("duration_days").eq("id", plan_id).single().execute()
+        duration_days = plan_result.data["duration_days"] if plan_result.data else 30
+
+        new_expires = (datetime.now(timezone.utc) + timedelta(days=duration_days)).isoformat()
+
+        # Reactivate and extend
+        sb.table("user_subscriptions").update({
+            "is_active": True,
+            "expires_at": new_expires,
+        }).eq("id", local_sub["id"]).execute()
+
+        # Ensure profile reflects active plan
+        sb.table("profiles").update({
+            "plan_type": plan_id,
+        }).eq("id", user_id).execute()
+
+        logger.info(
+            f"Invoice payment processed for user {mask_user_id(user_id)}: "
+            f"plan={plan_id}, new_expires={new_expires[:10]}"
+        )
+
+    except Exception as e:
+        logger.error(f"Error handling invoice.paid for sub {stripe_sub_id[:8]}***: {e}")
 
 
 def _build_pncp_link(lic: dict) -> str:
@@ -1001,7 +1173,7 @@ async def buscar_licitacoes(
     )
 
     # FEATURE FLAG: New Pricing Model (STORY-165)
-    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES
+    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES, get_plan_from_profile, PLAN_NAMES
     from datetime import datetime, timezone
 
     # ADMIN/MASTER BYPASS: Get highest tier automatically (no quota/rate limits)
@@ -1090,12 +1262,20 @@ async def buscar_licitacoes(
         except Exception as e:
             # Unexpected error - log but continue with safe fallback (user already authenticated)
             logger.warning(f"Quota check failed (continuing with fallback): {e}")
-            # Create safe fallback QuotaInfo (free_trial plan)
+            # RESILIENCE: Use profile's plan_type instead of hardcoded free_trial
+            fallback_plan = get_plan_from_profile(user["id"]) or "free_trial"
+            fallback_caps = PLAN_CAPABILITIES.get(fallback_plan, PLAN_CAPABILITIES["free_trial"])
+            fallback_name = PLAN_NAMES.get(fallback_plan, "FREE Trial") if fallback_plan != "free_trial" else "FREE Trial"
+            if fallback_plan != "free_trial":
+                logger.warning(
+                    f"PLAN FALLBACK for user {mask_user_id(user['id'])}: "
+                    f"subscription check failed, using profiles.plan_type='{fallback_plan}'"
+                )
             quota_info = QuotaInfo(
                 allowed=True,
-                plan_id="free_trial",
-                plan_name="FREE Trial",
-                capabilities=PLAN_CAPABILITIES["free_trial"],
+                plan_id=fallback_plan,
+                plan_name=fallback_name,
+                capabilities=fallback_caps,
                 quota_used=0,
                 quota_remaining=999999,
                 quota_reset_date=datetime.now(timezone.utc),

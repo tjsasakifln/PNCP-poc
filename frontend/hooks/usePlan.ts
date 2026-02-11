@@ -38,9 +38,18 @@ interface UsePlanReturn {
   refresh: () => Promise<void>;
 }
 
+const CACHE_KEY = "smartlic_cached_plan";
+const CACHE_TTL = 3600000; // 1 hour in milliseconds
+
+interface CachedPlan {
+  data: PlanInfo;
+  timestamp: number;
+}
+
 /**
  * Hook to fetch user's plan information and capabilities.
  * Replaces useQuota for new plan-based pricing system.
+ * Includes localStorage caching to prevent transient backend errors from downgrading paid users.
  */
 export function usePlan(): UsePlanReturn {
   const { session, user } = useAuth();
@@ -69,6 +78,51 @@ export function usePlan(): UsePlanReturn {
       }
 
       const data: PlanInfo = await response.json();
+
+      // Check if backend returned degraded data (free_trial) but we have a cached paid plan
+      if (data.plan_id === "free_trial" && typeof window !== "undefined") {
+        try {
+          const cached = localStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const parsedCache: CachedPlan = JSON.parse(cached);
+            const cacheAge = Date.now() - parsedCache.timestamp;
+
+            // If cache is valid (< 1 hour) and contains a paid plan, use cached data
+            if (
+              cacheAge < CACHE_TTL &&
+              parsedCache.data.plan_id !== "free_trial" &&
+              parsedCache.data.plan_id !== "free"
+            ) {
+              console.warn(
+                "[usePlan] Backend returned free_trial but cached paid plan exists. Using cached data to prevent transient downgrade.",
+                {
+                  cachedPlan: parsedCache.data.plan_id,
+                  cacheAge: Math.round(cacheAge / 1000) + "s",
+                }
+              );
+              setPlanInfo(parsedCache.data);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (cacheErr) {
+          console.error("[usePlan] Error reading cache:", cacheErr);
+        }
+      }
+
+      // If data is from a paid plan (not free_trial, not free), cache it
+      if (data.plan_id !== "free_trial" && data.plan_id !== "free" && typeof window !== "undefined") {
+        try {
+          const cacheData: CachedPlan = {
+            data,
+            timestamp: Date.now(),
+          };
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        } catch (cacheErr) {
+          console.error("[usePlan] Error writing cache:", cacheErr);
+        }
+      }
+
       setPlanInfo(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
