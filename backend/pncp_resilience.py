@@ -15,7 +15,7 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Dict, Optional, Tuple, Any
 
@@ -45,7 +45,7 @@ class UFPerformanceMetrics:
         """Record a successful request."""
         self.total_requests += 1
         self.successful_requests += 1
-        self.last_success = datetime.utcnow()
+        self.last_success = datetime.now(timezone.utc)
 
         # Update recent durations (keep last 10)
         self.recent_durations.append(duration_ms)
@@ -63,7 +63,7 @@ class UFPerformanceMetrics:
         """Record a failed request."""
         self.total_requests += 1
         self.failed_requests += 1
-        self.last_failure = datetime.utcnow()
+        self.last_failure = datetime.now(timezone.utc)
 
         if is_timeout:
             self.timeout_count += 1
@@ -364,7 +364,7 @@ class CacheEntry:
     @property
     def is_expired(self) -> bool:
         """Check if cache entry has expired."""
-        age = (datetime.utcnow() - self.created_at).total_seconds()
+        age = (datetime.now(timezone.utc) - self.created_at).total_seconds()
         return age > self.ttl_seconds
 
 
@@ -425,7 +425,7 @@ class PNCPCache:
         self.hits += 1
         logger.debug(
             f"Cache HIT for UF={uf}, dates={data_inicial} to {data_final}, "
-            f"modalidade={modalidade} (age={(datetime.utcnow() - entry.created_at).total_seconds():.0f}s)"
+            f"modalidade={modalidade} (age={(datetime.now(timezone.utc) - entry.created_at).total_seconds():.0f}s)"
         )
         return entry.data
 
@@ -442,7 +442,7 @@ class PNCPCache:
         key = self._make_key(uf, data_inicial, data_final, modalidade, status)
         self.cache[key] = CacheEntry(
             data=data,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             ttl_seconds=self.ttl_seconds
         )
         logger.debug(

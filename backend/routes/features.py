@@ -5,7 +5,7 @@ Provides GET /api/features/me endpoint with Redis caching (STORY-171).
 
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -189,7 +189,7 @@ async def get_my_features(user: dict = Depends(require_auth)):
     response = fetch_features_from_db(user_id)
 
     # Add cached_at timestamp
-    response.cached_at = datetime.utcnow().isoformat()
+    response.cached_at = datetime.now(timezone.utc).isoformat()
 
     # Store in cache (if Redis available)
     if redis_client:

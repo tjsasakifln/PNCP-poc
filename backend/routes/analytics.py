@@ -7,7 +7,7 @@ Provides aggregated user statistics from search_sessions table:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
@@ -92,7 +92,7 @@ async def get_analytics_summary(user: dict = Depends(require_auth)):
                 estimated_hours_saved=0.0,
                 avg_results_per_search=0.0,
                 success_rate=0.0,
-                member_since=datetime.utcnow().isoformat(),
+                member_since=datetime.now(timezone.utc).isoformat(),
             )
 
         row = result.data[0]
@@ -100,7 +100,7 @@ async def get_analytics_summary(user: dict = Depends(require_auth)):
         total_downloads = row["total_downloads"] or 0
         total_opportunities = row["total_opportunities"] or 0
         total_value_discovered = float(row["total_value_discovered"] or 0)
-        member_since = row["member_since"] or datetime.utcnow().isoformat()
+        member_since = row["member_since"] or datetime.now(timezone.utc).isoformat()
 
         # Calculate derived metrics
         estimated_hours_saved = float(total_searches * 2)
@@ -147,7 +147,7 @@ async def get_searches_over_time(
     user_id = user["id"]
 
     try:
-        start_date = (datetime.utcnow() - timedelta(days=range_days)).date()
+        start_date = (datetime.now(timezone.utc) - timedelta(days=range_days)).date()
 
         sessions_result = (
             sb.table("search_sessions")

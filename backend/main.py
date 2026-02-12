@@ -47,6 +47,7 @@ from routes.search import router as search_router
 from routes.user import router as user_router
 from routes.billing import router as billing_router
 from routes.sessions import router as sessions_router
+from routes.plans import router as plans_router  # STORY-203 CROSS-M01
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -81,20 +82,43 @@ app.add_middleware(
 # STORY-202 SYS-M01: Add correlation ID middleware for distributed tracing
 app.add_middleware(CorrelationIDMiddleware)
 
-# Mount all routers
+# ============================================================================
+# SYS-M08: API Versioning with /v1/ prefix
+# ============================================================================
+
+# Mount all routers under /v1/ prefix for versioning
+app.include_router(admin_router, prefix="/v1")
+app.include_router(subscriptions_router, prefix="/v1")
+app.include_router(features_router, prefix="/v1")
+app.include_router(messages_router, prefix="/v1")
+app.include_router(analytics_router, prefix="/v1")
+app.include_router(oauth_router, prefix="/v1")  # STORY-180: Google OAuth routes
+app.include_router(export_sheets_router, prefix="/v1")  # STORY-180: Google Sheets Export routes
+app.include_router(stripe_webhook_router, prefix="/v1")
+# STORY-202: Decomposed routers
+app.include_router(search_router, prefix="/v1")
+app.include_router(user_router, prefix="/v1")
+app.include_router(billing_router, prefix="/v1")
+app.include_router(sessions_router, prefix="/v1")
+app.include_router(plans_router, prefix="/v1")  # STORY-203 CROSS-M01
+
+# ============================================================================
+# SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
+# ============================================================================
+# For gradual migration, also mount at original paths (will be deprecated)
 app.include_router(admin_router)
 app.include_router(subscriptions_router)
 app.include_router(features_router)
 app.include_router(messages_router)
 app.include_router(analytics_router)
-app.include_router(oauth_router)  # STORY-180: Google OAuth routes
-app.include_router(export_sheets_router)  # STORY-180: Google Sheets Export routes
+app.include_router(oauth_router)
+app.include_router(export_sheets_router)
 app.include_router(stripe_webhook_router)
-# STORY-202: Decomposed routers
 app.include_router(search_router)
 app.include_router(user_router)
 app.include_router(billing_router)
 app.include_router(sessions_router)
+app.include_router(plans_router)
 
 logger.info(
     "FastAPI application initialized — PORT=%s",
@@ -139,16 +163,28 @@ async def log_registered_routes():
 
 @app.get("/")
 async def root():
-    """API root endpoint - provides navigation to documentation."""
+    """
+    API root endpoint - provides navigation to documentation.
+
+    SYS-M08: Informs clients about API versioning.
+    """
     return {
         "name": "BidIQ Uniformes API",
         "version": "0.2.0",
+        "api_version": "v1",  # SYS-M08: Current API version
         "description": "API para busca de licitações de uniformes no PNCP",
         "endpoints": {
             "docs": "/docs",
             "redoc": "/redoc",
             "health": "/health",
             "openapi": "/openapi.json",
+            "v1_api": "/v1",  # SYS-M08: Versioned API endpoint
+        },
+        "versioning": {  # SYS-M08: API versioning information
+            "current": "v1",
+            "supported": ["v1"],
+            "deprecated": [],
+            "note": "All endpoints available at /v1/<endpoint> and /<endpoint> (legacy)",
         },
         "status": "operational",
     }
@@ -160,13 +196,14 @@ async def health():
     Health check endpoint for monitoring and load balancers.
 
     Provides lightweight service health verification including dependency
-    checks for Supabase connectivity.
+    checks for Supabase, OpenAI, and Redis connectivity.
     """
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     dependencies = {
         "supabase": "unconfigured",
         "openai": "unconfigured",
+        "redis": "unconfigured",
     }
 
     # Check Supabase configuration
@@ -188,16 +225,40 @@ async def health():
     else:
         dependencies["openai"] = "missing_api_key"
 
+    # Check Redis connectivity (optional dependency)
+    # SYS-L06: Add Redis health check to health endpoint
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            from redis_client import is_redis_available
+            redis_available = await is_redis_available()
+            dependencies["redis"] = "healthy" if redis_available else "unavailable"
+        except Exception as e:
+            dependencies["redis"] = f"error: {str(e)[:50]}"
+    else:
+        # Redis is optional - not configured is not an error
+        dependencies["redis"] = "not_configured"
+
+    # Determine overall health status
+    # Supabase is critical, Redis is optional
     supabase_ok = not dependencies["supabase"].startswith("error")
-    status = "healthy" if supabase_ok else "degraded"
+    redis_degraded = dependencies["redis"].startswith("error") or dependencies["redis"] == "unavailable"
+
+    if not supabase_ok:
+        status = "unhealthy"
+    elif redis_degraded and redis_url:  # Only degrade if Redis is configured but failing
+        status = "degraded"
+    else:
+        status = "healthy"
 
     response_data = {
         "status": status,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": app.version,
         "dependencies": dependencies,
     }
 
+    # Return 503 if unhealthy (critical dependencies down)
     if not supabase_ok:
         from fastapi.responses import JSONResponse
         return JSONResponse(content=response_data, status_code=503)

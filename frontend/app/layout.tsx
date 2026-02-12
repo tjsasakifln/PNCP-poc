@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AnalyticsProvider } from "./components/AnalyticsProvider";
 import { AuthProvider } from "./components/AuthProvider";
+import { NProgressProvider } from "./components/NProgressProvider";
 import { Toaster } from "sonner";
 
 const dmSans = DM_Sans({
@@ -41,11 +42,20 @@ export const metadata: Metadata = {
     siteName: appName,
     type: "website",
     locale: "pt_BR",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${appName} - Busca Inteligente de Licitações`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: appName,
     description: "Busca inteligente de licitações no PNCP",
+    images: ["/og-image.png"],
   },
 };
 
@@ -69,8 +79,6 @@ export default function RootLayout({
                   }
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
-                    document.documentElement.style.setProperty('--canvas', '#121212');
-                    document.documentElement.style.setProperty('--ink', '#e0e0e0');
                   }
                 } catch(e) {}
               })();
@@ -91,8 +99,10 @@ export default function RootLayout({
         <AnalyticsProvider>
           <AuthProvider>
             <ThemeProvider>
-              {children}
-              <Toaster position="top-right" richColors closeButton />
+              <NProgressProvider>
+                {children}
+                <Toaster position="top-right" richColors closeButton />
+              </NProgressProvider>
             </ThemeProvider>
           </AuthProvider>
         </AnalyticsProvider>

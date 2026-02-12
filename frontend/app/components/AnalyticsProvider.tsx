@@ -50,7 +50,13 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     const handleBeforeUnload = () => {
       if (token) {
         try {
-          const sessionDuration = Date.now() - performance.timing.navigationStart;
+          // Use modern Performance API instead of deprecated performance.timing
+          const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+          const navigationStart = navEntries.length > 0
+            ? navEntries[0].startTime
+            : performance.timeOrigin;
+
+          const sessionDuration = Date.now() - navigationStart;
 
           mixpanel.track('page_exit', {
             path: pathname,

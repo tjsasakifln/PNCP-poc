@@ -27,8 +27,10 @@ redis==5.2.1  # Feature flag caching (STORY-171)
 # Kept in database.py for test backward compat only
 
 # Google Sheets API integration (STORY-180)
-google-api-python-client==2.150.0
-google-auth==2.35.0
-google-auth-oauthlib==1.2.1
-google-auth-httplib2==0.2.0
-cryptography==43.0.3
+# ACTIVE: Used in oauth.py, google_sheets.py, routes/export_sheets.py
+# Provides: Google OAuth login + export search results to Google Sheets
+google-api-python-client==2.150.0  # Google Sheets API client
+google-auth==2.35.0                # OAuth 2.0 authentication
+google-auth-oauthlib==1.2.1        # OAuth flow helpers
+google-auth-httplib2==0.2.0        # HTTP transport for Google APIs
+cryptography==43.0.3               # Required by google-auth

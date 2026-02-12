@@ -18,6 +18,8 @@ const PROTECTED_ROUTES = [
   "/conta",      // Account settings
   "/admin",      // Admin dashboard
   "/dashboard",  // Personal analytics dashboard
+  "/mensagens",  // Message center
+  "/planos/obrigado", // Post-purchase thank you page
 ];
 
 const PUBLIC_ROUTES = [

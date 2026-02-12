@@ -1,11 +1,19 @@
-"""Rate limiting with Redis + in-memory fallback."""
+"""Rate limiting with Redis + in-memory fallback.
+
+STORY-203 SYS-M03: In-memory rate limiter with max size limit
+- LRU eviction when dict exceeds 10,000 entries
+- Prevents unbounded memory growth in high-traffic scenarios
+"""
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+# STORY-203 SYS-M03: Maximum entries in in-memory rate limiter
+MAX_MEMORY_STORE_SIZE = 10_000
 
 
 class RateLimiter:
@@ -51,7 +59,7 @@ class RateLimiter:
         Returns:
             tuple: (allowed: bool, retry_after_seconds: int)
         """
-        minute_key = datetime.utcnow().strftime("%Y-%m-%dT%H:%M")
+        minute_key = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M")
         key = f"rate_limit:{user_id}:{minute_key}"
 
         if self.redis_client:
@@ -78,15 +86,31 @@ class RateLimiter:
             return (True, 0)  # Fail open (don't block on Redis errors)
 
     def _check_memory(self, key: str, limit: int) -> tuple[bool, int]:
-        """Check rate limit using in-memory dict (local dev only)."""
-        now = datetime.utcnow().timestamp()
+        """Check rate limit using in-memory dict (local dev only).
+
+        STORY-203 SYS-M03: Implements LRU eviction when size exceeds MAX_MEMORY_STORE_SIZE.
+        """
+        now = datetime.now(timezone.utc).timestamp()
 
         # Cleanup old entries (simple garbage collection)
-        self._memory_store = {
+        # Also implements max size limit with LRU eviction
+        cleaned_store = {
             k: (count, ts)
             for k, (count, ts) in self._memory_store.items()
             if now - ts < 60
         }
+
+        # STORY-203 SYS-M03: LRU eviction if store exceeds max size
+        if len(cleaned_store) > MAX_MEMORY_STORE_SIZE:
+            # Sort by timestamp (oldest first) and keep only newest MAX_MEMORY_STORE_SIZE entries
+            sorted_items = sorted(cleaned_store.items(), key=lambda item: item[1][1])
+            cleaned_store = dict(sorted_items[-MAX_MEMORY_STORE_SIZE:])
+            logger.warning(
+                f"In-memory rate limiter exceeded {MAX_MEMORY_STORE_SIZE} entries. "
+                f"Evicted oldest {len(self._memory_store) - len(cleaned_store)} entries (LRU)."
+            )
+
+        self._memory_store = cleaned_store
 
         if key in self._memory_store:
             count, timestamp = self._memory_store[key]

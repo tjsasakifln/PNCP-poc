@@ -11,10 +11,16 @@ provides in-process synchronization (sufficient for single-instance deployments)
 
 SECURITY NOTE (Issue #168):
 All user IDs in logs are sanitized to prevent PII exposure.
+
+STORY-203 SYS-M04: Database-driven plan capabilities
+- Plan capabilities loaded from database `plans` table
+- In-memory cache with 5-minute TTL to reduce DB load
+- Automatic fallback to hardcoded values if DB unavailable
 """
 
 import asyncio
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional, TypedDict
 from enum import Enum
@@ -27,6 +33,11 @@ logger = logging.getLogger(__name__)
 # This protects against race conditions within a single process.
 # For multi-process/multi-instance deployments, use the PostgreSQL RPC function.
 _quota_locks: dict[str, asyncio.Lock] = {}
+
+# STORY-203 SYS-M04: Plan capabilities cache
+_plan_capabilities_cache: Optional[dict[str, "PlanCapabilities"]] = None
+_plan_capabilities_cache_time: float = 0
+PLAN_CAPABILITIES_CACHE_TTL = 300  # 5 minutes in seconds
 
 
 def _get_user_lock(user_id: str) -> asyncio.Lock:
@@ -128,6 +139,144 @@ UPGRADE_SUGGESTIONS: dict[str, dict[str, str]] = {
 
 
 # ============================================================================
+# STORY-203 SYS-M04: Database-driven Plan Capabilities Loader
+# ============================================================================
+
+def _load_plan_capabilities_from_db() -> dict[str, PlanCapabilities]:
+    """Load plan capabilities from database.
+
+    STORY-203 SYS-M04: Loads plan definitions from `plans` table and converts
+    to PlanCapabilities format. Falls back to hardcoded PLAN_CAPABILITIES on error.
+
+    Returns:
+        dict[str, PlanCapabilities]: Plan capabilities indexed by plan_id
+    """
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        # Fetch all active plans from database
+        result = (
+            sb.table("plans")
+            .select("id, max_searches, price_brl, duration_days, description")
+            .eq("is_active", True)
+            .execute()
+        )
+
+        if not result.data:
+            logger.warning("No plans found in database, using hardcoded fallback")
+            return PLAN_CAPABILITIES
+
+        # Convert database plans to PlanCapabilities format
+        db_capabilities: dict[str, PlanCapabilities] = {}
+
+        for plan in result.data:
+            plan_id = plan["id"]
+            max_searches = plan.get("max_searches", 0)
+
+            # Derive capabilities from plan ID and max_searches
+            # This maps database schema to our PlanCapabilities structure
+            if plan_id == "free_trial":
+                caps = PlanCapabilities(
+                    max_history_days=7,
+                    allow_excel=False,
+                    max_requests_per_month=max_searches or 3,
+                    max_requests_per_min=2,
+                    max_summary_tokens=200,
+                    priority=PlanPriority.LOW.value,
+                )
+            elif plan_id == "consultor_agil":
+                caps = PlanCapabilities(
+                    max_history_days=30,
+                    allow_excel=False,
+                    max_requests_per_month=max_searches or 50,
+                    max_requests_per_min=10,
+                    max_summary_tokens=200,
+                    priority=PlanPriority.NORMAL.value,
+                )
+            elif plan_id == "maquina":
+                caps = PlanCapabilities(
+                    max_history_days=365,
+                    allow_excel=True,
+                    max_requests_per_month=max_searches or 300,
+                    max_requests_per_min=30,
+                    max_summary_tokens=500,
+                    priority=PlanPriority.HIGH.value,
+                )
+            elif plan_id == "sala_guerra":
+                caps = PlanCapabilities(
+                    max_history_days=1825,  # 5 years
+                    allow_excel=True,
+                    max_requests_per_month=max_searches or 1000,
+                    max_requests_per_min=60,
+                    max_summary_tokens=10000,
+                    priority=PlanPriority.CRITICAL.value,
+                )
+            else:
+                # Unknown plan - use conservative defaults
+                logger.warning(f"Unknown plan_id '{plan_id}' in database, using conservative defaults")
+                caps = PlanCapabilities(
+                    max_history_days=30,
+                    allow_excel=False,
+                    max_requests_per_month=max_searches or 10,
+                    max_requests_per_min=5,
+                    max_summary_tokens=200,
+                    priority=PlanPriority.NORMAL.value,
+                )
+
+            db_capabilities[plan_id] = caps
+
+        logger.info(
+            f"Loaded {len(db_capabilities)} plan capabilities from database: "
+            f"{list(db_capabilities.keys())}"
+        )
+        return db_capabilities
+
+    except Exception as e:
+        logger.error(f"Failed to load plan capabilities from database: {e}")
+        logger.info("Falling back to hardcoded PLAN_CAPABILITIES")
+        return PLAN_CAPABILITIES
+
+
+def get_plan_capabilities() -> dict[str, PlanCapabilities]:
+    """Get plan capabilities with caching.
+
+    STORY-203 SYS-M04: Returns plan capabilities from in-memory cache (5min TTL)
+    or loads from database. Falls back to hardcoded values on DB errors.
+
+    Returns:
+        dict[str, PlanCapabilities]: Plan capabilities indexed by plan_id
+    """
+    global _plan_capabilities_cache, _plan_capabilities_cache_time
+
+    now = time.time()
+    cache_age = now - _plan_capabilities_cache_time
+
+    # Return cached data if still valid
+    if _plan_capabilities_cache is not None and cache_age < PLAN_CAPABILITIES_CACHE_TTL:
+        logger.debug(f"Plan capabilities cache HIT (age={cache_age:.1f}s)")
+        return _plan_capabilities_cache
+
+    # Cache miss or expired - reload from DB
+    logger.debug("Plan capabilities cache MISS - loading from database")
+    _plan_capabilities_cache = _load_plan_capabilities_from_db()
+    _plan_capabilities_cache_time = now
+
+    return _plan_capabilities_cache
+
+
+def clear_plan_capabilities_cache() -> None:
+    """Clear plan capabilities cache (useful for testing or after plan updates).
+
+    STORY-203 SYS-M04: Forces next get_plan_capabilities() call to reload from DB.
+    """
+    global _plan_capabilities_cache, _plan_capabilities_cache_time
+    _plan_capabilities_cache = None
+    _plan_capabilities_cache_time = 0
+    logger.info("Plan capabilities cache cleared")
+
+
+# ============================================================================
 # Quota Info Model
 # ============================================================================
 
@@ -150,12 +299,12 @@ class QuotaInfo(BaseModel):
 
 def get_current_month_key() -> str:
     """Get current month key (e.g., '2026-02')."""
-    return datetime.utcnow().strftime("%Y-%m")
+    return datetime.now(timezone.utc).strftime("%Y-%m")
 
 
 def get_quota_reset_date() -> datetime:
     """Get next quota reset date (1st of next month)."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if now.month == 12:
         return datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
     else:
@@ -264,7 +413,7 @@ def increment_monthly_quota(user_id: str, max_quota: Optional[int] = None) -> in
                 "user_id": user_id,
                 "month_year": month_key,
                 "searches_count": current + 1,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             },
             on_conflict="user_id,month_year"
         ).execute()
@@ -391,13 +540,14 @@ def get_plan_from_profile(user_id: str, sb=None) -> Optional[str]:
         }
         mapped = PLAN_TYPE_MAP.get(plan_type, plan_type)
 
-        # Only return if it maps to a known plan
-        if mapped in PLAN_CAPABILITIES:
+        # STORY-203 SYS-M04: Check against dynamic plan capabilities
+        plan_caps = get_plan_capabilities()
+        if mapped in plan_caps:
             return mapped
 
         logger.warning(
             f"Unknown plan_type '{plan_type}' in profile for user {mask_user_id(user_id)}, "
-            f"mapped to '{mapped}' which is not in PLAN_CAPABILITIES"
+            f"mapped to '{mapped}' which is not in plan capabilities"
         )
         return None
 
@@ -503,8 +653,9 @@ def check_quota(user_id: str) -> QuotaInfo:
             plan_id = "free_trial"
             expires_at_dt = None
 
-    # Get plan capabilities
-    caps = PLAN_CAPABILITIES.get(plan_id, PLAN_CAPABILITIES["free_trial"])
+    # STORY-203 SYS-M04: Get plan capabilities from database-driven cache
+    plan_caps = get_plan_capabilities()
+    caps = plan_caps.get(plan_id, plan_caps.get("free_trial", PLAN_CAPABILITIES["free_trial"]))
     plan_name = PLAN_NAMES.get(plan_id, "FREE Trial")
 
     # Check expiry — ONLY for free_trial (trial expiry) vs paid (billing grace)

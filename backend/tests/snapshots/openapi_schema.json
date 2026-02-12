@@ -1,0 +1,4960 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BidIQ Uniformes API",
+    "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es de uniformes no PNCP. Permite filtrar oportunidades por estado, valor e keywords, gerando relat\u00f3rios Excel e resumos executivos via IA.",
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/v1/admin/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Users",
+        "description": "List all users with profiles and subscription info.",
+        "operationId": "list_users_v1_admin_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Create User",
+        "description": "Create a new user with optional plan assignment.",
+        "operationId": "create_user_v1_admin_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/users/{user_id}": {
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete User",
+        "description": "Delete a user and all their data.",
+        "operationId": "delete_user_v1_admin_users__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to delete",
+              "title": "User Id"
+            },
+            "description": "User UUID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update User",
+        "description": "Update user profile or plan.",
+        "operationId": "update_user_v1_admin_users__user_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to update",
+              "title": "User Id"
+            },
+            "description": "User UUID to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/users/{user_id}/reset-password": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Reset User Password",
+        "description": "Reset a user's password (admin only).",
+        "operationId": "reset_user_password_v1_admin_users__user_id__reset_password_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to reset password for",
+              "title": "User Id"
+            },
+            "description": "User UUID to reset password for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/users/{user_id}/assign-plan": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Assign Plan",
+        "description": "Manually assign a plan to a user (bypasses payment).",
+        "operationId": "assign_plan_v1_admin_users__user_id__assign_plan_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to assign plan to",
+              "title": "User Id"
+            },
+            "description": "User UUID to assign plan to"
+          },
+          {
+            "name": "plan_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Plan ID to assign",
+              "title": "Plan Id"
+            },
+            "description": "Plan ID to assign"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/users/{user_id}/credits": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update User Credits",
+        "description": "Manually adjust a user's credits (admin only).\n\nSets the credits_remaining value directly on the user's active subscription.\nIf no active subscription exists, creates one based on user's current plan.\n\nArgs:\n    user_id: UUID of the user\n    req.credits: New credit value (must be >= 0)\n\nReturns:\n    Updated user info with new credit value",
+        "operationId": "update_user_credits_v1_admin_users__user_id__credits_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to update credits for",
+              "title": "User Id"
+            },
+            "description": "User UUID to update credits for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCreditsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/subscriptions/update-billing-period": {
+      "post": {
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "Update Billing Period",
+        "description": "Update subscription billing period (monthly \u2194 annual).\n\nCRITICAL FLOW:\n1. Fetch current subscription from Supabase\n2. Calculate pro-rata credit (with defer logic if < 7 days to renewal)\n3. Update Stripe subscription\n4. Update Supabase (billing_period, updated_at)\n5. Invalidate Redis feature cache\n6. Return next billing date and credit info\n\nEDGE CASES:\n- Defer if < 7 days to renewal (avoid complex pro-rata + Stripe edge cases)\n- Prevent downgrade (annual \u2192 monthly) via UX validation\n- Handle timezone-aware date calculations\n\nArgs:\n    request: UpdateBillingPeriodRequest with new billing period\n    user: Authenticated user from require_auth dependency\n\nReturns:\n    UpdateBillingPeriodResponse with billing details\n\nRaises:\n    HTTPException 404: No active subscription found\n    HTTPException 400: Invalid billing period or downgrade attempt\n    HTTPException 500: Database or Stripe API error",
+        "operationId": "update_billing_period_v1_api_subscriptions_update_billing_period_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBillingPeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateBillingPeriodResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/api/features/me": {
+      "get": {
+        "tags": [
+          "features"
+        ],
+        "summary": "Get My Features",
+        "description": "Get current user's enabled features.\n\nCACHING STRATEGY:\n- Redis cache with 5-minute TTL\n- Cache key: `features:{user_id}`\n- Cache miss: Fetch from Supabase (JOIN user_subscriptions + plan_features)\n- Graceful degradation if Redis unavailable (direct DB query)\n\nCACHE INVALIDATION:\n- POST /api/subscriptions/update-billing-period invalidates on success\n- Manual: DELETE features:{user_id} via redis-cli\n\nReturns:\n    UserFeaturesResponse with features array, plan_id, billing_period, cached_at",
+        "operationId": "get_my_features_v1_api_features_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeaturesResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/api/messages/conversations": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Create Conversation",
+        "operationId": "create_conversation_v1_api_messages_conversations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "List Conversations",
+        "operationId": "list_conversations_v1_api_messages_conversations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationsListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/messages/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get Conversation",
+        "operationId": "get_conversation_v1_api_messages_conversations__conversation_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/messages/conversations/{conversation_id}/reply": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Reply To Conversation",
+        "operationId": "reply_to_conversation_v1_api_messages_conversations__conversation_id__reply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/messages/conversations/{conversation_id}/status": {
+      "patch": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Update Conversation Status",
+        "operationId": "update_conversation_status_v1_api_messages_conversations__conversation_id__status_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConversationStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/messages/unread-count": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get Unread Count",
+        "operationId": "get_unread_count_v1_api_messages_unread_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/analytics/summary": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Analytics Summary",
+        "description": "Get overall user analytics summary.",
+        "operationId": "get_analytics_summary_v1_analytics_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/analytics/searches-over-time": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Searches Over Time",
+        "description": "Get time-series search data grouped by period.",
+        "operationId": "get_searches_over_time_v1_analytics_searches_over_time_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(day|week|month)$",
+              "default": "week",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "range_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 90,
+              "title": "Range Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchesOverTimeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/top-dimensions": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Top Dimensions",
+        "description": "Get top UFs and sectors by search count.",
+        "operationId": "get_top_dimensions_v1_analytics_top_dimensions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopDimensionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/auth/google": {
+      "get": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Google Oauth Initiate",
+        "description": "Initiate Google OAuth 2.0 flow.\n\nRedirects user to Google consent screen to authorize Google Sheets access.\n\nQuery Parameters:\n    redirect: Frontend path to return to after authorization\n\nReturns:\n    302 Redirect to Google OAuth consent screen\n\nSecurity:\n    - CSRF protection via state parameter\n    - State encodes user_id + redirect path\n    - Validates state on callback\n\nExample:\n    GET /api/auth/google?redirect=/buscar\n    \u2192 Redirects to https://accounts.google.com/o/oauth2/auth?...",
+        "operationId": "google_oauth_initiate_v1_api_auth_google_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Page to return to after auth",
+              "default": "/buscar",
+              "title": "Redirect"
+            },
+            "description": "Page to return to after auth"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Google Oauth Revoke",
+        "description": "Revoke Google OAuth access and delete tokens.\n\nDeletes user's OAuth tokens from database and revokes access with Google.\n\nReturns:\n    {\n        \"success\": true,\n        \"message\": \"Google Sheets access revoked successfully\"\n    }\n\nSecurity:\n    - Requires authentication\n    - Only deletes tokens for authenticated user\n    - Revokes with Google API (best effort)\n\nNote:\n    Revoking access does NOT delete existing spreadsheets.\n    Spreadsheets remain in user's Google Drive.",
+        "operationId": "google_oauth_revoke_v1_api_auth_google_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/auth/google/callback": {
+      "get": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Google Oauth Callback",
+        "description": "Handle OAuth callback from Google.\n\nThis endpoint is called by Google after user authorizes access.\n\nQuery Parameters:\n    code: Authorization code (exchanged for tokens), absent on error\n    state: CSRF state token (contains user_id + redirect path)\n    error: OAuth error code (if authorization failed)\n\nReturns:\n    302 Redirect to frontend with success/error status\n\nFlow:\n    1. Decode state param to get user_id and redirect path\n    2. Exchange code for tokens (access + refresh)\n    3. Encrypt and save tokens to database\n    4. Redirect to frontend with success flag\n\nError Handling:\n    - Invalid state \u2192 Redirect with error=invalid_state\n    - Code exchange failed \u2192 Redirect with error=oauth_failed\n    - Database error \u2192 Redirect with error=storage_failed",
+        "operationId": "google_oauth_callback_v1_api_auth_google_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Authorization code from Google",
+              "title": "Code"
+            },
+            "description": "Authorization code from Google"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSRF state token",
+              "title": "State"
+            },
+            "description": "CSRF state token"
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth error (if any)",
+              "title": "Error"
+            },
+            "description": "OAuth error (if any)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/export/google-sheets": {
+      "post": {
+        "tags": [
+          "export"
+        ],
+        "summary": "Export To Google Sheets",
+        "description": "Export search results to Google Sheets.\n\nCreates a new Google Sheets spreadsheet or updates an existing one\nwith search results. Applies professional formatting (green header,\ncurrency symbols, hyperlinks).\n\nRequest Body:\n    {\n        \"licitacoes\": [...],\n        \"title\": \"SmartLic - Uniformes - 09/02/2026\",\n        \"mode\": \"create\" | \"update\",\n        \"spreadsheet_id\": \"optional for update mode\"\n    }\n\nReturns:\n    {\n        \"success\": true,\n        \"spreadsheet_id\": \"...\",\n        \"spreadsheet_url\": \"https://docs.google.com/spreadsheets/d/...\",\n        \"total_rows\": 142,\n        \"updated_at\": \"2026-02-09T15:30:00Z\"  // only for update mode\n    }\n\nErrors:\n    401 Unauthorized: User hasn't authorized Google Sheets\n    403 Forbidden: Token revoked or insufficient permissions\n    429 Too Many Requests: Google API quota exceeded\n    500 Internal Server Error: Google API error\n\nExample:\n    POST /api/export/google-sheets\n    {\n        \"licitacoes\": [...],\n        \"title\": \"SmartLic - Uniformes - SP, RJ\",\n        \"mode\": \"create\"\n    }",
+        "operationId": "export_to_google_sheets_v1_api_export_google_sheets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSheetsExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleSheetsExportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/api/export/google-sheets/history": {
+      "get": {
+        "tags": [
+          "export"
+        ],
+        "summary": "Get Export History",
+        "description": "Get user's Google Sheets export history.\n\nReturns list of all exports with spreadsheet URLs and search parameters.\nUseful for \"re-open last export\" and usage analytics.\n\nQuery Parameters:\n    limit: Maximum number of exports to return (default: 50, max: 100)\n\nReturns:\n    {\n        \"exports\": [\n            {\n                \"id\": \"uuid\",\n                \"spreadsheet_id\": \"...\",\n                \"spreadsheet_url\": \"https://docs.google.com/...\",\n                \"search_params\": {\"ufs\": [\"SP\"], \"setor\": \"Uniformes\"},\n                \"total_rows\": 142,\n                \"created_at\": \"2026-02-09T15:30:00Z\",\n                \"last_updated_at\": \"2026-02-09T15:30:00Z\"\n            }\n        ],\n        \"total\": 1\n    }\n\nExample:\n    GET /api/export/google-sheets/history?limit=20",
+        "operationId": "get_export_history_v1_api_export_google_sheets_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleSheetsExportHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/stripe": {
+      "post": {
+        "summary": "Stripe Webhook",
+        "description": "Handle Stripe webhook events with idempotency and signature validation.\n\nSecurity:\n- Verifies Stripe signature to prevent fake webhooks\n- Rejects unsigned/invalid requests with HTTP 400\n\nIdempotency:\n- Checks stripe_webhook_events table for duplicate event IDs\n- Returns \"already_processed\" for duplicate webhooks\n\nProcessing:\n- Determines billing_period from Stripe subscription interval\n- Updates user_subscriptions table via Supabase client\n- Syncs profiles.plan_type for fallback reliability\n- Invalidates Redis cache for affected user\n- Stores event in stripe_webhook_events for audit trail\n\nArgs:\n    request: FastAPI Request object with Stripe event payload\n\nReturns:\n    dict: {\"status\": \"success\"} or {\"status\": \"already_processed\"}\n\nRaises:\n    HTTPException 400: Invalid payload or signature verification failed\n    HTTPException 500: Database error during processing",
+        "operationId": "stripe_webhook_v1_webhooks_stripe_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/buscar-progress/{search_id}": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Buscar Progress Stream",
+        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - error: Search failed",
+        "operationId": "buscar_progress_stream_v1_buscar_progress__search_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Search Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/buscar": {
+      "post": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Buscar Licitacoes",
+        "description": "Main search endpoint - orchestrates the complete pipeline.\n\nWorkflow:\n    1. Fetch bids from PNCP API (with automatic pagination)\n    2. Apply sequential filters (UF, value, keywords, status)\n    3. Generate executive summary via GPT-4.1-nano (with fallback)\n    4. Create formatted Excel report\n    5. Return summary + base64-encoded Excel\n\nArgs:\n    request: BuscaRequest with ufs, data_inicial, data_final\n\nReturns:\n    BuscaResponse with resumo, excel_base64, total_raw, total_filtrado\n\nRaises:\n    HTTPException 502: PNCP API error (network, timeout, invalid response)\n    HTTPException 503: PNCP rate limit exceeded (retry after N seconds)\n    HTTPException 500: Internal server error (unexpected failure)\n\nExample:\n    >>> request = BuscaRequest(\n    ...     ufs=[\"SP\", \"RJ\"],\n    ...     data_inicial=\"2025-01-01\",\n    ...     data_final=\"2025-01-31\"\n    ... )\n    >>> response = await buscar_licitacoes(request)\n    >>> response.total_filtrado\n    15",
+        "operationId": "buscar_licitacoes_v1_buscar_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuscaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuscaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/change-password": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Change Password",
+        "description": "Change current user's password.",
+        "operationId": "change_password_v1_change_password_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get Profile",
+        "description": "Get current user profile with plan capabilities and quota status.",
+        "operationId": "get_profile_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/plans": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Get Plans",
+        "description": "Get available subscription plans.",
+        "operationId": "get_plans_v1_plans_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/checkout": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Create Checkout",
+        "description": "Create Stripe Checkout session for a plan purchase.",
+        "operationId": "create_checkout_v1_checkout_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "billing_period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "monthly",
+              "title": "Billing Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get Sessions",
+        "description": "Get user's search session history.",
+        "operationId": "get_sessions_v1_sessions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/plans": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Get Plans With Capabilities",
+        "description": "Get all active plans with capabilities and pricing.\n\nSTORY-203 CROSS-M01: Combines plan metadata from database with\ncapabilities from SYS-M04 infrastructure. This provides a single\nendpoint for frontend to fetch all plan-related data.\n\nReturns:\n    PlansResponse: List of plans with full details\n\nRaises:\n    HTTPException 500: If database query fails",
+        "operationId": "get_plans_with_capabilities_v1_api_plans_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlansResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Users",
+        "description": "List all users with profiles and subscription info.",
+        "operationId": "list_users_admin_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Create User",
+        "description": "Create a new user with optional plan assignment.",
+        "operationId": "create_user_admin_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}": {
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete User",
+        "description": "Delete a user and all their data.",
+        "operationId": "delete_user_admin_users__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to delete",
+              "title": "User Id"
+            },
+            "description": "User UUID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update User",
+        "description": "Update user profile or plan.",
+        "operationId": "update_user_admin_users__user_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to update",
+              "title": "User Id"
+            },
+            "description": "User UUID to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}/reset-password": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Reset User Password",
+        "description": "Reset a user's password (admin only).",
+        "operationId": "reset_user_password_admin_users__user_id__reset_password_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to reset password for",
+              "title": "User Id"
+            },
+            "description": "User UUID to reset password for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}/assign-plan": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Assign Plan",
+        "description": "Manually assign a plan to a user (bypasses payment).",
+        "operationId": "assign_plan_admin_users__user_id__assign_plan_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to assign plan to",
+              "title": "User Id"
+            },
+            "description": "User UUID to assign plan to"
+          },
+          {
+            "name": "plan_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Plan ID to assign",
+              "title": "Plan Id"
+            },
+            "description": "Plan ID to assign"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}/credits": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update User Credits",
+        "description": "Manually adjust a user's credits (admin only).\n\nSets the credits_remaining value directly on the user's active subscription.\nIf no active subscription exists, creates one based on user's current plan.\n\nArgs:\n    user_id: UUID of the user\n    req.credits: New credit value (must be >= 0)\n\nReturns:\n    Updated user info with new credit value",
+        "operationId": "update_user_credits_admin_users__user_id__credits_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "User UUID to update credits for",
+              "title": "User Id"
+            },
+            "description": "User UUID to update credits for"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCreditsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/subscriptions/update-billing-period": {
+      "post": {
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "Update Billing Period",
+        "description": "Update subscription billing period (monthly \u2194 annual).\n\nCRITICAL FLOW:\n1. Fetch current subscription from Supabase\n2. Calculate pro-rata credit (with defer logic if < 7 days to renewal)\n3. Update Stripe subscription\n4. Update Supabase (billing_period, updated_at)\n5. Invalidate Redis feature cache\n6. Return next billing date and credit info\n\nEDGE CASES:\n- Defer if < 7 days to renewal (avoid complex pro-rata + Stripe edge cases)\n- Prevent downgrade (annual \u2192 monthly) via UX validation\n- Handle timezone-aware date calculations\n\nArgs:\n    request: UpdateBillingPeriodRequest with new billing period\n    user: Authenticated user from require_auth dependency\n\nReturns:\n    UpdateBillingPeriodResponse with billing details\n\nRaises:\n    HTTPException 404: No active subscription found\n    HTTPException 400: Invalid billing period or downgrade attempt\n    HTTPException 500: Database or Stripe API error",
+        "operationId": "update_billing_period_api_subscriptions_update_billing_period_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBillingPeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateBillingPeriodResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/features/me": {
+      "get": {
+        "tags": [
+          "features"
+        ],
+        "summary": "Get My Features",
+        "description": "Get current user's enabled features.\n\nCACHING STRATEGY:\n- Redis cache with 5-minute TTL\n- Cache key: `features:{user_id}`\n- Cache miss: Fetch from Supabase (JOIN user_subscriptions + plan_features)\n- Graceful degradation if Redis unavailable (direct DB query)\n\nCACHE INVALIDATION:\n- POST /api/subscriptions/update-billing-period invalidates on success\n- Manual: DELETE features:{user_id} via redis-cli\n\nReturns:\n    UserFeaturesResponse with features array, plan_id, billing_period, cached_at",
+        "operationId": "get_my_features_api_features_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeaturesResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/messages/conversations": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Create Conversation",
+        "operationId": "create_conversation_api_messages_conversations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "List Conversations",
+        "operationId": "list_conversations_api_messages_conversations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationsListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get Conversation",
+        "operationId": "get_conversation_api_messages_conversations__conversation_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/conversations/{conversation_id}/reply": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Reply To Conversation",
+        "operationId": "reply_to_conversation_api_messages_conversations__conversation_id__reply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/conversations/{conversation_id}/status": {
+      "patch": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Update Conversation Status",
+        "operationId": "update_conversation_status_api_messages_conversations__conversation_id__status_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConversationStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/unread-count": {
+      "get": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Get Unread Count",
+        "operationId": "get_unread_count_api_messages_unread_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/analytics/summary": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Analytics Summary",
+        "description": "Get overall user analytics summary.",
+        "operationId": "get_analytics_summary_analytics_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/analytics/searches-over-time": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Searches Over Time",
+        "description": "Get time-series search data grouped by period.",
+        "operationId": "get_searches_over_time_analytics_searches_over_time_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(day|week|month)$",
+              "default": "week",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "range_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 90,
+              "title": "Range Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchesOverTimeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/top-dimensions": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Top Dimensions",
+        "description": "Get top UFs and sectors by search count.",
+        "operationId": "get_top_dimensions_analytics_top_dimensions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopDimensionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/google": {
+      "get": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Google Oauth Initiate",
+        "description": "Initiate Google OAuth 2.0 flow.\n\nRedirects user to Google consent screen to authorize Google Sheets access.\n\nQuery Parameters:\n    redirect: Frontend path to return to after authorization\n\nReturns:\n    302 Redirect to Google OAuth consent screen\n\nSecurity:\n    - CSRF protection via state parameter\n    - State encodes user_id + redirect path\n    - Validates state on callback\n\nExample:\n    GET /api/auth/google?redirect=/buscar\n    \u2192 Redirects to https://accounts.google.com/o/oauth2/auth?...",
+        "operationId": "google_oauth_initiate_api_auth_google_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Page to return to after auth",
+              "default": "/buscar",
+              "title": "Redirect"
+            },
+            "description": "Page to return to after auth"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Google Oauth Revoke",
+        "description": "Revoke Google OAuth access and delete tokens.\n\nDeletes user's OAuth tokens from database and revokes access with Google.\n\nReturns:\n    {\n        \"success\": true,\n        \"message\": \"Google Sheets access revoked successfully\"\n    }\n\nSecurity:\n    - Requires authentication\n    - Only deletes tokens for authenticated user\n    - Revokes with Google API (best effort)\n\nNote:\n    Revoking access does NOT delete existing spreadsheets.\n    Spreadsheets remain in user's Google Drive.",
+        "operationId": "google_oauth_revoke_api_auth_google_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/google/callback": {
+      "get": {
+        "tags": [
+          "oauth"
+        ],
+        "summary": "Google Oauth Callback",
+        "description": "Handle OAuth callback from Google.\n\nThis endpoint is called by Google after user authorizes access.\n\nQuery Parameters:\n    code: Authorization code (exchanged for tokens), absent on error\n    state: CSRF state token (contains user_id + redirect path)\n    error: OAuth error code (if authorization failed)\n\nReturns:\n    302 Redirect to frontend with success/error status\n\nFlow:\n    1. Decode state param to get user_id and redirect path\n    2. Exchange code for tokens (access + refresh)\n    3. Encrypt and save tokens to database\n    4. Redirect to frontend with success flag\n\nError Handling:\n    - Invalid state \u2192 Redirect with error=invalid_state\n    - Code exchange failed \u2192 Redirect with error=oauth_failed\n    - Database error \u2192 Redirect with error=storage_failed",
+        "operationId": "google_oauth_callback_api_auth_google_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Authorization code from Google",
+              "title": "Code"
+            },
+            "description": "Authorization code from Google"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "CSRF state token",
+              "title": "State"
+            },
+            "description": "CSRF state token"
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "OAuth error (if any)",
+              "title": "Error"
+            },
+            "description": "OAuth error (if any)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/google-sheets": {
+      "post": {
+        "tags": [
+          "export"
+        ],
+        "summary": "Export To Google Sheets",
+        "description": "Export search results to Google Sheets.\n\nCreates a new Google Sheets spreadsheet or updates an existing one\nwith search results. Applies professional formatting (green header,\ncurrency symbols, hyperlinks).\n\nRequest Body:\n    {\n        \"licitacoes\": [...],\n        \"title\": \"SmartLic - Uniformes - 09/02/2026\",\n        \"mode\": \"create\" | \"update\",\n        \"spreadsheet_id\": \"optional for update mode\"\n    }\n\nReturns:\n    {\n        \"success\": true,\n        \"spreadsheet_id\": \"...\",\n        \"spreadsheet_url\": \"https://docs.google.com/spreadsheets/d/...\",\n        \"total_rows\": 142,\n        \"updated_at\": \"2026-02-09T15:30:00Z\"  // only for update mode\n    }\n\nErrors:\n    401 Unauthorized: User hasn't authorized Google Sheets\n    403 Forbidden: Token revoked or insufficient permissions\n    429 Too Many Requests: Google API quota exceeded\n    500 Internal Server Error: Google API error\n\nExample:\n    POST /api/export/google-sheets\n    {\n        \"licitacoes\": [...],\n        \"title\": \"SmartLic - Uniformes - SP, RJ\",\n        \"mode\": \"create\"\n    }",
+        "operationId": "export_to_google_sheets_api_export_google_sheets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSheetsExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleSheetsExportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/export/google-sheets/history": {
+      "get": {
+        "tags": [
+          "export"
+        ],
+        "summary": "Get Export History",
+        "description": "Get user's Google Sheets export history.\n\nReturns list of all exports with spreadsheet URLs and search parameters.\nUseful for \"re-open last export\" and usage analytics.\n\nQuery Parameters:\n    limit: Maximum number of exports to return (default: 50, max: 100)\n\nReturns:\n    {\n        \"exports\": [\n            {\n                \"id\": \"uuid\",\n                \"spreadsheet_id\": \"...\",\n                \"spreadsheet_url\": \"https://docs.google.com/...\",\n                \"search_params\": {\"ufs\": [\"SP\"], \"setor\": \"Uniformes\"},\n                \"total_rows\": 142,\n                \"created_at\": \"2026-02-09T15:30:00Z\",\n                \"last_updated_at\": \"2026-02-09T15:30:00Z\"\n            }\n        ],\n        \"total\": 1\n    }\n\nExample:\n    GET /api/export/google-sheets/history?limit=20",
+        "operationId": "get_export_history_api_export_google_sheets_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleSheetsExportHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "summary": "Stripe Webhook",
+        "description": "Handle Stripe webhook events with idempotency and signature validation.\n\nSecurity:\n- Verifies Stripe signature to prevent fake webhooks\n- Rejects unsigned/invalid requests with HTTP 400\n\nIdempotency:\n- Checks stripe_webhook_events table for duplicate event IDs\n- Returns \"already_processed\" for duplicate webhooks\n\nProcessing:\n- Determines billing_period from Stripe subscription interval\n- Updates user_subscriptions table via Supabase client\n- Syncs profiles.plan_type for fallback reliability\n- Invalidates Redis cache for affected user\n- Stores event in stripe_webhook_events for audit trail\n\nArgs:\n    request: FastAPI Request object with Stripe event payload\n\nReturns:\n    dict: {\"status\": \"success\"} or {\"status\": \"already_processed\"}\n\nRaises:\n    HTTPException 400: Invalid payload or signature verification failed\n    HTTPException 500: Database error during processing",
+        "operationId": "stripe_webhook_webhooks_stripe_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buscar-progress/{search_id}": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Buscar Progress Stream",
+        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - error: Search failed",
+        "operationId": "buscar_progress_stream_buscar_progress__search_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Search Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buscar": {
+      "post": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Buscar Licitacoes",
+        "description": "Main search endpoint - orchestrates the complete pipeline.\n\nWorkflow:\n    1. Fetch bids from PNCP API (with automatic pagination)\n    2. Apply sequential filters (UF, value, keywords, status)\n    3. Generate executive summary via GPT-4.1-nano (with fallback)\n    4. Create formatted Excel report\n    5. Return summary + base64-encoded Excel\n\nArgs:\n    request: BuscaRequest with ufs, data_inicial, data_final\n\nReturns:\n    BuscaResponse with resumo, excel_base64, total_raw, total_filtrado\n\nRaises:\n    HTTPException 502: PNCP API error (network, timeout, invalid response)\n    HTTPException 503: PNCP rate limit exceeded (retry after N seconds)\n    HTTPException 500: Internal server error (unexpected failure)\n\nExample:\n    >>> request = BuscaRequest(\n    ...     ufs=[\"SP\", \"RJ\"],\n    ...     data_inicial=\"2025-01-01\",\n    ...     data_final=\"2025-01-31\"\n    ... )\n    >>> response = await buscar_licitacoes(request)\n    >>> response.total_filtrado\n    15",
+        "operationId": "buscar_licitacoes_buscar_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuscaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuscaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/change-password": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Change Password",
+        "description": "Change current user's password.",
+        "operationId": "change_password_change_password_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get Profile",
+        "description": "Get current user profile with plan capabilities and quota status.",
+        "operationId": "get_profile_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/plans": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Get Plans",
+        "description": "Get available subscription plans.",
+        "operationId": "get_plans_plans_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Create Checkout",
+        "description": "Create Stripe Checkout session for a plan purchase.",
+        "operationId": "create_checkout_checkout_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "billing_period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "monthly",
+              "title": "Billing Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Get Sessions",
+        "description": "Get user's search session history.",
+        "operationId": "get_sessions_sessions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/plans": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Get Plans With Capabilities",
+        "description": "Get all active plans with capabilities and pricing.\n\nSTORY-203 CROSS-M01: Combines plan metadata from database with\ncapabilities from SYS-M04 infrastructure. This provides a single\nendpoint for frontend to fetch all plan-related data.\n\nReturns:\n    PlansResponse: List of plans with full details\n\nRaises:\n    HTTPException 500: If database query fails",
+        "operationId": "get_plans_with_capabilities_api_plans_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlansResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "API root endpoint - provides navigation to documentation.\n\nSYS-M08: Informs clients about API versioning.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Health check endpoint for monitoring and load balancers.\n\nProvides lightweight service health verification including dependency\nchecks for Supabase, OpenAI, and Redis connectivity.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sources/health": {
+      "get": {
+        "summary": "Sources Health",
+        "description": "Health check for all configured procurement data sources.\n\nReturns status, response time, and priority for each source.",
+        "operationId": "sources_health_sources_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/setores": {
+      "get": {
+        "summary": "Listar Setores",
+        "description": "Return available procurement sectors for frontend dropdown.",
+        "operationId": "listar_setores_setores_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/debug/pncp-test": {
+      "get": {
+        "summary": "Debug Pncp Test",
+        "description": "Diagnostic: test if PNCP API is reachable from this server.",
+        "operationId": "debug_pncp_test_debug_pncp_test_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BuscaRequest": {
+        "properties": {
+          "ufs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Ufs",
+            "description": "List of Brazilian state codes (e.g., ['SP', 'RJ', 'MG'])",
+            "examples": [
+              [
+                "SP",
+                "RJ"
+              ]
+            ]
+          },
+          "data_inicial": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Data Inicial",
+            "description": "Start date in YYYY-MM-DD format",
+            "examples": [
+              "2025-01-01"
+            ]
+          },
+          "data_final": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Data Final",
+            "description": "End date in YYYY-MM-DD format",
+            "examples": [
+              "2025-01-31"
+            ]
+          },
+          "setor_id": {
+            "type": "string",
+            "title": "Setor Id",
+            "description": "Sector ID for keyword filtering (e.g., 'vestuario', 'alimentos', 'informatica')",
+            "default": "vestuario",
+            "examples": [
+              "vestuario"
+            ]
+          },
+          "termos_busca": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termos Busca",
+            "description": "Custom search terms. Use commas to separate multi-word phrases (e.g., 'levantamento topogr\u00e1fico, terraplenagem, drenagem'). Without commas, spaces separate individual keywords (legacy mode).",
+            "examples": [
+              "jaleco avental",
+              "levantamento topogr\u00e1fico, terraplenagem, drenagem"
+            ]
+          },
+          "show_all_matches": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show All Matches",
+            "description": "When True, bypasses minimum match floor and returns all results with at least 1 keyword match (for 'show hidden results' feature).",
+            "default": false
+          },
+          "exclusion_terms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclusion Terms",
+            "description": "Custom exclusion terms. Overrides sector exclusions when provided."
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusLicitacao",
+            "description": "Status da licita\u00e7\u00e3o para filtrar. Padr\u00e3o: 'todos' (sem filtro de status). IMPORTANTE: Filtro de status desabilitado por padr\u00e3o devido a valores inconsistentes na API PNCP. Use 'todos' para m\u00e1xima cobertura de resultados.",
+            "default": "todos",
+            "examples": [
+              "todos",
+              "recebendo_proposta",
+              "em_julgamento",
+              "encerrada"
+            ]
+          },
+          "modalidades": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalidades",
+            "description": "Lista de c\u00f3digos de modalidade conforme Lei 14.133/2021. C\u00f3digos v\u00e1lidos: 1 (Preg\u00e3o Eletr\u00f4nico), 2 (Preg\u00e3o Presencial), 3 (Concorr\u00eancia), 6 (Dispensa), 7 (Inexigibilidade), 9 (Leil\u00e3o), 10 (Di\u00e1logo Competitivo), 11 (Concurso). None = todas as modalidades. NOTA: C\u00f3digos 4 (Tomada de Pre\u00e7os) e 5 (Convite) foram removidos por serem da Lei 8.666/93 (revogada).",
+            "examples": [
+              [
+                1,
+                2,
+                6
+              ]
+            ]
+          },
+          "valor_minimo": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Minimo",
+            "description": "Valor m\u00ednimo estimado da licita\u00e7\u00e3o em BRL. None = sem limite inferior.",
+            "examples": [
+              50000.0
+            ]
+          },
+          "valor_maximo": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Maximo",
+            "description": "Valor m\u00e1ximo estimado da licita\u00e7\u00e3o em BRL. None = sem limite superior.",
+            "examples": [
+              5000000.0
+            ]
+          },
+          "esferas": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/EsferaGovernamental"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esferas",
+            "description": "Lista de esferas governamentais ('F'=Federal, 'E'=Estadual, 'M'=Municipal). None = todas as esferas.",
+            "examples": [
+              [
+                "M",
+                "E"
+              ]
+            ]
+          },
+          "municipios": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipios",
+            "description": "Lista de c\u00f3digos IBGE de munic\u00edpios para filtrar. None = todos os munic\u00edpios das UFs selecionadas.",
+            "examples": [
+              [
+                "3550308",
+                "3304557"
+              ]
+            ]
+          },
+          "ordenacao": {
+            "type": "string",
+            "title": "Ordenacao",
+            "description": "Crit\u00e9rio de ordena\u00e7\u00e3o dos resultados: 'data_desc' (mais recente), 'data_asc' (mais antigo), 'valor_desc' (maior valor), 'valor_asc' (menor valor), 'prazo_asc' (prazo mais pr\u00f3ximo), 'relevancia' (score de matching).",
+            "default": "data_desc",
+            "examples": [
+              "data_desc",
+              "valor_desc",
+              "prazo_asc"
+            ]
+          },
+          "orgaos": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orgaos",
+            "description": "Lista de nomes de \u00f3rg\u00e3os/entidades para filtrar (busca parcial). None = todos os \u00f3rg\u00e3os.",
+            "examples": [
+              [
+                "Prefeitura de S\u00e3o Paulo",
+                "Minist\u00e9rio da Sa\u00fade"
+              ]
+            ]
+          },
+          "pagina": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Pagina",
+            "description": "N\u00famero da p\u00e1gina de resultados (1-indexed). Padr\u00e3o: 1.",
+            "default": 1,
+            "examples": [
+              1,
+              2,
+              3
+            ]
+          },
+          "itens_por_pagina": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 10.0,
+            "title": "Itens Por Pagina",
+            "description": "Quantidade de itens por p\u00e1gina. Valores permitidos: 10, 20, 50, 100. Padr\u00e3o: 20.",
+            "default": 20,
+            "examples": [
+              10,
+              20,
+              50,
+              100
+            ]
+          },
+          "search_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Id",
+            "description": "Client-generated UUID for SSE progress tracking via /buscar-progress/{search_id}."
+          }
+        },
+        "type": "object",
+        "required": [
+          "ufs",
+          "data_inicial",
+          "data_final"
+        ],
+        "title": "BuscaRequest",
+        "description": "Request schema for /buscar endpoint.\n\nValidates user input for procurement search:\n- At least 1 Brazilian state (UF) must be selected\n- Dates must be in YYYY-MM-DD format\n- data_inicial must be <= data_final\n- Date range cannot exceed 30 days\n- data_final cannot be in the future\n- valor_maximo must be >= valor_minimo (if both provided)\n\nExamples:\n    >>> request = BuscaRequest(\n    ...     ufs=[\"SP\", \"RJ\"],\n    ...     data_inicial=\"2025-01-01\",\n    ...     data_final=\"2025-01-31\"\n    ... )\n    >>> request.ufs\n    ['SP', 'RJ']\n\n    >>> # With new P0/P1 filters\n    >>> request = BuscaRequest(\n    ...     ufs=[\"SP\"],\n    ...     data_inicial=\"2025-01-01\",\n    ...     data_final=\"2025-01-31\",\n    ...     status=StatusLicitacao.RECEBENDO_PROPOSTA,\n    ...     modalidades=[1, 2, 6],\n    ...     valor_minimo=50000,\n    ...     valor_maximo=500000,\n    ...     esferas=[EsferaGovernamental.MUNICIPAL]\n    ... )",
+        "example": {
+          "data_final": "2025-01-31",
+          "data_inicial": "2025-01-01",
+          "esferas": [
+            "M"
+          ],
+          "modalidades": [
+            1,
+            2,
+            6
+          ],
+          "ordenacao": "data_desc",
+          "status": "recebendo_proposta",
+          "ufs": [
+            "SP",
+            "RJ"
+          ],
+          "valor_maximo": 500000,
+          "valor_minimo": 50000
+        }
+      },
+      "BuscaResponse": {
+        "properties": {
+          "resumo": {
+            "$ref": "#/components/schemas/ResumoLicitacoes",
+            "description": "Executive summary (AI-generated or fallback)"
+          },
+          "licitacoes": {
+            "items": {
+              "$ref": "#/components/schemas/LicitacaoItem"
+            },
+            "type": "array",
+            "title": "Licitacoes",
+            "description": "List of individual bids for display. FREE tier shows 5-10 fully, rest blurred."
+          },
+          "excel_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excel Base64",
+            "description": "Excel file encoded as base64 string (None if plan doesn't allow or storage used)"
+          },
+          "download_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Download Url",
+            "description": "Signed URL for direct Excel download (60min TTL, preferred over base64)"
+          },
+          "excel_available": {
+            "type": "boolean",
+            "title": "Excel Available",
+            "description": "Whether Excel export is available for user's plan"
+          },
+          "quota_used": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quota Used",
+            "description": "Monthly searches used after this request"
+          },
+          "quota_remaining": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quota Remaining",
+            "description": "Monthly searches remaining"
+          },
+          "total_raw": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Raw",
+            "description": "Total records fetched from PNCP API (before filtering)"
+          },
+          "total_filtrado": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Filtrado",
+            "description": "Records after applying filters (UF, value, keywords, deadline)"
+          },
+          "filter_stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilterStats"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Breakdown of filter rejection reasons"
+          },
+          "termos_utilizados": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termos Utilizados",
+            "description": "Keywords effectively used for filtering (after stopword removal)"
+          },
+          "stopwords_removidas": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stopwords Removidas",
+            "description": "Stopwords stripped from user input (for transparency)"
+          },
+          "upgrade_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upgrade Message",
+            "description": "Message shown when Excel is blocked, encouraging upgrade"
+          },
+          "source_stats": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Stats",
+            "description": "Per-source fetch metrics when multi-source is active"
+          },
+          "hidden_by_min_match": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hidden By Min Match",
+            "description": "Number of bids that matched at least 1 term but were below the minimum match floor"
+          },
+          "filter_relaxed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filter Relaxed",
+            "description": "True if the minimum match filter was relaxed from strict to 1 due to zero results"
+          },
+          "ultima_atualizacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ultima Atualizacao",
+            "description": "ISO timestamp of when search results were generated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resumo",
+          "excel_available",
+          "quota_used",
+          "quota_remaining",
+          "total_raw",
+          "total_filtrado"
+        ],
+        "title": "BuscaResponse",
+        "description": "Response schema for /buscar endpoint.\n\nReturns the complete search results including:\n- AI-generated executive summary\n- Excel file as base64-encoded string (optional, based on plan)\n- Statistics about raw vs filtered results\n- Quota information for user awareness\n\nThe Excel file can be decoded and downloaded by the frontend.",
+        "example": {
+          "excel_available": true,
+          "excel_base64": "UEsDBBQABg...",
+          "quota_remaining": 26,
+          "quota_used": 24,
+          "resumo": {
+            "destaques": [
+              "3 urgentes"
+            ],
+            "resumo_executivo": "Encontradas 15 licita\u00e7\u00f5es.",
+            "total_oportunidades": 15,
+            "valor_total": 2300000.0
+          },
+          "total_filtrado": 15,
+          "total_raw": 523,
+          "ultima_atualizacao": "2026-02-10T14:30:00Z"
+        }
+      },
+      "ConversationCategory": {
+        "type": "string",
+        "enum": [
+          "suporte",
+          "sugestao",
+          "funcionalidade",
+          "bug",
+          "outro"
+        ],
+        "title": "ConversationCategory",
+        "description": "Category for support conversations."
+      },
+      "ConversationDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "user_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Email"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "last_message_at": {
+            "type": "string",
+            "title": "Last Message At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageResponse"
+            },
+            "type": "array",
+            "title": "Messages",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "subject",
+          "category",
+          "status",
+          "last_message_at",
+          "created_at"
+        ],
+        "title": "ConversationDetail",
+        "description": "Full conversation with messages thread."
+      },
+      "ConversationStatus": {
+        "type": "string",
+        "enum": [
+          "aberto",
+          "respondido",
+          "resolvido"
+        ],
+        "title": "ConversationStatus",
+        "description": "Status of a support conversation."
+      },
+      "ConversationSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "user_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Email"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "last_message_at": {
+            "type": "string",
+            "title": "Last Message At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "unread_count": {
+            "type": "integer",
+            "title": "Unread Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "subject",
+          "category",
+          "status",
+          "last_message_at",
+          "created_at"
+        ],
+        "title": "ConversationSummary",
+        "description": "Summary of a conversation for list views."
+      },
+      "ConversationsListResponse": {
+        "properties": {
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationSummary"
+            },
+            "type": "array",
+            "title": "Conversations"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversations",
+          "total"
+        ],
+        "title": "ConversationsListResponse",
+        "description": "Paginated list of conversations."
+      },
+      "CreateConversationRequest": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ConversationCategory"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "category",
+          "body"
+        ],
+        "title": "CreateConversationRequest",
+        "description": "Request to create a new conversation with first message."
+      },
+      "CreateUserRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "User email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "title": "Password",
+            "description": "User password"
+          },
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Id",
+            "description": "Initial plan",
+            "default": "free"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "CreateUserRequest"
+      },
+      "DimensionItem": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "count",
+          "value"
+        ],
+        "title": "DimensionItem"
+      },
+      "EsferaGovernamental": {
+        "type": "string",
+        "enum": [
+          "F",
+          "E",
+          "M"
+        ],
+        "title": "EsferaGovernamental",
+        "description": "Esfera governamental para filtro de busca.\n\nDefine o n\u00edvel de governo do \u00f3rg\u00e3o contratante:\n- FEDERAL (F): Uni\u00e3o, minist\u00e9rios, autarquias federais\n- ESTADUAL (E): Estados, DF, secretarias estaduais\n- MUNICIPAL (M): Prefeituras, c\u00e2maras municipais"
+      },
+      "FeatureInfo": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "enabled"
+        ],
+        "title": "FeatureInfo",
+        "description": "Single feature flag information."
+      },
+      "FilterStats": {
+        "properties": {
+          "rejeitadas_uf": {
+            "type": "integer",
+            "title": "Rejeitadas Uf",
+            "description": "Rejected by UF filter",
+            "default": 0
+          },
+          "rejeitadas_valor": {
+            "type": "integer",
+            "title": "Rejeitadas Valor",
+            "description": "Rejected by value range",
+            "default": 0
+          },
+          "rejeitadas_keyword": {
+            "type": "integer",
+            "title": "Rejeitadas Keyword",
+            "description": "Rejected by keyword match (zero matches)",
+            "default": 0
+          },
+          "rejeitadas_min_match": {
+            "type": "integer",
+            "title": "Rejeitadas Min Match",
+            "description": "Rejected by minimum match floor (had matches but below threshold)",
+            "default": 0
+          },
+          "rejeitadas_prazo": {
+            "type": "integer",
+            "title": "Rejeitadas Prazo",
+            "description": "Rejected by deadline",
+            "default": 0
+          },
+          "rejeitadas_outros": {
+            "type": "integer",
+            "title": "Rejeitadas Outros",
+            "description": "Rejected by other reasons",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "FilterStats",
+        "description": "Statistics about filter rejection reasons."
+      },
+      "GoogleSheetsExportHistory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Export record UUID"
+          },
+          "spreadsheet_id": {
+            "type": "string",
+            "title": "Spreadsheet Id",
+            "description": "Google Sheets spreadsheet ID"
+          },
+          "spreadsheet_url": {
+            "type": "string",
+            "title": "Spreadsheet Url",
+            "description": "Shareable URL"
+          },
+          "search_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Search Params",
+            "description": "Search parameters snapshot"
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows",
+            "description": "Number of rows exported"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At",
+            "description": "Creation timestamp (ISO 8601)"
+          },
+          "last_updated_at": {
+            "type": "string",
+            "title": "Last Updated At",
+            "description": "Last update timestamp (ISO 8601)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "spreadsheet_id",
+          "spreadsheet_url",
+          "search_params",
+          "total_rows",
+          "created_at",
+          "last_updated_at"
+        ],
+        "title": "GoogleSheetsExportHistory",
+        "description": "Schema for individual export history entry."
+      },
+      "GoogleSheetsExportHistoryResponse": {
+        "properties": {
+          "exports": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleSheetsExportHistory"
+            },
+            "type": "array",
+            "title": "Exports",
+            "description": "List of user's Google Sheets exports"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total",
+            "description": "Total number of exports in history"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exports",
+          "total"
+        ],
+        "title": "GoogleSheetsExportHistoryResponse",
+        "description": "Response schema for export history endpoint."
+      },
+      "GoogleSheetsExportRequest": {
+        "properties": {
+          "licitacoes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "maxItems": 10000,
+            "minItems": 1,
+            "title": "Licitacoes",
+            "description": "List of procurement contracts to export"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Title",
+            "description": "Spreadsheet title"
+          },
+          "mode": {
+            "type": "string",
+            "pattern": "^(create|update)$",
+            "title": "Mode",
+            "description": "'create' for new spreadsheet, 'update' for existing",
+            "default": "create"
+          },
+          "spreadsheet_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9_-]{44}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spreadsheet Id",
+            "description": "Google Sheets spreadsheet ID (required for mode='update')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "licitacoes",
+          "title"
+        ],
+        "title": "GoogleSheetsExportRequest",
+        "description": "Request schema for Google Sheets export endpoint.\n\nSupports both \"create new spreadsheet\" and \"update existing\" modes."
+      },
+      "GoogleSheetsExportResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Export success indicator",
+            "default": true
+          },
+          "spreadsheet_id": {
+            "type": "string",
+            "title": "Spreadsheet Id",
+            "description": "Google Sheets spreadsheet ID"
+          },
+          "spreadsheet_url": {
+            "type": "string",
+            "title": "Spreadsheet Url",
+            "description": "Full shareable URL to the spreadsheet"
+          },
+          "total_rows": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Rows",
+            "description": "Number of contracts exported"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "ISO 8601 timestamp (only for mode='update')"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spreadsheet_id",
+          "spreadsheet_url",
+          "total_rows"
+        ],
+        "title": "GoogleSheetsExportResponse",
+        "description": "Response schema for successful Google Sheets export."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LicitacaoItem": {
+        "properties": {
+          "pncp_id": {
+            "type": "string",
+            "title": "Pncp Id",
+            "description": "Unique PNCP identifier"
+          },
+          "objeto": {
+            "type": "string",
+            "title": "Objeto",
+            "description": "Procurement object description"
+          },
+          "orgao": {
+            "type": "string",
+            "title": "Orgao",
+            "description": "Government agency name"
+          },
+          "uf": {
+            "type": "string",
+            "title": "Uf",
+            "description": "State code (e.g., 'SP')"
+          },
+          "municipio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Municipio",
+            "description": "Municipality name"
+          },
+          "valor": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Valor",
+            "description": "Estimated total value in BRL"
+          },
+          "modalidade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modalidade",
+            "description": "Procurement modality"
+          },
+          "data_publicacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Publicacao",
+            "description": "Publication date"
+          },
+          "data_abertura": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Abertura",
+            "description": "Proposal opening date"
+          },
+          "data_encerramento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Encerramento",
+            "description": "Proposal submission deadline"
+          },
+          "dias_restantes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Restantes",
+            "description": "Days remaining until proposal deadline (negative if past)"
+          },
+          "urgencia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Urgencia",
+            "description": "Urgency level: critica (<7d), alta (7-14d), media (14-30d), baixa (>30d), encerrada (past)"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link",
+            "description": "Direct link to PNCP portal"
+          },
+          "_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Source that provided this record"
+          },
+          "relevance_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relevance Score",
+            "description": "Relevance score 0.0-1.0 (only when custom terms active)"
+          },
+          "matched_terms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Terms",
+            "description": "List of search terms that matched this bid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pncp_id",
+          "objeto",
+          "orgao",
+          "uf",
+          "valor",
+          "link"
+        ],
+        "title": "LicitacaoItem",
+        "description": "Individual bid item for display in search results.\n\nUsed for FREE tier preview feature - shows 5-10 items fully,\nrest are displayed blurred/partial without links.",
+        "example": {
+          "data_abertura": "2026-02-15",
+          "data_publicacao": "2026-02-01",
+          "link": "https://pncp.gov.br/app/editais/12345678000190/2026/1",
+          "modalidade": "Preg\u00e3o Eletr\u00f4nico",
+          "municipio": "S\u00e3o Paulo",
+          "objeto": "Aquisi\u00e7\u00e3o de uniformes para funcion\u00e1rios",
+          "orgao": "Prefeitura Municipal de S\u00e3o Paulo",
+          "pncp_id": "12345678000190-1-000001/2026",
+          "uf": "SP",
+          "valor": 150000.0
+        }
+      },
+      "MessageResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "sender_id": {
+            "type": "string",
+            "title": "Sender Id"
+          },
+          "sender_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Email"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "is_admin_reply": {
+            "type": "boolean",
+            "title": "Is Admin Reply"
+          },
+          "read_by_user": {
+            "type": "boolean",
+            "title": "Read By User"
+          },
+          "read_by_admin": {
+            "type": "boolean",
+            "title": "Read By Admin"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sender_id",
+          "body",
+          "is_admin_reply",
+          "read_by_user",
+          "read_by_admin",
+          "created_at"
+        ],
+        "title": "MessageResponse",
+        "description": "Single message in a conversation thread."
+      },
+      "PlanDetails": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "price_brl": {
+            "type": "number",
+            "title": "Price Brl"
+          },
+          "duration_days": {
+            "type": "integer",
+            "title": "Duration Days"
+          },
+          "max_searches": {
+            "type": "integer",
+            "title": "Max Searches"
+          },
+          "capabilities": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Capabilities"
+          },
+          "stripe_price_id_monthly": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stripe Price Id Monthly"
+          },
+          "stripe_price_id_annual": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stripe Price Id Annual"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price_brl",
+          "duration_days",
+          "max_searches",
+          "capabilities",
+          "is_active"
+        ],
+        "title": "PlanDetails",
+        "description": "Complete plan details for frontend display."
+      },
+      "PlansResponse": {
+        "properties": {
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/PlanDetails"
+            },
+            "type": "array",
+            "title": "Plans"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plans",
+          "total"
+        ],
+        "title": "PlansResponse",
+        "description": "Response model for GET /api/plans."
+      },
+      "ReplyRequest": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "ReplyRequest",
+        "description": "Request to reply to a conversation."
+      },
+      "ResumoLicitacoes": {
+        "properties": {
+          "resumo_executivo": {
+            "type": "string",
+            "title": "Resumo Executivo",
+            "description": "1-2 sentence executive summary",
+            "examples": [
+              "Encontradas 15 licita\u00e7\u00f5es de uniformes em SP e RJ, totalizando R$ 2.3M."
+            ]
+          },
+          "total_oportunidades": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Oportunidades",
+            "description": "Number of procurement opportunities found"
+          },
+          "valor_total": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Valor Total",
+            "description": "Total value of all opportunities in BRL"
+          },
+          "destaques": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Destaques",
+            "description": "Key highlights (2-5 bullet points)",
+            "examples": [
+              [
+                "3 licita\u00e7\u00f5es com prazo at\u00e9 48h",
+                "Maior valor: R$ 500k em SP"
+              ]
+            ]
+          },
+          "alerta_urgencia": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alerta Urgencia",
+            "description": "Optional urgency alert for time-sensitive opportunities",
+            "examples": [
+              "\u26a0\ufe0f 5 licita\u00e7\u00f5es encerram em 24 horas"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "resumo_executivo",
+          "total_oportunidades",
+          "valor_total"
+        ],
+        "title": "ResumoLicitacoes",
+        "description": "Executive summary schema for procurement search results.\n\nThis schema will be populated by GPT-4.1-nano (Issue #14) or\nfallback mechanism (Issue #15). For now, it defines the structure\nthat the LLM module must adhere to.\n\nFields:\n    resumo_executivo: Brief 1-2 sentence summary\n    total_oportunidades: Count of filtered procurement opportunities\n    valor_total: Sum of all bid values in BRL\n    destaques: List of 2-5 key highlights (e.g., \"3 urgente opportunities\")\n    alerta_urgencia: Optional alert for time-sensitive bids",
+        "example": {
+          "alerta_urgencia": "\u26a0\ufe0f 5 licita\u00e7\u00f5es encerram em 24 horas",
+          "destaques": [
+            "3 licita\u00e7\u00f5es com prazo at\u00e9 48h",
+            "Maior valor: R$ 500k em SP"
+          ],
+          "resumo_executivo": "Encontradas 15 licita\u00e7\u00f5es de uniformes em SP e RJ.",
+          "total_oportunidades": 15,
+          "valor_total": 2300000.0
+        }
+      },
+      "RevokeResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "title": "RevokeResponse",
+        "description": "Response for revoke endpoint."
+      },
+      "SearchesOverTimeResponse": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TimeSeriesDataPoint"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "data"
+        ],
+        "title": "SearchesOverTimeResponse"
+      },
+      "StatusLicitacao": {
+        "type": "string",
+        "enum": [
+          "recebendo_proposta",
+          "em_julgamento",
+          "encerrada",
+          "todos"
+        ],
+        "title": "StatusLicitacao",
+        "description": "Status da licita\u00e7\u00e3o para filtro de busca.\n\nDefine o est\u00e1gio atual do processo licitat\u00f3rio:\n- RECEBENDO_PROPOSTA: Licita\u00e7\u00f5es abertas para envio de propostas (padr\u00e3o)\n- EM_JULGAMENTO: Propostas encerradas, em an\u00e1lise pelo \u00f3rg\u00e3o\n- ENCERRADA: Processo finalizado (com ou sem vencedor)\n- TODOS: Sem filtro de status (retorna todas)"
+      },
+      "SummaryResponse": {
+        "properties": {
+          "total_searches": {
+            "type": "integer",
+            "title": "Total Searches"
+          },
+          "total_downloads": {
+            "type": "integer",
+            "title": "Total Downloads"
+          },
+          "total_opportunities": {
+            "type": "integer",
+            "title": "Total Opportunities"
+          },
+          "total_value_discovered": {
+            "type": "number",
+            "title": "Total Value Discovered"
+          },
+          "estimated_hours_saved": {
+            "type": "number",
+            "title": "Estimated Hours Saved"
+          },
+          "avg_results_per_search": {
+            "type": "number",
+            "title": "Avg Results Per Search"
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate"
+          },
+          "member_since": {
+            "type": "string",
+            "title": "Member Since"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_searches",
+          "total_downloads",
+          "total_opportunities",
+          "total_value_discovered",
+          "estimated_hours_saved",
+          "avg_results_per_search",
+          "success_rate",
+          "member_since"
+        ],
+        "title": "SummaryResponse"
+      },
+      "TimeSeriesDataPoint": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "searches": {
+            "type": "integer",
+            "title": "Searches"
+          },
+          "opportunities": {
+            "type": "integer",
+            "title": "Opportunities"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "searches",
+          "opportunities",
+          "value"
+        ],
+        "title": "TimeSeriesDataPoint"
+      },
+      "TopDimensionsResponse": {
+        "properties": {
+          "top_ufs": {
+            "items": {
+              "$ref": "#/components/schemas/DimensionItem"
+            },
+            "type": "array",
+            "title": "Top Ufs"
+          },
+          "top_sectors": {
+            "items": {
+              "$ref": "#/components/schemas/DimensionItem"
+            },
+            "type": "array",
+            "title": "Top Sectors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "top_ufs",
+          "top_sectors"
+        ],
+        "title": "TopDimensionsResponse"
+      },
+      "UnreadCountResponse": {
+        "properties": {
+          "unread_count": {
+            "type": "integer",
+            "title": "Unread Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unread_count"
+        ],
+        "title": "UnreadCountResponse",
+        "description": "Unread message count for badge display."
+      },
+      "UpdateBillingPeriodRequest": {
+        "properties": {
+          "new_billing_period": {
+            "type": "string",
+            "enum": [
+              "monthly",
+              "annual"
+            ],
+            "title": "New Billing Period",
+            "description": "Target billing period"
+          },
+          "user_timezone": {
+            "type": "string",
+            "title": "User Timezone",
+            "description": "User's timezone for accurate pro-rata calculations",
+            "default": "America/Sao_Paulo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "new_billing_period"
+        ],
+        "title": "UpdateBillingPeriodRequest",
+        "description": "Request to update subscription billing period."
+      },
+      "UpdateBillingPeriodResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "new_billing_period": {
+            "type": "string",
+            "title": "New Billing Period"
+          },
+          "next_billing_date": {
+            "type": "string",
+            "title": "Next Billing Date"
+          },
+          "prorated_credit": {
+            "type": "string",
+            "title": "Prorated Credit"
+          },
+          "deferred": {
+            "type": "boolean",
+            "title": "Deferred"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "new_billing_period",
+          "next_billing_date",
+          "prorated_credit",
+          "deferred",
+          "message"
+        ],
+        "title": "UpdateBillingPeriodResponse",
+        "description": "Response for billing period update."
+      },
+      "UpdateConversationStatusRequest": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ConversationStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "UpdateConversationStatusRequest",
+        "description": "Request to update conversation status (admin only)."
+      },
+      "UpdateCreditsRequest": {
+        "properties": {
+          "credits": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Credits",
+            "description": "New credit value (must be >= 0)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "credits"
+        ],
+        "title": "UpdateCreditsRequest",
+        "description": "Request body for manual credit adjustment."
+      },
+      "UpdateUserRequest": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "plan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Id"
+          }
+        },
+        "type": "object",
+        "title": "UpdateUserRequest"
+      },
+      "UserFeaturesResponse": {
+        "properties": {
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureInfo"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id"
+          },
+          "billing_period": {
+            "type": "string",
+            "title": "Billing Period"
+          },
+          "cached_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "features",
+          "plan_id",
+          "billing_period"
+        ],
+        "title": "UserFeaturesResponse",
+        "description": "Response containing user's enabled features."
+      },
+      "UserProfileResponse": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id",
+            "description": "Plan ID (e.g., 'consultor_agil')"
+          },
+          "plan_name": {
+            "type": "string",
+            "title": "Plan Name",
+            "description": "Display name (e.g., 'Consultor \u00c1gil')"
+          },
+          "capabilities": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Capabilities",
+            "description": "Plan capabilities (max_history_days, allow_excel, etc.)"
+          },
+          "quota_used": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quota Used",
+            "description": "Searches used this month"
+          },
+          "quota_remaining": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Quota Remaining",
+            "description": "Searches remaining this month"
+          },
+          "quota_reset_date": {
+            "type": "string",
+            "title": "Quota Reset Date",
+            "description": "ISO 8601 timestamp of next quota reset"
+          },
+          "trial_expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Expires At",
+            "description": "ISO 8601 timestamp when trial expires (if applicable)"
+          },
+          "subscription_status": {
+            "type": "string",
+            "title": "Subscription Status",
+            "description": "Status: 'trial', 'active', or 'expired'"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "description": "Whether user has admin privileges",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "plan_id",
+          "plan_name",
+          "capabilities",
+          "quota_used",
+          "quota_remaining",
+          "quota_reset_date",
+          "subscription_status"
+        ],
+        "title": "UserProfileResponse",
+        "description": "User profile with plan capabilities and quota status.\n\nReturned by /api/me endpoint to provide frontend with all\nnecessary plan information for UI rendering."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { useAuth } from "../components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AppHeader } from "../components/AppHeader";
+import { Breadcrumbs } from "../components/Breadcrumbs";
 
 /**
  * Shared layout for all authenticated (protected) pages.
@@ -45,6 +46,7 @@ export default function ProtectedLayout({
     <>
       <AppHeader />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        <Breadcrumbs />
         {children}
       </main>
     </>

@@ -21,20 +21,20 @@ function stringToBoolean(value: string | undefined): boolean {
 
 /**
  * FEATURE FLAG: New Pricing Model (STORY-165)
- * 
+ *
  * Controls UI elements for plan-based capabilities:
  * - Plan badge display
  * - Locked Excel export button
  * - Date range validation
  * - Quota counter
  * - Upgrade modals
- * 
+ *
  * Default: false (disabled for safety, gradual rollout)
- * 
+ *
  * @example
  * ```tsx
  * import { ENABLE_NEW_PRICING } from '@/lib/config';
- * 
+ *
  * {ENABLE_NEW_PRICING && <PlanBadge />}
  * ```
  */
@@ -42,10 +42,103 @@ export const ENABLE_NEW_PRICING: boolean = stringToBoolean(
   process.env.NEXT_PUBLIC_ENABLE_NEW_PRICING
 );
 
+/**
+ * FEATURE FLAG: Advanced Analytics Dashboard
+ *
+ * Controls advanced analytics features:
+ * - Time-series charts
+ * - Top dimensions (UFs/Sectors)
+ * - CSV export
+ * - Extended metrics
+ *
+ * Default: true (stable feature)
+ *
+ * @example
+ * ```tsx
+ * import { ENABLE_ANALYTICS } from '@/lib/config';
+ *
+ * {ENABLE_ANALYTICS && <AdvancedCharts />}
+ * ```
+ */
+export const ENABLE_ANALYTICS: boolean = stringToBoolean(
+  process.env.NEXT_PUBLIC_ENABLE_ANALYTICS || 'true'
+);
+
+/**
+ * FEATURE FLAG: Saved Searches
+ *
+ * Controls saved search functionality:
+ * - Save search button
+ * - Saved searches dropdown
+ * - Search history persistence
+ * - Load saved searches
+ *
+ * Default: true (stable feature)
+ *
+ * @example
+ * ```tsx
+ * import { ENABLE_SAVED_SEARCHES } from '@/lib/config';
+ *
+ * {ENABLE_SAVED_SEARCHES && <SaveSearchButton />}
+ * ```
+ */
+export const ENABLE_SAVED_SEARCHES: boolean = stringToBoolean(
+  process.env.NEXT_PUBLIC_ENABLE_SAVED_SEARCHES || 'true'
+);
+
+/**
+ * FEATURE FLAG: Dark Mode
+ *
+ * Controls theme switching functionality:
+ * - Theme toggle in header
+ * - System preference detection
+ * - Theme persistence
+ * - Dark mode styles
+ *
+ * Default: true (stable feature)
+ *
+ * @example
+ * ```tsx
+ * import { ENABLE_DARK_MODE } from '@/lib/config';
+ *
+ * {ENABLE_DARK_MODE && <ThemeToggle />}
+ * ```
+ */
+export const ENABLE_DARK_MODE: boolean = stringToBoolean(
+  process.env.NEXT_PUBLIC_ENABLE_DARK_MODE || 'true'
+);
+
+/**
+ * FEATURE FLAG: Real-time Search Progress (SSE)
+ *
+ * Controls server-sent events for search progress:
+ * - Live progress updates during search
+ * - Per-UF progress tracking
+ * - Fallback to simulated progress
+ *
+ * Default: true (stable feature)
+ *
+ * @example
+ * ```tsx
+ * import { ENABLE_SSE_PROGRESS } from '@/lib/config';
+ *
+ * if (ENABLE_SSE_PROGRESS) {
+ *   connectToProgressStream(searchId);
+ * }
+ * ```
+ */
+export const ENABLE_SSE_PROGRESS: boolean = stringToBoolean(
+  process.env.NEXT_PUBLIC_ENABLE_SSE_PROGRESS || 'true'
+);
+
 // Log feature flag state (only in development)
 if (process.env.NODE_ENV === 'development') {
   console.log('[Config] Feature Flags:', {
     ENABLE_NEW_PRICING,
+    ENABLE_ANALYTICS,
+    ENABLE_SAVED_SEARCHES,
+    ENABLE_DARK_MODE,
+    ENABLE_SSE_PROGRESS,
   });
 }
 

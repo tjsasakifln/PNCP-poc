@@ -100,17 +100,20 @@ def setup_logging(level: str = "INFO") -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
+    # STORY-202 SYS-M01: Add RequestIDFilter to inject request_id into all logs
+    # Import here to avoid circular dependency. Must be added to handler BEFORE
+    # any logs are emitted so startup logs don't crash on missing %(request_id)s.
+    from middleware import RequestIDFilter
+    request_id_filter = RequestIDFilter()
+
     handler = logging.StreamHandler(sys.stdout)
+    handler.addFilter(request_id_filter)
     handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, effective_level))
     root_logger.addHandler(handler)
-
-    # STORY-202 SYS-M01: Add RequestIDFilter to inject request_id into all logs
-    # Import here to avoid circular dependency
-    from middleware import RequestIDFilter
-    root_logger.addFilter(RequestIDFilter())
+    root_logger.addFilter(request_id_filter)
 
     # Log security enforcement if level was elevated
     if is_production and level.upper() == "DEBUG":

@@ -522,7 +522,7 @@ class PNCPClient:
             # Check if there are more pages
             if not tem_proxima:
                 logger.info(
-                    f"✅ Fetch complete for modalidade={modalidade}, UF={uf or 'ALL'}: "
+                    f"[SUCCESS] Fetch complete for modalidade={modalidade}, UF={uf or 'ALL'}: "
                     f"{items_fetched} total items across {pagina} pages"
                 )
                 break
@@ -530,7 +530,7 @@ class PNCPClient:
             # HOTFIX STORY-183: Enhanced warning when max_pages limit reached
             if pagina >= max_pages:
                 logger.warning(
-                    f"⚠️ MAX_PAGES ({max_pages}) ATINGIDO! "
+                    f"[WARN] MAX_PAGES ({max_pages}) ATINGIDO! "
                     f"UF={uf or 'ALL'}, modalidade={modalidade}. "
                     f"Fetched {items_fetched} items out of {total_registros} total. "
                     f"Remaining pages: {paginas_restantes}. "

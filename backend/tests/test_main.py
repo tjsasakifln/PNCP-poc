@@ -113,7 +113,7 @@ class TestHealthEndpoint:
 
     def test_health_timestamp_format(self, client):
         """Health endpoint timestamp should be valid ISO 8601 format."""
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         response = client.get("/health")
         data = response.json()
@@ -124,7 +124,7 @@ class TestHealthEndpoint:
         assert isinstance(parsed, datetime)
 
         # Timestamp should be recent (within last 5 seconds)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         delta = (now - parsed).total_seconds()
         assert abs(delta) < 5, f"Timestamp {timestamp} is not recent (delta: {delta}s)"
 
@@ -170,6 +170,67 @@ class TestHealthEndpoint:
         """Health endpoint should return JSON content type."""
         response = client.get("/health")
         assert "application/json" in response.headers["content-type"]
+
+    def test_health_includes_dependencies(self, client):
+        """Health endpoint should report status of all dependencies."""
+        response = client.get("/health")
+        data = response.json()
+
+        assert "dependencies" in data
+        dependencies = data["dependencies"]
+
+        # Should include all tracked dependencies
+        assert "supabase" in dependencies
+        assert "openai" in dependencies
+        assert "redis" in dependencies
+
+    def test_health_redis_not_configured(self, client):
+        """When Redis is not configured, health should show 'not_configured'."""
+        import os
+        from unittest.mock import patch
+
+        # Simulate Redis not configured
+        with patch.dict(os.environ, {"REDIS_URL": ""}, clear=False):
+            response = client.get("/health")
+            data = response.json()
+
+            # Should still be healthy (Redis is optional)
+            assert data["status"] == "healthy"
+            assert data["dependencies"]["redis"] == "not_configured"
+
+    def test_health_redis_configured_but_unavailable(self, client):
+        """When Redis is configured but unavailable, health should degrade."""
+        import os
+        from unittest.mock import patch, AsyncMock
+
+        # Simulate Redis configured but unavailable
+        with patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6379"}, clear=False):
+            with patch("redis_client.is_redis_available", new_callable=AsyncMock) as mock_redis:
+                mock_redis.return_value = False
+
+                response = client.get("/health")
+                data = response.json()
+
+                # Should be degraded when Redis is configured but down
+                assert data["status"] == "degraded"
+                assert data["dependencies"]["redis"] == "unavailable"
+
+    def test_health_redis_healthy(self, client):
+        """When Redis is available, health should report it as healthy."""
+        import os
+        from unittest.mock import patch, AsyncMock
+
+        # Simulate Redis configured and available
+        with patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6379"}, clear=False):
+            with patch("redis_client.is_redis_available", new_callable=AsyncMock) as mock_redis:
+                mock_redis.return_value = True
+
+                response = client.get("/health")
+                data = response.json()
+
+                # Should be healthy
+                assert data["status"] == "healthy"
+                assert data["dependencies"]["redis"] == "healthy"
 
 
 class TestCORSHeaders:

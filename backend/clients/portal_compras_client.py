@@ -526,7 +526,7 @@ class PortalComprasAdapter(SourceAdapter):
                 link_edital=raw_record.get("linkDocumentos") or raw_record.get("link_edital") or "",
                 link_portal=raw_record.get("linkPortal") or raw_record.get("link") or "",
                 # Metadata
-                fetched_at=datetime.utcnow(),
+                fetched_at=datetime.now(timezone.utc),
                 raw_data=raw_record,
             )
 

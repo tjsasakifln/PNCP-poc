@@ -35,7 +35,7 @@ Performance:
 import logging
 import os
 from typing import Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class InMemoryCache:
         value, expiry = self._store[key]
 
         # Check if expired
-        if expiry and datetime.utcnow() > expiry:
+        if expiry and datetime.now(timezone.utc) > expiry:
             del self._store[key]
             return None
 
@@ -66,7 +66,7 @@ class InMemoryCache:
 
     def setex(self, key: str, ttl: int, value: str) -> bool:
         """Set value with TTL (time-to-live in seconds)."""
-        expiry = datetime.utcnow() + timedelta(seconds=ttl)
+        expiry = datetime.now(timezone.utc) + timedelta(seconds=ttl)
         self._store[key] = (value, expiry)
         return True
 

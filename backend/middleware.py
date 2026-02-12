@@ -14,14 +14,26 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
 
 class RequestIDFilter(logging.Filter):
-    """Inject request_id into all log records."""
+    """
+    Inject request_id into all log records.
+
+    SYS-L04: Ensures all log records have a request_id field for correlation.
+    Falls back to "-" if no request context exists (e.g., startup logs).
+    """
     def filter(self, record):
-        record.request_id = request_id_var.get("-")
+        if not hasattr(record, 'request_id'):
+            record.request_id = request_id_var.get("-")
         return True
 
 
 class CorrelationIDMiddleware(BaseHTTPMiddleware):
-    """Add correlation/request ID to every request for distributed tracing."""
+    """
+    Add correlation/request ID to every request for distributed tracing.
+
+    SYS-L04: Produces exactly one log line per request with:
+    - HTTP method, path, status code, duration
+    - Request ID for correlation across distributed services
+    """
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # Use incoming X-Request-ID or generate new
@@ -35,15 +47,24 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         method = request.method
         path = request.url.path
 
-        logger.info(f"→ {method} {path}")
-
         try:
             response = await call_next(request)
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.info(f"← {method} {path} {response.status_code} ({duration_ms}ms)")
+
+            # SYS-L04: Single consolidated log line per request
+            logger.info(
+                f"{method} {path} -> {response.status_code} ({duration_ms}ms) "
+                f"[req_id={req_id}]"
+            )
+
             response.headers["X-Request-ID"] = req_id
             return response
         except Exception as e:
             duration_ms = int((time.time() - start_time) * 1000)
-            logger.error(f"✗ {method} {path} ERROR ({duration_ms}ms): {e}")
+
+            # SYS-L04: Single log line for errors
+            logger.error(
+                f"{method} {path} -> ERROR ({duration_ms}ms) "
+                f"[req_id={req_id}] {type(e).__name__}: {str(e)}"
+            )
             raise

@@ -239,7 +239,7 @@ async def update_billing_period(
     try:
         sb.table("user_subscriptions").update({
             "billing_period": request.new_billing_period,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", subscription["id"]).execute()
 
         logger.info(

@@ -60,20 +60,12 @@ type Period = "day" | "week" | "month";
 // Constants
 // ============================================================================
 
+import { UF_NAMES } from "../../lib/constants/uf-names";
+
 const CHART_COLORS = [
   "#116dff", "#0d5ad4", "#0a1e3f", "#3b8bff", "#6aa7ff",
   "#16a34a", "#ca8a04", "#dc2626", "#8b5cf6", "#ec4899",
 ];
-
-const UF_NAMES: Record<string, string> = {
-  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas",
-  BA: "Bahia", CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo",
-  GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul",
-  MG: "Minas Gerais", PA: "Pará", PB: "Paraíba", PR: "Paraná",
-  PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte",
-  RS: "Rio Grande do Sul", RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina",
-  SP: "São Paulo", SE: "Sergipe", TO: "Tocantins",
-};
 
 // ============================================================================
 // Helpers

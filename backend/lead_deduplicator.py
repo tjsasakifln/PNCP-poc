@@ -14,7 +14,7 @@ import logging
 import json
 from pathlib import Path
 from typing import List, Set, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from schemas_lead_prospecting import (
     LeadProfile,
@@ -145,7 +145,7 @@ class LeadDeduplicator:
         """
         history = self.load_history()
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for lead in new_leads:
             # Create history entry
@@ -204,14 +204,14 @@ class LeadDeduplicator:
                 if notes is not None:
                     lead.notes = notes
 
-                lead.last_seen = datetime.utcnow()
+                lead.last_seen = datetime.now(timezone.utc)
                 break
         else:
             logger.warning(f"CNPJ {cnpj} not found in history")
             return
 
         # Save
-        history.last_updated = datetime.utcnow()
+        history.last_updated = datetime.now(timezone.utc)
         self.save_history(history)
 
         logger.info(f"Updated lead status for CNPJ {cnpj}")
@@ -220,7 +220,7 @@ class LeadDeduplicator:
         """Create empty history object."""
         return LeadHistoryFile(
             version="1.0",
-            last_updated=datetime.utcnow(),
+            last_updated=datetime.now(timezone.utc),
             total_leads=0,
             leads=[],
         )

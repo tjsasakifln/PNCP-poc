@@ -15,7 +15,7 @@ Documentation: https://compras.dados.gov.br/
 import asyncio
 import logging
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, Optional, Set
 
 import httpx
@@ -550,7 +550,7 @@ class ComprasGovAdapter(SourceAdapter):
                 esfera="F",  # Federal
                 link_edital=link,
                 link_portal=link,
-                fetched_at=datetime.utcnow(),
+                fetched_at=datetime.now(timezone.utc),
                 raw_data=raw_record,
             )
 

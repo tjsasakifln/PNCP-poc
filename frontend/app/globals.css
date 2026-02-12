@@ -516,3 +516,32 @@ select {
 .dark .mobile-date-picker .rdp-day_selected {
   @apply bg-brand-navy text-white;
 }
+
+/* ============================================================
+   NProgress Custom Styles (Page Transition Loading Bar)
+   ============================================================ */
+
+/* Loading bar */
+#nprogress .bar {
+  @apply bg-brand-blue;
+  height: 3px;
+  z-index: 9999;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* Glow effect */
+#nprogress .peg {
+  box-shadow: 0 0 10px var(--brand-blue), 0 0 5px var(--brand-blue);
+}
+
+/* Dark mode adjustments */
+.dark #nprogress .bar {
+  @apply bg-brand-blue;
+}
+
+.dark #nprogress .peg {
+  box-shadow: 0 0 12px var(--brand-blue), 0 0 6px var(--brand-blue);
+}

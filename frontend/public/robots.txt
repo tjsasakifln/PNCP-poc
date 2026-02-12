@@ -1,0 +1,23 @@
+# robots.txt for SmartLic.tech
+
+# Allow all crawlers to access public pages
+User-agent: *
+Allow: /
+Allow: /planos
+Allow: /login
+Allow: /signup
+
+# Disallow protected/authenticated areas
+Disallow: /buscar
+Disallow: /historico
+Disallow: /conta
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /mensagens
+Disallow: /api/
+
+# Disallow OAuth and callback endpoints
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://smartlic.tech/sitemap.xml

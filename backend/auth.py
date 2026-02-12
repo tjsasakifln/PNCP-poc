@@ -12,11 +12,16 @@ CRITICAL FIX (2026-02-11): Use local JWT validation instead of Supabase API
 - Fixes: token_verification success=False AuthApiError
 - Source: https://github.com/orgs/supabase/discussions/20763
 - Much faster (no API call) and more reliable
+
+STORY-203 SYS-M02: Use hashlib.sha256 for deterministic cache keys
+- Python's hash() is not deterministic across process restarts
+- hashlib.sha256() provides collision-resistant, deterministic hashing
 """
 
 import logging
 import time
 import os
+import hashlib
 import jwt
 from typing import Optional, Dict, Tuple
 
@@ -29,8 +34,8 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
 
 # Token validation cache - reduces Supabase Auth API calls by ~95%
-# Key: hash of token prefix, Value: (user_data, timestamp)
-_token_cache: Dict[int, Tuple[dict, float]] = {}
+# Key: SHA256 hash of token prefix, Value: (user_data, timestamp)
+_token_cache: Dict[str, Tuple[dict, float]] = {}
 CACHE_TTL = 60  # seconds - balances security (short-lived) vs performance
 
 
@@ -49,7 +54,8 @@ async def get_current_user(
         return None
 
     token = credentials.credentials
-    token_hash = hash(token[:16])  # Hash first 16 chars for cache key
+    # STORY-203 SYS-M02: Use deterministic SHA256 hash instead of Python's hash()
+    token_hash = hashlib.sha256(token[:16].encode('utf-8')).hexdigest()
 
     # FAST PATH: Check cache first (avoids remote Supabase call)
     if token_hash in _token_cache:

@@ -164,7 +164,7 @@ plan_type IN (
 |--------|------|----------|---------|-------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
 | `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` |
-| `plan_id` | `text` | NO | - | FK -> `plans(id)` |
+| `plan_id` | `text` | NO | - | FK -> `plans(id) ON DELETE RESTRICT` |
 | `credits_remaining` | `int` | YES | NULL | NULL = unlimited |
 | `starts_at` | `timestamptz` | NO | `now()` | |
 | `expires_at` | `timestamptz` | YES | NULL | NULL = never expires |
@@ -183,7 +183,33 @@ plan_type IN (
 | `idx_user_subscriptions_active` | `user_id, is_active` | B-tree (partial) | `WHERE is_active = true` |
 | `idx_user_subscriptions_billing` | `user_id, billing_period, is_active` | B-tree (partial) | `WHERE is_active = true` |
 
-**Note:** The `stripe_subscription_id` has a UNIQUE constraint but no explicit index was created in migrations -- PostgreSQL auto-creates an index for UNIQUE constraints via the SQLAlchemy model definition.
+**Notes:**
+
+1. **stripe_subscription_id index:** The `stripe_subscription_id` has a UNIQUE constraint but no explicit index was created in migrations -- PostgreSQL auto-creates an index for UNIQUE constraints via the SQLAlchemy model definition.
+
+2. **plan_id FK ON DELETE behavior (NEW-DB-05):**
+   - The `plan_id` foreign key uses **RESTRICT** (PostgreSQL default when ON DELETE is not specified)
+   - This is an **intentional safety feature** to prevent accidental data loss
+   - **Behavior:** Cannot delete a plan from `plans` table if any active subscriptions reference it
+   - **Rationale:**
+     - Plans are business-critical entities with pricing, features, and Stripe integration
+     - Deleting a plan with active subscriptions would orphan billing records
+     - Forces explicit handling: deactivate subscriptions first (`is_active = false`), then optionally delete plan
+   - **Alternative approaches considered:**
+     - `ON DELETE CASCADE`: Too dangerous - would delete all user subscriptions if plan is removed
+     - `ON DELETE SET NULL`: Invalid - `plan_id` is NOT NULL (required for billing logic)
+     - `RESTRICT` (current): Safest option - requires intentional cleanup workflow
+   - **How to retire a plan:**
+     ```sql
+     -- 1. Mark plan as inactive (hides from catalog)
+     UPDATE plans SET is_active = false WHERE id = 'old_plan';
+
+     -- 2. Migrate or expire active subscriptions
+     UPDATE user_subscriptions SET is_active = false WHERE plan_id = 'old_plan' AND is_active = true;
+
+     -- 3. Only then can you delete the plan (if needed)
+     DELETE FROM plans WHERE id = 'old_plan';
+     ```
 
 ---
 

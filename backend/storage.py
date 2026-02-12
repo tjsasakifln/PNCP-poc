@@ -13,7 +13,7 @@ Architecture:
 import logging
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ def upload_excel(buffer_bytes: bytes, search_id: Optional[str] = None) -> Option
         ...     print(result['signed_url'])
     """
     file_id = search_id or str(uuid.uuid4())
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     file_path = f"{timestamp}_{file_id}.xlsx"
 
     try:

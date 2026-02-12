@@ -8,34 +8,8 @@ import type { StatusLicitacao } from "../../../components/StatusFilter";
 import type { Esfera } from "../../components/EsferaFilter";
 import type { Municipio } from "../../components/MunicipioFilter";
 import type { OrdenacaoOption } from "../../components/OrdenacaoSelect";
-
-const UFS = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
-  "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
-  "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-];
-
-const STOPWORDS_PT = new Set([
-  "o","a","os","as","um","uma","uns","umas",
-  "de","do","da","dos","das","em","no","na","nos","nas",
-  "por","pelo","pela","pelos","pelas","para","pra","pro",
-  "com","sem","sob","sobre","entre","ate","desde","apos",
-  "perante","contra","ante",
-  "ao","aos","num","numa","nuns","numas",
-  "e","ou","mas","porem","que","se","como","quando","porque","pois",
-  "nem","tanto","quanto","logo","portanto",
-  "nao","mais","muito","tambem","ja","ainda","so","apenas",
-  "ser","ter","estar","ir","vir","fazer","dar","ver",
-  "ha","foi","sao","era","sera",
-]);
-
-function stripAccents(s: string): string {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function isStopword(word: string): boolean {
-  return STOPWORDS_PT.has(stripAccents(word.toLowerCase()));
-}
+import { UFS } from "../../../lib/constants/uf-names";
+import { STOPWORDS_PT, stripAccents, isStopword } from "../../../lib/constants/stopwords";
 
 export interface TermValidation {
   valid: string[];
@@ -240,7 +214,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     const termosParam = searchParams.get('termos');
 
     if (ufsParam) {
-      const ufsArray = ufsParam.split(',').filter(uf => UFS.includes(uf));
+      const ufsArray = ufsParam.split(',').filter(uf => UFS.includes(uf as any));
       if (ufsArray.length > 0) {
         setUfsSelecionadas(new Set(ufsArray));
         if (dataInicialParam) setDataInicial(dataInicialParam);
@@ -273,8 +247,63 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     setMunicipios([]);
   }, [Array.from(ufsSelecionadas).sort().join(",")]);
 
-  // Fetch sectors
+  // Sector caching configuration (FE-NEW-08)
+  const SECTOR_CACHE_KEY = "smartlic-sectors-cache";
+  const SECTOR_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  interface SectorCache {
+    data: Setor[];
+    timestamp: number;
+  }
+
+  // Check if cache is valid
+  const getCachedSectors = (): Setor[] | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cached = localStorage.getItem(SECTOR_CACHE_KEY);
+      if (!cached) return null;
+
+      const { data, timestamp }: SectorCache = JSON.parse(cached);
+      const age = Date.now() - timestamp;
+
+      if (age > SECTOR_CACHE_TTL) {
+        // Cache expired
+        localStorage.removeItem(SECTOR_CACHE_KEY);
+        return null;
+      }
+
+      return data;
+    } catch {
+      return null;
+    }
+  };
+
+  // Save sectors to cache
+  const cacheSectors = (sectors: Setor[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const cache: SectorCache = {
+        data: sectors,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(SECTOR_CACHE_KEY, JSON.stringify(cache));
+    } catch {
+      // Ignore cache errors (e.g., quota exceeded)
+    }
+  };
+
+  // Fetch sectors with caching
   const fetchSetores = async (attempt = 0) => {
+    // Try cache first
+    const cachedSectors = getCachedSectors();
+    if (cachedSectors && cachedSectors.length > 0) {
+      setSetores(cachedSectors);
+      setSetoresUsingFallback(false);
+      setSetoresLoading(false);
+      return;
+    }
+
+    // Cache miss or expired - fetch from API
     setSetoresLoading(true);
     setSetoresError(false);
     try {
@@ -283,6 +312,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
       if (data.setores && data.setores.length > 0) {
         setSetores(data.setores);
         setSetoresUsingFallback(false);
+        cacheSectors(data.setores); // Cache successful response
       } else {
         throw new Error("Empty response");
       }
@@ -406,5 +436,5 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   };
 }
 
-export { UFS, STOPWORDS_PT, stripAccents, isStopword, validateTermsClientSide, SETORES_FALLBACK };
+export { validateTermsClientSide, SETORES_FALLBACK };
 export type { StatusLicitacao, Esfera, Municipio, OrdenacaoOption };
