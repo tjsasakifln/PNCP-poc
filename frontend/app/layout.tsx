@@ -31,6 +31,7 @@ const dmMono = DM_Mono({
 const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://bidiq-frontend-production.up.railway.app"),
   title: `${appName} - Busca Inteligente de Licitações`,
   description: "Ferramenta de busca avançada no PNCP com filtros por setor, região e período",
   icons: {
