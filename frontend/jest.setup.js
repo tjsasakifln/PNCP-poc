@@ -129,6 +129,12 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// Mock Element.prototype.scrollIntoView (not available in jsdom)
+// Required for components that scroll elements into view (MunicipioFilter, OrgaoFilter, etc.)
+if (typeof window !== 'undefined' && typeof Element.prototype.scrollIntoView === 'undefined') {
+  Element.prototype.scrollIntoView = jest.fn();
+}
+
 // Global test timeout (default: 5000ms)
 jest.setTimeout(10000)
 

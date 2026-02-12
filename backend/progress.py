@@ -1,14 +1,20 @@
-"""In-memory progress tracking for SSE-based real-time search progress.
+"""Distributed progress tracking for SSE-based real-time search progress.
 
-Manages ProgressTracker instances that use asyncio.Queue to communicate
-between the search pipeline (producer) and the SSE endpoint (consumer).
+Supports two modes:
+1. Redis pub/sub (horizontal scaling): Shares progress events across backend instances
+2. In-memory fallback (single instance): Uses asyncio.Queue when Redis unavailable
+
+The mode is determined by REDIS_URL environment variable and connection health.
 """
 
 import asyncio
+import json
 import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
+
+from redis_client import get_redis, is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -35,27 +41,48 @@ class ProgressTracker:
     """
     Manages progress for a single search operation.
 
-    Uses asyncio.Queue to communicate between the search pipeline
-    (producer) and the SSE endpoint (consumer).
+    Supports two modes:
+    - Redis pub/sub: Publishes events to Redis channel for distributed SSE
+    - In-memory queue: Uses asyncio.Queue as fallback for single-instance deployments
     """
 
-    def __init__(self, search_id: str, uf_count: int):
+    def __init__(self, search_id: str, uf_count: int, use_redis: bool = False):
         self.search_id = search_id
         self.uf_count = uf_count
         self.queue: asyncio.Queue[ProgressEvent] = asyncio.Queue()
         self.created_at = time.time()
         self._ufs_completed = 0
         self._is_complete = False
+        self._use_redis = use_redis
 
     async def emit(self, stage: str, progress: int, message: str, **detail: Any) -> None:
-        """Push a progress event to the queue."""
+        """Push a progress event to the queue and/or Redis pub/sub channel."""
         event = ProgressEvent(
             stage=stage,
             progress=min(100, max(0, progress)),
             message=message,
             detail=detail,
         )
+
+        # Always put in local queue for backward compatibility
         await self.queue.put(event)
+
+        # Also publish to Redis if enabled
+        if self._use_redis:
+            await self._publish_to_redis(event)
+
+    async def _publish_to_redis(self, event: ProgressEvent) -> None:
+        """Publish event to Redis pub/sub channel."""
+        redis = get_redis()
+        if redis is None:
+            return
+
+        channel = f"bidiq:progress:{self.search_id}:events"
+        try:
+            event_json = json.dumps(event.to_dict())
+            await redis.publish(channel, event_json)
+        except Exception as e:
+            logger.warning(f"Failed to publish progress event to Redis: {e}")
 
     async def emit_uf_complete(self, uf: str, items_count: int) -> None:
         """Emit progress for a single UF completion."""
@@ -94,35 +121,126 @@ class ProgressTracker:
         await self.queue.put(event)
 
 
-# Global registry of active progress trackers
+# Global registry of active progress trackers (in-memory mode only)
 _active_trackers: Dict[str, ProgressTracker] = {}
 _TRACKER_TTL = 300  # 5 minutes
 
 
-def create_tracker(search_id: str, uf_count: int) -> ProgressTracker:
-    """Create and register a progress tracker."""
+async def create_tracker(search_id: str, uf_count: int) -> ProgressTracker:
+    """Create and register a progress tracker.
+
+    Automatically selects Redis or in-memory mode based on availability.
+    Stores tracker metadata in Redis for distributed access if available.
+    """
     _cleanup_stale()
-    tracker = ProgressTracker(search_id, uf_count)
+
+    # Check if Redis is available
+    use_redis = await is_redis_available()
+
+    tracker = ProgressTracker(search_id, uf_count, use_redis=use_redis)
     _active_trackers[search_id] = tracker
-    logger.debug(f"Created progress tracker: {search_id} ({uf_count} UFs)")
+
+    # Store tracker metadata in Redis if available
+    if use_redis:
+        await _store_tracker_metadata(search_id, uf_count)
+
+    logger.debug(
+        f"Created progress tracker: {search_id} ({uf_count} UFs) "
+        f"[mode: {'Redis' if use_redis else 'in-memory'}]"
+    )
     return tracker
 
 
-def get_tracker(search_id: str) -> Optional[ProgressTracker]:
-    """Get a progress tracker by search_id."""
-    return _active_trackers.get(search_id)
+async def get_tracker(search_id: str) -> Optional[ProgressTracker]:
+    """Get a progress tracker by search_id.
+
+    Checks in-memory registry first, then falls back to Redis metadata.
+    """
+    # Check in-memory registry first
+    tracker = _active_trackers.get(search_id)
+    if tracker:
+        return tracker
+
+    # Try to load from Redis metadata
+    redis = get_redis()
+    if redis:
+        try:
+            key = f"bidiq:progress:{search_id}"
+            metadata = await redis.hgetall(key)
+            if metadata and "uf_count" in metadata:
+                uf_count = int(metadata["uf_count"])
+                # Recreate tracker from metadata (for SSE consumer on different instance)
+                tracker = ProgressTracker(search_id, uf_count, use_redis=True)
+                _active_trackers[search_id] = tracker
+                logger.debug(f"Loaded tracker from Redis metadata: {search_id}")
+                return tracker
+        except Exception as e:
+            logger.warning(f"Failed to load tracker from Redis: {e}")
+
+    return None
 
 
-def remove_tracker(search_id: str) -> None:
-    """Remove a tracker after search completes."""
+async def remove_tracker(search_id: str) -> None:
+    """Remove a tracker after search completes.
+
+    Cleans up both in-memory and Redis state.
+    """
     _active_trackers.pop(search_id, None)
+
+    # Remove from Redis if available
+    redis = get_redis()
+    if redis:
+        try:
+            key = f"bidiq:progress:{search_id}"
+            await redis.delete(key)
+        except Exception as e:
+            logger.warning(f"Failed to remove tracker from Redis: {e}")
 
 
 def _cleanup_stale() -> None:
-    """Remove trackers older than TTL."""
+    """Remove trackers older than TTL (in-memory only)."""
     now = time.time()
     stale = [sid for sid, t in _active_trackers.items() if now - t.created_at > _TRACKER_TTL]
     for sid in stale:
         _active_trackers.pop(sid, None)
     if stale:
         logger.debug(f"Cleaned up {len(stale)} stale progress trackers")
+
+
+async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
+    """Store tracker metadata in Redis with TTL."""
+    redis = get_redis()
+    if redis is None:
+        return
+
+    try:
+        key = f"bidiq:progress:{search_id}"
+        metadata = {
+            "uf_count": str(uf_count),
+            "created_at": str(time.time()),
+        }
+        await redis.hset(key, mapping=metadata)
+        await redis.expire(key, _TRACKER_TTL)
+    except Exception as e:
+        logger.warning(f"Failed to store tracker metadata in Redis: {e}")
+
+
+async def subscribe_to_events(search_id: str) -> Optional[any]:
+    """Subscribe to Redis pub/sub channel for progress events.
+
+    Returns:
+        redis.asyncio.client.PubSub instance or None if Redis unavailable.
+    """
+    redis = get_redis()
+    if redis is None:
+        return None
+
+    try:
+        pubsub = redis.pubsub()
+        channel = f"bidiq:progress:{search_id}:events"
+        await pubsub.subscribe(channel)
+        logger.debug(f"Subscribed to Redis channel: {channel}")
+        return pubsub
+    except Exception as e:
+        logger.warning(f"Failed to subscribe to Redis channel: {e}")
+        return None

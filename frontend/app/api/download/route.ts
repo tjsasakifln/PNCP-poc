@@ -13,17 +13,31 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // STORY-202 SYS-M01: Forward X-Request-ID if present for tracing
+  const requestId = request.headers.get("X-Request-ID");
+  if (requestId) {
+    console.log(`[download] Request ID: ${requestId}`);
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get("id");
+  const url = searchParams.get("url");
 
+  // STORY-202 CROSS-C02: Priority 1 - Signed URL from object storage (redirect)
+  if (url) {
+    console.log(`✅ Redirecting to signed URL (object storage)`);
+    return NextResponse.redirect(url);
+  }
+
+  // Priority 2: Legacy filesystem download by ID
   if (!id) {
     return NextResponse.json(
-      { message: "ID obrigatório" },
+      { message: "ID ou URL obrigatório" },
       { status: 400 }
     );
   }
 
-  // Read from filesystem instead of memory cache
+  // Read from filesystem (legacy mode / storage fallback)
   const tmpDir = tmpdir();
   const filePath = join(tmpDir, `bidiq_${id}.xlsx`);
 
@@ -32,7 +46,7 @@ export async function GET(request: NextRequest) {
     const appNameSlug = (process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech").replace(/[\s.]+/g, '_');
     const filename = `${appNameSlug}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
-    console.log(`✅ Download served: ${id} (${buffer.length} bytes)`);
+    console.log(`✅ Download served from filesystem: ${id} (${buffer.length} bytes) [legacy mode]`);
 
     // Convert Buffer to Uint8Array for Next.js Response
     const uint8Array = new Uint8Array(buffer);

@@ -60,9 +60,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward auth header to backend (already validated above)
+    // STORY-202 SYS-M01: Add correlation ID for distributed tracing
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Authorization": authHeader,
+      "X-Request-ID": randomUUID(),
     };
 
     const MAX_RETRIES = 2;
@@ -175,9 +177,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only save Excel to filesystem if there are actual results
+    // Handle Excel download: prefer signed URL from storage, fallback to base64 + filesystem
     let downloadId: string | null = null;
-    if (data.excel_base64) {
+    let downloadUrl: string | null = null;
+
+    if (data.download_url) {
+      // Backend provided a signed URL from object storage (preferred)
+      downloadUrl = data.download_url;
+      console.log(`✅ Excel available via signed URL (TTL: 60min)`);
+    } else if (data.excel_base64) {
+      // Fallback: Backend sent base64, save to filesystem (legacy mode)
       downloadId = randomUUID();
       const buffer = Buffer.from(data.excel_base64, "base64");
       const tmpDir = tmpdir();
@@ -185,7 +194,7 @@ export async function POST(request: NextRequest) {
 
       try {
         await writeFile(filePath, buffer);
-        console.log(`✅ Excel saved to: ${filePath}`);
+        console.log(`✅ Excel saved to filesystem: ${filePath} (fallback mode)`);
 
         // Limpar arquivo após 60 minutos (buscas longas + tempo de análise)
         setTimeout(async () => {
@@ -208,6 +217,7 @@ export async function POST(request: NextRequest) {
       resumo: data.resumo,
       licitacoes: data.licitacoes || [],  // Individual bids for preview display
       download_id: downloadId,
+      download_url: downloadUrl,  // Signed URL from object storage (preferred)
       total_raw: data.total_raw || 0,
       total_filtrado: data.total_filtrado || 0,
       filter_stats: data.filter_stats || null,

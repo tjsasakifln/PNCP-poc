@@ -96,6 +96,7 @@ export interface BuscaResult {
   resumo: Resumo;
   licitacoes: LicitacaoItem[];  // Individual bids for preview display
   download_id: string;
+  download_url?: string | null;  // STORY-202 CROSS-C02: Signed URL from object storage (60min TTL)
   total_raw: number;
   total_filtrado: number;
   filter_stats: FilterStats | null;

@@ -30,6 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
 from pncp_client import PNCPClient
 from sectors import list_sectors
+from middleware import CorrelationIDMiddleware  # STORY-202 SYS-M01
 
 # Existing routers
 from admin import router as admin_router
@@ -74,8 +75,11 @@ app.add_middleware(
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-Request-ID"],
 )
+
+# STORY-202 SYS-M01: Add correlation ID middleware for distributed tracing
+app.add_middleware(CorrelationIDMiddleware)
 
 # Mount all routers
 app.include_router(admin_router)

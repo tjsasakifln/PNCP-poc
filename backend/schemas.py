@@ -622,7 +622,10 @@ class BuscaResponse(BaseModel):
         description="List of individual bids for display. FREE tier shows 5-10 fully, rest blurred."
     )
     excel_base64: Optional[str] = Field(
-        default=None, description="Excel file encoded as base64 string (None if plan doesn't allow)"
+        default=None, description="Excel file encoded as base64 string (None if plan doesn't allow or storage used)"
+    )
+    download_url: Optional[str] = Field(
+        default=None, description="Signed URL for direct Excel download (60min TTL, preferred over base64)"
     )
     excel_available: bool = Field(
         ..., description="Whether Excel export is available for user's plan"

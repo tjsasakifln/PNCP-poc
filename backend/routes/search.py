@@ -32,13 +32,14 @@ from filter import (
 from status_inference import enriquecer_com_status_inferido
 from utils.ordenacao import ordenar_licitacoes
 from excel import create_excel
+from storage import upload_excel
 from llm import gerar_resumo, gerar_resumo_fallback
 from sectors import get_sector, list_sectors
 from auth import require_auth
 from authorization import _check_user_roles, _get_admin_ids, _get_master_quota_info
 from log_sanitizer import mask_user_id, log_user_action
 from rate_limiter import rate_limiter
-from progress import create_tracker, get_tracker, remove_tracker
+from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_events
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +163,7 @@ async def buscar_progress_stream(
         # Wait up to 30s for the tracker to be created by POST /buscar
         tracker = None
         for _ in range(60):  # 60 * 0.5s = 30s
-            tracker = get_tracker(search_id)
+            tracker = await get_tracker(search_id)
             if tracker:
                 break
             await _asyncio.sleep(0.5)
@@ -171,21 +172,52 @@ async def buscar_progress_stream(
             yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
             return
 
-        # Stream events from the tracker's queue
-        while True:
+        # Try Redis pub/sub first, fallback to in-memory queue
+        pubsub = await subscribe_to_events(search_id)
+
+        if pubsub:
+            # Redis mode: Stream from pub/sub channel
+            logger.debug(f"SSE using Redis pub/sub for {search_id}")
             try:
-                event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
-                yield f"data: {_json.dumps(event.to_dict())}\n\n"
+                while True:
+                    try:
+                        message = await _asyncio.wait_for(pubsub.get_message(ignore_subscribe_messages=True), timeout=30.0)
+                        if message and message["type"] == "message":
+                            # Redis returns JSON string, parse it
+                            event_data = _json.loads(message["data"])
+                            yield f"data: {_json.dumps(event_data)}\n\n"
 
-                if event.stage in ("complete", "error"):
+                            if event_data.get("stage") in ("complete", "error"):
+                                break
+
+                    except _asyncio.TimeoutError:
+                        # Heartbeat to keep connection alive
+                        yield ": heartbeat\n\n"
+
+                    except _asyncio.CancelledError:
+                        break
+
+            finally:
+                await pubsub.unsubscribe()
+                await pubsub.close()
+
+        else:
+            # In-memory mode: Stream from local queue
+            logger.debug(f"SSE using in-memory queue for {search_id}")
+            while True:
+                try:
+                    event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
+                    yield f"data: {_json.dumps(event.to_dict())}\n\n"
+
+                    if event.stage in ("complete", "error"):
+                        break
+
+                except _asyncio.TimeoutError:
+                    # Heartbeat to keep connection alive
+                    yield ": heartbeat\n\n"
+
+                except _asyncio.CancelledError:
                     break
-
-            except _asyncio.TimeoutError:
-                # Heartbeat to keep connection alive
-                yield ": heartbeat\n\n"
-
-            except _asyncio.CancelledError:
-                break
 
     return StreamingResponse(
         event_generator(),
@@ -242,7 +274,7 @@ async def buscar_licitacoes(
     # SSE Progress Tracking: Create tracker if search_id provided
     tracker = None
     if request.search_id:
-        tracker = create_tracker(request.search_id, len(request.ufs))
+        tracker = await create_tracker(request.search_id, len(request.ufs))
         await tracker.emit("connecting", 3, "Iniciando busca...")
 
     logger.info(
@@ -606,7 +638,7 @@ async def buscar_licitacoes(
                 logger.error(f"Multi-source fetch timed out after {FETCH_TIMEOUT}s")
                 if tracker:
                     await tracker.emit_error("Busca expirou por tempo")
-                    remove_tracker(request.search_id)
+                    await remove_tracker(request.search_id)
                 raise HTTPException(
                     status_code=504,
                     detail=(
@@ -661,7 +693,7 @@ async def buscar_licitacoes(
                 logger.error(f"PNCP fetch timed out after {FETCH_TIMEOUT}s for {len(request.ufs)} UFs")
                 if tracker:
                     await tracker.emit_error("Busca expirou por tempo")
-                    remove_tracker(request.search_id)
+                    await remove_tracker(request.search_id)
                 raise HTTPException(
                     status_code=504,
                     detail=(
@@ -836,7 +868,7 @@ async def buscar_licitacoes(
             logger.info("No bids passed filters — skipping LLM and Excel generation")
             if tracker:
                 await tracker.emit_complete()
-                remove_tracker(request.search_id)
+                await remove_tracker(request.search_id)
             resumo = ResumoLicitacoes(
                 resumo_executivo=(
                     f"Nenhuma licitação de {sector.name.lower()} encontrada "
@@ -954,14 +986,32 @@ async def buscar_licitacoes(
 
         # Step 4: Generate Excel report (conditional based on plan)
         excel_base64 = None
+        download_url = None
         excel_available = quota_info.capabilities["allow_excel"] if quota_info else False
         upgrade_message = None
 
         if excel_available:
             logger.info("Generating Excel report")
             excel_buffer = create_excel(licitacoes_filtradas)
-            excel_base64 = base64.b64encode(excel_buffer.read()).decode("utf-8")
-            logger.info(f"Excel report generated ({len(excel_base64)} base64 chars)")
+            excel_bytes = excel_buffer.read()
+
+            # Try to upload to object storage (Supabase Storage)
+            storage_result = upload_excel(excel_bytes, request.search_id)
+
+            if storage_result:
+                # Storage upload succeeded - use signed URL
+                download_url = storage_result["signed_url"]
+                logger.info(
+                    f"Excel uploaded to storage: {storage_result['file_path']} "
+                    f"(signed URL valid for {storage_result['expires_in']}s)"
+                )
+                # Don't send base64 if we have a download URL (saves bandwidth)
+                excel_base64 = None
+            else:
+                # Storage upload failed - fallback to base64
+                logger.warning("Storage upload failed, falling back to base64 encoding")
+                excel_base64 = base64.b64encode(excel_bytes).decode("utf-8")
+                logger.info(f"Excel report encoded as base64 ({len(excel_base64)} chars)")
         else:
             logger.info("Excel generation skipped (not allowed for user's plan)")
             upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
@@ -978,6 +1028,7 @@ async def buscar_licitacoes(
             resumo=resumo,
             licitacoes=licitacao_items,  # Individual bids for frontend display
             excel_base64=excel_base64,
+            download_url=download_url,
             excel_available=excel_available,
             quota_used=new_quota_used,
             quota_remaining=quota_remaining,
@@ -1031,14 +1082,14 @@ async def buscar_licitacoes(
         # SSE: Search complete
         if tracker:
             await tracker.emit_complete()
-            remove_tracker(request.search_id)
+            await remove_tracker(request.search_id)
 
         return response
 
     except PNCPRateLimitError as e:
         if tracker:
             await tracker.emit_error(f"PNCP rate limit: {e}")
-            remove_tracker(request.search_id)
+            await remove_tracker(request.search_id)
         logger.error(f"PNCP rate limit exceeded: {e}", exc_info=True)
         # Extract Retry-After header if available
         retry_after = getattr(e, "retry_after", 60)  # Default 60s if not provided
@@ -1054,7 +1105,7 @@ async def buscar_licitacoes(
     except PNCPAPIError as e:
         if tracker:
             await tracker.emit_error(f"PNCP API error: {e}")
-            remove_tracker(request.search_id)
+            await remove_tracker(request.search_id)
         logger.error(f"PNCP API error: {e}", exc_info=True)
         raise HTTPException(
             status_code=502,
@@ -1068,7 +1119,7 @@ async def buscar_licitacoes(
     except Exception:
         if tracker:
             await tracker.emit_error("Erro interno do servidor")
-            remove_tracker(request.search_id)
+            await remove_tracker(request.search_id)
         logger.exception("Internal server error during procurement search")
         raise HTTPException(
             status_code=500,

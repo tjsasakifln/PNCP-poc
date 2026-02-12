@@ -359,17 +359,25 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   };
 
   const handleDownload = async () => {
-    if (!result?.download_id) return;
+    // STORY-202 CROSS-C02: Support both download_url (object storage) and download_id (filesystem)
+    if (!result?.download_id && !result?.download_url) return;
     setDownloadError(null);
     setDownloadLoading(true);
 
-    trackEvent('download_started', { download_id: result.download_id });
+    const downloadIdentifier = result.download_url ? 'url' : result.download_id;
+    trackEvent('download_started', { download_id: result.download_id, has_url: !!result.download_url });
 
     try {
       const downloadHeaders: Record<string, string> = {};
       if (session?.access_token) downloadHeaders["Authorization"] = `Bearer ${session.access_token}`;
 
-      const response = await fetch(`/api/download?id=${result.download_id}`, { headers: downloadHeaders });
+      // Priority 1: Use signed URL from object storage (pass as query param for redirect)
+      // Priority 2: Use legacy download_id (filesystem)
+      const downloadEndpoint = result.download_url
+        ? `/api/download?url=${encodeURIComponent(result.download_url)}`
+        : `/api/download?id=${result.download_id}`;
+
+      const response = await fetch(downloadEndpoint, { headers: downloadHeaders });
 
       if (!response.ok) {
         if (response.status === 401) { window.location.href = "/login"; throw new Error('Faça login para continuar'); }
@@ -399,7 +407,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
-      trackEvent('download_completed', { download_id: result.download_id, file_size_bytes: blob.size });
+      trackEvent('download_completed', {
+        download_id: result.download_id,
+        file_size_bytes: blob.size,
+        source: result.download_url ? 'object_storage' : 'filesystem'
+      });
     } catch (e) {
       setDownloadError(getUserFriendlyError(e instanceof Error ? e : 'Não foi possível baixar o arquivo.'));
     } finally {

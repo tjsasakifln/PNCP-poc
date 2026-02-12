@@ -75,28 +75,15 @@ async def get_analytics_summary(user: dict = Depends(require_auth)):
     user_id = user["id"]
 
     try:
-        sessions_result = (
-            sb.table("search_sessions")
-            .select("id, total_raw, total_filtered, valor_total, created_at")
-            .eq("user_id", user_id)
-            .execute()
-        )
-        sessions = sessions_result.data or []
+        # STORY-202 DB-M07: Use RPC to avoid full-table scan (single optimized query)
+        result = sb.rpc("get_analytics_summary", {
+            "p_user_id": user_id,
+            "p_start_date": None,
+            "p_end_date": None,
+        }).execute()
 
-        # Get member_since from profile
-        profile_result = (
-            sb.table("profiles")
-            .select("created_at")
-            .eq("id", user_id)
-            .execute()
-        )
-        member_since = (
-            profile_result.data[0]["created_at"]
-            if profile_result.data
-            else datetime.utcnow().isoformat()
-        )
-
-        if not sessions:
+        if not result.data or len(result.data) == 0:
+            # No data - return zeros with current timestamp
             return SummaryResponse(
                 total_searches=0,
                 total_downloads=0,
@@ -105,18 +92,24 @@ async def get_analytics_summary(user: dict = Depends(require_auth)):
                 estimated_hours_saved=0.0,
                 avg_results_per_search=0.0,
                 success_rate=0.0,
-                member_since=member_since,
+                member_since=datetime.utcnow().isoformat(),
             )
 
-        total_searches = len(sessions)
-        total_downloads = sum(1 for s in sessions if (s.get("total_filtered") or 0) > 0)
-        total_opportunities = sum(s.get("total_filtered") or 0 for s in sessions)
-        total_value_discovered = float(
-            sum(Decimal(str(s.get("valor_total") or 0)) for s in sessions)
-        )
+        row = result.data[0]
+        total_searches = row["total_searches"] or 0
+        total_downloads = row["total_downloads"] or 0
+        total_opportunities = row["total_opportunities"] or 0
+        total_value_discovered = float(row["total_value_discovered"] or 0)
+        member_since = row["member_since"] or datetime.utcnow().isoformat()
+
+        # Calculate derived metrics
         estimated_hours_saved = float(total_searches * 2)
-        avg_results_per_search = total_opportunities / total_searches
-        success_rate = (total_downloads / total_searches * 100)
+        avg_results_per_search = (
+            total_opportunities / total_searches if total_searches > 0 else 0.0
+        )
+        success_rate = (
+            (total_downloads / total_searches * 100) if total_searches > 0 else 0.0
+        )
 
         logger.info(
             f"Analytics summary for user {mask_user_id(user_id)}: "
@@ -135,7 +128,7 @@ async def get_analytics_summary(user: dict = Depends(require_auth)):
         )
 
     except Exception as e:
-        logger.error(f"Error fetching analytics summary for {mask_user_id(user_id)}: {e}")
+        logger.error(f"Error calling get_analytics_summary RPC for {mask_user_id(user_id)}: {e}")
         raise
 
 

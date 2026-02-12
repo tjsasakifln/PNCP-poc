@@ -96,7 +96,7 @@ def setup_logging(level: str = "INFO") -> None:
         # The warning will be added after root logger setup below
 
     formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        fmt="%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
@@ -106,6 +106,11 @@ def setup_logging(level: str = "INFO") -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, effective_level))
     root_logger.addHandler(handler)
+
+    # STORY-202 SYS-M01: Add RequestIDFilter to inject request_id into all logs
+    # Import here to avoid circular dependency
+    from middleware import RequestIDFilter
+    root_logger.addFilter(RequestIDFilter())
 
     # Log security enforcement if level was elevated
     if is_production and level.upper() == "DEBUG":

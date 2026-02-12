@@ -90,54 +90,46 @@ async def list_conversations(
     user_id = user["id"]
     admin = _is_admin(user_id)
 
-    query = sb.table("conversations").select(
-        "*, profiles!conversations_user_id_fkey(email)",
-        count="exact",
-    )
+    # STORY-202 DB-M06: Use RPC to eliminate N+1 query (one query instead of N+1)
+    try:
+        result = sb.rpc("get_conversations_with_unread_count", {
+            "p_user_id": user_id,
+            "p_is_admin": admin,
+            "p_status": status,
+            "p_limit": limit,
+            "p_offset": offset,
+        }).execute()
 
-    if not admin:
-        query = query.eq("user_id", user_id)
+        if not result.data:
+            return ConversationsListResponse(conversations=[], total=0)
 
-    if status:
-        query = query.eq("status", status)
+        # First row contains total_count (same for all rows due to window function)
+        total_count = result.data[0]["total_count"] if result.data else 0
 
-    result = (
-        query
-        .order("last_message_at", desc=True)
-        .range(offset, offset + limit - 1)
-        .execute()
-    )
+        conversations = [
+            ConversationSummary(
+                id=row["id"],
+                user_id=row["user_id"],
+                user_email=row["user_email"] if admin else None,
+                subject=row["subject"],
+                category=row["category"],
+                status=row["status"],
+                last_message_at=row["last_message_at"],
+                created_at=row["created_at"],
+                unread_count=row["unread_count"],
+            )
+            for row in result.data
+        ]
 
-    conversations = []
-    for row in result.data or []:
-        # Count unread messages for this conversation
-        unread_q = sb.table("messages").select("id", count="exact").eq(
-            "conversation_id", row["id"]
+        return ConversationsListResponse(
+            conversations=conversations,
+            total=total_count,
         )
-        if admin:
-            unread_q = unread_q.eq("is_admin_reply", False).eq("read_by_admin", False)
-        else:
-            unread_q = unread_q.eq("is_admin_reply", True).eq("read_by_user", False)
-        unread_result = unread_q.execute()
-        unread_count = unread_result.count or 0
 
-        profile_data = row.get("profiles") or {}
-        conversations.append(ConversationSummary(
-            id=row["id"],
-            user_id=row["user_id"],
-            user_email=profile_data.get("email") if admin else None,
-            subject=row["subject"],
-            category=row["category"],
-            status=row["status"],
-            last_message_at=row["last_message_at"],
-            created_at=row["created_at"],
-            unread_count=unread_count,
-        ))
-
-    return ConversationsListResponse(
-        conversations=conversations,
-        total=result.count or 0,
-    )
+    except Exception as e:
+        logger.error(f"Error calling get_conversations_with_unread_count RPC: {e}")
+        # Fallback to empty list on RPC error (graceful degradation)
+        return ConversationsListResponse(conversations=[], total=0)
 
 
 # --------------------------------------------------------------------------

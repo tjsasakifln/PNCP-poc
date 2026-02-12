@@ -309,3 +309,178 @@ class TestGerarResumoFallback:
             # Should work even with OpenAI module "unavailable"
             assert resumo.total_oportunidades == 1
             assert resumo.valor_total == 100_000.0
+
+
+class TestGerarResumoOpenAIIntegration:
+    """Test gerar_resumo() LLM integration with error handling."""
+
+    def test_empty_list_bypasses_api_call(self):
+        """Test empty list doesn't call OpenAI API."""
+        from llm import gerar_resumo
+
+        resumo = gerar_resumo([])
+        assert resumo.total_oportunidades == 0
+        assert "Nenhuma licitação" in resumo.resumo_executivo
+
+    def test_missing_api_key_raises_error(self):
+        """Test missing OPENAI_API_KEY raises ValueError."""
+        import os
+        from unittest.mock import patch
+        from llm import gerar_resumo
+
+        licitacoes = [
+            {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
+        ]
+
+        with patch.dict(os.environ, {}, clear=True):
+            try:
+                gerar_resumo(licitacoes)
+                assert False, "Should have raised ValueError for missing API key"
+            except ValueError as e:
+                assert "OPENAI_API_KEY" in str(e)
+
+    def test_openai_timeout_raises_error(self):
+        """Test OpenAI timeout error is raised (caller should fallback)."""
+        from unittest.mock import patch, MagicMock
+        from llm import gerar_resumo
+        from openai import APITimeoutError
+
+        licitacoes = [
+            {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
+        ]
+
+        with patch("llm.OpenAI") as mock_openai_class:
+            mock_client = MagicMock()
+            mock_client.beta.chat.completions.parse.side_effect = APITimeoutError(
+                request=MagicMock()
+            )
+            mock_openai_class.return_value = mock_client
+
+            with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key"}):
+                try:
+                    gerar_resumo(licitacoes)
+                    assert False, "Should have raised APITimeoutError"
+                except APITimeoutError:
+                    pass  # Expected
+
+    def test_openai_rate_limit_raises_error(self):
+        """Test OpenAI rate limit (429) error is raised."""
+        from unittest.mock import patch, MagicMock
+        from llm import gerar_resumo
+        from openai import RateLimitError
+
+        licitacoes = [
+            {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
+        ]
+
+        with patch("llm.OpenAI") as mock_openai_class:
+            mock_client = MagicMock()
+            mock_response = MagicMock()
+            mock_response.status_code = 429
+            mock_client.beta.chat.completions.parse.side_effect = RateLimitError(
+                message="Rate limit exceeded",
+                response=mock_response,
+                body={}
+            )
+            mock_openai_class.return_value = mock_client
+
+            with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key"}):
+                try:
+                    gerar_resumo(licitacoes)
+                    assert False, "Should have raised RateLimitError"
+                except RateLimitError:
+                    pass  # Expected
+
+    def test_openai_invalid_json_raises_error(self):
+        """Test OpenAI invalid JSON response raises ValueError."""
+        from unittest.mock import patch, MagicMock
+        from llm import gerar_resumo
+
+        licitacoes = [
+            {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
+        ]
+
+        with patch("llm.OpenAI") as mock_openai_class:
+            mock_client = MagicMock()
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock(message=MagicMock(parsed=None))]
+            mock_client.beta.chat.completions.parse.return_value = mock_response
+            mock_openai_class.return_value = mock_client
+
+            with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key"}):
+                try:
+                    gerar_resumo(licitacoes)
+                    assert False, "Should have raised ValueError for empty response"
+                except ValueError as e:
+                    assert "empty response" in str(e)
+
+    def test_openai_success_returns_valid_resumo(self):
+        """Test successful OpenAI call returns valid ResumoLicitacoes."""
+        from unittest.mock import patch, MagicMock
+        from llm import gerar_resumo
+
+        licitacoes = [
+            {"nomeOrgao": "Org A", "uf": "SP", "valorTotalEstimado": 100_000.0},
+            {"nomeOrgao": "Org B", "uf": "RJ", "valorTotalEstimado": 200_000.0},
+        ]
+
+        with patch("llm.OpenAI") as mock_openai_class:
+            mock_client = MagicMock()
+            mock_resumo = ResumoLicitacoes(
+                resumo_executivo="Encontradas 2 licitações totalizando R$ 300.000.",
+                total_oportunidades=2,
+                valor_total=300_000.0,
+                destaques=["Maior valor: R$ 200k"],
+                alerta_urgencia=None,
+            )
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock(message=MagicMock(parsed=mock_resumo))]
+            mock_client.beta.chat.completions.parse.return_value = mock_response
+            mock_openai_class.return_value = mock_client
+
+            with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key"}):
+                resumo = gerar_resumo(licitacoes)
+
+                assert isinstance(resumo, ResumoLicitacoes)
+                assert resumo.total_oportunidades == 2
+                assert resumo.valor_total == 300_000.0
+
+    def test_forbidden_deadline_terminology_rejected(self):
+        """Test LLM output with forbidden deadline terms is rejected."""
+        from unittest.mock import patch, MagicMock
+        from llm import gerar_resumo
+
+        licitacoes = [
+            {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
+        ]
+
+        with patch("llm.OpenAI") as mock_openai_class:
+            mock_client = MagicMock()
+            # Create resumo with forbidden term
+            mock_resumo = ResumoLicitacoes(
+                resumo_executivo="Prazo de abertura em 5 de fevereiro.",  # FORBIDDEN
+                total_oportunidades=1,
+                valor_total=100_000.0,
+                destaques=[],
+                alerta_urgencia=None,
+            )
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock(message=MagicMock(parsed=mock_resumo))]
+            mock_client.beta.chat.completions.parse.return_value = mock_response
+            mock_openai_class.return_value = mock_client
+
+            with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key"}):
+                try:
+                    gerar_resumo(licitacoes)
+                    assert False, "Should have rejected forbidden terminology"
+                except ValueError as e:
+                    assert "ambiguous deadline terminology" in str(e)
+
+    def test_sector_name_parameter_used(self):
+        """Test that sector_name parameter is included in fallback summary."""
+        licitacoes = [
+            {"nomeOrgao": "Test", "uf": "SP", "valorTotalEstimado": 100_000.0}
+        ]
+
+        resumo = gerar_resumo_fallback(licitacoes, sector_name="equipamentos médicos")
+        assert "equipamentos médicos" in resumo.resumo_executivo
