@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../../lib/supabase";
-import { useAnalytics } from "../../hooks/useAnalytics";
+import { useAnalytics } from "../../../hooks/useAnalytics";
 
 /**
  * Client-side Auth Callback Handler
