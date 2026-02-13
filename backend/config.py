@@ -95,16 +95,35 @@ def setup_logging(level: str = "INFO") -> None:
         # Note: We can't log this warning yet since logging isn't configured
         # The warning will be added after root logger setup below
 
-    formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    # STORY-220 AC4: Configurable format — JSON for production, text for development
+    log_format = os.getenv("LOG_FORMAT", "").lower()
+    if not log_format:
+        log_format = "json" if is_production else "text"
 
     # STORY-202 SYS-M01: Add RequestIDFilter to inject request_id into all logs
     # Import here to avoid circular dependency. Must be added to handler BEFORE
     # any logs are emitted so startup logs don't crash on missing %(request_id)s.
     from middleware import RequestIDFilter
     request_id_filter = RequestIDFilter()
+
+    if log_format == "json":
+        # STORY-220 AC2/AC3: JSON structured logging with all required fields
+        from pythonjsonlogger import jsonlogger
+        formatter = jsonlogger.JsonFormatter(
+            fmt="%(asctime)s %(levelname)s %(name)s %(message)s %(module)s %(funcName)s %(lineno)d %(request_id)s",
+            datefmt="%Y-%m-%dT%H:%M:%S",
+            rename_fields={
+                "asctime": "timestamp",
+                "levelname": "level",
+                "name": "logger_name",
+            },
+        )
+    else:
+        # Human-readable pipe-delimited format for development
+        formatter = logging.Formatter(
+            fmt="%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
 
     handler = logging.StreamHandler(sys.stdout)
     handler.addFilter(request_id_filter)
@@ -219,12 +238,19 @@ ZERO_RESULTS_RELAXATION_ENABLED: bool = str_to_bool(
     os.getenv("ZERO_RESULTS_RELAXATION_ENABLED", "true")
 )
 
-# Log feature flag state on import
 logger = logging.getLogger(__name__)
-logger.info(f"Feature Flag - ENABLE_NEW_PRICING: {ENABLE_NEW_PRICING}")
-logger.info(f"Feature Flag - LLM_ARBITER_ENABLED: {LLM_ARBITER_ENABLED}")
-logger.info(f"Feature Flag - SYNONYM_MATCHING_ENABLED: {SYNONYM_MATCHING_ENABLED}")
-logger.info(f"Feature Flag - ZERO_RESULTS_RELAXATION_ENABLED: {ZERO_RESULTS_RELAXATION_ENABLED}")
+
+
+def log_feature_flags() -> None:
+    """Log feature flag states. Call AFTER setup_logging() to ensure proper formatting.
+
+    STORY-220 AC6: Moved from module-level to function to prevent logging
+    before RequestIDFilter is installed.
+    """
+    logger.info(f"Feature Flag - ENABLE_NEW_PRICING: {ENABLE_NEW_PRICING}")
+    logger.info(f"Feature Flag - LLM_ARBITER_ENABLED: {LLM_ARBITER_ENABLED}")
+    logger.info(f"Feature Flag - SYNONYM_MATCHING_ENABLED: {SYNONYM_MATCHING_ENABLED}")
+    logger.info(f"Feature Flag - ZERO_RESULTS_RELAXATION_ENABLED: {ZERO_RESULTS_RELAXATION_ENABLED}")
 
 
 # ============================================

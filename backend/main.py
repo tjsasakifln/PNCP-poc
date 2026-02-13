@@ -33,7 +33,7 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
+from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feature_flags
 from pncp_client import PNCPClient
 from sectors import list_sectors
 from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware  # STORY-202 SYS-M01, STORY-210 AC10
@@ -58,6 +58,9 @@ from routes.plans import router as plans_router  # STORY-203 CROSS-M01
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
+
+# STORY-220 AC6: Log feature flags AFTER setup_logging() (not at import time)
+log_feature_flags()
 
 # STORY-210 AC8: Disable API docs in production to prevent reconnaissance
 _env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()

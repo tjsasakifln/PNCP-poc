@@ -27,9 +27,9 @@ from typing import Optional, Dict, Tuple
 
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from log_sanitizer import log_auth_event
+from log_sanitizer import log_auth_event, get_sanitized_logger
 
-logger = logging.getLogger(__name__)
+logger = get_sanitized_logger(__name__)
 
 security = HTTPBearer(auto_error=False)
 

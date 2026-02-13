@@ -37,11 +37,11 @@ from auth import require_auth
 from authorization import _check_user_roles
 from rate_limiter import rate_limiter
 from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_events
-from log_sanitizer import mask_user_id
+from log_sanitizer import mask_user_id, get_sanitized_logger
 from search_pipeline import SearchPipeline
 from search_context import SearchContext
 
-logger = logging.getLogger(__name__)
+logger = get_sanitized_logger(__name__)
 
 router = APIRouter(tags=["search"])
 

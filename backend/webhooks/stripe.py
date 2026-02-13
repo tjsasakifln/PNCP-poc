@@ -36,8 +36,9 @@ from fastapi import APIRouter, Request, HTTPException
 
 from supabase_client import get_supabase
 from cache import redis_cache
+from log_sanitizer import get_sanitized_logger
 
-logger = logging.getLogger(__name__)
+logger = get_sanitized_logger(__name__)
 router = APIRouter()
 
 # Stripe configuration

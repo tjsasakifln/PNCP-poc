@@ -35,5 +35,8 @@ google-auth-oauthlib==1.2.1        # OAuth flow helpers
 google-auth-httplib2==0.2.0        # HTTP transport for Google APIs
 cryptography==43.0.3               # Required by google-auth
 
+# JSON structured logging (STORY-220)
+python-json-logger>=2.0.4,<3.0.0
+
 # Error tracking (STORY-211)
 sentry-sdk[fastapi]>=2.0.0
