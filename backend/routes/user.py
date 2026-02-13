@@ -84,7 +84,7 @@ async def get_profile(user: dict = Depends(require_auth)):
     """
     Get current user profile with plan capabilities and quota status.
     """
-    from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES, get_plan_from_profile, PLAN_NAMES
+    from quota import check_quota, QuotaInfo, create_fallback_quota_info, create_legacy_quota_info
     from supabase_client import get_supabase
 
     is_admin, is_master = _check_user_roles(user["id"])
@@ -101,39 +101,10 @@ async def get_profile(user: dict = Depends(require_auth)):
             quota_info = check_quota(user["id"])
         except Exception as e:
             logger.error(f"Failed to check quota for user {user['id']}: {e}")
-            fallback_plan = get_plan_from_profile(user["id"]) or "free_trial"
-            fallback_caps = PLAN_CAPABILITIES.get(fallback_plan, PLAN_CAPABILITIES["free_trial"])
-            fallback_name = PLAN_NAMES.get(fallback_plan, "FREE Trial") if fallback_plan != "free_trial" else "FREE Trial"
-            if fallback_plan != "free_trial":
-                logger.warning(
-                    f"PLAN FALLBACK for user {mask_user_id(user['id'])}: "
-                    f"subscription check failed, using profiles.plan_type='{fallback_plan}'"
-                )
-            quota_info = QuotaInfo(
-                allowed=True,
-                plan_id=fallback_plan,
-                plan_name=fallback_name,
-                capabilities=fallback_caps,
-                quota_used=0,
-                quota_remaining=999999,
-                quota_reset_date=datetime.now(timezone.utc),
-                trial_expires_at=None,
-                error_message=None,
-            )
+            quota_info = create_fallback_quota_info(user["id"])
     else:
         logger.debug("New pricing disabled, using legacy behavior")
-        from quota import PLAN_CAPABILITIES as PC
-        quota_info = QuotaInfo(
-            allowed=True,
-            plan_id="legacy",
-            plan_name="Legacy",
-            capabilities=PC["free_trial"],
-            quota_used=0,
-            quota_remaining=999999,
-            quota_reset_date=datetime.now(timezone.utc),
-            trial_expires_at=None,
-            error_message=None,
-        )
+        quota_info = create_legacy_quota_info()
 
     try:
         sb = get_supabase()

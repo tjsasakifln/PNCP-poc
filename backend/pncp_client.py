@@ -986,6 +986,87 @@ class AsyncPNCPClient:
         return all_items
 
 
+# ============================================================================
+# PNCPLegacyAdapter — SourceAdapter wrapper for ConsolidationService (AC6)
+# ============================================================================
+
+class PNCPLegacyAdapter:
+    """Wraps existing PNCPClient as a SourceAdapter for multi-source consolidation.
+
+    STORY-216 AC6: Moved from inline class inside buscar_licitacoes() to module level.
+    Accepts constructor parameters instead of capturing enclosing scope variables.
+
+    This class conforms to the SourceAdapter interface (clients.base) but the import
+    is deferred to avoid making pncp_client.py depend on clients.base at module level.
+    The consolidation service only checks for the required methods at runtime.
+    """
+
+    def __init__(
+        self,
+        ufs: List[str],
+        modalidades: List[int] | None = None,
+        status: str | None = None,
+        on_uf_complete: Callable | None = None,
+    ):
+        self._ufs = ufs
+        self._modalidades = modalidades
+        self._status = status
+        self._on_uf_complete = on_uf_complete
+
+    @property
+    def metadata(self):
+        from clients.base import SourceMetadata, SourceCapability
+        return SourceMetadata(
+            name="PNCP", code="PNCP",
+            base_url="https://pncp.gov.br/api/consulta/v1",
+            capabilities={SourceCapability.PAGINATION, SourceCapability.DATE_RANGE, SourceCapability.FILTER_BY_UF},
+            rate_limit_rps=10.0, priority=1,
+        )
+
+    async def health_check(self):
+        from clients.base import SourceStatus
+        return SourceStatus.AVAILABLE
+
+    async def fetch(self, data_inicial, data_final, ufs=None, **kwargs):
+        from clients.base import UnifiedProcurement
+        _ufs = list(ufs) if ufs else self._ufs
+        if len(_ufs) > 1:
+            results = await buscar_todas_ufs_paralelo(
+                ufs=_ufs, data_inicial=data_inicial, data_final=data_final,
+                modalidades=self._modalidades, status=self._status,
+                max_concurrent=10, on_uf_complete=self._on_uf_complete,
+            )
+        else:
+            client = PNCPClient()
+            results = list(client.fetch_all(
+                data_inicial=data_inicial, data_final=data_final,
+                ufs=_ufs, modalidades=self._modalidades,
+            ))
+        for item in results:
+            yield UnifiedProcurement(
+                source_id=item.get("codigoCompra", ""),
+                source_name="PNCP",
+                objeto=item.get("objetoCompra", ""),
+                valor_estimado=item.get("valorTotalEstimado", 0) or 0,
+                orgao=item.get("nomeOrgao", ""),
+                cnpj_orgao=item.get("cnpjOrgao", ""),
+                uf=item.get("uf", ""),
+                municipio=item.get("municipio", ""),
+                numero_edital=item.get("numeroEdital", ""),
+                modalidade=item.get("modalidadeNome", ""),
+                situacao=item.get("situacaoCompraNome", ""),
+                link_edital=item.get("linkSistemaOrigem", ""),
+                link_portal=item.get("linkProcessoEletronico", ""),
+                raw_data=item,
+            )
+
+    def normalize(self, raw_record):
+        pass
+
+    async def close(self):
+        pass
+
+
 async def buscar_todas_ufs_paralelo(
     ufs: List[str],
     data_inicial: str,

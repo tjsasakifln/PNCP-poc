@@ -806,6 +806,56 @@ def _ensure_profile_exists(user_id: str, sb) -> bool:
         return False
 
 
+# ============================================================================
+# Shared Fallback Builders (AC7: eliminate duplication across routes)
+# ============================================================================
+
+def create_fallback_quota_info(user_id: str) -> "QuotaInfo":
+    """Create QuotaInfo from profile's plan_type when subscription check fails.
+
+    Shared by routes/search.py and routes/user.py to eliminate duplication.
+    Prevents the "fail to free_trial" anti-pattern by using profiles.plan_type
+    as a reliable last-known-plan fallback.
+    """
+    fallback_plan = get_plan_from_profile(user_id) or "free_trial"
+    fallback_caps = PLAN_CAPABILITIES.get(fallback_plan, PLAN_CAPABILITIES["free_trial"])
+    fallback_name = PLAN_NAMES.get(fallback_plan, "FREE Trial") if fallback_plan != "free_trial" else "FREE Trial"
+    if fallback_plan != "free_trial":
+        logger.warning(
+            f"PLAN FALLBACK for user {mask_user_id(user_id)}: "
+            f"subscription check failed, using profiles.plan_type='{fallback_plan}'"
+        )
+    return QuotaInfo(
+        allowed=True,
+        plan_id=fallback_plan,
+        plan_name=fallback_name,
+        capabilities=fallback_caps,
+        quota_used=0,
+        quota_remaining=999999,
+        quota_reset_date=datetime.now(timezone.utc),
+        trial_expires_at=None,
+        error_message=None,
+    )
+
+
+def create_legacy_quota_info() -> "QuotaInfo":
+    """Create QuotaInfo for legacy mode (ENABLE_NEW_PRICING=false).
+
+    Shared by routes/search.py and routes/user.py to eliminate duplication.
+    """
+    return QuotaInfo(
+        allowed=True,
+        plan_id="legacy",
+        plan_name="Legacy",
+        capabilities=PLAN_CAPABILITIES["free_trial"],
+        quota_used=0,
+        quota_remaining=999999,
+        quota_reset_date=datetime.now(timezone.utc),
+        trial_expires_at=None,
+        error_message=None,
+    )
+
+
 def save_search_session(
     user_id: str,
     sectors: list[str],
