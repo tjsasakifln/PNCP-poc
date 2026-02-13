@@ -63,7 +63,7 @@ class TestLargeFileDownload:
             from io import BytesIO
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Sala de Guerra plan (no limits)
             mock_check_quota.return_value = QuotaInfo(
@@ -164,7 +164,7 @@ class TestLargeFileDownload:
             from quota import QuotaInfo, PLAN_CAPABILITIES
             import time
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -228,7 +228,7 @@ class TestQuotaLimitReached:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Quota exhausted
             mock_check_quota.return_value = QuotaInfo(
@@ -272,7 +272,7 @@ class TestQuotaLimitReached:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Trial expired
             mock_check_quota.return_value = QuotaInfo(
@@ -359,7 +359,7 @@ class TestSessionExpiration:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -422,7 +422,7 @@ class TestConcurrentUsers:
             from quota import QuotaInfo, PLAN_CAPABILITIES
             from schemas import ResumoLicitacoes
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # User with 2 searches remaining
             mock_check_quota.return_value = QuotaInfo(
@@ -501,7 +501,7 @@ class TestConcurrentUsers:
             from quota import QuotaInfo, PLAN_CAPABILITIES
             from schemas import ResumoLicitacoes
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_client_instance = MagicMock()
             mock_pncp_client_class.return_value = mock_client_instance

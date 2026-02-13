@@ -1,100 +1,40 @@
-"""Redis connection manager for distributed progress tracking.
+"""Redis client compatibility shim (DEPRECATED).
 
-Provides a singleton Redis client with graceful fallback to None if Redis is unavailable.
-Used by progress.py for pub/sub-based SSE state sharing across backend instances.
+STORY-217: This module is deprecated. Use redis_pool instead:
+    from redis_pool import get_redis_pool, is_redis_available
+
+All functions redirect to the unified redis_pool module.
+This shim exists only for backward compatibility during migration.
 """
 
+import warnings
 import logging
-import os
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Lazy-loaded Redis client singleton
-_redis_client: Optional[any] = None
-_redis_available = False
-
 
 def get_redis() -> Optional[any]:
-    """Get Redis client instance or None if unavailable.
+    """Get Redis client instance (DEPRECATED).
 
-    Returns:
-        redis.asyncio.Redis instance if REDIS_URL is set and connection succeeds.
-        None if Redis is unavailable (graceful degradation to in-memory mode).
+    Use ``from redis_pool import get_redis_pool`` instead.
+    Returns the cached pool instance or None (does NOT initialize the pool).
     """
-    global _redis_client, _redis_available
-
-    # Already attempted connection
-    if _redis_client is not None:
-        return _redis_client
-
-    # No REDIS_URL = in-memory mode
-    redis_url = os.getenv("REDIS_URL")
-    if not redis_url:
-        if not _redis_available:  # Log once
-            logger.warning(
-                "REDIS_URL not set. Progress tracking will use in-memory mode "
-                "(not suitable for horizontal scaling)."
-            )
-            _redis_available = True  # Prevent repeated logs
-        return None
-
-    # Try to connect to Redis
-    try:
-        import redis.asyncio as aioredis
-
-        _redis_client = aioredis.from_url(
-            redis_url,
-            decode_responses=True,  # Automatically decode bytes to strings
-            socket_connect_timeout=3,
-            socket_timeout=3,
-        )
-
-        # Test connection (sync check during startup is acceptable)
-        import asyncio
-        try:
-            asyncio.run(_redis_client.ping())
-            logger.info(f"Redis connected successfully: {redis_url.split('@')[-1]}")  # Hide credentials
-            _redis_available = True
-        except Exception as ping_error:
-            logger.warning(
-                f"Redis connection test failed: {ping_error}. "
-                "Falling back to in-memory progress tracking."
-            )
-            _redis_client = None
-            _redis_available = False
-
-        return _redis_client
-
-    except ImportError:
-        logger.warning(
-            "redis package not installed. Install with 'pip install redis[hiredis]' "
-            "for distributed progress tracking support. Using in-memory mode."
-        )
-        _redis_available = False
-        return None
-
-    except Exception as e:
-        logger.warning(
-            f"Failed to initialize Redis client: {e}. "
-            "Progress tracking will use in-memory mode."
-        )
-        _redis_available = False
-        return None
+    warnings.warn(
+        "redis_client.get_redis() is deprecated. "
+        "Use 'from redis_pool import get_redis_pool' (async) instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    # Return the already-initialized pool (set during startup_redis)
+    import redis_pool
+    return redis_pool._redis_pool
 
 
 async def is_redis_available() -> bool:
-    """Check if Redis is available for pub/sub.
+    """Check if Redis is available (DEPRECATED).
 
-    Returns:
-        True if Redis client is connected, False otherwise.
+    Use ``from redis_pool import is_redis_available`` instead.
     """
-    redis = get_redis()
-    if redis is None:
-        return False
-
-    try:
-        await redis.ping()
-        return True
-    except Exception:
-        return False
+    from redis_pool import is_redis_available as _is_available
+    return await _is_available()

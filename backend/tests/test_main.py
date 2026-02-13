@@ -1,7 +1,7 @@
 """Tests for FastAPI application structure and base endpoints."""
 
 import pytest
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, AsyncMock
 from fastapi.testclient import TestClient
 from main import app
 
@@ -397,7 +397,7 @@ class TestBuscarEndpoint:
         # Mock rate limiter to always allow requests
         # Note: rate_limiter is imported at module level in main.py
         mock_rate_limiter = Mock()
-        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
         monkeypatch.setattr("main.rate_limiter", mock_rate_limiter)
 
         # Mock check_quota to skip Supabase connection
@@ -549,7 +549,7 @@ class TestBuscarEndpoint:
 
         # Mock rate limiter to always allow
         mock_rate_limiter = Mock()
-        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
         monkeypatch.setattr("main.rate_limiter", mock_rate_limiter)
 
         # Override the autouse mock to use free_trial (no Excel access)

@@ -1,10 +1,12 @@
-"""Tests for Redis cache invalidation (STORY-171).
+"""Tests for Redis cache invalidation (STORY-171, STORY-217).
 
-Tests cache hit/miss behavior, TTL, and invalidation after billing period updates.
+STORY-217: features.py now uses cache.redis_cache (shared pool) instead of
+per-request get_redis_client(). Tests updated to mock redis_cache.
 """
 
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 import json
+import pytest
 
 
 class TestRedisCacheInvalidation:
@@ -18,14 +20,14 @@ class TestRedisCacheInvalidation:
         # This is the format used in routes/features.py
         assert expected_key == f"features:{user_id}"
 
-    @patch("routes.features.get_redis_client")
-    def test_cache_stores_json_with_ttl(self, mock_redis_client):
+    @pytest.mark.asyncio
+    @patch("routes.features.redis_cache")
+    async def test_cache_stores_json_with_ttl(self, mock_redis_cache):
         """Test that cached data is stored as JSON with 5-minute TTL."""
         from routes.features import get_my_features
 
-        redis_mock = MagicMock()
-        mock_redis_client.return_value = redis_mock
-        redis_mock.get.return_value = None  # Cache miss
+        mock_redis_cache.get = AsyncMock(return_value=None)  # Cache miss
+        mock_redis_cache.setex = AsyncMock()
 
         user = {"id": "test-user", "email": "test@example.com"}
 
@@ -35,16 +37,16 @@ class TestRedisCacheInvalidation:
                 plan_id="free_trial",
                 billing_period="monthly",
                 cached_at=None,
+                model_dump_json=Mock(return_value='{"features":[],"plan_id":"free_trial","billing_period":"monthly","cached_at":null}'),
             )
 
-            import asyncio
-            asyncio.run(get_my_features(user))
+            await get_my_features(user)
 
             # Verify setex was called with correct TTL
-            redis_mock.setex.assert_called_once()
-            call_args = redis_mock.setex.call_args[0]
-            cache_key = call_args[0]
-            ttl = call_args[1]
+            mock_redis_cache.setex.assert_called_once()
+            call_args = mock_redis_cache.setex.call_args
+            cache_key = call_args[0][0]
+            ttl = call_args[0][1]
 
             assert cache_key == "features:test-user"
             assert ttl == 300  # 5 minutes
@@ -52,7 +54,6 @@ class TestRedisCacheInvalidation:
     def test_billing_period_update_invalidates_cache(self):
         """Test that successful billing period update deletes cache key."""
         # Simulating the cache invalidation logic from routes/subscriptions.py
-        # (which creates redis client inline, not via get_redis_client)
 
         redis_mock = MagicMock()
 
@@ -87,17 +88,16 @@ class TestRedisCacheInvalidation:
         assert data["billing_period"] == "annual"
         assert len(data["features"]) == 2
 
-    @patch("routes.features.get_redis_client")
-    def test_redis_connection_failure_doesnt_break_endpoint(self, mock_redis_client):
+    @pytest.mark.asyncio
+    @patch("routes.features.redis_cache")
+    async def test_redis_connection_failure_doesnt_break_endpoint(self, mock_redis_cache):
         """Test that Redis connection failure doesn't break the endpoint."""
         from routes.features import get_my_features
 
         user = {"id": "test-user", "email": "test@example.com"}
 
-        # Mock Redis client that raises exception on get
-        redis_mock = MagicMock()
-        redis_mock.get.side_effect = Exception("Redis connection timeout")
-        mock_redis_client.return_value = redis_mock
+        # Mock redis_cache.get raising exception
+        mock_redis_cache.get = AsyncMock(side_effect=Exception("Redis connection timeout"))
 
         with patch("routes.features.fetch_features_from_db") as mock_fetch:
             mock_fetch.return_value = Mock(
@@ -105,27 +105,26 @@ class TestRedisCacheInvalidation:
                 plan_id="free_trial",
                 billing_period="monthly",
                 cached_at=None,
+                model_dump_json=Mock(return_value='{"features":[],"plan_id":"free_trial","billing_period":"monthly","cached_at":null}'),
             )
 
-            import asyncio
             # Should not raise exception
-            response = asyncio.run(get_my_features(user))
+            response = await get_my_features(user)
 
             # Should still return valid response
             assert response.plan_id == "free_trial"
 
-    @patch("routes.features.get_redis_client")
-    def test_cache_ttl_expiration(self, mock_redis_client):
+    @pytest.mark.asyncio
+    @patch("routes.features.redis_cache")
+    async def test_cache_ttl_expiration(self, mock_redis_cache):
         """Test cache behavior after TTL expiration (simulated cache miss)."""
         from routes.features import get_my_features
 
         user = {"id": "test-user-expired", "email": "expired@example.com"}
 
-        redis_mock = MagicMock()
-        mock_redis_client.return_value = redis_mock
-
         # Simulate expired cache (get returns None)
-        redis_mock.get.return_value = None
+        mock_redis_cache.get = AsyncMock(return_value=None)
+        mock_redis_cache.setex = AsyncMock()
 
         with patch("routes.features.fetch_features_from_db") as mock_fetch:
             mock_fetch.return_value = Mock(
@@ -133,16 +132,16 @@ class TestRedisCacheInvalidation:
                 plan_id="maquina",
                 billing_period="annual",
                 cached_at="2026-02-07T12:05:00",
+                model_dump_json=Mock(return_value='{"features":[],"plan_id":"maquina","billing_period":"annual","cached_at":"2026-02-07T12:05:00"}'),
             )
 
-            import asyncio
-            asyncio.run(get_my_features(user))
+            await get_my_features(user)
 
             # Should fetch from DB (cache miss)
             mock_fetch.assert_called_once_with("test-user-expired")
 
             # Should re-cache the result
-            redis_mock.setex.assert_called_once()
+            mock_redis_cache.setex.assert_called_once()
 
 
 class TestCacheKeyCollisionPrevention:

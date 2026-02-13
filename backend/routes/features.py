@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from auth import require_auth
+from cache import redis_cache
 from log_sanitizer import mask_user_id
 
 logger = logging.getLogger(__name__)
@@ -31,33 +32,6 @@ class UserFeaturesResponse(BaseModel):
     plan_id: str
     billing_period: str
     cached_at: Optional[str] = None  # ISO 8601 timestamp
-
-
-def get_redis_client():
-    """Get Redis client with graceful fallback.
-
-    Returns:
-        Redis client or None if not configured/unavailable
-    """
-    import os
-
-    redis_url = os.getenv("REDIS_URL")
-    if not redis_url:
-        logger.debug("REDIS_URL not configured, caching disabled")
-        return None
-
-    try:
-        import redis
-        client = redis.from_url(redis_url, socket_connect_timeout=2, socket_timeout=2)
-        # Test connection
-        client.ping()
-        return client
-    except ImportError:
-        logger.warning("redis package not installed, caching disabled")
-        return None
-    except Exception as e:
-        logger.warning(f"Redis connection failed (graceful degradation): {e}")
-        return None
 
 
 def fetch_features_from_db(user_id: str) -> UserFeaturesResponse:
@@ -156,55 +130,44 @@ def fetch_features_from_db(user_id: str) -> UserFeaturesResponse:
 async def get_my_features(user: dict = Depends(require_auth)):
     """Get current user's enabled features.
 
-    CACHING STRATEGY:
-    - Redis cache with 5-minute TTL
-    - Cache key: `features:{user_id}`
+    CACHING STRATEGY (STORY-217: unified pool):
+    - Redis cache with 5-minute TTL via shared pool
+    - Cache key: ``features:{user_id}``
     - Cache miss: Fetch from Supabase (JOIN user_subscriptions + plan_features)
-    - Graceful degradation if Redis unavailable (direct DB query)
-
-    CACHE INVALIDATION:
-    - POST /api/subscriptions/update-billing-period invalidates on success
-    - Manual: DELETE features:{user_id} via redis-cli
-
-    Returns:
-        UserFeaturesResponse with features array, plan_id, billing_period, cached_at
+    - Graceful degradation via InMemoryCache fallback
     """
     user_id = user["id"]
     cache_key = f"features:{user_id}"
-    redis_client = get_redis_client()
 
-    # Try cache first (if Redis available)
-    if redis_client:
-        try:
-            cached_data = redis_client.get(cache_key)
-            if cached_data:
-                cached_json = json.loads(cached_data)
-                logger.debug(f"Redis cache HIT for user {mask_user_id(user_id)}")
-                return UserFeaturesResponse(**cached_json)
-        except Exception as e:
-            logger.warning(f"Redis cache read failed (non-critical): {e}")
+    # Try cache first (redis_cache handles Redis/InMemoryCache fallback)
+    try:
+        cached_data = await redis_cache.get(cache_key)
+        if cached_data:
+            cached_json = json.loads(cached_data)
+            logger.debug(f"Cache HIT for user {mask_user_id(user_id)}")
+            return UserFeaturesResponse(**cached_json)
+    except Exception as e:
+        logger.warning(f"Cache read failed (non-critical): {e}")
 
     # Cache miss - fetch from database
-    logger.debug(f"Redis cache MISS for user {mask_user_id(user_id)}, querying database")
+    logger.debug(f"Cache MISS for user {mask_user_id(user_id)}, querying database")
     response = fetch_features_from_db(user_id)
 
     # Add cached_at timestamp
     response.cached_at = datetime.now(timezone.utc).isoformat()
 
-    # Store in cache (if Redis available)
-    if redis_client:
-        try:
-            # 5-minute TTL (300 seconds)
-            cache_ttl = 300
-            redis_client.setex(
-                cache_key,
-                cache_ttl,
-                response.model_dump_json()  # Pydantic v2 method
-            )
-            logger.debug(
-                f"Cached features for user {mask_user_id(user_id)} (TTL={cache_ttl}s)"
-            )
-        except Exception as e:
-            logger.warning(f"Redis cache write failed (non-critical): {e}")
+    # Store in cache
+    try:
+        cache_ttl = 300  # 5-minute TTL
+        await redis_cache.setex(
+            cache_key,
+            cache_ttl,
+            response.model_dump_json(),
+        )
+        logger.debug(
+            f"Cached features for user {mask_user_id(user_id)} (TTL={cache_ttl}s)"
+        )
+    except Exception as e:
+        logger.warning(f"Cache write failed (non-critical): {e}")
 
     return response

@@ -219,7 +219,7 @@ class SearchPipeline:
                 logger.warning(f"Failed to get rate limit for user {mask_user_id(ctx.user['id'])}: {e}")
                 max_rpm = 10
 
-            rate_allowed, retry_after = deps.rate_limiter.check_rate_limit(ctx.user["id"], max_rpm)
+            rate_allowed, retry_after = await deps.rate_limiter.check_rate_limit(ctx.user["id"], max_rpm)
 
             if not rate_allowed:
                 logger.warning(

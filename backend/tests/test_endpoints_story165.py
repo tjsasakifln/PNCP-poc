@@ -1,7 +1,7 @@
 """Tests for /api/me and updated /api/buscar endpoints (STORY-165)."""
 
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timezone, timedelta
 from main import app
 from auth import require_auth
@@ -161,7 +161,7 @@ class TestBuscarEndpointQuotaValidation:
         cleanup = setup_auth_override("user-quota-exhausted-story165")
         try:
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Mock exhausted quota
             from quota import QuotaInfo, PLAN_CAPABILITIES
@@ -199,7 +199,7 @@ class TestBuscarEndpointQuotaValidation:
         cleanup = setup_auth_override("user-trial-expired-story165")
         try:
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             from quota import QuotaInfo, PLAN_CAPABILITIES
             mock_check_quota.return_value = QuotaInfo(
@@ -247,7 +247,7 @@ class TestBuscarEndpointQuotaValidation:
         cleanup = setup_auth_override("user-increment-quota-story165")
         try:
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             from quota import QuotaInfo, PLAN_CAPABILITIES
             mock_check_quota.return_value = QuotaInfo(
@@ -366,7 +366,7 @@ class TestBuscarEndpointExcelGating:
     ):
         """Should skip Excel for Consultor Ágil plan (allow_excel=False)."""
         # Mock rate limiter to allow requests
-        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
         cleanup = setup_auth_override("user-123")
         try:
@@ -425,7 +425,7 @@ class TestBuscarEndpointFallbackBehavior:
     ):
         """Should continue search even if quota increment fails."""
         # Mock rate limiter to allow requests
-        mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
         cleanup = setup_auth_override("user-123")
         try:

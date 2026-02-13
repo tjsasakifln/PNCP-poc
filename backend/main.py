@@ -207,6 +207,22 @@ logger.info(
 )
 
 
+# STORY-217: Redis pool lifecycle
+from redis_pool import startup_redis, shutdown_redis
+
+
+@app.on_event("startup")
+async def init_redis_pool():
+    """Initialize shared Redis pool during startup (AC11)."""
+    await startup_redis()
+
+
+@app.on_event("shutdown")
+async def close_redis_pool():
+    """Close shared Redis pool during shutdown."""
+    await shutdown_redis()
+
+
 # HOTFIX STORY-183: Diagnostic logging for route registration
 @app.on_event("startup")
 async def log_registered_routes():
@@ -305,7 +321,7 @@ async def health():
     redis_url = os.getenv("REDIS_URL")
     if redis_url:
         try:
-            from redis_client import is_redis_available
+            from redis_pool import is_redis_available
             redis_available = await is_redis_available()
             dependencies["redis"] = "healthy" if redis_available else "unavailable"
         except Exception as e:

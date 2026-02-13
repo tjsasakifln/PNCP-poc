@@ -1,6 +1,7 @@
 """Unit tests for SearchPipeline stages 1-2 (validate and prepare).
 
 STORY-216 AC12: Unit tests for individual pipeline stages.
+STORY-217: rate_limiter.check_rate_limit is now async — mocks use AsyncMock.
 
 Covers:
   - Stage 1 (stage_validate): Admin bypass, rate limiting, quota checks (new pricing
@@ -35,6 +36,13 @@ from search_pipeline import SearchPipeline
 # Factory helpers
 # ============================================================================
 
+def _make_async_rate_limiter(**overrides):
+    """Create a rate_limiter mock with async check_rate_limit."""
+    rl = MagicMock()
+    rl.check_rate_limit = AsyncMock(return_value=overrides.get("return_value", (True, 0)))
+    return rl
+
+
 def make_deps(**overrides):
     """Create a deps namespace with sensible defaults for all pipeline dependencies."""
     defaults = {
@@ -43,7 +51,7 @@ def make_deps(**overrides):
         "buscar_todas_ufs_paralelo": AsyncMock(return_value=[]),
         "aplicar_todos_filtros": MagicMock(return_value=([], {})),
         "create_excel": MagicMock(),
-        "rate_limiter": MagicMock(),
+        "rate_limiter": _make_async_rate_limiter(),
         "check_user_roles": MagicMock(return_value=(False, False)),
         "match_keywords": MagicMock(return_value=(True, [])),
         "KEYWORDS_UNIFORMES": set(),
@@ -156,8 +164,7 @@ class TestStageValidate:
         mock_check_quota.return_value = _make_quota_info(
             capabilities={"max_requests_per_min": 5, "max_requests_per_month": 50, "allow_excel": False}
         )
-        rate_limiter = MagicMock()
-        rate_limiter.check_rate_limit.return_value = (False, 30)
+        rate_limiter = _make_async_rate_limiter(return_value=(False, 30))
 
         deps = make_deps(rate_limiter=rate_limiter)
         ctx = make_ctx()
@@ -183,8 +190,7 @@ class TestStageValidate:
             allowed=False,
             error_message="Limite de buscas mensais atingido",
         )
-        rate_limiter = MagicMock()
-        rate_limiter.check_rate_limit.return_value = (True, 0)
+        rate_limiter = _make_async_rate_limiter(return_value=(True, 0))
 
         deps = make_deps(
             ENABLE_NEW_PRICING=True,
@@ -218,8 +224,7 @@ class TestStageValidate:
         fallback_qi = _make_quota_info(plan_id="fallback", plan_name="Fallback")
         mock_fallback.return_value = fallback_qi
 
-        rate_limiter = MagicMock()
-        rate_limiter.check_rate_limit.return_value = (True, 0)
+        rate_limiter = _make_async_rate_limiter(return_value=(True, 0))
 
         deps = make_deps(
             ENABLE_NEW_PRICING=True,
@@ -248,8 +253,7 @@ class TestStageValidate:
         legacy_qi = _make_quota_info(plan_id="legacy", plan_name="Legacy")
         mock_legacy.return_value = legacy_qi
 
-        rate_limiter = MagicMock()
-        rate_limiter.check_rate_limit.return_value = (True, 0)
+        rate_limiter = _make_async_rate_limiter(return_value=(True, 0))
 
         deps = make_deps(
             ENABLE_NEW_PRICING=False,

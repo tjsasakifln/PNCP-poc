@@ -7,7 +7,7 @@ Stripe integration (STORY-171).
 import logging
 from typing import Literal
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
@@ -260,19 +260,14 @@ async def update_billing_period(
             detail="Erro ao atualizar assinatura no banco de dados"
         )
 
-    # Step 6: Invalidate Redis feature cache
+    # Step 6: Invalidate feature cache (STORY-217: shared pool)
     try:
-        import os
-        redis_url = os.getenv("REDIS_URL")
-        if redis_url:
-            import redis
-            r = redis.from_url(redis_url)
-            cache_key = f"features:{user_id}"
-            r.delete(cache_key)
-            logger.info(f"Invalidated Redis cache for user {mask_user_id(user_id)}")
+        from cache import redis_cache
+        cache_key = f"features:{user_id}"
+        await redis_cache.delete(cache_key)
+        logger.info(f"Invalidated cache for user {mask_user_id(user_id)}")
     except Exception as e:
-        # Non-critical: Cache invalidation failure doesn't block the operation
-        logger.warning(f"Failed to invalidate Redis cache (non-critical): {e}")
+        logger.warning(f"Failed to invalidate cache (non-critical): {e}")
 
     # Step 7: Return success response
     return UpdateBillingPeriodResponse(

@@ -1,6 +1,6 @@
 # STORY-217: Unify Triple Redis Architecture → Single Async Client
 
-**Status:** Pending
+**Status:** Done
 **Priority:** P1 — Pre-GTM Important
 **Sprint:** Sprint 2 (Weeks 2-3)
 **Estimated Effort:** 2 days
@@ -29,31 +29,31 @@ Three independent Redis connection strategies coexist, wasting connections and c
 
 ### Unification
 
-- [ ] AC1: Create single `backend/redis_pool.py` with one async Redis client and connection pool
-- [ ] AC2: Pool configuration: `max_connections=20`, `decode_responses=True`, `socket_timeout=5`
-- [ ] AC3: Lazy initialization via `get_redis_pool()` async function (no `asyncio.run()`)
-- [ ] AC4: Unified fallback: when Redis unavailable → `InMemoryCache` with LRU eviction (max 10K entries)
-- [ ] AC5: All modules use `get_redis_pool()` instead of their own connection logic
+- [x] AC1: Create single `backend/redis_pool.py` with one async Redis client and connection pool
+- [x] AC2: Pool configuration: `max_connections=20`, `decode_responses=True`, `socket_timeout=5`
+- [x] AC3: Lazy initialization via `get_redis_pool()` async function (no `asyncio.run()`)
+- [x] AC4: Unified fallback: when Redis unavailable → `InMemoryCache` with LRU eviction (max 10K entries)
+- [x] AC5: All modules use `get_redis_pool()` instead of their own connection logic
 
 ### Migration
 
-- [ ] AC6: `redis_client.py` — redirect to `redis_pool.py` (keep module for backward compat, deprecation warning)
-- [ ] AC7: `cache.py` — redirect `RedisCache` to use the async pool, keep `InMemoryCache` as fallback
-- [ ] AC8: `routes/features.py:51` — remove per-request Redis connection, use shared pool
-- [ ] AC9: `progress.py` — use shared pool for pub/sub operations
+- [x] AC6: `redis_client.py` — redirect to `redis_pool.py` (keep module for backward compat, deprecation warning)
+- [x] AC7: `cache.py` — redirect `RedisCache` to use the async pool, keep `InMemoryCache` as fallback
+- [x] AC8: `routes/features.py:51` — remove per-request Redis connection, use shared pool
+- [x] AC9: `progress.py` — use shared pool for pub/sub operations
 
 ### Fix asyncio.run() Crash
 
-- [ ] AC10: Replace `asyncio.run(_redis_client.ping())` in `redis_client.py:56` with proper async health check
-- [ ] AC11: Health check runs during FastAPI lifespan startup (not at module import)
+- [x] AC10: Replace `asyncio.run(_redis_client.ping())` in `redis_client.py:56` with proper async health check
+- [x] AC11: Health check runs during FastAPI lifespan startup (not at module import)
 
 ### Testing
 
-- [ ] AC12: Test: concurrent requests share the same connection pool
-- [ ] AC13: Test: Redis unavailable → fallback to InMemoryCache
-- [ ] AC14: Test: InMemoryCache has LRU eviction at 10K entries
-- [ ] AC15: Test: no `asyncio.run()` calls in production code (`grep -rn "asyncio.run" backend/ --include="*.py"` returns only test files)
-- [ ] AC16: All existing tests pass
+- [x] AC12: Test: concurrent requests share the same connection pool
+- [x] AC13: Test: Redis unavailable → fallback to InMemoryCache
+- [x] AC14: Test: InMemoryCache has LRU eviction at 10K entries
+- [x] AC15: Test: no `asyncio.run()` calls in production code (`grep -rn "asyncio.run" backend/ --include="*.py"` returns only test files)
+- [x] AC16: All existing tests pass
 
 ## Validation Metric
 
@@ -71,8 +71,15 @@ Three independent Redis connection strategies coexist, wasting connections and c
 
 | File | Change |
 |------|--------|
-| `backend/redis_pool.py` | NEW — unified async pool |
-| `backend/redis_client.py` | Deprecate, redirect to pool |
-| `backend/cache.py` | Use shared pool |
-| `backend/routes/features.py` | Remove per-request connection |
-| `backend/progress.py` | Use shared pool |
+| `backend/redis_pool.py` | NEW — unified async pool + InMemoryCache LRU |
+| `backend/redis_client.py` | Deprecated shim → redirects to redis_pool |
+| `backend/cache.py` | Async RedisCacheClient using shared pool |
+| `backend/routes/features.py` | Removed per-request connection, uses redis_cache |
+| `backend/routes/subscriptions.py` | Removed ad-hoc connection, uses redis_cache |
+| `backend/progress.py` | Uses get_redis_pool() for pub/sub |
+| `backend/rate_limiter.py` | Async, uses shared pool |
+| `backend/webhooks/stripe.py` | Updated to async redis_cache |
+| `backend/main.py` | Added startup_redis/shutdown_redis lifecycle hooks |
+| `backend/tests/test_redis_pool.py` | NEW — 39 tests (AC12-AC15) |
+| `backend/tests/test_rate_limiter.py` | NEW — 8 async tests |
+| `backend/tests/test_stripe_webhook.py` | Updated mock paths redis_client → redis_cache |

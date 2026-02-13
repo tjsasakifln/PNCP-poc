@@ -17,7 +17,7 @@ Tracks:
 Mocking Strategy:
   - @patch('webhooks.stripe.stripe.Webhook.construct_event') for signature validation
   - @patch('webhooks.stripe.get_supabase') for all DB operations
-  - @patch('webhooks.stripe.redis_client') for cache operations
+  - @patch('webhooks.stripe.redis_cache') for cache operations
   - @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test') for env config
   - AsyncMock for request.body() (FastAPI sends coroutine)
 """
@@ -224,7 +224,7 @@ class TestSignatureValidation:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac3_valid_signature_returns_200(
@@ -269,7 +269,7 @@ class TestIdempotency:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac4_duplicate_event_returns_already_processed(
@@ -289,7 +289,7 @@ class TestIdempotency:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac5_new_event_inserted_into_webhook_events(
@@ -312,7 +312,7 @@ class TestIdempotency:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac6_event_record_contains_required_fields(
@@ -365,7 +365,7 @@ class TestSubscriptionUpdated:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac7_monthly_interval_sets_billing_period_monthly(
@@ -416,7 +416,7 @@ class TestSubscriptionUpdated:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac8_annual_interval_sets_billing_period_annual(
@@ -456,7 +456,7 @@ class TestSubscriptionUpdated:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac9_subscription_updated_syncs_profiles_plan_type(
@@ -504,7 +504,7 @@ class TestSubscriptionDeleted:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac10_deleted_sets_is_active_false(
@@ -544,7 +544,7 @@ class TestSubscriptionDeleted:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac11_deleted_syncs_profiles_plan_type_to_free_trial(
@@ -584,7 +584,7 @@ class TestSubscriptionDeleted:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac12_unknown_subscription_logged_no_crash(
@@ -614,7 +614,7 @@ class TestInvoicePayment:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac13_invoice_payment_syncs_plan_type(
@@ -655,7 +655,7 @@ class TestInvoicePayment:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac14_invoice_payment_invalidates_cache(
@@ -684,7 +684,7 @@ class TestCacheInvalidation:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac15_cache_key_format_is_features_user_id(
@@ -704,7 +704,7 @@ class TestCacheInvalidation:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac16_redis_unavailable_webhook_still_processes(
@@ -736,7 +736,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac17_database_error_returns_500(
@@ -763,7 +763,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac18_unhandled_event_type_returns_200(
@@ -867,7 +867,7 @@ class TestSubscriptionUpdatedEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_missing_interval_defaults_to_monthly(
@@ -917,7 +917,7 @@ class TestSubscriptionUpdatedEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_plan_change_updates_plan_id(
@@ -971,7 +971,7 @@ class TestInvoicePaymentEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_invoice_without_subscription_skipped(
@@ -1002,7 +1002,7 @@ class TestInvoicePaymentEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_invoice_unknown_subscription_no_crash(
@@ -1022,7 +1022,7 @@ class TestInvoicePaymentEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_invoice_extends_subscription_expiry(
@@ -1068,7 +1068,7 @@ class TestDeletedSubscriptionEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_deleted_unknown_subscription_no_crash(
@@ -1088,7 +1088,7 @@ class TestDeletedSubscriptionEdgeCases:
 
     @pytest.mark.asyncio
     @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
-    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_deleted_invalidates_cache(

@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-from redis_client import get_redis, is_redis_available
+from redis_pool import get_redis_pool, is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class ProgressTracker:
 
     async def _publish_to_redis(self, event: ProgressEvent) -> None:
         """Publish event to Redis pub/sub channel."""
-        redis = get_redis()
+        redis = await get_redis_pool()
         if redis is None:
             return
 
@@ -162,7 +162,7 @@ async def get_tracker(search_id: str) -> Optional[ProgressTracker]:
         return tracker
 
     # Try to load from Redis metadata
-    redis = get_redis()
+    redis = await get_redis_pool()
     if redis:
         try:
             key = f"bidiq:progress:{search_id}"
@@ -188,7 +188,7 @@ async def remove_tracker(search_id: str) -> None:
     _active_trackers.pop(search_id, None)
 
     # Remove from Redis if available
-    redis = get_redis()
+    redis = await get_redis_pool()
     if redis:
         try:
             key = f"bidiq:progress:{search_id}"
@@ -209,7 +209,7 @@ def _cleanup_stale() -> None:
 
 async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
     """Store tracker metadata in Redis with TTL."""
-    redis = get_redis()
+    redis = await get_redis_pool()
     if redis is None:
         return
 
@@ -231,7 +231,7 @@ async def subscribe_to_events(search_id: str) -> Optional[any]:
     Returns:
         redis.asyncio.client.PubSub instance or None if Redis unavailable.
     """
-    redis = get_redis()
+    redis = await get_redis_pool()
     if redis is None:
         return None
 

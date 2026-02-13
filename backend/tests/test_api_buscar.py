@@ -1,7 +1,7 @@
 """Comprehensive tests for /api/buscar endpoint - BLOCKER 4 fix."""
 
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timezone, timedelta
 from main import app
 from auth import require_auth
@@ -233,7 +233,7 @@ class TestBuscarDateRangeValidation:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # FREE Trial: max_history_days = 7
             mock_check_quota.return_value = QuotaInfo(
@@ -277,7 +277,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Consultor Ágil: max_history_days = 30
             mock_check_quota.return_value = QuotaInfo(
@@ -324,7 +324,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Máquina: max_history_days = 365
             mock_check_quota.return_value = QuotaInfo(
@@ -377,7 +377,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Sala de Guerra: max_history_days = 1825 (5 years)
             mock_check_quota.return_value = QuotaInfo(
@@ -423,7 +423,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Sala de Guerra: max_history_days = 1825
             mock_check_quota.return_value = QuotaInfo(
@@ -475,7 +475,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Consultor Ágil: max_history_days = 30
             mock_check_quota.return_value = QuotaInfo(
@@ -521,7 +521,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Consultor Ágil: max_history_days = 30
             mock_check_quota.return_value = QuotaInfo(
@@ -571,7 +571,7 @@ class TestBuscarDateRangeValidation:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             # Free trial: max_history_days = 7
             mock_check_quota.return_value = QuotaInfo(
@@ -762,7 +762,7 @@ class TestBuscarPNCPRateLimiting:
             from exceptions import PNCPRateLimitError
 
             # User rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -816,7 +816,7 @@ class TestBuscarUserRateLimiting:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit exceeded (10 req/min for consultor_agil)
-            mock_rate_limiter.check_rate_limit.return_value = (False, 45)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(False, 45))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -866,7 +866,7 @@ class TestBuscarUserRateLimiting:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -912,7 +912,7 @@ class TestBuscarUserRateLimiting:
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
-            mock_rate_limiter.check_rate_limit.return_value = (False, 30)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(False, 30))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -1063,7 +1063,7 @@ class TestBuscarUserRateLimiting:
                 )
 
             mock_check_quota.side_effect = check_quota_side_effect
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_client_instance = MagicMock()
             mock_pncp_client_class.return_value = mock_client_instance
@@ -1100,7 +1100,7 @@ class TestBuscarUserRateLimiting:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit exceeded
-            mock_rate_limiter.check_rate_limit.return_value = (False, 30)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(False, 30))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -1148,7 +1148,7 @@ class TestBuscarErrorHandling:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=False,
@@ -1385,7 +1385,7 @@ class TestBuscarInvalidSector:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -1436,7 +1436,7 @@ class TestBuscarCustomSearchTerms:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
@@ -1548,7 +1548,7 @@ class TestBuscarCustomSearchTerms:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
             # Rate limit passes
-            mock_rate_limiter.check_rate_limit.return_value = (True, 0)
+            mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
 
             mock_check_quota.return_value = QuotaInfo(
                 allowed=True,
