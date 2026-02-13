@@ -196,7 +196,8 @@ def update_stripe_subscription_billing_period(
     if not stripe_key:
         raise ValueError("STRIPE_SECRET_KEY not configured")
 
-    stripe.api_key = stripe_key
+    # NOTE: stripe.api_key NOT set globally (thread safety - STORY-221 Track 2)
+    # Pass api_key= parameter to each Stripe API call instead
 
     # Determine target price ID
     target_price_id = (
@@ -211,9 +212,10 @@ def update_stripe_subscription_billing_period(
 
     # Update subscription with new price
     # proration_behavior='create_prorations' ensures Stripe handles the billing adjustment
+    subscription = stripe.Subscription.retrieve(stripe_subscription_id, api_key=stripe_key)
     subscription_updates = {
         "items": [{
-            "id": stripe.Subscription.retrieve(stripe_subscription_id)["items"]["data"][0]["id"],
+            "id": subscription["items"]["data"][0]["id"],
             "price": target_price_id,
         }],
         "proration_behavior": "create_prorations",
@@ -224,7 +226,8 @@ def update_stripe_subscription_billing_period(
     if prorated_credit and prorated_credit > 0:
         # Convert BRL to cents for Stripe
         credit_cents = int(prorated_credit * 100)
-        customer_id = stripe.Subscription.retrieve(stripe_subscription_id)["customer"]
+        # Reuse subscription object from earlier retrieve call to avoid duplicate API call
+        customer_id = subscription["customer"]
 
         logger.info(f"Applying {prorated_credit} BRL credit to customer {customer_id}")
 
@@ -234,11 +237,13 @@ def update_stripe_subscription_billing_period(
             amount=-credit_cents,  # Negative = credit
             currency="brl",
             description=f"Pro-rata credit for billing period change to {new_billing_period}",
+            api_key=stripe_key,
         )
 
     updated_subscription = stripe.Subscription.modify(
         stripe_subscription_id,
-        **subscription_updates
+        **subscription_updates,
+        api_key=stripe_key,
     )
 
     logger.info(f"Successfully updated Stripe subscription {stripe_subscription_id}")

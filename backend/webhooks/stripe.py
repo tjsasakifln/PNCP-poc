@@ -42,7 +42,8 @@ logger = get_sanitized_logger(__name__)
 router = APIRouter()
 
 # Stripe configuration
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+# NOTE: stripe.api_key removed for thread safety (STORY-221 Track 2)
+# Webhook signature validation uses STRIPE_WEBHOOK_SECRET only
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 if not STRIPE_WEBHOOK_SECRET:

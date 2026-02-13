@@ -46,7 +46,8 @@ async def create_checkout(
     stripe_key = os.getenv("STRIPE_SECRET_KEY")
     if not stripe_key:
         raise HTTPException(status_code=500, detail="Stripe not configured")
-    stripe_lib.api_key = stripe_key
+    # NOTE: stripe_lib.api_key NOT set globally (thread safety - STORY-221 Track 2)
+    # Pass api_key= parameter to Stripe API calls instead
 
     from supabase_client import get_supabase
     sb = get_supabase()
@@ -77,7 +78,7 @@ async def create_checkout(
 
     session_params["customer_email"] = user["email"]
 
-    checkout_session = stripe_lib.checkout.Session.create(**session_params)
+    checkout_session = stripe_lib.checkout.Session.create(**session_params, api_key=stripe_key)
     return {"checkout_url": checkout_session.url}
 
 
