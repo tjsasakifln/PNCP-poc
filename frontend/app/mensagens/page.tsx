@@ -8,10 +8,9 @@ import type {
   ConversationSummary,
   ConversationDetail,
   ConversationCategory,
-  ConversationStatus,
 } from "../types";
 
-const CATEGORY_LABELS: Record<ConversationCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   suporte: "Suporte",
   sugestao: "Sugestão",
   funcionalidade: "Funcionalidade",
@@ -19,13 +18,13 @@ const CATEGORY_LABELS: Record<ConversationCategory, string> = {
   outro: "Outro",
 };
 
-const STATUS_LABELS: Record<ConversationStatus, string> = {
+const STATUS_LABELS: Record<string, string> = {
   aberto: "Aberto",
   respondido: "Respondido",
   resolvido: "Resolvido",
 };
 
-const STATUS_COLORS: Record<ConversationStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   aberto: "bg-[var(--warning)] text-white",
   respondido: "bg-[var(--brand-blue)] text-white",
   resolvido: "bg-[var(--success)] text-white",

@@ -37,6 +37,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feature_flags, validate_env_vars
 from pncp_client import PNCPClient
 from sectors import list_sectors
+from schemas import (
+    RootResponse, HealthResponse, HealthDependencies,
+    SourcesHealthResponse, SourceInfo, SetoresResponse, DebugPNCPResponse,
+)
 from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware  # STORY-202 SYS-M01, STORY-210 AC10
 from redis_pool import startup_redis, shutdown_redis  # STORY-217: Redis pool lifecycle
 
@@ -280,7 +284,7 @@ logger.info(
 # Core utility endpoints (stay in main.py)
 # ============================================================================
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 async def root():
     """
     API root endpoint - provides navigation to documentation.
@@ -309,7 +313,7 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse)
 async def health():
     """
     Health check endpoint for monitoring and load balancers.
@@ -383,7 +387,7 @@ async def health():
     return response_data
 
 
-@app.get("/sources/health")
+@app.get("/sources/health", response_model=SourcesHealthResponse)
 async def sources_health():
     """
     Health check for all configured procurement data sources.
@@ -473,7 +477,7 @@ async def sources_health():
     }
 
 
-@app.get("/setores")
+@app.get("/setores", response_model=SetoresResponse)
 async def listar_setores():
     """Return available procurement sectors for frontend dropdown."""
     return {"setores": list_sectors()}
@@ -483,7 +487,7 @@ async def listar_setores():
 from admin import require_admin as _require_admin
 
 
-@app.get("/debug/pncp-test")
+@app.get("/debug/pncp-test", response_model=DebugPNCPResponse)
 async def debug_pncp_test(admin: dict = Depends(_require_admin)):
     """Diagnostic: test if PNCP API is reachable from this server. Admin only."""
     import time as t

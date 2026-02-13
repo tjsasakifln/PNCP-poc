@@ -17,7 +17,7 @@ from fastapi.responses import Response
 from auth import require_auth
 from authorization import _check_user_roles, _get_admin_ids, _get_master_quota_info
 from config import ENABLE_NEW_PRICING
-from schemas import UserProfileResponse
+from schemas import UserProfileResponse, SuccessResponse, DeleteAccountResponse
 from log_sanitizer import mask_user_id, log_user_action
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def _check_change_password_rate_limit(user_id: str) -> None:
     _change_password_attempts[user_id].append(now)
 
 
-@router.post("/change-password")
+@router.post("/change-password", response_model=SuccessResponse)
 async def change_password(
     request: Request,
     user: dict = Depends(require_auth),
@@ -137,7 +137,7 @@ async def get_profile(user: dict = Depends(require_auth)):
     )
 
 
-@router.delete("/me")
+@router.delete("/me", response_model=DeleteAccountResponse)
 async def delete_account(user: dict = Depends(require_auth)):
     """Delete entire user account and all associated data (LGPD Art. 18 VI).
 

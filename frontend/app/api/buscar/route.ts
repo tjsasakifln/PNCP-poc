@@ -213,19 +213,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // STORY-222 AC8: Forward ALL backend response fields (no cherry-picking).
+    // Only override download_id/download_url (proxy-generated) and strip
+    // excel_base64 (already consumed above, too large to forward).
+    const { excel_base64: _stripped, ...backendFields } = data;
+
     return NextResponse.json({
-      resumo: data.resumo,
-      licitacoes: data.licitacoes || [],  // Individual bids for preview display
+      ...backendFields,
+      // Proxy-generated fields (override backend values)
       download_id: downloadId,
       download_url: downloadUrl,  // Signed URL from object storage (preferred)
+      // Safe defaults for required fields
+      licitacoes: data.licitacoes || [],
       total_raw: data.total_raw || 0,
       total_filtrado: data.total_filtrado || 0,
-      filter_stats: data.filter_stats || null,
-      termos_utilizados: data.termos_utilizados || null,
-      stopwords_removidas: data.stopwords_removidas || null,
       excel_available: data.excel_available || false,
-      upgrade_message: data.upgrade_message || null,
-      ultima_atualizacao: data.ultima_atualizacao || null,
     });
 
   } catch (error) {

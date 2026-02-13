@@ -846,6 +846,194 @@ class UserProfileResponse(BaseModel):
 # Google Sheets Export Schemas (STORY-180)
 # ============================================================================
 
+# ============================================================================
+# Generic Response Models (STORY-222: OpenAPI contract stabilization)
+# ============================================================================
+
+class SuccessResponse(BaseModel):
+    """Generic success response for simple operations."""
+    success: bool
+
+
+class SuccessMessageResponse(BaseModel):
+    """Success response with message."""
+    success: bool
+    message: str
+
+
+class StatusResponse(BaseModel):
+    """Generic status response."""
+    status: str
+
+
+# ============================================================================
+# Main App Endpoint Response Models (STORY-222)
+# ============================================================================
+
+class RootResponse(BaseModel):
+    """Response for GET / root endpoint."""
+    name: str
+    version: str
+    api_version: str
+    description: str
+    endpoints: Dict[str, str]
+    versioning: Dict[str, Any]
+    status: str
+
+
+class HealthDependencies(BaseModel):
+    """Health check dependency statuses."""
+    supabase: str
+    openai: str
+    redis: str
+
+
+class HealthResponse(BaseModel):
+    """Response for GET /health endpoint."""
+    status: str
+    timestamp: str
+    version: str
+    dependencies: HealthDependencies
+
+
+class SourceInfo(BaseModel):
+    """Individual data source health info."""
+    code: str
+    name: str
+    enabled: bool
+    priority: int
+    status: Optional[str] = None
+    response_ms: Optional[int] = None
+
+
+class SourcesHealthResponse(BaseModel):
+    """Response for GET /sources/health endpoint."""
+    sources: List[SourceInfo]
+    multi_source_enabled: bool
+    total_enabled: int
+    total_available: int
+    checked_at: str
+
+
+class SetoresResponse(BaseModel):
+    """Response for GET /setores endpoint."""
+    setores: List[Dict[str, Any]]
+
+
+class DebugPNCPResponse(BaseModel):
+    """Response for GET /debug/pncp-test endpoint."""
+    success: bool
+    total_registros: Optional[int] = None
+    items_returned: Optional[int] = None
+    error: Optional[str] = None
+    error_type: Optional[str] = None
+    elapsed_ms: int
+
+
+# ============================================================================
+# Billing Response Models (STORY-222)
+# ============================================================================
+
+class BillingPlansResponse(BaseModel):
+    """Response for GET /plans (billing.py)."""
+    plans: List[Dict[str, Any]]
+
+
+class CheckoutResponse(BaseModel):
+    """Response for POST /checkout."""
+    checkout_url: str
+
+
+# ============================================================================
+# Sessions Response Model (STORY-222)
+# ============================================================================
+
+class SessionsListResponse(BaseModel):
+    """Response for GET /sessions."""
+    sessions: List[Dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+
+
+# ============================================================================
+# Messages Response Models — missing ones (STORY-222)
+# ============================================================================
+
+class CreateConversationResponse(BaseModel):
+    """Response for POST /api/messages/conversations."""
+    id: str
+    status: str
+
+
+class ReplyStatusResponse(BaseModel):
+    """Response for POST /api/messages/conversations/{id}/reply."""
+    status: str
+
+
+# ============================================================================
+# User Response Models (STORY-222)
+# ============================================================================
+
+class DeleteAccountResponse(BaseModel):
+    """Response for DELETE /me."""
+    success: bool
+    message: str
+
+
+# ============================================================================
+# Admin Response Models (STORY-222)
+# ============================================================================
+
+class AdminUsersListResponse(BaseModel):
+    """Response for GET /admin/users."""
+    users: List[Dict[str, Any]]
+    total: int
+    limit: int
+    offset: int
+
+
+class AdminCreateUserResponse(BaseModel):
+    """Response for POST /admin/users."""
+    user_id: str
+    email: str
+    plan_id: Optional[str] = None
+
+
+class AdminDeleteUserResponse(BaseModel):
+    """Response for DELETE /admin/users/{user_id}."""
+    deleted: bool
+    user_id: str
+
+
+class AdminUpdateUserResponse(BaseModel):
+    """Response for PUT /admin/users/{user_id}."""
+    updated: bool
+    user_id: str
+
+
+class AdminResetPasswordResponse(BaseModel):
+    """Response for POST /admin/users/{user_id}/reset-password."""
+    success: bool
+    user_id: str
+
+
+class AdminAssignPlanResponse(BaseModel):
+    """Response for POST /admin/users/{user_id}/assign-plan."""
+    assigned: bool
+    user_id: str
+    plan_id: str
+
+
+class AdminUpdateCreditsResponse(BaseModel):
+    """Response for PUT /admin/users/{user_id}/credits."""
+    success: bool
+    user_id: str
+    credits: int
+    previous_credits: Optional[int] = None
+    subscription_created: Optional[bool] = None
+
+
 class GoogleSheetsExportRequest(BaseModel):
     """
     Request schema for Google Sheets export endpoint.

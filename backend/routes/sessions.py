@@ -7,13 +7,14 @@ import logging
 
 from fastapi import APIRouter, Depends, Query
 from auth import require_auth
+from schemas import SessionsListResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["sessions"])
 
 
-@router.get("/sessions")
+@router.get("/sessions", response_model=SessionsListResponse)
 async def get_sessions(
     user: dict = Depends(require_auth),
     limit: int = Query(default=20, ge=1, le=100),

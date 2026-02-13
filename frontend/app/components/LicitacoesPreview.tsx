@@ -168,7 +168,7 @@ export function LicitacoesPreview({
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {getRelevanceBadge(item.relevance_score)}
-                  {getSourceBadge(item._source)}
+                  {getSourceBadge(item._source ?? undefined)}
                   <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                     {item.uf}
                     {item.municipio && ` - ${item.municipio}`}

@@ -9,13 +9,14 @@ import os
 from fastapi import APIRouter, HTTPException, Depends, Query
 from auth import require_auth
 from log_sanitizer import mask_user_id, log_user_action
+from schemas import BillingPlansResponse, CheckoutResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["billing"])
 
 
-@router.get("/plans")
+@router.get("/plans", response_model=BillingPlansResponse)
 async def get_plans():
     """Get available subscription plans."""
     from supabase_client import get_supabase
@@ -31,7 +32,7 @@ async def get_plans():
     return {"plans": result.data}
 
 
-@router.post("/checkout")
+@router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout(
     plan_id: str = Query(...),
     billing_period: str = Query("monthly"),

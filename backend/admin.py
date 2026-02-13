@@ -26,7 +26,12 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query, Request, Path
 from pydantic import BaseModel, Field
 from auth import require_auth
-from schemas import validate_uuid, validate_plan_id
+from schemas import (
+    validate_uuid, validate_plan_id,
+    AdminUsersListResponse, AdminCreateUserResponse, AdminDeleteUserResponse,
+    AdminUpdateUserResponse, AdminResetPasswordResponse, AdminAssignPlanResponse,
+    AdminUpdateCreditsResponse,
+)
 from log_sanitizer import sanitize_dict, log_admin_action
 
 logger = logging.getLogger(__name__)
@@ -247,7 +252,7 @@ class UpdateUserRequest(BaseModel):
     plan_id: Optional[str] = None
 
 
-@router.get("/users")
+@router.get("/users", response_model=AdminUsersListResponse)
 async def list_users(
     admin: dict = Depends(require_admin),
     limit: int = Query(default=50, ge=1, le=200),
@@ -311,7 +316,7 @@ async def list_users(
     }
 
 
-@router.post("/users")
+@router.post("/users", response_model=AdminCreateUserResponse)
 async def create_user(
     req: CreateUserRequest,
     admin: dict = Depends(require_admin),
@@ -358,7 +363,7 @@ async def create_user(
     return {"user_id": user_id, "email": req.email, "plan_id": req.plan_id}
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}", response_model=AdminDeleteUserResponse)
 async def delete_user(
     user_id: str = Path(..., description="User UUID to delete"),
     admin: dict = Depends(require_admin),
@@ -392,7 +397,7 @@ async def delete_user(
     return {"deleted": True, "user_id": user_id}
 
 
-@router.put("/users/{user_id}")
+@router.put("/users/{user_id}", response_model=AdminUpdateUserResponse)
 async def update_user(
     req: UpdateUserRequest,
     user_id: str = Path(..., description="User UUID to update"),
@@ -435,7 +440,7 @@ async def update_user(
     return {"updated": True, "user_id": user_id}
 
 
-@router.post("/users/{user_id}/reset-password")
+@router.post("/users/{user_id}/reset-password", response_model=AdminResetPasswordResponse)
 async def reset_user_password(
     request: Request,
     user_id: str = Path(..., description="User UUID to reset password for"),
@@ -467,7 +472,7 @@ async def reset_user_password(
     return {"success": True, "user_id": user_id}
 
 
-@router.post("/users/{user_id}/assign-plan")
+@router.post("/users/{user_id}/assign-plan", response_model=AdminAssignPlanResponse)
 async def assign_plan(
     user_id: str = Path(..., description="User UUID to assign plan to"),
     plan_id: str = Query(..., description="Plan ID to assign"),
@@ -520,7 +525,7 @@ class UpdateCreditsRequest(BaseModel):
     credits: int = Field(..., ge=0, description="New credit value (must be >= 0)")
 
 
-@router.put("/users/{user_id}/credits")
+@router.put("/users/{user_id}/credits", response_model=AdminUpdateCreditsResponse)
 async def update_user_credits(
     req: UpdateCreditsRequest,
     user_id: str = Path(..., description="User UUID to update credits for"),

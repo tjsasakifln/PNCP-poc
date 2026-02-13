@@ -16,6 +16,9 @@ from schemas import (
     ConversationDetail,
     ConversationsListResponse,
     UnreadCountResponse,
+    CreateConversationResponse,
+    ReplyStatusResponse,
+    StatusResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ def _is_admin(user_id: str) -> bool:
 # --------------------------------------------------------------------------
 # 1. POST /api/messages/conversations — create conversation + first message
 # --------------------------------------------------------------------------
-@router.post("/conversations", status_code=201)
+@router.post("/conversations", status_code=201, response_model=CreateConversationResponse)
 async def create_conversation(
     req: CreateConversationRequest,
     user: dict = Depends(require_auth),
@@ -218,7 +221,7 @@ async def get_conversation(
 # --------------------------------------------------------------------------
 # 4. POST /api/messages/conversations/{id}/reply — reply to thread
 # --------------------------------------------------------------------------
-@router.post("/conversations/{conversation_id}/reply", status_code=201)
+@router.post("/conversations/{conversation_id}/reply", status_code=201, response_model=ReplyStatusResponse)
 async def reply_to_conversation(
     conversation_id: str,
     req: ReplyRequest,
@@ -275,7 +278,7 @@ async def reply_to_conversation(
 # --------------------------------------------------------------------------
 # 5. PATCH /api/messages/conversations/{id}/status — admin set status
 # --------------------------------------------------------------------------
-@router.patch("/conversations/{conversation_id}/status")
+@router.patch("/conversations/{conversation_id}/status", response_model=StatusResponse)
 async def update_conversation_status(
     conversation_id: str,
     req: UpdateConversationStatusRequest,

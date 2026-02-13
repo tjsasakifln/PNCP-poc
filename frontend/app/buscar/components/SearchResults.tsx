@@ -286,7 +286,7 @@ export default function SearchResults({
               </div>
             )}
 
-            {result.resumo.destaques.length > 0 && (
+            {result.resumo.destaques && result.resumo.destaques.length > 0 && (
               <div className="mt-4 sm:mt-6">
                 <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-2 sm:mb-3">Destaques:</h4>
                 <ul className="list-disc list-inside text-sm sm:text-base space-y-2 text-ink-secondary">

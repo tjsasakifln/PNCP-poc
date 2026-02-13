@@ -141,6 +141,21 @@ jobs:
             rm -rf .next || true
           fi
 
+      - name: TypeScript type check
+        run: |
+          cd frontend
+          npx tsc --noEmit --pretty
+
+      - name: Verify generated API types are committed
+        run: |
+          cd frontend
+          if [ ! -f app/api-types.generated.ts ]; then
+            echo "❌ Generated API types file not found: app/api-types.generated.ts"
+            echo "Run: npm run generate:api-types"
+            exit 1
+          fi
+          echo "✅ Generated API types file exists"
+
       - name: Run tests with coverage
         run: |
           cd frontend
