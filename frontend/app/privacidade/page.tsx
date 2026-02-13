@@ -14,7 +14,7 @@ export default function PrivacidadePage() {
             Política de Privacidade
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-            Última atualização: 07 de fevereiro de 2026
+            Última atualização: 13 de fevereiro de 2026
           </p>
 
           <div className="prose prose-gray dark:prose-invert max-w-none">
@@ -49,9 +49,9 @@ export default function PrivacidadePage() {
                 2.2 Informações Coletadas Automaticamente
               </h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
-                <li><strong>Dados de Uso:</strong> Páginas visitadas, tempo de sessão, buscas realizadas</li>
+                <li><strong>Dados de Uso (via Mixpanel, apenas com consentimento):</strong> Páginas visitadas, tempo de sessão, buscas realizadas, eventos de interação</li>
                 <li><strong>Dados Técnicos:</strong> Endereço IP, tipo de navegador, sistema operacional</li>
-                <li><strong>Cookies:</strong> Preferências de tema, sessão de autenticação, análise de uso</li>
+                <li><strong>Cookies:</strong> Preferências de tema, sessão de autenticação, análise de uso (cookies analíticos requerem consentimento explícito)</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 text-gray-800 dark:text-gray-200">
@@ -70,7 +70,7 @@ export default function PrivacidadePage() {
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
                 <li>Fornecer e melhorar nossos serviços de busca de licitações</li>
                 <li>Personalizar resultados de acordo com suas preferências</li>
-                <li>Enviar notificações sobre novas oportunidades relevantes</li>
+                <li>Enviar notificações sobre novas oportunidades relevantes (em breve)</li>
                 <li>Processar pagamentos e gerenciar assinaturas</li>
                 <li>Comunicar atualizações de sistema e novidades do produto</li>
                 <li>Analisar uso da plataforma para melhorias de UX</li>
@@ -87,7 +87,7 @@ export default function PrivacidadePage() {
                 <strong>Nós NÃO vendemos seus dados pessoais.</strong> Compartilhamos informações apenas nas seguintes situações:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
-                <li><strong>Prestadores de Serviço:</strong> Supabase (hospedagem), Railway (backend), OpenAI (IA), Stripe/Mercado Pago (pagamentos)</li>
+                <li><strong>Prestadores de Serviço:</strong> Supabase (hospedagem), Railway (backend), OpenAI (IA), Stripe/Mercado Pago (pagamentos), Mixpanel (análise de uso — apenas com consentimento)</li>
                 <li><strong>Requisições Legais:</strong> Quando exigido por lei, ordem judicial ou autoridades competentes</li>
                 <li><strong>Proteção de Direitos:</strong> Para proteger nossos direitos, propriedade ou segurança</li>
                 <li><strong>Consentimento:</strong> Quando você autorizar explicitamente</li>
@@ -128,7 +128,10 @@ export default function PrivacidadePage() {
                 <li><strong>Oposição:</strong> Se opor ao tratamento de dados em certas situações</li>
               </ul>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
-                Para exercer seus direitos, entre em contato através da seção de suporte na plataforma.
+                Para exercer seus direitos de <strong>eliminação</strong> e <strong>portabilidade</strong>,
+                acesse <a href="/conta" className="text-blue-600 dark:text-blue-400 hover:underline">Minha Conta</a> na
+                plataforma. Para demais solicitações, entre em contato pelo e-mail{' '}
+                <a href="mailto:privacidade@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">privacidade@smartlic.tech</a>.
               </p>
             </section>
 
@@ -137,12 +140,12 @@ export default function PrivacidadePage() {
                 7. Cookies e Tecnologias Similares
               </h2>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                Utilizamos cookies essenciais, funcionais e analíticos. Você pode gerenciar preferências de cookies através do seu navegador.
+                Utilizamos cookies essenciais, funcionais e analíticos. Cookies analíticos (Mixpanel) só são ativados após seu consentimento explícito. Você pode gerenciar suas preferências de cookies a qualquer momento através do link &quot;Gerenciar Cookies&quot; no rodapé da plataforma.
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
                 <li><strong>Essenciais:</strong> Autenticação, segurança</li>
                 <li><strong>Funcionais:</strong> Preferências de tema, idioma</li>
-                <li><strong>Analíticos:</strong> Google Analytics (anonimizado)</li>
+                <li><strong>Analíticos:</strong> Mixpanel (apenas com consentimento explícito do usuário)</li>
               </ul>
             </section>
 
@@ -192,7 +195,7 @@ export default function PrivacidadePage() {
               </h2>
               <div className="text-gray-700 dark:text-gray-300 leading-relaxed space-y-2">
                 <p><strong>Encarregado de Dados (DPO):</strong></p>
-                <p>Entre em contato através da seção de suporte na plataforma.</p>
+                <p>E-mail: <a href="mailto:privacidade@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">privacidade@smartlic.tech</a></p>
                 <p className="mt-4">
                   Para questões relacionadas à LGPD, você também pode contatar a Autoridade Nacional de Proteção de Dados (ANPD):
                   <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline ml-1">

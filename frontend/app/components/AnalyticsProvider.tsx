@@ -1,34 +1,70 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import mixpanel from 'mixpanel-browser';
 import { usePathname } from 'next/navigation';
+import { getCookieConsent, type CookieConsent } from './CookieConsentBanner';
 
 /**
- * Analytics Provider - Initializes Mixpanel and tracks page views
+ * Analytics Provider - Initializes Mixpanel ONLY after cookie consent (LGPD Art. 7)
  *
  * This component:
- * 1. Initializes Mixpanel on app load
- * 2. Tracks page_load event
- * 3. Tracks page_exit event (beforeunload)
- * 4. Tracks route changes
+ * 1. Checks cookie consent before any analytics initialization
+ * 2. Initializes Mixpanel only if analytics consent is granted
+ * 3. Tracks page_load event after consent
+ * 4. Tracks page_exit event (beforeunload)
+ * 5. Listens for consent changes and initializes/disables accordingly
  */
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    // Initialize Mixpanel
     const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
+    if (!token) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Mixpanel token not configured. Analytics disabled.');
+      }
+      return;
+    }
 
-    if (token) {
+    const initMixpanel = (consent: CookieConsent | null) => {
+      if (!consent || !consent.analytics) {
+        // No consent or opted out — do not initialize
+        if (initializedRef.current) {
+          try {
+            mixpanel.opt_out_tracking();
+          } catch {
+            // ignore
+          }
+        }
+        return;
+      }
+
+      // Consent granted — initialize Mixpanel
+      if (!initializedRef.current) {
+        try {
+          mixpanel.init(token, {
+            debug: process.env.NODE_ENV === 'development',
+            track_pageview: false,
+            persistence: 'localStorage',
+          });
+          initializedRef.current = true;
+        } catch (error) {
+          console.warn('Mixpanel initialization failed:', error);
+          return;
+        }
+      } else {
+        // Re-enable tracking if previously opted out
+        try {
+          mixpanel.opt_in_tracking();
+        } catch {
+          // ignore
+        }
+      }
+
+      // Track page_load
       try {
-        mixpanel.init(token, {
-          debug: process.env.NODE_ENV === 'development',
-          track_pageview: false, // We'll track manually for more control
-          persistence: 'localStorage',
-        });
-
-        // Track page_load event
         mixpanel.track('page_load', {
           path: pathname,
           timestamp: new Date().toISOString(),
@@ -36,21 +72,27 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
           referrer: document.referrer || 'direct',
           user_agent: navigator.userAgent,
         });
-
-        console.log('✅ Mixpanel initialized successfully');
-      } catch (error) {
-        console.warn('❌ Mixpanel initialization failed:', error);
+      } catch {
+        // ignore
       }
-    } else if (process.env.NODE_ENV === 'development') {
-      // Only log in development - no warning in production
-      console.log('ℹ️ Mixpanel token not configured. Analytics disabled.');
-    }
+    };
 
-    // Track page_exit event when user leaves
+    // Check current consent and initialize
+    const consent = getCookieConsent();
+    initMixpanel(consent);
+
+    // Listen for consent changes
+    const handleConsentChanged = (e: Event) => {
+      const detail = (e as CustomEvent).detail as CookieConsent | null;
+      initMixpanel(detail);
+    };
+    window.addEventListener('cookie-consent-changed', handleConsentChanged);
+
+    // Track page_exit only if consent was granted
     const handleBeforeUnload = () => {
-      if (token) {
+      const currentConsent = getCookieConsent();
+      if (currentConsent?.analytics && initializedRef.current) {
         try {
-          // Use modern Performance API instead of deprecated performance.timing
           const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
           const navigationStart = navEntries.length > 0
             ? navEntries[0].startTime
@@ -64,8 +106,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
             session_duration_readable: `${Math.floor(sessionDuration / 1000)}s`,
             timestamp: new Date().toISOString(),
           });
-        } catch (error) {
-          console.warn('Failed to track page_exit:', error);
+        } catch {
+          // ignore
         }
       }
     };
@@ -74,6 +116,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('cookie-consent-changed', handleConsentChanged);
     };
   }, [pathname]);
 

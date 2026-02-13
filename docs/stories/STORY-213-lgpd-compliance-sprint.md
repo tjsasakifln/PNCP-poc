@@ -1,6 +1,6 @@
 # STORY-213: LGPD Compliance Sprint — Cookie Consent, Data Deletion, Privacy Policy
 
-**Status:** Pending
+**Status:** Completed
 **Priority:** P0 — Blocks GTM Launch (Legal)
 **Sprint:** Sprint 2 (Weeks 2-3)
 **Estimated Effort:** 5-7 days
@@ -24,20 +24,20 @@ LGPD (Lei Geral de Proteção de Dados) compliance is **legally required** for a
 
 ### Track 1: Cookie Consent Banner (3 days)
 
-- [ ] AC1: Create `CookieConsentBanner` component that appears on first visit
-- [ ] AC2: Banner explains: essential cookies (always), analytics cookies (opt-in)
-- [ ] AC3: User can "Accept All" or "Reject Non-Essential"
-- [ ] AC4: **Mixpanel ONLY initializes after analytics consent** — modify `AnalyticsProvider.tsx` to check consent before `mixpanel.init()`
-- [ ] AC5: Consent preference persisted in `localStorage` key `bidiq_cookie_consent`
-- [ ] AC6: Consent can be changed later via link in footer ("Gerenciar Cookies")
-- [ ] AC7: Banner links to `/privacidade` for full details
-- [ ] AC8: `identifyUser()` only called after consent is granted (respects opt-out)
+- [x] AC1: Create `CookieConsentBanner` component that appears on first visit
+- [x] AC2: Banner explains: essential cookies (always), analytics cookies (opt-in)
+- [x] AC3: User can "Accept All" or "Reject Non-Essential"
+- [x] AC4: **Mixpanel ONLY initializes after analytics consent** — modify `AnalyticsProvider.tsx` to check consent before `mixpanel.init()`
+- [x] AC5: Consent preference persisted in `localStorage` key `bidiq_cookie_consent`
+- [x] AC6: Consent can be changed later via link in footer ("Gerenciar Cookies")
+- [x] AC7: Banner links to `/privacidade` for full details
+- [x] AC8: `identifyUser()` only called after consent is granted (respects opt-out)
 
 ### Track 2: Account Deletion (2 days)
 
-- [ ] AC9: "Excluir Minha Conta" button in account settings page (`/conta`)
-- [ ] AC10: Confirmation dialog with clear explanation: "Todos os seus dados serão excluídos permanentemente: perfil, histórico de buscas, assinaturas, mensagens."
-- [ ] AC11: Backend endpoint `DELETE /api/me` that:
+- [x] AC9: "Excluir Minha Conta" button in account settings page (`/conta`)
+- [x] AC10: Confirmation dialog with clear explanation: "Todos os seus dados serão excluídos permanentemente: perfil, histórico de buscas, assinaturas, mensagens."
+- [x] AC11: Backend endpoint `DELETE /api/me` that:
   - Deletes from `search_sessions` where `user_id`
   - Deletes from `monthly_quota` where `user_id`
   - Deletes from `user_subscriptions` where `user_id`
@@ -45,36 +45,36 @@ LGPD (Lei Geral de Proteção de Dados) compliance is **legally required** for a
   - Deletes from `messages` where `user_id`
   - Deletes from `profiles` where `id`
   - Calls Supabase `auth.admin.deleteUser(user_id)` to remove auth record
-- [ ] AC12: Cancels active Stripe subscription before deletion (if any)
-- [ ] AC13: Audit log entry (anonymized): `"account_deleted", timestamp, hashed_user_id`
-- [ ] AC14: Shows confirmation page after deletion with logout redirect
+- [x] AC12: Cancels active Stripe subscription before deletion (if any)
+- [x] AC13: Audit log entry (anonymized): `"account_deleted", timestamp, hashed_user_id`
+- [x] AC14: Shows confirmation page after deletion with logout redirect
 
 ### Track 3: Privacy Policy Fixes (0.5 day)
 
-- [ ] AC15: Section 7: Replace "Google Analytics (anonimizado)" with "Mixpanel"
-- [ ] AC16: Section 4: Add Mixpanel as data processor with description
-- [ ] AC17: Section 2.2: Update "Dados de Uso" to accurately describe Mixpanel collection
-- [ ] AC18: Add specific DPO contact email (e.g., `dpo@smartlic.tech` or `privacidade@smartlic.tech`)
-- [ ] AC19: Remove mention of email notifications if not yet implemented (or add "em breve")
-- [ ] AC20: Update timestamp at bottom of privacy policy page
+- [x] AC15: Section 7: Replace "Google Analytics (anonimizado)" with "Mixpanel"
+- [x] AC16: Section 4: Add Mixpanel as data processor with description
+- [x] AC17: Section 2.2: Update "Dados de Uso" to accurately describe Mixpanel collection
+- [x] AC18: Add specific DPO contact email (e.g., `dpo@smartlic.tech` or `privacidade@smartlic.tech`)
+- [x] AC19: Remove mention of email notifications if not yet implemented (or add "em breve")
+- [x] AC20: Update timestamp at bottom of privacy policy page
 
 ### Track 4: Data Portability (1 day)
 
-- [ ] AC21: Backend endpoint `GET /api/me/export` returns JSON file with all user data:
+- [x] AC21: Backend endpoint `GET /api/me/export` returns JSON file with all user data:
   - Profile information
   - Search history (sessions)
   - Subscription history
   - Messages
-- [ ] AC22: "Exportar Meus Dados" button in account settings page
-- [ ] AC23: Download as JSON file with filename `smartlic_dados_{user_id_prefix}_{date}.json`
+- [x] AC22: "Exportar Meus Dados" button in account settings page
+- [x] AC23: Download as JSON file with filename `smartlic_dados_{user_id_prefix}_{date}.json`
 
 ### Testing
 
-- [ ] AC24: Test cookie consent banner appears on fresh visit (no localStorage)
-- [ ] AC25: Test Mixpanel does NOT fire before consent
-- [ ] AC26: Test account deletion cascades correctly (all tables cleaned)
-- [ ] AC27: Test data export includes all expected tables
-- [ ] AC28: Test deletion of user with active Stripe subscription cancels it first
+- [x] AC24: Test cookie consent banner appears on fresh visit (no localStorage)
+- [x] AC25: Test Mixpanel does NOT fire before consent
+- [x] AC26: Test account deletion cascades correctly (all tables cleaned)
+- [x] AC27: Test data export includes all expected tables
+- [x] AC28: Test deletion of user with active Stripe subscription cancels it first
 
 ## Validation Metric
 

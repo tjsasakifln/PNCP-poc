@@ -51,3 +51,47 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
+    return NextResponse.json(
+      { message: "Servidor nao configurado" },
+      { status: 503 }
+    );
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader) {
+    return NextResponse.json(
+      { message: "Autenticacao necessaria" },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const response = await fetch(`${backendUrl}/me`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": authHeader,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { message: error.detail || "Erro ao excluir conta" },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json().catch(() => ({ success: true }));
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    return NextResponse.json(
+      { message: "Erro ao conectar com servidor" },
+      { status: 503 }
+    );
+  }
+}

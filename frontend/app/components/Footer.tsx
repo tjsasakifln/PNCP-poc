@@ -77,6 +77,38 @@ export default function Footer() {
               <li>
                 <FooterLink href="/termos">Termos de Uso</FooterLink>
               </li>
+              <li>
+                <button
+                  onClick={() => window.dispatchEvent(new Event("manage-cookies"))}
+                  className="
+                    relative
+                    inline-block
+                    hover:text-brand-blue
+                    transition-colors
+                    focus-visible:outline-none
+                    focus-visible:ring-[3px]
+                    focus-visible:ring-[var(--ring)]
+                    focus-visible:ring-offset-2
+                    rounded
+                    px-1
+                    group
+                    text-left
+                  "
+                >
+                  Gerenciar Cookies
+                  <span className="
+                    absolute
+                    bottom-0
+                    left-0
+                    w-0
+                    h-[2px]
+                    bg-brand-blue
+                    transition-all
+                    duration-300
+                    group-hover:w-full
+                  " />
+                </button>
+              </li>
             </ul>
           </div>
         </div>

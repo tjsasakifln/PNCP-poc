@@ -14,6 +14,15 @@ export default function ContaPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Account deletion state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState(false);
+
+  // Data export state
+  const [exporting, setExporting] = useState(false);
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
@@ -30,6 +39,28 @@ export default function ContaPage() {
           <Link href="/login" className="text-[var(--brand-blue)] hover:underline">
             Ir para login
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show deletion confirmation page
+  if (deleted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--success-subtle)] flex items-center justify-center">
+            <svg role="img" aria-label="Sucesso" className="w-8 h-8 text-[var(--success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-3">
+            Conta excluída
+          </h1>
+          <p className="text-[var(--ink-secondary)] mb-6">
+            Sua conta e todos os dados associados foram excluídos permanentemente.
+            Você será redirecionado para a página inicial.
+          </p>
         </div>
       </div>
     );
@@ -82,6 +113,73 @@ export default function ContaPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/me", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || data.message || "Erro ao excluir conta");
+      }
+
+      setShowDeleteModal(false);
+      setDeleted(true);
+
+      // Redirect to home after 3 seconds
+      setTimeout(async () => {
+        await signOut();
+      }, 3000);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Erro desconhecido");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/me/export", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Erro ao exportar dados");
+      }
+
+      // Extract filename from Content-Disposition header or build default
+      const disposition = res.headers.get("Content-Disposition");
+      let filename = `smartlic_dados_${user.id.slice(0, 8)}_${new Date().toISOString().slice(0, 10)}.json`;
+      if (disposition) {
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        if (match) filename = match[1];
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao exportar dados");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
       <div className="max-w-lg mx-auto">
@@ -110,7 +208,7 @@ export default function ContaPage() {
         </div>
 
         {/* Change password */}
-        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card">
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
           <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Alterar senha</h2>
 
           {error && (
@@ -239,7 +337,105 @@ export default function ContaPage() {
             </button>
           </form>
         </div>
+
+        {/* Data & Privacy section (LGPD) */}
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
+          <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Dados e Privacidade</h2>
+          <p className="text-sm text-[var(--ink-secondary)] mb-4">
+            Conforme a LGPD, você pode exportar seus dados ou excluir sua conta a qualquer momento.
+          </p>
+
+          <div className="space-y-3">
+            {/* Export Data Button */}
+            <button
+              onClick={handleExportData}
+              disabled={exporting}
+              className="w-full py-3 px-4 rounded-button border border-[var(--border)]
+                         bg-[var(--surface-0)] text-[var(--ink)]
+                         hover:bg-[var(--surface-1)] transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         flex items-center justify-center gap-2"
+            >
+              <svg role="img" aria-label="Exportar" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {exporting ? "Exportando..." : "Exportar Meus Dados"}
+            </button>
+
+            {/* Delete Account Button */}
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="w-full py-3 px-4 rounded-button border border-[var(--error,#dc2626)]
+                         text-[var(--error,#dc2626)] bg-transparent
+                         hover:bg-[var(--error-subtle,#fef2f2)] transition-colors
+                         flex items-center justify-center gap-2"
+            >
+              <svg role="img" aria-label="Excluir" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Excluir Minha Conta
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            role="alertdialog"
+            aria-labelledby="delete-title"
+            aria-describedby="delete-desc"
+            className="bg-[var(--surface-0)] rounded-card border border-[var(--border)] p-6 max-w-md w-full shadow-xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[var(--error-subtle,#fef2f2)] flex items-center justify-center flex-shrink-0">
+                <svg role="img" aria-label="Atenção" className="w-5 h-5 text-[var(--error,#dc2626)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 id="delete-title" className="text-lg font-semibold text-[var(--ink)]">
+                Excluir conta permanentemente?
+              </h3>
+            </div>
+
+            <p id="delete-desc" className="text-sm text-[var(--ink-secondary)] mb-6">
+              Todos os seus dados serão excluídos permanentemente: perfil, histórico de buscas,
+              assinaturas, mensagens. Esta ação <strong>não pode ser desfeita</strong>.
+            </p>
+
+            {deleteError && (
+              <div className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-input text-sm">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError(null);
+                }}
+                disabled={deleting}
+                className="px-4 py-2 rounded-button border border-[var(--border)]
+                           text-[var(--ink)] bg-[var(--surface-0)]
+                           hover:bg-[var(--surface-1)] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="px-4 py-2 rounded-button bg-[var(--error,#dc2626)] text-white
+                           hover:opacity-90 transition-opacity
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Excluindo..." : "Excluir Permanentemente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

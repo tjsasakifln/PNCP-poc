@@ -6,6 +6,7 @@ import { AnalyticsProvider } from "./components/AnalyticsProvider";
 import { AuthProvider } from "./components/AuthProvider";
 import { NProgressProvider } from "./components/NProgressProvider";
 import { Toaster } from "sonner";
+import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -103,6 +104,7 @@ export default function RootLayout({
               <NProgressProvider>
                 {children}
                 <Toaster position="top-right" richColors closeButton />
+                <CookieConsentBanner />
               </NProgressProvider>
             </ThemeProvider>
           </AuthProvider>

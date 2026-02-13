@@ -1,14 +1,19 @@
-"""User profile and password management routes.
+"""User profile, password management, account deletion, and data export routes.
 
 Extracted from main.py as part of STORY-202 monolith decomposition.
+STORY-213: Added DELETE /me (account deletion) and GET /me/export (data portability).
 """
 
+import hashlib
+import json
 import logging
 import os
 import time
 from collections import defaultdict
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import Response
 from auth import require_auth
 from authorization import _check_user_roles, _get_admin_ids, _get_master_quota_info
 from config import ENABLE_NEW_PRICING
@@ -81,7 +86,6 @@ async def get_profile(user: dict = Depends(require_auth)):
     """
     from quota import check_quota, QuotaInfo, PLAN_CAPABILITIES, get_plan_from_profile, PLAN_NAMES
     from supabase_client import get_supabase
-    from datetime import datetime, timezone
 
     is_admin, is_master = _check_user_roles(user["id"])
     if user["id"].lower() in _get_admin_ids():
@@ -159,4 +163,198 @@ async def get_profile(user: dict = Depends(require_auth)):
         trial_expires_at=quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
         subscription_status=subscription_status,
         is_admin=is_admin,
+    )
+
+
+@router.delete("/me")
+async def delete_account(user: dict = Depends(require_auth)):
+    """Delete entire user account and all associated data (LGPD Art. 18 VI).
+
+    Cascade order:
+    1. Cancel active Stripe subscription (if any)
+    2. Delete from: search_sessions, monthly_quota, user_subscriptions,
+       user_oauth_tokens, messages, profiles
+    3. Delete auth user via Supabase admin API
+    4. Log anonymized audit entry
+    """
+    from supabase_client import get_supabase
+    import stripe
+
+    user_id = user["id"]
+    hashed_id = hashlib.sha256(user_id.encode()).hexdigest()[:16]
+    sb = get_supabase()
+
+    logger.info(f"Account deletion requested: {mask_user_id(user_id)}")
+
+    # Step 1: Cancel active Stripe subscription if any
+    try:
+        subs_result = (
+            sb.table("user_subscriptions")
+            .select("stripe_subscription_id, is_active")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .execute()
+        )
+        if subs_result.data:
+            for sub in subs_result.data:
+                stripe_sub_id = sub.get("stripe_subscription_id")
+                if stripe_sub_id:
+                    try:
+                        stripe.Subscription.cancel(stripe_sub_id)
+                        logger.info(f"Cancelled Stripe subscription {stripe_sub_id} for account deletion")
+                    except stripe.InvalidRequestError as e:
+                        # Subscription may already be cancelled
+                        logger.warning(f"Stripe subscription cancel failed (may be already cancelled): {e}")
+                    except Exception as e:
+                        logger.error(f"Failed to cancel Stripe subscription {stripe_sub_id}: {e}")
+    except Exception as e:
+        logger.warning(f"Failed to check Stripe subscriptions during account deletion: {e}")
+
+    # Step 2: Cascade delete from all tables
+    tables_to_delete = [
+        "search_sessions",
+        "monthly_quota",
+        "user_subscriptions",
+        "user_oauth_tokens",
+        "messages",
+    ]
+
+    for table in tables_to_delete:
+        try:
+            sb.table(table).delete().eq("user_id", user_id).execute()
+        except Exception as e:
+            logger.error(f"Failed to delete from {table} for user {mask_user_id(user_id)}: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro ao excluir dados de {table}. Tente novamente.",
+            )
+
+    # Delete profile (id column, not user_id)
+    try:
+        sb.table("profiles").delete().eq("id", user_id).execute()
+    except Exception as e:
+        logger.error(f"Failed to delete profile for user {mask_user_id(user_id)}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao excluir perfil. Tente novamente.",
+        )
+
+    # Step 3: Delete auth user
+    try:
+        sb.auth.admin.delete_user(user_id)
+    except Exception as e:
+        logger.error(f"Failed to delete auth user {mask_user_id(user_id)}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao excluir conta de autenticação. Tente novamente.",
+        )
+
+    # Step 4: Anonymized audit log
+    log_user_action(logger, "account_deleted", hashed_id)
+    logger.info(f"Account deleted successfully: hashed_id={hashed_id}")
+
+    return {"success": True, "message": "Conta excluída com sucesso."}
+
+
+@router.get("/me/export")
+async def export_user_data(user: dict = Depends(require_auth)):
+    """Export all user data as JSON file (LGPD Art. 18 V — data portability).
+
+    Returns a downloadable JSON file containing:
+    - Profile information
+    - Search history (sessions)
+    - Subscription history
+    - Messages
+    """
+    from supabase_client import get_supabase
+
+    user_id = user["id"]
+    sb = get_supabase()
+    now = datetime.now(timezone.utc)
+
+    logger.info(f"Data export requested: {mask_user_id(user_id)}")
+
+    export_data: dict = {
+        "exported_at": now.isoformat(),
+        "user_id": user_id,
+    }
+
+    # Profile
+    try:
+        profile_result = sb.table("profiles").select("*").eq("id", user_id).execute()
+        export_data["profile"] = profile_result.data[0] if profile_result.data else None
+    except Exception as e:
+        logger.warning(f"Failed to export profile: {e}")
+        export_data["profile"] = None
+
+    # Search sessions
+    try:
+        sessions_result = (
+            sb.table("search_sessions")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        export_data["search_history"] = sessions_result.data or []
+    except Exception as e:
+        logger.warning(f"Failed to export search sessions: {e}")
+        export_data["search_history"] = []
+
+    # Subscriptions
+    try:
+        subs_result = (
+            sb.table("user_subscriptions")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        export_data["subscriptions"] = subs_result.data or []
+    except Exception as e:
+        logger.warning(f"Failed to export subscriptions: {e}")
+        export_data["subscriptions"] = []
+
+    # Messages
+    try:
+        messages_result = (
+            sb.table("messages")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        export_data["messages"] = messages_result.data or []
+    except Exception as e:
+        logger.warning(f"Failed to export messages: {e}")
+        export_data["messages"] = []
+
+    # Monthly quota
+    try:
+        quota_result = (
+            sb.table("monthly_quota")
+            .select("*")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        export_data["quota_history"] = quota_result.data or []
+    except Exception as e:
+        logger.warning(f"Failed to export quota history: {e}")
+        export_data["quota_history"] = []
+
+    log_user_action(logger, "data_exported", user_id)
+
+    # Build filename: smartlic_dados_{user_id_prefix}_{date}.json
+    user_id_prefix = user_id[:8]
+    date_str = now.strftime("%Y-%m-%d")
+    filename = f"smartlic_dados_{user_id_prefix}_{date_str}.json"
+
+    content = json.dumps(export_data, ensure_ascii=False, indent=2, default=str)
+
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
     )
