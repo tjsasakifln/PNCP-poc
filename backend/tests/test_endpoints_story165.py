@@ -32,7 +32,7 @@ class TestMeEndpoint:
 
     @pytest.mark.skip(reason="Stale mock — /me endpoint subscription lookup chain changed — STORY-224")
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", return_value=(False, False))
+    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_returns_user_profile_with_capabilities(
@@ -80,7 +80,7 @@ class TestMeEndpoint:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", return_value=(False, False))
+    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_returns_trial_info_for_free_users(
@@ -121,7 +121,7 @@ class TestMeEndpoint:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", return_value=(False, False))
+    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(

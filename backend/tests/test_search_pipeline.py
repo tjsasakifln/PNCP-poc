@@ -52,7 +52,7 @@ def make_deps(**overrides):
         "aplicar_todos_filtros": MagicMock(return_value=([], {})),
         "create_excel": MagicMock(),
         "rate_limiter": _make_async_rate_limiter(),
-        "check_user_roles": MagicMock(return_value=(False, False)),
+        "check_user_roles": AsyncMock(return_value=(False, False)),
         "match_keywords": MagicMock(return_value=(True, [])),
         "KEYWORDS_UNIFORMES": set(),
         "KEYWORDS_EXCLUSAO": set(),
@@ -140,7 +140,7 @@ class TestStageValidate:
         master_qi = _make_quota_info(plan_id="sala_guerra", plan_name="Sala de Guerra (Admin)")
         mock_master_quota.return_value = master_qi
 
-        deps = make_deps(check_user_roles=MagicMock(return_value=(False, False)))
+        deps = make_deps(check_user_roles=AsyncMock(return_value=(False, False)))
         ctx = make_ctx(user={"id": "admin-42", "email": "admin@test.com"})
         pipeline = SearchPipeline(deps)
 

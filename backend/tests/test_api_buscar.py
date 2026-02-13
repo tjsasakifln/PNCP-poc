@@ -949,7 +949,7 @@ class TestBuscarUserRateLimiting:
             cleanup()
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
-    @patch("routes.search._check_user_roles")
+    @patch("routes.search._check_user_roles", new_callable=AsyncMock)
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
@@ -992,7 +992,7 @@ class TestBuscarUserRateLimiting:
             cleanup()
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
-    @patch("routes.search._check_user_roles")
+    @patch("routes.search._check_user_roles", new_callable=AsyncMock)
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")

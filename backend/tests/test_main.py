@@ -546,7 +546,9 @@ class TestBuscarEndpoint:
         from datetime import datetime, timezone
 
         # Ensure user is NOT detected as admin/master (otherwise admin bypass kicks in)
-        monkeypatch.setattr("main._check_user_roles", lambda user_id: (False, False))
+        async def _mock_check_roles(user_id):
+            return (False, False)
+        monkeypatch.setattr("authorization._check_user_roles", _mock_check_roles)
         monkeypatch.setattr("main._get_admin_ids", lambda: set())
 
         # Mock rate limiter to always allow

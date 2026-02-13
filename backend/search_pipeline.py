@@ -205,7 +205,7 @@ class SearchPipeline:
         deps = self.deps
 
         # Admin/Master detection
-        ctx.is_admin, ctx.is_master = deps.check_user_roles(ctx.user["id"])
+        ctx.is_admin, ctx.is_master = await deps.check_user_roles(ctx.user["id"])
         if ctx.user["id"].lower() in _get_admin_ids():
             ctx.is_admin = True
             ctx.is_master = True

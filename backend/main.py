@@ -20,6 +20,7 @@ STORY-202: Monolith decomposition — routes extracted to:
 
 import logging
 import os
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 # STORY-211: Sentry error tracking
@@ -33,10 +34,11 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feature_flags
+from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feature_flags, validate_env_vars
 from pncp_client import PNCPClient
 from sectors import list_sectors
 from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware  # STORY-202 SYS-M01, STORY-210 AC10
+from redis_pool import startup_redis, shutdown_redis  # STORY-217: Redis pool lifecycle
 
 # Existing routers
 from admin import router as admin_router
@@ -128,6 +130,69 @@ if _sentry_dsn:
 else:
     logger.info("Sentry DSN not configured — error tracking disabled")
 
+
+# ============================================================================
+# STORY-221: Lifespan Context Manager (replaces deprecated @app.on_event)
+# ============================================================================
+
+def _log_registered_routes(app_instance: FastAPI) -> None:
+    """Diagnostic logging for route registration (HOTFIX STORY-183).
+
+    Logs all registered routes for debugging route 404 issues.
+    """
+    logger.info("=" * 60)
+    logger.info("REGISTERED ROUTES:")
+    logger.info("=" * 60)
+    for route in app_instance.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            methods = ','.join(route.methods) if route.methods else 'N/A'
+            logger.info(f"  {methods:8s} {route.path}")
+    logger.info("=" * 60)
+
+    # Specifically check for export route
+    export_routes = [r for r in app_instance.routes if hasattr(r, 'path') and '/export' in r.path]
+    if export_routes:
+        logger.info(f"Export routes found: {len(export_routes)}")
+        for r in export_routes:
+            methods = ','.join(r.methods) if hasattr(r, 'methods') and r.methods else 'N/A'
+            logger.info(f"   {methods:8s} {r.path}")
+    else:
+        logger.error("NO EXPORT ROUTES FOUND - /api/export/google-sheets will return 404!")
+    logger.info("=" * 60)
+
+
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    """Application lifespan context manager.
+
+    Handles startup and shutdown events for the FastAPI application.
+    Replaces deprecated @app.on_event("startup") and @app.on_event("shutdown").
+
+    Startup:
+        - Validate environment variables (AC12-AC14)
+        - Initialize Redis pool (STORY-217)
+        - Log registered routes for diagnostics
+
+    Shutdown:
+        - Close Redis pool gracefully
+    """
+    # === STARTUP ===
+    # AC12-AC14: Validate environment variables
+    validate_env_vars()
+
+    # STORY-217: Initialize Redis pool
+    await startup_redis()
+
+    # HOTFIX STORY-183: Diagnostic route logging
+    _log_registered_routes(app_instance)
+
+    yield
+
+    # === SHUTDOWN ===
+    # STORY-217: Close Redis pool
+    await shutdown_redis()
+
+
 # Initialize FastAPI application
 app = FastAPI(
     title="BidIQ Uniformes API",
@@ -140,6 +205,7 @@ app = FastAPI(
     docs_url=None if _is_production else "/docs",
     redoc_url=None if _is_production else "/redoc",
     openapi_url=None if _is_production else "/openapi.json",
+    lifespan=lifespan,  # STORY-221: Lifespan context manager for startup/shutdown
 )
 
 # CORS Configuration
@@ -208,47 +274,6 @@ logger.info(
     "Feature Flags — ENABLE_NEW_PRICING=%s",
     ENABLE_NEW_PRICING,
 )
-
-
-# STORY-217: Redis pool lifecycle
-from redis_pool import startup_redis, shutdown_redis
-
-
-@app.on_event("startup")
-async def init_redis_pool():
-    """Initialize shared Redis pool during startup (AC11)."""
-    await startup_redis()
-
-
-@app.on_event("shutdown")
-async def close_redis_pool():
-    """Close shared Redis pool during shutdown."""
-    await shutdown_redis()
-
-
-# HOTFIX STORY-183: Diagnostic logging for route registration
-@app.on_event("startup")
-async def log_registered_routes():
-    """Log all registered routes for debugging route 404 issues."""
-    logger.info("=" * 60)
-    logger.info("REGISTERED ROUTES:")
-    logger.info("=" * 60)
-    for route in app.routes:
-        if hasattr(route, 'methods') and hasattr(route, 'path'):
-            methods = ','.join(route.methods) if route.methods else 'N/A'
-            logger.info(f"  {methods:8s} {route.path}")
-    logger.info("=" * 60)
-
-    # Specifically check for export route
-    export_routes = [r for r in app.routes if hasattr(r, 'path') and '/export' in r.path]
-    if export_routes:
-        logger.info(f"Export routes found: {len(export_routes)}")
-        for r in export_routes:
-            methods = ','.join(r.methods) if hasattr(r, 'methods') and r.methods else 'N/A'
-            logger.info(f"   {methods:8s} {r.path}")
-    else:
-        logger.error("NO EXPORT ROUTES FOUND - /api/export/google-sheets will return 404!")
-    logger.info("=" * 60)
 
 
 # ============================================================================

@@ -87,7 +87,7 @@ async def get_profile(user: dict = Depends(require_auth)):
     from quota import check_quota, QuotaInfo, create_fallback_quota_info, create_legacy_quota_info
     from supabase_client import get_supabase
 
-    is_admin, is_master = _check_user_roles(user["id"])
+    is_admin, is_master = await _check_user_roles(user["id"])
     if user["id"].lower() in _get_admin_ids():
         is_admin = True
         is_master = True

@@ -359,3 +359,30 @@ def get_cors_origins() -> list[str]:
 
     logger.info(f"CORS origins configured: {unique_origins}")
     return unique_origins
+
+
+def validate_env_vars() -> None:
+    """Validate required and recommended environment variables at startup.
+
+    AC12: Check required vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET
+    AC13: Warn on recommended vars: OPENAI_API_KEY, STRIPE_SECRET_KEY, SENTRY_DSN
+    AC14: Raise RuntimeError if critical vars missing AND ENVIRONMENT=production
+    """
+    required_vars = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET"]
+    recommended_vars = ["OPENAI_API_KEY", "STRIPE_SECRET_KEY", "SENTRY_DSN"]
+
+    env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+    is_production = env in ("production", "prod")
+
+    missing_required = [var for var in required_vars if not os.getenv(var)]
+    missing_recommended = [var for var in recommended_vars if not os.getenv(var)]
+
+    if missing_required:
+        msg = f"Missing required environment variables: {', '.join(missing_required)}"
+        if is_production:
+            raise RuntimeError(f"FATAL: {msg}. Cannot start in production without these.")
+        else:
+            logger.warning(f"{msg} (non-production, continuing with degraded functionality)")
+
+    if missing_recommended:
+        logger.warning(f"Missing recommended environment variables: {', '.join(missing_recommended)}")

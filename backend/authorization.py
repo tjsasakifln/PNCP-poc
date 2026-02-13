@@ -4,9 +4,9 @@ Shared authorization logic used across multiple route modules.
 Extracted from main.py as part of STORY-202 monolith decomposition.
 """
 
+import asyncio
 import logging
 import os
-import time
 
 from log_sanitizer import mask_user_id
 
@@ -29,7 +29,7 @@ def _get_admin_ids() -> set[str]:
     return {uid.strip().lower() for uid in raw.split(",") if uid.strip()}
 
 
-def _check_user_roles(user_id: str) -> tuple[bool, bool]:
+async def _check_user_roles(user_id: str) -> tuple[bool, bool]:
     """
     Check user's admin and master status from Supabase.
 
@@ -84,7 +84,7 @@ def _check_user_roles(user_id: str) -> tuple[bool, bool]:
         except Exception as e:
             if attempt == 0:
                 logger.debug(f"Retry user roles check for {mask_user_id(user_id)} after error: {type(e).__name__}")
-                time.sleep(0.3)
+                await asyncio.sleep(0.3)
                 continue
             logger.warning(
                 f"ROLE CHECK FAILED for user {mask_user_id(user_id)} after 2 attempts: {type(e).__name__}. "
@@ -94,7 +94,7 @@ def _check_user_roles(user_id: str) -> tuple[bool, bool]:
     return (False, False)
 
 
-def _is_admin(user_id: str) -> bool:
+async def _is_admin(user_id: str) -> bool:
     """
     Check if user can access /admin/* endpoints.
 
@@ -108,11 +108,11 @@ def _is_admin(user_id: str) -> bool:
         return True
 
     # Check Supabase
-    is_admin, _ = _check_user_roles(user_id)
+    is_admin, _ = await _check_user_roles(user_id)
     return is_admin
 
 
-def _has_master_access(user_id: str) -> bool:
+async def _has_master_access(user_id: str) -> bool:
     """
     Check if user has full feature access (master or admin).
 
@@ -127,7 +127,7 @@ def _has_master_access(user_id: str) -> bool:
         return True
 
     # Check Supabase
-    is_admin, is_master = _check_user_roles(user_id)
+    is_admin, is_master = await _check_user_roles(user_id)
     return is_admin or is_master
 
 
