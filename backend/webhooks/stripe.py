@@ -201,8 +201,11 @@ async def _handle_subscription_updated(sb, event: stripe.Event):
 
     # Invalidate Redis cache for affected user
     cache_key = f"features:{user_id}"
-    redis_client.delete(cache_key)
-    logger.info(f"Cache invalidated: key={cache_key}")
+    try:
+        redis_client.delete(cache_key)
+        logger.info(f"Cache invalidated: key={cache_key}")
+    except Exception as e:
+        logger.warning(f"Cache invalidation failed (non-fatal): {e}")
 
 
 async def _handle_subscription_deleted(sb, event: stripe.Event):
@@ -246,8 +249,12 @@ async def _handle_subscription_deleted(sb, event: stripe.Event):
 
     # Invalidate cache
     cache_key = f"features:{user_id}"
-    redis_client.delete(cache_key)
-    logger.info(f"Subscription deactivated: user_id={user_id}, cache invalidated")
+    try:
+        redis_client.delete(cache_key)
+        logger.info(f"Subscription deactivated: user_id={user_id}, cache invalidated")
+    except Exception as e:
+        logger.warning(f"Cache invalidation failed on deletion (non-fatal): {e}")
+        logger.info(f"Subscription deactivated: user_id={user_id}")
 
 
 async def _handle_invoice_payment_succeeded(sb, event: stripe.Event):
@@ -302,5 +309,9 @@ async def _handle_invoice_payment_succeeded(sb, event: stripe.Event):
 
     # Invalidate cache
     cache_key = f"features:{user_id}"
-    redis_client.delete(cache_key)
-    logger.info(f"Annual renewal processed: user_id={user_id}, new_expires={new_expires[:10]}")
+    try:
+        redis_client.delete(cache_key)
+        logger.info(f"Annual renewal processed: user_id={user_id}, new_expires={new_expires[:10]}")
+    except Exception as e:
+        logger.warning(f"Cache invalidation failed on renewal (non-fatal): {e}")
+        logger.info(f"Annual renewal processed: user_id={user_id}, new_expires={new_expires[:10]}")

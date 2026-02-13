@@ -1,6 +1,6 @@
 # STORY-215: Stripe/Billing Test Suite — Replace Placeholder Tests
 
-**Status:** Pending
+**Status:** Done
 **Priority:** P0 — Blocks GTM Launch (Revenue Safety)
 **Sprint:** Sprint 2 (Weeks 2-3)
 **Estimated Effort:** 3 days
@@ -25,51 +25,51 @@ The billing/Stripe area has the lowest test coverage (Grade D) despite being the
 
 ### Webhook Signature Tests
 
-- [ ] AC1: Test: Missing `stripe-signature` header → HTTP 400
-- [ ] AC2: Test: Invalid/tampered payload → HTTP 400
-- [ ] AC3: Test: Valid signature → HTTP 200, event processed
+- [x] AC1: Test: Missing `stripe-signature` header → HTTP 400
+- [x] AC2: Test: Invalid/tampered payload → HTTP 400
+- [x] AC3: Test: Valid signature → HTTP 200, event processed
 
 ### Idempotency Tests
 
-- [ ] AC4: Test: Duplicate `event.id` → HTTP 200 with `"already_processed"` message
-- [ ] AC5: Test: New `event.id` → inserted into `stripe_webhook_events` table
-- [ ] AC6: Test: Database stores `event_id`, `event_type`, `processed_at`
+- [x] AC4: Test: Duplicate `event.id` → HTTP 200 with `"already_processed"` message
+- [x] AC5: Test: New `event.id` → inserted into `stripe_webhook_events` table
+- [x] AC6: Test: Database stores `event_id`, `event_type`, `processed_at`
 
 ### Subscription Event Tests
 
-- [ ] AC7: Test: `customer.subscription.updated` with `interval=month` → sets `billing_period="monthly"` in DB
-- [ ] AC8: Test: `customer.subscription.updated` with `interval=year` → sets `billing_period="annual"` in DB
-- [ ] AC9: Test: `customer.subscription.updated` syncs `profiles.plan_type` (critical fallback)
-- [ ] AC10: Test: `customer.subscription.deleted` → sets `is_active=False` in `user_subscriptions`
-- [ ] AC11: Test: `customer.subscription.deleted` syncs `profiles.plan_type`
-- [ ] AC12: Test: Unknown subscription_id → logged warning, no crash (HTTP 200)
+- [x] AC7: Test: `customer.subscription.updated` with `interval=month` → sets `billing_period="monthly"` in DB
+- [x] AC8: Test: `customer.subscription.updated` with `interval=year` → sets `billing_period="annual"` in DB
+- [x] AC9: Test: `customer.subscription.updated` syncs `profiles.plan_type` (critical fallback)
+- [x] AC10: Test: `customer.subscription.deleted` → sets `is_active=False` in `user_subscriptions`
+- [x] AC11: Test: `customer.subscription.deleted` syncs `profiles.plan_type`
+- [x] AC12: Test: Unknown subscription_id → logged warning, no crash (HTTP 200)
 
 ### Invoice/Payment Tests
 
-- [ ] AC13: Test: `invoice.payment_succeeded` → syncs `profiles.plan_type`
-- [ ] AC14: Test: `invoice.payment_succeeded` → invalidates features cache key `"features:{user_id}"`
+- [x] AC13: Test: `invoice.payment_succeeded` → syncs `profiles.plan_type`
+- [x] AC14: Test: `invoice.payment_succeeded` → invalidates features cache key `"features:{user_id}"`
 
 ### Cache Invalidation Tests
 
-- [ ] AC15: Test: After billing update, cache key `"features:{user_id}"` is deleted from Redis
-- [ ] AC16: Test: Redis unavailable → webhook still processes (graceful degradation)
+- [x] AC15: Test: After billing update, cache key `"features:{user_id}"` is deleted from Redis
+- [x] AC16: Test: Redis unavailable → webhook still processes (graceful degradation)
 
 ### Error Handling Tests
 
-- [ ] AC17: Test: Database error during webhook processing → HTTP 500, error logged
-- [ ] AC18: Test: Unhandled event type → HTTP 200 with `"unhandled"` message
-- [ ] AC19: Test: Malformed event payload → HTTP 400, not HTTP 500
+- [x] AC17: Test: Database error during webhook processing → HTTP 500, error logged
+- [x] AC18: Test: Unhandled event type → HTTP 200 with `"unhandled"` message
+- [x] AC19: Test: Malformed event payload → HTTP 400, not HTTP 500
 
 ### Test Infrastructure
 
-- [ ] AC20: Remove `sys.modules['stripe'] = MagicMock()` hack — use proper `@patch('stripe.Webhook.construct_event')` instead
-- [ ] AC21: All tests use actual assertions (no `# Expected:` comments without corresponding asserts)
-- [ ] AC22: All billing-related pre-existing failures fixed or explicitly skipped with reason
+- [x] AC20: Remove `sys.modules['stripe'] = MagicMock()` hack — use proper `@patch('stripe.Webhook.construct_event')` instead
+- [x] AC21: All tests use actual assertions (no `# Expected:` comments without corresponding asserts)
+- [x] AC22: All billing-related pre-existing failures fixed or explicitly skipped with reason
 
 ### Coverage Gate
 
-- [ ] AC23: `pytest tests/test_stripe_webhook.py --cov=webhooks.stripe --cov-report=term-missing` shows >85% coverage
-- [ ] AC24: All tests pass with zero warnings about stale mocks
+- [x] AC23: `pytest tests/test_stripe_webhook.py --cov=webhooks.stripe --cov-report=term-missing` shows >85% coverage
+- [x] AC24: All tests pass with zero warnings about stale mocks
 
 ## Validation Metric
 

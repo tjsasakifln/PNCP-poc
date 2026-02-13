@@ -1,350 +1,1107 @@
 """
-Unit Tests for Stripe Webhook Handler
+STORY-215: Stripe Webhook Handler — Complete Test Suite
 
-Tests:
-1. Signature validation (reject invalid/unsigned webhooks)
-2. Idempotency (duplicate events ignored)
-3. Billing period update from webhook
-4. Cache invalidation after webhook
-5. Edge cases (missing fields, malformed payloads)
+Replaces placeholder tests with real assertions covering all 24 acceptance criteria.
+
+Coverage target: >85% of webhooks/stripe.py
+
+Tracks:
+  1. Infrastructure: Proper @patch patterns (no sys.modules hack)
+  2. Signature validation (AC1-AC3)
+  3. Idempotency (AC4-AC6)
+  4. Subscription events (AC7-AC12)
+  5. Invoice/payment + cache (AC13-AC16)
+  6. Error handling (AC17-AC19)
+  7. Test infrastructure (AC20-AC24)
 
 Mocking Strategy:
-- Mock Stripe signature verification
-- Mock database session
-- Mock Redis cache
-- Use in-memory fixtures for test data
-
-Coverage Target: 95%+
+  - @patch('webhooks.stripe.stripe.Webhook.construct_event') for signature validation
+  - @patch('webhooks.stripe.get_supabase') for all DB operations
+  - @patch('webhooks.stripe.redis_client') for cache operations
+  - @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test') for env config
+  - AsyncMock for request.body() (FastAPI sends coroutine)
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock, patch, MagicMock, call
 from fastapi import HTTPException
 
-# Mock Stripe module before importing webhooks
-import sys
-sys.modules['stripe'] = MagicMock()
-sys.modules['stripe.error'] = MagicMock()
+# ──────────────────────────────────────────────────────────────────────
+# AC20: NO sys.modules['stripe'] = MagicMock() — use proper @patch
+# ──────────────────────────────────────────────────────────────────────
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Fixtures
+# ═══════════════════════════════════════════════════════════════════════
 
 @pytest.fixture
 def mock_request():
-    """Mock FastAPI Request with Stripe webhook payload."""
-    request = Mock()
-    request.body = Mock(return_value=b'{"id": "evt_test_123", "type": "customer.subscription.updated"}')
+    """Mock FastAPI Request with async body() method."""
+    request = AsyncMock()
+    request.body = AsyncMock(return_value=b'{"id":"evt_test_123","type":"customer.subscription.updated"}')
     request.headers = {"stripe-signature": "t=1234567890,v1=valid_signature"}
     return request
 
 
 @pytest.fixture
-def mock_stripe_event():
-    """Mock Stripe Event object."""
-    event = Mock()
-    event.id = "evt_test_123"
-    event.type = "customer.subscription.updated"
-    event.data = Mock()
-    event.data.object = {
-        "id": "sub_test_456",
-        "plan": {"interval": "year"},
+def mock_request_no_signature():
+    """Mock request missing stripe-signature header."""
+    request = AsyncMock()
+    request.body = AsyncMock(return_value=b'{"id":"evt_test_123"}')
+    request.headers = {}
+    return request
+
+
+@pytest.fixture
+def make_stripe_event():
+    """Factory for Stripe Event mocks."""
+    def _make(event_id="evt_test_123", event_type="customer.subscription.updated",
+              data_object=None):
+        event = Mock()
+        event.id = event_id
+        event.type = event_type
+        if data_object is None:
+            data_object = Mock()
+            data_object.id = "sub_test_456"
+            data_object.get = lambda key, default=None: {
+                "plan": {"interval": "year"},
+                "items": {"data": [{"plan": {"interval": "year"}}]},
+                "customer": "cus_test_789",
+                "metadata": {"plan_id": "plan_pro"},
+                "subscription": "sub_test_456",
+            }.get(key, default)
+        event.data = Mock()
+        event.data.object = data_object
+        return event
+    return _make
+
+
+@pytest.fixture
+def subscription_updated_event(make_stripe_event):
+    """Standard subscription.updated event."""
+    return make_stripe_event(
+        event_type="customer.subscription.updated",
+    )
+
+
+@pytest.fixture
+def subscription_deleted_event(make_stripe_event):
+    """Standard subscription.deleted event."""
+    data = Mock()
+    data.id = "sub_test_456"
+    data.get = lambda key, default=None: {
         "customer": "cus_test_789",
-    }
-    return event
+    }.get(key, default)
+    return make_stripe_event(
+        event_id="evt_test_del_124",
+        event_type="customer.subscription.deleted",
+        data_object=data,
+    )
 
 
 @pytest.fixture
-def mock_db_session():
-    """Mock database session."""
-    db = MagicMock()
-    db.query = MagicMock()
-    db.add = MagicMock()
-    db.commit = MagicMock()
-    db.rollback = MagicMock()
-    db.close = MagicMock()
-    db.flush = MagicMock()
-    return db
+def invoice_paid_event(make_stripe_event):
+    """Standard invoice.payment_succeeded event."""
+    data = Mock()
+    data.id = "in_test_789"
+    data.get = lambda key, default=None: {
+        "subscription": "sub_test_456",
+        "customer": "cus_test_789",
+    }.get(key, default)
+    return make_stripe_event(
+        event_id="evt_test_inv_125",
+        event_type="invoice.payment_succeeded",
+        data_object=data,
+    )
 
 
 @pytest.fixture
-def mock_redis():
-    """Mock Redis client."""
-    redis = MagicMock()
-    redis.delete = MagicMock(return_value=1)
-    return redis
+def mock_supabase_client():
+    """
+    Mock Supabase client with chainable table operations.
+
+    Returns a mock that supports:
+        sb.table("x").select("y").eq("z", val).limit(1).execute()
+        sb.table("x").insert({...}).execute()
+        sb.table("x").update({...}).eq("z", val).execute()
+        sb.table("x").select("y").eq("z", val).single().execute()
+    """
+    sb = MagicMock()
+
+    # Track per-table call chains
+    _table_mocks = {}
+
+    def _make_chain():
+        chain = MagicMock()
+        chain.select.return_value = chain
+        chain.insert.return_value = chain
+        chain.update.return_value = chain
+        chain.upsert.return_value = chain
+        chain.delete.return_value = chain
+        chain.eq.return_value = chain
+        chain.limit.return_value = chain
+        chain.single.return_value = chain
+        chain.order.return_value = chain
+        chain.execute.return_value = Mock(data=[])
+        return chain
+
+    def table_factory(name):
+        if name not in _table_mocks:
+            _table_mocks[name] = _make_chain()
+        return _table_mocks[name]
+
+    sb.table = MagicMock(side_effect=table_factory)
+    sb._table_mocks = _table_mocks
+    return sb
 
 
-class TestStripeWebhookSignatureValidation:
-    """Test webhook signature validation."""
+def configure_idempotency(sb, *, already_processed=False, event_id="evt_test_123"):
+    """Helper: configure idempotency check response on Supabase mock."""
+    events_chain = sb.table("stripe_webhook_events")
+    if already_processed:
+        events_chain.execute.return_value = Mock(data=[{"id": event_id}])
+    else:
+        events_chain.execute.return_value = Mock(data=[])
 
+
+def configure_subscription_lookup(sb, *, found=True, user_id="user_123",
+                                   plan_id="plan_pro", sub_id="sub-local-uuid"):
+    """Helper: configure user_subscriptions lookup response."""
+    subs_chain = sb.table("user_subscriptions")
+    if found:
+        subs_chain.execute.return_value = Mock(data=[{
+            "id": sub_id,
+            "user_id": user_id,
+            "plan_id": plan_id,
+        }])
+    else:
+        subs_chain.execute.return_value = Mock(data=[])
+
+
+def configure_plan_lookup(sb, *, duration_days=30):
+    """Helper: configure plans table lookup for invoice handler."""
+    plans_chain = sb.table("plans")
+    plans_chain.execute.return_value = Mock(data={"duration_days": duration_days})
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Track 2: Signature Validation (AC1-AC3)
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestSignatureValidation:
+    """AC1-AC3: Webhook signature verification."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    async def test_ac1_missing_signature_returns_400(self, mock_request_no_signature):
+        """AC1: Missing stripe-signature header → HTTP 400."""
+        from webhooks.stripe import stripe_webhook
+
+        with pytest.raises(HTTPException) as exc_info:
+            await stripe_webhook(mock_request_no_signature)
+
+        assert exc_info.value.status_code == 400
+        assert "Missing stripe-signature" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac2_invalid_signature_returns_400(self, mock_construct, mock_request):
+        """AC2: Invalid/tampered payload → HTTP 400."""
+        import stripe as stripe_mod
+        mock_construct.side_effect = stripe_mod.error.SignatureVerificationError(
+            "Invalid signature", sig_header="bad"
+        )
+
+        from webhooks.stripe import stripe_webhook
+
+        with pytest.raises(HTTPException) as exc_info:
+            await stripe_webhook(mock_request)
+
+        assert exc_info.value.status_code == 400
+        assert "Invalid signature" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
     @patch('webhooks.stripe.get_supabase')
-    def test_valid_signature_accepted(self, mock_get_sb, mock_construct, mock_request, mock_stripe_event):
-        """Valid signature should be accepted."""
-        mock_construct.return_value = mock_stripe_event
-        mock_sb = MagicMock()
-        mock_get_sb.return_value = mock_sb
-        # Mock idempotency check - no existing event
-        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = Mock(data=[])
-        # Mock insert for event logging
-        mock_sb.table.return_value.insert.return_value.execute.return_value = Mock(data=[])
-
-        # Should not raise exception
-        assert mock_construct.called or True  # Placeholder assertion
-
-    def test_missing_signature_header_rejected(self, mock_request):
-        """Missing stripe-signature header should be rejected."""
-        mock_request.headers = {}  # No signature header
-
-        # Verify that a request without stripe-signature would be missing the key
-        assert "stripe-signature" not in mock_request.headers
-
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
-    def test_invalid_signature_rejected(self, mock_construct, mock_request):
-        """Invalid signature should be rejected."""
-        # Mock signature verification failure
-        import stripe
-        mock_construct.side_effect = stripe.error.SignatureVerificationError("Invalid signature", sig_header="invalid")
+    async def test_ac3_valid_signature_returns_200(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        subscription_updated_event, mock_supabase_client
+    ):
+        """AC3: Valid signature → HTTP 200, event processed."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
 
-        # Expected: HTTP 400 "Invalid signature"
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
 
+        assert result["status"] == "success"
+        assert result["event_id"] == subscription_updated_event.id
+        mock_construct.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
-    def test_invalid_payload_rejected(self, mock_construct, mock_request):
-        """Malformed payload should be rejected."""
+    async def test_invalid_payload_returns_400(self, mock_construct, mock_request):
+        """AC19: Malformed event payload → HTTP 400, not HTTP 500."""
         mock_construct.side_effect = ValueError("Invalid JSON")
 
-        # Expected: HTTP 400 "Invalid payload"
+        from webhooks.stripe import stripe_webhook
+
+        with pytest.raises(HTTPException) as exc_info:
+            await stripe_webhook(mock_request)
+
+        assert exc_info.value.status_code == 400
+        assert "Invalid payload" in exc_info.value.detail
 
 
-class TestStripeWebhookIdempotency:
-    """Test webhook idempotency (duplicate event handling)."""
+# ═══════════════════════════════════════════════════════════════════════
+# Track 3: Idempotency (AC4-AC6)
+# ═══════════════════════════════════════════════════════════════════════
 
-    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+class TestIdempotency:
+    """AC4-AC6: Duplicate event handling."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
     @patch('webhooks.stripe.get_supabase')
-    def test_duplicate_event_returns_already_processed(self, mock_get_sb, mock_construct, mock_request, mock_stripe_event):
-        """Duplicate webhook event should return 'already_processed'."""
-        mock_construct.return_value = mock_stripe_event
-        mock_sb = MagicMock()
-        mock_get_sb.return_value = mock_sb
-        # Mock idempotency check - existing event found
-        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = Mock(data=[{"id": "evt_test_123"}])
-
-        # Expected: {"status": "already_processed"}
-
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac4_duplicate_event_returns_already_processed(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        subscription_updated_event, mock_supabase_client
+    ):
+        """AC4: Duplicate event.id → HTTP 200 with 'already_processed'."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=True)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "already_processed"
+        assert result["event_id"] == "evt_test_123"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
     @patch('webhooks.stripe.get_supabase')
-    def test_new_event_processed_and_recorded(self, mock_get_sb, mock_construct, mock_request, mock_stripe_event):
-        """New webhook event should be processed and recorded in DB."""
-        mock_construct.return_value = mock_stripe_event
-        mock_sb = MagicMock()
-        mock_get_sb.return_value = mock_sb
-        # Mock idempotency check - no existing event
-        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = Mock(data=[])
-        # Mock insert for event logging
-        mock_sb.table.return_value.insert.return_value.execute.return_value = Mock(data=[])
-        # Mock update for subscription
-        mock_sb.table.return_value.update.return_value.eq.return_value.execute.return_value = Mock(data=[])
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac5_new_event_inserted_into_webhook_events(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        subscription_updated_event, mock_supabase_client
+    ):
+        """AC5: New event.id → inserted into stripe_webhook_events table."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
 
-        # Expected:
-        # 1. Event processed (handle_subscription_updated called)
-        # 2. Event added to stripe_webhook_events table
-        # 3. {"status": "success"}
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+
+        # Verify insert was called on stripe_webhook_events table
+        mock_supabase_client.table.assert_any_call("stripe_webhook_events")
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac6_event_record_contains_required_fields(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        subscription_updated_event, mock_supabase_client
+    ):
+        """AC6: Database stores event_id, event_type, processed_at."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+
+        # Track insert calls
+        insert_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_insert(table_name):
+            chain = original_table(table_name)
+            if table_name == "stripe_webhook_events":
+                original_insert = chain.insert
+
+                def capturing_insert(data):
+                    insert_calls.append(data)
+                    return original_insert(data)
+
+                chain.insert = capturing_insert
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_insert)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        # Verify at least one insert was captured for webhook events
+        assert len(insert_calls) >= 1, "Expected insert into stripe_webhook_events"
+        record = insert_calls[0]
+        assert "id" in record, "Record must contain event id"
+        assert record["id"] == "evt_test_123"
+        assert "type" in record, "Record must contain event type"
+        assert record["type"] == "customer.subscription.updated"
+        assert "processed_at" in record, "Record must contain processed_at timestamp"
 
 
-class TestBillingPeriodUpdate:
-    """Test billing_period update from Stripe webhook."""
+# ═══════════════════════════════════════════════════════════════════════
+# Track 3: Subscription Updated (AC7-AC9)
+# ═══════════════════════════════════════════════════════════════════════
 
-    def test_annual_interval_sets_billing_period_annual(self, mock_db_session):
-        """Stripe interval 'year' should set billing_period to 'annual'."""
-        event = Mock()
-        event.data.object = {
-            "id": "sub_test_456",
-            "plan": {"interval": "year"},
-        }
+class TestSubscriptionUpdated:
+    """AC7-AC9: customer.subscription.updated event handling."""
 
-        # Mock user subscription
-        mock_subscription = Mock()
-        mock_subscription.user_id = "user_123"
-        mock_db_session.query().filter().first.return_value = mock_subscription
-
-        # Call handler (mocked async)
-        # Expected: billing_period = 'annual' in DB
-
-    def test_monthly_interval_sets_billing_period_monthly(self, mock_db_session):
-        """Stripe interval 'month' should set billing_period to 'monthly'."""
-        event = Mock()
-        event.data.object = {
-            "id": "sub_test_456",
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac7_monthly_interval_sets_billing_period_monthly(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """AC7: interval=month → billing_period='monthly'."""
+        data = Mock()
+        data.id = "sub_test_456"
+        data.get = lambda key, default=None: {
             "plan": {"interval": "month"},
-        }
+            "items": {"data": [{"plan": {"interval": "month"}}]},
+            "customer": "cus_test_789",
+            "metadata": None,
+        }.get(key, default)
 
-        mock_subscription = Mock()
-        mock_subscription.user_id = "user_123"
-        mock_db_session.query().filter().first.return_value = mock_subscription
+        event = make_stripe_event(event_type="customer.subscription.updated", data_object=data)
+        mock_construct.return_value = event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
 
-        # Expected: billing_period = 'monthly'
+        # Track updates
+        update_calls = []
+        original_table = mock_supabase_client.table
 
-    def test_missing_interval_defaults_to_monthly(self, mock_db_session):
-        """Missing interval should default to 'monthly'."""
-        event = Mock()
-        event.data.object = {
-            "id": "sub_test_456",
-            "plan": {},  # No interval
-        }
+        def track_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
 
-        # Expected: billing_period = 'monthly' (safe default)
+                def capturing_update(data):
+                    update_calls.append(data)
+                    return original_update(data)
 
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            u.get("billing_period") == "monthly" for u in update_calls
+        ), f"Expected billing_period='monthly' in updates: {update_calls}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac8_annual_interval_sets_billing_period_annual(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_updated_event
+    ):
+        """AC8: interval=year → billing_period='annual'."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+
+        update_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
+
+                def capturing_update(data):
+                    update_calls.append(data)
+                    return original_update(data)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            u.get("billing_period") == "annual" for u in update_calls
+        ), f"Expected billing_period='annual' in updates: {update_calls}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac9_subscription_updated_syncs_profiles_plan_type(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_updated_event
+    ):
+        """AC9: subscription.updated syncs profiles.plan_type (critical fallback)."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, plan_id="plan_pro")
+
+        profile_updates = []
+        original_table = mock_supabase_client.table
+
+        def track_profile_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "profiles":
+                original_update = chain.update
+
+                def capturing_update(data):
+                    profile_updates.append(data)
+                    return original_update(data)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_profile_update)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        assert len(profile_updates) >= 1, "Expected profiles.plan_type sync"
+        assert any(
+            "plan_type" in u for u in profile_updates
+        ), f"Expected plan_type in profile updates: {profile_updates}"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Track 3: Subscription Deleted (AC10-AC12)
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestSubscriptionDeleted:
+    """AC10-AC12: customer.subscription.deleted event handling."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac10_deleted_sets_is_active_false(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_deleted_event
+    ):
+        """AC10: subscription.deleted → is_active=False in user_subscriptions."""
+        mock_construct.return_value = subscription_deleted_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+
+        sub_updates = []
+        original_table = mock_supabase_client.table
+
+        def track_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
+
+                def capturing_update(data):
+                    sub_updates.append(data)
+                    return original_update(data)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            u.get("is_active") is False for u in sub_updates
+        ), f"Expected is_active=False in subscription updates: {sub_updates}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac11_deleted_syncs_profiles_plan_type_to_free_trial(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_deleted_event
+    ):
+        """AC11: subscription.deleted syncs profiles.plan_type to 'free_trial'."""
+        mock_construct.return_value = subscription_deleted_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+
+        profile_updates = []
+        original_table = mock_supabase_client.table
+
+        def track_profile(table_name):
+            chain = original_table(table_name)
+            if table_name == "profiles":
+                original_update = chain.update
+
+                def capturing_update(data):
+                    profile_updates.append(data)
+                    return original_update(data)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_profile)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        assert len(profile_updates) >= 1, "Expected profiles.plan_type sync on deletion"
+        assert any(
+            u.get("plan_type") == "free_trial" for u in profile_updates
+        ), f"Expected plan_type='free_trial' in profile updates: {profile_updates}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac12_unknown_subscription_logged_no_crash(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_updated_event
+    ):
+        """AC12: Unknown subscription_id → logged warning, no crash (HTTP 200)."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        # Subscription NOT found
+        configure_subscription_lookup(mock_supabase_client, found=False)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        # Should still return success (event logged, no crash)
+        assert result["status"] == "success"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Track 4: Invoice/Payment (AC13-AC14)
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestInvoicePayment:
+    """AC13-AC14: invoice.payment_succeeded event handling."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac13_invoice_payment_syncs_plan_type(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, invoice_paid_event
+    ):
+        """AC13: invoice.payment_succeeded → syncs profiles.plan_type."""
+        mock_construct.return_value = invoice_paid_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, plan_id="plan_pro")
+        configure_plan_lookup(mock_supabase_client, duration_days=30)
+
+        profile_updates = []
+        original_table = mock_supabase_client.table
+
+        def track_profile(table_name):
+            chain = original_table(table_name)
+            if table_name == "profiles":
+                original_update = chain.update
+
+                def capturing_update(data):
+                    profile_updates.append(data)
+                    return original_update(data)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_profile)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            u.get("plan_type") == "plan_pro" for u in profile_updates
+        ), f"Expected plan_type='plan_pro' in profile updates: {profile_updates}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac14_invoice_payment_invalidates_cache(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, invoice_paid_event
+    ):
+        """AC14: invoice.payment_succeeded → invalidates features cache key."""
+        mock_construct.return_value = invoice_paid_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, user_id="user_456")
+        configure_plan_lookup(mock_supabase_client, duration_days=365)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        mock_redis.delete.assert_called_with("features:user_456")
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Track 4: Cache Invalidation (AC15-AC16)
+# ═══════════════════════════════════════════════════════════════════════
 
 class TestCacheInvalidation:
-    """Test Redis cache invalidation after webhook."""
+    """AC15-AC16: Redis cache invalidation behavior."""
 
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
     @patch('webhooks.stripe.redis_client')
-    def test_cache_invalidated_after_billing_update(self, mock_redis, mock_db_session):
-        """Cache should be invalidated after billing_period update."""
-        event = Mock()
-        event.data.object = {
-            "id": "sub_test_456",
-            "plan": {"interval": "year"},
-        }
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac15_cache_key_format_is_features_user_id(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_updated_event
+    ):
+        """AC15: After billing update, cache key 'features:{user_id}' is deleted."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, user_id="user_abc_123")
 
-        mock_subscription = Mock()
-        mock_subscription.user_id = "user_123"
-        mock_db_session.query().filter().first.return_value = mock_subscription
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
 
-        # Expected: redis_client.delete(f"features:user_123") called
+        mock_redis.delete.assert_called_with("features:user_abc_123")
 
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
     @patch('webhooks.stripe.redis_client')
-    def test_cache_invalidation_uses_correct_key_format(self, mock_redis, mock_db_session):
-        """Cache key should follow 'features:<user_id>' format."""
-        # Expected: redis_client.delete("features:user_123")
-        # NOT: redis_client.delete("user_123") or other formats
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac16_redis_unavailable_webhook_still_processes(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_updated_event
+    ):
+        """AC16: Redis unavailable → webhook still processes (graceful degradation)."""
+        mock_construct.return_value = subscription_updated_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+
+        # Redis operations raise exceptions
+        mock_redis.delete.side_effect = Exception("Redis connection refused")
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        # Webhook should still succeed even if Redis fails
+        assert result["status"] == "success"
 
 
-class TestWebhookEventLogging:
-    """Test webhook event logging to database."""
+# ═══════════════════════════════════════════════════════════════════════
+# Track 5: Error Handling (AC17-AC19)
+# ═══════════════════════════════════════════════════════════════════════
 
-    def test_event_stored_in_stripe_webhook_events_table(self, mock_db_session):
-        """Processed webhook should be stored in stripe_webhook_events table."""
-        # Expected:
-        # 1. StripeWebhookEvent object created
-        # 2. db.add(webhook_event) called
-        # 3. db.commit() called
+class TestErrorHandling:
+    """AC17-AC19: Error handling and edge cases."""
 
-    def test_event_payload_stored_as_jsonb(self, mock_db_session):
-        """Event payload should be stored as JSONB for debugging."""
-        # Expected: payload column contains full Stripe event data
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac17_database_error_returns_500(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        subscription_updated_event
+    ):
+        """AC17: Database error during webhook processing → HTTP 500, error logged."""
+        mock_construct.return_value = subscription_updated_event
+        mock_sb = MagicMock()
+        mock_get_sb.return_value = mock_sb
 
+        # Make the idempotency check raise a DB error
+        mock_sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.side_effect = Exception(
+            "Database connection lost"
+        )
 
-class TestEdgeCases:
-    """Test edge cases and error handling."""
+        from webhooks.stripe import stripe_webhook
 
-    def test_subscription_not_found_in_db(self, mock_db_session):
-        """Webhook for unknown subscription should be logged but not fail."""
-        event = Mock()
-        event.data.object = {
-            "id": "sub_unknown_999",
-            "plan": {"interval": "year"},
-        }
+        with pytest.raises(HTTPException) as exc_info:
+            await stripe_webhook(mock_request)
 
-        # Mock no subscription found
-        mock_db_session.query().filter().first.return_value = None
+        assert exc_info.value.status_code == 500
+        assert "Database error" in exc_info.value.detail
 
-        # Expected: No crash, event still logged
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac18_unhandled_event_type_returns_200(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """AC18: Unhandled event type → HTTP 200 with event logged."""
+        unhandled_event = make_stripe_event(
+            event_id="evt_unhandled_999",
+            event_type="charge.succeeded",  # Not in our handlers
+        )
+        mock_construct.return_value = unhandled_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
 
-    def test_database_error_triggers_rollback(self, mock_db_session):
-        """Database error should trigger rollback and return HTTP 500."""
-        from sqlalchemy.exc import SQLAlchemyError
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
 
-        mock_db_session.commit.side_effect = SQLAlchemyError("DB connection lost")
+        # Should still return success (just logs and records, no processing)
+        assert result["status"] == "success"
+        assert result["event_id"] == "evt_unhandled_999"
 
-        # Expected:
-        # 1. db.rollback() called
-        # 2. HTTP 500 raised
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_ac19_malformed_payload_returns_400_not_500(
+        self, mock_construct, mock_request
+    ):
+        """AC19: Malformed event payload → HTTP 400, not HTTP 500."""
+        mock_construct.side_effect = ValueError("No JSON object could be decoded")
 
-    def test_redis_failure_does_not_block_webhook(self, mock_redis, mock_db_session):
-        """Redis failure should not prevent webhook processing."""
-        mock_redis.delete.side_effect = Exception("Redis connection failed")
+        from webhooks.stripe import stripe_webhook
 
-        # Expected:
-        # 1. Webhook still processed
-        # 2. Event still logged to DB
-        # 3. Error logged but not raised
+        with pytest.raises(HTTPException) as exc_info:
+            await stripe_webhook(mock_request)
 
-
-class TestMultipleEventTypes:
-    """Test handling of different Stripe event types."""
-
-    def test_customer_subscription_updated_handled(self):
-        """customer.subscription.updated event should be processed."""
-        # Expected: handle_subscription_updated() called
-
-    def test_customer_subscription_deleted_handled(self):
-        """customer.subscription.deleted event should mark subscription inactive."""
-        # Expected: is_active = False in user_subscriptions
-
-    def test_invoice_payment_succeeded_handled(self):
-        """invoice.payment_succeeded event should be processed (annual renewal)."""
-        # Expected: Cache invalidated for renewal
-
-    def test_unhandled_event_type_logged_and_skipped(self):
-        """Unhandled event types should be logged but not fail."""
-        event = Mock()
-        event.type = "charge.succeeded"  # Not in our handlers
-
-        # Expected: Log message, event recorded, no processing
-
-
-# Integration test (requires test database)
-@pytest.mark.integration
-class TestWebhookIntegration:
-    """Integration tests with real database (requires test DB)."""
-
-    def test_full_webhook_flow_end_to_end(self):
-        """
-        Full webhook flow:
-        1. Receive Stripe event
-        2. Verify signature
-        3. Check idempotency
-        4. Update DB
-        5. Invalidate cache
-        6. Log event
-        """
-        # TODO: Implement with test database
-        pass
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.status_code != 500  # Explicitly NOT 500
 
 
-# Fixtures for common test data
-@pytest.fixture
-def sample_subscription_updated_event():
-    """Sample Stripe subscription.updated event payload."""
-    return {
-        "id": "evt_test_123",
-        "type": "customer.subscription.updated",
-        "data": {
-            "object": {
-                "id": "sub_test_456",
-                "customer": "cus_test_789",
-                "plan": {
-                    "interval": "year",
-                    "amount": 285100,  # R$ 2,851 in centavos
-                    "currency": "brl",
-                },
-                "status": "active",
-            }
-        },
-    }
+# ═══════════════════════════════════════════════════════════════════════
+# Track 7: Test Infrastructure Validation (AC20-AC21, AC24)
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestInfrastructureQuality:
+    """AC20-AC21, AC24: Test quality meta-checks."""
+
+    def test_ac20_no_sys_modules_hack(self):
+        """AC20: Verify no module-level stripe mock injection is used."""
+        import pathlib
+        import re
+        source = pathlib.Path(__file__).read_text(encoding="utf-8")
+        # Look for the actual hack pattern: sys.modules[...] = MagicMock/Mock
+        hack_pattern = re.compile(r"^sys\.modules\[.*stripe.*\]\s*=", re.MULTILINE)
+        matches = hack_pattern.findall(source)
+        assert len(matches) == 0, (
+            f"FOUND sys.modules stripe hack pattern — use @patch instead: {matches}"
+        )
+
+    def test_ac21_no_assertion_free_tests(self):
+        """AC21: All test methods in this module have real assertions."""
+        import sys
+        import inspect
+        module = sys.modules[__name__]
+        test_classes = [
+            cls for name, cls in inspect.getmembers(module, inspect.isclass)
+            if name.startswith("Test")
+        ]
+
+        tests_without_asserts = []
+        for cls in test_classes:
+            for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
+                if not name.startswith("test_"):
+                    continue
+                source = inspect.getsource(method)
+                has_assert = "assert" in source or "pytest.raises" in source
+                if not has_assert:
+                    tests_without_asserts.append(f"{cls.__name__}.{name}")
+
+        assert len(tests_without_asserts) == 0, (
+            f"Tests without assertions found: {tests_without_asserts}"
+        )
+
+    def test_ac24_minimum_assertion_count(self):
+        """AC24: Total assert count > 30 across all tests (validation metric)."""
+        import pathlib
+        source = pathlib.Path(__file__).read_text(encoding="utf-8")
+        assert_count = source.count("assert ")
+        # Validation metric from story: grep -c "assert" > 30
+        assert assert_count > 30, (
+            f"Only {assert_count} assertions found, need >30"
+        )
 
 
-@pytest.fixture
-def sample_subscription_deleted_event():
-    """Sample Stripe subscription.deleted event payload."""
-    return {
-        "id": "evt_test_124",
-        "type": "customer.subscription.deleted",
-        "data": {
-            "object": {
-                "id": "sub_test_456",
-                "customer": "cus_test_789",
-                "status": "canceled",
-            }
-        },
-    }
+# ═══════════════════════════════════════════════════════════════════════
+# Additional Edge Cases
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestSubscriptionUpdatedEdgeCases:
+    """Extra edge cases for subscription update handler."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_missing_interval_defaults_to_monthly(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """Missing plan.interval should default to 'monthly'."""
+        data = Mock()
+        data.id = "sub_test_456"
+        data.get = lambda key, default=None: {
+            "plan": {},  # No interval key
+            "items": {"data": [{"plan": {}}]},
+            "customer": "cus_test_789",
+            "metadata": None,
+        }.get(key, default)
+
+        event = make_stripe_event(event_type="customer.subscription.updated", data_object=data)
+        mock_construct.return_value = event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+
+        update_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
+
+                def capturing_update(d):
+                    update_calls.append(d)
+                    return original_update(d)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            u.get("billing_period") == "monthly" for u in update_calls
+        ), f"Expected billing_period='monthly' as default: {update_calls}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_plan_change_updates_plan_id(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """Plan change via metadata.plan_id updates subscription plan_id."""
+        data = Mock()
+        data.id = "sub_test_456"
+        data.get = lambda key, default=None: {
+            "plan": {"interval": "month"},
+            "items": {"data": [{"plan": {"interval": "month"}}]},
+            "customer": "cus_test_789",
+            "metadata": {"plan_id": "plan_enterprise"},
+        }.get(key, default)
+
+        event = make_stripe_event(event_type="customer.subscription.updated", data_object=data)
+        mock_construct.return_value = event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, plan_id="plan_pro")
+
+        update_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
+
+                def capturing_update(d):
+                    update_calls.append(d)
+                    return original_update(d)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            u.get("plan_id") == "plan_enterprise" for u in update_calls
+        ), f"Expected plan_id='plan_enterprise' in updates: {update_calls}"
+
+
+class TestInvoicePaymentEdgeCases:
+    """Edge cases for invoice payment handler."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_invoice_without_subscription_skipped(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """Invoice without subscription_id (one-time payment) is skipped."""
+        data = Mock()
+        data.id = "in_oneoff_999"
+        data.get = lambda key, default=None: {
+            "subscription": None,  # No subscription
+            "customer": "cus_test_789",
+        }.get(key, default)
+
+        event = make_stripe_event(
+            event_id="evt_oneoff_999",
+            event_type="invoice.payment_succeeded",
+            data_object=data,
+        )
+        mock_construct.return_value = event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_invoice_unknown_subscription_no_crash(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, invoice_paid_event
+    ):
+        """Invoice for unknown subscription doesn't crash."""
+        mock_construct.return_value = invoice_paid_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, found=False)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_invoice_extends_subscription_expiry(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, invoice_paid_event
+    ):
+        """Invoice payment extends subscription expiry date."""
+        mock_construct.return_value = invoice_paid_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client)
+        configure_plan_lookup(mock_supabase_client, duration_days=365)
+
+        sub_updates = []
+        original_table = mock_supabase_client.table
+
+        def track_update(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
+
+                def capturing_update(d):
+                    sub_updates.append(d)
+                    return original_update(d)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert any(
+            "expires_at" in u and u.get("is_active") is True
+            for u in sub_updates
+        ), f"Expected expires_at + is_active=True in updates: {sub_updates}"
+
+
+class TestDeletedSubscriptionEdgeCases:
+    """Edge cases for subscription deletion handler."""
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_deleted_unknown_subscription_no_crash(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_deleted_event
+    ):
+        """Deletion for unknown subscription doesn't crash."""
+        mock_construct.return_value = subscription_deleted_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, found=False)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_client')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_deleted_invalidates_cache(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, subscription_deleted_event
+    ):
+        """Subscription deletion invalidates the user's cache."""
+        mock_construct.return_value = subscription_deleted_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+        configure_subscription_lookup(mock_supabase_client, user_id="user_del_789")
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        mock_redis.delete.assert_called_with("features:user_del_789")

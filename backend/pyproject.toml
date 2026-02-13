@@ -29,7 +29,11 @@ markers = [
     "unit: Unit tests (fast, isolated)",
     "integration: Integration tests (external dependencies)",
     "slow: Slow tests (> 1s)",
+    "asyncio: Async tests",
 ]
+
+# pytest-asyncio configuration
+asyncio_mode = "auto"
 
 # Logging
 log_cli = false
