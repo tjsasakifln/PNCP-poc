@@ -1,41 +1,64 @@
-# Monitoring & Alerting Setup - 48-Hour Critical Window
+# Monitoring & Alerting Setup
 
-**Project:** BidIQ Uniformes
-**Version:** 1.0
-**Last Updated:** 2026-01-30
+**Project:** SmartLic (BidIQ)
+**Version:** 2.0
+**Last Updated:** 2026-02-13
 **Owner:** @devops
-**Duration:** 48 hours post-deployment
+**Alert Contact:** tiago.sasaki@gmail.com
 
 ---
 
 ## Overview
 
-This runbook provides comprehensive monitoring and alerting setup for the **48-hour critical window** following production deployment. During this period, we actively monitor all metrics to detect issues early and ensure deployment stability.
+This runbook provides the production monitoring and alerting setup for SmartLic. It covers automated uptime monitoring (UptimeRobot), error tracking (Sentry), and platform metrics (Railway).
 
-**Critical Window:** First 48 hours after production deployment
-**On-Call Requirement:** DevOps engineer available 24/7
-**Alert Response Time:** <15 minutes
+**Alert Response Time:** <15 minutes for critical, <1 hour for warnings
 
 ---
 
 ## Section 1: Monitoring Stack
 
-### 1.1 Platform Monitoring
+### 1.1 Active Monitoring
 
-| Platform | Tool | Metrics | Access |
-|----------|------|---------|--------|
-| **Backend (Railway)** | Railway Dashboard | CPU, Memory, Network, Requests, Errors | https://railway.app/dashboard |
-| **Frontend (Vercel)** | Vercel Analytics | Web Vitals, Page Views, Errors, Performance | https://vercel.com/dashboard |
-| **Analytics** | Mixpanel | User events, Conversion funnels, Retention | https://mixpanel.com/ |
-| **Error Tracking** | Browser Console + Railway Logs | JavaScript errors, API errors | Manual |
+| Layer | Tool | What It Monitors | Alert Channel |
+|-------|------|------------------|---------------|
+| **Uptime** | UptimeRobot (Free) | Backend + Frontend health endpoints, 5-min interval | Email: tiago.sasaki@gmail.com |
+| **Errors** | Sentry | Unhandled exceptions, error rate spikes, revenue-critical paths | Email: tiago.sasaki@gmail.com |
+| **Infrastructure** | Railway Dashboard | CPU, Memory, Network, Request rate | Railway built-in alerts |
+| **Frontend Perf** | Railway (Frontend) | Web Vitals, Build status | Railway built-in alerts |
 
-### 1.2 Custom Monitoring (Optional)
+### 1.2 UptimeRobot Monitors
 
-**Future Enhancements (Week 2+):**
-- Sentry for error tracking (frontend + backend)
+| Monitor | URL | Interval | Alert Condition |
+|---------|-----|----------|-----------------|
+| **SmartLic Backend Health** | `https://bidiq-backend-production.up.railway.app/health` | 5 min | HTTP status != 200 |
+| **SmartLic Frontend Health** | `https://smartlic.tech/api/health` | 5 min | HTTP status != 200 (returns 503 when backend is down) |
+
+**UptimeRobot Dashboard:** https://dashboard.uptimerobot.com/
+
+**Note:** The frontend health endpoint (`/api/health`) performs a deep check — it fetches the backend `/health` endpoint and returns HTTP 503 if the backend is unreachable. This means UptimeRobot monitoring the frontend health endpoint also implicitly monitors backend availability.
+
+### 1.3 Sentry Projects
+
+| Project | Platform | DSN Env Var | Dashboard |
+|---------|----------|-------------|-----------|
+| `smartlic-backend` | Python (FastAPI) | `SENTRY_DSN` | https://sentry.io → smartlic-backend |
+| `smartlic-frontend` | JavaScript (Next.js) | `NEXT_PUBLIC_SENTRY_DSN` | https://sentry.io → smartlic-frontend |
+
+**Sentry Alert Rules:**
+
+| Rule | Condition | Action | Scope |
+|------|-----------|--------|-------|
+| New Issue Alert | First occurrence of any new error | Email tiago.sasaki@gmail.com | Both projects |
+| Error Rate Spike | Error rate > 5% in 5-minute window | Email tiago.sasaki@gmail.com | Both projects |
+| Stripe Webhook Critical | Unhandled exception in `webhooks/stripe.py` | Immediate email tiago.sasaki@gmail.com | smartlic-backend |
+
+### 1.4 Future Enhancements
+
 - Datadog for unified metrics
 - PagerDuty for on-call management
 - Grafana for custom dashboards
+- Slack webhook integration for alerts
 
 ---
 
@@ -195,7 +218,7 @@ Metric: CPU Usage
 Condition: Greater than 80%
 Duration: 5 minutes
 Notification: Email + Webhook
-Recipients: devops@example.com
+Recipients: tiago.sasaki@gmail.com
 ```
 
 ### 3.2 Vercel Alerts
@@ -228,7 +251,7 @@ Settings → Notifications
 ☑ Build Failures
 ☑ Deployment Errors
 ☑ Performance Degradation
-Email: devops@example.com
+Email: tiago.sasaki@gmail.com
 ```
 
 ### 3.3 Mixpanel Alerts (Manual Monitoring)
@@ -257,36 +280,78 @@ Email: devops@example.com
 - Error rate >10% (search_failed)
 - Conversion rate drops >30% (search_started → download_completed)
 
-### 3.4 Custom Alerts (Email + Slack)
+### 3.4 UptimeRobot Alerts
 
-**Email Alerts:**
+**Active Monitors:**
 
-Create email distribution list:
-- devops@example.com
-- pm@example.com (for critical only)
+| Monitor | URL | Interval | Status |
+|---------|-----|----------|--------|
+| SmartLic Backend Health | `https://bidiq-backend-production.up.railway.app/health` | 5 min | Active |
+| SmartLic Frontend Health | `https://smartlic.tech/api/health` | 5 min | Active |
 
-**Slack Alerts (Optional):**
+**Alert Contact:** tiago.sasaki@gmail.com (email)
 
-1. Create Slack channel: `#bidiq-production-alerts`
-2. Add webhook integration
-3. Configure Railway/Vercel to send alerts to webhook
+**Alert Behavior (Free Plan):**
+- Alerts on first detected failure (no consecutive failure threshold on free plan)
+- Email notification sent immediately
+- Recovery notification sent when service comes back up
 
-**Webhook URL:**
+### 3.5 Sentry Alerts
+
+**Active Alert Rules:**
+
+1. **New Issue Alert** — Fires on first occurrence of any new error in either project
+2. **Error Rate Spike** — Fires when error rate exceeds 5% in a 5-minute window
+3. **Stripe Webhook Critical** — Fires on any unhandled exception in `webhooks/stripe.py` (revenue-critical)
+
+**Alert Contact:** tiago.sasaki@gmail.com (email)
+
+### 3.6 What to Do When UptimeRobot Alerts
+
+**You receive an email: "Monitor is DOWN"**
+
+**Step 1: Identify which monitor (< 1 min)**
+
+| Alert says... | Meaning |
+|---------------|---------|
+| "SmartLic Backend Health is DOWN" | Backend server is not responding |
+| "SmartLic Frontend Health is DOWN" | Frontend server OR backend is not responding |
+
+**Step 2: Verify manually (< 2 min)**
+
+```bash
+# Check backend directly
+curl -s -o /dev/null -w "%{http_code}" https://bidiq-backend-production.up.railway.app/health
+# Expected: 200
+
+# Check frontend health (includes backend check)
+curl -s https://smartlic.tech/api/health
+# Expected: {"status":"healthy"}
+# If degraded: {"status":"degraded","details":{"backend":"unreachable"}}
 ```
-https://hooks.slack.com/services/YOUR/WEBHOOK/URL
-```
 
-**Slack Alert Format:**
-```
-🚨 **CRITICAL ALERT** 🚨
-Service: Backend (Railway)
-Metric: CPU Usage
-Value: 85%
-Threshold: 80%
-Duration: 5 minutes
-Action: Investigate resource usage
-Time: 2026-01-30 14:32 UTC
-```
+**Step 3: Diagnose (< 5 min)**
+
+| Symptom | Likely Cause | Action |
+|---------|--------------|--------|
+| Backend returns non-200 | Backend crashed or overloaded | Check Railway logs: `railway logs --tail` |
+| Backend timeout | Railway service stopped | Check Railway dashboard for deployment status |
+| Frontend returns 503, backend OK | Frontend can't reach backend | Check frontend env vars (BACKEND_URL) |
+| Both down | Railway platform issue | Check https://status.railway.app |
+
+**Step 4: Resolve**
+
+| Issue | Resolution |
+|-------|-----------|
+| Backend crash-loop | Railway auto-restarts (3 retries). If persistent: `railway up` to redeploy |
+| Memory/CPU spike | Check for expensive queries. Consider scaling Railway instance |
+| Bad deployment | Rollback: see `docs/runbooks/rollback-procedure.md` |
+| Railway outage | Wait for Railway to resolve. Monitor https://status.railway.app |
+
+**Step 5: Verify recovery**
+- UptimeRobot will send "Monitor is UP" email when service recovers
+- Confirm manually with curl commands above
+- Check Sentry for any errors that occurred during downtime
 
 ---
 
@@ -797,20 +862,25 @@ HH:mm UTC (+30 min)
 
 | Role | Name | Contact | Availability |
 |------|------|---------|--------------|
-| **Primary On-Call** | @devops | ____________ | 24/7 (48h window) |
-| **Backup On-Call** | @architect | ____________ | On-call (48h window) |
-| **PM (Escalation)** | @pm | ____________ | Business hours |
-| **QA (Validation)** | @qa | ____________ | Business hours |
+| **Primary On-Call** | Tiago Sasaki | tiago.sasaki@gmail.com | 24/7 |
 
 **External Support:**
 - Railway Support: https://railway.app/help
-- Vercel Support: https://vercel.com/support
-- Mixpanel Support: support@mixpanel.com
+- Railway Status: https://status.railway.app
+- Sentry Support: https://sentry.io/support/
+- UptimeRobot Dashboard: https://dashboard.uptimerobot.com/
+
+**Alert Destinations:**
+- UptimeRobot alerts → tiago.sasaki@gmail.com
+- Sentry alerts → tiago.sasaki@gmail.com
+- Railway alerts → Railway dashboard notifications
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Created:** 2026-01-30
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-13
 **Owner:** @devops
-**Next Review:** After 48-hour critical window completion
+**Change Log:**
+- v2.0 (2026-02-13): STORY-212 — Added UptimeRobot monitors, Sentry alert rules, UptimeRobot response procedure, replaced all placeholder values
+- v1.0 (2026-01-30): Initial 48-hour monitoring plan
