@@ -333,11 +333,9 @@ async def health():
         "dependencies": dependencies,
     }
 
-    # Return 503 if unhealthy (critical dependencies down)
-    if not supabase_ok:
-        from fastapi.responses import JSONResponse
-        return JSONResponse(content=response_data, status_code=503)
-
+    # Always return 200 for Railway health checks — report status in body
+    # Returning 503 prevents Railway from starting the container entirely,
+    # which is worse than running with degraded dependencies.
     return response_data
 
 
