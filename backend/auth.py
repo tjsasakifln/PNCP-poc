@@ -34,7 +34,9 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
 
 # Token validation cache - reduces Supabase Auth API calls by ~95%
-# Key: SHA256 hash of token prefix, Value: (user_data, timestamp)
+# Key: SHA256 hash of FULL token, Value: (user_data, timestamp)
+# STORY-210 AC3: MUST hash full token. Hashing only a prefix (e.g. [:16])
+# causes identity collision — all Supabase HS256 JWTs share the same prefix.
 _token_cache: Dict[str, Tuple[dict, float]] = {}
 CACHE_TTL = 60  # seconds - balances security (short-lived) vs performance
 
@@ -54,8 +56,9 @@ async def get_current_user(
         return None
 
     token = credentials.credentials
-    # STORY-203 SYS-M02: Use deterministic SHA256 hash instead of Python's hash()
-    token_hash = hashlib.sha256(token[:16].encode('utf-8')).hexdigest()
+    # STORY-210 AC3: Hash FULL token to prevent identity collision (CVSS 9.1)
+    # Previously hashed only first 16 chars, which are identical for all Supabase JWTs.
+    token_hash = hashlib.sha256(token.encode('utf-8')).hexdigest()
 
     # FAST PATH: Check cache first (avoids remote Supabase call)
     if token_hash in _token_cache:
@@ -86,12 +89,12 @@ async def get_current_user(
         audience = supabase_url.replace("https://", "").replace("http://", "")
 
         try:
+            # STORY-210 AC7: Enable audience verification (removed verify_aud: False)
             payload = jwt.decode(
                 token,
                 jwt_secret,
                 algorithms=["HS256"],
                 audience="authenticated",  # Supabase default audience
-                options={"verify_aud": False}  # Relax audience check for compatibility
             )
         except jwt.ExpiredSignatureError:
             logger.warning("JWT token expired")

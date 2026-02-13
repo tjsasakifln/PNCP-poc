@@ -7,11 +7,14 @@ Endpoints:
 - DELETE /api/auth/google - Revoke access
 
 STORY-180: Google Sheets Export
+STORY-210 AC13: Cryptographic nonce for OAuth CSRF protection
 """
 
 import logging
-import base64
-from typing import Optional
+import os
+import secrets
+import time
+from typing import Optional, Dict, Tuple
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 from fastapi.responses import RedirectResponse
@@ -30,8 +33,41 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["oauth"])
 
 # Frontend URL for redirects
-import os
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+# STORY-210 AC13: In-memory OAuth nonce store with TTL
+# Key: nonce string, Value: (user_id, redirect_path, created_at)
+_OAUTH_NONCE_TTL = 600  # 10 minutes
+_oauth_nonce_store: Dict[str, Tuple[str, str, float]] = {}
+
+# Allowed redirect paths (whitelist)
+_ALLOWED_REDIRECT_PATHS = {"/buscar", "/configuracoes", "/dashboard", "/"}
+
+
+def _store_oauth_nonce(user_id: str, redirect_path: str) -> str:
+    """Generate and store a cryptographic nonce for OAuth CSRF protection."""
+    # Prune expired nonces (keep store clean)
+    now = time.time()
+    expired = [k for k, v in _oauth_nonce_store.items() if now - v[2] > _OAUTH_NONCE_TTL]
+    for k in expired:
+        del _oauth_nonce_store[k]
+
+    nonce = secrets.token_urlsafe(32)
+    _oauth_nonce_store[nonce] = (user_id, redirect_path, now)
+    return nonce
+
+
+def _verify_oauth_nonce(nonce: str) -> Optional[Tuple[str, str]]:
+    """Verify and consume a nonce. Returns (user_id, redirect_path) or None."""
+    entry = _oauth_nonce_store.pop(nonce, None)
+    if entry is None:
+        return None
+
+    user_id, redirect_path, created_at = entry
+    if time.time() - created_at > _OAUTH_NONCE_TTL:
+        return None  # Expired
+
+    return user_id, redirect_path
 
 
 # ============================================================================
@@ -78,10 +114,14 @@ async def google_oauth_initiate(
         backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         redirect_uri = f"{backend_url}/api/auth/google/callback"
 
-        # CSRF protection: encode user_id + redirect path in state param
-        state = base64.urlsafe_b64encode(
-            f"{user['id']}:{redirect}".encode()
-        ).decode()
+        # STORY-210 AC13: Validate redirect path against whitelist
+        if redirect not in _ALLOWED_REDIRECT_PATHS:
+            logger.warning(f"OAuth redirect path not in whitelist: {redirect}")
+            redirect = "/buscar"
+
+        # STORY-210 AC13: Cryptographic nonce for CSRF protection
+        # Replaces predictable base64(user_id:redirect) with random nonce
+        state = _store_oauth_nonce(user["id"], redirect)
 
         # Generate authorization URL
         authorization_url = get_authorization_url(redirect_uri, state)
@@ -142,15 +182,14 @@ async def google_oauth_callback(
         )
 
     try:
-        # Decode state to get user_id and redirect path
-        try:
-            decoded = base64.urlsafe_b64decode(state.encode()).decode()
-            user_id, redirect_path = decoded.split(":", 1)
-        except Exception:
-            logger.error("Invalid OAuth state parameter")
+        # STORY-210 AC13: Verify cryptographic nonce (replaces base64 decode)
+        nonce_result = _verify_oauth_nonce(state)
+        if nonce_result is None:
+            logger.error("Invalid or expired OAuth state nonce")
             return RedirectResponse(
                 f"{FRONTEND_URL}/buscar?error=invalid_state"
             )
+        user_id, redirect_path = nonce_result
 
         # Build redirect URI (must match authorization request)
         backend_url = os.getenv("BACKEND_URL", "http://localhost:8000")

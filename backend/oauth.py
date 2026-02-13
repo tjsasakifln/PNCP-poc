@@ -48,7 +48,14 @@ ENCRYPTION_KEY_B64 = os.getenv("ENCRYPTION_KEY", "")
 GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
 
 # Validate encryption key on module load
+# STORY-210 AC6: Raise error in production when ENCRYPTION_KEY is missing
 if not ENCRYPTION_KEY_B64:
+    _env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+    if _env in ("production", "prod"):
+        raise RuntimeError(
+            "ENCRYPTION_KEY is required in production. "
+            "Generate with: openssl rand -base64 32"
+        )
     logger.warning(
         "ENCRYPTION_KEY not set. Generate with: openssl rand -base64 32"
     )

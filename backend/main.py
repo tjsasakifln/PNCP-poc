@@ -25,12 +25,12 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins
 from pncp_client import PNCPClient
 from sectors import list_sectors
-from middleware import CorrelationIDMiddleware  # STORY-202 SYS-M01
+from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware  # STORY-202 SYS-M01, STORY-210 AC10
 
 # Existing routers
 from admin import router as admin_router
@@ -53,6 +53,10 @@ from routes.plans import router as plans_router  # STORY-203 CROSS-M01
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
+# STORY-210 AC8: Disable API docs in production to prevent reconnaissance
+_env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
+_is_production = _env in ("production", "prod")
+
 # Initialize FastAPI application
 app = FastAPI(
     title="BidIQ Uniformes API",
@@ -62,9 +66,9 @@ app = FastAPI(
         "gerando relatórios Excel e resumos executivos via IA."
     ),
     version="0.2.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 # CORS Configuration
@@ -81,6 +85,9 @@ app.add_middleware(
 
 # STORY-202 SYS-M01: Add correlation ID middleware for distributed tracing
 app.add_middleware(CorrelationIDMiddleware)
+
+# STORY-210 AC10: Add security headers to all responses
+app.add_middleware(SecurityHeadersMiddleware)
 
 # ============================================================================
 # SYS-M08: API Versioning with /v1/ prefix
@@ -362,9 +369,13 @@ async def listar_setores():
     return {"setores": list_sectors()}
 
 
+# STORY-210 AC9: Protect debug endpoint with admin auth
+from admin import require_admin as _require_admin
+
+
 @app.get("/debug/pncp-test")
-async def debug_pncp_test():
-    """Diagnostic: test if PNCP API is reachable from this server."""
+async def debug_pncp_test(admin: dict = Depends(_require_admin)):
+    """Diagnostic: test if PNCP API is reachable from this server. Admin only."""
     import time as t
     from datetime import date, timedelta
 

@@ -22,7 +22,11 @@ router = APIRouter(tags=["plans"])
 
 
 class PlanDetails(BaseModel):
-    """Complete plan details for frontend display."""
+    """Complete plan details for frontend display.
+
+    STORY-210 AC11: Stripe Price IDs removed from public response
+    to prevent enumeration attacks on pricing infrastructure.
+    """
     id: str
     name: str
     description: str
@@ -30,8 +34,6 @@ class PlanDetails(BaseModel):
     duration_days: int
     max_searches: int
     capabilities: Dict[str, Any]
-    stripe_price_id_monthly: str | None = None
-    stripe_price_id_annual: str | None = None
     is_active: bool
 
 
@@ -65,8 +67,7 @@ async def get_plans_with_capabilities():
         result = (
             sb.table("plans")
             .select(
-                "id, name, description, price_brl, duration_days, max_searches, "
-                "stripe_price_id_monthly, stripe_price_id_annual, is_active"
+                "id, name, description, price_brl, duration_days, max_searches, is_active"
             )
             .eq("is_active", True)
             .order("price_brl")
@@ -87,6 +88,7 @@ async def get_plans_with_capabilities():
             plan_id = plan["id"]
             capabilities = plan_capabilities.get(plan_id, {})
 
+            # STORY-210 AC11: Stripe Price IDs excluded from public response
             enriched_plan = PlanDetails(
                 id=plan_id,
                 name=plan["name"],
@@ -102,8 +104,6 @@ async def get_plans_with_capabilities():
                     "max_summary_tokens": capabilities.get("max_summary_tokens", 200),
                     "priority": capabilities.get("priority", "normal"),
                 },
-                stripe_price_id_monthly=plan.get("stripe_price_id_monthly"),
-                stripe_price_id_annual=plan.get("stripe_price_id_annual"),
                 is_active=plan["is_active"],
             )
             enriched_plans.append(enriched_plan)

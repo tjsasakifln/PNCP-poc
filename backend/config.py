@@ -238,9 +238,12 @@ DEFAULT_CORS_ORIGINS: list[str] = [
 ]
 
 # Production allowed origins (always included when CORS_ORIGINS is set)
+# STORY-210 AC14: Added smartlic.tech custom domain
 PRODUCTION_ORIGINS: list[str] = [
     "https://bidiq-frontend-production.up.railway.app",
     "https://bidiq-uniformes-production.up.railway.app",
+    "https://smartlic.tech",
+    "https://www.smartlic.tech",
 ]
 
 

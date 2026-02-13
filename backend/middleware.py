@@ -1,4 +1,4 @@
-"""Request correlation and observability middleware."""
+"""Request correlation, observability, and security middleware."""
 import logging
 import time
 import uuid
@@ -68,3 +68,25 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
                 f"[req_id={req_id}] {type(e).__name__}: {str(e)}"
             )
             raise
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    STORY-210 AC10: Add standard security headers to all responses.
+
+    Headers applied:
+    - X-Content-Type-Options: nosniff — prevent MIME type sniffing
+    - X-Frame-Options: DENY — prevent clickjacking
+    - X-XSS-Protection: 1; mode=block — legacy XSS protection
+    - Referrer-Policy: strict-origin-when-cross-origin — control referrer leakage
+    - Permissions-Policy: camera=(), microphone=(), geolocation=() — disable unused APIs
+    """
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        return response

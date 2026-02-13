@@ -5,6 +5,8 @@ Extracted from main.py as part of STORY-202 monolith decomposition.
 
 import logging
 import os
+import time
+from collections import defaultdict
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from auth import require_auth
@@ -17,6 +19,34 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["user"])
 
+# STORY-210 AC12: Per-user rate limiting for /change-password
+# 5 attempts per 15 minutes (900 seconds)
+_CHANGE_PASSWORD_MAX_ATTEMPTS = 5
+_CHANGE_PASSWORD_WINDOW_SECONDS = 900
+_change_password_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_change_password_rate_limit(user_id: str) -> None:
+    """Check and enforce rate limit for password change.
+
+    Raises HTTPException 429 if limit exceeded.
+    """
+    now = time.time()
+    cutoff = now - _CHANGE_PASSWORD_WINDOW_SECONDS
+
+    # Prune old attempts
+    attempts = _change_password_attempts[user_id]
+    _change_password_attempts[user_id] = [t for t in attempts if t > cutoff]
+
+    if len(_change_password_attempts[user_id]) >= _CHANGE_PASSWORD_MAX_ATTEMPTS:
+        logger.warning(f"Rate limit exceeded for password change: {mask_user_id(user_id)}")
+        raise HTTPException(
+            status_code=429,
+            detail="Muitas tentativas de alteração de senha. Tente novamente em 15 minutos."
+        )
+
+    _change_password_attempts[user_id].append(now)
+
 
 @router.post("/change-password")
 async def change_password(
@@ -24,6 +54,9 @@ async def change_password(
     user: dict = Depends(require_auth),
 ):
     """Change current user's password."""
+    # STORY-210 AC12: Rate limit — 5 attempts per 15 minutes
+    _check_change_password_rate_limit(user["id"])
+
     body = await request.json()
     new_password = body.get("new_password", "")
     if len(new_password) < 6:
