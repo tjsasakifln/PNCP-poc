@@ -13,6 +13,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:quarantine": "jest --testPathPattern='__tests__/quarantine/' --testPathIgnorePatterns='/node_modules/' --no-coverage --passWithNoTests",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",

@@ -50,20 +50,14 @@ const customJestConfig = {
     '!**/jest.config.js',
   ],
 
-  // Coverage thresholds (target: 60% per CLAUDE.md, current: ~43%)
-  // TEMPORARY: Lowered to unblock PR #129 (was 49%)
-  // Next PR should focus on increasing coverage back to 60%
-  // Priority areas:
-  //   - LoadingProgress component tests
-  //   - RegionSelector component tests
-  //   - SavedSearchesDropdown tests
-  //   - AnalyticsProvider tests
+  // Coverage thresholds — post-quarantine stepping stone toward 60% target
+  // STORY-218 AC9-AC11: Raised from emergency lows to post-quarantine actuals
   coverageThreshold: {
     global: {
-      branches: 35,   // Lowered from 39 (current: ~35%)
-      functions: 40,  // Lowered from 41 (current: ~40%)
-      lines: 44,      // Lowered from 50 (current: ~44%)
-      statements: 43, // Lowered from 49 (current: ~43%)
+      branches: 50,
+      functions: 55,
+      lines: 55,
+      statements: 55,
     },
   },
 
@@ -90,6 +84,7 @@ const customJestConfig = {
     '/.next/',
     '/__tests__/e2e/', // E2E tests run via Playwright, not Jest
     '/e2e-tests/', // Playwright E2E tests directory
+    '/__tests__/quarantine/', // Quarantined tests (STORY-218) — run separately via test:quarantine
   ],
 
   // Transform node_modules that use ES modules (uuid, etc.)

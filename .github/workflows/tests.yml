@@ -146,8 +146,14 @@ jobs:
           cd frontend
           if [ -f package.json ]; then
             # Run with --no-cache to force fresh run
-            npm test -- --coverage --ci --no-cache || true
+            npm test -- --coverage --ci --no-cache
           fi
+
+      - name: Run quarantined tests (non-blocking)
+        run: |
+          cd frontend
+          npm run test:quarantine -- --ci --no-cache || true
+        continue-on-error: true
 
       - name: Publish Frontend Test Results
         uses: dorny/test-reporter@v1
