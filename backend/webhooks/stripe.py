@@ -215,6 +215,7 @@ async def _handle_subscription_deleted(sb, event: stripe.Event):
     Handle customer.subscription.deleted event.
 
     Marks subscription as inactive and syncs profiles.plan_type to free_trial.
+    STORY-225 AC14: Sends cancellation confirmation email.
 
     Args:
         sb: Supabase client
@@ -228,7 +229,7 @@ async def _handle_subscription_deleted(sb, event: stripe.Event):
     # Find subscription to get user_id before deactivating
     sub_result = (
         sb.table("user_subscriptions")
-        .select("id, user_id")
+        .select("id, user_id, plan_id, expires_at")
         .eq("stripe_subscription_id", stripe_sub_id)
         .limit(1)
         .execute()
@@ -257,6 +258,9 @@ async def _handle_subscription_deleted(sb, event: stripe.Event):
     except Exception as e:
         logger.warning(f"Cache invalidation failed on deletion (non-fatal): {e}")
         logger.info(f"Subscription deactivated: user_id={user_id}")
+
+    # STORY-225 AC14: Send cancellation confirmation email
+    _send_cancellation_email(sb, user_id, local_sub)
 
 
 async def _handle_invoice_payment_succeeded(sb, event: stripe.Event):
@@ -317,3 +321,103 @@ async def _handle_invoice_payment_succeeded(sb, event: stripe.Event):
     except Exception as e:
         logger.warning(f"Cache invalidation failed on renewal (non-fatal): {e}")
         logger.info(f"Annual renewal processed: user_id={user_id}, new_expires={new_expires[:10]}")
+
+    # STORY-225 AC12: Send payment confirmation email
+    _send_payment_confirmation_email(sb, user_id, plan_id, invoice_data, new_expires)
+
+
+# ============================================================================
+# STORY-225: Email notification helpers (fire-and-forget)
+# ============================================================================
+
+def _send_payment_confirmation_email(sb, user_id: str, plan_id: str, invoice_data: dict, new_expires: str) -> None:
+    """Send payment confirmation email (AC12). Never raises."""
+    try:
+        from email_service import send_email_async
+        from templates.emails.billing import render_payment_confirmation_email
+        from quota import PLAN_NAMES, PLAN_PRICES
+
+        profile = sb.table("profiles").select("email, full_name").eq("id", user_id).single().execute()
+        if not profile.data or not profile.data.get("email"):
+            return
+
+        email = profile.data["email"]
+        name = profile.data.get("full_name") or email.split("@")[0]
+        plan_name = PLAN_NAMES.get(plan_id, plan_id)
+
+        # Format amount from Stripe (cents → BRL)
+        amount_cents = invoice_data.get("amount_paid", 0)
+        amount = f"R$ {amount_cents / 100:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        # Determine billing period
+        billing_period = "mensal"
+        lines = invoice_data.get("lines", {}).get("data", [])
+        if lines:
+            interval = lines[0].get("plan", {}).get("interval", "month")
+            billing_period = "anual" if interval == "year" else "mensal"
+
+        # Format renewal date
+        try:
+            from datetime import datetime
+            renewal_dt = datetime.fromisoformat(new_expires.replace("Z", "+00:00"))
+            renewal_date = renewal_dt.strftime("%d/%m/%Y")
+        except Exception:
+            renewal_date = new_expires[:10]
+
+        html = render_payment_confirmation_email(
+            user_name=name,
+            plan_name=plan_name,
+            amount=amount,
+            next_renewal_date=renewal_date,
+            billing_period=billing_period,
+        )
+        send_email_async(
+            to=email,
+            subject=f"Pagamento confirmado — {plan_name}",
+            html=html,
+            tags=[{"name": "category", "value": "payment_confirmation"}],
+        )
+        logger.info(f"Payment confirmation email queued for user_id={user_id}")
+    except Exception as e:
+        logger.warning(f"Failed to send payment confirmation email: {e}")
+
+
+def _send_cancellation_email(sb, user_id: str, subscription_data: dict) -> None:
+    """Send cancellation confirmation email (AC14). Never raises."""
+    try:
+        from email_service import send_email_async
+        from templates.emails.billing import render_cancellation_email
+        from quota import PLAN_NAMES
+
+        profile = sb.table("profiles").select("email, full_name").eq("id", user_id).single().execute()
+        if not profile.data or not profile.data.get("email"):
+            return
+
+        email = profile.data["email"]
+        name = profile.data.get("full_name") or email.split("@")[0]
+        plan_id = subscription_data.get("plan_id", "")
+        plan_name = PLAN_NAMES.get(plan_id, plan_id)
+
+        # End date from subscription expires_at
+        expires_at = subscription_data.get("expires_at", "")
+        try:
+            from datetime import datetime
+            end_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+            end_date = end_dt.strftime("%d/%m/%Y")
+        except Exception:
+            end_date = expires_at[:10] if expires_at else "N/A"
+
+        html = render_cancellation_email(
+            user_name=name,
+            plan_name=plan_name,
+            end_date=end_date,
+        )
+        send_email_async(
+            to=email,
+            subject="Cancelamento confirmado — SmartLic",
+            html=html,
+            tags=[{"name": "category", "value": "cancellation"}],
+        )
+        logger.info(f"Cancellation email queued for user_id={user_id}")
+    except Exception as e:
+        logger.warning(f"Failed to send cancellation email: {e}")

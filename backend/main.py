@@ -60,6 +60,7 @@ from routes.user import router as user_router
 from routes.billing import router as billing_router
 from routes.sessions import router as sessions_router
 from routes.plans import router as plans_router  # STORY-203 CROSS-M01
+from routes.emails import router as emails_router  # STORY-225: Transactional emails
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -249,6 +250,7 @@ app.include_router(user_router, prefix="/v1")
 app.include_router(billing_router, prefix="/v1")
 app.include_router(sessions_router, prefix="/v1")
 app.include_router(plans_router, prefix="/v1")  # STORY-203 CROSS-M01
+app.include_router(emails_router, prefix="/v1")  # STORY-225
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -267,6 +269,7 @@ app.include_router(user_router)
 app.include_router(billing_router)
 app.include_router(sessions_router)
 app.include_router(plans_router)
+app.include_router(emails_router)  # STORY-225
 
 logger.info(
     "FastAPI application initialized — PORT=%s",

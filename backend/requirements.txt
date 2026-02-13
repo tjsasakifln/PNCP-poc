@@ -35,6 +35,9 @@ google-auth-oauthlib==1.2.1        # OAuth flow helpers
 google-auth-httplib2==0.2.0        # HTTP transport for Google APIs
 cryptography==43.0.3               # Required by google-auth
 
+# Transactional email (STORY-225)
+resend>=2.0.0,<3.0.0
+
 # JSON structured logging (STORY-220)
 python-json-logger>=2.0.4,<3.0.0
 

@@ -42,6 +42,71 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# STORY-225: Quota email notification helper
+# ============================================================================
+
+def _maybe_send_quota_email(user_id: str, quota_used: int, quota_info) -> None:
+    """Send quota warning/exhaustion email if threshold reached.
+
+    AC10: Warning at 80% usage.
+    AC11: Exhaustion at 100% usage.
+    Fire-and-forget: never blocks the search pipeline.
+    """
+    try:
+        max_quota = quota_info.capabilities.get("max_requests_per_month", 0)
+        if max_quota <= 0:
+            return
+
+        pct = quota_used / max_quota
+        reset_date = quota_info.quota_reset_date.strftime("%d/%m/%Y")
+
+        # Get user email
+        from supabase_client import get_supabase
+        sb = get_supabase()
+        profile = sb.table("profiles").select("email, full_name, email_unsubscribed").eq("id", user_id).single().execute()
+        if not profile.data or not profile.data.get("email"):
+            return
+        if profile.data.get("email_unsubscribed"):
+            return
+
+        email = profile.data["email"]
+        name = profile.data.get("full_name") or email.split("@")[0]
+        plan_name = quota_info.plan_name
+
+        from email_service import send_email_async
+
+        if pct >= 1.0:
+            from templates.emails.quota import render_quota_exhausted_email
+            html = render_quota_exhausted_email(
+                user_name=name, plan_name=plan_name,
+                quota_limit=max_quota, reset_date=reset_date,
+            )
+            send_email_async(
+                to=email,
+                subject=f"Limite de buscas atingido — {plan_name}",
+                html=html,
+                tags=[{"name": "category", "value": "quota_exhausted"}],
+            )
+        elif pct >= 0.8 and (quota_used - 1) / max_quota < 0.8:
+            # Only send at the exact crossing of 80% threshold
+            from templates.emails.quota import render_quota_warning_email
+            html = render_quota_warning_email(
+                user_name=name, plan_name=plan_name,
+                quota_used=quota_used, quota_limit=max_quota,
+                reset_date=reset_date,
+            )
+            send_email_async(
+                to=email,
+                subject=f"Aviso de cota: {quota_used}/{max_quota} buscas usadas",
+                html=html,
+                tags=[{"name": "category", "value": "quota_warning"}],
+            )
+    except Exception as e:
+        # Never fail the search pipeline due to email errors
+        logger.warning(f"Failed to send quota email for user {mask_user_id(user_id)}: {e}")
+
+
+# ============================================================================
 # Helper functions (moved from routes/search.py)
 # ============================================================================
 
@@ -264,6 +329,9 @@ class SearchPipeline:
 
                 ctx.quota_info.quota_used = new_quota_used
                 ctx.quota_info.quota_remaining = quota_remaining_after
+
+                # STORY-225 AC10/AC11: Quota email notifications (fire-and-forget)
+                _maybe_send_quota_email(ctx.user["id"], new_quota_used, ctx.quota_info)
             except HTTPException:
                 raise
             except RuntimeError as e:
