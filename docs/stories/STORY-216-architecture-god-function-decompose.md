@@ -1,6 +1,6 @@
 # STORY-216: Decompose God Function — buscar_licitacoes → SearchPipeline
 
-**Status:** In Progress (implementation complete, test hardening pending)
+**Status:** Complete
 **Priority:** P1 — Pre-GTM Important
 **Sprint:** Sprint 2 (Weeks 2-3)
 **Estimated Effort:** 3 days
@@ -50,8 +50,8 @@
 
 - [x] AC10: Each pipeline stage is independently testable (7 async methods on SearchPipeline class)
 - [x] AC11: Existing `test_api_buscar.py` tests pass unchanged — API contract preserved via SimpleNamespace dependency injection. Pre-existing failures (rate limiter state pollution, date range tests that hang on Supabase calls) confirmed to also fail on committed code.
-- [ ] AC12: Add unit tests for at least 3 individual stages — pending
-- [ ] AC13: TypeScript check passes: `npx tsc --noEmit --pretty` — pending
+- [x] AC12: Add unit tests for at least 3 individual stages — 42 tests across 7 stages + helpers (3 test files)
+- [x] AC13: TypeScript check passes: `npx tsc --noEmit --pretty` — 0 errors
 
 ### Non-Goals
 
@@ -93,9 +93,20 @@
 
 ### Remaining work
 
-- AC9: Consolidate link-building with excel.py (low priority)
-- AC12: Write `test_search_pipeline.py` with unit tests for individual stages
-- AC13: Run TypeScript check
+- AC9: Consolidate link-building with excel.py (low priority, deferred)
+
+### Squad execution (2026-02-13) — AC12 + AC13
+
+**4 parallel fronts executed simultaneously:**
+
+| Front | Scope | Result |
+|-------|-------|--------|
+| ECHO | Stage 1-2 tests (validate, prepare) | 10 tests, all green |
+| FOXTROT | Stage 4-5 tests (filter, enrich) | 8 tests, all green |
+| GOLF | Stage 6-7 + helper function tests | 24 tests, all green |
+| HOTEL | AC13 TypeScript check | 0 errors (missing node_modules fixed via npm install) |
+
+**Total: 42 new tests, 42 passed, 0 failures in 2.73s**
 
 ## Validation Metric
 
@@ -120,3 +131,6 @@
 | `backend/pncp_client.py` | Receives `PNCPLegacyAdapter` class (moved from inline) |
 | `backend/quota.py` | NEW shared functions: `create_fallback_quota_info()`, `create_legacy_quota_info()` |
 | `backend/tests/test_api_buscar.py` | NOT modified — verify unchanged behavior |
+| `backend/tests/test_search_pipeline.py` | NEW — 10 tests for Stages 1-2 (validate + prepare) |
+| `backend/tests/test_search_pipeline_filter_enrich.py` | NEW — 8 tests for Stages 4-5 (filter + enrich) |
+| `backend/tests/test_search_pipeline_generate_persist.py` | NEW — 24 tests for Stages 6-7 + helper functions |
