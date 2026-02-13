@@ -22,6 +22,12 @@ import logging
 import os
 from dotenv import load_dotenv
 
+# STORY-211: Sentry error tracking
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+from log_sanitizer import mask_email, mask_token, mask_user_id, mask_ip_address, sanitize_dict, sanitize_string
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -57,6 +63,68 @@ logger = logging.getLogger(__name__)
 _env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
 _is_production = _env in ("production", "prod")
 
+# STORY-211: Sentry Error Tracking — must init BEFORE app creation (AC2)
+APP_VERSION = "0.2.0"
+
+
+def scrub_pii(event, hint):
+    """Sentry before_send callback to strip PII from error events (AC3).
+
+    Leverages log_sanitizer.py patterns for consistent masking.
+    Strips: email addresses, JWT tokens, user IDs, API keys.
+    """
+    # Scrub request headers (Authorization, cookies, API keys)
+    if "request" in event:
+        request = event["request"]
+        if "headers" in request:
+            request["headers"] = {
+                k: (mask_token(v) if k.lower() in ("authorization", "cookie", "x-api-key") else v)
+                for k, v in request["headers"].items()
+            }
+        if "data" in request and isinstance(request["data"], dict):
+            request["data"] = sanitize_dict(request["data"])
+
+    # Scrub user context
+    if "user" in event:
+        user = event["user"]
+        if "email" in user:
+            user["email"] = mask_email(user["email"])
+        if "id" in user:
+            user["id"] = mask_user_id(str(user["id"]))
+        if "ip_address" in user:
+            user["ip_address"] = mask_ip_address(user["ip_address"])
+
+    # Scrub breadcrumb messages
+    if "breadcrumbs" in event:
+        for crumb in event.get("breadcrumbs", {}).get("values", []):
+            if "message" in crumb:
+                crumb["message"] = sanitize_string(crumb["message"])
+            if "data" in crumb and isinstance(crumb["data"], dict):
+                crumb["data"] = sanitize_dict(crumb["data"])
+
+    # Scrub exception values
+    if "exception" in event:
+        for exc in event.get("exception", {}).get("values", []):
+            if "value" in exc:
+                exc["value"] = sanitize_string(exc["value"])
+
+    return event
+
+
+_sentry_dsn = os.getenv("SENTRY_DSN")
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[FastApiIntegration(), StarletteIntegration()],
+        traces_sample_rate=0.1,
+        environment=_env,
+        release=APP_VERSION,
+        before_send=scrub_pii,
+    )
+    logger.info("Sentry initialized for error tracking")
+else:
+    logger.info("Sentry DSN not configured — error tracking disabled")
+
 # Initialize FastAPI application
 app = FastAPI(
     title="BidIQ Uniformes API",
@@ -65,7 +133,7 @@ app = FastAPI(
         "Permite filtrar oportunidades por estado, valor e keywords, "
         "gerando relatórios Excel e resumos executivos via IA."
     ),
-    version="0.2.0",
+    version=APP_VERSION,
     docs_url=None if _is_production else "/docs",
     redoc_url=None if _is_production else "/redoc",
     openapi_url=None if _is_production else "/openapi.json",

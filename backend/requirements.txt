@@ -34,3 +34,6 @@ google-auth==2.35.0                # OAuth 2.0 authentication
 google-auth-oauthlib==1.2.1        # OAuth flow helpers
 google-auth-httplib2==0.2.0        # HTTP transport for Google APIs
 cryptography==43.0.3               # Required by google-auth
+
+# Error tracking (STORY-211)
+sentry-sdk[fastapi]>=2.0.0

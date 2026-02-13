@@ -60,10 +60,12 @@ export default function AuthCallbackPage() {
         const error = params.get("error");
         const errorDescription = params.get("error_description");
 
-        // DEBUG: Log everything for troubleshooting
-        console.log("[OAuth Callback] ===== STARTING OAUTH CALLBACK =====");
-        console.log("[OAuth Callback] Full URL:", window.location.href);
-        console.log("[OAuth Callback] Query params:", Object.fromEntries(params.entries()));
+        // DEBUG: Log troubleshooting info (STORY-211 AC15: dev only to prevent PII leaks)
+        if (process.env.NODE_ENV === 'development') {
+          console.log("[OAuth Callback] ===== STARTING OAUTH CALLBACK =====");
+          console.log("[OAuth Callback] Full URL:", window.location.href);
+          console.log("[OAuth Callback] Query params:", Object.fromEntries(params.entries()));
+        }
 
         if (error) {
           console.error("[OAuth Callback] OAuth error parameter found:", error, errorDescription);
@@ -121,10 +123,13 @@ export default function AuthCallbackPage() {
 
           if (session) {
             console.log("[OAuth Callback] ✅ Session obtained successfully!");
-            console.log("[OAuth Callback] User:", session.user.email);
-            console.log("[OAuth Callback] Access Token (first 20 chars):", session.access_token.substring(0, 20) + "...");
-            console.log("[OAuth Callback] Refresh Token exists:", !!session.refresh_token);
-            console.log("[OAuth Callback] Expires at:", new Date(session.expires_at! * 1000).toISOString());
+            // STORY-211 AC15: Gate sensitive session details behind dev check
+            if (process.env.NODE_ENV === 'development') {
+              console.log("[OAuth Callback] User:", session.user.email);
+              console.log("[OAuth Callback] Access Token (first 20 chars):", session.access_token.substring(0, 20) + "...");
+              console.log("[OAuth Callback] Refresh Token exists:", !!session.refresh_token);
+              console.log("[OAuth Callback] Expires at:", new Date(session.expires_at! * 1000).toISOString());
+            }
 
             // COMMUNITY FIX: Force set session in supabase client to ensure it's available
             // Source: https://github.com/supabase/auth-js/issues/762
