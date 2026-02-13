@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from auth import require_auth
 from cache import redis_cache
 from log_sanitizer import mask_user_id
+from quota import get_plan_from_profile, SUBSCRIPTION_GRACE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +43,26 @@ def fetch_features_from_db(user_id: str) -> UserFeaturesResponse:
 
     Returns:
         UserFeaturesResponse with features, plan_id, billing_period
+
+    Multi-layer fallback strategy (AC6-AC7):
+    1. Active subscription (primary source)
+    2. Recently-expired subscription within grace period (billing gap tolerance)
+    3. profiles.plan_type (last known plan - reliable fallback)
+    4. free_trial (absolute last resort)
     """
     from supabase_client import get_supabase
+    from datetime import timedelta
 
     sb = get_supabase()
 
-    # Get user's current subscription
+    plan_id = None
+    billing_period = "monthly"  # Default
+
+    # --- Layer 1: Active subscription ---
     try:
         sub_result = (
             sb.table("user_subscriptions")
-            .select("plan_id, billing_period")
+            .select("plan_id, billing_period, expires_at")
             .eq("user_id", user_id)
             .eq("is_active", True)
             .order("created_at", desc=True)
@@ -59,29 +70,59 @@ def fetch_features_from_db(user_id: str) -> UserFeaturesResponse:
             .execute()
         )
 
-        if not sub_result.data or len(sub_result.data) == 0:
-            # No active subscription - return free_trial defaults
-            logger.info(f"No active subscription for user {mask_user_id(user_id)}, using free_trial")
-            return UserFeaturesResponse(
-                features=[],
-                plan_id="free_trial",
-                billing_period="monthly",
-                cached_at=None,
-            )
-
-        subscription = sub_result.data[0]
-        plan_id = subscription["plan_id"]
-        billing_period = subscription["billing_period"]
+        if sub_result.data and len(sub_result.data) > 0:
+            subscription = sub_result.data[0]
+            plan_id = subscription["plan_id"]
+            billing_period = subscription["billing_period"]
+        else:
+            # No active subscription found
+            logger.info(f"No active subscription for user {mask_user_id(user_id)}")
 
     except Exception as e:
         logger.error(f"Failed to fetch subscription for user {mask_user_id(user_id)}: {e}")
-        # Fail open with free_trial
-        return UserFeaturesResponse(
-            features=[],
-            plan_id="free_trial",
-            billing_period="monthly",
-            cached_at=None,
-        )
+
+    # --- Layer 2: Recently-expired subscription (grace period) ---
+    if not plan_id:
+        try:
+            grace_cutoff = (datetime.now(timezone.utc) - timedelta(days=SUBSCRIPTION_GRACE_DAYS)).isoformat()
+            grace_result = (
+                sb.table("user_subscriptions")
+                .select("plan_id, billing_period, expires_at")
+                .eq("user_id", user_id)
+                .gte("expires_at", grace_cutoff)
+                .order("expires_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+
+            if grace_result.data and len(grace_result.data) > 0:
+                subscription = grace_result.data[0]
+                plan_id = subscription["plan_id"]
+                billing_period = subscription["billing_period"]
+                logger.info(
+                    f"Using grace-period subscription for user {mask_user_id(user_id)}: "
+                    f"plan={plan_id}"
+                )
+        except Exception as e:
+            logger.warning(f"Failed to fetch grace-period subscription for user {mask_user_id(user_id)}: {e}")
+
+    # --- Layer 3: Profile-based fallback (last known plan) ---
+    if not plan_id:
+        profile_plan = get_plan_from_profile(user_id, sb)
+        if profile_plan and profile_plan != "free_trial":
+            logger.warning(
+                f"FALLBACK ACTIVATED for user {mask_user_id(user_id)}: "
+                f"using profiles.plan_type='{profile_plan}' (no active subscription found)"
+            )
+            plan_id = profile_plan
+            # Default billing_period to monthly for profile fallback
+            billing_period = "monthly"
+
+    # --- Layer 4: Absolute last resort ---
+    if not plan_id:
+        logger.info(f"Using free_trial for user {mask_user_id(user_id)} (no subscription or profile plan)")
+        plan_id = "free_trial"
+        billing_period = "monthly"
 
     # Get features for this plan + billing_period
     try:

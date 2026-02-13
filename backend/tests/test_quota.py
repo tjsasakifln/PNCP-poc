@@ -588,6 +588,93 @@ class TestDecrementCredits:
         mock_table.update.assert_not_called()
 
 
+class TestCheckAndIncrementQuotaAtomic:
+    """Test suite for check_and_increment_quota_atomic (STORY-223 AC20)."""
+
+    @patch("supabase_client.get_supabase")
+    def test_ac20_fallback_path_increments_quota_without_race(self, mock_get_supabase):
+        """AC20: Fallback path (no RPC) correctly increments quota without race conditions."""
+        from quota import check_and_increment_quota_atomic
+
+        mock_sb = Mock()
+        mock_get_supabase.return_value = mock_sb
+
+        # Mock RPC failure (function not available)
+        mock_sb.rpc.return_value.execute.side_effect = Exception("function check_and_increment_quota does not exist")
+
+        # Mock fallback: get_monthly_quota_used returns 5
+        with patch("quota.get_monthly_quota_used", return_value=5):
+            # Mock fallback: increment_monthly_quota returns 6
+            with patch("quota.increment_monthly_quota", return_value=6):
+                allowed, new_count, remaining = check_and_increment_quota_atomic("user-123", max_quota=50)
+
+        assert allowed is True
+        assert new_count == 6
+        assert remaining == 44  # 50 - 6
+
+    @patch("supabase_client.get_supabase")
+    def test_fallback_path_blocks_when_at_limit(self, mock_get_supabase):
+        """Fallback path should block when quota is at limit."""
+        from quota import check_and_increment_quota_atomic
+
+        mock_sb = Mock()
+        mock_get_supabase.return_value = mock_sb
+
+        # Mock RPC failure
+        mock_sb.rpc.return_value.execute.side_effect = Exception("RPC not available")
+
+        # Mock fallback: already at quota limit
+        with patch("quota.get_monthly_quota_used", return_value=50):
+            allowed, new_count, remaining = check_and_increment_quota_atomic("user-123", max_quota=50)
+
+        assert allowed is False
+        assert new_count == 50
+        assert remaining == 0
+
+    @patch("supabase_client.get_supabase")
+    def test_rpc_path_atomic_increment(self, mock_get_supabase):
+        """RPC path should atomically check and increment."""
+        from quota import check_and_increment_quota_atomic
+
+        mock_sb = Mock()
+        mock_get_supabase.return_value = mock_sb
+
+        # Mock successful RPC call
+        mock_sb.rpc.return_value.execute.return_value.data = [
+            {"allowed": True, "new_count": 11, "quota_remaining": 39}
+        ]
+
+        allowed, new_count, remaining = check_and_increment_quota_atomic("user-123", max_quota=50)
+
+        assert allowed is True
+        assert new_count == 11
+        assert remaining == 39
+
+        # Verify RPC was called with correct function name
+        mock_sb.rpc.assert_called_once()
+        call_args = mock_sb.rpc.call_args
+        assert call_args[0][0] == "check_and_increment_quota"
+
+    @patch("supabase_client.get_supabase")
+    def test_rpc_path_blocks_at_limit(self, mock_get_supabase):
+        """RPC path should block when at limit."""
+        from quota import check_and_increment_quota_atomic
+
+        mock_sb = Mock()
+        mock_get_supabase.return_value = mock_sb
+
+        # Mock RPC returning blocked result
+        mock_sb.rpc.return_value.execute.return_value.data = [
+            {"allowed": False, "new_count": 50, "quota_remaining": 0}
+        ]
+
+        allowed, new_count, remaining = check_and_increment_quota_atomic("user-123", max_quota=50)
+
+        assert allowed is False
+        assert new_count == 50
+        assert remaining == 0
+
+
 class TestMonthlyQuotaFunctions:
     """Test suite for monthly quota tracking functions (STORY-165)."""
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../AuthProvider';
 
 interface LandingNavbarProps {
   className?: string;
@@ -9,6 +10,7 @@ interface LandingNavbarProps {
 
 export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,20 +70,36 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
             </Link>
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons - AC21-AC24: Auth-aware rendering */}
           <div className="flex items-center space-x-4">
-            <Link
-              href="/login"
-              className="text-brand-navy hover:text-brand-blue font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup?source=landing-cta"
-              className="bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
-            >
-              Criar conta
-            </Link>
+            {loading ? (
+              // AC24: Prevent layout shift during auth loading
+              <div className="w-[180px]" />
+            ) : user ? (
+              // AC22: Logged-in user sees "Ir para Busca" button
+              <Link
+                href="/buscar"
+                className="bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+              >
+                Ir para Busca
+              </Link>
+            ) : (
+              // AC23: Not-logged-in user sees Login + Criar conta
+              <>
+                <Link
+                  href="/login"
+                  className="text-brand-navy hover:text-brand-blue font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup?source=landing-cta"
+                  className="bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                >
+                  Criar conta
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

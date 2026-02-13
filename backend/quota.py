@@ -29,22 +29,10 @@ from log_sanitizer import mask_user_id
 
 logger = logging.getLogger(__name__)
 
-# Global lock for in-process synchronization (fallback when RPC unavailable)
-# This protects against race conditions within a single process.
-# For multi-process/multi-instance deployments, use the PostgreSQL RPC function.
-_quota_locks: dict[str, asyncio.Lock] = {}
-
 # STORY-203 SYS-M04: Plan capabilities cache
 _plan_capabilities_cache: Optional[dict[str, "PlanCapabilities"]] = None
 _plan_capabilities_cache_time: float = 0
 PLAN_CAPABILITIES_CACHE_TTL = 300  # 5 minutes in seconds
-
-
-def _get_user_lock(user_id: str) -> asyncio.Lock:
-    """Get or create a lock for a specific user (per-user locking)."""
-    if user_id not in _quota_locks:
-        _quota_locks[user_id] = asyncio.Lock()
-    return _quota_locks[user_id]
 
 
 # ============================================================================
@@ -868,42 +856,56 @@ def save_search_session(
     valor_total: float,
     resumo_executivo: Optional[str],
     destaques: Optional[list[str]],
-) -> str:
-    """Save search session to history. Returns session ID."""
+) -> Optional[str]:
+    """Save search session to history. Returns session ID or None on failure.
+
+    AC16: Implements retry (max 1) for transient DB errors. Failure to save
+    session does NOT break the search request — always returns None on error.
+    """
+    import asyncio
     from supabase_client import get_supabase
+
     sb = get_supabase()
 
     # Ensure profile exists (FK constraint requires this)
     if not _ensure_profile_exists(user_id, sb):
-        raise RuntimeError(f"Cannot save session: profile missing for user {mask_user_id(user_id)}")
+        logger.error(f"Cannot save session: profile missing for user {mask_user_id(user_id)}")
+        return None
 
-    try:
-        result = (
-            sb.table("search_sessions")
-            .insert({
-                "user_id": user_id,
-                "sectors": sectors,
-                "ufs": ufs,
-                "data_inicial": data_inicial,
-                "data_final": data_final,
-                "custom_keywords": custom_keywords,
-                "total_raw": total_raw,
-                "total_filtered": total_filtered,
-                "valor_total": float(valor_total),
-                "resumo_executivo": resumo_executivo,
-                "destaques": destaques,
-            })
-            .execute()
-        )
+    for attempt in range(2):  # max 1 retry (0, 1)
+        try:
+            result = (
+                sb.table("search_sessions")
+                .insert({
+                    "user_id": user_id,
+                    "sectors": sectors,
+                    "ufs": ufs,
+                    "data_inicial": data_inicial,
+                    "data_final": data_final,
+                    "custom_keywords": custom_keywords,
+                    "total_raw": total_raw,
+                    "total_filtered": total_filtered,
+                    "valor_total": float(valor_total),
+                    "resumo_executivo": resumo_executivo,
+                    "destaques": destaques,
+                })
+                .execute()
+            )
 
-        if not result.data or len(result.data) == 0:
-            logger.error(f"Insert returned empty result for user {mask_user_id(user_id)}")
-            raise RuntimeError("Insert returned empty result")
+            if not result.data or len(result.data) == 0:
+                logger.error(f"Insert returned empty result for user {mask_user_id(user_id)}")
+                raise RuntimeError("Insert returned empty result")
 
-        session_id = result.data[0]["id"]
-        # SECURITY: Sanitize user ID in logs (Issue #168)
-        logger.info(f"Saved search session {session_id[:8]}*** for user {mask_user_id(user_id)}")
-        return session_id
-    except Exception as e:
-        logger.error(f"Failed to insert search session for user {mask_user_id(user_id)}: {e}")
-        raise
+            session_id = result.data[0]["id"]
+            # SECURITY: Sanitize user ID in logs (Issue #168)
+            logger.info(f"Saved search session {session_id[:8]}*** for user {mask_user_id(user_id)}")
+            return session_id
+        except Exception as e:
+            if attempt == 0:
+                logger.warning(f"Transient error saving session for user {mask_user_id(user_id)}, retrying: {e}")
+                # Use sync sleep since save_search_session is synchronous
+                import time
+                time.sleep(0.3)
+                continue
+            logger.error(f"Failed to save search session after retry for user {mask_user_id(user_id)}: {e}")
+            return None  # silent fail - don't break search results
