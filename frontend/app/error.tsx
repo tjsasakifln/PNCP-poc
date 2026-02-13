@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { useAnalytics } from "../hooks/useAnalytics";
 
 export default function Error({
   error,
@@ -10,10 +11,19 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { trackEvent } = useAnalytics();
+
   useEffect(() => {
     // STORY-211 AC10: Report errors to Sentry
     Sentry.captureException(error);
     console.error("Application error:", error);
+    // STORY-219 AC23: Track error in analytics
+    trackEvent('error_encountered', {
+      error_type: error.name || 'Error',
+      error_message: error.message,
+      error_digest: error.digest,
+      page: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+    });
   }, [error]);
 
   return (

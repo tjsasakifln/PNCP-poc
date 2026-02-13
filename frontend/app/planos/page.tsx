@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
 import {
   calculateROI,
@@ -169,6 +170,7 @@ function isPrivilegedUser(isAdmin: boolean, userProfile?: UserProfile | null): b
 
 export default function PlanosPage() {
   const { session, user, isAdmin, loading: authLoading } = useAuth();
+  const { trackEvent } = useAnalytics();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -229,6 +231,12 @@ export default function PlanosPage() {
     if (params.get("success")) setStatusMsg("Pagamento realizado com sucesso! Seu plano está ativo.");
     if (params.get("cancelled")) setStatusMsg("Pagamento cancelado.");
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get("source") || "url";
+    trackEvent("plan_page_viewed", { source });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch user profile to check privileges (master plan, etc.)
   useEffect(() => {
@@ -392,6 +400,11 @@ export default function PlanosPage() {
       return;
     }
     setCheckoutLoading(planId);
+    trackEvent("checkout_initiated", {
+      plan_id: planId,
+      billing_period: billingPeriod,
+      source: "planos_page",
+    });
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
       const res = await fetch(`${backendUrl}/checkout?plan_id=${planId}&billing_period=${billingPeriod}`, {
@@ -405,6 +418,11 @@ export default function PlanosPage() {
       const data = await res.json();
       window.location.href = data.checkout_url;
     } catch (err) {
+      trackEvent("checkout_failed", {
+        plan_id: planId,
+        billing_period: billingPeriod,
+        error: err instanceof Error ? err.message : "unknown",
+      });
       alert(err instanceof Error ? err.message : "Erro ao iniciar pagamento");
     } finally {
       setCheckoutLoading(null);

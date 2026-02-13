@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import mixpanel from 'mixpanel-browser';
 import { usePathname } from 'next/navigation';
 import { getCookieConsent, type CookieConsent } from './CookieConsentBanner';
+import { captureUTMParams } from '../../hooks/useAnalytics';
 
 /**
  * Analytics Provider - Initializes Mixpanel ONLY after cookie consent (LGPD Art. 7)
@@ -62,6 +63,9 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
           // ignore
         }
       }
+
+      // STORY-219 AC24-AC27: Capture UTM params on first load
+      captureUTMParams();
 
       // Track page_load
       try {

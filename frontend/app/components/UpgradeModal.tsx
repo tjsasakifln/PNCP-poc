@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 
 interface Plan {
   id: string;
@@ -28,6 +29,7 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { trackEvent } = useAnalytics();
 
   // Close on Escape key - prevent propagation to global handlers
   useEffect(() => {
@@ -79,14 +81,14 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
   // Track analytics when modal opens
   useEffect(() => {
     if (isOpen && typeof window !== "undefined") {
-      console.log("Upgrade modal opened", { source, preSelectedPlan });
+      trackEvent("upgrade_modal_opened", { source, pre_selected_plan: preSelectedPlan });
     }
   }, [isOpen, source, preSelectedPlan]);
 
   if (!isOpen) return null;
 
   const handlePlanClick = (planId: string) => {
-    console.log("Plan clicked:", planId, { source });
+    trackEvent("upgrade_modal_plan_clicked", { plan_id: planId, source });
     window.location.href = `/planos?plan=${planId}`;
   };
 

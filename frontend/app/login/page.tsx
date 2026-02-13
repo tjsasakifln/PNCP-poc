@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 import { toast } from "sonner";
@@ -53,6 +54,16 @@ function translateSupabaseError(message: string): string {
   return message;
 }
 
+// AC17: Categorize login errors for analytics
+function categorizeLoginError(rawMessage: string): string {
+  const lower = rawMessage.toLowerCase();
+  if (lower.includes("invalid login credentials")) return "wrong_creds";
+  if (lower.includes("error sending magic link email")) return "not_registered";
+  if (lower.includes("rate limit")) return "rate_limited";
+  if (lower.includes("fetch failed") || lower.includes("networkerror") || lower.includes("network error")) return "network";
+  return "unknown";
+}
+
 // Loading fallback for Suspense
 function LoginLoading() {
   return (
@@ -78,6 +89,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithEmail, signInWithMagicLink, signInWithGoogle, session, loading: authLoading } = useAuth();
+  const { trackEvent, identifyUser } = useAnalytics();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -108,8 +120,15 @@ function LoginContent() {
   }, [searchParams]);
 
   // Handle already authenticated users
+  // AC7: Link user identity after login
   useEffect(() => {
     if (!authLoading && session) {
+      // AC7: Link user identity after login
+      identifyUser(session.user.id, {
+        plan_type: 'unknown',
+        signup_date: session.user.created_at,
+      });
+
       const redirectTo = searchParams.get("redirect") || "/buscar";
 
       // Show toast notification
@@ -120,22 +139,33 @@ function LoginContent() {
         router.push(redirectTo);
       }, 1500);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, session, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
+
+    // AC15: Track login attempt before any async work
+    trackEvent('login_attempted', {
+      method: mode === "magic" ? "magic_link" : "email",
+    });
+
     setLoading(true);
 
     try {
       if (mode === "magic") {
         await signInWithMagicLink(email);
         setMagicSent(true);
+        // AC16: Track login_completed for magic link
+        trackEvent('login_completed', { method: "magic_link" });
         toast.success("Link mágico enviado! Verifique seu email.");
       } else {
         await signInWithEmail(email, password);
         setSuccess(true);
+        // AC16: Track login_completed for email
+        trackEvent('login_completed', { method: "email" });
         toast.success("Login realizado com sucesso!");
         // Don't redirect here - the useEffect above will handle it
         // when the session state updates
@@ -143,6 +173,11 @@ function LoginContent() {
     } catch (err: unknown) {
       const rawMessage = err instanceof Error ? err.message : "Erro ao fazer login";
       const translatedMessage = translateSupabaseError(rawMessage);
+      // AC17: Track login_failed with error categorization
+      trackEvent('login_failed', {
+        method: mode === "magic" ? "magic_link" : "email",
+        error_category: categorizeLoginError(rawMessage),
+      });
       setError(translatedMessage);
       toast.error(translatedMessage);
     } finally {

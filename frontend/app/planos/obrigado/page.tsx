@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../components/AuthProvider";
 import Link from "next/link";
 import { Rocket, Zap, Trophy, CheckCircle } from "lucide-react";
+import { useAnalytics } from "../../../hooks/useAnalytics";
 
 const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; message: string }> = {
   consultor_agil: {
@@ -27,12 +28,19 @@ const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; messag
 function ObrigadoContent() {
   const searchParams = useSearchParams();
   const { session } = useAuth();
+  const { trackEvent } = useAnalytics();
   const [planId, setPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     const plan = searchParams.get("plan");
     if (plan) setPlanId(plan);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (planId) {
+      trackEvent("checkout_completed", { plan_id: planId });
+    }
+  }, [planId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const details = planId ? PLAN_DETAILS[planId] : null;
 

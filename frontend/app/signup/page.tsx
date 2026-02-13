@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
 import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
@@ -71,6 +72,7 @@ Ao rolar ate o final deste texto e marcar a caixa abaixo, voce confirma que leu 
 
 export default function SignupPage() {
   const { signUpWithEmail, signInWithGoogle } = useAuth();
+  const { trackEvent } = useAnalytics();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -140,6 +142,9 @@ export default function SignupPage() {
       return;
     }
 
+    // AC13: Track signup attempt (after validation, before async work)
+    trackEvent('signup_attempted', { method: "email" });
+
     setLoading(true);
 
     const finalSector = sector === "outro" ? sectorOther.trim() : sector;
@@ -147,6 +152,13 @@ export default function SignupPage() {
     try {
       await signUpWithEmail(email, password, fullName, company, finalSector, extractDigits(phone), whatsappConsent);
       setSuccess(true);
+      // AC14 + AC26: Track signup_completed with UTM params
+      trackEvent('signup_completed', {
+        method: "email",
+        ...getStoredUTMParams(),
+      });
+      // AC9: identifyUser skipped here — user must confirm email first.
+      // Identity will be linked on first login (AC7).
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao criar conta";
       setError(message);

@@ -6,6 +6,17 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { UpgradeModal } from '../app/components/UpgradeModal';
 
+// Mock useAnalytics hook (STORY-219: replaced console.log with trackEvent)
+const mockTrackEvent = jest.fn();
+jest.mock('../hooks/useAnalytics', () => ({
+  useAnalytics: () => ({
+    trackEvent: mockTrackEvent,
+    identifyUser: jest.fn(),
+    resetUser: jest.fn(),
+    trackPageView: jest.fn(),
+  }),
+}));
+
 // Mock window.location
 delete (window as any).location;
 window.location = { href: '' } as any;
@@ -277,10 +288,8 @@ describe('UpgradeModal', () => {
     });
   });
 
-  describe('Analytics tracking (console.log mock)', () => {
-    it('logs modal open event with source', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
+  describe('Analytics tracking (STORY-219: trackEvent)', () => {
+    it('tracks modal open event with source', () => {
       render(
         <UpgradeModal
           isOpen={true}
@@ -290,17 +299,13 @@ describe('UpgradeModal', () => {
         />
       );
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Upgrade modal opened',
-        { source: 'excel_button', preSelectedPlan: 'maquina' }
+      expect(mockTrackEvent).toHaveBeenCalledWith(
+        'upgrade_modal_opened',
+        { source: 'excel_button', pre_selected_plan: 'maquina' }
       );
-
-      consoleSpy.mockRestore();
     });
 
-    it('logs plan click event', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
+    it('tracks plan click event', async () => {
       render(
         <UpgradeModal
           isOpen={true}
@@ -315,13 +320,10 @@ describe('UpgradeModal', () => {
 
       fireEvent.click(screen.getByText(/Assinar Máquina/i));
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Plan clicked:',
-        'maquina',
-        { source: 'quota_counter' }
+      expect(mockTrackEvent).toHaveBeenCalledWith(
+        'upgrade_modal_plan_clicked',
+        { plan_id: 'maquina', source: 'quota_counter' }
       );
-
-      consoleSpy.mockRestore();
     });
   });
 

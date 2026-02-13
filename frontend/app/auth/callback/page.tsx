@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../../lib/supabase";
+import { useAnalytics } from "../../hooks/useAnalytics";
 
 /**
  * Client-side Auth Callback Handler
@@ -14,6 +15,11 @@ import { supabase } from "../../../lib/supabase";
 export default function AuthCallbackPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { identifyUser } = useAnalytics();
+
+  // Store identifyUser in a ref so useEffect can access it without re-running
+  const identifyUserRef = useRef(identifyUser);
+  identifyUserRef.current = identifyUser;
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -149,6 +155,14 @@ export default function AuthCallbackPage() {
             }
 
             setStatus("success");
+
+            // AC8: Link user identity after OAuth callback
+            identifyUserRef.current(session.user.id, {
+              plan_type: 'unknown',
+              signup_method: 'google',
+              signup_date: session.user.created_at,
+            });
+
             // Full page navigation ensures cookies are sent to middleware
             console.log("[OAuth Callback] Redirecting to /buscar");
             window.location.href = "/buscar";
@@ -174,12 +188,21 @@ export default function AuthCallbackPage() {
         }
 
         if (user) {
+          // AC8: Link user identity for fallback path
+          identifyUserRef.current(user.id, {
+            signup_method: 'google',
+          });
           setStatus("success");
           window.location.href = "/buscar";
         } else {
           // No session yet - listen for auth state change
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === "SIGNED_IN" && session) {
+              // AC8: Link user identity on auth state change
+              identifyUserRef.current(session.user.id, {
+                signup_method: 'google',
+                signup_date: session.user.created_at,
+              });
               setStatus("success");
               subscription.unsubscribe();
               window.location.href = "/buscar";

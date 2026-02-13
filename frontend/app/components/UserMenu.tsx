@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, ReactNode } from "react";
 import { useAuth } from "./AuthProvider";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import Link from "next/link";
 
 interface UserMenuProps {
@@ -13,6 +14,7 @@ interface UserMenuProps {
 
 export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
   const { user, session, loading, signOut, isAdmin } = useAuth();
+  const { resetUser } = useAnalytics();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -111,7 +113,7 @@ export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
           )}
           <div className="border-t border-[var(--border)] mt-1 pt-1">
             <button
-              onClick={() => { signOut(); setOpen(false); }}
+              onClick={() => { resetUser(); signOut(); setOpen(false); }}
               className="block w-full text-left px-4 py-2.5 text-sm text-[var(--error)] hover:bg-[var(--surface-1)]"
             >
               Sair
