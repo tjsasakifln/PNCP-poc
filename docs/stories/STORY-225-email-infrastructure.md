@@ -101,9 +101,11 @@ For a paid SaaS, transactional emails are essential for customer lifecycle manag
 
 ### Deployment Checklist
 
-- [ ] Set `RESEND_API_KEY` in Railway environment
-- [ ] Configure Resend sender domain: `noreply@smartlic.tech` (SPF, DKIM, DMARC)
-- [ ] Add `welcome_email_sent_at` column to `profiles` table (nullable timestamp)
-- [ ] Add `email_unsubscribed` boolean column to `profiles` table (default false)
-- [ ] Add `email_unsubscribed_at` timestamp column to `profiles` table (nullable)
+- [x] Set `RESEND_API_KEY` in Railway environment
+- [x] Set `EMAIL_ENABLED=true` in Railway environment
+- [x] Set `EMAIL_FROM=SmartLic <noreply@smartlic.tech>` in Railway environment
+- [x] Configure Resend sender domain: `smartlic.tech` (SPF, DKIM, DMARC) — DNS records added to Cloudflare, verification pending
+- [x] Add `welcome_email_sent_at` column to `profiles` table (nullable timestamp)
+- [x] Add `email_unsubscribed` boolean column to `profiles` table (default false)
+- [x] Add `email_unsubscribed_at` timestamp column to `profiles` table (nullable)
 - [ ] Frontend: call POST /emails/send-welcome after signup confirmation
