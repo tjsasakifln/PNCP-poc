@@ -33,6 +33,7 @@ from schemas import (
     AdminUpdateCreditsResponse,
 )
 from log_sanitizer import sanitize_dict, log_admin_action
+from filter_stats import filter_stats_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -657,6 +658,34 @@ async def reload_feature_flags_endpoint(
     )
 
     return {"success": True, "flags": current_values}
+
+
+@router.get("/admin/filter-stats")
+async def get_filter_stats(
+    request: Request,
+    days: int = Query(default=7, ge=1, le=90, description="Number of days to look back"),
+    admin: dict = Depends(require_admin),
+):
+    """
+    STORY-248 AC10: Filter rejection statistics.
+
+    Returns counts of each rejection reason code for the specified period.
+    Admin-only endpoint.
+
+    Reason codes:
+    - keyword_miss: No sector keyword found in procurement description
+    - exclusion_hit: Exclusion keyword matched (false-positive prevention)
+    - llm_reject: LLM arbiter rejected the contract
+    - density_low: Term density below minimum threshold
+    - value_exceed: Contract value exceeds sector maximum
+    - uf_mismatch: State (UF) not in selected set
+    - status_mismatch: Procurement status does not match filter
+    """
+    stats = filter_stats_tracker.get_stats(days=days)
+    return {
+        "status": "ok",
+        "data": stats,
+    }
 
 
 def _assign_plan(sb, user_id: str, plan_id: str):

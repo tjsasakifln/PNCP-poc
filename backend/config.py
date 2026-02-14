@@ -211,21 +211,78 @@ LLM_ARBITER_TEMPERATURE: float = float(os.getenv("LLM_ARBITER_TEMPERATURE", "0")
 
 # Term density thresholds (adjustable without code changes)
 # HOTFIX 2026-02-10: Adjusted based on bug-investigation-squad findings
-# Reduced thresholds to minimize false positives while maintaining precision
+#
+# ============================================
+# STORY-248 Threshold Review (2026-02-14)
+# ============================================
+# Reviewed thresholds against 15-sector expansion (vestuario, alimentos,
+# informatica, mobiliario, papelaria, engenharia, software, facilities,
+# saude, vigilancia, transporte, manutencao_predial, engenharia_rodoviaria,
+# materiais_eletricos, materiais_hidraulicos).
+#
+# Decision: KEEP all three thresholds unchanged.
+#
+# Density metric: matched_term_occurrences / total_words_in_objetoCompra.
+# Typical PNCP descriptions are 10-40 words, so density values map to:
+#   - 10-word desc + 1 match = 10.0% (auto-accept)
+#   - 20-word desc + 1 match =  5.0% (boundary: exactly 5% goes to LLM)
+#   - 30-word desc + 1 match =  3.3% (LLM standard prompt)
+#   - 50-word desc + 1 match =  2.0% (boundary: exactly 2% goes to LLM standard)
+#   - 100-word desc + 1 match = 1.0% (boundary: exactly 1% goes to LLM conservative)
+#
+# HIGH (5%) rationale:
+#   For the typical 15-30 word PNCP description, >5% means the keyword
+#   appears prominently (1-2 times in 15-20 words). Combined with the
+#   multi-layer defense (exclusion keywords, context_required_keywords,
+#   max_contract_value per sector, and RED_FLAGS), false positives at
+#   >5% density are rare. Further lowering to 3% was considered but would
+#   increase false auto-approvals for 30-word descriptions with 1 match.
+#
+# MEDIUM (2%) rationale:
+#   The 2-5% zone captures genuinely ambiguous cases for LLM evaluation.
+#   Contracts in this range have keyword presence but it may be tangential.
+#   The dual prompt approach (standard for 2-5%, conservative for 1-2%)
+#   correctly applies more scrutiny to lower-density matches.
+#
+# LOW (1%) rationale:
+#   Below 1%, the keyword match is incidental in a long description (100+
+#   words with 1 match). Auto-rejection is appropriate. For typical 10-30
+#   word descriptions, any single match already yields >3% density, so this
+#   threshold primarily filters out verbose multi-topic procurement packages.
+#
+# Per-sector thresholds considered and REJECTED:
+#   While keyword specificity varies by sector (e.g., "uniforme" is
+#   unambiguous vs. "LED" is broader), the multi-layer defense stack
+#   (exclusions + context_required + value caps + red flags + LLM arbiter)
+#   compensates adequately. Adding 15 x 3 = 45 per-sector threshold
+#   parameters would increase maintenance burden without clear benefit.
+#
+# NOTE (out of scope): The conservative prompt in llm_arbiter.py (lines
+#   115-137) has a hardcoded sector description for "Vestuario e Uniformes"
+#   that is incorrectly applied to all 15 sectors. This should be addressed
+#   in a separate story to use each sector's actual description.
+# ============================================
+#
+# Decision flow:
+#   density > 5%       -> Auto-ACCEPT (high confidence, no LLM)
+#   2% < density <= 5% -> LLM with standard prompt
+#   1% <= density <= 2% -> LLM with conservative prompt + examples
+#   density < 1%       -> Auto-REJECT (low confidence, no LLM)
+#
 # High threshold: density > X% = auto-accept without LLM (high confidence)
 TERM_DENSITY_HIGH_THRESHOLD: float = float(
     os.getenv("TERM_DENSITY_HIGH_THRESHOLD", "0.05")
-)  # 5% (reduced from 8% to reduce false auto-approvals)
+)  # 5% — reviewed 2026-02-14, kept (see rationale above)
 
 # Medium threshold: density between MEDIUM and HIGH = LLM with standard prompt
 TERM_DENSITY_MEDIUM_THRESHOLD: float = float(
     os.getenv("TERM_DENSITY_MEDIUM_THRESHOLD", "0.02")
-)  # 2% (reduced from 3% - contracts in 2-5% use standard LLM prompt)
+)  # 2% — reviewed 2026-02-14, kept (see rationale above)
 
 # Low threshold: density < X% = auto-reject without LLM (low confidence)
 TERM_DENSITY_LOW_THRESHOLD: float = float(
     os.getenv("TERM_DENSITY_LOW_THRESHOLD", "0.01")
-)  # 1% (kept - contracts < 1% auto-rejected)
+)  # 1% — reviewed 2026-02-14, kept (see rationale above)
 
 # ============================================
 # Filter Debugging & QA (STORY-181 AC1.3, AC7)
@@ -237,6 +294,10 @@ FILTER_DEBUG_MODE: bool = str_to_bool(os.getenv("FILTER_DEBUG_MODE", "false"))
 FILTER_DEBUG_SAMPLE: int = int(os.getenv("FILTER_DEBUG_SAMPLE", "0"))
 
 # QA audit sample rate: flag X% of LLM decisions for manual review
+# STORY-248 AC8 Review (2026-02-14): Confirmed at 10%.
+# At 10%, after ~100 LLM decisions we have ~10 audit samples — sufficient
+# to detect systematic bias. With 15 sectors generating LLM calls, volume
+# is adequate for statistical significance without overwhelming reviewers.
 QA_AUDIT_SAMPLE_RATE: float = float(os.getenv("QA_AUDIT_SAMPLE_RATE", "0.10"))
 
 # Synonym matching feature flag (STORY-179 AC12)

@@ -2793,6 +2793,57 @@
         "summary": "Root"
       }
     },
+    "/admin/admin/filter-stats": {
+      "get": {
+        "description": "STORY-248 AC10: Filter rejection statistics.\n\nReturns counts of each rejection reason code for the specified period.\nAdmin-only endpoint.\n\nReason codes:\n- keyword_miss: No sector keyword found in procurement description\n- exclusion_hit: Exclusion keyword matched (false-positive prevention)\n- llm_reject: LLM arbiter rejected the contract\n- density_low: Term density below minimum threshold\n- value_exceed: Contract value exceeds sector maximum\n- uf_mismatch: State (UF) not in selected set\n- status_mismatch: Procurement status does not match filter",
+        "operationId": "get_filter_stats_admin_admin_filter_stats_get",
+        "parameters": [
+          {
+            "description": "Number of days to look back",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "description": "Number of days to look back",
+              "maximum": 90,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Filter Stats",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/feature-flags/reload": {
       "post": {
         "description": "Reload all feature flags from environment variables (admin only).\n\nSTORY-226 AC16: Clears the feature flag cache, forcing re-read from\nenvironment on next access. Returns current values after reload.",
@@ -4587,6 +4638,57 @@
           }
         },
         "summary": "Sources Health"
+      }
+    },
+    "/v1/admin/admin/filter-stats": {
+      "get": {
+        "description": "STORY-248 AC10: Filter rejection statistics.\n\nReturns counts of each rejection reason code for the specified period.\nAdmin-only endpoint.\n\nReason codes:\n- keyword_miss: No sector keyword found in procurement description\n- exclusion_hit: Exclusion keyword matched (false-positive prevention)\n- llm_reject: LLM arbiter rejected the contract\n- density_low: Term density below minimum threshold\n- value_exceed: Contract value exceeds sector maximum\n- uf_mismatch: State (UF) not in selected set\n- status_mismatch: Procurement status does not match filter",
+        "operationId": "get_filter_stats_v1_admin_admin_filter_stats_get",
+        "parameters": [
+          {
+            "description": "Number of days to look back",
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "description": "Number of days to look back",
+              "maximum": 90,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Filter Stats",
+        "tags": [
+          "admin"
+        ]
       }
     },
     "/v1/admin/feature-flags/reload": {

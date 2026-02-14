@@ -12,6 +12,19 @@ from typing import Set, Tuple, List, Dict, Optional
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# STORY-248 AC9: Lazy import to avoid circular dependency at module load time.
+# The tracker is imported inside functions that need it.
+_filter_stats_tracker = None
+
+
+def _get_tracker():
+    """Lazy-load the filter stats tracker singleton."""
+    global _filter_stats_tracker
+    if _filter_stats_tracker is None:
+        from filter_stats import filter_stats_tracker
+        _filter_stats_tracker = filter_stats_tracker
+    return _filter_stats_tracker
+
 
 # ---------- Portuguese Stopwords ----------
 # Prepositions, articles, conjunctions, and other function words that should
@@ -494,6 +507,79 @@ KEYWORDS_EXCLUSAO: Set[str] = {
     "execução de obra",
     "servicos de engenharia",
     "serviços de engenharia",
+
+    # --- STORY-248 AC5: Cross-sector ambiguity exclusions ---
+    # These prevent false positives where a keyword from one sector
+    # matches text that clearly belongs to a different domain.
+
+    # "papel" (papelaria) in non-stationery context
+    "papel de parede",
+    "papel moeda",
+
+    # "cola" (papelaria) in non-stationery context
+    "cola de contato",
+    "cola epóxi",
+    "cola epoxi",
+
+    # "pasta" (papelaria) in non-stationery context
+    "pasta térmica",
+    "pasta termica",
+
+    # "ferro" (engenharia) in non-construction context
+    "ferro de solda",
+
+    # "areia" (engenharia) in non-construction context
+    "areia para gato",
+    "areia sanitária",
+    "areia sanitaria",
+
+    # "bota" (vestuario) in medical context
+    "bota ortopédica",
+    "bota ortopedica",
+
+    # "luva" (multiple sectors) in sports context
+    "luva de boxe",
+    "luva de goleiro",
+
+    # "meia" (vestuario) in idiomatic/non-clothing context
+    "meia idade",
+    "meia pensão",
+    "meia pensao",
+
+    # "saia" (vestuario) in idiomatic context
+    "saia justa",
+
+    # "agenda" (papelaria) in non-product context
+    "agenda política",
+    "agenda politica",
+    "agenda regulatória",
+    "agenda regulatoria",
+
+    # "grampo" (papelaria) in surveillance context
+    "grampo telefônico",
+    "grampo telefonico",
+
+    # "tesoura" (papelaria) in medical context
+    "tesoura cirúrgica",
+    "tesoura cirurgica",
+
+    # "piso" (engenharia) in HR context
+    "piso salarial",
+
+    # "monitor" (informatica) in medical context
+    "monitor cardíaco",
+    "monitor cardiaco",
+
+    # "revestimento" (engenharia) in biological context
+    "revestimento celular",
+
+    # "transformador" (materiais_eletricos) in figurative context
+    "transformador social",
+    "transformador de vidas",
+
+    # "diesel" (transporte) in generator context
+    "motor diesel estacionário",
+    "motor diesel estacionario",
 }
 
 
@@ -650,6 +736,14 @@ def match_keywords(
             # Use strict word boundary for exclusions (exact match required)
             pattern = rf"\b{re.escape(exc_norm)}\b"
             if re.search(pattern, objeto_norm):
+                # STORY-248 AC9: Record exclusion hit
+                try:
+                    _get_tracker().record_rejection(
+                        "exclusion_hit",
+                        description_preview=objeto[:100],
+                    )
+                except Exception:
+                    pass  # Never let stats recording break filter logic
                 return False, []
 
     # Search for matching keywords
@@ -1740,6 +1834,15 @@ def aplicar_todos_filtros(
             resultado_uf.append(lic)
         else:
             stats["rejeitadas_uf"] += 1
+            # STORY-248 AC9: Record UF mismatch
+            try:
+                _get_tracker().record_rejection(
+                    "uf_mismatch",
+                    sector=setor,
+                    description_preview=lic.get("objetoCompra", "")[:100],
+                )
+            except Exception:
+                pass
 
     logger.debug(
         f"  Após filtro UF: {len(resultado_uf)} "
@@ -1765,6 +1868,15 @@ def aplicar_todos_filtros(
                     resultado_status.append(lic)
                 else:
                     stats["rejeitadas_status"] += 1
+                    # STORY-248 AC9: Record status mismatch
+                    try:
+                        _get_tracker().record_rejection(
+                            "status_mismatch",
+                            sector=setor,
+                            description_preview=lic.get("objetoCompra", "")[:100],
+                        )
+                    except Exception:
+                        pass
             else:
                 # Fallback: try raw API fields (legacy behavior)
                 situacao = (
@@ -1796,6 +1908,15 @@ def aplicar_todos_filtros(
                     resultado_status.append(lic)
                 else:
                     stats["rejeitadas_status"] += 1
+                    # STORY-248 AC9: Record status mismatch (fallback path)
+                    try:
+                        _get_tracker().record_rejection(
+                            "status_mismatch",
+                            sector=setor,
+                            description_preview=lic.get("objetoCompra", "")[:100],
+                        )
+                    except Exception:
+                        pass
 
         logger.debug(
             f"  Após filtro Status: {len(resultado_status)} "
@@ -1990,6 +2111,15 @@ def aplicar_todos_filtros(
                             f"valor=R$ {valor:,.2f} setor={setor} "
                             f"objeto={lic.get('objetoCompra', '')[:80]}"
                         )
+                        # STORY-248 AC9: Record value exceed
+                        try:
+                            _get_tracker().record_rejection(
+                                "value_exceed",
+                                sector=setor,
+                                description_preview=lic.get("objetoCompra", "")[:100],
+                            )
+                        except Exception:
+                            pass
                         continue
 
                     resultado_valor_teto.append(lic)
@@ -2045,6 +2175,15 @@ def aplicar_todos_filtros(
             resultado_keyword.append(lic)
         else:
             stats["rejeitadas_keyword"] += 1
+            # STORY-248 AC9: Record keyword miss
+            try:
+                _get_tracker().record_rejection(
+                    "keyword_miss",
+                    sector=setor,
+                    description_preview=objeto[:100],
+                )
+            except Exception:
+                pass
 
     # STORY-181 AC2: Camada 2A - Calibrated Term Density Decision Thresholds
     # Using configurable thresholds from config.py (env-var adjustable)
@@ -2057,8 +2196,8 @@ def aplicar_todos_filtros(
     )
 
     resultado_densidade: List[dict] = []
-    resultado_llm_standard: List[dict] = []  # density 3-8%: LLM standard prompt
-    resultado_llm_conservative: List[dict] = []  # density 1-3%: LLM conservative prompt
+    resultado_llm_standard: List[dict] = []  # density 2-5%: LLM standard prompt
+    resultado_llm_conservative: List[dict] = []  # density 1-2%: LLM conservative prompt
     stats["rejeitadas_red_flags"] = 0
 
     for lic in resultado_keyword:
@@ -2068,7 +2207,7 @@ def aplicar_todos_filtros(
         objeto_preview = lic.get("objetoCompra", "")[:100]
 
         if density > TERM_DENSITY_HIGH_THRESHOLD:
-            # High confidence (>8%) - dominant term, accept without LLM
+            # High confidence (>5%) - dominant term, accept without LLM
             stats["aprovadas_alta_densidade"] += 1
             logger.info(
                 f"[{trace_id}] Camada 2A: ACCEPT (alta densidade) "
@@ -2082,8 +2221,17 @@ def aplicar_todos_filtros(
                 f"[{trace_id}] Camada 2A: REJECT (baixa densidade) "
                 f"density={density:.1%} objeto={objeto_preview}"
             )
+            # STORY-248 AC9: Record density low rejection
+            try:
+                _get_tracker().record_rejection(
+                    "density_low",
+                    sector=setor,
+                    description_preview=objeto_preview,
+                )
+            except Exception:
+                pass
         elif density >= TERM_DENSITY_MEDIUM_THRESHOLD:
-            # Medium-high zone (3-8%) - LLM with standard prompt
+            # Medium-high zone (2-5%) - LLM with standard prompt
             # STORY-181 AC6: Check red flags BEFORE sending to LLM
             objeto_norm = normalize_text(lic.get("objetoCompra", ""))
             flagged, flag_terms = has_red_flags(
@@ -2102,7 +2250,7 @@ def aplicar_todos_filtros(
             lic["_llm_prompt_level"] = "standard"
             resultado_llm_standard.append(lic)
         else:
-            # Low-medium zone (1-3%) - LLM with conservative prompt
+            # Low-medium zone (1-2%) - LLM with conservative prompt
             # STORY-181 AC6: Check red flags BEFORE sending to LLM
             objeto_norm = normalize_text(lic.get("objetoCompra", ""))
             flagged, flag_terms = has_red_flags(
@@ -2197,6 +2345,15 @@ def aplicar_todos_filtros(
                     f"density={lic.get('_term_density', 0):.1%} "
                     f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"
                 )
+                # STORY-248 AC9: Record LLM rejection
+                try:
+                    _get_tracker().record_rejection(
+                        "llm_reject",
+                        sector=setor,
+                        description_preview=objeto[:100],
+                    )
+                except Exception:
+                    pass
 
             # STORY-181 AC7: QA Audit sampling
             if random.random() < QA_AUDIT_SAMPLE_RATE:
