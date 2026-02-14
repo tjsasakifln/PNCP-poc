@@ -1,6 +1,6 @@
 # STORY-227: Fix JWT ES256 Validation After Supabase Key Rotation
 
-**Status:** In Progress
+**Status:** Completed
 **Priority:** P0 — EMERGENCY
 **Sprint:** Immediate (Sprint 3 — Hotfix)
 **Estimated Effort:** S (2-4h)
@@ -30,15 +30,15 @@ This is a **total system outage** for all authenticated functionality: search, p
 - [x] AC2: JWT validation uses Supabase's **JWKS endpoint** (`https://<project-ref>.supabase.co/.well-known/jwks.json`) to dynamically fetch public keys, OR uses the ECC P-256 public key configured as an environment variable
 - [x] AC3: If using JWKS, keys are cached with a TTL (e.g., 5 minutes) to avoid per-request network calls
 - [x] AC4: Backward compatibility: if both HS256 and ES256 tokens could be in-flight during transition, accept both algorithms temporarily
-- [ ] AC5: Railway environment variable `SUPABASE_JWT_SECRET` is updated — if asymmetric (ES256), set to the **public key** (PEM format), not the shared secret
+- [x] AC5: Railway environment variable `SUPABASE_JWT_SECRET` is updated — if asymmetric (ES256), set to the **public key** (PEM format), not the shared secret
 
 ### Verification
 
-- [ ] AC6: `GET /me` returns 200 with valid user profile for a logged-in user
-- [ ] AC7: `POST /buscar` returns 200 and executes search for authenticated user
-- [ ] AC8: `GET /buscar-progress/{search_id}` SSE stream connects successfully
-- [ ] AC9: `GET /health` continues to return 200 (unauthenticated endpoint unaffected)
-- [ ] AC10: Invalid/expired tokens still correctly return 401
+- [x] AC6: `GET /me` returns 200 with valid user profile for a logged-in user
+- [x] AC7: `POST /buscar` returns 200 and executes search for authenticated user
+- [x] AC8: `GET /buscar-progress/{search_id}` SSE stream connects successfully
+- [x] AC9: `GET /health` continues to return 200 (unauthenticated endpoint unaffected)
+- [x] AC10: Invalid/expired tokens still correctly return 401
 
 ### Tests
 
@@ -49,8 +49,8 @@ This is a **total system outage** for all authenticated functionality: search, p
 
 ### Deployment
 
-- [ ] AC15: Deploy to Railway production
-- [ ] AC16: Verify via production smoke test (`curl -H "Authorization: Bearer <token>" https://api.smartlic.tech/me`)
+- [x] AC15: Deploy to Railway production
+- [x] AC16: Verify via production smoke test (`curl -H "Authorization: Bearer <token>" https://api.smartlic.tech/me`)
 
 ## Technical Notes
 
