@@ -27,11 +27,20 @@ MODALIDADES_PNCP = {
     15: "Chamada pública",
 }
 
-# Default modalities for BidIQ Uniformes search
-# Focus on Pregão Eletrônico (6) - most common for uniforms
-# NOTE: Modalidade 8 (Dispensa) has 2000+ records and causes timeouts
+# Default modalities: competitive modalities most relevant for procurement search
+# These four cover the vast majority of real competitive procurement opportunities
 DEFAULT_MODALIDADES: List[int] = [
-    6,  # Pregão - Eletrônico (most common for uniforms, fast response)
+    4,  # Concorrência - Eletrônica
+    5,  # Concorrência - Presencial
+    6,  # Pregão - Eletrônico (most common for uniforms)
+    7,  # Pregão - Presencial
+]
+
+# Modalities ALWAYS excluded from search results:
+# These have a pre-defined winner — pure noise for users seeking opportunities
+MODALIDADES_EXCLUIDAS: List[int] = [
+    9,   # Inexigibilidade — inviabilidade de competição, vencedor pré-definido
+    14,  # Inaplicabilidade da Licitação — sem processo competitivo
 ]
 
 

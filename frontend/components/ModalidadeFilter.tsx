@@ -6,18 +6,18 @@ import { useState } from "react";
  * ModalidadeFilter Component
  *
  * Multi-select filter for procurement modality types.
- * Complies with Lei 14.133/2021 (Nova Lei de Licitacoes e Contratos).
+ * Codes mapped to real PNCP API codes (codigoModalidadeContratacao).
  * Based on specs from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
  *
  * Features:
  * - Multi-select with checkboxes
- * - 3 popular modalities always visible: Pregao Eletronico, Pregao Presencial, Dispensa
+ * - 4 popular competitive modalities always visible: Concorrencia (4,5), Pregao (6,7)
  * - Collapsible section for other modalities
  * - "Todas" and "Limpar" buttons
  * - Counter showing selected count
  * - Full keyboard accessibility
  * - ARIA compliant
- * - Visual consistency with design system
+ * - Inexigibilidade (9) and Inaplicabilidade (14) excluded — pre-defined winner
  */
 
 export interface Modalidade {
@@ -29,47 +29,53 @@ export interface Modalidade {
 
 const MODALIDADES: Modalidade[] = [
   {
-    codigo: 1,
+    codigo: 4,
+    nome: "Concorrencia Eletronica",
+    descricao: "Licitacao eletronica para obras e servicos de grande valor (Lei 14.133/21, Art. 28 I)",
+    popular: true,
+  },
+  {
+    codigo: 5,
+    nome: "Concorrencia Presencial",
+    descricao: "Licitacao presencial para obras e servicos de grande valor (Lei 14.133/21, Art. 28 I)",
+    popular: true,
+  },
+  {
+    codigo: 6,
     nome: "Pregao Eletronico",
     descricao: "Licitacao eletronica para bens e servicos comuns (Lei 14.133/21, Art. 6º XL)",
     popular: true,
   },
   {
-    codigo: 2,
+    codigo: 7,
     nome: "Pregao Presencial",
     descricao: "Licitacao presencial para bens e servicos comuns (Lei 14.133/21, Art. 6º XL)",
     popular: true,
   },
   {
-    codigo: 6,
+    codigo: 8,
     nome: "Dispensa de Licitacao",
     descricao: "Contratacao direta sem processo licitatorio (Lei 14.133/21, Art. 75)",
-    popular: true,
   },
   {
-    codigo: 3,
-    nome: "Concorrencia",
-    descricao: "Para obras e servicos de grande valor (Lei 14.133/21, Art. 28 I)",
+    codigo: 1,
+    nome: "Leilao Eletronico",
+    descricao: "Para alienacao de bens em formato eletronico (Lei 14.133/21, Art. 28 V)",
   },
   {
-    codigo: 7,
-    nome: "Inexigibilidade",
-    descricao: "Quando ha inviabilidade de competicao (Lei 14.133/21, Art. 74)",
-  },
-  {
-    codigo: 9,
-    nome: "Leilao",
-    descricao: "Para alienacao de bens (Lei 14.133/21, Art. 28 V)",
-  },
-  {
-    codigo: 10,
+    codigo: 2,
     nome: "Dialogo Competitivo",
     descricao: "Para solucoes inovadoras (Lei 14.133/21, Art. 32 VII)",
   },
   {
-    codigo: 11,
+    codigo: 3,
     nome: "Concurso",
     descricao: "Escolha de trabalho tecnico, cientifico ou artistico (Lei 14.133/21, Art. 6º XLIV)",
+  },
+  {
+    codigo: 12,
+    nome: "Credenciamento",
+    descricao: "Cadastramento de interessados para prestacao de servicos (Lei 14.133/21, Art. 79)",
   },
 ];
 

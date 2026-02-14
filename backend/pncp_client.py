@@ -13,7 +13,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from config import RetryConfig, DEFAULT_MODALIDADES
+from config import RetryConfig, DEFAULT_MODALIDADES, MODALIDADES_EXCLUIDAS
 from exceptions import PNCPAPIError
 from middleware import request_id_var
 
@@ -377,8 +377,9 @@ class PNCPClient:
                 f"{len(date_chunks)} chunks of up to 30 days"
             )
 
-        # Use default modalities if not specified
+        # Use default modalities if not specified; always filter out excluded
         modalidades_to_fetch = modalidades or DEFAULT_MODALIDADES
+        modalidades_to_fetch = [m for m in modalidades_to_fetch if m not in MODALIDADES_EXCLUIDAS]
 
         # Track unique IDs to avoid duplicates across modalities and chunks
         seen_ids: set[str] = set()
@@ -937,8 +938,9 @@ class AsyncPNCPClient:
         import time as sync_time
         start_time = sync_time.time()
 
-        # Use default modalities if not specified
+        # Use default modalities if not specified; always filter out excluded
         modalidades = modalidades or DEFAULT_MODALIDADES
+        modalidades = [m for m in modalidades if m not in MODALIDADES_EXCLUIDAS]
 
         # Map status to PNCP API value
         pncp_status = STATUS_PNCP_MAP.get(status) if status else None

@@ -62,21 +62,21 @@ O SmartLic busca apenas modalidade 6 (Pregão Eletrônico). Isso perde oportunid
 ## Acceptance Criteria
 
 ### Backend
-- [ ] **AC1:** `DEFAULT_MODALIDADES = [4, 5, 6, 7]` em `config.py`. Comentário explica a escolha (modalidades competitivas).
-- [ ] **AC2:** `MODALIDADES_EXCLUIDAS = [9, 14]` em `config.py`. Comentário explica: "vencedor pré-definido = ruído".
-- [ ] **AC3:** `pncp_client.py:fetch_all()` e `buscar_todas_ufs_paralelo()` — quando `modalidades=None`, usa `DEFAULT_MODALIDADES`. Quando lista explícita fornecida, filtra removendo qualquer modalidade em `MODALIDADES_EXCLUIDAS`.
-- [ ] **AC4:** `ModalidadeContratacao` enum atualizado para mapear códigos PNCP reais (4=Concorrência Eletrônica, 5=Concorrência Presencial, 6=Pregão Eletrônico, 7=Pregão Presencial, 8=Dispensa, 12=Credenciamento).
-- [ ] **AC5:** Schema field description de `modalidades` atualizado com códigos corretos e nota sobre exclusão de 9 e 14.
-- [ ] **AC6:** Testes unitários: `test_default_modalidades_includes_competitive()` verifica [4,5,6,7]. `test_excluded_modalidades_never_fetched()` verifica que 9 e 14 são filtrados.
+- [x] **AC1:** `DEFAULT_MODALIDADES = [4, 5, 6, 7]` em `config.py`. Comentário explica a escolha (modalidades competitivas).
+- [x] **AC2:** `MODALIDADES_EXCLUIDAS = [9, 14]` em `config.py`. Comentário explica: "vencedor pré-definido = ruído".
+- [x] **AC3:** `pncp_client.py:fetch_all()` e `buscar_todas_ufs_paralelo()` — quando `modalidades=None`, usa `DEFAULT_MODALIDADES`. Quando lista explícita fornecida, filtra removendo qualquer modalidade em `MODALIDADES_EXCLUIDAS`.
+- [x] **AC4:** `ModalidadeContratacao` enum atualizado para mapear códigos PNCP reais (4=Concorrência Eletrônica, 5=Concorrência Presencial, 6=Pregão Eletrônico, 7=Pregão Presencial, 8=Dispensa, 12=Credenciamento).
+- [x] **AC5:** Schema field description de `modalidades` atualizado com códigos corretos e nota sobre exclusão de 9 e 14.
+- [x] **AC6:** Testes unitários: `test_default_modalidades_includes_competitive()` verifica [4,5,6,7]. `test_excluded_modalidades_never_fetched()` verifica que 9 e 14 são filtrados.
 
 ### Frontend
-- [ ] **AC7:** `ModalidadeFilter.tsx` — Concorrência Eletrônica (4) e Concorrência Presencial (5) adicionados. Pregão Presencial (7) adicionado. Popular=[4, 5, 6, 7]. Inexigibilidade removida.
-- [ ] **AC8:** Frontend não permite selecionar modalidades 9 ou 14 (não aparecem na lista).
-- [ ] **AC9:** Testes de componente `ModalidadeFilter` atualizados.
+- [x] **AC7:** `ModalidadeFilter.tsx` — Concorrência Eletrônica (4) e Concorrência Presencial (5) adicionados. Pregão Presencial (7) adicionado. Popular=[4, 5, 6, 7]. Inexigibilidade removida.
+- [x] **AC8:** Frontend não permite selecionar modalidades 9 ou 14 (não aparecem na lista).
+- [x] **AC9:** Testes de componente `ModalidadeFilter` atualizados.
 
 ### Regressão
-- [ ] **AC10:** OpenAPI schema snapshot atualizado após mudanças em schemas.py.
-- [ ] **AC11:** Todos os testes existentes de modalidade passam ou são atualizados.
+- [x] **AC10:** OpenAPI schema snapshot atualizado após mudanças em schemas.py.
+- [x] **AC11:** Todos os testes existentes de modalidade passam ou são atualizados.
 
 ## Definition of Done
 - Todos os ACs checked

@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from config import RetryConfig, DEFAULT_MODALIDADES
+from config import RetryConfig, DEFAULT_MODALIDADES, MODALIDADES_EXCLUIDAS
 from exceptions import PNCPAPIError
 from pncp_client import PNCPClient, calculate_delay
 
@@ -648,7 +648,7 @@ class TestFetchAllPagination:
 
     @patch("pncp_client.requests.Session.get")
     def test_fetch_all_uses_default_modalidades(self, mock_get):
-        """Test fetch_all uses DEFAULT_MODALIDADES when none specified."""
+        """Test fetch_all uses DEFAULT_MODALIDADES [4,5,6,7] when none specified."""
         mock_response = Mock(status_code=200, headers=JSON_HEADERS)
         mock_response.json.return_value = {
             "data": [],
@@ -661,8 +661,9 @@ class TestFetchAllPagination:
         client = PNCPClient()
         list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"]))
 
-        # Should call API once for each default modalidade
+        # Should call API once for each default modalidade (4 competitive modalities)
         assert mock_get.call_count == len(DEFAULT_MODALIDADES)
+        assert mock_get.call_count == 4  # [4, 5, 6, 7]
 
 
 class TestFetchByUFHelper:
@@ -1317,3 +1318,118 @@ class TestAsyncFetchPageHTMLResponse:
 
         assert len(results) == 0
         assert call_count == 2
+
+
+# ============================================================================
+# STORY-241: Modalidade Defaults and Exclusions Tests
+# ============================================================================
+
+
+class TestDefaultModalidadesCompetitive:
+    """STORY-241 AC1/AC2/AC6: Verify DEFAULT_MODALIDADES and MODALIDADES_EXCLUIDAS."""
+
+    def test_default_modalidades_includes_competitive(self):
+        """AC1: DEFAULT_MODALIDADES must be [4, 5, 6, 7] — all competitive modalities."""
+        assert DEFAULT_MODALIDADES == [4, 5, 6, 7]
+
+    def test_default_modalidades_contains_concorrencia_eletronica(self):
+        """AC1: Concorrência Eletrônica (4) must be in defaults."""
+        assert 4 in DEFAULT_MODALIDADES
+
+    def test_default_modalidades_contains_concorrencia_presencial(self):
+        """AC1: Concorrência Presencial (5) must be in defaults."""
+        assert 5 in DEFAULT_MODALIDADES
+
+    def test_default_modalidades_contains_pregao_eletronico(self):
+        """AC1: Pregão Eletrônico (6) must be in defaults."""
+        assert 6 in DEFAULT_MODALIDADES
+
+    def test_default_modalidades_contains_pregao_presencial(self):
+        """AC1: Pregão Presencial (7) must be in defaults."""
+        assert 7 in DEFAULT_MODALIDADES
+
+    def test_excluded_modalidades_defined(self):
+        """AC2: MODALIDADES_EXCLUIDAS must be [9, 14]."""
+        assert MODALIDADES_EXCLUIDAS == [9, 14]
+
+    def test_inexigibilidade_excluded(self):
+        """AC2: Inexigibilidade (9) must be excluded."""
+        assert 9 in MODALIDADES_EXCLUIDAS
+        assert 9 not in DEFAULT_MODALIDADES
+
+    def test_inaplicabilidade_excluded(self):
+        """AC2: Inaplicabilidade (14) must be excluded."""
+        assert 14 in MODALIDADES_EXCLUIDAS
+        assert 14 not in DEFAULT_MODALIDADES
+
+
+class TestExcludedModalidadesNeverFetched:
+    """STORY-241 AC3/AC6: Excluded modalities are filtered out of API calls."""
+
+    @patch("pncp_client.requests.Session.get")
+    def test_excluded_modalidades_never_fetched_sync(self, mock_get):
+        """AC3: fetch_all() filters out modalidades 9 and 14 even if explicitly passed."""
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
+        mock_response.json.return_value = {
+            "data": [],
+            "totalRegistros": 0,
+            "totalPaginas": 1,
+            "paginasRestantes": 0,
+        }
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        # Explicitly pass excluded modalities along with valid ones
+        list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[6, 9, 14]))
+
+        # Should only call API for modalidade 6 (9 and 14 filtered out)
+        assert mock_get.call_count == 1
+        call_params = mock_get.call_args[1]["params"]
+        assert call_params["codigoModalidadeContratacao"] == 6
+
+    @patch("pncp_client.requests.Session.get")
+    def test_excluded_only_results_in_zero_calls(self, mock_get):
+        """AC3: If all requested modalidades are excluded, no API calls are made."""
+        mock_response = Mock(status_code=200, headers=JSON_HEADERS)
+        mock_response.json.return_value = {"data": []}
+        mock_get.return_value = mock_response
+
+        client = PNCPClient()
+        results = list(client.fetch_all("2024-01-01", "2024-01-30", ufs=["SP"], modalidades=[9, 14]))
+
+        assert len(results) == 0
+        assert mock_get.call_count == 0
+
+    @pytest.mark.asyncio
+    @patch("pncp_client.httpx.AsyncClient.get")
+    async def test_excluded_modalidades_never_fetched_async(self, mock_get):
+        """AC3: buscar_todas_ufs_paralelo() filters out modalidades 9 and 14."""
+        from pncp_client import buscar_todas_ufs_paralelo
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = JSON_HEADERS
+        mock_response.json.return_value = {
+            "data": [
+                {"numeroControlePNCP": "001", "unidadeOrgao": {"ufSigla": "SP", "municipioNome": ""}, "orgaoEntidade": {"razaoSocial": ""}},
+            ],
+            "totalRegistros": 1,
+            "totalPaginas": 1,
+            "paginasRestantes": 0,
+        }
+        mock_get.return_value = mock_response
+
+        results = await buscar_todas_ufs_paralelo(
+            ufs=["SP"],
+            data_inicial="2026-01-01",
+            data_final="2026-01-15",
+            modalidades=[6, 9, 14],
+        )
+
+        # Should have results from modalidade 6 only
+        assert len(results) == 1
+        # Check that API was only called for modalidade 6, not 9 or 14
+        for call in mock_get.call_args_list:
+            params = call[1].get("params", call[0][1] if len(call[0]) > 1 else {})
+            if "codigoModalidadeContratacao" in params:
+                assert params["codigoModalidadeContratacao"] not in (9, 14)

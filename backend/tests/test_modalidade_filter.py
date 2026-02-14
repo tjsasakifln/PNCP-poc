@@ -24,37 +24,35 @@ def _recent_dates(days_back: int = 7) -> tuple[str, str]:
 
 
 class TestModalidadeEnumDefinition:
-    """Tests for ModalidadeContratacao enum definition (Lei 14.133/2021)."""
+    """Tests for ModalidadeContratacao enum definition (PNCP API codes — STORY-241)."""
 
-    def test_all_lei_14133_modalidade_codes_exist(self):
-        """All 8 Lei 14.133/2021 modalidade codes should be defined."""
-        assert ModalidadeContratacao.PREGAO_ELETRONICO == 1
-        assert ModalidadeContratacao.PREGAO_PRESENCIAL == 2
-        assert ModalidadeContratacao.CONCORRENCIA == 3
-        assert ModalidadeContratacao.DISPENSA == 6
-        assert ModalidadeContratacao.INEXIGIBILIDADE == 7
-        assert ModalidadeContratacao.LEILAO == 9
-        assert ModalidadeContratacao.DIALOGO_COMPETITIVO == 10
-        assert ModalidadeContratacao.CONCURSO == 11
+    def test_all_pncp_api_modalidade_codes_exist(self):
+        """All PNCP API modalidade codes should be defined (excluding 9 and 14)."""
+        assert ModalidadeContratacao.LEILAO_ELETRONICO == 1
+        assert ModalidadeContratacao.DIALOGO_COMPETITIVO == 2
+        assert ModalidadeContratacao.CONCURSO == 3
+        assert ModalidadeContratacao.CONCORRENCIA_ELETRONICA == 4
+        assert ModalidadeContratacao.CONCORRENCIA_PRESENCIAL == 5
+        assert ModalidadeContratacao.PREGAO_ELETRONICO == 6
+        assert ModalidadeContratacao.PREGAO_PRESENCIAL == 7
+        assert ModalidadeContratacao.DISPENSA == 8
+        assert ModalidadeContratacao.CREDENCIAMENTO == 12
 
-    def test_deprecated_codes_removed(self):
-        """Codes 4 (TOMADA_PRECOS) and 5 (CONVITE) should NOT exist."""
+    def test_excluded_codes_not_in_enum(self):
+        """Inexigibilidade (9) and Inaplicabilidade (14) should NOT exist in enum."""
         with pytest.raises(AttributeError):
-            _ = ModalidadeContratacao.TOMADA_PRECOS
+            _ = ModalidadeContratacao.INEXIGIBILIDADE
         with pytest.raises(AttributeError):
-            _ = ModalidadeContratacao.CONVITE
-        # Also verify CREDENCIAMENTO (8) is removed
-        with pytest.raises(AttributeError):
-            _ = ModalidadeContratacao.CREDENCIAMENTO
+            _ = ModalidadeContratacao.INAPLICABILIDADE
 
     def test_modalidade_enum_count(self):
-        """Should have exactly 8 Lei 14.133/2021 modalidade options."""
-        assert len(ModalidadeContratacao) == 8
+        """Should have exactly 13 PNCP API modalidade options (all except 9 and 14)."""
+        assert len(ModalidadeContratacao) == 13
 
-    def test_modalidade_codes_match_lei_14133(self):
-        """Modalidade codes should be 1,2,3,6,7,9,10,11 only."""
+    def test_modalidade_codes_match_pncp_api(self):
+        """Modalidade codes should match real PNCP API codes."""
         codes = sorted([m.value for m in ModalidadeContratacao])
-        assert codes == [1, 2, 3, 6, 7, 9, 10, 11]
+        assert codes == [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15]
 
 
 class TestSingleModalidadeFilter:
@@ -154,62 +152,57 @@ class TestEmptyListReturnsAll:
         assert len(result) == 2
 
 
-class TestDeprecatedModalidadeCodesRejection:
-    """Tests for rejecting deprecated Lei 8.666/93 modalidade codes."""
+class TestExcludedModalidadeCodesRejection:
+    """Tests for rejecting excluded modalidade codes (STORY-241)."""
 
-    def test_deprecated_code_4_rejected_in_schema(self):
-        """Modalidade code 4 (Tomada de Preços) should be rejected in schema."""
+    def test_excluded_code_9_rejected_in_schema(self):
+        """Modalidade code 9 (Inexigibilidade) should be rejected — pre-defined winner."""
         d_ini, d_fin = _recent_dates(7)
         with pytest.raises(ValidationError) as exc_info:
             BuscaRequest(
                 ufs=["SP"],
                 data_inicial=d_ini,
                 data_final=d_fin,
-                modalidades=[4],
+                modalidades=[9],
             )
         error_msg = str(exc_info.value).lower()
-        assert "inválidos" in error_msg or "invalid" in error_msg
-        assert "4" in str(exc_info.value)
+        assert "excluídas" in error_msg or "9" in str(exc_info.value)
 
-    def test_deprecated_code_5_rejected_in_schema(self):
-        """Modalidade code 5 (Convite) should be rejected in schema."""
+    def test_excluded_code_14_rejected_in_schema(self):
+        """Modalidade code 14 (Inaplicabilidade) should be rejected — pre-defined winner."""
         d_ini, d_fin = _recent_dates(7)
         with pytest.raises(ValidationError) as exc_info:
             BuscaRequest(
                 ufs=["SP"],
                 data_inicial=d_ini,
                 data_final=d_fin,
-                modalidades=[5],
+                modalidades=[14],
             )
         error_msg = str(exc_info.value).lower()
-        assert "inválidos" in error_msg or "invalid" in error_msg
-        assert "5" in str(exc_info.value)
+        assert "excluídas" in error_msg or "14" in str(exc_info.value)
 
-    def test_deprecated_code_8_rejected_in_schema(self):
-        """Modalidade code 8 (Credenciamento) should be rejected in schema."""
+    def test_codes_4_5_8_now_valid_pncp_codes(self):
+        """Codes 4, 5, 8 are now valid PNCP API codes (Concorrência, Dispensa)."""
+        d_ini, d_fin = _recent_dates(7)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=[4, 5, 8],
+        )
+        assert set(request.modalidades) == {4, 5, 8}
+
+    def test_mixed_valid_and_excluded_codes_rejected(self):
+        """Mix of valid and excluded codes should be rejected."""
         d_ini, d_fin = _recent_dates(7)
         with pytest.raises(ValidationError) as exc_info:
             BuscaRequest(
                 ufs=["SP"],
                 data_inicial=d_ini,
                 data_final=d_fin,
-                modalidades=[8],
+                modalidades=[6, 9],  # 9 is excluded
             )
-        error_msg = str(exc_info.value).lower()
-        assert "inválidos" in error_msg or "invalid" in error_msg
-        assert "8" in str(exc_info.value)
-
-    def test_mixed_valid_and_deprecated_codes_rejected(self):
-        """Mix of valid and deprecated codes should be rejected."""
-        d_ini, d_fin = _recent_dates(7)
-        with pytest.raises(ValidationError) as exc_info:
-            BuscaRequest(
-                ufs=["SP"],
-                data_inicial=d_ini,
-                data_final=d_fin,
-                modalidades=[1, 4, 6],  # 4 is deprecated
-            )
-        assert "4" in str(exc_info.value)
+        assert "9" in str(exc_info.value)
 
 
 class TestInexistentModalidadeHandling:
@@ -236,17 +229,16 @@ class TestInexistentModalidadeHandling:
             )
         assert "0" in str(exc_info.value)
 
-    def test_invalid_modalidade_code_twelve_in_schema(self):
-        """Modalidade code 12 should be rejected in schema."""
+    def test_valid_modalidade_code_twelve_accepted(self):
+        """Modalidade code 12 (Credenciamento) should now be accepted — valid PNCP code."""
         d_ini, d_fin = _recent_dates(7)
-        with pytest.raises(ValidationError) as exc_info:
-            BuscaRequest(
-                ufs=["SP"],
-                data_inicial=d_ini,
-                data_final=d_fin,
-                modalidades=[12],
-            )
-        assert "12" in str(exc_info.value)
+        request = BuscaRequest(
+            ufs=["SP"],
+            data_inicial=d_ini,
+            data_final=d_fin,
+            modalidades=[12],
+        )
+        assert request.modalidades == [12]
 
     def test_invalid_modalidade_negative_in_schema(self):
         """Negative modalidade code should be rejected in schema."""
@@ -351,17 +343,17 @@ class TestModalidadeSchemaValidation:
         )
         assert request.modalidades == [1, 2, 6]
 
-    def test_all_lei_14133_codes_accepted(self):
-        """All 8 Lei 14.133/2021 modalidade codes should be accepted together."""
+    def test_all_pncp_api_codes_accepted(self):
+        """All valid PNCP API modalidade codes should be accepted together."""
         d_ini, d_fin = _recent_dates(7)
         request = BuscaRequest(
             ufs=["SP"],
             data_inicial=d_ini,
             data_final=d_fin,
-            modalidades=[1, 2, 3, 6, 7, 9, 10, 11],
+            modalidades=[1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15],
         )
-        assert len(request.modalidades) == 8
-        assert set(request.modalidades) == {1, 2, 3, 6, 7, 9, 10, 11}
+        assert len(request.modalidades) == 13
+        assert set(request.modalidades) == {1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15}
 
     def test_modalidades_none_accepted(self):
         """None modalidades should be accepted (means all)."""

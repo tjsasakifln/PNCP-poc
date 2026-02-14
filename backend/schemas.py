@@ -29,27 +29,28 @@ class StatusLicitacao(str, Enum):
 
 class ModalidadeContratacao(IntEnum):
     """
-    Modalidades de contratação conforme Lei 14.133/2021 (Nova Lei de Licitações).
+    Modalidades de contratação mapeadas pelos códigos reais da API PNCP.
 
-    Códigos oficiais das modalidades de licitação vigentes:
-    - 1-2: Pregões (eletrônico/presencial) - Art. 6º XLIII
-    - 3: Concorrência - Art. 6º XLII
-    - 6-7: Contratação direta (Dispensa/Inexigibilidade) - Arts. 75 e 74
-    - 9: Leilão - Art. 6º XLV
-    - 10: Diálogo Competitivo - Art. 6º XLVI
-    - 11: Concurso - Art. 6º XLIV
+    Fonte: https://pncp.gov.br/api/pncp/v1/modalidades
+    Os códigos abaixo correspondem ao campo codigoModalidadeContratacao
+    retornado pela API PNCP.
 
-    IMPORTANTE: Códigos 4 (Tomada de Preços) e 5 (Convite) foram REMOVIDOS
-    pois são modalidades da Lei 8.666/93, revogada pela Lei 14.133/2021.
+    EXCLUÍDAS: 9 (Inexigibilidade) e 14 (Inaplicabilidade) — modalidades
+    com vencedor pré-definido, sem valor competitivo para o usuário.
     """
-    PREGAO_ELETRONICO = 1      # Art. 6º XLIII
-    PREGAO_PRESENCIAL = 2      # Art. 6º XLIII
-    CONCORRENCIA = 3           # Art. 6º XLII
-    DISPENSA = 6               # Art. 75
-    INEXIGIBILIDADE = 7        # Art. 74
-    LEILAO = 9                 # Art. 6º XLV
-    DIALOGO_COMPETITIVO = 10   # Art. 6º XLVI
-    CONCURSO = 11              # Art. 6º XLIV
+    LEILAO_ELETRONICO = 1       # Leilão - Eletrônico
+    DIALOGO_COMPETITIVO = 2     # Diálogo Competitivo
+    CONCURSO = 3                # Concurso
+    CONCORRENCIA_ELETRONICA = 4 # Concorrência - Eletrônica
+    CONCORRENCIA_PRESENCIAL = 5 # Concorrência - Presencial
+    PREGAO_ELETRONICO = 6       # Pregão - Eletrônico
+    PREGAO_PRESENCIAL = 7       # Pregão - Presencial
+    DISPENSA = 8                # Dispensa de Licitação
+    MANIFESTACAO_INTERESSE = 10 # Manifestação de Interesse
+    PRE_QUALIFICACAO = 11       # Pré-qualificação
+    CREDENCIAMENTO = 12         # Credenciamento
+    LEILAO_PRESENCIAL = 13      # Leilão - Presencial
+    CHAMADA_PUBLICA = 15        # Chamada Pública
 
 
 class EsferaGovernamental(str, Enum):
@@ -344,14 +345,15 @@ class BuscaRequest(BaseModel):
 
     modalidades: Optional[List[int]] = Field(
         default=None,
-        description="Lista de códigos de modalidade conforme Lei 14.133/2021. "
-                    "Códigos válidos: 1 (Pregão Eletrônico), 2 (Pregão Presencial), "
-                    "3 (Concorrência), 6 (Dispensa), 7 (Inexigibilidade), "
-                    "9 (Leilão), 10 (Diálogo Competitivo), 11 (Concurso). "
-                    "None = todas as modalidades. "
-                    "NOTA: Códigos 4 (Tomada de Preços) e 5 (Convite) foram removidos "
-                    "por serem da Lei 8.666/93 (revogada).",
-        examples=[[1, 2, 6]],
+        description="Lista de códigos de modalidade conforme API PNCP. "
+                    "Códigos válidos: 1 (Leilão Eletrônico), 2 (Diálogo Competitivo), "
+                    "3 (Concurso), 4 (Concorrência Eletrônica), 5 (Concorrência Presencial), "
+                    "6 (Pregão Eletrônico), 7 (Pregão Presencial), 8 (Dispensa), "
+                    "10 (Manifestação de Interesse), 11 (Pré-qualificação), "
+                    "12 (Credenciamento), 13 (Leilão Presencial), 15 (Chamada Pública). "
+                    "None = modalidades padrão [4, 5, 6, 7]. "
+                    "EXCLUÍDOS: 9 (Inexigibilidade) e 14 (Inaplicabilidade) — vencedor pré-definido.",
+        examples=[[4, 5, 6, 7]],
     )
 
     valor_minimo: Optional[float] = Field(
@@ -475,24 +477,32 @@ class BuscaRequest(BaseModel):
     @classmethod
     def validate_modalidades(cls, v: Optional[List[int]]) -> Optional[List[int]]:
         """
-        Validate that modalidade codes conform to Lei 14.133/2021.
+        Validate that modalidade codes match real PNCP API codes.
 
-        Valid codes: 1, 2, 3, 6, 7, 9, 10, 11
-        DEPRECATED codes 4 (Tomada de Preços) and 5 (Convite) are REJECTED.
+        Valid codes: 1-8, 10-13, 15 (all PNCP modalities except excluded).
+        EXCLUDED: 9 (Inexigibilidade) and 14 (Inaplicabilidade) — pre-defined winner.
         """
         if v is None:
             return v
 
-        # Valid codes per Lei 14.133/2021
-        valid_codes = {1, 2, 3, 6, 7, 9, 10, 11}
+        # Valid codes per PNCP API (excluding 9=Inexigibilidade, 14=Inaplicabilidade)
+        valid_codes = {1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15}
+
+        # Check for excluded codes specifically
+        excluded_codes = [code for code in v if code in (9, 14)]
+        if excluded_codes:
+            raise ValueError(
+                f"Modalidades excluídas: {excluded_codes}. "
+                f"9 (Inexigibilidade) e 14 (Inaplicabilidade) não são permitidas "
+                f"(vencedor pré-definido)."
+            )
 
         # Check for invalid codes
         invalid_codes = [code for code in v if code not in valid_codes]
         if invalid_codes:
             raise ValueError(
                 f"Códigos de modalidade inválidos: {invalid_codes}. "
-                f"Valores válidos (Lei 14.133/2021): {sorted(valid_codes)}. "
-                f"NOTA: Códigos 4 e 5 foram removidos (Lei 8.666/93 revogada)."
+                f"Valores válidos (API PNCP): {sorted(valid_codes)}."
             )
 
         return v
@@ -534,7 +544,7 @@ class BuscaRequest(BaseModel):
                 "data_inicial": "2025-01-01",
                 "data_final": "2025-01-31",
                 "status": "recebendo_proposta",
-                "modalidades": [1, 2, 6],
+                "modalidades": [4, 5, 6, 7],
                 "valor_minimo": 50000,
                 "valor_maximo": 500000,
                 "esferas": ["M"],
