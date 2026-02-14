@@ -51,23 +51,23 @@ Os IDs dos setores (`engenharia`, `facilities`, etc.) permanecem inalterados. Ap
 ## Acceptance Criteria
 
 ### Backend
-- [ ] **AC1:** `engenharia` sector name = "Engenharia, Projetos e Obras", description inclui "escritórios de projeto, consultorias, fiscalização, topografia".
-- [ ] **AC2:** `facilities` sector name = "Facilities e Manutenção".
-- [ ] **AC3:** `manutencao_predial` sector name = "Manutenção e Conservação Predial".
-- [ ] **AC4:** `vigilancia` sector name = "Vigilância e Segurança Patrimonial".
-- [ ] **AC5:** `informatica` sector name = "Hardware e Equipamentos de TI".
-- [ ] **AC6:** Nenhum setor ID foi alterado (apenas name e description).
-- [ ] **AC7:** `list_sectors()` retorna os nomes novos.
-- [ ] **AC8:** Teste: `test_sector_ids_unchanged()` verifica que os mesmos IDs existem antes e depois.
+- [x] **AC1:** `engenharia` sector name = "Engenharia, Projetos e Obras", description inclui "escritórios de projeto, consultorias, fiscalização, topografia".
+- [x] **AC2:** `facilities` sector name = "Facilities e Manutenção".
+- [x] **AC3:** `manutencao_predial` sector name = "Manutenção e Conservação Predial".
+- [x] **AC4:** `vigilancia` sector name = "Vigilância e Segurança Patrimonial".
+- [x] **AC5:** `informatica` sector name = "Hardware e Equipamentos de TI".
+- [x] **AC6:** Nenhum setor ID foi alterado (apenas name e description).
+- [x] **AC7:** `list_sectors()` retorna os nomes novos.
+- [x] **AC8:** Teste: `test_sector_ids_unchanged()` verifica que os mesmos IDs existem antes e depois.
 
 ### Frontend
-- [ ] **AC9:** SETORES_FALLBACK reflete os novos nomes.
-- [ ] **AC10:** Signup page SECTORS reflete os novos nomes.
-- [ ] **AC11:** Dropdown de setores na busca mostra os novos nomes.
+- [x] **AC9:** SETORES_FALLBACK reflete os novos nomes.
+- [x] **AC10:** Signup page SECTORS reflete os novos nomes.
+- [x] **AC11:** Dropdown de setores na busca mostra os novos nomes.
 
 ### Regressão
-- [ ] **AC12:** Busca por setor ID `engenharia` funciona igual ao antes (keywords não mudaram).
-- [ ] **AC13:** Analytics por setor_id não afetados (IDs preservados).
+- [x] **AC12:** Busca por setor ID `engenharia` funciona igual ao antes (keywords não mudaram).
+- [x] **AC13:** Analytics por setor_id não afetados (IDs preservados).
 
 ## Definition of Done
 - Todos os ACs checked

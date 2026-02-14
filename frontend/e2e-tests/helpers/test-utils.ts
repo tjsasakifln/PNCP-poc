@@ -142,7 +142,7 @@ export async function mockSetoresAPI(page: Page) {
         setores: [
           { id: 'vestuario', name: 'Vestuário e Uniformes', description: '' },
           { id: 'alimentos', name: 'Alimentos e Merenda', description: '' },
-          { id: 'informatica', name: 'Informática e Tecnologia', description: '' },
+          { id: 'informatica', name: 'Hardware e Equipamentos de TI', description: '' },
         ],
       }),
     });

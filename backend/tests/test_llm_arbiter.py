@@ -260,7 +260,7 @@ class TestPromptConstruction:
         classify_contract_primary_match(
             objeto="Teste de prompt",
             valor=1_000_000,
-            setor_name="Informática e Tecnologia",
+            setor_name="Hardware e Equipamentos de TI",
         )
 
         call_args = mock_openai_client.chat.completions.create.call_args
@@ -272,7 +272,7 @@ class TestPromptConstruction:
 
         # User message (sector mode)
         user_msg = messages[1]["content"]
-        assert "Setor: Informática e Tecnologia" in user_msg
+        assert "Setor: Hardware e Equipamentos de TI" in user_msg
         assert "Valor: R$" in user_msg
         assert "Objeto: Teste de prompt" in user_msg
         assert "PRIMARIAMENTE" in user_msg

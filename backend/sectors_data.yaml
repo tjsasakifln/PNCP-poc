@@ -531,8 +531,8 @@ sectors:
       - "sal para piscina"
 
   informatica:
-    name: "Informática e Tecnologia"
-    description: "Computadores, servidores, software, periféricos, redes"
+    name: "Hardware e Equipamentos de TI"
+    description: "Computadores, servidores, periféricos, redes, equipamentos de informática, impressoras, switches, storage"
     max_contract_value: 20000000  # R$ 20M
     keywords:
       - "computador"
@@ -1179,8 +1179,8 @@ sectors:
       - "concessao"
 
   engenharia:
-    name: "Engenharia e Construção"
-    description: "Obras, reformas, construção civil, pavimentação, infraestrutura"
+    name: "Engenharia, Projetos e Obras"
+    description: "Obras, reformas, construção civil, pavimentação, infraestrutura, escritórios de projeto, consultorias de engenharia, fiscalização, topografia"
     max_contract_value: null  # No limit - civil works can be billions
     keywords:
       # High precision compound terms
@@ -1640,8 +1640,8 @@ sectors:
       - "luminarias"
 
   facilities:
-    name: "Facilities (Limpeza e Zeladoria)"
-    description: "Limpeza predial, produtos de limpeza, conservação, copa/cozinha, segurança patrimonial, portaria, recepção, zeladoria, jardinagem"
+    name: "Facilities e Manutenção"
+    description: "Limpeza predial, produtos de limpeza, conservação, copa/cozinha, portaria, recepção, zeladoria, jardinagem, manutenção predial"
     max_contract_value: 30000000  # R$ 30M
     keywords:
       # Core facilities management (English + Portuguese)
@@ -2273,7 +2273,7 @@ sectors:
       - "ar comprimido"
 
   vigilancia:
-    name: "Vigilância e Segurança"
+    name: "Vigilância e Segurança Patrimonial"
     description: "Vigilância patrimonial, segurança eletrônica, CFTV, alarmes, controle de acesso, portaria armada/desarmada"
     max_contract_value: 40000000  # R$ 40M
     keywords:
@@ -2630,7 +2630,7 @@ sectors:
       - "lubrificante industrial"
 
   manutencao_predial:
-    name: "Manutenção Predial"
+    name: "Manutenção e Conservação Predial"
     description: "Manutenção preventiva/corretiva de edificações, PMOC, ar condicionado, elevadores, instalações elétricas/hidráulicas, pintura predial, impermeabilização"
     max_contract_value: 30000000  # R$ 30M
     keywords:

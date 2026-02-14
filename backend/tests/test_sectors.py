@@ -27,8 +27,40 @@ class TestSectorConfig:
             get_sector("inexistente")
 
 
+class TestSectorIdsUnchanged:
+    """AC8: Verify all sector IDs are preserved after rename (STORY-243)."""
+
+    EXPECTED_IDS = {
+        "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
+        "engenharia", "software", "facilities", "saude", "vigilancia",
+        "transporte", "manutencao_predial", "engenharia_rodoviaria",
+        "materiais_eletricos", "materiais_hidraulicos",
+    }
+
+    def test_sector_ids_unchanged(self):
+        """All sector IDs must remain the same — only names/descriptions change."""
+        sectors = list_sectors()
+        ids = {s["id"] for s in sectors}
+        assert ids == self.EXPECTED_IDS
+
+    def test_renamed_sectors_have_new_names(self):
+        """Verify the 5 renamed sectors have their new display names."""
+        assert get_sector("engenharia").name == "Engenharia, Projetos e Obras"
+        assert get_sector("facilities").name == "Facilities e Manutenção"
+        assert get_sector("manutencao_predial").name == "Manutenção e Conservação Predial"
+        assert get_sector("vigilancia").name == "Vigilância e Segurança Patrimonial"
+        assert get_sector("informatica").name == "Hardware e Equipamentos de TI"
+
+    def test_search_by_sector_id_still_works(self):
+        """AC12: Searching by sector ID returns valid config (keywords preserved)."""
+        for sid in self.EXPECTED_IDS:
+            s = get_sector(sid)
+            assert s.id == sid
+            assert len(s.keywords) > 0
+
+
 class TestInformaticaSector:
-    """Tests for Informática e Tecnologia sector — audit-derived."""
+    """Tests for Hardware e Equipamentos de TI sector — audit-derived."""
 
     def _match(self, texto):
         s = SECTORS["informatica"]
@@ -152,7 +184,7 @@ class TestPapelariaSector:
 
 
 class TestEngenhariaSector:
-    """Tests for Engenharia e Construção sector — audit-derived."""
+    """Tests for Engenharia, Projetos e Obras sector — audit-derived."""
 
     def _match(self, texto):
         s = SECTORS["engenharia"]
@@ -554,7 +586,7 @@ class TestFacilitiesSector:
 
 
 class TestManutencaoPredialSector:
-    """Tests for Manutenção Predial sector."""
+    """Tests for Manutenção e Conservação Predial sector."""
 
     def _match(self, texto):
         s = SECTORS["manutencao_predial"]
