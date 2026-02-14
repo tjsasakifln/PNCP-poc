@@ -14,7 +14,7 @@ class TestSectorConfig:
     def test_all_sectors_exist(self):
         sectors = list_sectors()
         ids = {s["id"] for s in sectors}
-        assert ids == {"vestuario", "alimentos", "informatica", "mobiliario", "papelaria", "engenharia", "software", "facilities", "saude", "vigilancia", "transporte", "manutencao_predial"}
+        assert ids == {"vestuario", "alimentos", "informatica", "mobiliario", "papelaria", "engenharia", "software", "facilities", "saude", "vigilancia", "transporte", "manutencao_predial", "engenharia_rodoviaria", "materiais_eletricos", "materiais_hidraulicos"}
 
     def test_get_sector_returns_config(self):
         s = get_sector("vestuario")
@@ -1049,3 +1049,205 @@ class TestFacilitiesPortariaExclusions:
             "Contratação de empresa para prestação de serviços de portaria e recepção para o prédio sede"
         )
         assert ok is True
+
+
+# ============================================================
+# STORY-242: New Sectors — Engenharia Rodoviária, Materiais Elétricos, Materiais Hidráulicos
+# ============================================================
+
+
+class TestNewSectorsLoaded:
+    """AC5: Verify all 3 new sectors exist in SECTORS dict."""
+
+    def test_engenharia_rodoviaria_exists(self):
+        s = get_sector("engenharia_rodoviaria")
+        assert s.id == "engenharia_rodoviaria"
+        assert s.name == "Engenharia Rodoviária e Infraestrutura Viária"
+        assert len(s.keywords) >= 30
+        assert len(s.exclusions) >= 15
+
+    def test_materiais_eletricos_exists(self):
+        s = get_sector("materiais_eletricos")
+        assert s.id == "materiais_eletricos"
+        assert s.name == "Materiais Elétricos e Instalações"
+        assert s.max_contract_value == 20_000_000
+        assert len(s.keywords) >= 25
+        assert len(s.exclusions) >= 10
+
+    def test_materiais_hidraulicos_exists(self):
+        s = get_sector("materiais_hidraulicos")
+        assert s.id == "materiais_hidraulicos"
+        assert s.name == "Materiais Hidráulicos e Saneamento"
+        assert s.max_contract_value == 30_000_000
+        assert len(s.keywords) >= 25
+        assert len(s.exclusions) >= 10
+
+    def test_list_sectors_includes_new(self):
+        sectors = list_sectors()
+        ids = {s["id"] for s in sectors}
+        assert "engenharia_rodoviaria" in ids
+        assert "materiais_eletricos" in ids
+        assert "materiais_hidraulicos" in ids
+        assert len(sectors) >= 15  # 12 existing + 3 new
+
+
+class TestEngenhariaRodoviariaSector:
+    """AC6: Filter tests for engenharia_rodoviaria sector."""
+
+    def _match(self, texto):
+        s = SECTORS["engenharia_rodoviaria"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    # True positives
+    def test_matches_pavimentacao_asfaltica(self):
+        ok, kw = self._match("Contratação de empresa para pavimentação asfáltica da rodovia BR-101")
+        assert ok is True
+
+    def test_matches_recapeamento(self):
+        ok, kw = self._match("Serviço de recapeamento asfáltico em vias urbanas do município")
+        assert ok is True
+
+    def test_matches_sinalizacao_viaria(self):
+        ok, kw = self._match("Aquisição de materiais para sinalização viária horizontal e vertical")
+        assert ok is True
+
+    def test_matches_conservacao_rodoviaria(self):
+        ok, kw = self._match("Contrato de conservação rodoviária preventiva no trecho sul")
+        assert ok is True
+
+    def test_matches_defensas_metalicas(self):
+        ok, kw = self._match("Fornecimento e instalação de defensas metálicas em rodovias estaduais")
+        assert ok is True
+
+    def test_matches_viaduto(self):
+        ok, kw = self._match("Construção de viaduto sobre a BR-116 no km 52")
+        assert ok is True
+
+    def test_matches_tapa_buraco(self):
+        ok, kw = self._match("Operação tapa-buraco em vias municipais danificadas")
+        assert ok is True
+
+    def test_matches_fresagem(self):
+        ok, kw = self._match("Serviço de fresagem de pavimento asfáltico deteriorado")
+        assert ok is True
+
+    # False positives (exclusions)
+    def test_excludes_terminal_rodoviario(self):
+        ok, _ = self._match("Reforma do terminal rodoviário central para passageiros")
+        assert ok is False
+
+    def test_excludes_engenharia_software(self):
+        ok, _ = self._match("Contratação de serviço de engenharia de software para sistemas")
+        assert ok is False
+
+    def test_excludes_passagem_rodoviaria(self):
+        ok, _ = self._match("Aquisição de passagem rodoviária para servidores em viagem")
+        assert ok is False
+
+    def test_excludes_tunnel_vpn(self):
+        ok, _ = self._match("Configuração de túnel VPN para acesso remoto seguro")
+        assert ok is False
+
+
+class TestMateriaisEletricosSector:
+    """AC6: Filter tests for materiais_eletricos sector."""
+
+    def _match(self, texto):
+        s = SECTORS["materiais_eletricos"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    # True positives
+    def test_matches_disjuntores(self):
+        ok, kw = self._match("Aquisição de disjuntores termomagnéticos para quadro de distribuição")
+        assert ok is True
+
+    def test_matches_cabo_eletrico(self):
+        ok, kw = self._match("Fornecimento de cabo elétrico flexível 2,5mm para instalações")
+        assert ok is True
+
+    def test_matches_iluminacao_publica(self):
+        ok, kw = self._match("Modernização da iluminação pública com tecnologia LED")
+        assert ok is True
+
+    def test_matches_transformador(self):
+        ok, kw = self._match("Aquisição de transformador trifásico para subestação")
+        assert ok is True
+
+    def test_matches_eletroduto(self):
+        ok, kw = self._match("Fornecimento de eletrodutos e conduletes para instalação predial")
+        assert ok is True
+
+    def test_matches_material_eletrico(self):
+        ok, kw = self._match("Registro de preços para material elétrico diverso")
+        assert ok is True
+
+    # False positives (exclusions)
+    def test_excludes_computadores(self):
+        ok, _ = self._match("Aquisição de computadores e notebooks para o setor administrativo")
+        assert ok is False
+
+    def test_excludes_eletrodomesticos(self):
+        ok, _ = self._match("Compra de eletrodomésticos para cozinha do refeitório")
+        assert ok is False
+
+    def test_excludes_veiculo_eletrico(self):
+        ok, _ = self._match("Aquisição de veículo elétrico para transporte municipal")
+        assert ok is False
+
+    def test_excludes_guitarra_eletrica(self):
+        ok, _ = self._match("Compra de guitarra elétrica para escola de música municipal")
+        assert ok is False
+
+
+class TestMateriaisHidraulicosSector:
+    """AC6: Filter tests for materiais_hidraulicos sector."""
+
+    def _match(self, texto):
+        s = SECTORS["materiais_hidraulicos"]
+        return match_keywords(texto, s.keywords, s.exclusions)
+
+    # True positives
+    def test_matches_tubo_pvc(self):
+        ok, kw = self._match("Aquisição de tubo PVC para rede de distribuição de água")
+        assert ok is True
+
+    def test_matches_bomba_submersa(self):
+        ok, kw = self._match("Fornecimento de bomba submersa para poço artesiano municipal")
+        assert ok is True
+
+    def test_matches_tratamento_agua(self):
+        ok, kw = self._match("Contratação de empresa para tratamento de água na ETA central")
+        assert ok is True
+
+    def test_matches_material_hidraulico(self):
+        ok, kw = self._match("Registro de preços para aquisição de material hidráulico")
+        assert ok is True
+
+    def test_matches_saneamento_basico(self):
+        ok, kw = self._match("Obra de saneamento básico no distrito industrial")
+        assert ok is True
+
+    def test_matches_rede_coletora(self):
+        ok, kw = self._match("Implantação de rede coletora de esgoto no bairro norte")
+        assert ok is True
+
+    def test_matches_fossa_septica(self):
+        ok, kw = self._match("Instalação de fossa séptica em unidades habitacionais rurais")
+        assert ok is True
+
+    # False positives (exclusions)
+    def test_excludes_prensa_hidraulica(self):
+        ok, _ = self._match("Aquisição de prensa hidráulica para oficina mecânica industrial")
+        assert ok is False
+
+    def test_excludes_macaco_hidraulico(self):
+        ok, _ = self._match("Compra de macaco hidráulico para manutenção de veículos")
+        assert ok is False
+
+    def test_excludes_direcao_hidraulica(self):
+        ok, _ = self._match("Reparo de direção hidráulica de veículo da frota municipal")
+        assert ok is False
+
+    def test_excludes_escavadeira_hidraulica(self):
+        ok, _ = self._match("Locação de escavadeira hidráulica para obra de terraplanagem")
+        assert ok is False

@@ -69,6 +69,9 @@ const SETORES_FALLBACK: Setor[] = [
   { id: "escritorio", name: "Material de Escritório", description: "Papelaria, escritório" },
   { id: "construcao", name: "Construção Civil", description: "Obras, materiais de construção" },
   { id: "servicos", name: "Serviços Gerais", description: "Serviços diversos" },
+  { id: "engenharia_rodoviaria", name: "Engenharia Rodoviária", description: "Pavimentação, rodovias, pontes, viadutos, sinalização viária" },
+  { id: "materiais_eletricos", name: "Materiais Elétricos", description: "Fios, cabos, disjuntores, iluminação, subestações" },
+  { id: "materiais_hidraulicos", name: "Materiais Hidráulicos", description: "Tubos, conexões, bombas, tratamento de água, saneamento" },
 ];
 
 export interface SearchFiltersState {

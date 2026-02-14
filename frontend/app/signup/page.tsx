@@ -22,6 +22,9 @@ const SECTORS = [
   { id: "vigilancia", name: "Vigilância e Segurança" },
   { id: "transporte", name: "Transporte e Veículos" },
   { id: "manutencao_predial", name: "Manutenção Predial" },
+  { id: "engenharia_rodoviaria", name: "Engenharia Rodoviária e Infraestrutura Viária" },
+  { id: "materiais_eletricos", name: "Materiais Elétricos e Instalações" },
+  { id: "materiais_hidraulicos", name: "Materiais Hidráulicos e Saneamento" },
   { id: "outro", name: "Outro" },
 ];
 
