@@ -20,7 +20,7 @@ openai==1.109.1
 
 # Auth & Database
 supabase==2.13.0
-PyJWT==2.9.0  # Local JWT validation (HOTFIX 2026-02-11)
+PyJWT==2.9.0  # Local JWT validation + ES256/JWKS support (STORY-227)
 stripe==11.4.1
 redis==5.2.1  # Feature flag caching (STORY-171)
 # sqlalchemy and psycopg2-binary moved to requirements-dev.txt (STORY-201)
@@ -33,7 +33,7 @@ google-api-python-client==2.150.0  # Google Sheets API client
 google-auth==2.35.0                # OAuth 2.0 authentication
 google-auth-oauthlib==1.2.1        # OAuth flow helpers
 google-auth-httplib2==0.2.0        # HTTP transport for Google APIs
-cryptography==43.0.3               # Required by google-auth
+cryptography==43.0.3               # Required by google-auth + ES256 JWT (STORY-227)
 
 # Transactional email (STORY-225)
 resend>=2.0.0,<3.0.0

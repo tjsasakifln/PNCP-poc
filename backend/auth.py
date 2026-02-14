@@ -16,6 +16,13 @@ CRITICAL FIX (2026-02-11): Use local JWT validation instead of Supabase API
 STORY-203 SYS-M02: Use hashlib.sha256 for deterministic cache keys
 - Python's hash() is not deterministic across process restarts
 - hashlib.sha256() provides collision-resistant, deterministic hashing
+
+STORY-227 Track 1: ES256+JWKS support
+- Supabase rotated JWT signing from HS256 to ES256 (Feb 2026)
+- Supports JWKS endpoint for dynamic public key fetching (5-min cache)
+- Supports PEM public key via SUPABASE_JWT_SECRET env var
+- Backward compatible: accepts both HS256 and ES256 during transition
+- Key detection order: JWKS endpoint > PEM key > HS256 symmetric secret
 """
 
 import logging
@@ -23,7 +30,8 @@ import time
 import os
 import hashlib
 import jwt
-from typing import Optional, Dict, Tuple
+from jwt import PyJWKClient
+from typing import Any, Optional, Dict, Tuple
 
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -40,17 +48,194 @@ security = HTTPBearer(auto_error=False)
 _token_cache: Dict[str, Tuple[dict, float]] = {}
 CACHE_TTL = 60  # seconds - balances security (short-lived) vs performance
 
+# ---------------------------------------------------------------------------
+# JWKS client — lazily initialized on first use to avoid startup failures
+# when SUPABASE_URL is not yet configured or network is unavailable.
+# ---------------------------------------------------------------------------
+_jwks_client: Optional[PyJWKClient] = None
+_jwks_init_attempted: bool = False
+
+
+def _get_jwks_client() -> Optional[PyJWKClient]:
+    """Return the cached PyJWKClient instance, creating it on first call.
+
+    The client is only created if a JWKS URL can be determined from either:
+      1. SUPABASE_JWKS_URL env var (explicit override), or
+      2. SUPABASE_URL env var (auto-constructed).
+
+    Returns None if neither is available or if initialization fails.
+    The 5-minute cache is handled internally by PyJWKClient (lifespan=300).
+    """
+    global _jwks_client, _jwks_init_attempted
+
+    if _jwks_client is not None:
+        return _jwks_client
+
+    # Only attempt init once to avoid repeated failures on every request
+    if _jwks_init_attempted:
+        return None
+    _jwks_init_attempted = True
+
+    jwks_url = os.getenv("SUPABASE_JWKS_URL")
+    if not jwks_url:
+        supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if supabase_url:
+            jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+
+    if not jwks_url:
+        logger.debug("No JWKS URL available — JWKS client not initialized")
+        return None
+
+    try:
+        _jwks_client = PyJWKClient(
+            jwks_url,
+            cache_jwk_set=True,
+            lifespan=300,  # AC3: 5-minute JWKS cache TTL
+        )
+        logger.info(f"JWKS client initialized: {jwks_url}")
+        return _jwks_client
+    except Exception as e:
+        logger.warning(f"Failed to initialize JWKS client: {type(e).__name__}")
+        return None
+
+
+def _is_pem_key(secret: str) -> bool:
+    """Check whether SUPABASE_JWT_SECRET contains a PEM-encoded public key."""
+    return secret.strip().startswith("-----BEGIN")
+
+
+def _get_jwt_key_and_algorithms(token: str) -> Tuple[Any, list[str]]:
+    """Determine the correct key and algorithm(s) for JWT verification.
+
+    Strategy (AC4 — backward compatible during HS256→ES256 transition):
+      1. JWKS endpoint (preferred): fetch signing key by token's ``kid`` header.
+         Returns the EC public key with ``["ES256"]``.
+      2. PEM public key: if SUPABASE_JWT_SECRET starts with ``-----BEGIN``,
+         treat it as an EC/RSA PEM key. Returns the PEM string with
+         ``["ES256"]`` (AC5).
+      3. HS256 symmetric secret (legacy): plain string used directly with
+         ``["HS256"]``.
+
+    Returns:
+        (key, algorithms): tuple of the verification key and list of
+        algorithm strings to pass to ``jwt.decode``.
+
+    Raises:
+        HTTPException 500: if no JWT secret is configured at all.
+    """
+    jwt_secret = os.getenv("SUPABASE_JWT_SECRET", "")
+
+    # --- Strategy 1: JWKS endpoint (dynamic key rotation support) ----------
+    jwks = _get_jwks_client()
+    if jwks is not None:
+        try:
+            signing_key = jwks.get_signing_key_from_jwt(token)
+            logger.debug("Using JWKS-derived signing key (ES256)")
+            return signing_key.key, ["ES256"]
+        except jwt.exceptions.PyJWKClientError as e:
+            # JWKS fetch/match failed — fall through to other strategies
+            logger.debug(f"JWKS key lookup failed ({type(e).__name__}), trying fallbacks")
+        except Exception as e:
+            logger.debug(f"JWKS unexpected error ({type(e).__name__}), trying fallbacks")
+
+    # --- Strategy 2: PEM public key in env var (AC5) -----------------------
+    if jwt_secret and _is_pem_key(jwt_secret):
+        logger.debug("Using PEM public key from SUPABASE_JWT_SECRET (ES256)")
+        return jwt_secret, ["ES256"]
+
+    # --- Strategy 3: HS256 symmetric secret (legacy) -----------------------
+    if jwt_secret:
+        logger.debug("Using symmetric secret from SUPABASE_JWT_SECRET (HS256)")
+        return jwt_secret, ["HS256"]
+
+    # No key available at all
+    logger.error("SUPABASE_JWT_SECRET not configured and no JWKS URL available!")
+    raise HTTPException(status_code=500, detail="Auth not configured")
+
+
+def reset_jwks_client() -> None:
+    """Reset the JWKS client so it will be re-initialized on next use.
+
+    Useful for testing or when rotating JWKS endpoints at runtime.
+    """
+    global _jwks_client, _jwks_init_attempted
+    _jwks_client = None
+    _jwks_init_attempted = False
+    logger.info("JWKS client reset — will re-initialize on next request")
+
+
+def _decode_with_fallback(token: str, primary_key: Any, primary_algorithms: list[str]) -> dict:
+    """Attempt JWT decode with the alternate algorithm for backward compatibility.
+
+    During the HS256→ES256 transition (AC4), tokens may be signed with either
+    algorithm. If the primary decode (based on key detection) fails, this
+    function tries the other algorithm using the symmetric secret.
+
+    This handles the case where:
+      - Server is configured for ES256 (JWKS/PEM) but receives an old HS256 token
+      - Server is configured for HS256 but receives a new ES256 token (limited —
+        requires JWKS or PEM key to be available for ES256 verification)
+
+    Raises the original exception if the fallback also fails.
+    """
+    jwt_secret = os.getenv("SUPABASE_JWT_SECRET", "")
+
+    if "HS256" in primary_algorithms and jwt_secret and not _is_pem_key(jwt_secret):
+        # Primary was HS256 — try ES256 via JWKS if available
+        jwks = _get_jwks_client()
+        if jwks is not None:
+            try:
+                signing_key = jwks.get_signing_key_from_jwt(token)
+                payload = jwt.decode(
+                    token,
+                    signing_key.key,
+                    algorithms=["ES256"],
+                    audience="authenticated",
+                )
+                logger.info("JWT fallback: decoded with ES256 (JWKS) after HS256 failed")
+                return payload
+            except Exception:
+                pass
+        # No JWKS available or JWKS also failed — cannot try ES256 without a key
+        raise jwt.InvalidTokenError("Fallback ES256 decode not possible without JWKS")
+
+    elif "ES256" in primary_algorithms and jwt_secret and not _is_pem_key(jwt_secret):
+        # Primary was ES256 — try HS256 with the symmetric secret
+        try:
+            payload = jwt.decode(
+                token,
+                jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
+            logger.info("JWT fallback: decoded with HS256 after ES256 failed")
+            return payload
+        except Exception:
+            raise jwt.InvalidTokenError("Fallback HS256 decode also failed")
+
+    elif "ES256" in primary_algorithms and jwt_secret and _is_pem_key(jwt_secret):
+        # Primary was ES256 with PEM key — no HS256 fallback possible (no symmetric secret)
+        raise jwt.InvalidTokenError("ES256 PEM decode failed, no HS256 secret available")
+
+    # No meaningful fallback available
+    raise jwt.InvalidTokenError("No fallback algorithm available")
+
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[dict]:
     """Extract and verify user from Supabase JWT token.
 
-    Uses local cache (60s TTL) to reduce Supabase Auth API calls by ~95% and
+    Supports ES256 (via JWKS or PEM key) and HS256 (symmetric secret) with
+    automatic fallback between algorithms during the transition period (AC4).
+    Key detection order: JWKS endpoint > PEM key > HS256 symmetric secret.
+
+    Uses local cache (60s TTL) to reduce validation overhead by ~95% and
     eliminate intermittent validation failures from remote timeouts.
 
     Returns None if no token provided (allows anonymous access where needed).
     Raises HTTPException 401 if token is invalid.
+    Raises HTTPException 500 if auth is not configured (no key available).
     """
     if credentials is None:
         return None
@@ -75,33 +260,33 @@ async def get_current_user(
     # SLOW PATH: Cache miss or expired - validate locally with JWT
     logger.debug("Auth cache MISS - validating JWT locally")
     try:
-        # CRITICAL FIX: Validate JWT locally instead of calling Supabase API
-        # This is MUCH faster and eliminates AuthApiError issues
-        # Source: https://github.com/orgs/supabase/discussions/20763
-        jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
-        if not jwt_secret:
-            logger.error("SUPABASE_JWT_SECRET not configured!")
-            raise HTTPException(status_code=500, detail="Auth not configured")
-
-        # Decode and verify JWT signature locally
-        # audience is the Supabase project URL without protocol
-        supabase_url = os.getenv("SUPABASE_URL", "")
-        audience = supabase_url.replace("https://", "").replace("http://", "")
+        # Determine key and algorithm(s) based on configuration
+        # (raises HTTPException 500 if completely unconfigured)
+        key, algorithms = _get_jwt_key_and_algorithms(token)
 
         try:
             # STORY-210 AC7: Enable audience verification (removed verify_aud: False)
             payload = jwt.decode(
                 token,
-                jwt_secret,
-                algorithms=["HS256"],
+                key,
+                algorithms=algorithms,
                 audience="authenticated",  # Supabase default audience
             )
+        except jwt.InvalidAlgorithmError:
+            # AC4: Backward compatibility — if primary algorithm fails,
+            # retry with the alternate algorithm during HS256→ES256 transition.
+            # e.g. token signed with HS256 but we tried ES256, or vice versa.
+            payload = _decode_with_fallback(token, key, algorithms)
         except jwt.ExpiredSignatureError:
             logger.warning("JWT token expired")
             raise HTTPException(status_code=401, detail="Token expirado")
         except jwt.InvalidTokenError as e:
-            logger.warning(f"Invalid JWT token: {type(e).__name__}")
-            raise HTTPException(status_code=401, detail="Token invalido")
+            # Primary decode failed — attempt fallback before giving up (AC4)
+            try:
+                payload = _decode_with_fallback(token, key, algorithms)
+            except Exception:
+                logger.warning(f"Invalid JWT token: {type(e).__name__}")
+                raise HTTPException(status_code=401, detail="Token invalido")
 
         # Extract user data from JWT claims
         user_id = payload.get("sub")
