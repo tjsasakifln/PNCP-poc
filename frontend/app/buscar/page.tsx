@@ -83,7 +83,7 @@ function HomePageContent() {
   return (
     <div className="min-h-screen">
       {/* Navigation Header */}
-      <header className="border-b border-strong bg-[var(--surface-0)] sticky top-0 z-50 backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95">
+      <header className="sticky top-0 z-50 bg-[var(--surface-0)] backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95 border-b border-[var(--border)] shadow-sm">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <Link href="/" className="text-xl font-bold text-brand-navy hover:text-brand-blue transition-colors">

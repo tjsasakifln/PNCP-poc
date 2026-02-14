@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/components/AuthProvider";
+import LandingNavbar from "@/app/components/landing/LandingNavbar";
 
 /**
  * STORY-226 AC25-AC28: FAQ / Central de Ajuda
@@ -310,6 +311,7 @@ export default function AjudaPage() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)]">
+      <LandingNavbar />
       {/* Hero Section */}
       <div className="bg-[var(--surface-0)] border-b border-[var(--border)]">
         <div className="max-w-4xl mx-auto px-4 py-12 text-center">

@@ -24,7 +24,7 @@ export function AppHeader({ extraControls, statusSlot }: AppHeaderProps) {
   const defaultStatusSlot = <QuotaBadge />;
 
   return (
-    <header className="sticky top-0 z-40 bg-[var(--surface-0)] border-b border-[var(--border)] shadow-sm">
+    <header className="sticky top-0 z-50 bg-[var(--surface-0)] backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95 border-b border-[var(--border)] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link

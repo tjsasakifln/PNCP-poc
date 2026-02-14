@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
+import LandingNavbar from "../components/landing/LandingNavbar";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
@@ -438,7 +439,8 @@ export default function PlanosPage() {
   const isPopular = (id: string) => id === "maquina";
 
   return (
-    <div className="min-h-screen bg-[var(--canvas)] py-12 px-4">
+    <div className="min-h-screen bg-[var(--canvas)]">
+      <LandingNavbar />
       {/* STORY-226 AC33: Loading overlay during Stripe redirect */}
       {stripeRedirecting && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--canvas)]/80 backdrop-blur-sm">
@@ -454,7 +456,7 @@ export default function PlanosPage() {
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto py-12 px-4">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-display font-bold text-[var(--ink)] mb-3">
             {userIsFree ? "Escolha seu plano" : "Gerenciar sua assinatura"}
