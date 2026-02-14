@@ -39,6 +39,7 @@ interface UseSearchParams {
   dataInicial: string;
   dataFinal: string;
   searchMode: "setor" | "termos";
+  modoBusca: "abertas" | "publicacao";
   setorId: string;
   termosArray: string[];
   status: StatusLicitacao;
@@ -260,6 +261,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
             setor_id: filters.searchMode === "setor" ? filters.setorId : null,
             termos_busca: filters.searchMode === "termos" ? filters.termosArray.join(", ") : null,
             search_id: newSearchId,
+            modo_busca: filters.modoBusca,
             status: filters.status,
             modalidades: filters.modalidades.length > 0 ? filters.modalidades : undefined,
             valor_minimo: filters.valorMin,

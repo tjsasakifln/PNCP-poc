@@ -46,22 +46,22 @@ Mudar o paradigma de busca: ampliar a janela de publicação para 180 dias e fil
 ## Acceptance Criteria
 
 ### Backend
-- [ ] **AC1:** `BuscaRequest.modo_busca` aceita `"publicacao"` (legado) ou `"abertas"` (novo padrão). Default: `"abertas"`.
-- [ ] **AC2:** Quando `modo_busca="abertas"`, o backend calcula `dataInicial = hoje - 180 dias` e `dataFinal = hoje`, ignorando as datas enviadas pelo frontend.
-- [ ] **AC3:** Novo filtro `filtrar_por_prazo_aberto()` em `filter.py` rejeita licitações onde `dataEncerramentoProposta <= datetime.now()`. Logs rejection reason.
-- [ ] **AC4:** Filtro `filtrar_por_prazo_aberto()` é aplicado ANTES do filtro de keywords (fail-fast: elimina encerradas antes de processamento pesado).
-- [ ] **AC5:** Cada licitação no resultado inclui `dias_restantes` (int) calculado como `(dataEncerramentoProposta - hoje).days`.
-- [ ] **AC6:** Testes unitários para `filtrar_por_prazo_aberto()`: licitação encerrada ontem → rejeitada; encerra amanhã → aceita; sem data de encerramento → aceita (campo ausente não deve bloquear).
+- [x] **AC1:** `BuscaRequest.modo_busca` aceita `"publicacao"` (legado) ou `"abertas"` (novo padrão). Default: `"abertas"`.
+- [x] **AC2:** Quando `modo_busca="abertas"`, o backend calcula `dataInicial = hoje - 180 dias` e `dataFinal = hoje`, ignorando as datas enviadas pelo frontend.
+- [x] **AC3:** Novo filtro `filtrar_por_prazo_aberto()` em `filter.py` rejeita licitações onde `dataEncerramentoProposta <= datetime.now()`. Logs rejection reason.
+- [x] **AC4:** Filtro `filtrar_por_prazo_aberto()` é aplicado ANTES do filtro de keywords (fail-fast: elimina encerradas antes de processamento pesado).
+- [x] **AC5:** Cada licitação no resultado inclui `dias_restantes` (int) calculado como `(dataEncerramentoProposta - hoje).days`.
+- [x] **AC6:** Testes unitários para `filtrar_por_prazo_aberto()`: licitação encerrada ontem → rejeitada; encerra amanhã → aceita; sem data de encerramento → aceita (campo ausente não deve bloquear).
 
 ### Frontend
-- [ ] **AC7:** `useSearchFilters` default de data é 180 dias quando modo=abertas. Seletor de data fica oculto/desabilitado neste modo.
-- [ ] **AC8:** Label muda de "Período de publicação" para contextual: modo abertas → "Mostrando licitações abertas para proposta"; modo publicação → "Período de publicação".
-- [ ] **AC9:** Card de resultado mostra badge com dias restantes: verde (>7d), amarelo (3-7d), vermelho (<3d), cinza (sem data).
-- [ ] **AC10:** Testes para `useSearchFilters` verificam default de 180 dias e label condicional.
+- [x] **AC7:** `useSearchFilters` default de data é 180 dias quando modo=abertas. Seletor de data fica oculto/desabilitado neste modo.
+- [x] **AC8:** Label muda de "Período de publicação" para contextual: modo abertas → "Mostrando licitações abertas para proposta"; modo publicação → "Período de publicação".
+- [x] **AC9:** Card de resultado mostra badge com dias restantes: verde (>7d), amarelo (3-7d), vermelho (<3d), cinza (sem data).
+- [x] **AC10:** Testes para `useSearchFilters` verificam default de 180 dias e label condicional.
 
 ### Regressão
-- [ ] **AC11:** Modo `"publicacao"` continua funcionando exatamente como antes (backward compatible).
-- [ ] **AC12:** Testes existentes de busca passam sem modificação no modo publicação.
+- [x] **AC11:** Modo `"publicacao"` continua funcionando exatamente como antes (backward compatible).
+- [x] **AC12:** Testes existentes de busca passam sem modificação no modo publicação.
 
 ## Definition of Done
 - Todos os ACs checked

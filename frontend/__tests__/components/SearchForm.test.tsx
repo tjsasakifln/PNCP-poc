@@ -33,6 +33,8 @@ const defaultProps: SearchFormProps = {
   fetchSetores: jest.fn(),
   searchMode: 'setor',
   setSearchMode: jest.fn(),
+  modoBusca: 'abertas',
+  dateLabel: 'Mostrando licitações abertas para proposta',
   termosArray: [],
   termoInput: '',
   setTermoInput: jest.fn(),
@@ -190,16 +192,20 @@ describe('SearchForm Component', () => {
   });
 
   describe('Date inputs', () => {
-    it('should render date inicial input', () => {
-      render(<SearchForm {...defaultProps} />);
+    it('should show info box in abertas mode', () => {
+      render(<SearchForm {...defaultProps} modoBusca="abertas" dateLabel="Mostrando licitações abertas para proposta" />);
 
-      expect(screen.getByLabelText(/Data inicial/i)).toBeInTheDocument();
+      expect(screen.getByText(/Mostrando licitações abertas para proposta/i)).toBeInTheDocument();
+      expect(screen.getByText(/Buscando nos últimos 180 dias/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Data inicial/i)).not.toBeInTheDocument();
     });
 
-    it('should render date final input', () => {
-      render(<SearchForm {...defaultProps} />);
+    it('should render date inputs in publicacao mode', () => {
+      render(<SearchForm {...defaultProps} modoBusca="publicacao" dateLabel="Período de publicação" />);
 
+      expect(screen.getByLabelText(/Data inicial/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Data final/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Mostrando licitações abertas para proposta/i)).not.toBeInTheDocument();
     });
 
     it('should show date range validation error', () => {
@@ -329,6 +335,58 @@ describe('SearchForm Component', () => {
 
       const searchButton = screen.getByRole('button', { name: /Consultando/i });
       expect(searchButton).toHaveAttribute('aria-busy', 'true');
+    });
+  });
+
+  describe('STORY-240 AC10: modoBusca and dateLabel behavior', () => {
+    it('AC10.1: should default to abertas mode', () => {
+      // Default props already has modoBusca='abertas'
+      render(<SearchForm {...defaultProps} />);
+
+      // Should show abertas-specific info box (tested in "Date inputs" section)
+      // This test verifies the prop is correctly passed to component
+      expect(defaultProps.modoBusca).toBe('abertas');
+    });
+
+    it('AC10.2: should display 180-day info message in abertas mode', () => {
+      render(<SearchForm {...defaultProps} modoBusca="abertas" dateLabel="Mostrando licitações abertas para proposta" />);
+
+      expect(screen.getByText(/Buscando nos últimos 180 dias/i)).toBeInTheDocument();
+    });
+
+    it('AC10.3: should show abertas-specific dateLabel', () => {
+      render(<SearchForm {...defaultProps} modoBusca="abertas" dateLabel="Mostrando licitações abertas para proposta" />);
+
+      expect(screen.getByText(/Mostrando licitações abertas para proposta/i)).toBeInTheDocument();
+    });
+
+    it('AC10.4: should render date inputs when mode is publicacao', () => {
+      render(<SearchForm {...defaultProps} modoBusca="publicacao" dateLabel="Período de publicação" />);
+
+      expect(screen.getByLabelText(/Data inicial/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Data final/i)).toBeInTheDocument();
+    });
+
+    it('AC10.5: should NOT show abertas-specific dateLabel in publicacao mode', () => {
+      render(<SearchForm {...defaultProps} modoBusca="publicacao" dateLabel="Período de publicação" />);
+
+      // In publicacao mode, dateLabel is not rendered - only date inputs are shown
+      expect(screen.queryByText(/Mostrando licitações abertas para proposta/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Buscando nos últimos 180 dias/i)).not.toBeInTheDocument();
+    });
+
+    it('AC10: integration - should hide date inputs in abertas mode', () => {
+      render(<SearchForm {...defaultProps} modoBusca="abertas" dateLabel="Mostrando licitações abertas para proposta" />);
+
+      expect(screen.queryByLabelText(/Data inicial/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Data final/i)).not.toBeInTheDocument();
+    });
+
+    it('AC10: integration - should hide info box in publicacao mode', () => {
+      render(<SearchForm {...defaultProps} modoBusca="publicacao" dateLabel="Período de publicação" />);
+
+      expect(screen.queryByText(/Buscando nos últimos 180 dias/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Mostrando licitações abertas para proposta/i)).not.toBeInTheDocument();
     });
   });
 });

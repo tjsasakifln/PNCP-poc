@@ -86,6 +86,10 @@ export interface SearchFiltersState {
   searchMode: "setor" | "termos";
   setSearchMode: (mode: "setor" | "termos") => void;
 
+  // Search paradigm (STORY-240)
+  modoBusca: "abertas" | "publicacao";
+  setModoBusca: (mode: "abertas" | "publicacao") => void;
+
   // Terms
   termosArray: string[];
   setTermosArray: (terms: string[]) => void;
@@ -142,6 +146,7 @@ export interface SearchFiltersState {
   // Computed
   sectorName: string;
   searchLabel: string;
+  dateLabel: string;
 
   // Clear result callback (provided by parent)
   clearResult: () => void;
@@ -160,6 +165,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   const [setoresRetryCount, setSetoresRetryCount] = useState(0);
   const [setorId, setSetorId] = useState("vestuario");
   const [searchMode, setSearchMode] = useState<"setor" | "termos">("setor");
+  const [modoBusca, setModoBusca] = useState<"abertas" | "publicacao">("abertas");
   const [termosArray, setTermosArray] = useState<string[]>([]);
   const [termoInput, setTermoInput] = useState("");
   const [termValidation, setTermValidation] = useState<TermValidation | null>(null);
@@ -192,13 +198,25 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   );
   const [dataInicial, setDataInicial] = useState(() => {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    now.setDate(now.getDate() - 7);
+    now.setDate(now.getDate() - 180);
     return now.toISOString().split("T")[0];
   });
   const [dataFinal, setDataFinal] = useState(() => {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     return now.toISOString().split("T")[0];
   });
+
+  // STORY-240 AC7: Override dates when modo_busca changes
+  useEffect(() => {
+    if (modoBusca === "abertas") {
+      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const dataFim = now.toISOString().split("T")[0];
+      now.setDate(now.getDate() - 180);
+      const dataIni = now.toISOString().split("T")[0];
+      setDataInicial(dataIni);
+      setDataFinal(dataFim);
+    }
+  }, [modoBusca]);
 
   // Validation
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -409,11 +427,16 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
       ? `"${termosArray.join('", "')}"`
       : "Licitações";
 
+  const dateLabel = modoBusca === "abertas"
+    ? "Mostrando licitações abertas para proposta"
+    : "Período de publicação";
+
   return {
     setores, setoresLoading, setoresError, setoresUsingFallback, setoresRetryCount,
     setorId, setSetorId: (id: string) => { setSetorId(id); clearResult(); },
     fetchSetores,
     searchMode, setSearchMode: (mode: "setor" | "termos") => { setSearchMode(mode); clearResult(); },
+    modoBusca, setModoBusca: (mode: "abertas" | "publicacao") => { setModoBusca(mode); clearResult(); },
     termosArray, setTermosArray, termoInput, setTermoInput,
     termValidation, addTerms, removeTerm,
     ufsSelecionadas, setUfsSelecionadas,
@@ -431,7 +454,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     locationFiltersOpen, setLocationFiltersOpen,
     advancedFiltersOpen, setAdvancedFiltersOpen,
     validationErrors, canSearch,
-    sectorName, searchLabel,
+    sectorName, searchLabel, dateLabel,
     clearResult,
   };
 }

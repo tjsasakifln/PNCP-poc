@@ -80,6 +80,7 @@ def make_request(**overrides):
         "municipios": None,
         "ordenacao": "relevancia",
         "search_id": "test-search-123",
+        "modo_busca": None,  # STORY-240: "publicacao" or "abertas"
     }
     defaults.update(overrides)
     return SimpleNamespace(**defaults)

@@ -106,9 +106,15 @@ export function LicitacoesPreview({
     return `${day}/${month}/${year}`;
   };
 
-  /** AC2: Get urgency color classes based on urgencia level */
+  /** AC2 + AC9: Get urgency color classes based on urgencia level */
   const getUrgenciaBadge = (item: LicitacaoItem) => {
-    if (!item.data_encerramento) return null;
+    if (!item.data_encerramento) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs font-medium">
+          Prazo não informado
+        </span>
+      );
+    }
     const dias = item.dias_restantes;
     const urgencia = item.urgencia;
 

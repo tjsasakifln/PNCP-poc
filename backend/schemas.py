@@ -322,6 +322,12 @@ class BuscaRequest(BaseModel):
         default=None,
         description="Custom exclusion terms. Overrides sector exclusions when provided.",
     )
+    modo_busca: Optional[str] = Field(
+        default="abertas",
+        description="Modo de busca: 'abertas' (padrão) busca licitações com prazo aberto "
+                    "nos últimos 180 dias; 'publicacao' usa datas enviadas pelo frontend.",
+        examples=["abertas", "publicacao"],
+    )
 
     # -------------------------------------------------------------------------
     # NEW P0 Filters: Status, Modalidade, Valor
@@ -453,6 +459,17 @@ class BuscaRequest(BaseModel):
                 )
 
         return self
+
+    @field_validator('modo_busca')
+    @classmethod
+    def validate_modo_busca(cls, v: Optional[str]) -> Optional[str]:
+        """Validate modo_busca is one of the allowed values."""
+        allowed = {"abertas", "publicacao"}
+        if v is not None and v not in allowed:
+            raise ValueError(
+                f"modo_busca inválido: '{v}'. Valores permitidos: {sorted(allowed)}"
+            )
+        return v
 
     @field_validator('modalidades')
     @classmethod

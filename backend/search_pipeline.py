@@ -351,6 +351,17 @@ class SearchPipeline:
     # ------------------------------------------------------------------
     async def stage_prepare(self, ctx: SearchContext) -> None:
         """Load sector, parse custom terms, configure keywords and exclusions."""
+        # STORY-240 AC2: Override dates for "abertas" mode
+        if ctx.request.modo_busca == "abertas":
+            from datetime import date, timedelta
+            today = date.today()
+            ctx.request.data_inicial = (today - timedelta(days=180)).isoformat()
+            ctx.request.data_final = today.isoformat()
+            logger.info(
+                f"modo_busca='abertas': date range overridden to "
+                f"{ctx.request.data_inicial} → {ctx.request.data_final} (180 days)"
+            )
+
         try:
             ctx.sector = get_sector(ctx.request.setor_id)
         except KeyError as e:
@@ -654,6 +665,7 @@ class SearchPipeline:
             exclusions=ctx.active_exclusions,
             context_required=ctx.active_context_required,
             min_match_floor=ctx.min_match_floor_value,
+            modo_busca=request.modo_busca or "publicacao",
         )
 
         # Min-match relaxation
@@ -685,6 +697,7 @@ class SearchPipeline:
                 exclusions=ctx.active_exclusions,
                 context_required=ctx.active_context_required,
                 min_match_floor=None,
+                modo_busca=request.modo_busca or "publicacao",
             )
             ctx.hidden_by_min_match = 0
 

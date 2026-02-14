@@ -30,6 +30,10 @@ export interface SearchFormProps {
   searchMode: "setor" | "termos";
   setSearchMode: (mode: "setor" | "termos") => void;
 
+  // Search paradigm (STORY-240)
+  modoBusca: "abertas" | "publicacao";
+  dateLabel: string;
+
   // Terms
   termosArray: string[];
   termoInput: string;
@@ -97,6 +101,7 @@ export default function SearchForm({
   setores, setoresLoading, setoresError, setoresUsingFallback, setoresRetryCount,
   setorId, setSetorId, fetchSetores,
   searchMode, setSearchMode,
+  modoBusca, dateLabel,
   termosArray, termoInput, setTermoInput, termValidation, addTerms, removeTerm,
   ufsSelecionadas, toggleUf, toggleRegion, selecionarTodos, limparSelecao,
   dataInicial, setDataInicial, dataFinal, setDataFinal,
@@ -389,20 +394,31 @@ export default function SearchForm({
 
       {/* Date Range Section */}
       <section className="mb-6 animate-fade-in-up stagger-3 relative z-0">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <CustomDateInput
-            id="data-inicial"
-            value={dataInicial}
-            onChange={(value) => { setDataInicial(value); clearResult(); }}
-            label="Data inicial:"
-          />
-          <CustomDateInput
-            id="data-final"
-            value={dataFinal}
-            onChange={(value) => { setDataFinal(value); clearResult(); }}
-            label="Data final:"
-          />
-        </div>
+        {modoBusca === "abertas" ? (
+          <div className="p-3 bg-brand-blue-subtle rounded-card border border-brand-blue/20">
+            <p className="text-sm font-medium text-brand-navy">
+              {dateLabel}
+            </p>
+            <p className="text-xs text-ink-secondary mt-1">
+              Buscando nos últimos 180 dias — somente licitações com prazo aberto
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CustomDateInput
+              id="data-inicial"
+              value={dataInicial}
+              onChange={(value) => { setDataInicial(value); clearResult(); }}
+              label="Data inicial:"
+            />
+            <CustomDateInput
+              id="data-final"
+              value={dataFinal}
+              onChange={(value) => { setDataFinal(value); clearResult(); }}
+              label="Data final:"
+            />
+          </div>
+        )}
 
         {validationErrors.date_range && (
           <p className="text-sm sm:text-base text-error mt-3 font-medium" role="alert">

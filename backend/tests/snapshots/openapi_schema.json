@@ -322,6 +322,23 @@
             ],
             "title": "Modalidades"
           },
+          "modo_busca": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": "abertas",
+            "description": "Modo de busca: 'abertas' (padr\u00e3o) busca licita\u00e7\u00f5es com prazo aberto nos \u00faltimos 180 dias; 'publicacao' usa datas enviadas pelo frontend.",
+            "examples": [
+              "abertas",
+              "publicacao"
+            ],
+            "title": "Modo Busca"
+          },
           "municipios": {
             "anyOf": [
               {

@@ -27,6 +27,7 @@ from pncp_client import PNCPClient, buscar_todas_ufs_paralelo
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import (
     aplicar_todos_filtros,
+    filtrar_por_prazo_aberto,
     match_keywords,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO,

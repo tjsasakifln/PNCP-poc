@@ -1588,6 +1588,58 @@ def obter_setor_dominante(
     return None
 
 
+def filtrar_por_prazo_aberto(
+    licitacoes: List[dict],
+) -> Tuple[List[dict], int]:
+    """
+    STORY-240 AC3: Filter out bids whose proposal deadline has already passed.
+
+    Rejects bids where dataEncerramentoProposta <= now().
+    Bids without a deadline date are KEPT (conservative approach).
+
+    Args:
+        licitacoes: List of raw PNCP bid dictionaries
+
+    Returns:
+        Tuple of (approved bids list, count of rejected bids)
+    """
+    from datetime import datetime, timezone
+
+    aprovadas: List[dict] = []
+    rejeitadas = 0
+    agora = datetime.now(timezone.utc)
+
+    for lic in licitacoes:
+        data_fim_str = lic.get("dataEncerramentoProposta")
+        if not data_fim_str:
+            # No deadline date → keep (conservative)
+            aprovadas.append(lic)
+            continue
+
+        try:
+            data_fim = datetime.fromisoformat(
+                data_fim_str.replace("Z", "+00:00")
+            )
+            if data_fim <= agora:
+                rejeitadas += 1
+                logger.debug(
+                    f"filtrar_por_prazo_aberto: rejeitada (encerrada em {data_fim_str}): "
+                    f"{lic.get('objetoCompra', '')[:80]}"
+                )
+                continue
+        except (ValueError, AttributeError):
+            # If date parsing fails, keep (conservative)
+            logger.warning(f"filtrar_por_prazo_aberto: data inválida: '{data_fim_str}'")
+
+        aprovadas.append(lic)
+
+    logger.info(
+        f"filtrar_por_prazo_aberto: {len(aprovadas)} aprovadas, {rejeitadas} rejeitadas "
+        f"(total: {len(licitacoes)})"
+    )
+    return aprovadas, rejeitadas
+
+
 def aplicar_todos_filtros(
     licitacoes: List[dict],
     ufs_selecionadas: Set[str],
@@ -1603,6 +1655,7 @@ def aplicar_todos_filtros(
     context_required: Dict[str, Set[str]] | None = None,
     min_match_floor: Optional[int] = None,
     setor: Optional[str] = None,  # STORY-179 AC1: sector ID for max_contract_value check
+    modo_busca: str = "publicacao",  # STORY-240 AC4: "publicacao" or "abertas"
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Aplica todos os filtros em sequência otimizada (fail-fast).
@@ -1667,6 +1720,7 @@ def aplicar_todos_filtros(
         "rejeitadas_keyword": 0,
         "rejeitadas_min_match": 0,
         "rejeitadas_prazo": 0,
+        "rejeitadas_prazo_aberto": 0,  # STORY-240 AC4: bids with passed deadline
         "rejeitadas_outros": 0,
         # STORY-179 AC2: Camada 2A (term density ratio)
         "aprovadas_alta_densidade": 0,  # density > 5% (high confidence, no LLM)
@@ -1894,6 +1948,17 @@ def aplicar_todos_filtros(
         )
     else:
         resultado_valor = resultado_orgao
+
+    # Etapa 7.5: Filtro de Prazo Aberto (STORY-240 AC4)
+    # When modo_busca="abertas", reject bids whose proposal deadline has passed.
+    # Applied BEFORE keywords filter (fail-fast: eliminates closed bids before heavy regex).
+    if modo_busca == "abertas":
+        resultado_valor, rejeitadas_prazo = filtrar_por_prazo_aberto(resultado_valor)
+        stats["rejeitadas_prazo_aberto"] = rejeitadas_prazo
+        logger.debug(
+            f"  Após filtro Prazo Aberto: {len(resultado_valor)} "
+            f"(rejeitadas: {rejeitadas_prazo})"
+        )
 
     # STORY-179 AC1.3: Camada 1A - Value Threshold (Anti-False Positive)
     # Apply sector-specific max_contract_value check BEFORE keyword matching
