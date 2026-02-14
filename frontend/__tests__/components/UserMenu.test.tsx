@@ -15,6 +15,16 @@ jest.mock('../../app/components/AuthProvider', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// Mock useAnalytics hook
+jest.mock('../../hooks/useAnalytics', () => ({
+  useAnalytics: () => ({
+    trackEvent: jest.fn(),
+    identifyUser: jest.fn(),
+    resetUser: jest.fn(),
+    trackPageView: jest.fn(),
+  }),
+}));
+
 // Mock Next.js Link component
 jest.mock('next/link', () => {
   return function MockLink({ children, href, onClick }: { children: React.ReactNode; href: string; onClick?: () => void }) {
@@ -28,7 +38,7 @@ describe('UserMenu Component', () => {
   });
 
   describe('Loading state', () => {
-    it('should render nothing when loading', () => {
+    it('should render skeleton placeholder when loading (AC7)', () => {
       mockUseAuth.mockReturnValue({
         user: null,
         session: null,
@@ -36,8 +46,19 @@ describe('UserMenu Component', () => {
         signOut: mockSignOut,
       });
 
-      const { container } = render(<UserMenu />);
-      expect(container).toBeEmptyDOMElement();
+      render(<UserMenu />);
+
+      // Should show loading skeleton, not empty
+      const skeleton = screen.getByLabelText('Carregando autenticação');
+      expect(skeleton).toBeInTheDocument();
+
+      // Should show pulsing circle placeholder
+      const pulsingCircle = skeleton.querySelector('.animate-pulse');
+      expect(pulsingCircle).toBeInTheDocument();
+
+      // Should NOT show login links during loading
+      expect(screen.queryByText('Entrar')).not.toBeInTheDocument();
+      expect(screen.queryByText('Criar conta')).not.toBeInTheDocument();
     });
   });
 
@@ -280,6 +301,55 @@ describe('UserMenu Component', () => {
 
       const button = screen.getByRole('button');
       expect(button).toHaveTextContent('L');
+    });
+  });
+
+  describe('STORY-231: Auth resilience', () => {
+    it('AC11: should render user info when auth context has valid user', () => {
+      mockUseAuth.mockReturnValue({
+        user: { email: 'maria@smartlic.tech', id: 'usr-231' },
+        session: { access_token: 'token-231' },
+        loading: false,
+        signOut: mockSignOut,
+        isAdmin: false,
+      });
+
+      render(<UserMenu />);
+
+      // Should show avatar button with first letter
+      const button = screen.getByRole('button');
+      expect(button).toHaveTextContent('M');
+      expect(button).toHaveAttribute('title', 'maria@smartlic.tech');
+
+      // Should NOT show login links
+      expect(screen.queryByText('Entrar')).not.toBeInTheDocument();
+      expect(screen.queryByText('Criar conta')).not.toBeInTheDocument();
+    });
+
+    it('AC12: should render login links when auth context is null', () => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        session: null,
+        loading: false,
+        signOut: mockSignOut,
+        isAdmin: false,
+      });
+
+      render(<UserMenu />);
+
+      // Should show login links
+      const entrarLink = screen.getByRole('link', { name: /Entrar/i });
+      expect(entrarLink).toBeInTheDocument();
+      expect(entrarLink).toHaveAttribute('href', '/login');
+
+      const criarContaLink = screen.getByRole('link', { name: /Criar conta/i });
+      expect(criarContaLink).toBeInTheDocument();
+      expect(criarContaLink).toHaveAttribute('href', '/signup');
+
+      // Should NOT show avatar button
+      const buttons = screen.queryAllByRole('button');
+      const avatarButton = buttons.find(btn => btn.className.includes('rounded-full'));
+      expect(avatarButton).toBeUndefined();
     });
   });
 });

@@ -52,36 +52,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // CRITICAL FIX: Add timeout to prevent infinite loading from stale cache/network issues
     const authTimeout = setTimeout(() => {
       console.warn("[AuthProvider] Auth check timeout - forcing loading=false");
       setLoading(false);
-    }, 10000); // 10 second timeout
+    }, 10000);
 
-    // Get initial user - SECURITY FIX: Use getUser() for validated user data
-    // getUser() ensures the user is authenticated by Supabase server (not just from cookies)
-    supabase.auth.getUser()
-      .then(({ data: { user } }) => {
-        clearTimeout(authTimeout);
-        setUser(user);
-        setLoading(false);
-        // Get session for access token (after user is validated)
-        if (user) {
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session?.access_token) {
-              fetchAdminStatus(session.access_token);
-            }
-          });
+    const initAuth = async () => {
+      try {
+        // Primary: server-validated user
+        const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+
+        if (validatedUser) {
+          clearTimeout(authTimeout);
+          setUser(validatedUser);
+          setLoading(false);
+          const { data: { session: sess } } = await supabase.auth.getSession();
+          setSession(sess);
+          if (sess?.access_token) {
+            fetchAdminStatus(sess.access_token);
+          }
+          return;
         }
-      })
-      .catch((error) => {
-        console.error("[AuthProvider] Auth check failed:", error);
+
+        // AC6: getUser returned null — try refreshing the session once
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession) {
+          console.info("[AuthProvider] getUser returned null, attempting session refresh (AC6)");
+          const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+
+          if (refreshedSession?.user) {
+            clearTimeout(authTimeout);
+            setUser(refreshedSession.user);
+            setSession(refreshedSession);
+            setLoading(false);
+            if (refreshedSession.access_token) {
+              fetchAdminStatus(refreshedSession.access_token);
+            }
+            return;
+          }
+        }
+
+        // No valid user found
         clearTimeout(authTimeout);
         setUser(null);
         setSession(null);
         setLoading(false);
-      });
+      } catch (error) {
+        console.error("[AuthProvider] Auth check failed:", error);
+
+        // AC5: getUser() threw an error — fall back to session data
+        try {
+          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+          if (fallbackSession?.user) {
+            console.info("[AuthProvider] Falling back to session data (AC5)");
+            clearTimeout(authTimeout);
+            setUser(fallbackSession.user);
+            setSession(fallbackSession);
+            setLoading(false);
+            // Don't fetch admin status on fallback — keep isAdmin=false as safe default
+            return;
+          }
+        } catch (sessionError) {
+          console.error("[AuthProvider] Session fallback also failed:", sessionError);
+        }
+
+        clearTimeout(authTimeout);
+        setUser(null);
+        setSession(null);
+        setLoading(false);
+      }
+    };
+
+    initAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -89,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setLoading(false);
         if (session) {
-          // SECURITY FIX: Revalidate user on auth state change
           const { data: { user } } = await supabase.auth.getUser();
           setUser(user);
           if (session.access_token) {

@@ -26,7 +26,13 @@ export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2" aria-label="Carregando autenticação">
+        <div className="w-9 h-9 rounded-full bg-[var(--surface-1)] animate-pulse" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (
