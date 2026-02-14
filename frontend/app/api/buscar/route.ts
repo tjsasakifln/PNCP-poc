@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5 * 60 * 1000);
 
-        response = await fetch(`${backendUrl}/buscar`, {
+        response = await fetch(`${backendUrl}/v1/buscar`, {
           method: "POST",
           headers,
           body: JSON.stringify({

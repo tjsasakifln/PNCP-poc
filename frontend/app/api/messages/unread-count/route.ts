@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
 
   try {
-    const res = await fetch(`${backendUrl}/api/messages/unread-count`, {
+    const res = await fetch(`${backendUrl}/v1/api/messages/unread-count`, {
       headers: { Authorization: authHeader, "Content-Type": "application/json" },
     });
     const data = await res.json().catch(() => ({}));

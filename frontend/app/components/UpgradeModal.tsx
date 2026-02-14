@@ -62,7 +62,7 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
       setError(null);
       try {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-        const res = await fetch(`${backendUrl}/plans`);
+        const res = await fetch(`${backendUrl}/v1/plans`);
         if (!res.ok) throw new Error("Erro ao carregar planos");
         const data = await res.json();
         // Hide free and master from public listing

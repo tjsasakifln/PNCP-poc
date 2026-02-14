@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (key !== "endpoint") backendParams.set(key, value);
   });
 
-  const fullUrl = `${backendUrl}/analytics/${endpoint}${backendParams.toString() ? `?${backendParams}` : ""}`;
+  const fullUrl = `${backendUrl}/v1/analytics/${endpoint}${backendParams.toString() ? `?${backendParams}` : ""}`;
 
   try {
     const res = await fetch(fullUrl, {

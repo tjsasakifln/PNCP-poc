@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${backendUrl}/me`, {
+    const response = await fetch(`${backendUrl}/v1/me`, {
       headers: {
         "Authorization": authHeader,
         "Content-Type": "application/json",
@@ -70,7 +70,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${backendUrl}/me`, {
+    const response = await fetch(`${backendUrl}/v1/me`, {
       method: "DELETE",
       headers: {
         "Authorization": authHeader,

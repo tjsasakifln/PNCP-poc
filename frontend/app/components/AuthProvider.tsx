@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const res = await fetch(`${backendUrl}/me`, {
+      const res = await fetch(`${backendUrl}/v1/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (res.ok) {

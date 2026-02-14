@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const qs = searchParams.toString();
-  const url = `${backendUrl}/api/messages/conversations${qs ? `?${qs}` : ""}`;
+  const url = `${backendUrl}/v1/api/messages/conversations${qs ? `?${qs}` : ""}`;
 
   try {
     const res = await fetch(url, {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const res = await fetch(`${backendUrl}/api/messages/conversations`, {
+    const res = await fetch(`${backendUrl}/v1/api/messages/conversations`, {
       method: "POST",
       headers: { Authorization: authHeader, "Content-Type": "application/json" },
       body: JSON.stringify(body),

@@ -151,7 +151,7 @@ describe('GET /api/analytics', () => {
       await GET(request);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://test-backend:8000/analytics/summary',
+        'http://test-backend:8000/v1/analytics/summary',
         expect.any(Object)
       );
     });
@@ -172,7 +172,7 @@ describe('GET /api/analytics', () => {
       await GET(request);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://test-backend:8000/analytics/summary?start_date=2026-01-01&end_date=2026-01-31',
+        'http://test-backend:8000/v1/analytics/summary?start_date=2026-01-01&end_date=2026-01-31',
         expect.any(Object)
       );
     });
@@ -190,7 +190,7 @@ describe('GET /api/analytics', () => {
       await GET(request);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://test-backend:8000/analytics/summary',
+        'http://test-backend:8000/v1/analytics/summary',
         expect.any(Object)
       );
     });

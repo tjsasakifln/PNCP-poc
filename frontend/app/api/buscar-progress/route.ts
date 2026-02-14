@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const backendResponse = await fetch(
-      `${backendUrl}/buscar-progress/${encodeURIComponent(searchId)}`,
+      `${backendUrl}/v1/buscar-progress/${encodeURIComponent(searchId)}`,
       { headers }
     );
 

@@ -252,7 +252,7 @@ export default function PlanosPage() {
 
       try {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-        const res = await fetch(`${backendUrl}/me`, {
+        const res = await fetch(`${backendUrl}/v1/me`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         if (res.ok) {
@@ -276,7 +276,7 @@ export default function PlanosPage() {
   const fetchPlans = async () => {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const res = await fetch(`${backendUrl}/plans`);
+      const res = await fetch(`${backendUrl}/v1/plans`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       // Hide free, master, and sala_guerra from public listing
@@ -410,7 +410,7 @@ export default function PlanosPage() {
     });
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-      const res = await fetch(`${backendUrl}/checkout?plan_id=${planId}&billing_period=${billingPeriod}`, {
+      const res = await fetch(`${backendUrl}/v1/checkout?plan_id=${planId}&billing_period=${billingPeriod}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}` },
       });

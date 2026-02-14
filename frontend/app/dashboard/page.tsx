@@ -210,7 +210,7 @@ export default function DashboardPage() {
 
       let url: string;
       if (backendUrl) {
-        url = `${backendUrl}/analytics/${endpoint}${searchParams.toString() ? `?${searchParams}` : ""}`;
+        url = `${backendUrl}/v1/analytics/${endpoint}${searchParams.toString() ? `?${searchParams}` : ""}`;
       } else {
         searchParams.set("endpoint", endpoint);
         url = `/api/analytics?${searchParams}`;

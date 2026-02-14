@@ -372,7 +372,7 @@ describe("POST /api/buscar", () => {
     await POST(request);
 
     expect(global.fetch).toHaveBeenCalledWith(
-      "http://custom:9000/buscar",
+      "http://custom:9000/v1/buscar",
       expect.any(Object)
     );
 

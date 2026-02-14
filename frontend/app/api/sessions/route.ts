@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const queryString = searchParams.toString();
 
   try {
-    const response = await fetch(`${backendUrl}/sessions${queryString ? `?${queryString}` : ""}`, {
+    const response = await fetch(`${backendUrl}/v1/sessions${queryString ? `?${queryString}` : ""}`, {
       headers: {
         "Authorization": authHeader,
         "Content-Type": "application/json",

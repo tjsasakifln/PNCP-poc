@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const response = await fetch(`${backendUrl}/change-password`, {
+    const response = await fetch(`${backendUrl}/v1/change-password`, {
       method: "POST",
       headers: {
         "Authorization": authHeader,

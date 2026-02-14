@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${backendUrl}/me/export`, {
+    const response = await fetch(`${backendUrl}/v1/me/export`, {
       headers: {
         "Authorization": authHeader,
       },

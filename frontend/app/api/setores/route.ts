@@ -12,7 +12,7 @@ export async function GET() {
 
   try {
 
-    const response = await fetch(`${backendUrl}/setores`);
+    const response = await fetch(`${backendUrl}/v1/setores`);
 
     if (!response.ok) {
       return NextResponse.json(

@@ -18,7 +18,7 @@ export async function PATCH(
   try {
     const body = await request.json();
     const res = await fetch(
-      `${backendUrl}/api/messages/conversations/${id}/status`,
+      `${backendUrl}/v1/api/messages/conversations/${id}/status`,
       {
         method: "PATCH",
         headers: { Authorization: authHeader, "Content-Type": "application/json" },

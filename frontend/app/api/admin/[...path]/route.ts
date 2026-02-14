@@ -80,7 +80,7 @@ async function handleAdminRequest(
     }
 
     const response = await fetch(
-      `${backendUrl}${backendPath}${queryString ? `?${queryString}` : ""}`,
+      `${backendUrl}/v1${backendPath}${queryString ? `?${queryString}` : ""}`,
       fetchOptions
     );
 

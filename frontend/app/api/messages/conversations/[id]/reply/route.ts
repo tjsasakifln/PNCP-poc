@@ -18,7 +18,7 @@ export async function POST(
   try {
     const body = await request.json();
     const res = await fetch(
-      `${backendUrl}/api/messages/conversations/${id}/reply`,
+      `${backendUrl}/v1/api/messages/conversations/${id}/reply`,
       {
         method: "POST",
         headers: { Authorization: authHeader, "Content-Type": "application/json" },

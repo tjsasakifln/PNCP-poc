@@ -17,7 +17,7 @@ export async function GET(
 
   try {
     const res = await fetch(
-      `${backendUrl}/api/messages/conversations/${id}`,
+      `${backendUrl}/v1/api/messages/conversations/${id}`,
       { headers: { Authorization: authHeader, "Content-Type": "application/json" } },
     );
     const data = await res.json().catch(() => ({}));
