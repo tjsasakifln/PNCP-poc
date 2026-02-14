@@ -10,6 +10,7 @@ import type { Municipio } from "../../components/MunicipioFilter";
 import type { OrdenacaoOption } from "../../components/OrdenacaoSelect";
 import { UFS } from "../../../lib/constants/uf-names";
 import { STOPWORDS_PT, stripAccents, isStopword } from "../../../lib/constants/stopwords";
+import { useAuth } from "../../components/AuthProvider";
 
 export interface TermValidation {
   valid: string[];
@@ -150,6 +151,8 @@ export interface SearchFiltersState {
   sectorName: string;
   searchLabel: string;
   dateLabel: string;
+  isUsingDefaults: boolean;
+  allUfsSelected: boolean;
 
   // Clear result callback (provided by parent)
   clearResult: () => void;
@@ -159,6 +162,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   const searchParams = useSearchParams();
   const [urlParamsApplied, setUrlParamsApplied] = useState(false);
   const { trackEvent } = useAnalytics();
+  const { user } = useAuth();
 
   // Sectors state
   const [setores, setSetores] = useState<Setor[]>([]);
@@ -175,7 +179,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
 
   // P0 Filters
   const [status, setStatus] = useState<StatusLicitacao>("recebendo_proposta");
-  const [modalidades, setModalidades] = useState<number[]>([]);
+  const [modalidades, setModalidades] = useState<number[]>([4, 5, 6, 7]);
   const [valorMin, setValorMin] = useState<number | null>(null);
   const [valorMax, setValorMax] = useState<number | null>(null);
   const [valorValid, setValorValid] = useState(true);
@@ -197,7 +201,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
 
   // UFs and dates
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
-    new Set(["SC", "PR", "RS"])
+    new Set(UFS as readonly string[])
   );
   const [dataInicial, setDataInicial] = useState(() => {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -262,6 +266,16 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   useEffect(() => {
     localStorage.setItem('smartlic-advanced-filters', advancedFiltersOpen ? 'open' : 'closed');
   }, [advancedFiltersOpen]);
+
+  // STORY-246 AC3: Pre-select sector from user profile (only if no URL params override)
+  useEffect(() => {
+    if (urlParamsApplied && !searchParams.get('setor')) {
+      const userSector = user?.user_metadata?.sector;
+      if (userSector && typeof userSector === 'string') {
+        setSetorId(userSector);
+      }
+    }
+  }, [user, urlParamsApplied, searchParams]);
 
   // Clear municipios when UFs change
   useEffect(() => {
@@ -434,6 +448,15 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     ? "Mostrando licitações abertas para proposta"
     : "Período de publicação";
 
+  // STORY-246 AC1-AC4: Compute smart defaults state
+  const allUfsSelected = ufsSelecionadas.size === UFS.length;
+  const isUsingDefaults = allUfsSelected &&
+    modalidades.length === 4 &&
+    modalidades.includes(4) &&
+    modalidades.includes(5) &&
+    modalidades.includes(6) &&
+    modalidades.includes(7);
+
   return {
     setores, setoresLoading, setoresError, setoresUsingFallback, setoresRetryCount,
     setorId, setSetorId: (id: string) => { setSetorId(id); clearResult(); },
@@ -458,6 +481,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     advancedFiltersOpen, setAdvancedFiltersOpen,
     validationErrors, canSearch,
     sectorName, searchLabel, dateLabel,
+    isUsingDefaults, allUfsSelected,
     clearResult,
   };
 }

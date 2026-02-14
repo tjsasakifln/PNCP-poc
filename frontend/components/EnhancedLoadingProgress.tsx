@@ -323,14 +323,18 @@ export function EnhancedLoadingProgress({
       <div className="flex justify-between items-center text-xs text-ink-secondary pt-3 border-t border-strong">
         <span>
           {effectiveStatesProcessed > 0 ? (
-            <>
-              <span className="font-semibold text-brand-blue">{effectiveStatesProcessed}</span>
-              {' de '}
-              <span className="font-semibold">{stateCount}</span>
-              {` ${stateCount === 1 ? 'estado processado' : 'estados processados'}`}
-            </>
+            stateCount >= 27 ? (
+              <>Buscando em todo o Brasil...</>
+            ) : (
+              <>
+                <span className="font-semibold text-brand-blue">{effectiveStatesProcessed}</span>
+                {' de '}
+                <span className="font-semibold">{stateCount}</span>
+                {` ${stateCount === 1 ? 'estado processado' : 'estados processados'}`}
+              </>
+            )
           ) : (
-            `Processando ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`
+            stateCount >= 27 ? 'Buscando em todo o Brasil...' : `Processando ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}`
           )}
         </span>
 

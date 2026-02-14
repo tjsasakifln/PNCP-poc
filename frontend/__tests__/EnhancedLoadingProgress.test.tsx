@@ -48,7 +48,7 @@ describe('EnhancedLoadingProgress Component', () => {
         />
       );
 
-      expect(screen.getByText(/Processando 27 estados/)).toBeInTheDocument();
+      expect(screen.getByText(/Buscando em todo o Brasil/)).toBeInTheDocument();
     });
 
     it('should display singular state when count is 1', () => {

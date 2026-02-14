@@ -95,6 +95,10 @@ export interface SearchFormProps {
 
   // Clear result callback
   clearResult: () => void;
+
+  // Customize accordion (AC6-AC8)
+  customizeOpen: boolean;
+  setCustomizeOpen: (open: boolean) => void;
 }
 
 export default function SearchForm({
@@ -114,6 +118,7 @@ export default function SearchForm({
   loading, buscar, searchButtonRef,
   result, handleSaveSearch, isMaxCapacity,
   planInfo, onShowUpgradeModal, clearResult,
+  customizeOpen, setCustomizeOpen,
 }: SearchFormProps) {
   return (
     <>
@@ -336,158 +341,8 @@ export default function SearchForm({
         )}
       </section>
 
-      {/* UF Selection Section */}
-      <section className="mb-6 animate-fade-in-up stagger-2 relative z-10">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-          <label className="text-base sm:text-lg font-semibold text-ink">
-            Estados (<Tooltip content="UF = Unidade Federativa (Estado brasileiro). Selecione os estados onde deseja buscar licitações.">UFs</Tooltip>):
-          </label>
-          <div className="flex gap-3">
-            <button
-              onClick={selecionarTodos}
-              className="text-sm sm:text-base font-medium text-brand-blue hover:text-brand-blue-hover hover:underline transition-colors"
-              type="button"
-            >
-              Selecionar todos
-            </button>
-            <button
-              onClick={limparSelecao}
-              className="text-sm sm:text-base font-medium text-ink-muted hover:text-ink transition-colors"
-              type="button"
-            >
-              Limpar
-            </button>
-          </div>
-        </div>
-
-        <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
-
-        <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5 sm:gap-2">
-          {UFS.map(uf => (
-            <button
-              key={uf}
-              onClick={() => toggleUf(uf)}
-              type="button"
-              title={UF_NAMES[uf]}
-              aria-pressed={ufsSelecionadas.has(uf)}
-              className={`px-1.5 py-2.5 sm:px-4 sm:py-2 rounded-button border text-xs sm:text-base font-medium transition-all duration-200 min-h-[44px] ${
-                ufsSelecionadas.has(uf)
-                  ? "bg-brand-navy text-white border-brand-navy hover:bg-brand-blue-hover"
-                  : "bg-surface-0 text-ink-secondary border hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
-              }`}
-            >
-              {uf}
-            </button>
-          ))}
-        </div>
-
-        <p className="text-sm sm:text-base text-ink-muted mt-2">
-          {ufsSelecionadas.size === 1 ? '1 estado selecionado' : `${ufsSelecionadas.size} estados selecionados`}
-        </p>
-
-        {validationErrors.ufs && (
-          <p className="text-sm sm:text-base text-error mt-2 font-medium" role="alert">
-            {validationErrors.ufs}
-          </p>
-        )}
-      </section>
-
-      {/* Date Range Section */}
-      <section className="mb-6 animate-fade-in-up stagger-3 relative z-0">
-        {modoBusca === "abertas" ? (
-          <div className="p-3 bg-brand-blue-subtle rounded-card border border-brand-blue/20">
-            <p className="text-sm font-medium text-brand-navy">
-              {dateLabel}
-            </p>
-            <p className="text-xs text-ink-secondary mt-1">
-              Buscando nos últimos 180 dias — somente licitações com prazo aberto
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <CustomDateInput
-              id="data-inicial"
-              value={dataInicial}
-              onChange={(value) => { setDataInicial(value); clearResult(); }}
-              label="Data inicial:"
-            />
-            <CustomDateInput
-              id="data-final"
-              value={dataFinal}
-              onChange={(value) => { setDataFinal(value); clearResult(); }}
-              label="Data final:"
-            />
-          </div>
-        )}
-
-        {validationErrors.date_range && (
-          <p className="text-sm sm:text-base text-error mt-3 font-medium" role="alert">
-            {validationErrors.date_range}
-          </p>
-        )}
-
-        {planInfo && dataInicial && dataFinal && (() => {
-          const days = dateDiffInDays(dataInicial, dataFinal);
-          const maxDays = planInfo.capabilities.max_history_days;
-          if (days > maxDays) {
-            return (
-              <div className="mt-3 p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
-                <div className="flex items-start gap-3">
-                  <svg role="img" aria-label="Aviso" className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-warning mb-1">
-                      Período muito longo para seu plano
-                    </p>
-                    <p className="text-sm text-ink-secondary">
-                      Seu plano {planInfo.plan_name} permite buscas de até {maxDays} dias.
-                      Você selecionou {days} dias. Ajuste as datas ou faça upgrade.
-                    </p>
-                    <button
-                      onClick={() => {
-                        const suggestedPlan = maxDays < 30 ? "consultor_agil" : maxDays < 365 ? "maquina" : "sala_guerra";
-                        onShowUpgradeModal(suggestedPlan, "date_range");
-                      }}
-                      className="mt-2 text-sm font-medium text-brand-blue hover:underline"
-                    >
-                      Ver planos →
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-          return null;
-        })()}
-      </section>
-
-      {/* Filter Panels */}
-      <FilterPanel
-        locationFiltersOpen={locationFiltersOpen}
-        setLocationFiltersOpen={setLocationFiltersOpen}
-        advancedFiltersOpen={advancedFiltersOpen}
-        setAdvancedFiltersOpen={setAdvancedFiltersOpen}
-        esferas={esferas}
-        setEsferas={setEsferas}
-        ufsSelecionadas={ufsSelecionadas}
-        municipios={municipios}
-        setMunicipios={setMunicipios}
-        status={status}
-        setStatus={setStatus}
-        modalidades={modalidades}
-        setModalidades={setModalidades}
-        valorMin={valorMin}
-        setValorMin={setValorMin}
-        valorMax={valorMax}
-        setValorMax={setValorMax}
-        setValorValid={setValorValid}
-        loading={loading}
-        clearResult={clearResult}
-      />
-
-      {/* Search Buttons */}
-      <div className="space-y-3 sm:relative sticky bottom-4 sm:bottom-auto z-20 bg-[var(--canvas)] sm:bg-transparent pt-2 sm:pt-0 -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 sm:pb-0">
+      {/* Search Buttons - AC5: moved up, right after sector selection */}
+      <div className="mb-6 space-y-3 sm:relative sticky bottom-4 sm:bottom-auto z-20 bg-[var(--canvas)] sm:bg-transparent pt-2 sm:pt-0 -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 sm:pb-0 animate-fade-in-up stagger-2">
         <button
           ref={searchButtonRef}
           onClick={buscar}
@@ -536,6 +391,192 @@ export default function SearchForm({
           </button>
         )}
       </div>
+
+      {/* AC6: Personalizar busca accordion - collapsed by default */}
+      <section className="mb-6 animate-fade-in-up stagger-3">
+        <button
+          type="button"
+          onClick={() => setCustomizeOpen(!customizeOpen)}
+          aria-expanded={customizeOpen}
+          className="w-full text-base font-semibold text-ink mb-2 flex items-center gap-2 hover:text-brand-blue transition-colors"
+        >
+          <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          Personalizar busca
+          <svg className={`w-4 h-4 ml-auto transition-transform ${customizeOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* AC8: Badge when collapsed */}
+        {!customizeOpen && (
+          <div className="flex items-center justify-center gap-2 text-sm text-ink-secondary py-2 animate-fade-in-up">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              Buscando em {ufsSelecionadas.size === 27 ? 'todo o Brasil' : `${ufsSelecionadas.size} estado${ufsSelecionadas.size !== 1 ? 's' : ''}`} • Licitações abertas
+              {modalidades.length > 0 ? ` • ${modalidades.length} modalidade${modalidades.length !== 1 ? 's' : ''}` : ''}
+            </span>
+          </div>
+        )}
+
+        {customizeOpen && (
+          <div className="space-y-6 animate-fade-in-up">
+            {/* UF Selection Section - moved into accordion */}
+            <div className="relative z-10">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                <label className="text-base sm:text-lg font-semibold text-ink">
+                  Estados (<Tooltip content="UF = Unidade Federativa (Estado brasileiro). Selecione os estados onde deseja buscar licitações.">UFs</Tooltip>):
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={selecionarTodos}
+                    className="text-sm sm:text-base font-medium text-brand-blue hover:text-brand-blue-hover hover:underline transition-colors"
+                    type="button"
+                  >
+                    Selecionar todos
+                  </button>
+                  <button
+                    onClick={limparSelecao}
+                    className="text-sm sm:text-base font-medium text-ink-muted hover:text-ink transition-colors"
+                    type="button"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+
+              <RegionSelector selected={ufsSelecionadas} onToggleRegion={toggleRegion} />
+
+              <div className="grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5 sm:gap-2">
+                {UFS.map(uf => (
+                  <button
+                    key={uf}
+                    onClick={() => toggleUf(uf)}
+                    type="button"
+                    title={UF_NAMES[uf]}
+                    aria-pressed={ufsSelecionadas.has(uf)}
+                    className={`px-1.5 py-2.5 sm:px-4 sm:py-2 rounded-button border text-xs sm:text-base font-medium transition-all duration-200 min-h-[44px] ${
+                      ufsSelecionadas.has(uf)
+                        ? "bg-brand-navy text-white border-brand-navy hover:bg-brand-blue-hover"
+                        : "bg-surface-0 text-ink-secondary border hover:border-accent hover:text-brand-blue hover:bg-brand-blue-subtle"
+                    }`}
+                  >
+                    {uf}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-sm sm:text-base text-ink-muted mt-2">
+                {ufsSelecionadas.size === 1 ? '1 estado selecionado' : `${ufsSelecionadas.size} estados selecionados`}
+              </p>
+
+              {validationErrors.ufs && (
+                <p className="text-sm sm:text-base text-error mt-2 font-medium" role="alert">
+                  {validationErrors.ufs}
+                </p>
+              )}
+            </div>
+
+            {/* Date Range Section - moved into accordion */}
+            <div className="relative z-0">
+              {modoBusca === "abertas" ? (
+                <div className="p-3 bg-brand-blue-subtle rounded-card border border-brand-blue/20">
+                  <p className="text-sm font-medium text-brand-navy">
+                    {dateLabel}
+                  </p>
+                  <p className="text-xs text-ink-secondary mt-1">
+                    Buscando nos últimos 180 dias — somente licitações com prazo aberto
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <CustomDateInput
+                    id="data-inicial"
+                    value={dataInicial}
+                    onChange={(value) => { setDataInicial(value); clearResult(); }}
+                    label="Data inicial:"
+                  />
+                  <CustomDateInput
+                    id="data-final"
+                    value={dataFinal}
+                    onChange={(value) => { setDataFinal(value); clearResult(); }}
+                    label="Data final:"
+                  />
+                </div>
+              )}
+
+              {validationErrors.date_range && (
+                <p className="text-sm sm:text-base text-error mt-3 font-medium" role="alert">
+                  {validationErrors.date_range}
+                </p>
+              )}
+
+              {planInfo && dataInicial && dataFinal && (() => {
+                const days = dateDiffInDays(dataInicial, dataFinal);
+                const maxDays = planInfo.capabilities.max_history_days;
+                if (days > maxDays) {
+                  return (
+                    <div className="mt-3 p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
+                      <div className="flex items-start gap-3">
+                        <svg role="img" aria-label="Aviso" className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-warning mb-1">
+                            Período muito longo para seu plano
+                          </p>
+                          <p className="text-sm text-ink-secondary">
+                            Seu plano {planInfo.plan_name} permite buscas de até {maxDays} dias.
+                            Você selecionou {days} dias. Ajuste as datas ou faça upgrade.
+                          </p>
+                          <button
+                            onClick={() => {
+                              const suggestedPlan = maxDays < 30 ? "consultor_agil" : maxDays < 365 ? "maquina" : "sala_guerra";
+                              onShowUpgradeModal(suggestedPlan, "date_range");
+                            }}
+                            className="mt-2 text-sm font-medium text-brand-blue hover:underline"
+                          >
+                            Ver planos →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            {/* Filter Panels - moved into accordion */}
+            <FilterPanel
+              locationFiltersOpen={locationFiltersOpen}
+              setLocationFiltersOpen={setLocationFiltersOpen}
+              advancedFiltersOpen={advancedFiltersOpen}
+              setAdvancedFiltersOpen={setAdvancedFiltersOpen}
+              esferas={esferas}
+              setEsferas={setEsferas}
+              ufsSelecionadas={ufsSelecionadas}
+              municipios={municipios}
+              setMunicipios={setMunicipios}
+              status={status}
+              setStatus={setStatus}
+              modalidades={modalidades}
+              setModalidades={setModalidades}
+              valorMin={valorMin}
+              setValorMin={setValorMin}
+              valorMax={valorMax}
+              setValorMax={setValorMax}
+              setValorValid={setValorValid}
+              loading={loading}
+              clearResult={clearResult}
+            />
+          </div>
+        )}
+      </section>
+
     </>
   );
 }

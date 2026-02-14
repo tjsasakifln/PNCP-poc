@@ -36,6 +36,16 @@ function HomePageContent() {
   const [upgradeSource, setUpgradeSource] = useState<string | undefined>();
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
+  // Customize accordion state (AC7: maintain in localStorage)
+  const [customizeOpen, setCustomizeOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('smartlic-customize-open') === 'open';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('smartlic-customize-open', customizeOpen ? 'open' : 'closed');
+  }, [customizeOpen]);
+
   // Onboarding
   const { shouldShowOnboarding, restartTour } = useOnboarding({
     autoStart: true,
@@ -149,6 +159,8 @@ function HomePageContent() {
               planInfo={planInfo}
               onShowUpgradeModal={handleShowUpgradeModal}
               clearResult={() => search.setResult(null)}
+              customizeOpen={customizeOpen}
+              setCustomizeOpen={setCustomizeOpen}
             />
 
             <SearchResults

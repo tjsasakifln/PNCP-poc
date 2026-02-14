@@ -63,25 +63,25 @@ DEPOIS (1-2 passos):
 ## Acceptance Criteria
 
 ### Frontend — Defaults
-- [ ] **AC1:** Default de UFs = todas as 27 UFs (novo usuário ou não-logado).
-- [ ] **AC2:** Default de modalidades = [4, 5, 6, 7] (competitivas).
-- [ ] **AC3:** Se usuário logado com setor no perfil, pre-seleciona o setor automaticamente.
-- [ ] **AC4:** Default de datas = 180 dias (alinhado com STORY-240 modo abertas).
+- [x] **AC1:** Default de UFs = todas as 27 UFs (novo usuário ou não-logado).
+- [x] **AC2:** Default de modalidades = [4, 5, 6, 7] (competitivas).
+- [x] **AC3:** Se usuário logado com setor no perfil, pre-seleciona o setor automaticamente.
+- [x] **AC4:** Default de datas = 180 dias (alinhado com STORY-240 modo abertas).
 
 ### Frontend — Layout
-- [ ] **AC5:** Setor selector e botão "Buscar" são os elementos mais prominentes da página.
-- [ ] **AC6:** UFs, datas e filtros avançados ficam em accordion "Personalizar busca" — colapsado por padrão para novos usuários.
-- [ ] **AC7:** Accordion mantém estado no localStorage (se usuário abriu, permanece aberto em visitas futuras).
-- [ ] **AC8:** Badge informativo quando accordion está colapsado: "Buscando em 27 estados, licitações abertas".
+- [x] **AC5:** Setor selector e botão "Buscar" são os elementos mais prominentes da página.
+- [x] **AC6:** UFs, datas e filtros avançados ficam em accordion "Personalizar busca" — colapsado por padrão para novos usuários.
+- [x] **AC7:** Accordion mantém estado no localStorage (se usuário abriu, permanece aberto em visitas futuras).
+- [x] **AC8:** Badge informativo quando accordion está colapsado: "Buscando em 27 estados, licitações abertas".
 
 ### Frontend — Feedback
-- [ ] **AC9:** Ao clicar Buscar com defaults, progresso mostra "Buscando em todo o Brasil..." (não lista 27 UFs).
-- [ ] **AC10:** Resultado mostra resumo dos filtros ativos no topo: "27 UFs | Últimos 180 dias | Modalidades competitivas".
+- [x] **AC9:** Ao clicar Buscar com defaults, progresso mostra "Buscando em todo o Brasil..." (não lista 27 UFs).
+- [x] **AC10:** Resultado mostra resumo dos filtros ativos no topo: "27 UFs | Últimos 180 dias | Modalidades competitivas".
 
 ### Regressão
-- [ ] **AC11:** Usuários que já tinham UFs selecionadas via URL params continuam funcionando (URL params override defaults).
-- [ ] **AC12:** Busca com filtros personalizados funciona igual ao antes.
-- [ ] **AC13:** Testes existentes de busca atualizados para novos defaults.
+- [x] **AC11:** Usuários que já tinham UFs selecionadas via URL params continuam funcionando (URL params override defaults).
+- [x] **AC12:** Busca com filtros personalizados funciona igual ao antes.
+- [x] **AC13:** Testes existentes de busca atualizados para novos defaults.
 
 ## Definition of Done
 - Todos os ACs checked

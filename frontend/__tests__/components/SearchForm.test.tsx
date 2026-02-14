@@ -8,6 +8,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SearchForm from '@/app/buscar/components/SearchForm';
 import type { SearchFormProps } from '@/app/buscar/components/SearchForm';
+import { UFS } from '@/lib/constants/uf-names';
 
 // Mock Next.js Link
 jest.mock('next/link', () => {
@@ -79,6 +80,9 @@ const defaultProps: SearchFormProps = {
   planInfo: null,
   onShowUpgradeModal: jest.fn(),
   clearResult: jest.fn(),
+  // STORY-246: New props for accordion
+  customizeOpen: true,
+  setCustomizeOpen: jest.fn(),
 };
 
 describe('SearchForm Component', () => {
@@ -388,5 +392,48 @@ describe('SearchForm Component', () => {
       expect(screen.queryByText(/Buscando nos últimos 180 dias/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/Mostrando licitações abertas para proposta/i)).not.toBeInTheDocument();
     });
+  });
+
+  describe('STORY-246: One-Click Experience - Prop compatibility', () => {
+    // NOTE: These tests verify the component accepts the new props without errors.
+    // Full UI behavior tests will be added once Track 2 (UI Changes) implements
+    // the accordion and badge features.
+
+    it('should accept customizeOpen and setCustomizeOpen props', () => {
+      const setCustomizeOpen = jest.fn();
+      const { container } = render(
+        <SearchForm
+          {...defaultProps}
+          customizeOpen={false}
+          setCustomizeOpen={setCustomizeOpen}
+        />
+      );
+      // Component should render without throwing
+      expect(container).toBeTruthy();
+    });
+
+    it('should render correctly with all 27 UFs selected', () => {
+      const { container } = render(
+        <SearchForm {...defaultProps} ufsSelecionadas={new Set(UFS)} />
+      );
+      // When all UFs are selected, count should show 27
+      expect(screen.getByText(/27 estados selecionados/i)).toBeInTheDocument();
+      expect(container).toBeTruthy();
+    });
+
+    it('should render correctly with partial UF selection', () => {
+      const { container } = render(
+        <SearchForm {...defaultProps} ufsSelecionadas={new Set(['SP', 'RJ'])} />
+      );
+      // Should show correct count
+      expect(screen.getByText(/2 estados selecionados/i)).toBeInTheDocument();
+      expect(container).toBeTruthy();
+    });
+
+    // TODO: After Track 2 (UI Changes) is complete, add these AC tests:
+    // - AC5: Search button appears before "Personalizar busca" accordion
+    // - AC6: UF section visibility controlled by customizeOpen state
+    // - AC8: Badge shows "Buscando em todo o Brasil" or state count when collapsed
+    // - AC12: Custom filters work when accordion is open
   });
 });
