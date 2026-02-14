@@ -44,6 +44,9 @@ class SearchContext:
     # === Stage 3: ExecuteSearch outputs ===
     licitacoes_raw: list = field(default_factory=list)
     source_stats_data: Optional[list] = None
+    is_partial: bool = False
+    data_sources: Optional[list] = None  # List[schemas.DataSourceStatus]
+    degradation_reason: Optional[str] = None
 
     # === Stage 4: FilterResults outputs ===
     licitacoes_filtradas: list = field(default_factory=list)

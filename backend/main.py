@@ -371,6 +371,19 @@ async def health():
         # Redis is optional - not configured is not an error
         dependencies["redis"] = "not_configured"
 
+    # AC27: Add per-source health status from SourceHealthRegistry
+    from source_config.sources import source_health_registry
+    from pncp_client import get_circuit_breaker
+
+    sources = {}
+    source_names = ["PNCP", "Portal Transparência", "Licitar Digital", "ComprasGov", "BLL", "BNC"]
+    for source_name in source_names:
+        sources[source_name] = source_health_registry.get_status(source_name)
+
+    # Include PNCP circuit breaker status (property access)
+    pncp_cb = get_circuit_breaker()
+    sources["PNCP_circuit_breaker"] = "degraded" if pncp_cb.is_degraded else "healthy"
+
     # Determine overall health status
     # Supabase is critical, Redis is optional
     supabase_ok = not dependencies["supabase"].startswith("error")
@@ -388,6 +401,7 @@ async def health():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": app.version,
         "dependencies": dependencies,
+        "sources": sources,
     }
 
     # Always return 200 for Railway health checks — report status in body
@@ -487,8 +501,12 @@ async def sources_health():
 
 
 @app.get("/setores", response_model=SetoresResponse)
+@app.get("/v1/setores", response_model=SetoresResponse)
 async def listar_setores():
-    """Return available procurement sectors for frontend dropdown."""
+    """Return available procurement sectors for frontend dropdown.
+
+    STORY-252 Track 5 (AC24): Mounted at both /setores (legacy) and /v1/setores (versioned).
+    """
     return {"setores": list_sectors()}
 
 

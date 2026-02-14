@@ -28,8 +28,9 @@ Usage:
 
 import os
 import logging
+import time
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Literal, Optional
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,132 @@ class SourceCode(str, Enum):
     COMPRAS_GOV = "ComprasGov"
     BLL = "BLL"
     BNC = "BNC"
+
+
+@dataclass
+class SourceHealthStatus:
+    """Health status entry for a single source."""
+
+    status: Literal["healthy", "degraded", "down"] = "healthy"
+    updated_at: float = field(default_factory=time.time)
+    consecutive_failures: int = 0
+    ttl_seconds: int = 300  # 5 minutes
+
+
+class SourceHealthRegistry:
+    """
+    In-memory health registry tracking source availability.
+
+    Maintains status (healthy/degraded/down) for each source with a
+    configurable TTL. Status persists between requests within the
+    same process. Thread-safe for async (single-process, no locks needed).
+
+    Usage:
+        registry = source_health_registry  # module-level singleton
+        registry.record_success("PNCP")
+        registry.record_failure("PNCP")
+        status = registry.get_status("PNCP")  # "healthy" | "degraded" | "down"
+        available = registry.is_available("PNCP")  # True if healthy or degraded
+    """
+
+    def __init__(self) -> None:
+        self._statuses: Dict[str, SourceHealthStatus] = {}
+
+    def get_status(self, source_name: str) -> str:
+        """
+        Get current health status for a source.
+
+        Returns "healthy" if no status recorded or TTL has expired.
+
+        Args:
+            source_name: Source identifier (e.g., "PNCP", "Portal")
+
+        Returns:
+            One of "healthy", "degraded", "down"
+        """
+        entry = self._statuses.get(source_name)
+        if entry is None:
+            return "healthy"
+        # Check TTL expiration
+        if time.time() - entry.updated_at > entry.ttl_seconds:
+            # TTL expired — reset to healthy
+            del self._statuses[source_name]
+            return "healthy"
+        return entry.status
+
+    def record_success(self, source_name: str) -> None:
+        """
+        Record a successful interaction with a source.
+
+        Resets status to healthy and clears consecutive failure count.
+
+        Args:
+            source_name: Source identifier
+        """
+        self._statuses[source_name] = SourceHealthStatus(
+            status="healthy",
+            updated_at=time.time(),
+            consecutive_failures=0,
+        )
+
+    def record_failure(self, source_name: str) -> None:
+        """
+        Record a failed interaction with a source.
+
+        Increments consecutive failure counter and updates status:
+        - 1-2 failures: remains "healthy"
+        - 3-4 failures: transitions to "degraded"
+        - 5+ failures: transitions to "down"
+
+        Args:
+            source_name: Source identifier
+        """
+        entry = self._statuses.get(source_name)
+        if entry is None:
+            entry = SourceHealthStatus()
+
+        previous_status = entry.status
+        entry.consecutive_failures += 1
+        entry.updated_at = time.time()
+
+        if entry.consecutive_failures >= 5:
+            entry.status = "down"
+        elif entry.consecutive_failures >= 3:
+            entry.status = "degraded"
+        # else stays at current status (healthy for 1-2 failures)
+
+        self._statuses[source_name] = entry
+
+        # AC28: Log WARNING when transitioning to degraded or down
+        if entry.status != previous_status and entry.status in ("degraded", "down"):
+            logger.warning(
+                f"Source '{source_name}' transitioned to {entry.status.upper()} status "
+                f"after {entry.consecutive_failures} consecutive failures"
+            )
+
+    def is_available(self, source_name: str) -> bool:
+        """
+        Check if a source is available for requests.
+
+        A source is available if its status is "healthy" or "degraded".
+        A "down" source is not available.
+
+        Args:
+            source_name: Source identifier
+
+        Returns:
+            True if healthy or degraded, False if down
+        """
+        status = self.get_status(source_name)
+        return status in ("healthy", "degraded")
+
+    def reset(self) -> None:
+        """Clear all health statuses. Useful for testing."""
+        self._statuses.clear()
+
+
+# Module-level singleton — persists between requests within the same process
+source_health_registry = SourceHealthRegistry()
 
 
 @dataclass

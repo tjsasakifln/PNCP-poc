@@ -25,7 +25,9 @@ from types import SimpleNamespace
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
-from schemas import BuscaResponse, FilterStats, ResumoLicitacoes, ResumoEstrategico, LicitacaoItem
+from schemas import BuscaResponse, FilterStats, ResumoLicitacoes, ResumoEstrategico, LicitacaoItem, DataSourceStatus
+from pncp_client import get_circuit_breaker, PNCPDegradedError
+from consolidation import AllSourcesFailedError
 from term_parser import parse_search_terms
 from relevance import calculate_min_matches, score_relevance, count_phrase_matches
 from status_inference import enriquecer_com_status_inferido
@@ -519,11 +521,19 @@ class SearchPipeline:
                 timeout=source_config.portal.timeout,
             )
 
+        # STORY-252 T8: Create ComprasGov fallback adapter for last-resort use
+        # when all primary sources fail (AC15). Only effective if ComprasGov
+        # is NOT already included as a primary adapter.
+        fallback_adapter = ComprasGovAdapter(
+            timeout=source_config.compras_gov.timeout
+        )
+
         consolidation_svc = ConsolidationService(
             adapters=adapters,
             timeout_per_source=source_config.consolidation.timeout_per_source,
             timeout_global=source_config.consolidation.timeout_global,
             fail_on_all_errors=source_config.consolidation.fail_on_all_errors,
+            fallback_adapter=fallback_adapter,
         )
 
         source_complete_cb = None
@@ -552,11 +562,50 @@ class SearchPipeline:
                 }
                 for sr in consolidation_result.source_results
             ]
+
+            # STORY-252 T8: Map consolidation degradation state to pipeline context
+            ctx.is_partial = consolidation_result.is_partial
+            ctx.degradation_reason = consolidation_result.degradation_reason
+            ctx.data_sources = [
+                DataSourceStatus(
+                    source=sr.source_code,
+                    status="ok" if sr.status == "success" else sr.status,
+                    records=sr.record_count,
+                )
+                for sr in consolidation_result.source_results
+            ]
+
             logger.info(
                 f"Multi-source fetch: {consolidation_result.total_before_dedup} raw -> "
                 f"{consolidation_result.total_after_dedup} deduped "
                 f"({consolidation_result.duplicates_removed} dupes removed)"
+                f"{' [PARTIAL]' if ctx.is_partial else ''}"
             )
+        except AllSourcesFailedError as e:
+            # STORY-252 T8: All sources failed — return empty results with
+            # detailed degradation info instead of crashing the request.
+            logger.error(f"All sources failed during multi-source fetch: {e}")
+            ctx.licitacoes_raw = []
+            ctx.is_partial = True
+            ctx.degradation_reason = str(e)
+            ctx.data_sources = [
+                DataSourceStatus(
+                    source=src,
+                    status="error",
+                    records=0,
+                )
+                for src in e.source_errors
+            ]
+            ctx.source_stats_data = [
+                {
+                    "source_code": src,
+                    "record_count": 0,
+                    "duration_ms": 0,
+                    "error": err,
+                    "status": "error",
+                }
+                for src, err in e.source_errors.items()
+            ]
         except asyncio.TimeoutError:
             logger.error(f"Multi-source fetch timed out after {fetch_timeout}s")
             if ctx.tracker:
@@ -580,6 +629,26 @@ class SearchPipeline:
         """PNCP-only fetch path (default)."""
         logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
 
+        # STORY-252 T8: Check circuit breaker before attempting PNCP fetch.
+        # If PNCP is known to be degraded, skip the fetch entirely to avoid
+        # wasting time on requests that will almost certainly timeout.
+        cb = get_circuit_breaker()
+        if cb.is_degraded:
+            logger.warning(
+                "PNCP circuit breaker is DEGRADED — skipping PNCP fetch. "
+                f"Degraded until {cb.degraded_until}, cooldown={cb.cooldown_seconds}s"
+            )
+            ctx.licitacoes_raw = []
+            ctx.is_partial = True
+            ctx.degradation_reason = (
+                "PNCP esta temporariamente indisponivel (circuit breaker ativo). "
+                "Tente novamente em alguns minutos."
+            )
+            ctx.data_sources = [
+                DataSourceStatus(source="PNCP", status="skipped", records=0)
+            ]
+            return
+
         async def _do_fetch() -> list:
             if use_parallel:
                 logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
@@ -593,6 +662,8 @@ class SearchPipeline:
                         max_concurrent=10,
                         on_uf_complete=uf_progress_callback,
                     )
+                except PNCPDegradedError:
+                    raise  # Re-raise to be handled by outer try/except
                 except Exception as e:
                     logger.warning(f"Parallel fetch failed, falling back to sequential: {e}")
                     client = deps.PNCPClient()
@@ -617,6 +688,27 @@ class SearchPipeline:
 
         try:
             ctx.licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=fetch_timeout)
+            # STORY-252 T8: Successful PNCP fetch — populate data source status
+            ctx.data_sources = [
+                DataSourceStatus(
+                    source="PNCP",
+                    status="ok",
+                    records=len(ctx.licitacoes_raw),
+                )
+            ]
+        except PNCPDegradedError as e:
+            # STORY-252 T8: PNCP circuit breaker tripped during fetch.
+            # Return empty results with degradation info rather than crashing.
+            logger.warning(f"PNCP degraded during fetch: {e}")
+            ctx.licitacoes_raw = []
+            ctx.is_partial = True
+            ctx.degradation_reason = (
+                "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
+                "Tente novamente em alguns minutos."
+            )
+            ctx.data_sources = [
+                DataSourceStatus(source="PNCP", status="error", records=0)
+            ]
         except asyncio.TimeoutError:
             logger.error(f"PNCP fetch timed out after {fetch_timeout}s for {len(request.ufs)} UFs")
             if ctx.tracker:
@@ -627,7 +719,7 @@ class SearchPipeline:
                 status_code=504,
                 detail=(
                     f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos. "
-                    f"Tente com menos estados ou um período menor."
+                    f"Tente com menos estados ou um periodo menor."
                 ),
             )
 
@@ -828,6 +920,9 @@ class SearchPipeline:
                 source_stats=ctx.source_stats_data,
                 hidden_by_min_match=ctx.hidden_by_min_match if ctx.custom_terms else None,
                 filter_relaxed=ctx.filter_relaxed if ctx.custom_terms else None,
+                is_partial=ctx.is_partial,
+                data_sources=ctx.data_sources,
+                degradation_reason=ctx.degradation_reason,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -927,6 +1022,9 @@ class SearchPipeline:
             hidden_by_min_match=ctx.hidden_by_min_match if ctx.custom_terms else None,
             filter_relaxed=ctx.filter_relaxed if ctx.custom_terms else None,
             ultima_atualizacao=datetime.now().isoformat() + "Z",
+            is_partial=ctx.is_partial,
+            data_sources=ctx.data_sources,
+            degradation_reason=ctx.degradation_reason,
         )
 
         logger.info(
@@ -946,6 +1044,51 @@ class SearchPipeline:
 
         Errors in session save do NOT fail the search request.
         """
+        # AC26: Emit structured log per search completion
+        elapsed_ms = int((sync_time_module.time() - ctx.start_time) * 1000)
+
+        # Determine which sources were attempted, succeeded, and failed
+        sources_attempted = []
+        sources_succeeded = []
+        sources_failed_with_reason = []
+
+        if ctx.source_stats_data:
+            # Multi-source path
+            for stat in ctx.source_stats_data:
+                src_code = stat.get("source_code", "unknown")
+                sources_attempted.append(src_code)
+                if stat.get("error"):
+                    sources_failed_with_reason.append({
+                        "source": src_code,
+                        "reason": stat["error"][:100]  # Truncate long error messages
+                    })
+                else:
+                    sources_succeeded.append(src_code)
+        else:
+            # PNCP-only path
+            sources_attempted = ["PNCP"]
+            if ctx.licitacoes_raw is not None:
+                sources_succeeded = ["PNCP"]
+            else:
+                sources_failed_with_reason = [{"source": "PNCP", "reason": "unknown"}]
+
+        is_partial = len(sources_failed_with_reason) > 0 and len(sources_succeeded) > 0
+
+        logger.info(
+            "search_completed",
+            extra={
+                "search_id": ctx.request.search_id or "no_id",
+                "ufs_requested": ctx.request.ufs,
+                "sources_attempted": sources_attempted,
+                "sources_succeeded": sources_succeeded,
+                "sources_failed": sources_failed_with_reason,
+                "total_raw": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
+                "total_filtered": len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0,
+                "is_partial": is_partial,
+                "elapsed_ms": elapsed_ms,
+            }
+        )
+
         # If response was already built (e.g., empty results early return in stage_generate)
         if ctx.response is not None and not ctx.licitacoes_filtradas:
             # Save session even for zero results

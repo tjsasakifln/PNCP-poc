@@ -6,6 +6,7 @@ import type { SearchProgressEvent } from "../../../hooks/useSearchProgress";
 import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
 import { EmptyState } from "../../components/EmptyState";
+import { DegradationBanner } from "./DegradationBanner";
 import { QuotaCounter } from "../../components/QuotaCounter";
 import { LicitacoesPreview } from "../../components/LicitacoesPreview";
 import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/OrdenacaoSelect";
@@ -148,8 +149,40 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Empty State */}
-      {result && result.resumo.total_oportunidades === 0 && (
+      {/* STORY-252 AC22/AC23: All sources down — RED error (total_raw=0, total_filtrado=0, is_partial=true) */}
+      {result && result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && (
+        <DegradationBanner
+          variant="error"
+          message="Nenhuma fonte de dados respondeu. O PNCP e fontes alternativas estao indisponiveis."
+          detail={result.degradation_reason || "Tente novamente em alguns minutos."}
+          dataSources={result.data_sources}
+          showRetry
+          onRetry={onSearch}
+          loading={loading}
+        />
+      )}
+
+      {/* STORY-252 AC23: Partial results, but all filtered out (total_raw>0, total_filtrado=0, is_partial=true) */}
+      {result && result.is_partial && (result.total_raw || 0) > 0 && result.resumo.total_oportunidades === 0 && (
+        <>
+          <DegradationBanner
+            variant="warning"
+            message="Resultados parciais — algumas fontes nao responderam e nenhum resultado passou nos filtros."
+            detail="Os dados disponiveis nao continham licitacoes compativeis com os criterios selecionados. Tente ampliar o periodo ou selecionar mais estados."
+            dataSources={result.data_sources}
+          />
+          <EmptyState
+            onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            rawCount={rawCount}
+            stateCount={ufsSelecionadas.size}
+            filterStats={result.filter_stats}
+            sectorName={sectorName}
+          />
+        </>
+      )}
+
+      {/* Empty State — legitimate zero results (not caused by API failure) */}
+      {result && !result.is_partial && result.resumo.total_oportunidades === 0 && (
         <EmptyState
           onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           rawCount={rawCount}
@@ -162,6 +195,16 @@ export default function SearchResults({
       {/* Result Display */}
       {result && result.resumo.total_oportunidades > 0 && (
         <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in-up">
+          {/* STORY-252 AC21: Yellow banner for partial results */}
+          {result.is_partial && (
+            <DegradationBanner
+              variant="warning"
+              message="Resultados parciais — algumas fontes de dados nao responderam."
+              detail={result.degradation_reason}
+              dataSources={result.data_sources}
+            />
+          )}
+
           {/* Results header with ordering */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong">
             <h2 className="text-lg font-semibold text-ink">

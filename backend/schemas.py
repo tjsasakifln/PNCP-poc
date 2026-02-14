@@ -757,6 +757,28 @@ class LicitacaoItem(BaseModel):
         }
 
 
+class DataSourceStatus(BaseModel):
+    """
+    Status information for a single data source in multi-source fetching.
+
+    Used to provide transparency about which sources contributed to results
+    and which failed/timed out during the search operation.
+    """
+    source: str = Field(
+        ...,
+        description="Data source identifier (e.g., 'pncp', 'compras_gov', 'portal')"
+    )
+    status: str = Field(
+        ...,
+        description="Source status: 'ok' (success), 'timeout' (timed out), 'error' (failed), 'skipped' (not attempted)"
+    )
+    records: int = Field(
+        default=0,
+        ge=0,
+        description="Number of records successfully returned by this source"
+    )
+
+
 class BuscaResponse(BaseModel):
     """
     Response schema for /buscar endpoint.
@@ -818,6 +840,18 @@ class BuscaResponse(BaseModel):
     source_stats: Optional[List[dict]] = Field(
         default=None,
         description="Per-source fetch metrics when multi-source is active"
+    )
+    is_partial: bool = Field(
+        default=False,
+        description="True when not all configured data sources responded successfully (some timed out/failed)"
+    )
+    data_sources: Optional[List[DataSourceStatus]] = Field(
+        default=None,
+        description="Detailed status breakdown of each data source (None for backward compatibility)"
+    )
+    degradation_reason: Optional[str] = Field(
+        default=None,
+        description="Human-readable explanation of partial results (e.g., 'PNCP indisponível, resultados de fontes alternativas')"
     )
     hidden_by_min_match: Optional[int] = Field(
         default=None,
@@ -1160,6 +1194,7 @@ class HealthResponse(BaseModel):
     timestamp: str
     version: str
     dependencies: HealthDependencies
+    sources: Optional[Dict[str, str]] = None  # AC27: Per-source health status
 
 
 class SourceInfo(BaseModel):

@@ -3,10 +3,11 @@
 import asyncio
 import json
 import logging
+import os
 import random
 import time
 from datetime import date, timedelta
-from typing import Any, Callable, Dict, Generator, List
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 import httpx
 import requests
@@ -18,6 +19,120 @@ from exceptions import PNCPAPIError
 from middleware import request_id_var
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# PNCP Degraded Error (STORY-252 AC8)
+# ============================================================================
+
+class PNCPDegradedError(PNCPAPIError):
+    """Raised when PNCP circuit breaker is in degraded state."""
+    pass
+
+
+# ============================================================================
+# Circuit Breaker (STORY-252 AC8)
+# ============================================================================
+
+# Configurable via environment variables
+PNCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
+    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "5")
+)
+PNCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
+    os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "300")
+)
+
+# Per-modality timeout (STORY-252 AC6) — configurable
+PNCP_TIMEOUT_PER_MODALITY: float = float(
+    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "15")
+)
+
+# Modality retry on timeout (STORY-252 AC9)
+PNCP_MODALITY_RETRY_BACKOFF: float = float(
+    os.environ.get("PNCP_MODALITY_RETRY_BACKOFF", "3.0")
+)
+
+
+class PNCPCircuitBreaker:
+    """Circuit breaker for PNCP API to prevent cascading failures.
+
+    After ``threshold`` consecutive timeouts (any UF+modality combination),
+    the circuit breaker marks PNCP as *degraded* for ``cooldown_seconds``.
+    While degraded, callers should skip PNCP and use alternative sources.
+
+    Thread-safety: Python's GIL makes simple int/float assignments atomic.
+    For async code an asyncio.Lock is used around state mutations.
+
+    Attributes:
+        consecutive_failures: Running count of consecutive timeout failures.
+        degraded_until: Unix timestamp until which PNCP is considered degraded.
+            ``None`` when not degraded.
+        threshold: Number of consecutive failures before tripping.
+        cooldown_seconds: Duration in seconds to stay degraded after tripping.
+    """
+
+    def __init__(
+        self,
+        threshold: int = PNCP_CIRCUIT_BREAKER_THRESHOLD,
+        cooldown_seconds: int = PNCP_CIRCUIT_BREAKER_COOLDOWN,
+    ):
+        self.threshold = threshold
+        self.cooldown_seconds = cooldown_seconds
+        self.consecutive_failures: int = 0
+        self.degraded_until: Optional[float] = None
+        self._lock = asyncio.Lock()
+
+    @property
+    def is_degraded(self) -> bool:
+        """Return ``True`` if the circuit breaker is currently in degraded state."""
+        if self.degraded_until is None:
+            return False
+        if time.time() >= self.degraded_until:
+            # Cooldown expired — auto-reset
+            self.degraded_until = None
+            self.consecutive_failures = 0
+            logger.info("PNCP circuit breaker cooldown expired — resetting to healthy")
+            return False
+        return True
+
+    async def record_failure(self) -> None:
+        """Record a timeout/failure. Trips the breaker after ``threshold`` consecutive failures."""
+        async with self._lock:
+            self.consecutive_failures += 1
+            logger.debug(
+                f"PNCP circuit breaker: failure #{self.consecutive_failures} "
+                f"(threshold={self.threshold})"
+            )
+            if self.consecutive_failures >= self.threshold and not self.is_degraded:
+                self.degraded_until = time.time() + self.cooldown_seconds
+                logger.warning(
+                    f"PNCP circuit breaker TRIPPED after {self.consecutive_failures} "
+                    f"consecutive failures — degraded for {self.cooldown_seconds}s"
+                )
+
+    async def record_success(self) -> None:
+        """Record a successful request. Resets the failure counter."""
+        async with self._lock:
+            if self.consecutive_failures > 0:
+                logger.debug(
+                    f"PNCP circuit breaker: success after {self.consecutive_failures} "
+                    f"failures — resetting counter"
+                )
+            self.consecutive_failures = 0
+
+    def reset(self) -> None:
+        """Manually reset the circuit breaker (for testing or admin use)."""
+        self.consecutive_failures = 0
+        self.degraded_until = None
+
+
+# Module-level singleton
+_circuit_breaker = PNCPCircuitBreaker()
+
+
+def get_circuit_breaker() -> PNCPCircuitBreaker:
+    """Return the module-level circuit breaker singleton."""
+    return _circuit_breaker
 
 
 # ============================================================================
@@ -626,6 +741,67 @@ class AsyncPNCPClient:
             await self._client.aclose()
         logger.debug(f"Async session closed. Total requests made: {self._request_count}")
 
+    async def health_canary(self) -> bool:
+        """Run a lightweight probe to verify PNCP API is responsive (STORY-252 AC10).
+
+        Sends a single request for UF=SP, modality 6 (Pregao Eletronico),
+        page 1 only, with a tight 5-second timeout.
+
+        If the canary fails, the module-level circuit breaker is set to degraded
+        and a warning is logged (AC11).
+
+        Returns:
+            ``True`` if PNCP responded successfully, ``False`` otherwise.
+        """
+        CANARY_TIMEOUT = 5.0  # seconds
+
+        if self._client is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+
+        try:
+            params = {
+                "dataInicial": date.today().strftime("%Y%m%d"),
+                "dataFinal": date.today().strftime("%Y%m%d"),
+                "codigoModalidadeContratacao": 6,
+                "pagina": 1,
+                "tamanhoPagina": 1,
+                "uf": "SP",
+            }
+            url = f"{self.BASE_URL}/contratacoes/publicacao"
+
+            response = await asyncio.wait_for(
+                self._client.get(url, params=params),
+                timeout=CANARY_TIMEOUT,
+            )
+
+            if response.status_code in (200, 204):
+                logger.info("PNCP health canary: OK")
+                await _circuit_breaker.record_success()
+                return True
+
+            logger.warning(
+                f"PNCP health canary: unexpected status {response.status_code}"
+            )
+        except (asyncio.TimeoutError, httpx.TimeoutException):
+            logger.warning(
+                "WARNING: PNCP health check failed (timeout) "
+                "— skipping PNCP for this search, using alternative sources"
+            )
+        except (httpx.HTTPError, Exception) as exc:
+            logger.warning(
+                f"WARNING: PNCP health check failed ({type(exc).__name__}: {exc}) "
+                "— skipping PNCP for this search, using alternative sources"
+            )
+
+        # Canary failed — trip circuit breaker immediately
+        _circuit_breaker.degraded_until = time.time() + _circuit_breaker.cooldown_seconds
+        _circuit_breaker.consecutive_failures = _circuit_breaker.threshold
+        logger.warning(
+            f"PNCP circuit breaker set to degraded for {_circuit_breaker.cooldown_seconds}s "
+            "due to health canary failure"
+        )
+        return False
+
     async def _rate_limit(self) -> None:
         """
         Enforce rate limiting: minimum 100ms between requests.
@@ -825,6 +1001,135 @@ class AsyncPNCPClient:
 
         raise PNCPAPIError("Unexpected: exhausted retries without result")
 
+    async def _fetch_single_modality(
+        self,
+        uf: str,
+        data_inicial: str,
+        data_final: str,
+        modalidade: int,
+        status: str | None = None,
+        max_pages: int = 500,
+    ) -> List[Dict[str, Any]]:
+        """Fetch all pages for a single UF + single modality.
+
+        This is the inner loop extracted from ``_fetch_uf_all_pages`` so that
+        each modality can be wrapped with its own timeout (STORY-252 AC6).
+
+        Args:
+            uf: State code (e.g. "SP").
+            data_inicial: Start date YYYY-MM-DD.
+            data_final: End date YYYY-MM-DD.
+            modalidade: Modality code.
+            status: Optional PNCP status filter value.
+            max_pages: Maximum pages per modality.
+
+        Returns:
+            List of normalized procurement records for this modality.
+        """
+        items: List[Dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        pagina = 1
+
+        while pagina <= max_pages:
+            try:
+                response = await self._fetch_page_async(
+                    data_inicial=data_inicial,
+                    data_final=data_final,
+                    modalidade=modalidade,
+                    uf=uf,
+                    pagina=pagina,
+                    status=status,
+                )
+
+                await _circuit_breaker.record_success()
+
+                data = response.get("data", [])
+                paginas_restantes = response.get("paginasRestantes", 0)
+
+                for item in data:
+                    item_id = item.get("numeroControlePNCP", "")
+                    if item_id and item_id not in seen_ids:
+                        seen_ids.add(item_id)
+                        normalized = PNCPClient._normalize_item(item)
+                        items.append(normalized)
+
+                if paginas_restantes <= 0:
+                    break
+
+                # HOTFIX STORY-183: Enhanced warning when approaching max_pages
+                if pagina >= max_pages and paginas_restantes > 0:
+                    logger.warning(
+                        f"MAX_PAGES ({max_pages}) reached for UF={uf}, "
+                        f"modalidade={modalidade}. Fetched {len(items)} items. "
+                        f"Remaining pages: {paginas_restantes}"
+                    )
+
+                pagina += 1
+
+            except PNCPAPIError as e:
+                await _circuit_breaker.record_failure()
+                logger.warning(
+                    f"Error fetching UF={uf}, modalidade={modalidade}, "
+                    f"page={pagina}: {e}"
+                )
+                break
+
+        return items
+
+    async def _fetch_modality_with_timeout(
+        self,
+        uf: str,
+        data_inicial: str,
+        data_final: str,
+        modalidade: int,
+        status: str | None = None,
+        max_pages: int = 500,
+    ) -> List[Dict[str, Any]]:
+        """Fetch a single modality with per-modality timeout and 1 retry (STORY-252 AC6/AC9).
+
+        Wraps ``_fetch_single_modality`` with:
+        - ``PNCP_TIMEOUT_PER_MODALITY`` second timeout (default 15s, AC6)
+        - 1 retry after ``PNCP_MODALITY_RETRY_BACKOFF`` seconds on timeout (AC9)
+
+        On final timeout the circuit breaker records a failure but other
+        modalities continue independently.
+
+        Returns:
+            List of records, or empty list if the modality timed out.
+        """
+        per_modality_timeout = PNCP_TIMEOUT_PER_MODALITY
+        retry_backoff = PNCP_MODALITY_RETRY_BACKOFF
+
+        for attempt in range(2):  # 0 = first try, 1 = retry
+            try:
+                result = await asyncio.wait_for(
+                    self._fetch_single_modality(
+                        uf=uf,
+                        data_inicial=data_inicial,
+                        data_final=data_final,
+                        modalidade=modalidade,
+                        status=status,
+                        max_pages=max_pages,
+                    ),
+                    timeout=per_modality_timeout,
+                )
+                return result
+            except asyncio.TimeoutError:
+                await _circuit_breaker.record_failure()
+                if attempt == 0:
+                    logger.warning(
+                        f"UF={uf} modalidade={modalidade} timed out after "
+                        f"{per_modality_timeout}s — retrying in {retry_backoff}s "
+                        f"(attempt 1/1)"
+                    )
+                    await asyncio.sleep(retry_backoff)
+                else:
+                    logger.warning(
+                        f"UF={uf} modalidade={modalidade} timed out after retry "
+                        f"— skipping this modality"
+                    )
+        return []
+
     async def _fetch_uf_all_pages(
         self,
         uf: str,
@@ -834,65 +1139,64 @@ class AsyncPNCPClient:
         status: str | None = None,
         max_pages: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
     ) -> List[Dict[str, Any]]:
-        """
-        Fetch all pages for a single UF across all modalities.
+        """Fetch all pages for a single UF across all modalities in parallel.
+
+        STORY-252 AC6: Each modality runs with its own timeout so that one
+        hanging modality does not block the others.
 
         Args:
-            uf: State code
-            data_inicial: Start date
-            data_final: End date
-            modalidades: List of modality codes
-            status: Optional status filter
-            max_pages: Maximum pages to fetch per modality
+            uf: State code.
+            data_inicial: Start date.
+            data_final: End date.
+            modalidades: List of modality codes.
+            status: Optional status filter.
+            max_pages: Maximum pages to fetch per modality.
 
         Returns:
-            List of procurement records
+            Deduplicated list of procurement records for the UF.
         """
         async with self._semaphore:
+            # Check circuit breaker before starting
+            if _circuit_breaker.is_degraded:
+                logger.warning(
+                    f"PNCP circuit breaker is degraded — skipping UF={uf}"
+                )
+                return []
+
+            # Launch all modalities in parallel with individual timeouts (AC6)
+            modality_tasks = [
+                self._fetch_modality_with_timeout(
+                    uf=uf,
+                    data_inicial=data_inicial,
+                    data_final=data_final,
+                    modalidade=mod,
+                    status=status,
+                    max_pages=max_pages,
+                )
+                for mod in modalidades
+            ]
+
+            modality_results = await asyncio.gather(
+                *modality_tasks, return_exceptions=True
+            )
+
+            # Merge and deduplicate across modalities
             all_items: List[Dict[str, Any]] = []
-            seen_ids: set = set()
+            seen_ids: set[str] = set()
 
-            for modalidade in modalidades:
-                pagina = 1
-
-                while pagina <= max_pages:
-                    try:
-                        response = await self._fetch_page_async(
-                            data_inicial=data_inicial,
-                            data_final=data_final,
-                            modalidade=modalidade,
-                            uf=uf,
-                            pagina=pagina,
-                            status=status,
-                        )
-
-                        data = response.get("data", [])
-                        paginas_restantes = response.get("paginasRestantes", 0)
-
-                        for item in data:
-                            item_id = item.get("numeroControlePNCP", "")
-                            if item_id and item_id not in seen_ids:
-                                seen_ids.add(item_id)
-                                # Normalize item
-                                normalized = PNCPClient._normalize_item(item)
-                                all_items.append(normalized)
-
-                        if paginas_restantes <= 0:
-                            break
-
-                        # HOTFIX STORY-183: Enhanced warning when approaching max_pages
-                        if pagina >= max_pages and paginas_restantes > 0:
-                            logger.warning(
-                                f"⚠️ MAX_PAGES ({max_pages}) reached for UF={uf}, modalidade={modalidade}. "
-                                f"Fetched {len([i for i in all_items if i.get('uf') == uf])} items. "
-                                f"Remaining pages: {paginas_restantes}"
-                            )
-
-                        pagina += 1
-
-                    except PNCPAPIError as e:
-                        logger.warning(f"Error fetching UF={uf}, modalidade={modalidade}: {e}")
-                        break
+            for mod, result in zip(modalidades, modality_results):
+                if isinstance(result, Exception):
+                    logger.warning(
+                        f"UF={uf} modalidade={mod} failed: {result}"
+                    )
+                    continue
+                for item in result:
+                    item_id = item.get("codigoCompra", "") or item.get(
+                        "numeroControlePNCP", ""
+                    )
+                    if item_id and item_id not in seen_ids:
+                        seen_ids.add(item_id)
+                        all_items.append(item)
 
             logger.info(f"Fetched {len(all_items)} items for UF={uf}")
             return all_items
@@ -950,8 +1254,23 @@ class AsyncPNCPClient:
             f"(max_concurrent={self.max_concurrent}, status={status})"
         )
 
-        # Per-UF timeout: 90s prevents one slow state from blocking everything
-        PER_UF_TIMEOUT = 90  # seconds
+        # STORY-252 AC10: Health canary — lightweight probe before full search
+        if _circuit_breaker.is_degraded:
+            logger.warning(
+                "PNCP circuit breaker already degraded — skipping PNCP entirely"
+            )
+            return []
+
+        canary_ok = await self.health_canary()
+        if not canary_ok:
+            logger.warning(
+                "PNCP health canary failed — returning empty results"
+            )
+            return []
+
+        # STORY-252 AC7: Reduced per-UF timeout from 90s to 30s
+        # With 4 modalities at 15s each running in parallel, 30s is sufficient
+        PER_UF_TIMEOUT = 30  # seconds
 
         # Create tasks for each UF with optional progress callback
         async def _fetch_with_callback(uf: str) -> List[Dict[str, Any]]:
@@ -968,6 +1287,7 @@ class AsyncPNCPClient:
                     timeout=PER_UF_TIMEOUT,
                 )
             except asyncio.TimeoutError:
+                await _circuit_breaker.record_failure()
                 logger.warning(f"UF={uf} timed out after {PER_UF_TIMEOUT}s — skipping")
                 result = []
             if on_uf_complete:
@@ -1043,6 +1363,8 @@ class PNCPLegacyAdapter:
 
     async def health_check(self):
         from clients.base import SourceStatus
+        if _circuit_breaker.is_degraded:
+            return SourceStatus.DEGRADED
         return SourceStatus.AVAILABLE
 
     async def fetch(self, data_inicial, data_final, ufs=None, **kwargs):

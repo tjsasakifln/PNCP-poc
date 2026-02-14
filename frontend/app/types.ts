@@ -75,6 +75,12 @@ export interface BuscaResult {
   metadata?: TermValidationMetadata | null;
   /** ISO timestamp of when search results were generated */
   ultima_atualizacao?: string | null;
+  /** STORY-252 AC21-AC23: True when not all data sources responded */
+  is_partial?: boolean;
+  /** STORY-252 AC21: Per-source status for degradation details */
+  data_sources?: DataSourceStatus[];
+  /** STORY-252 AC22: Human-readable reason for degradation */
+  degradation_reason?: string;
 }
 
 // ============================================================================
@@ -112,6 +118,13 @@ export interface SourceStat {
   duration_ms: number;
   error: string | null;
   status: string;
+}
+
+/** Per-source status for degradation banners (STORY-252 AC21-AC23) */
+export interface DataSourceStatus {
+  source: string;
+  status: "ok" | "timeout" | "error" | "skipped";
+  records: number;
 }
 
 /** Validation metadata for search terms */

@@ -1060,9 +1060,13 @@ class TestBuscarTodasUfsParalelo:
             status="recebendo_proposta",
         )
 
-        # Should have passed situacaoCompra parameter
-        assert len(captured_params) > 0
-        assert captured_params[0].get("situacaoCompra") == "recebendo_proposta"
+        # Should have passed situacaoCompra parameter in search requests.
+        # Note: captured_params[0] is the health canary request (STORY-252 AC10)
+        # which does not include situacaoCompra. Actual search params start at [1].
+        assert len(captured_params) > 1
+        search_params = [p for p in captured_params if p.get("situacaoCompra")]
+        assert len(search_params) > 0
+        assert search_params[0].get("situacaoCompra") == "recebendo_proposta"
 
     @pytest.mark.asyncio
     async def test_parallel_fetch_logs_execution_time(self, caplog):
