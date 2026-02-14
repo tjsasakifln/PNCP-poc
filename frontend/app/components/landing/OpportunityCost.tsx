@@ -35,7 +35,7 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
 
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-              Licitações não encontradas são contratos perdidos.
+              Cada edital que passa é um contrato que vai para o concorrente.
             </h2>
 
             {/* Bullet Points — Curtos e diretos */}
@@ -43,16 +43,16 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
                 <span>
-                  <strong className="text-ink tabular-nums">500 mil</strong> oportunidades/mês no Brasil
+                  <strong className="text-ink tabular-nums">R$ 2,3 bilhões</strong> em oportunidades mapeadas mensalmente
                 </span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
-                <span>A maioria passa despercebida</span>
+                <span>Editais relevantes vencem enquanto você ainda procura</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
-                <span>Seu concorrente pode estar encontrando agora</span>
+                <span>Quem encontra primeiro, licita primeiro</span>
               </li>
             </ul>
           </div>

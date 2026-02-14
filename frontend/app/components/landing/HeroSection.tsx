@@ -74,11 +74,11 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           variants={fadeInUp}
         >
           <span className="text-ink">
-            Encontre Oportunidades Relevantes
+            Seu Analista de Licitações
           </span>
           <br />
           <span className="text-gradient">
-            em 3 Minutos, Não em 8 Horas
+            Movido por Inteligência Artificial
           </span>
         </motion.h1>
 
@@ -95,9 +95,9 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           "
           variants={fadeInUp}
         >
-          Algoritmos inteligentes filtram milhares de licitações de múltiplas fontes
+          IA analisa milhares de editais e entrega apenas as oportunidades
           <br className="hidden sm:block" />
-          para entregar apenas o que importa para o seu negócio.
+          certas para o perfil do seu negócio. Curadoria inteligente, não busca genérica.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -112,7 +112,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             glow={true}
             onClick={() => window.location.href = '/signup?source=landing-cta'}
           >
-            Economize 10h/Semana Agora
+            Encontrar minhas oportunidades
           </GradientButton>
 
           {/* Secondary CTA with border fill animation */}
@@ -132,9 +132,9 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           className="mt-12 flex flex-wrap items-center justify-center gap-4"
           variants={fadeInUp}
         >
-          <StatsBadge icon={Zap} value="160x" label="Mais Rápido" delay={0} />
-          <StatsBadge icon={Target} value="95%" label="de Precisão" delay={0.1} />
-          <StatsBadge icon={Globe} value="PNCP + 27" label="Portais" delay={0.2} />
+          <StatsBadge icon={Target} value="R$ 2.3" label="bi mapeados" delay={0} />
+          <StatsBadge icon={Zap} value="500k+" label="editais/mês" delay={0.1} />
+          <StatsBadge icon={Globe} value="27" label="estados cobertos" delay={0.2} />
         </motion.div>
       </motion.div>
     </section>

@@ -3,26 +3,33 @@ import userEvent from '@testing-library/user-event';
 import HeroSection from '@/app/components/landing/HeroSection';
 
 describe('HeroSection', () => {
-  it('renders headline with new copy', () => {
+  it('renders headline with intelligence/curation positioning (AC1)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/Encontre Oportunidades Relevantes/i)).toBeInTheDocument();
-    expect(screen.getByText(/em 3 Minutos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Seu Analista de Licitações/i)).toBeInTheDocument();
+    expect(screen.getByText(/Movido por Inteligência Artificial/i)).toBeInTheDocument();
   });
 
-  it('renders subheadline with stats', () => {
+  it('renders subheadline mentioning AI as differentiator (AC2)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/Algoritmos inteligentes filtram milhares de licitações/i)).toBeInTheDocument();
-    expect(screen.getByText(/entregar apenas o que importa/i)).toBeInTheDocument();
+    expect(screen.getByText(/IA analisa milhares de editais/i)).toBeInTheDocument();
+    expect(screen.getByText(/Curadoria inteligente/i)).toBeInTheDocument();
   });
 
-  it('renders primary CTA button with new text', () => {
+  it('renders primary CTA with results verb (AC3)', () => {
     render(<HeroSection />);
 
-    // Primary CTA is now a GradientButton (renders as <button>) not a link
-    const primaryCTA = screen.getByRole('button', { name: /Economize 10h\/Semana Agora/i });
+    const primaryCTA = screen.getByRole('button', { name: /Encontrar minhas oportunidades/i });
     expect(primaryCTA).toBeInTheDocument();
+  });
+
+  it('renders stats badges with trust signals (AC4)', () => {
+    render(<HeroSection />);
+
+    expect(screen.getByText(/bi mapeados/i)).toBeInTheDocument();
+    expect(screen.getByText(/editais\/mês/i)).toBeInTheDocument();
+    expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
   });
 
   it('renders secondary CTA button with scroll functionality', () => {
@@ -32,19 +39,9 @@ describe('HeroSection', () => {
     expect(secondaryCTA).toBeInTheDocument();
   });
 
-  it('renders stats badges with values', () => {
-    render(<HeroSection />);
-
-    // Stats badges show Mais Rapido, Precisao, Portais
-    expect(screen.getByText(/Mais Rápido/i)).toBeInTheDocument();
-    expect(screen.getByText(/Precisão/i)).toBeInTheDocument();
-    expect(screen.getByText(/Portais/i)).toBeInTheDocument();
-  });
-
   it('scrolls to section when secondary CTA is clicked', async () => {
     const user = userEvent.setup();
 
-    // Mock scrollIntoView
     const mockScrollIntoView = jest.fn();
     const mockElement = { scrollIntoView: mockScrollIntoView };
     jest.spyOn(document, 'getElementById').mockReturnValue(mockElement as any);
@@ -61,10 +58,20 @@ describe('HeroSection', () => {
     });
   });
 
+  it('does NOT use forbidden terms (AC11)', () => {
+    const { container } = render(<HeroSection />);
+    const text = container.textContent || '';
+
+    expect(text).not.toMatch(/economize.*tempo/i);
+    expect(text).not.toMatch(/busca rápida/i);
+    expect(text).not.toMatch(/ferramenta de busca/i);
+    expect(text).not.toMatch(/planilha automatizada/i);
+    expect(text).not.toMatch(/10h\/semana/i);
+  });
+
   it('uses design system tokens for styling', () => {
     const { container } = render(<HeroSection />);
 
-    // Check for design token classes
     expect(container.querySelector('.text-ink')).toBeInTheDocument();
     expect(container.querySelector('.text-gradient')).toBeInTheDocument();
   });

@@ -20,7 +20,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          Desenvolvido por quem conhece
+          Cobertura total, precisão absoluta
         </h2>
 
         <p
@@ -28,7 +28,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          Servidores públicos com experiência em processos licitatórios.
+          100% das licitações federais, direto da fonte oficial do governo.
         </p>
 
         {/* Fonte Primária: PNCP */}
@@ -52,10 +52,10 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
                 clipRule="evenodd"
               />
             </svg>
-            <h3 className="text-xl font-bold">Fonte Primária Oficial</h3>
+            <h3 className="text-xl font-bold">Portal Nacional de Contratações Públicas</h3>
           </div>
-          <p className="text-2xl font-bold mb-1">PNCP</p>
-          <p className="text-white/80 text-sm mb-4">Portal Nacional de Contratações Públicas</p>
+          <p className="text-2xl font-bold mb-1">PNCP — 100% das licitações federais</p>
+          <p className="text-white/80 text-sm mb-4">Fonte oficial do Governo Federal • 27 estados • Atualização contínua</p>
           <a
             href="https://pncp.gov.br"
             target="_blank"
@@ -63,7 +63,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             className="inline-flex items-center gap-2 bg-white text-brand-navy px-5 py-2 rounded-button font-semibold hover:bg-surface-1 transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
             aria-label="Acessar PNCP - abre em nova aba"
           >
-            Acessar PNCP
+            Conhecer o PNCP
             <svg
               role="img"
               aria-label="Ícone"
@@ -90,10 +90,10 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
           }`}
         >
           <h4 className="text-sm font-bold text-ink uppercase tracking-wide mb-4">
-            Fontes Complementares
+            Fontes Complementares em Expansão
           </h4>
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-ink-secondary">
-            {['BLL', 'Portal Compras Públicas', 'BNC', 'Licitar Digital', 'Fontes estaduais'].map((source) => (
+            {['BLL', 'Portal Compras Públicas', 'BNC', 'Licitar Digital', 'Portais estaduais'].map((source) => (
               <span
                 key={source}
                 className="bg-surface-0 border border-[var(--border)] px-3 py-1.5 rounded-full"
@@ -102,7 +102,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
               </span>
             ))}
           </div>
-          <p className="text-xs text-ink-muted mt-4">Em constante expansão</p>
+          <p className="text-xs text-ink-muted mt-4">Integrações em constante expansão para cobertura máxima</p>
         </div>
       </div>
     </section>

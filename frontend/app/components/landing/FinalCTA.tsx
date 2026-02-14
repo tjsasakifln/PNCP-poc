@@ -20,7 +20,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
         }`}
       >
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-4">
-          Encontre licitações relevantes.
+          Comece a ganhar licitações hoje.
         </h2>
 
         <p
@@ -28,7 +28,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          3 consultas gratuitas para começar.
+          Licitações estão abrindo agora. A próxima pode ser a sua.
         </p>
 
         <div
@@ -40,7 +40,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             href="/signup?source=landing-cta"
             className="w-full sm:w-auto bg-white text-brand-navy hover:bg-surface-1 font-bold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center text-lg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
           >
-            Criar conta grátis — 3 consultas gratuitas
+            Encontrar minhas oportunidades — grátis
           </a>
         </div>
 
@@ -49,7 +49,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             isInView ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          Sem cartão. Sem compromisso.
+          3 consultas gratuitas. Sem cartão. Sem compromisso.
         </p>
       </div>
     </section>
