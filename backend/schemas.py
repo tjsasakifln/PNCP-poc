@@ -968,6 +968,116 @@ class UnreadCountResponse(BaseModel):
     unread_count: int
 
 
+# ============================================================================
+# Profile Context Schemas (STORY-247: Onboarding Profundo)
+# ============================================================================
+
+class PorteEmpresa(str, Enum):
+    """Company size classification."""
+    ME = "ME"
+    EPP = "EPP"
+    MEDIO = "MEDIO"
+    GRANDE = "GRANDE"
+
+
+class ExperienciaLicitacoes(str, Enum):
+    """Procurement experience level."""
+    PRIMEIRA_VEZ = "PRIMEIRA_VEZ"
+    INICIANTE = "INICIANTE"
+    EXPERIENTE = "EXPERIENTE"
+
+
+class PerfilContexto(BaseModel):
+    """
+    Business context profile collected during onboarding wizard.
+
+    Used to personalize search defaults and LLM recommendations.
+    Stored as JSONB in profiles.context_data.
+    """
+    ufs_atuacao: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=27,
+        description="States where the company operates (e.g., ['SP', 'RJ', 'MG'])",
+        examples=[["SP", "RJ"]],
+    )
+    porte_empresa: PorteEmpresa = Field(
+        ...,
+        description="Company size: ME, EPP, MEDIO, GRANDE",
+    )
+    experiencia_licitacoes: ExperienciaLicitacoes = Field(
+        ...,
+        description="Procurement experience level",
+    )
+    faixa_valor_min: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Minimum contract value of interest (BRL)",
+    )
+    faixa_valor_max: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Maximum contract value of interest (BRL)",
+    )
+    modalidades_interesse: Optional[List[int]] = Field(
+        default=None,
+        description="Preferred procurement modality codes (PNCP API codes)",
+    )
+    palavras_chave: Optional[List[str]] = Field(
+        default=None,
+        max_length=20,
+        description="Business-specific keywords for relevance boosting",
+    )
+
+    @model_validator(mode="after")
+    def validate_value_range(self) -> "PerfilContexto":
+        """Ensure faixa_valor_max >= faixa_valor_min when both provided."""
+        if self.faixa_valor_min is not None and self.faixa_valor_max is not None:
+            if self.faixa_valor_max < self.faixa_valor_min:
+                raise ValueError(
+                    "faixa_valor_max deve ser maior ou igual a faixa_valor_min"
+                )
+        return self
+
+    @field_validator('ufs_atuacao')
+    @classmethod
+    def validate_ufs(cls, v: List[str]) -> List[str]:
+        """Validate that all UFs are valid Brazilian state codes."""
+        valid_ufs = {
+            "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO",
+            "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR",
+            "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+        }
+        invalid = [uf for uf in v if uf.upper() not in valid_ufs]
+        if invalid:
+            raise ValueError(f"UFs inválidas: {invalid}")
+        return [uf.upper() for uf in v]
+
+    @field_validator('palavras_chave')
+    @classmethod
+    def validate_palavras_chave(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Validate keyword list."""
+        if v is None:
+            return v
+        # Strip whitespace and remove empties
+        cleaned = [kw.strip() for kw in v if kw.strip()]
+        if len(cleaned) > 20:
+            raise ValueError("Máximo de 20 palavras-chave permitidas")
+        return cleaned
+
+
+class PerfilContextoResponse(BaseModel):
+    """Response for GET /v1/profile/context."""
+    context_data: dict = Field(
+        default_factory=dict,
+        description="Business context data from onboarding",
+    )
+    completed: bool = Field(
+        default=False,
+        description="Whether onboarding wizard has been completed",
+    )
+
+
 class UserProfileResponse(BaseModel):
     """
     User profile with plan capabilities and quota status.

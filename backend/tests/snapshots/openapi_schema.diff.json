@@ -1125,6 +1125,16 @@
           "title": "EsferaGovernamental",
           "type": "string"
         },
+        "ExperienciaLicitacoes": {
+          "description": "Procurement experience level.",
+          "enum": [
+            "PRIMEIRA_VEZ",
+            "INICIANTE",
+            "EXPERIENTE"
+          ],
+          "title": "ExperienciaLicitacoes",
+          "type": "string"
+        },
         "FeatureInfo": {
           "description": "Single feature flag information.",
           "properties": {
@@ -1672,6 +1682,118 @@
           "title": "MessageResponse",
           "type": "object"
         },
+        "PerfilContexto": {
+          "description": "Business context profile collected during onboarding wizard.\n\nUsed to personalize search defaults and LLM recommendations.\nStored as JSONB in profiles.context_data.",
+          "properties": {
+            "experiencia_licitacoes": {
+              "$ref": "#/components/schemas/ExperienciaLicitacoes",
+              "description": "Procurement experience level"
+            },
+            "faixa_valor_max": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum contract value of interest (BRL)",
+              "title": "Faixa Valor Max"
+            },
+            "faixa_valor_min": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Minimum contract value of interest (BRL)",
+              "title": "Faixa Valor Min"
+            },
+            "modalidades_interesse": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preferred procurement modality codes (PNCP API codes)",
+              "title": "Modalidades Interesse"
+            },
+            "palavras_chave": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Business-specific keywords for relevance boosting",
+              "title": "Palavras Chave"
+            },
+            "porte_empresa": {
+              "$ref": "#/components/schemas/PorteEmpresa",
+              "description": "Company size: ME, EPP, MEDIO, GRANDE"
+            },
+            "ufs_atuacao": {
+              "description": "States where the company operates (e.g., ['SP', 'RJ', 'MG'])",
+              "examples": [
+                [
+                  "SP",
+                  "RJ"
+                ]
+              ],
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 27,
+              "minItems": 1,
+              "title": "Ufs Atuacao",
+              "type": "array"
+            }
+          },
+          "required": [
+            "ufs_atuacao",
+            "porte_empresa",
+            "experiencia_licitacoes"
+          ],
+          "title": "PerfilContexto",
+          "type": "object"
+        },
+        "PerfilContextoResponse": {
+          "description": "Response for GET /v1/profile/context.",
+          "properties": {
+            "completed": {
+              "default": false,
+              "description": "Whether onboarding wizard has been completed",
+              "title": "Completed",
+              "type": "boolean"
+            },
+            "context_data": {
+              "additionalProperties": true,
+              "description": "Business context data from onboarding",
+              "title": "Context Data",
+              "type": "object"
+            }
+          },
+          "title": "PerfilContextoResponse",
+          "type": "object"
+        },
         "PlanDetails": {
           "description": "Complete plan details for frontend display.\n\nSTORY-210 AC11: Stripe Price IDs removed from public response\nto prevent enumeration attacks on pricing infrastructure.",
           "properties": {
@@ -1743,6 +1865,17 @@
           ],
           "title": "PlansResponse",
           "type": "object"
+        },
+        "PorteEmpresa": {
+          "description": "Company size classification.",
+          "enum": [
+            "ME",
+            "EPP",
+            "MEDIO",
+            "GRANDE"
+          ],
+          "title": "PorteEmpresa",
+          "type": "string"
         },
         "Recomendacao": {
           "description": "Actionable recommendation for a specific procurement opportunity.\n\nGenerated by the LLM consultant or heuristic fallback.\nEach recommendation includes a concrete action and justification.",
@@ -4285,6 +4418,78 @@
           ]
         }
       },
+      "/profile/context": {
+        "get": {
+          "description": "Get business context from profile (STORY-247 AC3).",
+          "operationId": "get_profile_context_profile_context_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PerfilContextoResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Profile Context",
+          "tags": [
+            "user"
+          ]
+        },
+        "put": {
+          "description": "Save business context from onboarding wizard (STORY-247 AC2).\n\nStores context_data as JSONB in profiles table.",
+          "operationId": "save_profile_context_profile_context_put",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilContexto"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PerfilContextoResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Save Profile Context",
+          "tags": [
+            "user"
+          ]
+        }
+      },
       "/sessions": {
         "get": {
           "description": "Get user's search session history.",
@@ -5966,6 +6171,78 @@
           ]
         }
       },
+      "/v1/profile/context": {
+        "get": {
+          "description": "Get business context from profile (STORY-247 AC3).",
+          "operationId": "get_profile_context_v1_profile_context_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PerfilContextoResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Profile Context",
+          "tags": [
+            "user"
+          ]
+        },
+        "put": {
+          "description": "Save business context from onboarding wizard (STORY-247 AC2).\n\nStores context_data as JSONB in profiles table.",
+          "operationId": "save_profile_context_v1_profile_context_put",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilContexto"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PerfilContextoResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Save Profile Context",
+          "tags": [
+            "user"
+          ]
+        }
+      },
       "/v1/sessions": {
         "get": {
           "description": "Get user's search session history.",
@@ -6695,8 +6972,8 @@
               "type": "integer"
             },
             "resumo": {
-              "$ref": "#/components/schemas/ResumoLicitacoes",
-              "description": "Executive summary (AI-generated or fallback)"
+              "$ref": "#/components/schemas/ResumoEstrategico",
+              "description": "Strategic executive summary with actionable recommendations (AI-generated or fallback)"
             },
             "source_stats": {
               "anyOf": [
@@ -7809,6 +8086,60 @@
           "title": "PlansResponse",
           "type": "object"
         },
+        "Recomendacao": {
+          "description": "Actionable recommendation for a specific procurement opportunity.\n\nGenerated by the LLM consultant or heuristic fallback.\nEach recommendation includes a concrete action and justification.",
+          "properties": {
+            "acao_sugerida": {
+              "description": "Concrete suggested action",
+              "examples": [
+                "Prepare documenta\u00e7\u00e3o at\u00e9 17/02. Prazo final para propostas em 3 dias."
+              ],
+              "title": "Acao Sugerida",
+              "type": "string"
+            },
+            "justificativa": {
+              "description": "Why this opportunity is relevant",
+              "examples": [
+                "Valor compat\u00edvel com seu porte, \u00f3rg\u00e3o federal com bom hist\u00f3rico de pagamento."
+              ],
+              "title": "Justificativa",
+              "type": "string"
+            },
+            "oportunidade": {
+              "description": "Opportunity name (agency/object)",
+              "examples": [
+                "Prefeitura de Porto Alegre - Uniformes Escolares"
+              ],
+              "title": "Oportunidade",
+              "type": "string"
+            },
+            "urgencia": {
+              "description": "Urgency level: alta (<3 days), media (3-7 days), baixa (>7 days)",
+              "enum": [
+                "alta",
+                "media",
+                "baixa"
+              ],
+              "title": "Urgencia",
+              "type": "string"
+            },
+            "valor": {
+              "description": "Estimated value in BRL",
+              "minimum": 0.0,
+              "title": "Valor",
+              "type": "number"
+            }
+          },
+          "required": [
+            "oportunidade",
+            "valor",
+            "urgencia",
+            "acao_sugerida",
+            "justificativa"
+          ],
+          "title": "Recomendacao",
+          "type": "object"
+        },
         "ReplyRequest": {
           "description": "Request to reply to a conversation.",
           "properties": {
@@ -7839,15 +8170,29 @@
           "title": "ReplyStatusResponse",
           "type": "object"
         },
-        "ResumoLicitacoes": {
-          "description": "Executive summary schema for procurement search results.\n\nThis schema will be populated by GPT-4.1-nano (Issue #14) or\nfallback mechanism (Issue #15). For now, it defines the structure\nthat the LLM module must adhere to.\n\nFields:\n    resumo_executivo: Brief 1-2 sentence summary\n    total_oportunidades: Count of filtered procurement opportunities\n    valor_total: Sum of all bid values in BRL\n    destaques: List of 2-5 key highlights (e.g., \"3 urgente opportunities\")\n    alerta_urgencia: Optional alert for time-sensitive bids",
+        "ResumoEstrategico": {
+          "description": "Strategic executive summary with actionable recommendations.\n\nExtends ResumoLicitacoes for backward compatibility \u2014 all original fields\n(resumo_executivo, total_oportunidades, valor_total, destaques, alerta_urgencia)\nremain present. New fields provide actionable intelligence.\n\nFields:\n    recomendacoes: Prioritized list of recommended opportunities with actions\n    alertas_urgencia: Multiple urgency alerts (replaces single alerta_urgencia)\n    insight_setorial: Sector-level market context and trends",
           "example": {
             "alerta_urgencia": "\u26a0\ufe0f 5 licita\u00e7\u00f5es encerram em 24 horas",
+            "alertas_urgencia": [
+              "\u26a0\ufe0f 2 licita\u00e7\u00f5es encerram em 48h \u2014 a\u00e7\u00e3o imediata necess\u00e1ria",
+              "\ud83d\udccb Edital de SP exige certid\u00e3o FGTS atualizada (verificar validade)"
+            ],
             "destaques": [
-              "3 licita\u00e7\u00f5es com prazo at\u00e9 48h",
+              "3 licita\u00e7\u00f5es encerram em menos de 72h",
               "Maior valor: R$ 500k em SP"
             ],
-            "resumo_executivo": "Encontradas 15 licita\u00e7\u00f5es de uniformes em SP e RJ.",
+            "insight_setorial": "O setor de vestu\u00e1rio apresenta 15 oportunidades esta semana, 25% acima da m\u00e9dia mensal. Concentra\u00e7\u00e3o em SP e RJ sugere demanda sazonal por uniformes escolares.",
+            "recomendacoes": [
+              {
+                "acao_sugerida": "Prepare documenta\u00e7\u00e3o at\u00e9 16/02. Exige certid\u00e3o negativa atualizada.",
+                "justificativa": "Maior valor do lote, \u00f3rg\u00e3o municipal com bom hist\u00f3rico de pagamento.",
+                "oportunidade": "Prefeitura de S\u00e3o Paulo - Uniformes Escolares",
+                "urgencia": "alta",
+                "valor": 500000.0
+              }
+            ],
+            "resumo_executivo": "Encontradas 15 licita\u00e7\u00f5es de vestu\u00e1rio em SP e RJ, totalizando R$ 2.3M. Recomendamos aten\u00e7\u00e3o imediata a 3 oportunidades com prazo curto.",
             "total_oportunidades": 15,
             "valor_total": 2300000.0
           },
@@ -7867,6 +8212,20 @@
               ],
               "title": "Alerta Urgencia"
             },
+            "alertas_urgencia": {
+              "description": "Multiple urgency alerts for time-sensitive opportunities",
+              "examples": [
+                [
+                  "\u26a0\ufe0f 2 licita\u00e7\u00f5es encerram em 48h",
+                  "\ud83d\udccb 3 editais exigem certid\u00e3o atualizada"
+                ]
+              ],
+              "items": {
+                "type": "string"
+              },
+              "title": "Alertas Urgencia",
+              "type": "array"
+            },
             "destaques": {
               "description": "Key highlights (2-5 bullet points)",
               "examples": [
@@ -7879,6 +8238,23 @@
                 "type": "string"
               },
               "title": "Destaques",
+              "type": "array"
+            },
+            "insight_setorial": {
+              "default": "",
+              "description": "Sector-level market context and trend insight",
+              "examples": [
+                "Este m\u00eas h\u00e1 20% mais oportunidades de vestu\u00e1rio que o m\u00eas anterior no RS."
+              ],
+              "title": "Insight Setorial",
+              "type": "string"
+            },
+            "recomendacoes": {
+              "description": "Prioritized list of recommended opportunities with concrete actions",
+              "items": {
+                "$ref": "#/components/schemas/Recomendacao"
+              },
+              "title": "Recomendacoes",
               "type": "array"
             },
             "resumo_executivo": {
@@ -7907,7 +8283,7 @@
             "total_oportunidades",
             "valor_total"
           ],
-          "title": "ResumoLicitacoes",
+          "title": "ResumoEstrategico",
           "type": "object"
         },
         "RevokeResponse": {

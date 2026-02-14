@@ -277,6 +277,43 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     }
   }, [user, urlParamsApplied, searchParams]);
 
+  // STORY-247 AC12: Load search defaults from profile context
+  const profileContextAppliedRef = useRef(false);
+  useEffect(() => {
+    if (profileContextAppliedRef.current) return;
+    if (!urlParamsApplied) return;
+    // Don't override if URL params were provided
+    if (searchParams.get('ufs') || searchParams.get('setor')) return;
+
+    const cachedContext = typeof window !== 'undefined'
+      ? localStorage.getItem('smartlic-profile-context')
+      : null;
+    if (!cachedContext) return;
+
+    try {
+      const ctx = JSON.parse(cachedContext);
+      if (!ctx.porte_empresa) return; // Not completed
+
+      profileContextAppliedRef.current = true;
+
+      // Apply UFs from profile
+      if (ctx.ufs_atuacao && Array.isArray(ctx.ufs_atuacao) && ctx.ufs_atuacao.length > 0) {
+        setUfsSelecionadas(new Set(ctx.ufs_atuacao.filter((uf: string) => (UFS as readonly string[]).includes(uf))));
+      }
+
+      // Apply value range from profile
+      if (ctx.faixa_valor_min != null) setValorMin(ctx.faixa_valor_min);
+      if (ctx.faixa_valor_max != null) setValorMax(ctx.faixa_valor_max);
+
+      // Apply modalidades from profile
+      if (ctx.modalidades_interesse && Array.isArray(ctx.modalidades_interesse) && ctx.modalidades_interesse.length > 0) {
+        setModalidades(ctx.modalidades_interesse);
+      }
+    } catch {
+      // Invalid cache, ignore
+    }
+  }, [urlParamsApplied, searchParams]);
+
   // Clear municipios when UFs change
   useEffect(() => {
     setMunicipios([]);

@@ -18,7 +18,10 @@ from auth import require_auth
 from authorization import check_user_roles, get_admin_ids, get_master_quota_info
 from config import ENABLE_NEW_PRICING
 from database import get_db
-from schemas import UserProfileResponse, SuccessResponse, DeleteAccountResponse, validate_password
+from schemas import (
+    UserProfileResponse, SuccessResponse, DeleteAccountResponse,
+    PerfilContexto, PerfilContextoResponse, validate_password,
+)
 from log_sanitizer import mask_user_id, log_user_action
 
 logger = logging.getLogger(__name__)
@@ -136,6 +139,58 @@ async def get_profile(user: dict = Depends(require_auth), db=Depends(get_db)):
         subscription_status=subscription_status,
         is_admin=is_admin_flag,
     )
+
+
+@router.put("/profile/context", response_model=PerfilContextoResponse)
+async def save_profile_context(
+    context: PerfilContexto,
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """Save business context from onboarding wizard (STORY-247 AC2).
+
+    Stores context_data as JSONB in profiles table.
+    """
+    user_id = user["id"]
+
+    try:
+        context_dict = context.model_dump(exclude_none=True)
+        db.table("profiles").update({
+            "context_data": context_dict,
+        }).eq("id", user_id).execute()
+
+        log_user_action(logger, "profile_context_saved", user_id)
+        return PerfilContextoResponse(
+            context_data=context_dict,
+            completed=True,
+        )
+    except Exception as e:
+        logger.error(f"Failed to save profile context for {mask_user_id(user_id)}: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao salvar perfil de contexto")
+
+
+@router.get("/profile/context", response_model=PerfilContextoResponse)
+async def get_profile_context(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """Get business context from profile (STORY-247 AC3)."""
+    user_id = user["id"]
+
+    try:
+        result = db.table("profiles").select("context_data").eq("id", user_id).single().execute()
+        context_data = (result.data or {}).get("context_data") or {}
+
+        # Consider completed if at least porte_empresa is set
+        completed = bool(context_data.get("porte_empresa"))
+
+        return PerfilContextoResponse(
+            context_data=context_data,
+            completed=completed,
+        )
+    except Exception as e:
+        logger.error(f"Failed to get profile context for {mask_user_id(user_id)}: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao buscar perfil de contexto")
 
 
 @router.delete("/me", response_model=DeleteAccountResponse)

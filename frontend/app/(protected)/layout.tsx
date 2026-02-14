@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "../components/AuthProvider";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { AppHeader } from "../components/AppHeader";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 
@@ -11,6 +11,7 @@ import { Breadcrumbs } from "../components/Breadcrumbs";
  *
  * Provides:
  * - Auth guard (redirects to / if not logged in)
+ * - STORY-247 AC11: Redirects first-time users to /onboarding
  * - AppHeader with logo, ThemeToggle, MessageBadge, UserMenu
  * - Consistent max-width content area
  *
@@ -23,12 +24,48 @@ export default function ProtectedLayout({
 }) {
   const { session, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const onboardingCheckRef = useRef(false);
 
   useEffect(() => {
     if (!loading && !session) {
       router.replace("/");
     }
   }, [loading, session, router]);
+
+  // STORY-247 AC11: Redirect to onboarding if context_data is empty (first login)
+  useEffect(() => {
+    if (loading || !session?.access_token || onboardingCheckRef.current) return;
+    onboardingCheckRef.current = true;
+
+    // Skip check if already completed or if user is visiting non-search pages
+    const completed = typeof window !== 'undefined' && localStorage.getItem("smartlic-onboarding-completed") === "true";
+    if (completed) return;
+
+    // Only redirect from /buscar (the main landing after login)
+    if (pathname !== "/buscar") return;
+
+    // Check profile context from backend
+    fetch("/api/profile-context", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.completed) {
+          // Cache the context and mark as completed
+          localStorage.setItem("smartlic-onboarding-completed", "true");
+          if (res.context_data && Object.keys(res.context_data).length > 0) {
+            localStorage.setItem("smartlic-profile-context", JSON.stringify(res.context_data));
+          }
+        } else {
+          // First time user — redirect to onboarding
+          router.push("/onboarding");
+        }
+      })
+      .catch(() => {
+        // On error, don't block — let user use the app normally
+      });
+  }, [loading, session, pathname, router]);
 
   if (loading) {
     return (
