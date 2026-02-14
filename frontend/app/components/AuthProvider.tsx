@@ -52,8 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const authTimeout = setTimeout(() => {
-      console.warn("[AuthProvider] Auth check timeout - forcing loading=false");
+    const authTimeout = setTimeout(async () => {
+      console.warn("[AuthProvider] Auth check timeout — attempting session fallback");
+      // AC5: On timeout, try getSession() which reads local cookies (fast, no network)
+      try {
+        const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+        if (fallbackSession?.user) {
+          console.info("[AuthProvider] Timeout fallback: using session data");
+          setUser(fallbackSession.user);
+          setSession(fallbackSession);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // getSession also failed — give up
+      }
       setLoading(false);
     }, 10000);
 
