@@ -62,7 +62,7 @@ export default function Footer() {
                 <FooterLink href="/ajuda">Central de Ajuda</FooterLink>
               </li>
               <li>
-                <FooterLink href="/mensagens">Contato</FooterLink>
+                <FooterLink href="/ajuda#contato">Contato</FooterLink>
               </li>
               <li>
                 <FooterLink href="mailto:suporte@smartlic.tech">suporte@smartlic.tech</FooterLink>

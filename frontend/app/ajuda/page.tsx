@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useAuth } from "@/app/components/AuthProvider";
 
 /**
  * STORY-226 AC25-AC28: FAQ / Central de Ajuda
@@ -260,6 +261,7 @@ function AccordionItem({
 // ---- Main FAQ Page ----
 
 export default function AjudaPage() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -475,7 +477,7 @@ export default function AjudaPage() {
         )}
 
         {/* Contact Section */}
-        <div className="mt-12 text-center bg-[var(--surface-0)] border border-[var(--border)] rounded-card p-8">
+        <div id="contato" className="mt-12 text-center bg-[var(--surface-0)] border border-[var(--border)] rounded-card p-8 scroll-mt-24">
           <h3 className="text-xl font-semibold text-[var(--ink)] mb-2">
             Ainda tem dúvidas?
           </h3>
@@ -483,16 +485,29 @@ export default function AjudaPage() {
             Nossa equipe está pronta para ajudar.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/mensagens"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--brand-navy)] text-white
-                         rounded-button font-semibold hover:bg-[var(--brand-blue)] transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Enviar Mensagem
-            </Link>
+            {user ? (
+              <Link
+                href="/mensagens"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--brand-navy)] text-white
+                           rounded-button font-semibold hover:bg-[var(--brand-blue)] transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Enviar Mensagem
+              </Link>
+            ) : (
+              <a
+                href="mailto:suporte@smartlic.tech"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--brand-navy)] text-white
+                           rounded-button font-semibold hover:bg-[var(--brand-blue)] transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Enviar E-mail
+              </a>
+            )}
             <a
               href="mailto:suporte@smartlic.tech"
               className="inline-flex items-center gap-2 px-6 py-3 border border-[var(--border)]
