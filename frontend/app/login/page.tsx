@@ -14,10 +14,14 @@ const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 const ERROR_MESSAGES: Record<string, string> = {
   auth_failed: "Falha na autenticação. Tente novamente.",
   session_expired: "Sua sessão expirou. Faça login novamente.",
+  login_required: "Faça login para acessar esta página.",
   unexpected_error: "Erro inesperado. Tente novamente.",
   access_denied: "Acesso negado. Verifique suas credenciais.",
   invalid_request: "Requisição inválida. Tente novamente.",
 };
+
+// Reason codes that are informational (not errors)
+const INFO_REASONS = new Set(["login_required"]);
 
 // Translate Supabase error messages to Portuguese
 function translateSupabaseError(message: string): string {
@@ -100,17 +104,31 @@ function LoginContent() {
   const [success, setSuccess] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
 
-  // Check for error params from OAuth callback
+  // Check for error/reason params from OAuth callback or middleware redirect
   useEffect(() => {
     const errorParam = searchParams.get("error");
     const errorDescription = searchParams.get("error_description");
+    const reasonParam = searchParams.get("reason");
 
     if (errorParam) {
       const message = ERROR_MESSAGES[errorParam] || errorDescription || "Erro ao fazer login";
       setError(message);
       toast.error(message);
+    } else if (reasonParam) {
+      // AC3: Display context-appropriate message per reason code
+      const message = ERROR_MESSAGES[reasonParam];
+      if (message) {
+        if (INFO_REASONS.has(reasonParam)) {
+          toast.info(message);
+        } else {
+          setError(message);
+          toast.error(message);
+        }
+      }
+    }
 
-      // Clear error params from URL without redirect
+    // Clear params from URL without redirect
+    if (errorParam || reasonParam) {
       const url = new URL(window.location.href);
       url.searchParams.delete("error");
       url.searchParams.delete("error_description");

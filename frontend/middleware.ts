@@ -130,8 +130,18 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
 
-      if (error) {
+      // AC1/AC2: Distinguish "never logged in" vs "session expired"
+      // Supabase stores auth in cookies with names starting with "sb-"
+      const hasAuthCookies = request.cookies.getAll().some(
+        (c) => c.name.startsWith("sb-") && c.name.includes("auth-token")
+      );
+
+      if (hasAuthCookies && error) {
+        // Had auth cookies but getUser() failed → session expired
         loginUrl.searchParams.set("reason", "session_expired");
+      } else if (!hasAuthCookies) {
+        // No auth cookies at all → never logged in
+        loginUrl.searchParams.set("reason", "login_required");
       }
 
       return NextResponse.redirect(loginUrl);
