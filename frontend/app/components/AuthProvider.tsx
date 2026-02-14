@@ -142,16 +142,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
-        setLoading(false);
-        if (session) {
-          const { data: { user } } = await supabase.auth.getUser();
-          setUser(user);
+        if (session?.user) {
+          // Set user from session IMMEDIATELY so header updates without waiting
+          setUser(session.user);
+          setLoading(false);
+          clearTimeout(authTimeout);
           if (session.access_token) {
             fetchAdminStatus(session.access_token);
           }
+          // Background: validate user with server (non-blocking)
+          supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) setUser(user); // Upgrade to validated user
+          }).catch(() => { /* keep session user as fallback */ });
         } else {
           setUser(null);
           setIsAdmin(false);
+          setLoading(false);
         }
       }
     );
