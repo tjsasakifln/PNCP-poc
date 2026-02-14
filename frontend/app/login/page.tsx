@@ -405,6 +405,14 @@ function LoginContent() {
                   )}
                 </button>
               </div>
+              <div className="mt-1 text-right">
+                <Link
+                  href="/recuperar-senha"
+                  className="text-sm text-[var(--brand-blue)] hover:underline"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
             </div>
           )}
 
