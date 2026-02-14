@@ -2320,7 +2320,7 @@ def aplicar_todos_filtros(
             if not setor_name:
                 termos = lic.get("_matched_terms", [])
 
-            # STORY-181 AC3: Call LLM arbiter with prompt level
+            # STORY-181 AC3 + STORY-251 AC2: Call LLM arbiter with prompt level and setor_id
             stats["llm_arbiter_calls"] += 1
             is_primary = classify_contract_primary_match(
                 objeto=objeto,
@@ -2328,6 +2328,7 @@ def aplicar_todos_filtros(
                 setor_name=setor_name,
                 termos_busca=termos,
                 prompt_level=prompt_level,
+                setor_id=setor if setor_name else None,
             )
 
             if is_primary:

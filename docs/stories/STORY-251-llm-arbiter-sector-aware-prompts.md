@@ -77,32 +77,32 @@ Opção descartada. Manter exemplos manuais em 15 setores = 90 strings (3 SIM + 
 ## Acceptance Criteria
 
 ### Interface & Signature
-- [ ] **AC1:** `classify_contract_primary_match()` recebe novo parâmetro `setor_id: Optional[str] = None`.
-- [ ] **AC2:** `filter.py` passa `setor_id=setor` no call-site (linha ~2325).
-- [ ] **AC3:** A assinatura é backward-compatible — `setor_id=None` é default, nenhum caller existente quebra.
+- [x] **AC1:** `classify_contract_primary_match()` recebe novo parâmetro `setor_id: Optional[str] = None`.
+- [x] **AC2:** `filter.py` passa `setor_id=setor` no call-site (linha ~2325).
+- [x] **AC3:** A assinatura é backward-compatible — `setor_id=None` é default, nenhum caller existente quebra.
 
 ### Prompt Dinâmico
-- [ ] **AC4:** Quando `setor_id` é fornecido e existe em `sectors_data.yaml`, o prompt conservador usa `sector.description` em vez de descrição hardcoded.
-- [ ] **AC5:** Exemplos SIM no prompt conservador são gerados a partir das 3 primeiras keywords do setor (formato: `"Aquisição de {keyword} para órgão público"`).
-- [ ] **AC6:** Exemplos NAO no prompt conservador são gerados a partir das 3 primeiras exclusions do setor (formato: `"{exclusion}"`).
-- [ ] **AC7:** Quando `setor_id` é `None` ou não encontrado em `sectors_data.yaml`, fallback gracioso para o prompt standard (sem exemplos, sem descrição).
+- [x] **AC4:** Quando `setor_id` é fornecido e existe em `sectors_data.yaml`, o prompt conservador usa `sector.description` em vez de descrição hardcoded.
+- [x] **AC5:** Exemplos SIM no prompt conservador são gerados a partir das 3 primeiras keywords do setor (formato: `"Aquisição de {keyword} para órgão público"`).
+- [x] **AC6:** Exemplos NAO no prompt conservador são gerados a partir das 3 primeiras exclusions do setor (formato: `"{exclusion}"`).
+- [x] **AC7:** Quando `setor_id` é `None` ou não encontrado em `sectors_data.yaml`, fallback gracioso para o prompt standard (sem exemplos, sem descrição).
 
 ### Qualidade dos Exemplos
-- [ ] **AC8:** Para setores com < 3 keywords, gerar o máximo disponível (1 ou 2 exemplos SIM ainda é melhor que 0).
-- [ ] **AC9:** Para setores com < 3 exclusions, gerar o máximo disponível. Se 0 exclusions, omitir seção NAO do prompt em vez de gerar exemplos vazios.
-- [ ] **AC10:** Validação manual: gerar e inspecionar os prompts conservadores para os 5 maiores setores (vestuario, saude, informatica, engenharia, facilities) — confirmar relevância dos exemplos.
+- [x] **AC8:** Para setores com < 3 keywords, gerar o máximo disponível (1 ou 2 exemplos SIM ainda é melhor que 0).
+- [x] **AC9:** Para setores com < 3 exclusions, gerar o máximo disponível. Se 0 exclusions, omitir seção NAO do prompt em vez de gerar exemplos vazios.
+- [x] **AC10:** Validação manual: gerar e inspecionar os prompts conservadores para os 5 maiores setores (vestuario, saude, informatica, engenharia, facilities) — confirmar relevância dos exemplos.
 
 ### Testes
-- [ ] **AC11:** Teste parametrizado em `test_llm_arbiter.py` para pelo menos 5 setores (vestuario, informatica, saude, engenharia, materiais_eletricos) verificando que:
+- [x] **AC11:** Teste parametrizado em `test_llm_arbiter.py` para pelo menos 5 setores (vestuario, informatica, saude, engenharia, materiais_eletricos) verificando que:
   - O prompt conservador contém `sector.description` (não a descrição hardcoded de vestuário)
   - Os exemplos SIM contêm keywords do setor correto
   - Os exemplos NAO contêm exclusions do setor correto
-- [ ] **AC12:** Teste de fallback: quando `setor_id="inexistente"`, o prompt gerado é o standard (sem exemplos).
-- [ ] **AC13:** Testes existentes continuam passando (zero regressão em `pytest`).
+- [x] **AC12:** Teste de fallback: quando `setor_id="inexistente"`, o prompt gerado é o standard (sem exemplos).
+- [x] **AC13:** Testes existentes continuam passando (zero regressão em `pytest`).
 
 ### Performance
-- [ ] **AC14:** O tamanho do prompt conservador não excede 600 tokens para nenhum setor (medir com `len(prompt) / 4` como aproximação). O prompt atual tem ~226 tokens; o novo terá ~300-400 tokens com conteúdo dinâmico.
-- [ ] **AC15:** Nenhuma chamada adicional à API OpenAI — lookup do setor é local via `get_sector()` (in-memory, cached pelo Python module loader).
+- [x] **AC14:** O tamanho do prompt conservador não excede 600 tokens para nenhum setor (medir com `len(prompt) / 4` como aproximação). O prompt atual tem ~226 tokens; o novo terá ~300-400 tokens com conteúdo dinâmico.
+- [x] **AC15:** Nenhuma chamada adicional à API OpenAI — lookup do setor é local via `get_sector()` (in-memory, cached pelo Python module loader).
 
 ## Investigação Técnica
 

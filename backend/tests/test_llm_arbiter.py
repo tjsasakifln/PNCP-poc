@@ -1,5 +1,5 @@
 """
-Tests for LLM Arbiter (STORY-179 AC7.1).
+Tests for LLM Arbiter (STORY-179 AC7.1 + STORY-251 dynamic prompts).
 
 Test coverage:
 - Mock OpenAI API responses
@@ -7,6 +7,7 @@ Test coverage:
 - Fallback on API error
 - Prompt construction (sector vs custom terms)
 - Token counting (max 1 token output)
+- STORY-251: Dynamic conservative prompts per sector
 """
 
 import hashlib
@@ -16,6 +17,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from llm_arbiter import (
+    _build_conservative_prompt,
     classify_contract_primary_match,
     clear_cache,
     get_cache_stats,
@@ -360,3 +362,177 @@ class TestCacheKeyGeneration:
         key2 = hashlib.md5("setor:Vestuário:1000000:Objeto A".encode()).hexdigest()
 
         assert key1 == key2
+
+
+# =============================================================================
+# STORY-251: Dynamic Conservative Prompts Per Sector
+# =============================================================================
+
+
+class TestDynamicConservativePrompt:
+    """STORY-251 AC4-AC9: Sector-aware conservative prompts with dynamic examples."""
+
+    @pytest.mark.parametrize(
+        "setor_id",
+        ["vestuario", "informatica", "saude", "engenharia", "facilities"],
+        ids=["vestuario", "informatica", "saude", "engenharia", "facilities"],
+    )
+    def test_conservative_prompt_uses_sector_data(self, setor_id):
+        """AC11: Parametrized test verifying conservative prompt uses sector-specific data."""
+        from sectors import get_sector
+
+        config = get_sector(setor_id)
+        prompt = _build_conservative_prompt(
+            setor_id=setor_id,
+            setor_name=config.name,
+            objeto_truncated="Teste objeto",
+            valor=1_000_000,
+        )
+
+        # AC4: Uses sector description (not hardcoded vestuário text)
+        assert config.description in prompt
+
+        # AC5: SIM examples contain top-3 keywords from the correct sector (sorted)
+        expected_keywords = sorted(config.keywords)[:3]
+        for kw in expected_keywords:
+            assert kw in prompt, f"Expected keyword '{kw}' not found in prompt for {setor_id}"
+
+        # AC6: NAO examples contain top-3 exclusions from the correct sector (sorted)
+        expected_exclusions = sorted(config.exclusions)[:3]
+        for exc in expected_exclusions:
+            assert exc in prompt, f"Expected exclusion '{exc}' not found in prompt for {setor_id}"
+
+        # Basic structure checks
+        assert "SETOR:" in prompt
+        assert "DESCRIÇÃO DO SETOR:" in prompt
+        assert "SIM:" in prompt
+        assert "PRIMARIAMENTE" in prompt
+
+    def test_fallback_for_unknown_sector_id(self):
+        """AC12: When setor_id is not found, falls back to standard prompt (no examples)."""
+        prompt = _build_conservative_prompt(
+            setor_id="inexistente_xyz",
+            setor_name="Setor Fantasma",
+            objeto_truncated="Objeto teste",
+            valor=500_000,
+        )
+
+        # Standard prompt format — no examples, no description section
+        assert "Setor: Setor Fantasma" in prompt or "Setor Fantasma" in prompt
+        assert "EXEMPLOS DE CLASSIFICAÇÃO" not in prompt
+        assert "DESCRIÇÃO DO SETOR" not in prompt
+        assert "PRIMARIAMENTE" in prompt
+
+    def test_fallback_for_none_sector_id(self):
+        """AC7: When setor_id is None, falls back to standard prompt."""
+        prompt = _build_conservative_prompt(
+            setor_id=None,
+            setor_name="Vestuário e Uniformes",
+            objeto_truncated="Objeto teste",
+            valor=500_000,
+        )
+
+        # Standard prompt — no examples
+        assert "EXEMPLOS DE CLASSIFICAÇÃO" not in prompt
+        assert "DESCRIÇÃO DO SETOR" not in prompt
+
+    @pytest.mark.parametrize(
+        "setor_id",
+        [
+            "vestuario", "alimentos", "informatica", "mobiliario", "papelaria",
+            "engenharia", "software", "facilities", "saude", "vigilancia",
+            "transporte", "manutencao_predial", "engenharia_rodoviaria",
+            "materiais_eletricos", "materiais_hidraulicos",
+        ],
+        ids=lambda s: s,
+    )
+    def test_prompt_token_count_under_600(self, setor_id):
+        """AC14: Conservative prompt does not exceed 600 tokens for any sector."""
+        from sectors import get_sector
+
+        config = get_sector(setor_id)
+        prompt = _build_conservative_prompt(
+            setor_id=setor_id,
+            setor_name=config.name,
+            objeto_truncated="A" * 500,  # Max-length objeto
+            valor=99_999_999.99,  # Large value for max token usage
+        )
+
+        # Approximate token count: len(prompt) / 4
+        approx_tokens = len(prompt) / 4
+        assert approx_tokens < 600, (
+            f"Sector '{setor_id}' prompt is ~{approx_tokens:.0f} tokens "
+            f"(max 600). Prompt length: {len(prompt)} chars"
+        )
+
+
+class TestConservativePromptIntegration:
+    """STORY-251: End-to-end integration tests for classify_contract_primary_match with setor_id."""
+
+    def test_conservative_with_setor_id_uses_dynamic_prompt(self, mock_openai_client):
+        """AC4: When setor_id + conservative mode, prompt uses sector description."""
+        mock_openai_client.chat.completions.create.return_value = _create_mock_response("SIM")
+
+        classify_contract_primary_match(
+            objeto="Aquisição de computadores para escola",
+            valor=500_000,
+            setor_name="Hardware e Equipamentos de TI",
+            setor_id="informatica",
+            prompt_level="conservative",
+        )
+
+        call_args = mock_openai_client.chat.completions.create.call_args
+        user_msg = call_args.kwargs["messages"][1]["content"]
+
+        # Should use informatica description, NOT vestuário
+        assert "Computadores, servidores, periféricos" in user_msg
+        assert "uniformes, fardas" not in user_msg.lower() or "informatica" in user_msg.lower()
+
+    def test_conservative_without_setor_id_uses_standard(self, mock_openai_client):
+        """AC7: Without setor_id, conservative prompt falls back to standard."""
+        mock_openai_client.chat.completions.create.return_value = _create_mock_response("SIM")
+
+        classify_contract_primary_match(
+            objeto="Aquisição de computadores",
+            valor=500_000,
+            setor_name="Hardware e Equipamentos de TI",
+            prompt_level="conservative",
+        )
+
+        call_args = mock_openai_client.chat.completions.create.call_args
+        user_msg = call_args.kwargs["messages"][1]["content"]
+
+        # Standard prompt — no examples section
+        assert "EXEMPLOS DE CLASSIFICAÇÃO" not in user_msg
+
+    def test_standard_prompt_level_ignores_setor_id(self, mock_openai_client):
+        """Standard prompt_level should use simple prompt regardless of setor_id."""
+        mock_openai_client.chat.completions.create.return_value = _create_mock_response("SIM")
+
+        classify_contract_primary_match(
+            objeto="Aquisição de computadores",
+            valor=500_000,
+            setor_name="Hardware e Equipamentos de TI",
+            setor_id="informatica",
+            prompt_level="standard",
+        )
+
+        call_args = mock_openai_client.chat.completions.create.call_args
+        user_msg = call_args.kwargs["messages"][1]["content"]
+
+        # Standard prompt — no examples, no description
+        assert "EXEMPLOS DE CLASSIFICAÇÃO" not in user_msg
+        assert "DESCRIÇÃO DO SETOR" not in user_msg
+
+    def test_backward_compatible_no_setor_id(self, mock_openai_client):
+        """AC3: Existing callers without setor_id still work."""
+        mock_openai_client.chat.completions.create.return_value = _create_mock_response("NAO")
+
+        result = classify_contract_primary_match(
+            objeto="MELHORIAS URBANAS",
+            valor=47_600_000,
+            setor_name="Vestuário e Uniformes",
+        )
+
+        assert result is False
+        assert mock_openai_client.chat.completions.create.called

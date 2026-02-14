@@ -42,12 +42,94 @@ LLM_ENABLED = os.getenv("LLM_ARBITER_ENABLED", "true").lower() == "true"
 _arbiter_cache: dict[str, bool] = {}
 
 
+def _build_conservative_prompt(
+    setor_id: Optional[str],
+    setor_name: str,
+    objeto_truncated: str,
+    valor: float,
+) -> str:
+    """
+    Build sector-aware conservative prompt with dynamic examples (STORY-251).
+
+    When setor_id is provided and found in sectors_data.yaml, generates a prompt
+    using the sector's description and auto-generated examples from keywords/exclusions.
+    Falls back to standard prompt if sector not found.
+
+    Args:
+        setor_id: Sector identifier for dynamic lookup (e.g., "vestuario")
+        setor_name: Human-readable sector name
+        objeto_truncated: Truncated procurement object description
+        valor: Total estimated value
+
+    Returns:
+        Formatted prompt string for LLM classification
+    """
+    from sectors import get_sector
+
+    if not setor_id:
+        # No sector ID — fall back to standard prompt (no examples)
+        return _build_standard_sector_prompt(setor_name, objeto_truncated, valor)
+
+    try:
+        config = get_sector(setor_id)
+    except (KeyError, Exception):
+        # Sector not found — graceful fallback to standard prompt (AC7)
+        logger.warning(f"Sector '{setor_id}' not found for conservative prompt, using standard")
+        return _build_standard_sector_prompt(setor_name, objeto_truncated, valor)
+
+    description = config.description or setor_name
+
+    # AC5: Generate SIM examples from top keywords (sorted for determinism)
+    keywords = sorted(config.keywords)[:3]
+    sim_lines = "\n".join(f'- "Aquisição de {kw} para órgão público"' for kw in keywords)
+
+    # AC6/AC9: Generate NAO examples from top exclusions; omit section if none
+    exclusions = sorted(config.exclusions)[:3]
+    nao_section = ""
+    if exclusions:
+        nao_lines = "\n".join(f'- "{exc}"' for exc in exclusions)
+        nao_section = f"\nNAO:\n{nao_lines}"
+
+    return f"""Você é um classificador de licitações públicas. Analise se o contrato é PRIMARIAMENTE sobre o setor especificado (> 80% do valor e escopo).
+
+SETOR: {setor_name}
+DESCRIÇÃO DO SETOR: {description}
+
+CONTRATO:
+Valor: R$ {valor:,.2f}
+Objeto: {objeto_truncated}
+
+EXEMPLOS DE CLASSIFICAÇÃO:
+
+SIM:
+{sim_lines}
+{nao_section}
+
+Este contrato é PRIMARIAMENTE sobre {setor_name}?
+Responda APENAS: SIM ou NAO"""
+
+
+def _build_standard_sector_prompt(
+    setor_name: str,
+    objeto_truncated: str,
+    valor: float,
+) -> str:
+    """Build standard sector prompt without examples (density 3-8% or fallback)."""
+    return f"""Setor: {setor_name}
+Valor: R$ {valor:,.2f}
+Objeto: {objeto_truncated}
+
+Este contrato é PRIMARIAMENTE sobre {setor_name}?
+Responda APENAS: SIM ou NAO"""
+
+
 def classify_contract_primary_match(
     objeto: str,
     valor: float,
     setor_name: Optional[str] = None,
     termos_busca: Optional[list[str]] = None,
     prompt_level: str = "standard",
+    setor_id: Optional[str] = None,
 ) -> bool:
     """
     Use GPT-4o-mini to determine if contract is PRIMARILY about sector or custom terms.
@@ -111,38 +193,20 @@ def classify_contract_primary_match(
         context = setor_name
 
         if prompt_level == "conservative":
-            # STORY-181 AC3.2: Conservative prompt with examples (density 1-3%)
-            user_prompt = f"""Você é um classificador de licitações públicas. Analise se o contrato é PRIMARIAMENTE sobre o setor especificado (> 80% do valor e escopo).
-
-SETOR: {setor_name}
-DESCRIÇÃO DO SETOR: Aquisição de uniformes, fardas, roupas profissionais para servidores, estudantes, agentes públicos. NÃO inclui EPIs médicos (aventais hospitalares, luvas, máscaras).
-
-CONTRATO:
-Valor: R$ {valor:,.2f}
-Objeto: {objeto_truncated}
-
-EXEMPLOS DE CLASSIFICAÇÃO:
-
-SIM:
-- "Uniformes escolares para rede municipal"
-- "Fardamento para guardas municipais"
-- "Camisas polo e calças para agentes de trânsito"
-
-NAO:
-- "Material de saúde incluindo aventais hospitalares e luvas"
-- "Processo seletivo para contratação de servidores"
-- "Obra de infraestrutura com fornecimento de uniformes para operários"
-
-Este contrato é PRIMARIAMENTE sobre {setor_name}?
-Responda APENAS: SIM ou NAO"""
+            # STORY-251: Dynamic conservative prompt with sector-aware examples
+            user_prompt = _build_conservative_prompt(
+                setor_id=setor_id,
+                setor_name=setor_name,
+                objeto_truncated=objeto_truncated,
+                valor=valor,
+            )
         else:
             # Standard prompt (density 3-8%)
-            user_prompt = f"""Setor: {setor_name}
-Valor: R$ {valor:,.2f}
-Objeto: {objeto_truncated}
-
-Este contrato é PRIMARIAMENTE sobre {setor_name}?
-Responda APENAS: SIM ou NAO"""
+            user_prompt = _build_standard_sector_prompt(
+                setor_name=setor_name,
+                objeto_truncated=objeto_truncated,
+                valor=valor,
+            )
     else:
         mode = "termos"
         context = ", ".join(termos_busca) if termos_busca else ""
@@ -153,9 +217,9 @@ Objeto: {objeto_truncated}
 Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secundários)?
 Responda APENAS: SIM ou NAO"""
 
-    # AC3.5: Check cache (MD5 hash of mode:context:valor:objeto:prompt_level)
+    # AC3.5: Check cache (MD5 hash of mode:context:valor:objeto:prompt_level:setor_id)
     cache_key = hashlib.md5(
-        f"{mode}:{context}:{valor}:{objeto_truncated}:{prompt_level}".encode()
+        f"{mode}:{context}:{valor}:{objeto_truncated}:{prompt_level}:{setor_id or ''}".encode()
     ).hexdigest()
 
     if cache_key in _arbiter_cache:
