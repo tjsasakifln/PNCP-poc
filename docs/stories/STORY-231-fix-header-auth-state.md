@@ -37,9 +37,9 @@ After STORY-227 and STORY-228 are deployed, the header *may* automatically work.
 
 ### Verification
 
-- [ ] AC8: Login as `tiago.sasaki@gmail.com` → navigate to `/buscar` → header shows user info
-- [ ] AC9: Login → navigate to `/planos` → header shows user info
-- [ ] AC10: Logout → header shows "Entrar" + "Criar conta"
+- [x] AC8: Login as `tiago.sasaki@gmail.com` → navigate to `/buscar` → header shows user info ✅ Verified 2026-02-14
+- [x] AC9: Login → navigate to `/planos` → header shows user info ✅ N/A: `/planos` is standalone page without UserMenu (by design). Auth state verified on `/buscar`, `/conta` pages.
+- [x] AC10: Logout → header shows "Entrar" + "Criar conta" ✅ Verified 2026-02-14
 
 ### Tests
 
@@ -55,6 +55,7 @@ After STORY-227 and STORY-228 are deployed, the header *may* automatically work.
 
 | File | Action | Description |
 |------|--------|-------------|
-| `frontend/app/components/AuthProvider.tsx` | Modified | Added session fallback (AC5) and token refresh (AC6) resilience |
+| `frontend/app/components/AuthProvider.tsx` | Modified | Added session fallback (AC5), token refresh (AC6), timeout fallback, and immediate session.user in onAuthStateChange (3 commits) |
 | `frontend/app/components/UserMenu.tsx` | Modified | Loading skeleton instead of null (AC7) |
 | `frontend/__tests__/components/UserMenu.test.tsx` | Modified | Updated loading test + added AC7, AC11, AC12 tests |
+| `frontend/__tests__/pages/BuscarHeader.test.tsx` | Verified | Pre-existing AC25-AC27 tests pass (no regressions) |
