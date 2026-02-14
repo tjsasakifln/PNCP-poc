@@ -51,6 +51,7 @@ class PlanCapabilities(TypedDict):
     """Immutable plan capabilities - DO NOT modify without PR review."""
     max_history_days: int
     allow_excel: bool
+    allow_pipeline: bool  # STORY-250: Pipeline de Oportunidades
     max_requests_per_month: int
     max_requests_per_min: int
     max_summary_tokens: int
@@ -62,6 +63,7 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "free_trial": {
         "max_history_days": 7,
         "allow_excel": False,
+        "allow_pipeline": False,  # STORY-250
         "max_requests_per_month": 3,  # Free trial: 3 searches only
         "max_requests_per_min": 2,
         "max_summary_tokens": 200,
@@ -70,6 +72,7 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "consultor_agil": {
         "max_history_days": 30,
         "allow_excel": False,
+        "allow_pipeline": False,  # STORY-250
         "max_requests_per_month": 50,
         "max_requests_per_min": 10,
         "max_summary_tokens": 200,
@@ -78,6 +81,7 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "maquina": {
         "max_history_days": 365,
         "allow_excel": True,
+        "allow_pipeline": True,  # STORY-250
         "max_requests_per_month": 300,
         "max_requests_per_min": 30,
         "max_summary_tokens": 500,
@@ -86,6 +90,7 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "sala_guerra": {
         "max_history_days": 1825,  # 5 years
         "allow_excel": True,
+        "allow_pipeline": True,  # STORY-250
         "max_requests_per_month": 1000,
         "max_requests_per_min": 60,
         "max_summary_tokens": 10000,
@@ -119,6 +124,10 @@ UPGRADE_SUGGESTIONS: dict[str, dict[str, str]] = {
         "free_trial": "maquina",
         "consultor_agil": "maquina",
     },
+    "allow_pipeline": {
+        "free_trial": "maquina",
+        "consultor_agil": "maquina",
+    },
     "max_requests_per_month": {
         "consultor_agil": "maquina",
         "maquina": "sala_guerra",
@@ -134,6 +143,7 @@ UPGRADE_SUGGESTIONS: dict[str, dict[str, str]] = {
 _UNKNOWN_PLAN_DEFAULTS = PlanCapabilities(
     max_history_days=30,
     allow_excel=False,
+    allow_pipeline=False,  # STORY-250
     max_requests_per_month=10,
     max_requests_per_min=5,
     max_summary_tokens=200,
@@ -185,6 +195,7 @@ def _load_plan_capabilities_from_db() -> dict[str, PlanCapabilities]:
                 caps = PlanCapabilities(
                     max_history_days=base_caps["max_history_days"],
                     allow_excel=base_caps["allow_excel"],
+                    allow_pipeline=base_caps["allow_pipeline"],
                     max_requests_per_month=max_searches or base_caps["max_requests_per_month"],
                     max_requests_per_min=base_caps["max_requests_per_min"],
                     max_summary_tokens=base_caps["max_summary_tokens"],
@@ -196,6 +207,7 @@ def _load_plan_capabilities_from_db() -> dict[str, PlanCapabilities]:
                 caps = PlanCapabilities(
                     max_history_days=_UNKNOWN_PLAN_DEFAULTS["max_history_days"],
                     allow_excel=_UNKNOWN_PLAN_DEFAULTS["allow_excel"],
+                    allow_pipeline=_UNKNOWN_PLAN_DEFAULTS["allow_pipeline"],
                     max_requests_per_month=max_searches or _UNKNOWN_PLAN_DEFAULTS["max_requests_per_month"],
                     max_requests_per_min=_UNKNOWN_PLAN_DEFAULTS["max_requests_per_min"],
                     max_summary_tokens=_UNKNOWN_PLAN_DEFAULTS["max_summary_tokens"],

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { MessageBadge } from "./MessageBadge";
+import { PipelineAlerts } from "./PipelineAlerts";
 import { UserMenu } from "./UserMenu";
 import { QuotaBadge } from "./QuotaBadge";
 interface AppHeaderProps {
@@ -38,6 +39,7 @@ export function AppHeader({ extraControls, statusSlot }: AppHeaderProps) {
           {extraControls}
           <ThemeToggle />
           <MessageBadge />
+          <PipelineAlerts />
           <UserMenu statusSlot={statusSlot ?? defaultStatusSlot} />
         </div>
       </div>

@@ -80,27 +80,27 @@ CREATE INDEX idx_pipeline_encerramento ON pipeline_items(data_encerramento) WHER
 ## Acceptance Criteria
 
 ### Backend
-- [ ] **AC1:** Migration Supabase cria tabela `pipeline_items` com schema acima. RLS habilitado.
-- [ ] **AC2:** POST `/v1/pipeline` — adiciona item. Retorna 409 se já existe (UNIQUE constraint).
-- [ ] **AC3:** GET `/v1/pipeline?stage=analise` — lista com filtro por stage. Paginação: limit/offset.
-- [ ] **AC4:** PATCH `/v1/pipeline/{id}` — atualiza stage e/ou notes. Valida que stage é enum válido.
-- [ ] **AC5:** DELETE `/v1/pipeline/{id}` — remove. Retorna 404 se não existe ou não pertence ao user.
-- [ ] **AC6:** GET `/v1/pipeline/alerts` — retorna items com data_encerramento < now() + 3 dias e stage não em (enviada, resultado).
-- [ ] **AC7:** Todos os endpoints protegidos por auth. RLS garante isolamento por user_id.
+- [x] **AC1:** Migration Supabase cria tabela `pipeline_items` com schema acima. RLS habilitado.
+- [x] **AC2:** POST `/v1/pipeline` — adiciona item. Retorna 409 se já existe (UNIQUE constraint).
+- [x] **AC3:** GET `/v1/pipeline?stage=analise` — lista com filtro por stage. Paginação: limit/offset.
+- [x] **AC4:** PATCH `/v1/pipeline/{id}` — atualiza stage e/ou notes. Valida que stage é enum válido.
+- [x] **AC5:** DELETE `/v1/pipeline/{id}` — remove. Retorna 404 se não existe ou não pertence ao user.
+- [x] **AC6:** GET `/v1/pipeline/alerts` — retorna items com data_encerramento < now() + 3 dias e stage não em (enviada, resultado).
+- [x] **AC7:** Todos os endpoints protegidos por auth. RLS garante isolamento por user_id.
 
 ### Frontend
-- [ ] **AC8:** Botão "Salvar no pipeline" nos cards de resultado de busca. Feedback visual ao salvar.
-- [ ] **AC9:** Página `/pipeline` com Kanban board. Drag-and-drop entre stages.
-- [ ] **AC10:** Pipeline alerts no header/sidebar quando há licitações com prazo < 3 dias.
-- [ ] **AC11:** Counter de items por stage visível no menu lateral.
+- [x] **AC8:** Botão "Salvar no pipeline" nos cards de resultado de busca. Feedback visual ao salvar.
+- [x] **AC9:** Página `/pipeline` com Kanban board. Drag-and-drop entre stages.
+- [x] **AC10:** Pipeline alerts no header/sidebar quando há licitações com prazo < 3 dias.
+- [x] **AC11:** Counter de items por stage visível no menu lateral.
 
 ### Feature Gating
-- [ ] **AC12:** Pipeline disponível apenas para planos Profissional e Empresarial (quota.py gating).
-- [ ] **AC13:** Plano Free Trial vê o botão "Salvar" mas recebe modal de upgrade.
+- [x] **AC12:** Pipeline disponível apenas para planos Profissional e Empresarial (quota.py gating).
+- [x] **AC13:** Plano Free Trial vê o botão "Salvar" mas recebe modal de upgrade.
 
 ### Regressão
-- [ ] **AC14:** Busca funciona normalmente sem pipeline (feature é additive).
-- [ ] **AC15:** Testes existentes passam.
+- [x] **AC14:** Busca funciona normalmente sem pipeline (feature é additive).
+- [x] **AC15:** Testes existentes passam.
 
 ## Definition of Done
 - Todos os ACs checked

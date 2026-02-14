@@ -99,6 +99,10 @@ export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
             className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Mensagens
           </Link>
+          <Link href="/pipeline" onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
+            Pipeline
+          </Link>
           <Link href="/planos" onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Planos
