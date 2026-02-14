@@ -196,6 +196,8 @@ export default function PrivacidadePage() {
               <div className="text-gray-700 dark:text-gray-300 leading-relaxed space-y-2">
                 <p><strong>Encarregado de Dados (DPO):</strong></p>
                 <p>E-mail: <a href="mailto:privacidade@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">privacidade@smartlic.tech</a></p>
+                <p className="mt-4"><strong>Suporte Geral:</strong></p>
+                <p>E-mail: <a href="mailto:suporte@smartlic.tech" className="text-blue-600 dark:text-blue-400 hover:underline">suporte@smartlic.tech</a></p>
                 <p className="mt-4">
                   Para questões relacionadas à LGPD, você também pode contatar a Autoridade Nacional de Proteção de Dados (ANPD):
                   <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline ml-1">

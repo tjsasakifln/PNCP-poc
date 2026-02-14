@@ -6,6 +6,7 @@
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import PlanosPage from '@/app/planos/page';
+import { toast } from 'sonner';
 
 // Mock useAuth hook
 const mockUseAuth = jest.fn();
@@ -21,6 +22,14 @@ jest.mock('next/link', () => {
   };
 });
 
+// Mock sonner toast
+jest.mock('sonner', () => ({
+  toast: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
+}));
+
 // Mock fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -30,6 +39,9 @@ const originalLocation = window.location;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // Clear toast mocks
+  (toast.error as jest.Mock).mockClear();
+  (toast.success as jest.Mock).mockClear();
   // @ts-expect-error - mocking window.location
   delete window.location;
   window.location = {
@@ -521,9 +533,7 @@ describe('PlanosPage Component', () => {
       expect(screen.getByRole('button', { name: /Redirecionando.../i })).toBeInTheDocument();
     });
 
-    it('should show error alert on checkout failure', async () => {
-      const mockAlert = jest.spyOn(window, 'alert').mockImplementation(() => {});
-
+    it('should show error toast on checkout failure', async () => {
       const mockSession = { access_token: 'test-token-123' };
       mockUseAuth.mockReturnValue({
         session: mockSession,
@@ -567,10 +577,8 @@ describe('PlanosPage Component', () => {
       });
 
       await waitFor(() => {
-        expect(mockAlert).toHaveBeenCalledWith('Payment failed');
+        expect(toast.error).toHaveBeenCalledWith('Payment failed');
       });
-
-      mockAlert.mockRestore();
     });
   });
 

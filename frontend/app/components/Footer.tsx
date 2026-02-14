@@ -59,10 +59,13 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Suporte</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <FooterLink href="/mensagens">Central de Ajuda</FooterLink>
+                <FooterLink href="/ajuda">Central de Ajuda</FooterLink>
               </li>
               <li>
                 <FooterLink href="/mensagens">Contato</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="mailto:suporte@smartlic.tech">suporte@smartlic.tech</FooterLink>
               </li>
             </ul>
           </div>

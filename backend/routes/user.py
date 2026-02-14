@@ -15,9 +15,10 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import Response
 from auth import require_auth
-from authorization import _check_user_roles, _get_admin_ids, _get_master_quota_info
+from authorization import check_user_roles, get_admin_ids, get_master_quota_info
 from config import ENABLE_NEW_PRICING
-from schemas import UserProfileResponse, SuccessResponse, DeleteAccountResponse
+from database import get_db
+from schemas import UserProfileResponse, SuccessResponse, DeleteAccountResponse, validate_password
 from log_sanitizer import mask_user_id, log_user_action
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ def _check_change_password_rate_limit(user_id: str) -> None:
 async def change_password(
     request: Request,
     user: dict = Depends(require_auth),
+    db=Depends(get_db),
 ):
     """Change current user's password."""
     # STORY-210 AC12: Rate limit — 5 attempts per 15 minutes
@@ -64,13 +66,14 @@ async def change_password(
 
     body = await request.json()
     new_password = body.get("new_password", "")
-    if len(new_password) < 6:
-        raise HTTPException(status_code=400, detail="Senha deve ter no minimo 6 caracteres")
 
-    from supabase_client import get_supabase
-    sb = get_supabase()
+    # STORY-226 AC17: Validate password policy
+    is_valid, error_msg = validate_password(new_password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+
     try:
-        sb.auth.admin.update_user_by_id(user["id"], {"password": new_password})
+        db.auth.admin.update_user_by_id(user["id"], {"password": new_password})
     except Exception:
         log_user_action(logger, "password-change-failed", user["id"], level=logging.ERROR)
         raise HTTPException(status_code=500, detail="Erro ao alterar senha")
@@ -80,22 +83,21 @@ async def change_password(
 
 
 @router.get("/me", response_model=UserProfileResponse)
-async def get_profile(user: dict = Depends(require_auth)):
+async def get_profile(user: dict = Depends(require_auth), db=Depends(get_db)):
     """
     Get current user profile with plan capabilities and quota status.
     """
     from quota import check_quota, QuotaInfo, create_fallback_quota_info, create_legacy_quota_info
-    from supabase_client import get_supabase
 
-    is_admin, is_master = await _check_user_roles(user["id"])
-    if user["id"].lower() in _get_admin_ids():
-        is_admin = True
+    is_admin_flag, is_master = await check_user_roles(user["id"])
+    if user["id"].lower() in get_admin_ids():
+        is_admin_flag = True
         is_master = True
 
-    if is_admin or is_master:
-        role = "ADMIN" if is_admin else "MASTER"
+    if is_admin_flag or is_master:
+        role = "ADMIN" if is_admin_flag else "MASTER"
         logger.info(f"{role} user detected: {mask_user_id(user['id'])} - granting sala_guerra access")
-        quota_info = _get_master_quota_info(is_admin=is_admin)
+        quota_info = get_master_quota_info(is_admin=is_admin_flag)
     elif ENABLE_NEW_PRICING:
         try:
             quota_info = check_quota(user["id"])
@@ -107,8 +109,7 @@ async def get_profile(user: dict = Depends(require_auth)):
         quota_info = create_legacy_quota_info()
 
     try:
-        sb = get_supabase()
-        user_data = sb.auth.admin.get_user_by_id(user["id"])
+        user_data = db.auth.admin.get_user_by_id(user["id"])
         email = user_data.user.email if user_data and user_data.user else user.get("email", "unknown@example.com")
     except Exception as e:
         logger.warning(f"Failed to fetch user email: {e}")
@@ -133,12 +134,12 @@ async def get_profile(user: dict = Depends(require_auth)):
         quota_reset_date=quota_info.quota_reset_date.isoformat(),
         trial_expires_at=quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
         subscription_status=subscription_status,
-        is_admin=is_admin,
+        is_admin=is_admin_flag,
     )
 
 
 @router.delete("/me", response_model=DeleteAccountResponse)
-async def delete_account(user: dict = Depends(require_auth)):
+async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db)):
     """Delete entire user account and all associated data (LGPD Art. 18 VI).
 
     Cascade order:
@@ -148,19 +149,17 @@ async def delete_account(user: dict = Depends(require_auth)):
     3. Delete auth user via Supabase admin API
     4. Log anonymized audit entry
     """
-    from supabase_client import get_supabase
     import stripe
 
     user_id = user["id"]
     hashed_id = hashlib.sha256(user_id.encode()).hexdigest()[:16]
-    sb = get_supabase()
 
     logger.info(f"Account deletion requested: {mask_user_id(user_id)}")
 
     # Step 1: Cancel active Stripe subscription if any
     try:
         subs_result = (
-            sb.table("user_subscriptions")
+            db.table("user_subscriptions")
             .select("stripe_subscription_id, is_active")
             .eq("user_id", user_id)
             .eq("is_active", True)
@@ -192,7 +191,7 @@ async def delete_account(user: dict = Depends(require_auth)):
 
     for table in tables_to_delete:
         try:
-            sb.table(table).delete().eq("user_id", user_id).execute()
+            db.table(table).delete().eq("user_id", user_id).execute()
         except Exception as e:
             logger.error(f"Failed to delete from {table} for user {mask_user_id(user_id)}: {e}")
             raise HTTPException(
@@ -202,7 +201,7 @@ async def delete_account(user: dict = Depends(require_auth)):
 
     # Delete profile (id column, not user_id)
     try:
-        sb.table("profiles").delete().eq("id", user_id).execute()
+        db.table("profiles").delete().eq("id", user_id).execute()
     except Exception as e:
         logger.error(f"Failed to delete profile for user {mask_user_id(user_id)}: {e}")
         raise HTTPException(
@@ -212,7 +211,7 @@ async def delete_account(user: dict = Depends(require_auth)):
 
     # Step 3: Delete auth user
     try:
-        sb.auth.admin.delete_user(user_id)
+        db.auth.admin.delete_user(user_id)
     except Exception as e:
         logger.error(f"Failed to delete auth user {mask_user_id(user_id)}: {e}")
         raise HTTPException(
@@ -228,7 +227,7 @@ async def delete_account(user: dict = Depends(require_auth)):
 
 
 @router.get("/me/export")
-async def export_user_data(user: dict = Depends(require_auth)):
+async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db)):
     """Export all user data as JSON file (LGPD Art. 18 V — data portability).
 
     Returns a downloadable JSON file containing:
@@ -237,10 +236,7 @@ async def export_user_data(user: dict = Depends(require_auth)):
     - Subscription history
     - Messages
     """
-    from supabase_client import get_supabase
-
     user_id = user["id"]
-    sb = get_supabase()
     now = datetime.now(timezone.utc)
 
     logger.info(f"Data export requested: {mask_user_id(user_id)}")
@@ -252,7 +248,7 @@ async def export_user_data(user: dict = Depends(require_auth)):
 
     # Profile
     try:
-        profile_result = sb.table("profiles").select("*").eq("id", user_id).execute()
+        profile_result = db.table("profiles").select("*").eq("id", user_id).execute()
         export_data["profile"] = profile_result.data[0] if profile_result.data else None
     except Exception as e:
         logger.warning(f"Failed to export profile: {e}")
@@ -261,7 +257,7 @@ async def export_user_data(user: dict = Depends(require_auth)):
     # Search sessions
     try:
         sessions_result = (
-            sb.table("search_sessions")
+            db.table("search_sessions")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
@@ -275,7 +271,7 @@ async def export_user_data(user: dict = Depends(require_auth)):
     # Subscriptions
     try:
         subs_result = (
-            sb.table("user_subscriptions")
+            db.table("user_subscriptions")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
@@ -289,7 +285,7 @@ async def export_user_data(user: dict = Depends(require_auth)):
     # Messages
     try:
         messages_result = (
-            sb.table("messages")
+            db.table("messages")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
@@ -303,7 +299,7 @@ async def export_user_data(user: dict = Depends(require_auth)):
     # Monthly quota
     try:
         quota_result = (
-            sb.table("monthly_quota")
+            db.table("monthly_quota")
             .select("*")
             .eq("user_id", user_id)
             .execute()

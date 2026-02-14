@@ -8,6 +8,7 @@ import os
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from auth import require_auth
+from database import get_db
 from log_sanitizer import mask_user_id, log_user_action
 from schemas import BillingPlansResponse, CheckoutResponse
 
@@ -17,13 +18,10 @@ router = APIRouter(tags=["billing"])
 
 
 @router.get("/plans", response_model=BillingPlansResponse)
-async def get_plans():
+async def get_plans(db=Depends(get_db)):
     """Get available subscription plans."""
-    from supabase_client import get_supabase
-    sb = get_supabase()
-
     result = (
-        sb.table("plans")
+        db.table("plans")
         .select("id, name, description, max_searches, price_brl, duration_days, stripe_price_id_monthly, stripe_price_id_annual")
         .eq("is_active", True)
         .order("price_brl")
@@ -37,6 +35,7 @@ async def create_checkout(
     plan_id: str = Query(...),
     billing_period: str = Query("monthly"),
     user: dict = Depends(require_auth),
+    db=Depends(get_db),
 ):
     """Create Stripe Checkout session for a plan purchase."""
     import stripe as stripe_lib
@@ -50,10 +49,7 @@ async def create_checkout(
     # NOTE: stripe_lib.api_key NOT set globally (thread safety - STORY-221 Track 2)
     # Pass api_key= parameter to Stripe API calls instead
 
-    from supabase_client import get_supabase
-    sb = get_supabase()
-
-    plan_result = sb.table("plans").select("*").eq("id", plan_id).eq("is_active", True).single().execute()
+    plan_result = db.table("plans").select("*").eq("id", plan_id).eq("is_active", True).single().execute()
     if not plan_result.data:
         raise HTTPException(status_code=404, detail="Plano nao encontrado")
 

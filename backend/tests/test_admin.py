@@ -395,7 +395,7 @@ class TestCreateUserEndpoint(TestAdminEndpointsBase):
                 "/admin/users",
                 json={
                     "email": "newuser@example.com",
-                    "password": "securepassword123",
+                    "password": "SecurePass123",
                     "full_name": "New User",
                 }
             )
@@ -435,7 +435,7 @@ class TestCreateUserEndpoint(TestAdminEndpointsBase):
                 "/admin/users",
                 json={
                     "email": "premium@example.com",
-                    "password": "securepassword123",
+                    "password": "SecurePass123",
                     "plan_id": "pack_10",
                 }
             )
@@ -445,12 +445,12 @@ class TestCreateUserEndpoint(TestAdminEndpointsBase):
         assert data["plan_id"] == "pack_10"
 
     def test_create_user_validation_password_too_short(self, admin_client):
-        """Should reject password shorter than 6 characters."""
+        """Should reject password shorter than 8 characters (STORY-226 AC17)."""
         response = admin_client.post(
             "/admin/users",
             json={
                 "email": "user@example.com",
-                "password": "12345",  # Too short
+                "password": "Ab1",  # Too short (< 8 chars, Pydantic rejects at min_length=8)
             }
         )
 
@@ -466,7 +466,7 @@ class TestCreateUserEndpoint(TestAdminEndpointsBase):
                 "/admin/users",
                 json={
                     "email": "duplicate@example.com",
-                    "password": "securepassword123",
+                    "password": "SecurePass123",
                 }
             )
 
@@ -611,14 +611,14 @@ class TestResetPasswordEndpoint(TestAdminEndpointsBase):
         assert data["user_id"] == VALID_UUID_1
 
     def test_reset_password_too_short(self, admin_client):
-        """Should reject password shorter than 6 characters."""
+        """Should reject password shorter than 8 characters (STORY-226 AC17)."""
         response = admin_client.post(
             f"/admin/users/{VALID_UUID_1}/reset-password",
-            json={"new_password": "12345"}  # Too short
+            json={"new_password": "Ab1"}  # Too short
         )
 
         assert response.status_code == 400
-        assert "6 caracteres" in response.json()["detail"]
+        assert "8 caracteres" in response.json()["detail"]
 
     def test_reset_password_supabase_error(self, admin_client):
         """Should return 500 when Supabase update fails."""
@@ -816,7 +816,7 @@ class TestAdminLogging(TestAdminEndpointsBase):
             with caplog.at_level(logging.INFO):
                 admin_client.post(
                     "/admin/users",
-                    json={"email": "new@example.com", "password": "password123"}
+                    json={"email": "new@example.com", "password": "Password1"}
                 )
 
         # Check for sanitized log format from log_admin_action (Issue #168)

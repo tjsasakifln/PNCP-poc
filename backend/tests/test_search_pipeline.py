@@ -130,8 +130,8 @@ class TestStageValidate:
     # 1. Admin bypass
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline._get_master_quota_info")
-    @patch("search_pipeline._get_admin_ids", return_value={"admin-42"})
+    @patch("search_pipeline.get_master_quota_info")
+    @patch("search_pipeline.get_admin_ids", return_value={"admin-42"})
     async def test_admin_bypass_skips_quota_and_rate_limit(
         self, mock_admin_ids, mock_master_quota
     ):
@@ -157,7 +157,7 @@ class TestStageValidate:
     # 2. Rate limit exceeded
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline._get_admin_ids", return_value=set())
+    @patch("search_pipeline.get_admin_ids", return_value=set())
     @patch("quota.check_quota")
     async def test_rate_limit_exceeded_raises_429(self, mock_check_quota, _):
         """Non-admin user whose rate limiter returns (False, 30) gets HTTP 429."""
@@ -182,7 +182,7 @@ class TestStageValidate:
     # 3. Quota exhausted (new pricing)
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline._get_admin_ids", return_value=set())
+    @patch("search_pipeline.get_admin_ids", return_value=set())
     @patch("quota.check_quota")
     async def test_quota_exhausted_new_pricing_raises_403(self, mock_check_quota, _):
         """ENABLE_NEW_PRICING=True, quota.check_quota returns allowed=False -> HTTP 403."""
@@ -209,7 +209,7 @@ class TestStageValidate:
     # 4. Quota fallback on exception
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline._get_admin_ids", return_value=set())
+    @patch("search_pipeline.get_admin_ids", return_value=set())
     @patch("quota.create_fallback_quota_info")
     @patch("quota.check_quota")
     async def test_quota_fallback_on_exception(
@@ -242,7 +242,7 @@ class TestStageValidate:
     # 5. Legacy mode (ENABLE_NEW_PRICING=False)
     # ------------------------------------------------------------------ #
     @pytest.mark.asyncio
-    @patch("search_pipeline._get_admin_ids", return_value=set())
+    @patch("search_pipeline.get_admin_ids", return_value=set())
     @patch("quota.create_legacy_quota_info")
     @patch("quota.check_quota")
     async def test_legacy_mode_sets_legacy_quota(

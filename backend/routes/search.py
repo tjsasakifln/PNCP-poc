@@ -34,7 +34,7 @@ from filter import (
 )
 from excel import create_excel
 from auth import require_auth
-from authorization import _check_user_roles
+from authorization import check_user_roles
 from rate_limiter import rate_limiter
 from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_events
 from log_sanitizer import mask_user_id, get_sanitized_logger
@@ -176,7 +176,7 @@ async def buscar_licitacoes(
         aplicar_todos_filtros=aplicar_todos_filtros,
         create_excel=create_excel,
         rate_limiter=rate_limiter,
-        check_user_roles=_check_user_roles,
+        check_user_roles=check_user_roles,
         match_keywords=match_keywords,
         KEYWORDS_UNIFORMES=KEYWORDS_UNIFORMES,
         KEYWORDS_EXCLUSAO=KEYWORDS_EXCLUSAO,

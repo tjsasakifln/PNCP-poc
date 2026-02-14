@@ -45,8 +45,8 @@ async function fillFormAndConsent(
     company = 'Test Company',
     sector = 'informatica',
     email = 'john@example.com',
-    password = 'password123',
-    confirmPassword = 'password123',
+    password = 'Password123',
+    confirmPassword = 'Password123',
     phone = '11999999999',
     scrollToBottom = true,
     checkConsent = true,
@@ -56,7 +56,7 @@ async function fillFormAndConsent(
   const companyInput = screen.getByLabelText(/Empresa/i);
   const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
   const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
-  const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+  const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
   const confirmPasswordInput = screen.getByPlaceholderText(/Digite a senha novamente/i);
   const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
 
@@ -114,7 +114,7 @@ describe('SignupPage Component', () => {
       expect(screen.getByLabelText(/Empresa/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Setor de atuação/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/seu@email.com/i)).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/Minimo 6 caracteres/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/\(11\) 99999-9999/i)).toBeInTheDocument();
     });
 
@@ -275,10 +275,10 @@ describe('SignupPage Component', () => {
     it('should have required password field with min length', () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
       expect(passwordInput).toHaveAttribute('required');
       expect(passwordInput).toHaveAttribute('type', 'password');
-      expect(passwordInput).toHaveAttribute('minLength', '6');
+      expect(passwordInput).toHaveAttribute('minLength', '8');
     });
 
     it('should have required name field', () => {
@@ -360,7 +360,7 @@ describe('SignupPage Component', () => {
         company: 'Acme Corp',
         sector: 'informatica',
         email: 'john@example.com',
-        password: 'password123',
+        password: 'Password123',
         phone: '11999998888',
       });
 
@@ -373,7 +373,7 @@ describe('SignupPage Component', () => {
       await waitFor(() => {
         expect(mockSignUpWithEmail).toHaveBeenCalledWith(
           'john@example.com',
-          'password123',
+          'Password123',
           'John Doe',
           'Acme Corp',
           'informatica', // sector
@@ -550,14 +550,14 @@ describe('SignupPage Component', () => {
     it('should hide password by default', () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
       expect(passwordInput).toHaveAttribute('type', 'password');
     });
 
     it('should show password when toggle button is clicked', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
       // Get first toggle button (password field, not confirm password)
       const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
       const toggleButton = toggleButtons[0];
@@ -574,7 +574,7 @@ describe('SignupPage Component', () => {
     it('should hide password again when toggle button is clicked twice', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
       const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
       const toggleButton = toggleButtons[0];
 
@@ -610,13 +610,13 @@ describe('SignupPage Component', () => {
     it('should display password as typed when visible', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Minimo 6 caracteres/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
       const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
       const toggleButton = toggleButtons[0];
 
       // Type password while hidden
       await act(async () => {
-        fireEvent.change(passwordInput, { target: { value: 'secret123' } });
+        fireEvent.change(passwordInput, { target: { value: 'Secret123' } });
       });
 
       // Show password
@@ -625,7 +625,7 @@ describe('SignupPage Component', () => {
       });
 
       expect(passwordInput).toHaveAttribute('type', 'text');
-      expect(passwordInput).toHaveValue('secret123');
+      expect(passwordInput).toHaveValue('Secret123');
     });
 
     it('should render toggle button inside password field container', () => {

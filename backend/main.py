@@ -41,7 +41,7 @@ from schemas import (
     RootResponse, HealthResponse, HealthDependencies,
     SourcesHealthResponse, SourceInfo, SetoresResponse, DebugPNCPResponse,
 )
-from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware  # STORY-202 SYS-M01, STORY-210 AC10
+from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware, DeprecationMiddleware  # STORY-202 SYS-M01, STORY-210 AC10, STORY-226 AC14
 from redis_pool import startup_redis, shutdown_redis  # STORY-217: Redis pool lifecycle
 
 # Existing routers
@@ -230,6 +230,9 @@ app.add_middleware(CorrelationIDMiddleware)
 
 # STORY-210 AC10: Add security headers to all responses
 app.add_middleware(SecurityHeadersMiddleware)
+
+# STORY-226 AC14: Add deprecation headers to legacy (non-versioned) routes
+app.add_middleware(DeprecationMiddleware)
 
 # ============================================================================
 # SYS-M08: API Versioning with /v1/ prefix

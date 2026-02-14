@@ -110,7 +110,7 @@ export function MunicipioFilter({
       }
 
       const data = await response.json();
-      const municipios: Municipio[] = data.map((m: any) => ({
+      const municipios: Municipio[] = data.map((m: { id: number; nome: string }) => ({
         codigo: m.id.toString(),
         nome: m.nome,
         uf: uf,

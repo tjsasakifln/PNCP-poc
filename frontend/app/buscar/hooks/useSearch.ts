@@ -10,18 +10,13 @@ import type { SavedSearch } from "../../../lib/savedSearches";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useAuth } from "../../components/AuthProvider";
 import { useQuota } from "../../../hooks/useQuota";
-import { useSearchProgress } from "../../../hooks/useSearchProgress";
+import { useSearchProgress, type SearchProgressEvent } from "../../../hooks/useSearchProgress";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
 import { getUserFriendlyError } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
 import { toast } from "sonner";
-
-function dateDiffInDays(date1: string, date2: string): number {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  const diffTime = Math.abs(d2.getTime() - d1.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
+import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
+import { getCorrelationId, logCorrelatedRequest } from "../../../lib/utils/correlationId";
 
 export interface SearchFiltersSnapshot {
   ufs: Set<string>;
@@ -82,7 +77,7 @@ export interface UseSearchReturn {
   rawCount: number;
   searchId: string | null;
   useRealProgress: boolean;
-  sseEvent: any;
+  sseEvent: SearchProgressEvent | null;
   sseAvailable: boolean;
   downloadLoading: boolean;
   downloadError: string | null;
@@ -235,7 +230,12 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     });
 
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      // STORY-226 AC24: Attach session correlation ID for distributed tracing
+      const correlationId = getCorrelationId();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-Correlation-ID": correlationId,
+      };
       if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
       const MAX_CLIENT_RETRIES = 1;
@@ -248,6 +248,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
           await new Promise(resolve => setTimeout(resolve, CLIENT_RETRY_DELAYS[clientAttempt - 1]));
         }
 
+        logCorrelatedRequest("POST", "/api/buscar", correlationId);
         const response = await fetch("/api/buscar", {
           method: "POST",
           headers,
@@ -368,7 +369,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     trackEvent('download_started', { download_id: result.download_id, has_url: !!result.download_url });
 
     try {
-      const downloadHeaders: Record<string, string> = {};
+      // STORY-226 AC24: Attach session correlation ID for distributed tracing
+      const dlCorrelationId = getCorrelationId();
+      const downloadHeaders: Record<string, string> = {
+        "X-Correlation-ID": dlCorrelationId,
+      };
       if (session?.access_token) downloadHeaders["Authorization"] = `Bearer ${session.access_token}`;
 
       // Priority 1: Use signed URL from object storage (pass as query param for redirect)
@@ -377,6 +382,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         ? `/api/download?url=${encodeURIComponent(result.download_url)}`
         : `/api/download?id=${result.download_id}`;
 
+      logCorrelatedRequest("GET", downloadEndpoint, dlCorrelationId);
       const response = await fetch(downloadEndpoint, { headers: downloadHeaders });
 
       if (!response.ok) {

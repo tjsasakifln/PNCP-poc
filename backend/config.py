@@ -241,6 +241,88 @@ ZERO_RESULTS_RELAXATION_ENABLED: bool = str_to_bool(
 logger = logging.getLogger(__name__)
 
 
+# ============================================
+# Runtime-Reloadable Feature Flags (STORY-226 AC16)
+# ============================================
+# Cache dict: {flag_name: (value, timestamp)}
+# TTL-based: re-reads from env after expiry.
+# Use get_feature_flag() for runtime reads.
+# Use reload_feature_flags() or POST /v1/admin/feature-flags/reload to clear cache.
+
+_feature_flag_cache: dict[str, tuple[bool, float]] = {}
+_FEATURE_FLAG_TTL: float = 60.0  # seconds
+
+# Registry of known feature flags with their env var names and defaults
+_FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
+    "ENABLE_NEW_PRICING": ("ENABLE_NEW_PRICING", "true"),
+    "LLM_ARBITER_ENABLED": ("LLM_ARBITER_ENABLED", "true"),
+    "SYNONYM_MATCHING_ENABLED": ("SYNONYM_MATCHING_ENABLED", "true"),
+    "ZERO_RESULTS_RELAXATION_ENABLED": ("ZERO_RESULTS_RELAXATION_ENABLED", "true"),
+    "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
+}
+
+
+def get_feature_flag(name: str, default: bool | None = None) -> bool:
+    """Get a feature flag value, reading from environment at runtime with caching.
+
+    Reads the environment variable on each call, but caches the result for
+    _FEATURE_FLAG_TTL seconds to avoid excessive os.getenv() overhead.
+
+    Args:
+        name: Feature flag name (e.g., "ENABLE_NEW_PRICING").
+        default: Override default value. If None, uses the registry default
+                 or False if the flag is not in the registry.
+
+    Returns:
+        Boolean value of the feature flag.
+
+    Examples:
+        >>> get_feature_flag("ENABLE_NEW_PRICING")
+        True
+        >>> get_feature_flag("MY_NEW_FLAG", default=False)
+        False
+    """
+    import time as _time
+
+    now = _time.time()
+
+    # Check cache
+    if name in _feature_flag_cache:
+        cached_value, cached_at = _feature_flag_cache[name]
+        if (now - cached_at) < _FEATURE_FLAG_TTL:
+            return cached_value
+
+    # Cache miss or expired — read from env
+    if name in _FEATURE_FLAG_REGISTRY:
+        env_var, registry_default = _FEATURE_FLAG_REGISTRY[name]
+    else:
+        env_var = name
+        registry_default = "true" if default is True else "false"
+
+    effective_default = registry_default if default is None else ("true" if default else "false")
+    value = str_to_bool(os.getenv(env_var, effective_default))
+
+    _feature_flag_cache[name] = (value, now)
+    return value
+
+
+def reload_feature_flags() -> dict[str, bool]:
+    """Clear the feature flag cache, forcing re-read from environment on next access.
+
+    Returns:
+        Dict of all registered flags with their current (freshly read) values.
+    """
+    _feature_flag_cache.clear()
+    logger.info("Feature flag cache cleared — flags will be re-read from environment")
+
+    # Re-read all registered flags
+    current_values: dict[str, bool] = {}
+    for name in _FEATURE_FLAG_REGISTRY:
+        current_values[name] = get_feature_flag(name)
+
+    return current_values
+
+
 def log_feature_flags() -> None:
     """Log feature flag states. Call AFTER setup_logging() to ensure proper formatting.
 

@@ -13,13 +13,7 @@ import type { Municipio } from "../../components/MunicipioFilter";
 import type { OrdenacaoOption } from "../../components/OrdenacaoSelect";
 import FilterPanel from "./FilterPanel";
 import { UFS, UF_NAMES } from "../../../lib/constants/uf-names";
-
-function dateDiffInDays(date1: string, date2: string): number {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  const diffTime = Math.abs(d2.getTime() - d1.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
+import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
 
 export interface SearchFormProps {
   // Sectors

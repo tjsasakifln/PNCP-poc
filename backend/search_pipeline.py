@@ -16,7 +16,6 @@ AC8: No deferred imports — all imports at module level.
 """
 
 import asyncio
-import base64
 import logging
 import os
 import time as sync_time_module
@@ -34,7 +33,7 @@ from utils.ordenacao import ordenar_licitacoes
 from sectors import get_sector
 from storage import upload_excel
 from llm import gerar_resumo, gerar_resumo_fallback
-from authorization import _get_admin_ids, _get_master_quota_info
+from authorization import get_admin_ids, get_master_quota_info
 from log_sanitizer import mask_user_id
 from fastapi import HTTPException
 
@@ -271,7 +270,7 @@ class SearchPipeline:
 
         # Admin/Master detection
         ctx.is_admin, ctx.is_master = await deps.check_user_roles(ctx.user["id"])
-        if ctx.user["id"].lower() in _get_admin_ids():
+        if ctx.user["id"].lower() in get_admin_ids():
             ctx.is_admin = True
             ctx.is_master = True
 
@@ -303,7 +302,7 @@ class SearchPipeline:
         if ctx.is_admin or ctx.is_master:
             role = "ADMIN" if ctx.is_admin else "MASTER"
             logger.info(f"{role} user detected: {mask_user_id(ctx.user['id'])} - bypassing quota check")
-            ctx.quota_info = _get_master_quota_info(is_admin=ctx.is_admin)
+            ctx.quota_info = get_master_quota_info(is_admin=ctx.is_admin)
         elif deps.ENABLE_NEW_PRICING:
             logger.debug("New pricing enabled, checking quota and plan capabilities")
             try:
@@ -871,9 +870,19 @@ class SearchPipeline:
                 )
                 ctx.excel_base64 = None
             else:
-                logger.warning("Storage upload failed, falling back to base64 encoding")
-                ctx.excel_base64 = base64.b64encode(excel_bytes).decode("utf-8")
-                logger.info(f"Excel report encoded as base64 ({len(ctx.excel_base64)} chars)")
+                # STORY-226 AC15: Removed filesystem/base64 fallback.
+                # Rely exclusively on object storage. If upload fails,
+                # report Excel as temporarily unavailable.
+                logger.error(
+                    "Excel storage upload failed — no fallback. "
+                    "Excel will be unavailable for this search."
+                )
+                ctx.excel_base64 = None
+                ctx.download_url = None
+                ctx.excel_available = False
+                ctx.upgrade_message = (
+                    "Erro temporário ao gerar Excel. Tente novamente em alguns instantes."
+                )
         else:
             logger.info("Excel generation skipped (not allowed for user's plan)")
             ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."

@@ -12,6 +12,7 @@ import {
   getROIMessage,
   type ROIInputs,
 } from '@/lib/copy/roi';
+import { toast } from "sonner";
 
 interface Plan {
   id: string;
@@ -174,6 +175,7 @@ export default function PlanosPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [stripeRedirecting, setStripeRedirecting] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -416,6 +418,7 @@ export default function PlanosPage() {
         throw new Error(err.detail || "Erro ao iniciar pagamento");
       }
       const data = await res.json();
+      setStripeRedirecting(true);
       window.location.href = data.checkout_url;
     } catch (err) {
       trackEvent("checkout_failed", {
@@ -423,9 +426,9 @@ export default function PlanosPage() {
         billing_period: billingPeriod,
         error: err instanceof Error ? err.message : "unknown",
       });
-      alert(err instanceof Error ? err.message : "Erro ao iniciar pagamento");
-    } finally {
+      toast.error(err instanceof Error ? err.message : "Erro ao iniciar pagamento");
       setCheckoutLoading(null);
+      setStripeRedirecting(false);
     }
   };
 
@@ -436,6 +439,21 @@ export default function PlanosPage() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] py-12 px-4">
+      {/* STORY-226 AC33: Loading overlay during Stripe redirect */}
+      {stripeRedirecting && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--canvas)]/80 backdrop-blur-sm">
+          <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-card p-8 text-center shadow-xl max-w-sm mx-4">
+            <div className="w-12 h-12 mx-auto mb-4 border-4 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin" />
+            <h2 className="text-lg font-semibold text-[var(--ink)] mb-2">
+              Redirecionando para o checkout
+            </h2>
+            <p className="text-sm text-[var(--ink-secondary)]">
+              Você será redirecionado para o Stripe para concluir o pagamento de forma segura.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-display font-bold text-[var(--ink)] mb-3">

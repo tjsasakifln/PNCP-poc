@@ -27,6 +27,7 @@ from openai import OpenAI
 
 from schemas import ResumoLicitacoes
 from excel import parse_datetime
+from middleware import request_id_var
 
 
 def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes e fardamentos") -> ResumoLicitacoes:
@@ -148,6 +149,12 @@ EXEMPLO INCORRETO (NUNCA FAÇA):
 Data atual: {datetime.now().strftime("%d/%m/%Y")}
 """
 
+    # STORY-226 AC23: Forward X-Request-ID for distributed tracing
+    req_id = request_id_var.get("-")
+    extra_headers = {}
+    if req_id and req_id != "-":
+        extra_headers["X-Request-ID"] = req_id
+
     # Call OpenAI API with structured output
     response = client.beta.chat.completions.parse(
         model="gpt-4.1-nano",
@@ -158,6 +165,7 @@ Data atual: {datetime.now().strftime("%d/%m/%Y")}
         response_format=ResumoLicitacoes,
         temperature=0.3,
         max_tokens=500,
+        extra_headers=extra_headers if extra_headers else None,
     )
 
     # Extract parsed response

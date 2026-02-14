@@ -14,7 +14,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def get_redis() -> Optional[any]:
+def get_redis() -> Optional["redis.asyncio.Redis"]:
     """Get Redis client instance (DEPRECATED).
 
     Use ``from redis_pool import get_redis_pool`` instead.

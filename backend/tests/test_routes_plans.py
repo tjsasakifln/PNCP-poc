@@ -9,12 +9,22 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
 from routes.plans import router
+from database import get_db
 
 
-def _create_client():
-    """Create test client — no auth override needed (public endpoint)."""
+def _create_client(mock_db=None, mock_db_fn=None):
+    """Create test client with optional database dependency override.
+
+    Args:
+        mock_db: Supabase client mock to return (value)
+        mock_db_fn: Function to call for dependency (for raising exceptions)
+    """
     app = FastAPI()
     app.include_router(router)
+    if mock_db is not None:
+        app.dependency_overrides[get_db] = lambda: mock_db
+    elif mock_db_fn is not None:
+        app.dependency_overrides[get_db] = mock_db_fn
     return TestClient(app)
 
 
@@ -37,8 +47,7 @@ def _mock_sb(data=None):
 class TestGetPlans:
 
     @patch("quota.get_plan_capabilities")
-    @patch("supabase_client.get_supabase")
-    def test_successful_fetch_with_capabilities(self, mock_get_sb, mock_caps):
+    def test_successful_fetch_with_capabilities(self, mock_caps):
         plans_data = [
             {
                 "id": "free_trial",
@@ -59,7 +68,7 @@ class TestGetPlans:
                 "is_active": True,
             },
         ]
-        mock_get_sb.return_value = _mock_sb(data=plans_data)
+        sb = _mock_sb(data=plans_data)
 
         mock_caps.return_value = {
             "free_trial": {
@@ -80,7 +89,7 @@ class TestGetPlans:
             },
         }
 
-        client = _create_client()
+        client = _create_client(mock_db=sb)
         resp = client.get("/api/plans")
 
         assert resp.status_code == 200
@@ -101,11 +110,10 @@ class TestGetPlans:
         assert consultor["capabilities"]["max_requests_per_month"] == 50
 
     @patch("quota.get_plan_capabilities")
-    @patch("supabase_client.get_supabase")
-    def test_no_active_plans_returns_empty(self, mock_get_sb, mock_caps):
-        mock_get_sb.return_value = _mock_sb(data=None)  # No plans
+    def test_no_active_plans_returns_empty(self, mock_caps):
+        sb = _mock_sb(data=None)  # No plans
         mock_caps.return_value = {}
-        client = _create_client()
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/api/plans")
 
@@ -115,11 +123,10 @@ class TestGetPlans:
         assert body["total"] == 0
 
     @patch("quota.get_plan_capabilities")
-    @patch("supabase_client.get_supabase")
-    def test_empty_data_list_returns_empty(self, mock_get_sb, mock_caps):
-        mock_get_sb.return_value = _mock_sb(data=[])  # Empty list is falsy
+    def test_empty_data_list_returns_empty(self, mock_caps):
+        sb = _mock_sb(data=[])  # Empty list is falsy
         mock_caps.return_value = {}
-        client = _create_client()
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/api/plans")
 
@@ -128,10 +135,13 @@ class TestGetPlans:
         assert body["plans"] == []
         assert body["total"] == 0
 
-    @patch("supabase_client.get_supabase")
-    def test_db_error_returns_500(self, mock_get_sb):
-        mock_get_sb.side_effect = Exception("Database connection failed")
-        client = _create_client()
+    def test_db_error_returns_500(self):
+        """Database connection error should return 500 with user-friendly message."""
+        # Create a mock that raises when accessed
+        sb = Mock()
+        sb.table.side_effect = Exception("Database connection failed")
+
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/api/plans")
 
@@ -139,8 +149,7 @@ class TestGetPlans:
         assert "planos" in resp.json()["detail"].lower()
 
     @patch("quota.get_plan_capabilities")
-    @patch("supabase_client.get_supabase")
-    def test_plan_without_capabilities_gets_defaults(self, mock_get_sb, mock_caps):
+    def test_plan_without_capabilities_gets_defaults(self, mock_caps):
         """Plan not in capabilities dict should get default values."""
         plans_data = [
             {
@@ -153,10 +162,10 @@ class TestGetPlans:
                 "is_active": True,
             },
         ]
-        mock_get_sb.return_value = _mock_sb(data=plans_data)
+        sb = _mock_sb(data=plans_data)
         mock_caps.return_value = {}  # No capabilities for new_plan
 
-        client = _create_client()
+        client = _create_client(mock_db=sb)
         resp = client.get("/api/plans")
 
         assert resp.status_code == 200
@@ -169,8 +178,7 @@ class TestGetPlans:
         assert plan["capabilities"]["priority"] == "normal"
 
     @patch("quota.get_plan_capabilities")
-    @patch("supabase_client.get_supabase")
-    def test_null_duration_days_defaults_to_30(self, mock_get_sb, mock_caps):
+    def test_null_duration_days_defaults_to_30(self, mock_caps):
         """Plan with null duration_days should default to 30."""
         plans_data = [
             {
@@ -183,28 +191,27 @@ class TestGetPlans:
                 "is_active": True,
             },
         ]
-        mock_get_sb.return_value = _mock_sb(data=plans_data)
+        sb = _mock_sb(data=plans_data)
         mock_caps.return_value = {}
 
-        client = _create_client()
+        client = _create_client(mock_db=sb)
         resp = client.get("/api/plans")
 
         assert resp.status_code == 200
         assert resp.json()["plans"][0]["duration_days"] == 30
 
     @patch("quota.get_plan_capabilities")
-    @patch("supabase_client.get_supabase")
-    def test_plans_ordered_by_price(self, mock_get_sb, mock_caps):
+    def test_plans_ordered_by_price(self, mock_caps):
         """Verify that plans maintain the price-ordered query result."""
         plans_data = [
             {"id": "cheap", "name": "Cheap", "description": "Cheap", "price_brl": 50.0, "duration_days": 30, "max_searches": 5, "is_active": True},
             {"id": "mid", "name": "Mid", "description": "Mid", "price_brl": 200.0, "duration_days": 30, "max_searches": 20, "is_active": True},
             {"id": "expensive", "name": "Expensive", "description": "Expensive", "price_brl": 500.0, "duration_days": 30, "max_searches": 100, "is_active": True},
         ]
-        mock_get_sb.return_value = _mock_sb(data=plans_data)
+        sb = _mock_sb(data=plans_data)
         mock_caps.return_value = {}
 
-        client = _create_client()
+        client = _create_client(mock_db=sb)
         resp = client.get("/api/plans")
 
         assert resp.status_code == 200

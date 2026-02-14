@@ -113,6 +113,41 @@ def validate_uuid(value: str, field_name: str = "id") -> str:
     return value
 
 
+def validate_password(password: str) -> tuple[bool, str]:
+    """Validate password against security policy.
+
+    STORY-226 AC17: Enforce minimum password requirements:
+    - At least 8 characters
+    - At least 1 uppercase letter
+    - At least 1 digit
+
+    Args:
+        password: The password string to validate.
+
+    Returns:
+        Tuple of (is_valid, error_message).
+        If valid, error_message is an empty string.
+        If invalid, error_message is in Portuguese.
+
+    Examples:
+        >>> validate_password("Abc12345")
+        (True, "")
+        >>> validate_password("abc")
+        (False, "A senha deve ter pelo menos 8 caracteres.")
+        >>> validate_password("abcdefgh")
+        (False, "A senha deve conter pelo menos 1 letra maiúscula.")
+        >>> validate_password("Abcdefgh")
+        (False, "A senha deve conter pelo menos 1 dígito.")
+    """
+    if len(password) < 8:
+        return False, "A senha deve ter pelo menos 8 caracteres."
+    if not re.search(r"[A-Z]", password):
+        return False, "A senha deve conter pelo menos 1 letra maiúscula."
+    if not re.search(r"\d", password):
+        return False, "A senha deve conter pelo menos 1 dígito."
+    return True, ""
+
+
 def validate_plan_id(value: str) -> str:
     """
     Validate that a string is a valid plan ID.

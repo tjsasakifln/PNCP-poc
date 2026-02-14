@@ -225,7 +225,7 @@ async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
         logger.warning(f"Failed to store tracker metadata in Redis: {e}")
 
 
-async def subscribe_to_events(search_id: str) -> Optional[any]:
+async def subscribe_to_events(search_id: str) -> Optional["redis.asyncio.client.PubSub"]:
     """Subscribe to Redis pub/sub channel for progress events.
 
     Returns:

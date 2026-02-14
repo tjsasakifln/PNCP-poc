@@ -70,6 +70,66 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
             raise
 
 
+class DeprecationMiddleware(BaseHTTPMiddleware):
+    """
+    STORY-226 AC14: Add deprecation headers to legacy (non-prefixed) routes.
+
+    Legacy routes (mounted without /v1/ prefix) receive:
+    - Deprecation: true — RFC 8594 standard deprecation signal
+    - Sunset: 2026-06-01 — date after which legacy routes may be removed
+    - Link: </v1{path}>; rel="successor-version" — points to versioned equivalent
+
+    Logs a warning ONCE per unique route path to avoid log spam.
+    Does NOT affect core utility routes (/, /health, /docs, /redoc, /openapi.json).
+    """
+
+    # Class-level set to track which paths have been logged
+    _warned_paths: set[str] = set()
+
+    # Paths that are NOT considered legacy (they live at root by design)
+    _exempt_paths: set[str] = {
+        "/",
+        "/health",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    }
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        path = request.url.path
+        response = await call_next(request)
+
+        # Skip: already versioned, exempt, or static/internal paths
+        if (
+            path.startswith("/v1/")
+            or path in self._exempt_paths
+            or path.startswith("/docs")
+            or path.startswith("/redoc")
+        ):
+            return response
+
+        # Check if this path has a /v1/ equivalent by checking if it matches
+        # a known router pattern (any path with a non-empty segment after /)
+        path_segments = path.strip("/").split("/")
+        if not path_segments or not path_segments[0]:
+            return response
+
+        # This is a legacy route — add deprecation headers
+        response.headers["Deprecation"] = "true"
+        response.headers["Sunset"] = "2026-06-01"
+        response.headers["Link"] = f"</v1{path}>; rel=\"successor-version\""
+
+        # Log warning once per unique path
+        if path not in self._warned_paths:
+            self._warned_paths.add(path)
+            logger.warning(
+                f"DEPRECATED route accessed: {request.method} {path} — "
+                f"migrate to /v1{path} before 2026-06-01"
+            )
+
+        return response
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     STORY-210 AC10: Add standard security headers to all responses.

@@ -14,16 +14,12 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from auth import require_auth
+from database import get_db
 from log_sanitizer import mask_user_id
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
-
-
-def _get_sb():
-    from supabase_client import get_supabase
-    return get_supabase()
 
 
 # ============================================================================
@@ -69,14 +65,13 @@ class TopDimensionsResponse(BaseModel):
 # ============================================================================
 
 @router.get("/summary", response_model=SummaryResponse)
-async def get_analytics_summary(user: dict = Depends(require_auth)):
+async def get_analytics_summary(user: dict = Depends(require_auth), db=Depends(get_db)):
     """Get overall user analytics summary."""
-    sb = _get_sb()
     user_id = user["id"]
 
     try:
         # STORY-202 DB-M07: Use RPC to avoid full-table scan (single optimized query)
-        result = sb.rpc("get_analytics_summary", {
+        result = db.rpc("get_analytics_summary", {
             "p_user_id": user_id,
             "p_start_date": None,
             "p_end_date": None,
@@ -141,16 +136,16 @@ async def get_searches_over_time(
     user: dict = Depends(require_auth),
     period: str = Query("week", pattern="^(day|week|month)$"),
     range_days: int = Query(90, ge=1, le=365),
+    db=Depends(get_db),
 ):
     """Get time-series search data grouped by period."""
-    sb = _get_sb()
     user_id = user["id"]
 
     try:
         start_date = (datetime.now(timezone.utc) - timedelta(days=range_days)).date()
 
         sessions_result = (
-            sb.table("search_sessions")
+            db.table("search_sessions")
             .select("created_at, total_filtered, valor_total")
             .eq("user_id", user_id)
             .gte("created_at", start_date.isoformat())
@@ -202,14 +197,14 @@ async def get_searches_over_time(
 async def get_top_dimensions(
     user: dict = Depends(require_auth),
     limit: int = Query(5, ge=1, le=50),
+    db=Depends(get_db),
 ):
     """Get top UFs and sectors by search count."""
-    sb = _get_sb()
     user_id = user["id"]
 
     try:
         sessions_result = (
-            sb.table("search_sessions")
+            db.table("search_sessions")
             .select("ufs, sectors, valor_total")
             .eq("user_id", user_id)
             .execute()

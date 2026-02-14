@@ -70,7 +70,14 @@ export default function Error({
         </button>
 
         <p className="mt-4 text-sm text-[var(--ink-muted)]">
-          Se o problema persistir, entre em contato com o suporte.
+          Se o problema persistir,{" "}
+          <a href="/mensagens" className="text-[var(--brand-blue)] hover:underline">
+            entre em contato com o suporte
+          </a>{" "}
+          ou consulte a{" "}
+          <a href="/ajuda" className="text-[var(--brand-blue)] hover:underline">
+            Central de Ajuda
+          </a>.
         </p>
       </div>
     </div>

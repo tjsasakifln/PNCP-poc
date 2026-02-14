@@ -13,8 +13,10 @@ Data source: `plans` table in database (via SYS-M04 infrastructure)
 import logging
 from typing import List, Dict, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
+from database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ class PlansResponse(BaseModel):
 
 
 @router.get("/api/plans", response_model=PlansResponse)
-async def get_plans_with_capabilities():
+async def get_plans_with_capabilities(db=Depends(get_db)):
     """Get all active plans with capabilities and pricing.
 
     STORY-203 CROSS-M01: Combines plan metadata from database with
@@ -57,15 +59,12 @@ async def get_plans_with_capabilities():
     Raises:
         HTTPException 500: If database query fails
     """
-    from supabase_client import get_supabase
     from quota import get_plan_capabilities
 
     try:
-        sb = get_supabase()
-
         # Fetch all active plans from database
         result = (
-            sb.table("plans")
+            db.table("plans")
             .select(
                 "id, name, description, price_brl, duration_days, max_searches, is_active"
             )

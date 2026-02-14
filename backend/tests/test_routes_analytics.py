@@ -4,21 +4,24 @@ STORY-224 Track 4 (AC23): Analytics route coverage.
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
 from auth import require_auth
+from database import get_db
 from routes.analytics import router
 
 
 MOCK_USER = {"id": "user-123-uuid", "email": "test@example.com", "role": "authenticated"}
 
 
-def _create_client():
+def _create_client(mock_db=None):
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[require_auth] = lambda: MOCK_USER
+    if mock_db is not None:
+        app.dependency_overrides[get_db] = lambda: mock_db
     return TestClient(app)
 
 
@@ -56,8 +59,7 @@ def _mock_sb(execute_data=None, rpc_data=None):
 
 class TestAnalyticsSummary:
 
-    @patch("routes.analytics._get_sb")
-    def test_summary_with_data(self, mock_get_sb):
+    def test_summary_with_data(self):
         rpc_row = {
             "total_searches": 10,
             "total_downloads": 5,
@@ -65,8 +67,8 @@ class TestAnalyticsSummary:
             "total_value_discovered": 500000.0,
             "member_since": "2025-06-15T00:00:00+00:00",
         }
-        mock_get_sb.return_value = _mock_sb(rpc_data=[rpc_row])
-        client = _create_client()
+        sb = _mock_sb(rpc_data=[rpc_row])
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/summary")
 
@@ -81,10 +83,9 @@ class TestAnalyticsSummary:
         assert body["success_rate"] == 50.0  # 5/10*100
         assert body["member_since"] == "2025-06-15T00:00:00+00:00"
 
-    @patch("routes.analytics._get_sb")
-    def test_summary_empty_no_data(self, mock_get_sb):
-        mock_get_sb.return_value = _mock_sb(rpc_data=[])
-        client = _create_client()
+    def test_summary_empty_no_data(self):
+        sb = _mock_sb(rpc_data=[])
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/summary")
 
@@ -98,11 +99,10 @@ class TestAnalyticsSummary:
         assert body["avg_results_per_search"] == 0.0
         assert body["success_rate"] == 0.0
 
-    @patch("routes.analytics._get_sb")
-    def test_summary_none_rpc_result(self, mock_get_sb):
+    def test_summary_none_rpc_result(self):
         """RPC returns None data — should fall back to zeros."""
-        mock_get_sb.return_value = _mock_sb(rpc_data=None)
-        client = _create_client()
+        sb = _mock_sb(rpc_data=None)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/summary")
 
@@ -110,8 +110,7 @@ class TestAnalyticsSummary:
         body = resp.json()
         assert body["total_searches"] == 0
 
-    @patch("routes.analytics._get_sb")
-    def test_summary_null_fields_default_to_zero(self, mock_get_sb):
+    def test_summary_null_fields_default_to_zero(self):
         """RPC row has None values for counters — should coalesce to 0."""
         rpc_row = {
             "total_searches": None,
@@ -120,8 +119,8 @@ class TestAnalyticsSummary:
             "total_value_discovered": None,
             "member_since": None,
         }
-        mock_get_sb.return_value = _mock_sb(rpc_data=[rpc_row])
-        client = _create_client()
+        sb = _mock_sb(rpc_data=[rpc_row])
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/summary")
 
@@ -137,14 +136,13 @@ class TestAnalyticsSummary:
 
 class TestSearchesOverTime:
 
-    @patch("routes.analytics._get_sb")
-    def test_time_series_week_grouping(self, mock_get_sb):
+    def test_time_series_week_grouping(self):
         sessions = [
             {"created_at": "2026-02-02T10:00:00+00:00", "total_filtered": 5, "valor_total": 10000},
             {"created_at": "2026-02-03T10:00:00+00:00", "total_filtered": 3, "valor_total": 5000},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/searches-over-time?period=week&range_days=90")
 
@@ -158,14 +156,13 @@ class TestSearchesOverTime:
         assert point["opportunities"] == 8  # 5 + 3
         assert point["value"] == 15000.0
 
-    @patch("routes.analytics._get_sb")
-    def test_time_series_day_grouping(self, mock_get_sb):
+    def test_time_series_day_grouping(self):
         sessions = [
             {"created_at": "2026-02-01T10:00:00+00:00", "total_filtered": 5, "valor_total": 10000},
             {"created_at": "2026-02-02T10:00:00+00:00", "total_filtered": 3, "valor_total": 5000},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/searches-over-time?period=day&range_days=30")
 
@@ -174,14 +171,13 @@ class TestSearchesOverTime:
         assert body["period"] == "day"
         assert len(body["data"]) == 2  # Two different days
 
-    @patch("routes.analytics._get_sb")
-    def test_time_series_month_grouping(self, mock_get_sb):
+    def test_time_series_month_grouping(self):
         sessions = [
             {"created_at": "2026-01-15T10:00:00+00:00", "total_filtered": 2, "valor_total": 1000},
             {"created_at": "2026-02-10T10:00:00+00:00", "total_filtered": 7, "valor_total": 3000},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/searches-over-time?period=month&range_days=90")
 
@@ -190,10 +186,9 @@ class TestSearchesOverTime:
         assert body["period"] == "month"
         assert len(body["data"]) == 2  # Two different months
 
-    @patch("routes.analytics._get_sb")
-    def test_time_series_empty_sessions(self, mock_get_sb):
-        mock_get_sb.return_value = _mock_sb(execute_data=[])
-        client = _create_client()
+    def test_time_series_empty_sessions(self):
+        sb = _mock_sb(execute_data=[])
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/searches-over-time")
 
@@ -202,18 +197,18 @@ class TestSearchesOverTime:
         assert body["data"] == []
 
     def test_invalid_period_rejected(self):
-        client = _create_client()
+        sb = _mock_sb(execute_data=[])
+        client = _create_client(mock_db=sb)
         resp = client.get("/analytics/searches-over-time?period=invalid")
         assert resp.status_code == 422
 
-    @patch("routes.analytics._get_sb")
-    def test_time_series_null_values_handled(self, mock_get_sb):
+    def test_time_series_null_values_handled(self):
         """Sessions with null total_filtered and valor_total should default to 0."""
         sessions = [
             {"created_at": "2026-02-01T10:00:00+00:00", "total_filtered": None, "valor_total": None},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/searches-over-time?period=day")
 
@@ -229,15 +224,14 @@ class TestSearchesOverTime:
 
 class TestTopDimensions:
 
-    @patch("routes.analytics._get_sb")
-    def test_top_dimensions_with_data(self, mock_get_sb):
+    def test_top_dimensions_with_data(self):
         sessions = [
             {"ufs": ["SP", "RJ"], "sectors": ["facilities"], "valor_total": 100000},
             {"ufs": ["SP"], "sectors": ["facilities", "saude"], "valor_total": 200000},
             {"ufs": ["MG"], "sectors": ["saude"], "valor_total": 50000},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/top-dimensions?limit=5")
 
@@ -253,10 +247,9 @@ class TestTopDimensions:
         assert "facilities" in sector_names
         assert "saude" in sector_names
 
-    @patch("routes.analytics._get_sb")
-    def test_top_dimensions_empty(self, mock_get_sb):
-        mock_get_sb.return_value = _mock_sb(execute_data=[])
-        client = _create_client()
+    def test_top_dimensions_empty(self):
+        sb = _mock_sb(execute_data=[])
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/top-dimensions")
 
@@ -265,14 +258,13 @@ class TestTopDimensions:
         assert body["top_ufs"] == []
         assert body["top_sectors"] == []
 
-    @patch("routes.analytics._get_sb")
-    def test_top_dimensions_null_ufs_and_sectors(self, mock_get_sb):
+    def test_top_dimensions_null_ufs_and_sectors(self):
         """Sessions with null ufs/sectors should not crash."""
         sessions = [
             {"ufs": None, "sectors": None, "valor_total": 100000},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/top-dimensions")
 
@@ -281,15 +273,14 @@ class TestTopDimensions:
         assert body["top_ufs"] == []
         assert body["top_sectors"] == []
 
-    @patch("routes.analytics._get_sb")
-    def test_top_dimensions_limit_respected(self, mock_get_sb):
+    def test_top_dimensions_limit_respected(self):
         """Only top N dimensions should be returned."""
         sessions = [
             {"ufs": [f"UF{i}"], "sectors": [f"sector{i}"], "valor_total": 1000 * i}
             for i in range(10)
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/top-dimensions?limit=3")
 
@@ -298,15 +289,14 @@ class TestTopDimensions:
         assert len(body["top_ufs"]) <= 3
         assert len(body["top_sectors"]) <= 3
 
-    @patch("routes.analytics._get_sb")
-    def test_top_dimensions_value_aggregation(self, mock_get_sb):
+    def test_top_dimensions_value_aggregation(self):
         """Value should be summed across all sessions for each UF."""
         sessions = [
             {"ufs": ["SP"], "sectors": [], "valor_total": 100000},
             {"ufs": ["SP"], "sectors": [], "valor_total": 200000},
         ]
-        mock_get_sb.return_value = _mock_sb(execute_data=sessions)
-        client = _create_client()
+        sb = _mock_sb(execute_data=sessions)
+        client = _create_client(mock_db=sb)
 
         resp = client.get("/analytics/top-dimensions")
 

@@ -130,11 +130,25 @@ UPGRADE_SUGGESTIONS: dict[str, dict[str, str]] = {
 # STORY-203 SYS-M04: Database-driven Plan Capabilities Loader
 # ============================================================================
 
+# Conservative defaults for unknown plans discovered at runtime
+_UNKNOWN_PLAN_DEFAULTS = PlanCapabilities(
+    max_history_days=30,
+    allow_excel=False,
+    max_requests_per_month=10,
+    max_requests_per_min=5,
+    max_summary_tokens=200,
+    priority=PlanPriority.NORMAL.value,
+)
+
+
 def _load_plan_capabilities_from_db() -> dict[str, PlanCapabilities]:
     """Load plan capabilities from database.
 
     STORY-203 SYS-M04: Loads plan definitions from `plans` table and converts
     to PlanCapabilities format. Falls back to hardcoded PLAN_CAPABILITIES on error.
+
+    STORY-226 AC9: Uses data-driven lookup via PLAN_CAPABILITIES dict instead of
+    if/elif chain. The DB's max_searches overrides max_requests_per_month when present.
 
     Returns:
         dict[str, PlanCapabilities]: Plan capabilities indexed by plan_id
@@ -162,54 +176,30 @@ def _load_plan_capabilities_from_db() -> dict[str, PlanCapabilities]:
             plan_id = plan["id"]
             max_searches = plan.get("max_searches", 0)
 
-            # Derive capabilities from plan ID and max_searches
-            # This maps database schema to our PlanCapabilities structure
-            if plan_id == "free_trial":
+            # Data-driven lookup: use PLAN_CAPABILITIES as the source of truth
+            # for non-DB fields, override max_requests_per_month from DB
+            base_caps = PLAN_CAPABILITIES.get(plan_id)
+
+            if base_caps is not None:
+                # Known plan: merge DB max_searches into hardcoded capabilities
                 caps = PlanCapabilities(
-                    max_history_days=7,
-                    allow_excel=False,
-                    max_requests_per_month=max_searches or 3,
-                    max_requests_per_min=2,
-                    max_summary_tokens=200,
-                    priority=PlanPriority.LOW.value,
-                )
-            elif plan_id == "consultor_agil":
-                caps = PlanCapabilities(
-                    max_history_days=30,
-                    allow_excel=False,
-                    max_requests_per_month=max_searches or 50,
-                    max_requests_per_min=10,
-                    max_summary_tokens=200,
-                    priority=PlanPriority.NORMAL.value,
-                )
-            elif plan_id == "maquina":
-                caps = PlanCapabilities(
-                    max_history_days=365,
-                    allow_excel=True,
-                    max_requests_per_month=max_searches or 300,
-                    max_requests_per_min=30,
-                    max_summary_tokens=500,
-                    priority=PlanPriority.HIGH.value,
-                )
-            elif plan_id == "sala_guerra":
-                caps = PlanCapabilities(
-                    max_history_days=1825,  # 5 years
-                    allow_excel=True,
-                    max_requests_per_month=max_searches or 1000,
-                    max_requests_per_min=60,
-                    max_summary_tokens=10000,
-                    priority=PlanPriority.CRITICAL.value,
+                    max_history_days=base_caps["max_history_days"],
+                    allow_excel=base_caps["allow_excel"],
+                    max_requests_per_month=max_searches or base_caps["max_requests_per_month"],
+                    max_requests_per_min=base_caps["max_requests_per_min"],
+                    max_summary_tokens=base_caps["max_summary_tokens"],
+                    priority=base_caps["priority"],
                 )
             else:
-                # Unknown plan - use conservative defaults
+                # Unknown plan - use conservative defaults with DB max_searches
                 logger.warning(f"Unknown plan_id '{plan_id}' in database, using conservative defaults")
                 caps = PlanCapabilities(
-                    max_history_days=30,
-                    allow_excel=False,
-                    max_requests_per_month=max_searches or 10,
-                    max_requests_per_min=5,
-                    max_summary_tokens=200,
-                    priority=PlanPriority.NORMAL.value,
+                    max_history_days=_UNKNOWN_PLAN_DEFAULTS["max_history_days"],
+                    allow_excel=_UNKNOWN_PLAN_DEFAULTS["allow_excel"],
+                    max_requests_per_month=max_searches or _UNKNOWN_PLAN_DEFAULTS["max_requests_per_month"],
+                    max_requests_per_min=_UNKNOWN_PLAN_DEFAULTS["max_requests_per_min"],
+                    max_summary_tokens=_UNKNOWN_PLAN_DEFAULTS["max_summary_tokens"],
+                    priority=_UNKNOWN_PLAN_DEFAULTS["priority"],
                 )
 
             db_capabilities[plan_id] = caps

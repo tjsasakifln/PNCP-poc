@@ -27,7 +27,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request, Path
 from pydantic import BaseModel, Field
 from auth import require_auth
 from schemas import (
-    validate_uuid, validate_plan_id,
+    validate_uuid, validate_plan_id, validate_password,
     AdminUsersListResponse, AdminCreateUserResponse, AdminDeleteUserResponse,
     AdminUpdateUserResponse, AdminResetPasswordResponse, AdminAssignPlanResponse,
     AdminUpdateCreditsResponse,
@@ -240,7 +240,7 @@ async def require_admin(user: dict = Depends(require_auth)) -> dict:
 
 class CreateUserRequest(BaseModel):
     email: str = Field(..., description="User email")
-    password: str = Field(..., min_length=6, description="User password")
+    password: str = Field(..., min_length=8, description="User password (min 8 chars, 1 uppercase, 1 digit)")
     full_name: Optional[str] = None
     plan_id: Optional[str] = Field(default="free", description="Initial plan")
     company: Optional[str] = None
@@ -322,6 +322,11 @@ async def create_user(
     admin: dict = Depends(require_admin),
 ):
     """Create a new user with optional plan assignment."""
+    # STORY-226 AC17: Validate password policy
+    is_valid, error_msg = validate_password(req.password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
+
     from supabase_client import get_supabase
     sb = get_supabase()
 
@@ -452,8 +457,11 @@ async def reset_user_password(
 
     body = await request.json()
     new_password = body.get("new_password", "")
-    if len(new_password) < 6:
-        raise HTTPException(status_code=400, detail="Senha deve ter no minimo 6 caracteres")
+
+    # STORY-226 AC17: Validate password policy
+    is_valid, error_msg = validate_password(new_password)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error_msg)
 
     from supabase_client import get_supabase
     sb = get_supabase()
@@ -625,6 +633,30 @@ async def update_user_credits(
             "previous_credits": None,
             "subscription_created": True,
         }
+
+
+@router.post("/feature-flags/reload")
+async def reload_feature_flags_endpoint(
+    admin: dict = Depends(require_admin),
+):
+    """Reload all feature flags from environment variables (admin only).
+
+    STORY-226 AC16: Clears the feature flag cache, forcing re-read from
+    environment on next access. Returns current values after reload.
+    """
+    from config import reload_feature_flags
+
+    current_values = reload_feature_flags()
+
+    log_admin_action(
+        logger,
+        admin_id=admin['id'],
+        action="reload-feature-flags",
+        target_user_id=admin['id'],
+        details={"flags": current_values},
+    )
+
+    return {"success": True, "flags": current_values}
 
 
 def _assign_plan(sb, user_id: str, plan_id: str):

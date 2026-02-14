@@ -12,6 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from auth import require_auth
+from database import get_db
 
 
 client = TestClient(app)
@@ -35,17 +36,16 @@ def setup_auth_override(user_id="test-user-123"):
 class TestDeleteAccountEndpoint:
     """Test DELETE /me endpoint (AC26, AC28) - Account deletion."""
 
-    @patch("supabase_client.get_supabase")
     @patch("stripe.Subscription.cancel")
     def test_successful_account_deletion_with_stripe_subscription(
-        self, mock_stripe_cancel, mock_get_supabase
+        self, mock_stripe_cancel
     ):
         """Should delete account successfully and cancel Stripe subscription."""
         cleanup = setup_auth_override("user-with-subscription")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock Stripe subscription check
             mock_sb.table.return_value = mock_sb
@@ -91,16 +91,15 @@ class TestDeleteAccountEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_successful_account_deletion_without_stripe_subscription(
-        self, mock_get_supabase
+        self
     ):
         """Should delete account successfully when no Stripe subscription exists."""
         cleanup = setup_auth_override("user-without-subscription")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock empty Stripe subscription check
             mock_sb.table.return_value = mock_sb
@@ -127,17 +126,16 @@ class TestDeleteAccountEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     @patch("stripe.Subscription.cancel")
     def test_continues_deletion_if_stripe_cancel_fails(
-        self, mock_stripe_cancel, mock_get_supabase
+        self, mock_stripe_cancel
     ):
         """Should continue account deletion even if Stripe cancellation fails."""
         cleanup = setup_auth_override("user-stripe-error")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock Stripe subscription check
             mock_sb.table.return_value = mock_sb
@@ -173,16 +171,15 @@ class TestDeleteAccountEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_deletion_fails_with_500_on_search_sessions_error(
-        self, mock_get_supabase
+        self
     ):
         """Should return 500 if deletion from search_sessions fails."""
         cleanup = setup_auth_override("user-db-error")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock empty subscription check
             mock_sb.table.return_value = mock_sb
@@ -208,16 +205,15 @@ class TestDeleteAccountEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_deletion_fails_with_500_on_profile_error(
-        self, mock_get_supabase
+        self
     ):
         """Should return 500 if profile deletion fails."""
         cleanup = setup_auth_override("user-profile-error")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock table operations
             mock_sb.table.return_value = mock_sb
@@ -247,16 +243,15 @@ class TestDeleteAccountEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_deletion_fails_with_500_on_auth_user_error(
-        self, mock_get_supabase
+        self
     ):
         """Should return 500 if auth user deletion fails."""
         cleanup = setup_auth_override("user-auth-error")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock table operations
             mock_sb.table.return_value = mock_sb
@@ -288,17 +283,16 @@ class TestDeleteAccountEndpoint:
         # Should be unauthorized
         assert response.status_code in [401, 403]
 
-    @patch("supabase_client.get_supabase")
     @patch("stripe.Subscription.cancel")
     def test_deletion_cascades_all_user_data(
-        self, mock_stripe_cancel, mock_get_supabase
+        self, mock_stripe_cancel
     ):
         """Should cascade delete from ALL expected tables."""
         cleanup = setup_auth_override("user-cascade-test")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock operations
             mock_sb.table.return_value = mock_sb
@@ -336,16 +330,15 @@ class TestDeleteAccountEndpoint:
 class TestExportUserDataEndpoint:
     """Test GET /me/export endpoint (AC27) - Data portability."""
 
-    @patch("supabase_client.get_supabase")
     def test_successful_data_export_with_all_data(
-        self, mock_get_supabase
+        self
     ):
         """Should export all user data in JSON format."""
         cleanup = setup_auth_override("user-full-data")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock table operations
             mock_sb.table.return_value = mock_sb
@@ -424,16 +417,15 @@ class TestExportUserDataEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_export_filename_format(
-        self, mock_get_supabase
+        self
     ):
         """Should generate filename in format: smartlic_dados_{prefix}_{date}.json"""
         cleanup = setup_auth_override("user-filename-test")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock all table queries to return empty data
             mock_sb.table.return_value = mock_sb
@@ -459,16 +451,15 @@ class TestExportUserDataEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_export_with_empty_data(
-        self, mock_get_supabase
+        self
     ):
         """Should handle export when user has no data in tables."""
         cleanup = setup_auth_override("user-empty-data")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock all table queries to return empty data
             mock_sb.table.return_value = mock_sb
@@ -492,16 +483,15 @@ class TestExportUserDataEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_export_handles_partial_table_failures(
-        self, mock_get_supabase
+        self
     ):
         """Should include empty arrays for tables that fail to load."""
         cleanup = setup_auth_override("user-partial-fail")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock table operations
             mock_sb.table.return_value = mock_sb
@@ -532,16 +522,15 @@ class TestExportUserDataEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_export_includes_all_expected_tables(
-        self, mock_get_supabase
+        self
     ):
         """Should query all expected tables: profile, search_sessions, subscriptions, messages, quota."""
         cleanup = setup_auth_override("user-table-check")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock operations
             mock_sb.table.return_value = mock_sb
@@ -571,16 +560,15 @@ class TestExportUserDataEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_export_response_has_correct_media_type(
-        self, mock_get_supabase
+        self
     ):
         """Should return application/json media type."""
         cleanup = setup_auth_override("user-media-type")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock all queries
             mock_sb.table.return_value = mock_sb
@@ -605,16 +593,15 @@ class TestExportUserDataEndpoint:
         # Should be unauthorized
         assert response.status_code in [401, 403]
 
-    @patch("supabase_client.get_supabase")
     def test_export_data_includes_timestamp(
-        self, mock_get_supabase
+        self
     ):
         """Should include exported_at timestamp in ISO format."""
         cleanup = setup_auth_override("user-timestamp")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock all queries
             mock_sb.table.return_value = mock_sb
@@ -637,16 +624,15 @@ class TestExportUserDataEndpoint:
         finally:
             cleanup()
 
-    @patch("supabase_client.get_supabase")
     def test_export_search_history_ordered_by_created_at_desc(
-        self, mock_get_supabase
+        self
     ):
         """Should order search history, subscriptions, and messages by created_at descending."""
         cleanup = setup_auth_override("user-order-test")
         try:
             # Mock Supabase client
             mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock operations
             mock_sb.table.return_value = mock_sb

@@ -165,12 +165,18 @@ function QuotaRing({ used, total }: { used: number; total: number }) {
 // Custom Tooltip for Charts
 // ============================================================================
 
-function ChartTooltip({ active, payload, label }: any) {
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+}
+
+function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[var(--surface-elevated)] border border-[var(--border)] rounded-card p-3 shadow-lg text-sm">
       <p className="font-medium text-[var(--ink)] mb-1">{label}</p>
-      {payload.map((entry: any, i: number) => (
+      {payload.map((entry, i: number) => (
         <p key={i} style={{ color: entry.color }} className="text-xs">
           {entry.name}: {entry.name === "value" ? formatCurrency(entry.value) : formatNumber(entry.value)}
         </p>
@@ -236,8 +242,8 @@ export default function DashboardPage() {
         setTimeSeries(timeData?.data || []);
         setDimensions(dimData);
         trackEvent("dashboard_viewed", { period });
-      } catch (err: any) {
-        setError(err.message || "Erro ao carregar dashboard");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar dashboard");
       } finally {
         setLoading(false);
       }

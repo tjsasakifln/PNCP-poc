@@ -5,6 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PLAN_CONFIGS } from "../../lib/plans";
+import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
@@ -119,7 +120,7 @@ export default function AdminPage() {
       setNewPlan("free_trial");
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro");
+      toast.error(err instanceof Error ? err.message : "Erro ao criar usuário");
     } finally {
       setCreating(false);
     }
@@ -140,7 +141,7 @@ export default function AdminPage() {
       }
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro");
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir usuário");
     }
   };
 
@@ -154,7 +155,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error("Erro ao atribuir plano");
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro");
+      toast.error(err instanceof Error ? err.message : "Erro ao atribuir plano");
     }
   };
 
@@ -173,7 +174,7 @@ export default function AdminPage() {
 
     const credits = parseInt(editCreditsValue, 10);
     if (isNaN(credits) || credits < 0) {
-      alert("Valor de creditos invalido. Deve ser um numero >= 0.");
+      toast.error("Valor de créditos inválido. Deve ser um número >= 0.");
       return;
     }
 
@@ -197,7 +198,7 @@ export default function AdminPage() {
       setEditCreditsValue("");
       fetchUsers();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao atualizar creditos");
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar créditos");
     } finally {
       setSavingCredits(false);
     }

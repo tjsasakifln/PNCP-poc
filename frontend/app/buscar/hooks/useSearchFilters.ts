@@ -214,7 +214,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     const termosParam = searchParams.get('termos');
 
     if (ufsParam) {
-      const ufsArray = ufsParam.split(',').filter(uf => UFS.includes(uf as any));
+      const ufsArray = ufsParam.split(',').filter(uf => (UFS as readonly string[]).includes(uf));
       if (ufsArray.length > 0) {
         setUfsSelecionadas(new Set(ufsArray));
         if (dataInicialParam) setDataInicial(dataInicialParam);

@@ -112,7 +112,12 @@ export default function SignupPage() {
 
   const isSectorValid = sector !== "" && (sector !== "outro" || sectorOther.trim() !== "");
 
-  const passwordsMatch = password === confirmPassword && password.length >= 6;
+  // STORY-226 AC17: Enforce password policy (8+ chars, 1 uppercase, 1 digit)
+  const passwordMeetsPolicy =
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password);
+  const passwordsMatch = password === confirmPassword && passwordMeetsPolicy;
 
   const isFormValid =
     fullName.trim() !== "" &&
@@ -129,6 +134,11 @@ export default function SignupPage() {
 
     if (!isValidPhone(phone)) {
       setError("Telefone invalido. Use o formato (XX) XXXXX-XXXX");
+      return;
+    }
+
+    if (!passwordMeetsPolicy) {
+      setError("A senha deve ter pelo menos 8 caracteres, 1 letra maiuscula e 1 numero");
       return;
     }
 
@@ -377,8 +387,8 @@ export default function SignupPage() {
                            bg-[var(--surface-0)] text-[var(--ink)]
                            focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
                            focus:ring-[var(--brand-blue-subtle)]"
-                placeholder="Minimo 6 caracteres"
-                minLength={6}
+                placeholder="Min. 8 caracteres, 1 maiuscula, 1 numero"
+                minLength={8}
               />
               <button
                 type="button"
@@ -406,6 +416,20 @@ export default function SignupPage() {
                 )}
               </button>
             </div>
+            {/* STORY-226 AC17: Password policy feedback */}
+            {password && !passwordMeetsPolicy && (
+              <ul className="mt-1 text-xs space-y-0.5">
+                <li className={password.length >= 8 ? "text-green-600" : "text-[var(--error)]"}>
+                  {password.length >= 8 ? "\u2713" : "\u2717"} Minimo 8 caracteres
+                </li>
+                <li className={/[A-Z]/.test(password) ? "text-green-600" : "text-[var(--error)]"}>
+                  {/[A-Z]/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 letra maiuscula
+                </li>
+                <li className={/\d/.test(password) ? "text-green-600" : "text-[var(--error)]"}>
+                  {/\d/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 numero
+                </li>
+              </ul>
+            )}
           </div>
 
           {/* Confirm Password */}
@@ -428,7 +452,7 @@ export default function SignupPage() {
                              ? 'border-[var(--error)]'
                              : 'border-[var(--border)]'}`}
                 placeholder="Digite a senha novamente"
-                minLength={6}
+                minLength={8}
               />
               <button
                 type="button"

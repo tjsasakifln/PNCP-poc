@@ -23,13 +23,13 @@ class ErrorCode:
     INVALID_DATE_RANGE = "INVALID_DATE_RANGE"
 
 
-def _get_admin_ids() -> set[str]:
+def get_admin_ids() -> set[str]:
     """Get admin user IDs from environment variable (fallback/override)."""
     raw = os.getenv("ADMIN_USER_IDS", "")
     return {uid.strip().lower() for uid in raw.split(",") if uid.strip()}
 
 
-async def _check_user_roles(user_id: str) -> tuple[bool, bool]:
+async def check_user_roles(user_id: str) -> tuple[bool, bool]:
     """
     Check user's admin and master status from Supabase.
 
@@ -94,7 +94,7 @@ async def _check_user_roles(user_id: str) -> tuple[bool, bool]:
     return (False, False)
 
 
-async def _is_admin(user_id: str) -> bool:
+async def is_admin(user_id: str) -> bool:
     """
     Check if user can access /admin/* endpoints.
 
@@ -103,16 +103,16 @@ async def _is_admin(user_id: str) -> bool:
     2. Supabase profiles.is_admin = true
     """
     # Fast path: check env var first (no DB call)
-    admin_ids = _get_admin_ids()
+    admin_ids = get_admin_ids()
     if user_id.lower() in admin_ids:
         return True
 
     # Check Supabase
-    is_admin, _ = await _check_user_roles(user_id)
-    return is_admin
+    is_admin_flag, _ = await check_user_roles(user_id)
+    return is_admin_flag
 
 
-async def _has_master_access(user_id: str) -> bool:
+async def has_master_access(user_id: str) -> bool:
     """
     Check if user has full feature access (master or admin).
 
@@ -122,16 +122,16 @@ async def _has_master_access(user_id: str) -> bool:
     3. Supabase profiles.plan_type = 'master'
     """
     # Fast path: check env var first (no DB call)
-    admin_ids = _get_admin_ids()
+    admin_ids = get_admin_ids()
     if user_id.lower() in admin_ids:
         return True
 
     # Check Supabase
-    is_admin, is_master = await _check_user_roles(user_id)
-    return is_admin or is_master
+    is_admin_flag, is_master = await check_user_roles(user_id)
+    return is_admin_flag or is_master
 
 
-def _get_master_quota_info(is_admin: bool = False):
+def get_master_quota_info(is_admin: bool = False):
     """
     Get quota info for admin/master users - returns sala_guerra (highest tier).
 
@@ -153,3 +153,15 @@ def _get_master_quota_info(is_admin: bool = False):
         trial_expires_at=None,
         error_message=None,
     )
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible aliases (STORY-226 AC8)
+# These allow existing code that imports the underscore-prefixed names to
+# continue working without modification.  New code should use the public names.
+# ---------------------------------------------------------------------------
+_get_admin_ids = get_admin_ids
+_check_user_roles = check_user_roles
+_is_admin = is_admin
+_has_master_access = has_master_access
+_get_master_quota_info = get_master_quota_info

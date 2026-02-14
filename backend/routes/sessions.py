@@ -7,6 +7,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Query
 from auth import require_auth
+from database import get_db
 from schemas import SessionsListResponse
 
 logger = logging.getLogger(__name__)
@@ -19,13 +20,11 @@ async def get_sessions(
     user: dict = Depends(require_auth),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    db=Depends(get_db),
 ):
     """Get user's search session history."""
-    from supabase_client import get_supabase
-    sb = get_supabase()
-
     result = (
-        sb.table("search_sessions")
+        db.table("search_sessions")
         .select("*", count="exact")
         .eq("user_id", user["id"])
         .order("created_at", desc=True)

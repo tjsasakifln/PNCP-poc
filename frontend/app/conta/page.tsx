@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "../components/AuthProvider";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function ContaPage() {
   const { user, session, loading: authLoading, signOut } = useAuth();
@@ -174,7 +175,7 @@ export default function ContaPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao exportar dados");
+      toast.error(err instanceof Error ? err.message : "Erro ao exportar dados");
     } finally {
       setExporting(false);
     }

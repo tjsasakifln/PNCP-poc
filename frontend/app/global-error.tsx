@@ -77,6 +77,16 @@ export default function GlobalError({
             >
               Tentar novamente
             </button>
+            <p style={{ marginTop: "1rem", fontSize: "0.875rem", color: "#6b7280" }}>
+              Se o problema persistir,{" "}
+              <a href="/mensagens" style={{ color: "#2563eb", textDecoration: "underline" }}>
+                entre em contato com o suporte
+              </a>{" "}
+              ou consulte a{" "}
+              <a href="/ajuda" style={{ color: "#2563eb", textDecoration: "underline" }}>
+                Central de Ajuda
+              </a>.
+            </p>
           </div>
         </div>
       </body>

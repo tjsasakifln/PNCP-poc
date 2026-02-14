@@ -38,6 +38,9 @@ cryptography==43.0.3               # Required by google-auth
 # Transactional email (STORY-225)
 resend>=2.0.0,<3.0.0
 
+# YAML configuration loading (sectors_data.yaml)
+PyYAML>=6.0,<7.0
+
 # JSON structured logging (STORY-220)
 python-json-logger>=2.0.4,<3.0.0
 

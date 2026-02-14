@@ -467,7 +467,7 @@ class TestAdminEndpointValidation:
                 "/admin/users",
                 json={
                     "email": "test@example.com",
-                    "password": "password123",
+                    "password": "Password123",
                     "plan_id": "free"  # Valid plan_id
                 }
             )

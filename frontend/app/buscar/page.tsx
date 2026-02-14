@@ -5,7 +5,7 @@ import Link from "next/link";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useOnboarding } from "../../hooks/useOnboarding";
-import { useKeyboardShortcuts, getShortcutDisplay } from "../../hooks/useKeyboardShortcuts";
+import { useKeyboardShortcuts, getShortcutDisplay, type KeyboardShortcut } from "../../hooks/useKeyboardShortcuts";
 import { usePlan } from "../../hooks/usePlan";
 import { useAuth } from "../components/AuthProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -20,14 +20,10 @@ import { useSearch } from "./hooks/useSearch";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
 
+import { dateDiffInDays } from "../../lib/utils/dateDiffInDays";
+
 // White label branding configuration
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
-
-function dateDiffInDays(date1: string, date2: string): number {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-  return Math.ceil(Math.abs(d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-}
 
 function HomePageContent() {
   const { session, loading: authLoading } = useAuth();
@@ -68,7 +64,7 @@ function HomePageContent() {
   ] });
 
   const handleShowUpgradeModal = (plan?: string, source?: string) => {
-    setPreSelectedPlan(plan as any);
+    setPreSelectedPlan(plan as typeof preSelectedPlan);
     setUpgradeSource(source);
     setShowUpgradeModal(true);
   };
@@ -239,15 +235,15 @@ function HomePageContent() {
               </button>
             </div>
             <div className="space-y-3">
-              {[
+              {([
                 ["Executar busca", { key: 'k', ctrlKey: true, action: () => {}, description: '' }],
                 ["Selecionar todos os estados", { key: 'a', ctrlKey: true, action: () => {}, description: '' }],
                 ["Executar busca (alternativo)", { key: 'Enter', ctrlKey: true, action: () => {}, description: '' }],
-              ].map(([label, shortcut]) => (
-                <div key={label as string} className="flex items-center justify-between py-2 border-b border-strong">
-                  <span className="text-ink">{label as string}</span>
+              ] as [string, KeyboardShortcut][]).map(([label, shortcut]) => (
+                <div key={label} className="flex items-center justify-between py-2 border-b border-strong">
+                  <span className="text-ink">{label}</span>
                   <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
-                    {getShortcutDisplay(shortcut as any)}
+                    {getShortcutDisplay(shortcut)}
                   </kbd>
                 </div>
               ))}

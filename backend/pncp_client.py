@@ -15,6 +15,7 @@ from urllib3.util.retry import Retry
 
 from config import RetryConfig, DEFAULT_MODALIDADES
 from exceptions import PNCPAPIError
+from middleware import request_id_var
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class PNCPClient:
         session.mount("https://", adapter)
         session.mount("http://", adapter)
 
-        # Set default headers
+        # Set default headers (X-Request-ID is added per-request in fetch_page)
         session.headers.update({
             "User-Agent": "BidIQ/1.0 (procurement-search; contact@bidiq.com.br)",
             "Accept": "application/json",
@@ -179,6 +180,12 @@ class PNCPClient:
 
         url = f"{self.BASE_URL}/contratacoes/publicacao"
 
+        # STORY-226 AC23: Forward X-Request-ID for distributed tracing
+        req_id = request_id_var.get("-")
+        headers = {}
+        if req_id and req_id != "-":
+            headers["X-Request-ID"] = req_id
+
         for attempt in range(self.config.max_retries + 1):
             try:
                 logger.debug(
@@ -187,7 +194,8 @@ class PNCPClient:
                 )
 
                 response = self.session.get(
-                    url, params=params, timeout=self.config.timeout
+                    url, params=params, timeout=self.config.timeout,
+                    headers=headers,
                 )
 
                 # Handle rate limiting specifically
@@ -692,7 +700,15 @@ class AsyncPNCPClient:
                     f"{self.config.max_retries + 1}"
                 )
 
-                response = await self._client.get(url, params=params)
+                # STORY-226 AC23: Forward X-Request-ID for distributed tracing
+                req_id = request_id_var.get("-")
+                extra_headers = {}
+                if req_id and req_id != "-":
+                    extra_headers["X-Request-ID"] = req_id
+
+                response = await self._client.get(
+                    url, params=params, headers=extra_headers
+                )
 
                 # Handle rate limiting
                 if response.status_code == 429:

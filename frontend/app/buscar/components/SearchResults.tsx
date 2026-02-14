@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { BuscaResult } from "../../types";
+import type { SearchProgressEvent } from "../../../hooks/useSearchProgress";
 import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
 import { EmptyState } from "../../components/EmptyState";
@@ -18,7 +19,7 @@ export interface SearchResultsProps {
   stateCount: number;
   statesProcessed: number;
   onCancel: () => void;
-  sseEvent: any;
+  sseEvent: SearchProgressEvent | null;
   useRealProgress: boolean;
   sseAvailable: boolean;
   onStageChange: (stage: number) => void;

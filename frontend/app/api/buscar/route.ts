@@ -164,11 +164,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await response.json().catch(async () => {
-      const text = await response.text().catch(() => "");
-      console.error(`[buscar] Backend returned non-JSON response: ${text.slice(0, 200)}`);
-      return null;
-    });
+    const responseText = await response.text();
+    const data = (() => {
+      try {
+        return JSON.parse(responseText);
+      } catch {
+        console.error(`[buscar] Backend returned non-JSON response: ${responseText.slice(0, 200)}`);
+        return null;
+      }
+    })();
 
     if (!data) {
       return NextResponse.json(
