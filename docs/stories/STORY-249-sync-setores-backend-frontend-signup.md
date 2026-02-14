@@ -52,21 +52,21 @@ Divergências encontradas:
 ## Acceptance Criteria
 
 ### Sync
-- [ ] **AC1:** SETORES_FALLBACK em `useSearchFilters.ts` tem exatamente os mesmos IDs e nomes que `sectors_data.yaml` (12 setores). Cada entrada tem: id, name, description.
-- [ ] **AC2:** SECTORS em `signup/page.tsx` tem os mesmos 12 setores + `{ id: "outro", name: "Outro" }` (total: 13).
-- [ ] **AC3:** Nenhum ID inventado (como `alimentacao`, `escritorio`, `construcao`, `seguranca`, `servicos`) existe no frontend.
-- [ ] **AC4:** Script `scripts/sync-setores-fallback.js` sincroniza tanto `useSearchFilters.ts` quanto `signup/page.tsx`.
+- [x] **AC1:** SETORES_FALLBACK em `useSearchFilters.ts` tem exatamente os mesmos IDs e nomes que `sectors_data.yaml` (15 setores). Cada entrada tem: id, name, description.
+- [x] **AC2:** SECTORS em `signup/page.tsx` tem os mesmos 15 setores + `{ id: "outro", name: "Outro" }` (total: 16). Já estava correto.
+- [x] **AC3:** Nenhum ID inventado (como `alimentacao`, `escritorio`, `construcao`, `seguranca`, `servicos`) existe no frontend.
+- [x] **AC4:** Script `scripts/sync-setores-fallback.js` sincroniza tanto `useSearchFilters.ts` quanto `signup/page.tsx`.
 
 ### Verificação
-- [ ] **AC5:** Teste automatizado: `test_frontend_fallback_matches_backend()` — lê sectors_data.yaml e compara com SETORES_FALLBACK (importação direta ou parse de arquivo).
-- [ ] **AC6:** `npm test` frontend passa com os novos setores.
-- [ ] **AC7:** Dropdown de setores na busca mostra todos os setores corretos.
-- [ ] **AC8:** Dropdown de setores no signup mostra todos os setores corretos + "Outro".
+- [x] **AC5:** Teste automatizado: `sector-sync.test.ts` — lê sectors_data.yaml e compara com SETORES_FALLBACK (parse de arquivo). 6 testes passando.
+- [x] **AC6:** `npm test` frontend passa com os novos setores (1302 passed, 7 pre-existing failures).
+- [ ] **AC7:** Dropdown de setores na busca mostra todos os setores corretos. (manual/E2E)
+- [ ] **AC8:** Dropdown de setores no signup mostra todos os setores corretos + "Outro". (manual/E2E)
 
 ### Regressão
-- [ ] **AC9:** Busca por setor funciona para todos os 12 setores (IDs corretos propagados).
-- [ ] **AC10:** Signup com seleção de setor funciona.
-- [ ] **AC11:** localStorage sector cache invalidado (TTL ou versão) para forçar recarga.
+- [ ] **AC9:** Busca por setor funciona para todos os 15 setores (IDs corretos propagados). (manual/E2E)
+- [ ] **AC10:** Signup com seleção de setor funciona. (manual/E2E)
+- [x] **AC11:** localStorage sector cache invalidado (versão bumped: `smartlic-sectors-cache` → `smartlic-sectors-cache-v2`).
 
 ## Definition of Done
 - Todos os ACs checked

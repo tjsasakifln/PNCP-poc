@@ -3,22 +3,24 @@
 /**
  * Sync Setores Fallback Script
  *
- * This script synchronizes the hardcoded fallback sector list in the frontend
- * with the backend's sector definitions. It should be run monthly or whenever
- * new sectors are added to the backend.
+ * Synchronizes hardcoded sector lists in the frontend with the backend's
+ * sector definitions (sectors_data.yaml via /setores endpoint).
+ *
+ * Targets:
+ *   1. useSearchFilters.ts  → SETORES_FALLBACK (id, name, description)
+ *   2. signup/page.tsx      → SECTORS (id, name) + { id: "outro", name: "Outro" }
  *
  * Usage:
  *   node scripts/sync-setores-fallback.js [options]
  *
  * Options:
- *   --dry-run    Show what would be changed without modifying files
- *   --backend-url URL   Custom backend URL (default: http://localhost:8000)
+ *   --dry-run          Show what would be changed without modifying files
+ *   --backend-url URL  Custom backend URL (default: http://localhost:8000)
  *
  * Requirements:
- *   - Backend must be running
- *   - Backend must have /setores endpoint
+ *   - Backend must be running with /setores endpoint
  *
- * STORY-170 AC15: Fallback Hardcoded de Setores
+ * STORY-170 AC15 + STORY-249 AC4
  */
 
 const fs = require('fs').promises;
@@ -32,7 +34,9 @@ const BACKEND_URL = backendUrlIndex !== -1 && args[backendUrlIndex + 1]
   ? args[backendUrlIndex + 1]
   : 'http://localhost:8000';
 
-const FRONTEND_PAGE_PATH = path.join(__dirname, '../frontend/app/buscar/page.tsx');
+// Target file paths
+const SEARCH_FILTERS_PATH = path.join(__dirname, '../frontend/app/buscar/hooks/useSearchFilters.ts');
+const SIGNUP_PAGE_PATH = path.join(__dirname, '../frontend/app/signup/page.tsx');
 
 // ANSI color codes for terminal output
 const colors = {
@@ -52,7 +56,7 @@ function log(message, color = 'reset') {
  * Fetch sectors from backend API
  */
 async function fetchBackendSetores() {
-  log('\n📡 Fetching sectors from backend...', 'cyan');
+  log('\n  Fetching sectors from backend...', 'cyan');
   log(`   URL: ${BACKEND_URL}/setores\n`, 'cyan');
 
   try {
@@ -68,111 +72,21 @@ async function fetchBackendSetores() {
       throw new Error('Invalid response format: missing "setores" array');
     }
 
-    log(`✅ Successfully fetched ${data.setores.length} sectors`, 'green');
+    log(`   Successfully fetched ${data.setores.length} sectors`, 'green');
     return data.setores;
   } catch (error) {
-    log(`❌ Failed to fetch sectors: ${error.message}`, 'red');
-    log('\n💡 Make sure the backend is running:', 'yellow');
+    log(`   Failed to fetch sectors: ${error.message}`, 'red');
+    log('\n   Make sure the backend is running:', 'yellow');
     log('   cd backend && uvicorn main:app --reload', 'yellow');
     throw error;
   }
 }
 
 /**
- * Generate TypeScript code for SETORES_FALLBACK constant
- */
-function generateFallbackCode(setores) {
-  const entries = setores.map(setor => {
-    return `    { id: "${setor.id}", name: "${setor.name}", description: "${setor.description}" },`;
-  }).join('\n');
-
-  return `  // Hardcoded fallback list of sectors
-  const SETORES_FALLBACK: Setor[] = [
-${entries}
-  ];`;
-}
-
-/**
- * Update the frontend page with new fallback data
- */
-async function updateFrontendPage(setores) {
-  log('\n📝 Reading frontend page...', 'cyan');
-
-  try {
-    let content = await fs.readFile(FRONTEND_PAGE_PATH, 'utf-8');
-
-    // Find the SETORES_FALLBACK constant
-    const fallbackRegex = /\/\/ Hardcoded fallback list of sectors\s+const SETORES_FALLBACK: Setor\[\] = \[[^\]]+\];/s;
-
-    if (!fallbackRegex.test(content)) {
-      throw new Error('Could not find SETORES_FALLBACK constant in page.tsx');
-    }
-
-    const newFallbackCode = generateFallbackCode(setores);
-    const updatedContent = content.replace(fallbackRegex, newFallbackCode);
-
-    if (isDryRun) {
-      log('\n🔍 DRY RUN MODE - Changes that would be made:', 'yellow');
-      log('─'.repeat(60), 'yellow');
-      log(newFallbackCode, 'bright');
-      log('─'.repeat(60), 'yellow');
-      log('\n✅ Dry run complete. No files were modified.', 'green');
-      log('   Run without --dry-run to apply changes.\n', 'cyan');
-    } else {
-      await fs.writeFile(FRONTEND_PAGE_PATH, updatedContent, 'utf-8');
-      log('✅ Successfully updated frontend page', 'green');
-      log(`   File: ${FRONTEND_PAGE_PATH}\n`, 'cyan');
-    }
-
-    return true;
-  } catch (error) {
-    log(`❌ Failed to update frontend: ${error.message}`, 'red');
-    throw error;
-  }
-}
-
-/**
- * Compare current and new sector lists
- */
-function compareSetores(currentCode, newSetores) {
-  log('\n📊 Sector comparison:', 'cyan');
-
-  // Extract current sectors from code
-  const currentMatches = currentCode.match(/{ id: "([^"]+)"/g) || [];
-  const currentIds = currentMatches.map(m => m.match(/"([^"]+)"/)[1]);
-
-  const newIds = newSetores.map(s => s.id);
-
-  const added = newIds.filter(id => !currentIds.includes(id));
-  const removed = currentIds.filter(id => !newIds.includes(id));
-  const unchanged = currentIds.filter(id => newIds.includes(id));
-
-  log(`   Total sectors: ${newIds.length}`, 'bright');
-
-  if (added.length > 0) {
-    log(`   ✨ Added: ${added.join(', ')}`, 'green');
-  }
-
-  if (removed.length > 0) {
-    log(`   🗑️  Removed: ${removed.join(', ')}`, 'red');
-  }
-
-  if (unchanged.length > 0) {
-    log(`   ✓ Unchanged: ${unchanged.length} sectors`, 'cyan');
-  }
-
-  if (added.length === 0 && removed.length === 0) {
-    log(`   ℹ️  No changes detected`, 'yellow');
-  }
-
-  console.log();
-}
-
-/**
  * Validate sector data structure
  */
 function validateSetores(setores) {
-  log('\n🔍 Validating sector data...', 'cyan');
+  log('\n   Validating sector data...', 'cyan');
 
   const errors = [];
 
@@ -189,25 +103,149 @@ function validateSetores(setores) {
   });
 
   if (errors.length > 0) {
-    log('❌ Validation failed:', 'red');
-    errors.forEach(err => log(`   • ${err}`, 'red'));
+    log('   Validation failed:', 'red');
+    errors.forEach(err => log(`   - ${err}`, 'red'));
     throw new Error('Invalid sector data structure');
   }
 
-  log(`✅ All ${setores.length} sectors validated successfully\n`, 'green');
+  log(`   All ${setores.length} sectors validated successfully\n`, 'green');
 }
 
 /**
- * Main execution
+ * Compare current and new sector lists (by ID)
  */
+function compareSetores(label, currentCode, newIds) {
+  log(`\n   Sector comparison [${label}]:`, 'cyan');
+
+  const currentMatches = currentCode.match(/id: "([^"]+)"/g) || [];
+  const currentIds = currentMatches.map(m => m.match(/"([^"]+)"/)[1]);
+
+  const added = newIds.filter(id => !currentIds.includes(id));
+  const removed = currentIds.filter(id => !newIds.includes(id));
+  const unchanged = currentIds.filter(id => newIds.includes(id));
+
+  log(`   Total sectors: ${newIds.length}`, 'bright');
+
+  if (added.length > 0) {
+    log(`   + Added: ${added.join(', ')}`, 'green');
+  }
+
+  if (removed.length > 0) {
+    log(`   - Removed: ${removed.join(', ')}`, 'red');
+  }
+
+  if (unchanged.length > 0) {
+    log(`   = Unchanged: ${unchanged.length} sectors`, 'cyan');
+  }
+
+  if (added.length === 0 && removed.length === 0) {
+    log(`   No changes detected`, 'yellow');
+  }
+
+  console.log();
+  return { added, removed };
+}
+
+// ─── Target 1: useSearchFilters.ts SETORES_FALLBACK ──────────────────────────
+
+function generateFallbackCode(setores) {
+  const entries = setores.map(setor => {
+    return `  { id: "${setor.id}", name: "${setor.name}", description: "${setor.description}" },`;
+  }).join('\n');
+
+  return `// Fallback sectors list — synced with backend/sectors_data.yaml (STORY-249)
+const SETORES_FALLBACK: Setor[] = [
+${entries}
+];`;
+}
+
+async function updateSearchFilters(setores) {
+  log('   [1/2] Updating useSearchFilters.ts SETORES_FALLBACK...', 'cyan');
+
+  const content = await fs.readFile(SEARCH_FILTERS_PATH, 'utf-8');
+
+  const fallbackRegex = /\/\/ Fallback sectors list[^\n]*\nconst SETORES_FALLBACK: Setor\[\] = \[[^\]]+\];/s;
+
+  if (!fallbackRegex.test(content)) {
+    throw new Error('Could not find SETORES_FALLBACK constant in useSearchFilters.ts');
+  }
+
+  // Compare before applying
+  const currentMatch = content.match(fallbackRegex);
+  if (currentMatch) {
+    compareSetores('useSearchFilters.ts', currentMatch[0], setores.map(s => s.id));
+  }
+
+  const newCode = generateFallbackCode(setores);
+  const updatedContent = content.replace(fallbackRegex, newCode);
+
+  if (isDryRun) {
+    log('   DRY RUN - useSearchFilters.ts would become:', 'yellow');
+    log('   ' + '-'.repeat(50), 'yellow');
+    log(newCode, 'bright');
+    log('   ' + '-'.repeat(50), 'yellow');
+  } else {
+    await fs.writeFile(SEARCH_FILTERS_PATH, updatedContent, 'utf-8');
+    log(`   Updated: ${SEARCH_FILTERS_PATH}`, 'green');
+  }
+}
+
+// ─── Target 2: signup/page.tsx SECTORS ────────────────────────────────────────
+
+function generateSignupCode(setores) {
+  const entries = setores.map(setor => {
+    return `  { id: "${setor.id}", name: "${setor.name}" },`;
+  }).join('\n');
+
+  return `// Available sectors — synced with backend/sectors_data.yaml (STORY-249)
+const SECTORS = [
+${entries}
+  { id: "outro", name: "Outro" },
+];`;
+}
+
+async function updateSignupPage(setores) {
+  log('   [2/2] Updating signup/page.tsx SECTORS...', 'cyan');
+
+  const content = await fs.readFile(SIGNUP_PAGE_PATH, 'utf-8');
+
+  const sectorsRegex = /\/\/ Available sectors[^\n]*\nconst SECTORS = \[[^\]]+\];/s;
+
+  if (!sectorsRegex.test(content)) {
+    throw new Error('Could not find SECTORS constant in signup/page.tsx');
+  }
+
+  // Compare before applying
+  const currentMatch = content.match(sectorsRegex);
+  if (currentMatch) {
+    const idsWithOutro = [...setores.map(s => s.id), 'outro'];
+    compareSetores('signup/page.tsx', currentMatch[0], idsWithOutro);
+  }
+
+  const newCode = generateSignupCode(setores);
+  const updatedContent = content.replace(sectorsRegex, newCode);
+
+  if (isDryRun) {
+    log('   DRY RUN - signup/page.tsx would become:', 'yellow');
+    log('   ' + '-'.repeat(50), 'yellow');
+    log(newCode, 'bright');
+    log('   ' + '-'.repeat(50), 'yellow');
+  } else {
+    await fs.writeFile(SIGNUP_PAGE_PATH, updatedContent, 'utf-8');
+    log(`   Updated: ${SIGNUP_PAGE_PATH}`, 'green');
+  }
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+
 async function main() {
   log('\n' + '='.repeat(60), 'bright');
   log('  Sync Setores Fallback Script', 'bright');
-  log('  STORY-170 AC15: Monthly sector synchronization', 'cyan');
+  log('  STORY-249 AC4: Sync useSearchFilters.ts + signup/page.tsx', 'cyan');
   log('='.repeat(60) + '\n', 'bright');
 
   if (isDryRun) {
-    log('🔍 Running in DRY RUN mode\n', 'yellow');
+    log('   Running in DRY RUN mode\n', 'yellow');
   }
 
   try {
@@ -217,25 +255,18 @@ async function main() {
     // Step 2: Validate data
     validateSetores(setores);
 
-    // Step 3: Read current content for comparison
-    const currentContent = await fs.readFile(FRONTEND_PAGE_PATH, 'utf-8');
-    const currentFallback = currentContent.match(/\/\/ Hardcoded fallback list of sectors[\s\S]+?const SETORES_FALLBACK: Setor\[\] = \[[^\]]+\];/);
-
-    if (currentFallback) {
-      compareSetores(currentFallback[0], setores);
-    }
-
-    // Step 4: Update frontend
-    await updateFrontendPage(setores);
+    // Step 3: Update both targets
+    await updateSearchFilters(setores);
+    await updateSignupPage(setores);
 
     // Success summary
-    log('='.repeat(60), 'green');
-    log('  ✅ Synchronization complete!', 'green');
+    log('\n' + '='.repeat(60), 'green');
+    log('  Synchronization complete!', 'green');
     log('='.repeat(60) + '\n', 'green');
 
     if (!isDryRun) {
-      log('📝 Next steps:', 'cyan');
-      log('   1. Review the changes in page.tsx', 'cyan');
+      log('   Next steps:', 'cyan');
+      log('   1. Review changes in useSearchFilters.ts and signup/page.tsx', 'cyan');
       log('   2. Test the frontend with: npm run dev', 'cyan');
       log('   3. Commit the changes if everything looks good\n', 'cyan');
     }
@@ -243,7 +274,7 @@ async function main() {
     process.exit(0);
   } catch (error) {
     log('\n' + '='.repeat(60), 'red');
-    log('  ❌ Synchronization failed', 'red');
+    log('  Synchronization failed', 'red');
     log('='.repeat(60) + '\n', 'red');
     process.exit(1);
   }

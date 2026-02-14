@@ -56,23 +56,23 @@ const validateTermsClientSide = (terms: string[]): TermValidation => {
   return { valid, ignored, reasons };
 };
 
-// Fallback sectors list
+// Fallback sectors list — synced with backend/sectors_data.yaml (STORY-249)
 const SETORES_FALLBACK: Setor[] = [
-  { id: "vestuario", name: "Vestuário e Uniformes", description: "Uniformes, fardamentos, roupas profissionais" },
-  { id: "facilities", name: "Facilities e Manutenção", description: "Manutenção, limpeza, conservação" },
-  { id: "software", name: "Software & TI", description: "Software, sistemas, hardware, tecnologia" },
-  { id: "alimentacao", name: "Alimentação", description: "Merenda, refeições, alimentos" },
-  { id: "equipamentos", name: "Equipamentos", description: "Máquinas, equipamentos, ferramentas" },
-  { id: "transporte", name: "Transporte", description: "Veículos, combustível, frete" },
-  { id: "saude", name: "Saúde", description: "Medicamentos, material hospitalar" },
-  { id: "limpeza", name: "Limpeza", description: "Produtos de limpeza, higiene" },
-  { id: "seguranca", name: "Vigilância e Segurança Patrimonial", description: "Vigilância, segurança patrimonial" },
-  { id: "escritorio", name: "Material de Escritório", description: "Papelaria, escritório" },
-  { id: "construcao", name: "Engenharia, Projetos e Obras", description: "Obras, materiais de construção" },
-  { id: "servicos", name: "Serviços Gerais", description: "Serviços diversos" },
-  { id: "engenharia_rodoviaria", name: "Engenharia Rodoviária", description: "Pavimentação, rodovias, pontes, viadutos, sinalização viária" },
-  { id: "materiais_eletricos", name: "Materiais Elétricos", description: "Fios, cabos, disjuntores, iluminação, subestações" },
-  { id: "materiais_hidraulicos", name: "Materiais Hidráulicos", description: "Tubos, conexões, bombas, tratamento de água, saneamento" },
+  { id: "vestuario", name: "Vestuário e Uniformes", description: "Uniformes, fardamentos, roupas profissionais, EPIs de vestuário" },
+  { id: "alimentos", name: "Alimentos e Merenda", description: "Gêneros alimentícios, merenda escolar, refeições, rancho" },
+  { id: "informatica", name: "Hardware e Equipamentos de TI", description: "Computadores, servidores, periféricos, redes, equipamentos de informática, impressoras, switches, storage" },
+  { id: "mobiliario", name: "Mobiliário", description: "Mesas, cadeiras, armários, estantes, móveis de escritório" },
+  { id: "papelaria", name: "Papelaria e Material de Escritório", description: "Papel, canetas, material de escritório, suprimentos administrativos" },
+  { id: "engenharia", name: "Engenharia, Projetos e Obras", description: "Obras, reformas, construção civil, pavimentação, infraestrutura, escritórios de projeto, consultorias de engenharia, fiscalização, topografia" },
+  { id: "software", name: "Software e Sistemas", description: "Licenças de software, SaaS, desenvolvimento de sistemas, consultoria de TI" },
+  { id: "facilities", name: "Facilities e Manutenção", description: "Limpeza predial, produtos de limpeza, conservação, copa/cozinha, portaria, recepção, zeladoria, jardinagem, manutenção predial" },
+  { id: "saude", name: "Saúde", description: "Medicamentos, equipamentos hospitalares, insumos médicos, materiais de laboratório, órteses e próteses" },
+  { id: "vigilancia", name: "Vigilância e Segurança Patrimonial", description: "Vigilância patrimonial, segurança eletrônica, CFTV, alarmes, controle de acesso, portaria armada/desarmada" },
+  { id: "transporte", name: "Transporte e Veículos", description: "Aquisição/locação de veículos, combustíveis, manutenção de frota, pneus, peças automotivas, gerenciamento de frota" },
+  { id: "manutencao_predial", name: "Manutenção e Conservação Predial", description: "Manutenção preventiva/corretiva de edificações, PMOC, ar condicionado, elevadores, instalações elétricas/hidráulicas, pintura predial, impermeabilização" },
+  { id: "engenharia_rodoviaria", name: "Engenharia Rodoviária e Infraestrutura Viária", description: "Pavimentação, rodovias, pontes, viadutos, sinalização viária, conservação rodoviária" },
+  { id: "materiais_eletricos", name: "Materiais Elétricos e Instalações", description: "Fios, cabos, disjuntores, quadros elétricos, iluminação pública, subestações" },
+  { id: "materiais_hidraulicos", name: "Materiais Hidráulicos e Saneamento", description: "Tubos, conexões, bombas, tratamento de água, esgoto, redes de distribuição" },
 ];
 
 export interface SearchFiltersState {
@@ -320,7 +320,8 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   }, [Array.from(ufsSelecionadas).sort().join(",")]);
 
   // Sector caching configuration (FE-NEW-08)
-  const SECTOR_CACHE_KEY = "smartlic-sectors-cache";
+  // STORY-249 AC11: Bump version when sector IDs/names change to invalidate old cache
+  const SECTOR_CACHE_KEY = "smartlic-sectors-cache-v2";
   const SECTOR_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   interface SectorCache {
