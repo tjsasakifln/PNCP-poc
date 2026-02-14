@@ -73,26 +73,26 @@ NECESSÁRIO (ResumoEstrategico):
 ## Acceptance Criteria
 
 ### Backend — Schema
-- [ ] **AC1:** Schema `Recomendacao` com campos: oportunidade, valor, urgencia (enum), acao_sugerida, justificativa.
-- [ ] **AC2:** Schema `ResumoEstrategico` extends `ResumoLicitacoes` com campos adicionais: recomendacoes (list), alertas_urgencia (list), insight_setorial (str).
-- [ ] **AC3:** `ResumoEstrategico` é backward compatible — campos antigos (resumo_executivo, destaques, etc.) continuam presentes.
+- [x] **AC1:** Schema `Recomendacao` com campos: oportunidade, valor, urgencia (enum), acao_sugerida, justificativa.
+- [x] **AC2:** Schema `ResumoEstrategico` extends `ResumoLicitacoes` com campos adicionais: recomendacoes (list), alertas_urgencia (list), insight_setorial (str).
+- [x] **AC3:** `ResumoEstrategico` é backward compatible — campos antigos (resumo_executivo, destaques, etc.) continuam presentes.
 
 ### Backend — LLM
-- [ ] **AC4:** System prompt inclui persona de consultor com experiência no setor específico.
-- [ ] **AC5:** System prompt instrui: "Para cada oportunidade relevante, forneça ação concreta e justificativa".
-- [ ] **AC6:** System prompt inclui regras de urgência: alta (<3 dias), media (3-7 dias), baixa (>7 dias).
-- [ ] **AC7:** `max_tokens` aumentado para 1200.
-- [ ] **AC8:** Forbidden terms validation mantida (lines 177-195).
-- [ ] **AC9:** Fallback (`gerar_resumo_fallback`) retorna `ResumoEstrategico` com recomendações baseadas em heurísticas (top 3 por valor + urgência).
+- [x] **AC4:** System prompt inclui persona de consultor com experiência no setor específico.
+- [x] **AC5:** System prompt instrui: "Para cada oportunidade relevante, forneça ação concreta e justificativa".
+- [x] **AC6:** System prompt inclui regras de urgência: alta (<3 dias), media (3-7 dias), baixa (>7 dias).
+- [x] **AC7:** `max_tokens` aumentado para 1200.
+- [x] **AC8:** Forbidden terms validation mantida (lines 209-227).
+- [x] **AC9:** Fallback (`gerar_resumo_fallback`) retorna `ResumoEstrategico` com recomendações baseadas em heurísticas (top 5 por valor + urgência).
 
 ### Frontend
-- [ ] **AC10:** Recomendações renderizadas como cards com: badge de urgência (cor), ação sugerida em destaque, valor formatado.
-- [ ] **AC11:** Insight setorial exibido como banner informativo acima das recomendações.
-- [ ] **AC12:** Alertas de urgência (múltiplos) exibidos como lista com ícones de alerta.
+- [x] **AC10:** Recomendações renderizadas como cards com: badge de urgência (cor), ação sugerida em destaque, valor formatado.
+- [x] **AC11:** Insight setorial exibido como banner informativo acima das recomendações.
+- [x] **AC12:** Alertas de urgência (múltiplos) exibidos como lista com ícones de alerta.
 
 ### Regressão
-- [ ] **AC13:** Endpoint `/buscar` retorna `ResumoEstrategico` sem quebrar clientes que consomem apenas campos de `ResumoLicitacoes`.
-- [ ] **AC14:** Testes existentes de LLM atualizados para novo schema.
+- [x] **AC13:** Endpoint `/buscar` retorna `ResumoEstrategico` sem quebrar clientes que consomem apenas campos de `ResumoLicitacoes`.
+- [x] **AC14:** Testes existentes de LLM atualizados para novo schema.
 
 ## Definition of Done
 - Todos os ACs checked

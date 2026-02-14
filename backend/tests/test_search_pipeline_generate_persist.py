@@ -15,7 +15,7 @@ from search_pipeline import (
     _calcular_dias_restantes,
     _convert_to_licitacao_items,
 )
-from schemas import LicitacaoItem, ResumoLicitacoes, BuscaResponse
+from schemas import LicitacaoItem, ResumoLicitacoes, ResumoEstrategico, BuscaResponse
 
 
 # ============================================================================
@@ -87,7 +87,7 @@ def make_licitacao(**overrides):
 
 
 def make_resumo(**overrides):
-    """Create a ResumoLicitacoes instance."""
+    """Create a ResumoEstrategico instance."""
     defaults = {
         "resumo_executivo": "Encontradas 2 licitacoes de vestuario em SC.",
         "total_oportunidades": 2,
@@ -96,7 +96,7 @@ def make_resumo(**overrides):
         "alerta_urgencia": None,
     }
     defaults.update(overrides)
-    return ResumoLicitacoes(**defaults)
+    return ResumoEstrategico(**defaults)
 
 
 def make_ctx(**overrides):

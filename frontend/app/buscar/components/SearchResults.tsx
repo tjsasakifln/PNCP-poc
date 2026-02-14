@@ -278,12 +278,65 @@ export default function SearchResults({
               </div>
             </div>
 
-            {result.resumo.alerta_urgencia && (
+            {/* AC11: Insight Setorial Banner */}
+            {result.resumo.insight_setorial && (
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-brand-blue-subtle/50 border border-accent/30 rounded-card">
+                <p className="text-sm sm:text-base text-ink-secondary leading-relaxed">
+                  <span className="font-semibold text-brand-navy dark:text-brand-blue">Contexto do setor: </span>
+                  {result.resumo.insight_setorial}
+                </p>
+              </div>
+            )}
+
+            {/* AC12: Multiple Urgency Alerts */}
+            {result.resumo.alertas_urgencia && result.resumo.alertas_urgencia.length > 0 ? (
+              <div className="mt-4 sm:mt-6 space-y-2" role="alert">
+                {result.resumo.alertas_urgencia.map((alerta, i) => (
+                  <div key={i} className="p-3 sm:p-4 bg-warning-subtle border border-warning/20 rounded-card">
+                    <p className="text-sm sm:text-base font-medium text-warning">{alerta}</p>
+                  </div>
+                ))}
+              </div>
+            ) : result.resumo.alerta_urgencia ? (
               <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
                 <p className="text-sm sm:text-base font-medium text-warning">
                   <span aria-hidden="true">Atenção: </span>
                   {result.resumo.alerta_urgencia}
                 </p>
+              </div>
+            ) : null}
+
+            {/* AC10: Recommendation Cards */}
+            {result.resumo.recomendacoes && result.resumo.recomendacoes.length > 0 && (
+              <div className="mt-4 sm:mt-6">
+                <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-3 sm:mb-4">Recomendações do Consultor:</h4>
+                <div className="space-y-3">
+                  {result.resumo.recomendacoes.map((rec, i) => (
+                    <div
+                      key={i}
+                      className="p-3 sm:p-4 bg-surface border border-border rounded-card animate-fade-in-up"
+                      style={{ animationDelay: `${i * 80}ms` }}
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          rec.urgencia === "alta"
+                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                            : rec.urgencia === "media"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                            : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                        }`}>
+                          {rec.urgencia === "alta" ? "Urgente" : rec.urgencia === "media" ? "Atenção" : "Normal"}
+                        </span>
+                        <span className="text-sm font-semibold text-brand-navy dark:text-brand-blue">
+                          R$ {rec.valor.toLocaleString("pt-BR")}
+                        </span>
+                      </div>
+                      <p className="text-sm sm:text-base font-medium text-ink mb-1">{rec.oportunidade}</p>
+                      <p className="text-sm text-brand-navy dark:text-brand-blue font-medium mb-1">{rec.acao_sugerida}</p>
+                      <p className="text-xs sm:text-sm text-ink-secondary">{rec.justificativa}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

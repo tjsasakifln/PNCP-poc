@@ -201,10 +201,10 @@ class TestExcelStorageOnly:
         pipeline = SearchPipeline(deps)
 
         # Mock upload_excel to return None (failure)
-        from schemas import ResumoLicitacoes
+        from schemas import ResumoEstrategico
         with patch("search_pipeline.upload_excel", return_value=None), \
              patch("search_pipeline.gerar_resumo") as mock_resumo:
-            mock_resumo.return_value = ResumoLicitacoes(
+            mock_resumo.return_value = ResumoEstrategico(
                 resumo_executivo="test",
                 total_oportunidades=1,
                 valor_total=100000,

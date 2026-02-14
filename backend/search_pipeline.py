@@ -25,7 +25,7 @@ from types import SimpleNamespace
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
-from schemas import BuscaResponse, FilterStats, ResumoLicitacoes, LicitacaoItem
+from schemas import BuscaResponse, FilterStats, ResumoLicitacoes, ResumoEstrategico, LicitacaoItem
 from term_parser import parse_search_terms
 from relevance import calculate_min_matches, score_relevance, count_phrase_matches
 from status_inference import enriquecer_com_status_inferido
@@ -795,7 +795,7 @@ class SearchPipeline:
                 from progress import remove_tracker
                 await remove_tracker(ctx.request.search_id)
 
-            ctx.resumo = ResumoLicitacoes(
+            ctx.resumo = ResumoEstrategico(
                 resumo_executivo=(
                     f"Nenhuma licitação de {ctx.sector.name.lower()} encontrada "
                     f"nos estados selecionados para o período informado."
@@ -804,6 +804,9 @@ class SearchPipeline:
                 valor_total=0.0,
                 destaques=[],
                 alerta_urgencia=None,
+                recomendacoes=[],
+                alertas_urgencia=[],
+                insight_setorial=f"Não foram encontradas oportunidades de {ctx.sector.name.lower()} nos filtros selecionados. Considere ampliar o período ou os estados de busca.",
             )
 
             new_quota_used = ctx.quota_info.quota_used if ctx.quota_info else 0

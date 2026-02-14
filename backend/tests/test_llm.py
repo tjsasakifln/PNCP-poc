@@ -17,7 +17,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from llm import gerar_resumo, format_resumo_html
-from schemas import ResumoLicitacoes
+from schemas import ResumoLicitacoes, ResumoEstrategico
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -106,7 +106,8 @@ def test_gerar_resumo_single_bid(mock_openai):
     call_args = mock_client.beta.chat.completions.parse.call_args
     assert call_args.kwargs["model"] == "gpt-4.1-nano"
     assert call_args.kwargs["temperature"] == 0.3
-    assert call_args.kwargs["max_tokens"] == 500
+    assert call_args.kwargs["max_tokens"] == 1200
+    assert call_args.kwargs["response_format"] == ResumoEstrategico
 
 
 @patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test-key-12345"})

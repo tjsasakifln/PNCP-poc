@@ -7,6 +7,7 @@ from schemas import (
     BuscaRequest,
     BuscaResponse,
     ResumoLicitacoes,
+    ResumoEstrategico,
     StatusLicitacao,
     ModalidadeContratacao,
     EsferaGovernamental,
@@ -228,11 +229,12 @@ class TestBuscaResponse:
 
     def test_valid_response(self):
         """Valid response should be accepted."""
-        resumo = ResumoLicitacoes(
+        resumo = ResumoEstrategico(
             resumo_executivo="Test summary",
             total_oportunidades=10,
             valor_total=1500000.0,
             destaques=["Highlight 1"],
+            alerta_urgencia=None,
         )
 
         response = BuscaResponse(
@@ -247,6 +249,7 @@ class TestBuscaResponse:
 
         assert response.total_raw == 523
         assert response.total_filtrado == 10
+        assert isinstance(response.resumo, ResumoEstrategico)
         assert isinstance(response.resumo, ResumoLicitacoes)
         assert response.excel_available is True
         assert response.quota_used == 10
@@ -291,8 +294,11 @@ class TestBuscaResponse:
 
     def test_empty_excel_base64_accepted(self):
         """Empty excel_base64 string should be accepted (edge case)."""
-        resumo = ResumoLicitacoes(
-            resumo_executivo="Test", total_oportunidades=0, valor_total=0.0
+        resumo = ResumoEstrategico(
+            resumo_executivo="Test",
+            total_oportunidades=0,
+            valor_total=0.0,
+            alerta_urgencia=None,
         )
 
         response = BuscaResponse(
@@ -341,8 +347,11 @@ class TestSchemaJSONSerialization:
 
     def test_busca_response_nested_json(self):
         """BuscaResponse with nested objects should serialize correctly."""
-        resumo = ResumoLicitacoes(
-            resumo_executivo="Test", total_oportunidades=10, valor_total=500000.0
+        resumo = ResumoEstrategico(
+            resumo_executivo="Test",
+            total_oportunidades=10,
+            valor_total=500000.0,
+            alerta_urgencia=None,
         )
 
         response = BuscaResponse(

@@ -14,8 +14,11 @@ import type { components } from "./api-types.generated";
 // API Response Types — re-exported from generated OpenAPI types
 // ============================================================================
 
-/** Executive summary from GPT-4.1-nano (from backend ResumoLicitacoes schema) */
-export type Resumo = components["schemas"]["ResumoLicitacoes"];
+/** Strategic executive summary from GPT-4.1-nano (from backend ResumoEstrategico schema) */
+export type Resumo = components["schemas"]["ResumoEstrategico"];
+
+/** Actionable recommendation for a specific procurement opportunity */
+export type Recomendacao = components["schemas"]["Recomendacao"];
 
 /** Breakdown of filter rejection reasons */
 export type FilterStats = components["schemas"]["FilterStats"];

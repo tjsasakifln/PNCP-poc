@@ -2087,8 +2087,8 @@ export interface components {
              * @description Monthly searches used after this request
              */
             quota_used: number;
-            /** @description Executive summary (AI-generated or fallback) */
-            resumo: components["schemas"]["ResumoLicitacoes"];
+            /** @description Strategic executive summary with actionable recommendations (AI-generated or fallback) */
+            resumo: components["schemas"]["ResumoEstrategico"];
             /**
              * Source Stats
              * @description Per-source fetch metrics when multi-source is active
@@ -2744,6 +2744,45 @@ export interface components {
              * @description Total value of all opportunities in BRL
              */
             valor_total: number;
+        };
+        /**
+         * Recomendacao
+         * @description Actionable recommendation for a specific procurement opportunity.
+         */
+        Recomendacao: {
+            /** @description Opportunity name (agency/object) */
+            oportunidade: string;
+            /** @description Estimated value in BRL */
+            valor: number;
+            /** @description Urgency level: alta (<3 days), media (3-7 days), baixa (>7 days) */
+            urgencia: "alta" | "media" | "baixa";
+            /** @description Concrete suggested action */
+            acao_sugerida: string;
+            /** @description Why this opportunity is relevant */
+            justificativa: string;
+        };
+        /**
+         * ResumoEstrategico
+         * @description Strategic executive summary with actionable recommendations.
+         *     Extends ResumoLicitacoes for backward compatibility.
+         */
+        ResumoEstrategico: {
+            /** @description Optional urgency alert for time-sensitive opportunities (legacy) */
+            alerta_urgencia?: string | null;
+            /** @description Key highlights (2-5 bullet points) */
+            destaques?: string[];
+            /** @description 1-2 sentence executive summary with consultive tone */
+            resumo_executivo: string;
+            /** @description Number of procurement opportunities found */
+            total_oportunidades: number;
+            /** @description Total value of all opportunities in BRL */
+            valor_total: number;
+            /** @description Prioritized list of recommended opportunities with concrete actions */
+            recomendacoes?: components["schemas"]["Recomendacao"][];
+            /** @description Multiple urgency alerts for time-sensitive opportunities */
+            alertas_urgencia?: string[];
+            /** @description Sector-level market context and trend insight */
+            insight_setorial?: string;
         };
         /**
          * RevokeResponse

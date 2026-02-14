@@ -7,7 +7,7 @@ network issues, rate limits, or missing API keys.
 """
 
 from datetime import datetime, timedelta
-from schemas import ResumoLicitacoes
+from schemas import ResumoLicitacoes, ResumoEstrategico
 from llm import gerar_resumo_fallback
 
 
@@ -105,7 +105,8 @@ class TestGerarResumoFallback:
         resumo = gerar_resumo_fallback(licitacoes)
 
         assert resumo.alerta_urgencia is not None
-        assert "menos de 7 dias" in resumo.alerta_urgencia
+        assert "encerra em" in resumo.alerta_urgencia
+        assert "5 dia(s)" in resumo.alerta_urgencia
         assert "Prefeitura Urgente" in resumo.alerta_urgencia
 
     def test_no_urgency_alert_for_deadline_over_7_days(self):
@@ -193,7 +194,7 @@ class TestGerarResumoFallback:
         assert resumo.total_oportunidades == 1
 
     def test_matches_gerar_resumo_schema(self):
-        """Should return same ResumoLicitacoes schema as gerar_resumo()."""
+        """Should return ResumoEstrategico schema as gerar_resumo()."""
         licitacoes = [
             {
                 "nomeOrgao": "Prefeitura Teste",
@@ -204,13 +205,18 @@ class TestGerarResumoFallback:
 
         resumo = gerar_resumo_fallback(licitacoes)
 
-        # Should be valid ResumoLicitacoes instance
+        # Should be valid ResumoEstrategico instance (extends ResumoLicitacoes)
+        assert isinstance(resumo, ResumoEstrategico)
         assert isinstance(resumo, ResumoLicitacoes)
         assert hasattr(resumo, "resumo_executivo")
         assert hasattr(resumo, "total_oportunidades")
         assert hasattr(resumo, "valor_total")
         assert hasattr(resumo, "destaques")
         assert hasattr(resumo, "alerta_urgencia")
+        # New strategic fields
+        assert hasattr(resumo, "recomendacoes")
+        assert hasattr(resumo, "alertas_urgencia")
+        assert hasattr(resumo, "insight_setorial")
 
     def test_urgency_detection_uses_first_urgent_bid(self):
         """Should stop at first urgent bid found (fail-fast)."""
