@@ -43,6 +43,7 @@ class SourceCode(str, Enum):
     PORTAL = "Portal"
     LICITAR = "Licitar"
     COMPRAS_GOV = "ComprasGov"
+    PORTAL_TRANSPARENCIA = "PortalTransparencia"
     BLL = "BLL"
     BNC = "BNC"
 
@@ -232,6 +233,9 @@ class SingleSourceConfig:
         # PNCP and ComprasGov don't require credentials (open data)
         if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV):
             return True
+        # Portal Transparência requires API key
+        if self.code == SourceCode.PORTAL_TRANSPARENCIA:
+            return self.credentials.has_api_key()
         # Other sources may require API keys
         return True  # For now, allow even without credentials
 
@@ -314,6 +318,16 @@ class SourceConfig:
         priority=4,
     ))
 
+    portal_transparencia: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
+        code=SourceCode.PORTAL_TRANSPARENCIA,
+        name="Portal da Transparência - CGU",
+        base_url="https://api.portaldatransparencia.gov.br/api-de-dados",
+        enabled=False,  # Requires API key from Gov.br
+        timeout=30,
+        rate_limit_rps=1.5,  # 90 req/min
+        priority=3,
+    ))
+
     bll: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
         code=SourceCode.BLL,
         name="BLL Compras",
@@ -371,10 +385,16 @@ class SourceConfig:
         config.compras_gov.enabled = (
             os.getenv("ENABLE_SOURCE_COMPRAS_GOV", "true").lower() == "true"
         )
+        config.portal_transparencia.enabled = (
+            os.getenv("ENABLE_SOURCE_PORTAL_TRANSPARENCIA", "false").lower() == "true"
+        )
         config.bll.enabled = os.getenv("ENABLE_SOURCE_BLL", "false").lower() == "true"
         config.bnc.enabled = os.getenv("ENABLE_SOURCE_BNC", "false").lower() == "true"
 
         # Load credentials
+        config.portal_transparencia.credentials = SourceCredentials(
+            api_key=os.getenv("PORTAL_TRANSPARENCIA_API_KEY")
+        )
         config.portal.credentials = SourceCredentials(
             api_key=os.getenv("PORTAL_COMPRAS_API_KEY")
         )
@@ -402,7 +422,7 @@ class SourceConfig:
             List of enabled source code strings
         """
         sources = []
-        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.bll, self.bnc]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc]:
             if source.enabled:
                 sources.append(source.code.value)
         return sources
@@ -422,6 +442,7 @@ class SourceConfig:
             "Portal": self.portal,
             "Licitar": self.licitar,
             "ComprasGov": self.compras_gov,
+            "PortalTransparencia": self.portal_transparencia,
             "BLL": self.bll,
             "BNC": self.bnc,
         }
@@ -435,7 +456,7 @@ class SourceConfig:
             List of SingleSourceConfig objects for enabled sources
         """
         configs = []
-        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.bll, self.bnc]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc]:
             if source.enabled:
                 configs.append(source)
         return sorted(configs, key=lambda s: s.priority)
@@ -463,6 +484,11 @@ class SourceConfig:
         if self.licitar.enabled and not self.licitar.credentials.has_api_key():
             messages.append(
                 "WARNING: Licitar Digital enabled but LICITAR_API_KEY not set"
+            )
+
+        if self.portal_transparencia.enabled and not self.portal_transparencia.credentials.has_api_key():
+            messages.append(
+                "WARNING: Portal da Transparência enabled but PORTAL_TRANSPARENCIA_API_KEY not set"
             )
 
         # Check timeout configuration
