@@ -1,440 +1,488 @@
-# QA Review - Technical Debt Assessment
+# QA Review - Technical Debt Assessment v2.0
 
-**Reviewer:** @qa (Quinn)
-**Date:** 2026-02-11
-**Documents Reviewed:** DRAFT (`docs/prd/technical-debt-DRAFT.md`, 72 items) + DB specialist review (`docs/reviews/db-specialist-review.md`, 22 items) + UX specialist review (`docs/reviews/ux-specialist-review.md`, 33 items)
-**Codebase Commit:** `808cd05` (branch `main`)
-**Verification Method:** Direct codebase inspection, test execution, CI workflow review
+**Reviewer:** @qa
+**Date:** 2026-02-15
+**Status:** Phase 7 of Brownfield Discovery
+**Previous Review:** v1.0 (2026-02-11, commit `808cd05`) -- SUPERSEDED by this document
+**Codebase Commit:** `b80e64a` (branch `main`)
+**Input Documents:**
+1. `docs/prd/technical-debt-DRAFT.md` v2.0 (82 debitos, ~412h)
+2. `docs/reviews/db-specialist-review.md` v2.0 (3 severity changes, 3 new items, revised to 23h)
+3. `docs/reviews/ux-specialist-review.md` v2.0 (6 upgrades, 3 downgrades, 2 removals, 5 new items, revised to ~194h)
 
----
-
-## Gate Status: APPROVED WITH CONDITIONS
-
-The assessment is thorough enough to proceed to final consolidation, provided the conditions listed in Section 7 are addressed during consolidation. The DRAFT plus specialist reviews cover all major technical debt areas comprehensively. No critical blind spots remain after incorporating this QA review.
-
----
-
-## 1. Gaps Identified
-
-### 1.1 Gaps Not Covered by Any Document
-
-| Gap ID | Area | Description | Suggested Severity |
-|--------|------|-------------|-------------------|
-| GAP-01 | **CI/CD Pipeline Health** | The DRAFT states "21 backend failures + 70 frontend failures" (SYS-C04), but current test execution shows **0 backend failures** (all 1631 tests pass, verified locally) and only **38 frontend failures** (down from 70). The STORY-185 commit (`10c6a6a`) fixed many of these. The assessment references stale data. This matters because effort estimates for SYS-C04 are based on outdated failure counts. | N/A (data correction) |
-| GAP-02 | **Stripe Webhook Reliability in Production** | The DB specialist identified that SQLAlchemy handlers are likely broken (DB-C01 Q1 answer), meaning Stripe lifecycle events (cancellations, payment failures, subscription updates) may not be recording. **No document assesses the actual production impact.** Are there users who cancelled via Stripe dashboard but still show as active? Is there a backlog of unprocessed webhook events? This is not just tech debt -- it is a potential billing integrity issue affecting revenue. | CRITICAL |
-| GAP-03 | **Secret Management** | No document addresses how secrets are managed. `.env` files are referenced, Railway env vars are mentioned, but there is no assessment of: (a) whether secrets are rotated, (b) whether the Supabase service_role key is the same across environments, (c) whether Stripe test vs production keys are properly segregated. Given the hardcoded Stripe price IDs in migrations (DB-M05), the risk of cross-environment contamination is real. | MEDIUM |
-| GAP-04 | **Backup and Disaster Recovery** | No document mentions database backup strategy, point-in-time recovery capability, or rollback procedures for Supabase. Given this is a production SaaS processing payments, the absence of documented backup/recovery is a risk. | MEDIUM |
-| GAP-05 | **Dependency Vulnerability Scanning** | `requirements.txt` has ~50 dependencies. `package.json` has ~40. No document mentions `pip audit`, `npm audit`, Dependabot findings, or Snyk integration. The CodeQL workflow exists (`.github/workflows/codeql.yml`) but covers only static analysis, not dependency vulnerabilities. | MEDIUM |
-| GAP-06 | **Rate Limiting for Authentication Endpoints** | The backend has rate limiting for search (`rate_limiter.py`) but no document assesses whether login/signup endpoints are rate-limited. Brute-force protection for authentication is a basic security requirement for a SaaS. | HIGH |
-| GAP-07 | **Monitoring and Alerting** | No document mentions production monitoring, error tracking (Sentry, etc.), or alerting. The `SYS-M01` (no correlation IDs) and `SYS-L04` (no request logging middleware) debts are listed, but the broader question of "how do we know when production breaks" is unanswered. | MEDIUM |
-| GAP-08 | **Frontend Bundle Size Analysis** | UX review mentions framer-motion (40KB) but no document provides actual bundle analysis data. With `next build`, the output includes chunk sizes. This data would validate or invalidate several FE performance debts. | LOW |
-| GAP-09 | **E2E Test Gap for Billing Flows** | Verified: the 12 E2E spec files cover search, theme, saved-searches, empty-state, error-handling, admin, auth, performance, plan-display, signup, institutional, and landing. There is ZERO coverage of: Stripe checkout initiation, payment success callback, subscription management (upgrade/downgrade/cancel), and webhook-driven plan changes. See Q4 answer below for details. | HIGH |
-| GAP-10 | **Locust Load Tests Not Integrated** | `locustfile.py` exists and is well-written. `.github/workflows/load-test.yml` exists. But there is no mention in the DRAFT of whether load tests have ever been run or what the baseline performance metrics are. | LOW |
-
-### 1.2 Data Corrections for Final Consolidation
-
-| Item | DRAFT States | Actual (verified 2026-02-11) | Impact |
-|------|-------------|------------------------------|--------|
-| SYS-C04 | 21 backend + 70 frontend failures | **0 backend + 38 frontend failures** | Effort estimate for SYS-C04 drops from 8-16h to 4-8h |
-| FE-L07 | Coverage ~49.46%, 70 failures | **38 failures in 6 test suites** | More targeted fix needed |
-| Backend test count | "82 tests" (from CLAUDE.md) | **1631 tests collected** | CLAUDE.md outdated |
-| FE-M08 | "No middleware auth guards" | **Middleware EXISTS** (UX review correctly identified this) | Remove from DRAFT |
-| Frontend test count | Not specified | **1072 total (1026 pass, 38 fail, 8 skip)** | 96.5% pass rate, not catastrophic |
+**Verification Method:** Direct codebase inspection via grep/read of source files, cross-referencing between all 3 documents, and validation of factual claims against actual code.
 
 ---
 
-## 2. Cross-Area Risks
+## Gate Status: NEEDS WORK
 
-| Risk ID | Risk | Areas Affected | Probability | Impact | Mitigation |
-|---------|------|----------------|-------------|--------|------------|
-| RISK-01 | **ORM consolidation causes payment processing interruption** | Database, Backend, Billing | HIGH | CRITICAL | The dual Stripe handler issue (NEW-DB-01) means consolidating to Supabase client requires rewriting webhook handlers. If the new handlers have bugs, real payments could be missed. Mitigation: deploy to staging with Stripe test mode first; verify webhook delivery in Stripe Dashboard for 48h before production cutover; maintain old code as dead code for 2 weeks (as DB specialist recommends). |
-| RISK-02 | **Frontend monolith decomposition introduces visual regressions** | Frontend, UX | MEDIUM | HIGH | Decomposing `buscar/page.tsx` (1100 lines, 30+ hooks) is the highest-risk frontend change. State coordination between extracted hooks is error-prone. Mitigation: take Playwright visual regression screenshots before decomposition; run full E2E suite after each extraction step; do NOT combine with any feature work. |
-| RISK-03 | **RLS policy changes lock out legitimate operations** | Database, Backend | LOW | CRITICAL | Tightening RLS policies (DB-H04) could block operations that currently work by accident. The `monthly_quota` and `search_sessions` policies with `USING (true)` mean any authenticated user can modify these -- if backend code relies on this (even inadvertently), tightening to `TO service_role` would break it. Mitigation: audit every Supabase client call that touches these tables; ensure all use the service_role key, not the anon key. |
-| RISK-04 | **Migration 006 cleanup causes schema inconsistency** | Database | LOW | HIGH | Three `006_*` files create ambiguity. If the consolidation removes a migration that was never applied, the policy may not exist. If it removes one that WAS applied, Supabase migration tracking breaks. Mitigation: verify production state FIRST with `SELECT * FROM pg_policies WHERE tablename = 'search_sessions'` before any file changes. |
-| RISK-05 | **Price reconciliation (FE-L03) reveals business decision not yet made** | Frontend, Product | HIGH | MEDIUM | The divergent prices (149/349/997 vs 297/597/1497) may be intentional (promotional vs list price) but undocumented. "Fixing" this by standardizing to one set could be wrong if the other set is what the business intended. Mitigation: require explicit product owner sign-off on canonical prices before any code change. |
-| RISK-06 | **Test suite stabilization masks new regressions during debt resolution** | All areas | MEDIUM | HIGH | As tests are fixed/rewritten, newly introduced regressions could be attributed to "known failures" and ignored. Mitigation: establish a clean test baseline BEFORE starting debt resolution; run tests after EVERY debt fix; any new failure introduced during a debt fix must be resolved before merging. |
-| RISK-07 | **API pattern unification (FE-C03) breaks production pages** | Frontend, Backend | MEDIUM | HIGH | Moving `historico`, `conta`, `admin` from direct backend calls to proxy routes changes the auth flow. If the proxy routes do not forward auth headers identically, users experience authentication failures on pages that previously worked. Mitigation: implement one page at a time; test each with real admin and user accounts; deploy incrementally. |
+O assessment e substancialmente completo e de alta qualidade, mas possui **3 inconsistencias factuais verificadas contra o codebase** que devem ser corrigidas antes da publicacao final, **1 item potencialmente ja resolvido** (SYS-03), e **lacunas em areas de seguranca e observabilidade** que requerem ao menos documentacao explicita de que estao fora de escopo. Apos correcoes pontuais (estimativa: 2-4h de revisao documental), o assessment pode ser promovido a versao final.
 
 ---
 
-## 3. Dependency Validation
+## 1. Gaps Identificados
 
-### 3.1 DRAFT Dependency Chains: Validated
+### 1.1 Areas Nao Cobertas
 
-The 6 dependency chains in DRAFT Section 7 are structurally correct. My assessment of each:
+**GAP-01: Seguranca de API -- ausencia de analise de rate limiting por usuario**
 
-**Chain 1: ORM Consolidation** -- CORRECT. `CROSS-C01 -> DB-C01 -> DB-H01 -> DB-H03`. The DB specialist's finding that there are competing Stripe handler implementations (NEW-DB-01) strengthens this chain. I would add NEW-DB-01 as a parallel prerequisite alongside DB-C01:
+O sistema tem rate limiting global (`rate_limiter.py`, 51 arquivos referenciam rate limiting), mas o assessment nao analisa se existe rate limiting **por usuario autenticado** alem da quota mensal. Um usuario malicioso poderia disparar centenas de buscas simultaneas antes da quota ser decrementada (race condition window). Isso e particularmente relevante porque o backend faz chamadas externas ao PNCP API, amplificando o impacto.
 
-```
-CROSS-C01 (Dual ORM) --must-precede-->
-  DB-C01 (database.py URL) --parallel-with--> NEW-DB-01 (competing handlers)
-    --must-precede--> DB-H01 (Consolidate ORM)
-      --must-precede--> DB-H03 (Index stripe_subscription_id)
-```
+**GAP-02: Seguranca de dependencias -- analise incompleta**
 
-**Chain 2: Monolith Decomposition** -- CORRECT with one addition. The UX specialist's finding that FE-M01 (shared app shell) is a natural companion to FE-C01 (buscar decomposition) should be reflected. If the app shell is built FIRST, the buscar decomposition has a clear layout target:
+O `backend-ci.yml` inclui `safety check` (scan de vulnerabilidades de dependencias Python), mas o frontend nao tem equivalente (`npm audit` nao esta no CI). O DRAFT menciona `dependabot-auto-merge.yml` mas nao analisa se as dependencias estao atualizadas ou se ha CVEs conhecidos. Verificacao: existem 13 workflows em `.github/workflows/`, incluindo `codeql.yml` e `dependabot-auto-merge.yml`, mas nenhum roda `npm audit` no frontend.
 
-```
-FE-M01 (Shared app shell) --should-precede--> FE-C01 (buscar decomposition)
-```
+**GAP-03: Observabilidade -- Sentry nao avaliado**
 
-**Chain 3: Horizontal Scalability** -- CORRECT. No changes needed.
+O assessment menciona "PII masking in logs" e "Sentry scrubbing" como pontos positivos (Apendice B, item 10), mas nao avalia a configuracao do Sentry em si. `config.py` referencia `SENTRY_DSN` como variavel recomendada (linha 524). Nao ha analise de: (a) se a amostragem de traces esta configurada, (b) se os source maps do frontend estao enviados ao Sentry, (c) se alertas estao configurados para os erros criticos identificados. Verificacao: apenas `main.py` e `config.py` referenciam Sentry no backend.
 
-**Chain 4: CI/CD Green** -- NEEDS UPDATE. Given the corrected failure counts (0 backend, 38 frontend), the chain should reflect that backend CI is likely already green:
+**GAP-04: Backup e recuperacao de dados -- nao mencionado**
 
-```
-SYS-C04 (Fix pre-existing failures) -- PARTIALLY DONE (backend: 0 failures, frontend: 38)
-  --must-precede--> SYS-M07 (Frontend coverage)
-    --must-precede--> SYS-L01 (OpenAPI schema validation)
-```
+Para um SaaS em producao com dados de clientes (pipelines, sessoes de busca, assinaturas Stripe), nao ha analise de: (a) frequencia de backup do Supabase, (b) RTO/RPO definidos, (c) procedimento de recuperacao testado.
 
-**Chain 5: RLS Security** -- CORRECT. These are independent and can be batched into a single migration as the DB specialist recommends.
+**GAP-05: `email_service.py` nao avaliado**
 
-**Chain 6: API Pattern Unification** -- CORRECT with UX specialist's addition. FE-M08 should be replaced with FE-NEW-09 (missing middleware routes), which is a smaller task.
+`backend/email_service.py` usa `time.sleep()` sincronamente (linha 112) -- o mesmo anti-pattern identificado em SYS-07 para `quota.py`. Porem o email service nao aparece no assessment. Verificacao: `time.sleep` encontrado em `email_service.py:112`, `pncp_client.py` (6 ocorrencias no sync client), `quota.py:910`, `receita_federal_client.py:66`. O assessment so lista `quota.py`.
 
-### 3.2 Missing Dependencies Identified
+**GAP-06: `search_pipeline.py` cresceu significativamente**
 
-| From | To | Dependency Type | Rationale |
-|------|----|----------------|-----------|
-| GAP-02 (Stripe production audit) | CROSS-C01 (ORM consolidation) | MUST-PRECEDE | Before rewriting Stripe handlers, we need to know the current production state: which webhooks are failing, are there users with stale subscription status? This data determines the scope of the ORM consolidation. |
-| FE-L03 (Price reconciliation) | Product owner sign-off | BLOCKED-BY | Cannot resolve price divergence without business decision on canonical prices. |
-| DB-H04 (RLS tightening) | Backend audit of table access patterns | MUST-PRECEDE | Need to verify all code paths use service_role key before restricting policies. |
-| NEW-DB-02 (fix default plan_type) | DB-M02 (tighten CHECK constraint) | MUST-PRECEDE | Must update the trigger default before removing `'free'` from the CHECK constraint, otherwise new user creation fails. DB specialist correctly identifies this. |
+O DRAFT lista SYS-11 como MEDIUM ("search_pipeline.py becoming god module"). Verificacao: o arquivo tem agora **1318 linhas** -- nao simplesmente "growing", ja e um monolito comparavel ao `main.py` pre-decomposicao (1959 linhas que motivaram STORY-202). A severidade pode estar subestimada. `pncp_client.py` tem 1584 linhas (o maior arquivo do backend). Juntos, representam 2902 linhas de logica core.
 
-### 3.3 Proposed Resolution Order Validation
+**GAP-07: Testes E2E para fluxos de billing**
 
-The DRAFT's 4-sprint plan is structurally sound. I validate the ordering with the following adjustments:
+Verificacao dos 12 spec files de E2E confirma que nao ha NENHUM teste para: Stripe checkout, payment success callback, subscription management (upgrade/downgrade/cancel), e webhook-driven plan changes. Este gap ja foi identificado na v1.0 desta review (GAP-09) e permanece aberto.
 
-**Sprint 1 adjustments:**
-- ADD: GAP-02 (Stripe production audit) as item 0 -- a 2-4h investigation that determines the urgency and scope of the ORM consolidation.
-- MOVE: SYS-C04 partially into Sprint 1 -- given backend failures are already resolved, the remaining work is only the 38 frontend failures (4-8h). Getting CI green early provides the safety net for all subsequent work.
-- ADD: FE-L03 (price reconciliation) as P0 per UX specialist -- this is a trust issue for paying users.
+### 1.2 Debitos Sem Estimativa
 
-**Sprint 2 adjustments:**
-- No structural changes. The ORM consolidation + API unification pairing is correct.
+Todos os 82 debitos do DRAFT possuem estimativas. Os 3 items novos do DB Review e os 5 items novos do UX Review tambem possuem. No entanto, ha **divergencias significativas entre estimativas** que precisam ser reconciliadas:
 
-**Sprint 3 adjustments:**
-- ADD: FE-M01 (shared app shell) BEFORE FE-C01 (buscar decomposition). Building the app shell first gives the buscar refactoring a clear layout target.
+| Item | DRAFT (h) | DB Review (h) | UX Review (h) | Discrepancia |
+|------|-----------|---------------|----------------|-------------|
+| DB-01 | 4h | 2h | -- | DB Review rebaixou para 2h por downgrade de severidade (CRITICAL -> MEDIUM) |
+| DB-03 | 2h | 1h | -- | DB Review reduziu para 1h (corretamente -- single policy change) |
+| DB-04 | 2h | 1h | -- | DB Review reduziu para 1h (corretamente -- same pattern) |
+| DB-06 | 1h | 0.5h | -- | DB Review reduziu para 0.5h (one-line fix) |
+| A11Y-01+02 | 8h | -- | 4h | UX Review identifica co-implementation (shared dialog primitive) |
+| FE-01+02+03 | 48h | -- | 32h | UX Review identifica trabalho compartilhado (React Context + useReducer) |
+| FE-07 | 8h | -- | 6h | UX Review reduz por natureza mecanica (next/dynamic) |
+| UX-03 | 4h | -- | 2h | UX Review reduz por ser apenas mudanca de copy/calculo display |
+| IC-06 | 8h | -- | 4h | UX Review reduz com pattern de dicionario de erros |
+| FE-05 | 8h | -- | 6h | UX Review reduz por migracao mecanica para lucide-react |
 
-**Sprint 4: No changes needed.**
+**Recomendacao:** Adotar as estimativas revisadas dos especialistas em todos os casos. Ambos os specialists demonstraram analise mais detalhada que o DRAFT original. Reducao total: ~38h.
 
----
+### 1.3 Informacoes Faltantes
 
-## 4. Test Requirements
+**IF-01: Verificacao de producao pendente para DB-01 e DB-02**
 
-### 4.1 Tests Needed Post-Resolution
+Ambos os documentos (DRAFT e DB Review) concordam que queries de verificacao devem ser executadas ANTES de criar a migration 027. Estas queries NAO foram executadas. O resultado determina:
+- DB-01: Se a coluna `status` existe em `user_subscriptions`, a acao e documentar. Se nao existe, a acao e remover o trigger `trg_sync_profile_plan_type`.
+- DB-02: Se o default de `profiles.plan_type` foi corrigido manualmente para `'free_trial'`, o risco e ZERO. Se permanece `'free'`, novos signups podem estar falhando AGORA.
 
-For each major debt, the tests that validate the fix:
+**O escopo real de P0 nao pode ser definido sem estas verificacoes.** Recomendo executar as queries V1-V5 do DB Review como primeiro passo da Phase 8.
 
-| Debt ID | Resolution | Required Tests | Type |
-|---------|-----------|----------------|------|
-| DB-C01 + DB-H01 + NEW-DB-01 (ORM consolidation) | Migrate Stripe webhooks to Supabase client | (1) Unit tests for each webhook handler (subscription.created, updated, deleted, invoice.payment_succeeded, invoice.payment_failed) using mocked Supabase client. (2) Integration test: send Stripe test webhook, verify `user_subscriptions` and `profiles.plan_type` both updated. (3) Verify `stripe_webhook_events` idempotency table is written. (4) Regression: existing `test_stripe_webhook.py` (21 tests) must continue passing. | Unit + Integration |
-| DB-C03 (admin policy fix) | Change `plan_type='master'` to `is_admin=true` | (1) Test: admin user with `plan_type='consultor_agil'` and `is_admin=true` CAN read webhook events. (2) Test: master user with `is_admin=false` CANNOT read webhook events. (3) Test: admin user with `plan_type='master'` and `is_admin=true` still works. | Integration (Supabase RLS) |
-| DB-H04 (RLS tightening) | Add `TO service_role` restriction | (1) Test: anon key CANNOT insert/update/delete `monthly_quota`. (2) Test: authenticated user key CANNOT insert/update `monthly_quota`. (3) Test: service_role key CAN insert/update/delete. (4) Same for `search_sessions`. | Integration (Supabase RLS) |
-| SYS-C02 (main.py decomposition) | Extract into router modules | (1) All existing `test_main.py` tests must pass against the new router structure. (2) Import paths test: verify no circular imports in extracted modules. (3) OpenAPI schema comparison: exported schema before and after must be identical (no API contract changes). | Unit + Contract |
-| FE-C01 (buscar decomposition) | Extract components and hooks | (1) Visual regression: Playwright screenshots before/after must match. (2) All existing `page.test.tsx` tests that currently pass must continue passing. (3) New unit tests for extracted hooks (`useSearch`, `useSearchFilters`). (4) E2E: `search-flow.spec.ts` must pass. | Visual + Unit + E2E |
-| FE-C03 (API pattern unification) | All pages use proxy routes | (1) Test each migrated page (historico, conta, admin, mensagens) with expired auth token -- should redirect to login, not show raw 401. (2) Test: `NEXT_PUBLIC_BACKEND_URL` is NOT present in client-side JavaScript bundle (verify with `next build` + bundle grep). (3) Network tab verification: no requests to backend URL from browser. | E2E + Bundle analysis |
-| FE-L03 (price reconciliation) | Single source of truth for prices | (1) Unit test: all price display components reference the same data source. (2) E2E test: navigate to pricing page, compare prices with planos page -- they must match. (3) Contract test: frontend price data matches backend `/plans` endpoint response. | Unit + E2E + Contract |
-| SYS-C01 (Redis for SSE state) | Replace in-memory dict with Redis pub/sub | (1) Test: start search on instance A, receive progress on instance B (simulated with separate worker processes). (2) Test: Redis connection failure degrades gracefully (falls back to simulation, does not crash). (3) Load test: 50 concurrent SSE connections with Locust. | Integration + Load |
-| CROSS-C02 (Object storage for Excel) | Replace tmpdir with S3/Supabase Storage | (1) Test: generate Excel, restart server, download still works. (2) Test: concurrent downloads of different files. (3) Test: file cleanup after TTL. (4) Test: signed URL expiry. | Integration |
+**IF-02: Contagem de arquivos quarantined diverge entre documentos**
 
-### 4.2 Regression Test Strategy
+- DRAFT (FE-04): "17 test files quarantined"
+- UX Review (FE-04): "22 quarantined files, not 17 as stated"
+- **Verificacao codebase:** `find frontend/__tests__/quarantine/ -name "*.test.*"` retorna **22 arquivos** (13 diretorios/pastas + 22 arquivos de teste)
 
-**Baseline Establishment (BEFORE any debt resolution begins):**
+A contagem correta e **22**. O DRAFT precisa ser atualizado. Isso impacta a estimativa de FE-04 (24h pode estar subestimada para 22 arquivos vs 17).
 
-1. **Backend:** Run full test suite, record exact counts. Current baseline: 1631 tests, 0 failures (to be confirmed in CI).
-2. **Frontend:** Run full test suite, record exact counts. Current baseline: 1072 tests, 38 failures in 6 suites, 8 skipped.
-3. **E2E:** Run full Playwright suite against production, record results. Current: 60 tests across 12 spec files.
-4. **Save baseline as artifact:** Create `docs/testing/baseline-2026-02-11.md` with exact counts.
+**IF-03: SYS-03 pode estar parcialmente resolvido por STORY-251**
 
-**During Debt Resolution:**
+O DRAFT lista SYS-03 como CRITICAL (8h): "LLM Arbiter hardcoded 'Vestuario e Uniformes' sector description applied to ALL 15 sectors." Porem, a analise do codigo atual revela:
 
-1. **Per-PR testing:** Every PR that resolves a debt must include the test results summary. The number of passing tests must be >= baseline. The number of failing tests must be <= baseline. Any deviation must be explained.
-2. **No "temporary regressions":** If fixing debt X breaks test Y, both must be fixed in the same PR. Do not merge a PR that introduces new failures with the promise of fixing them later.
-3. **CI enforcement:** The CI pipeline (`.github/workflows/tests.yml`) must be green before merging any debt-resolution PR. Given backend tests now pass, the immediate action is to fix the 38 frontend failures to establish a green baseline.
-4. **E2E gate for high-risk changes:** For ORM consolidation (CROSS-C01), monolith decomposition (SYS-C02, FE-C01), and API unification (FE-C03), require a full E2E run as a merge gate.
+1. `llm_arbiter.py` linhas 45-109: `_build_conservative_prompt()` implementa lookup dinamico de setor via `get_sector(setor_id)` -- **STORY-251** adicionou esta funcionalidade
+2. `filter.py` linha 2331: passa `setor_id=setor` para `classify_contract_primary_match()` -- o setor ID e propagado
+3. O prompt conservador (linhas 93-109) agora usa `config.description` e gera exemplos SIM/NAO a partir dos keywords/exclusions de cada setor
 
-**Post-Sprint Validation:**
+O que **permanece** como problema:
+- `config.py` linhas 261-263 contem uma nota dizendo que o problema existe (nota obsoleta)
+- `_build_standard_sector_prompt()` (linhas 112-123) e generica e NAO usa descricao do setor -- mas esta e a funcao de **fallback**, usada apenas quando `setor_id` nao e fornecido ou nao e encontrado
 
-After each debt resolution sprint, run:
-1. Full backend test suite with coverage (must stay above 70%)
-2. Full frontend test suite with coverage (target: 60%)
-3. Full E2E suite against staging
-4. Manual smoke test of billing flow (as this has no automated E2E coverage)
+**Veredicto:** SYS-03 esta **parcialmente resolvido**. A severidade deveria cair de CRITICAL para LOW (apenas nota obsoleta em `config.py` e fallback generico). Esforco cai de 8h para ~1h (remover nota obsoleta + melhorar prompt de fallback).
+
+**IF-04: SYS-10 parcialmente resolvido**
+
+O DRAFT lista SYS-10 como HIGH (4h): "No backend linting enforcement in CI." Porem:
+
+- **Verificacao:** `backend-ci.yml` linhas 33-36 **JA incluem** `ruff check .` no CI (step "Run linting")
+- O que falta: `mypy` nao esta configurado em nenhum workflow
+- O workflow `tests.yml` (principal) nao tem linting, mas `backend-ci.yml` tem
+
+**Veredicto:** SYS-10 esta parcialmente resolvido. Descricao deve ser corrigida para "mypy not configured in CI" e esforco reduzido de 4h para 2h.
 
 ---
 
-## 5. Answers to DRAFT Questions
+## 2. Riscos Cruzados
 
-### Q1: Pre-existing test failures -- fix vs rewrite vs remove?
-
-**Current State (verified 2026-02-11):**
-- **Backend:** 0 failures out of 1631 tests. The 21 previously reported failures (billing, stripe, feature flags, prorata) have been resolved by commit `10c6a6a` (STORY-185). No backend tests need fixing, rewriting, or removing.
-- **Frontend:** 38 failures in 6 test suites out of 1072 total tests (96.5% pass rate).
-
-**Breakdown of the 38 frontend failures:**
-
-| Test Suite | Failures | Recommendation | Effort |
-|-----------|----------|---------------|--------|
-| `page.test.tsx` | ~7 | **FIX.** These test the main search page. Failures are in download button assertions and loading state detection. The tests are structurally sound but have stale selectors (e.g., checking for `bg-brand-navy` class that may have changed). Update selectors and assertions to match current UI. | 3-4h |
-| `free-user-search-flow.test.tsx` | ~8 | **REWRITE as E2E.** These are integration-style tests that render the full buscar page with complex mock chains. They are brittle because they depend on deep implementation details (specific hook return shapes, component internal state). Rewrite as Playwright E2E tests -- they are testing user flows, not unit behavior. | 4-6h (as E2E) |
-| `free-user-history-save.test.tsx` | ~5 | **REWRITE as E2E.** Same reasoning as above. | 2-3h (as E2E) |
-| `free-user-auth-token-consistency.test.tsx` | ~5 | **REWRITE as E2E.** Tests auth token behavior across navigation -- this is inherently an integration concern. | 2-3h (as E2E) |
-| `free-user-navigation-persistence.test.tsx` | ~6 | **REWRITE as E2E.** Tests state persistence across page navigation. | 2-3h (as E2E) |
-| `GoogleSheetsExportButton.test.tsx` | 7 | **FIX.** All 7 tests fail -- likely a component import/mock issue rather than individual test bugs. The test structure is correct (tests rendering, success flow, OAuth redirect, error handling). Probably needs updated mocks after a component refactor. | 2-3h |
-
-**Summary:** 0 tests should be removed. ~14 should be fixed in-place. ~24 should be rewritten as E2E tests (they are testing integration flows with unit test tooling, which is the wrong abstraction level).
-
-**Total effort:** 14-22h (less than the DRAFT's 8-16h estimate because backend is already done, but frontend rewrite-as-E2E is more work than simple fixing).
-
-### Q2: Coverage priorities -- which components to reach 60%?
-
-Current coverage is ~49.46%. The gap to 60% is approximately 10.5 percentage points. Based on the test file list and the DRAFT's suggestions, here is the prioritized list:
-
-**Priority 1 -- Highest coverage ROI (pages with most logic):**
-
-| Component | Current Coverage | Lines of Code | Estimated Coverage Gain | Effort |
-|-----------|-----------------|---------------|------------------------|--------|
-| `app/buscar/page.tsx` | Partial (page.test.tsx exists but 7 tests fail) | ~1100 lines | 4-6% | 3-4h (fix existing + add new) |
-| `app/api/buscar/route.ts` | Partial (download.test.ts exists) | ~200 lines | 1-2% | 2h |
-| `app/historico/page.tsx` | Partial (HistoricoPage.test.tsx exists) | ~400 lines | 1-2% | 2h |
-
-**Priority 2 -- Untested critical components:**
-
-| Component | Current Coverage | Lines of Code | Estimated Coverage Gain | Effort |
-|-----------|-----------------|---------------|------------------------|--------|
-| `app/components/AnalyticsProvider.tsx` | Partial (test exists) | ~100 lines | 0.5% | 1h |
-| `app/components/RegionSelector.tsx` | Partial (test exists) | ~200 lines | 1% | 1h |
-| `app/components/LoadingProgress.tsx` | Partial (test exists) | ~150 lines | 0.5% | 1h |
-| `app/components/SavedSearchesDropdown.tsx` | None | ~150 lines | 1% | 2h |
-
-**Priority 3 -- Easy wins (small untested files):**
-
-| Component | Estimated Coverage Gain | Effort |
-|-----------|------------------------|--------|
-| `lib/plans.ts` | 0.5% | 0.5h |
-| `lib/config.ts` | 0.3% | 0.5h |
-| `app/api/analytics/route.ts` | 0.3% | 1h |
-| `middleware.ts` | 0.5% | 1h |
-
-**Recommended strategy:** Fix Priority 1 first (fix existing failing tests + add tests for buscar/route). This alone should push coverage to ~55-57%. Then add Priority 2 tests to cross the 60% threshold. Total estimated effort: 12-16h. This aligns with FE-L07's estimate.
-
-**Components NOT to prioritize (from DRAFT's suggestions):** The DRAFT mentions `LoadingProgress`, `RegionSelector`, `SavedSearchesDropdown`, `AnalyticsProvider`. These are correct Priority 2 targets, but the biggest coverage gains come from fixing the broken `page.test.tsx` (Priority 1) because `buscar/page.tsx` is the largest file in the frontend.
-
-### Q3: Highest regression risk areas given production use with Stripe payments
-
-Ranked by severity of potential production impact:
-
-**Tier 1 -- Immediate financial impact:**
-
-1. **Stripe webhook processing** (`backend/webhooks/stripe.py`, `backend/main.py:733-900`). The DB specialist confirmed these are likely broken (SQLAlchemy path fails). Any change here risks payment state inconsistency. This area has 21 unit tests but zero integration tests against real Supabase, and zero E2E tests.
-
-2. **Quota enforcement** (`backend/quota.py`). The 4-layer fallback is robust but complex. Changes to plan definitions, subscription logic, or the fallback chain could silently allow free users to bypass limits or block paid users from searching. This area has 37 unit tests -- relatively well covered.
-
-3. **Auth middleware** (`frontend/middleware.ts`, `backend/auth.py`). Token cache, session validation, and role checking. A regression here either locks out all users or allows unauthorized access. Backend has 18 auth tests. Frontend middleware has no unit tests.
-
-**Tier 2 -- User experience degradation:**
-
-4. **Search flow** (`backend/main.py:buscar_licitacoes`, `frontend/app/buscar/page.tsx`). The core product function. Regressions here are immediately visible to all users. Well-covered by E2E tests (`search-flow.spec.ts`), but the monolithic structure means any refactoring is high-risk.
-
-5. **SSE progress tracking** (`backend/progress.py`, `frontend/app/buscar/page.tsx` SSE consumer). In-memory state means regressions are hard to reproduce. No dedicated unit tests for progress tracking.
-
-6. **Excel generation and download** (`backend/excel.py`, `frontend/app/api/download/route.ts`). File-system-dependent, cross-service. A regression here means users complete a search but cannot download results.
-
-**Tier 3 -- Administrative impact:**
-
-7. **Admin panel** (`backend/admin.py`, `frontend/app/admin/page.tsx`). Used for user management and plan changes. Regressions here affect operations but not end users directly.
-
-### Q4: E2E Playwright gaps for billing/Stripe checkout
-
-**Critical gap confirmed.** I verified the 12 E2E spec files:
-
-```
-search-flow.spec.ts       -- search UX
-theme.spec.ts             -- dark/light mode
-saved-searches.spec.ts    -- save/load searches
-empty-state.spec.ts       -- no results UX
-error-handling.spec.ts    -- error states
-admin-users.spec.ts       -- admin panel
-auth-ux.spec.ts           -- login/signup
-performance.spec.ts       -- load times
-plan-display.spec.ts      -- plan badge and quota display
-signup-consent.spec.ts    -- signup consent checkboxes
-institutional-pages.spec.ts -- terms, privacy
-landing-page.spec.ts      -- landing page
-```
-
-**Missing billing/Stripe E2E tests:**
-
-| Missing Test | Priority | Description |
-|-------------|----------|-------------|
-| `checkout-flow.spec.ts` | **P0** | Navigate to /planos, select a plan, click "Assinar", verify redirect to Stripe Checkout (or mock). Verify return to /planos/obrigado on success. Verify plan badge updates. |
-| `subscription-management.spec.ts` | **P1** | Logged-in paid user visits /conta, clicks "Gerenciar Assinatura", verify redirect to Stripe Customer Portal (or mock). |
-| `upgrade-downgrade.spec.ts` | **P1** | Free trial user sees upgrade prompts. Clicking "Upgrade" navigates to /planos. Plan comparison page shows correct prices (ties into FE-L03). |
-| `quota-enforcement.spec.ts` | **P1** | User with 0 remaining credits attempts search, verify block message and upgrade CTA appear. |
-| `price-consistency.spec.ts` | **P0** | Navigate to /pricing, capture prices. Navigate to /planos, capture prices. Assert they match. (This would have caught FE-L03 automatically.) |
-
-**Recommendation:** Add at minimum `checkout-flow.spec.ts` and `price-consistency.spec.ts` as P0. These can use Playwright route mocking to intercept Stripe redirects rather than requiring a real Stripe test environment. The `plan-display.spec.ts` already does mock-based testing of plan badges -- extend this pattern for checkout flows.
-
-### Q5: Should we prioritize Locust load testing?
-
-**Yes, but not immediately.** Here is the reasoning:
-
-**Current state:**
-- `locustfile.py` exists with well-structured test scenarios (search, download, health check)
-- `.github/workflows/load-test.yml` exists and runs weekly + on backend PRs
-- The backend has rate limiting (10 req/s to PNCP) and retry logic (exponential backoff)
-
-**When load testing matters most:**
-1. **After ORM consolidation (Sprint 2):** The new Supabase-client-based Stripe handlers may have different connection pool behavior. Load test the webhook endpoint with 50 concurrent events.
-2. **After Redis migration (Sprint 4):** SSE state moves from in-memory to Redis. The latency characteristics change fundamentally. Load test with 100 concurrent search sessions.
-3. **Before any pricing tier changes:** If Sala de Guerra users are promised unlimited searches, the system must handle their peak usage without degradation.
-
-**Recommendation:** Do not prioritize load testing in Sprint 1 (security fixes). In Sprint 2, after ORM consolidation, run a baseline load test and save results. In Sprint 4, run comparative load tests before and after Redis migration. The existing `locustfile.py` and workflow are sufficient infrastructure -- the gap is in actually running them and establishing baselines, not in building test infrastructure.
-
-**One specific load test to add:** The current `locustfile.py` does not test SSE connections. Add a Locust task that opens an SSE connection to `/buscar-progress/{search_id}` and holds it open for 30-60 seconds. This validates the `_active_trackers` in-memory dict under concurrent load (relevant to SYS-C01).
-
-### Q6: Should we add automated security tests to CI?
-
-**Yes. Here is the phased approach:**
-
-**Phase 1 (Immediate -- already partially done):**
-- CodeQL is already configured (`.github/workflows/codeql.yml`). It runs weekly and on PRs. This covers static analysis for both Python and JavaScript. **Verify it is actually running and not failing silently** (check GitHub Actions history).
-- Add `pip audit` to the backend CI job (`.github/workflows/tests.yml`). One line: `pip install pip-audit && pip-audit`. Catches known CVEs in Python dependencies.
-- Add `npm audit --audit-level=high` to the frontend CI job. Already common practice.
-- **Effort:** 1-2h.
-
-**Phase 2 (After RLS fixes in Sprint 1):**
-- Add RLS policy regression tests. These are SQL-based tests that verify:
-  - Anon key cannot access any table
-  - Authenticated user can only read their own data
-  - Service role can access everything
-  - Admin policies work correctly (test DB-C03 fix)
-- Implement as a pytest fixture that connects to a test Supabase instance with different role keys.
-- **Effort:** 4-6h.
-
-**Phase 3 (Sprint 3+):**
-- Add OWASP ZAP or similar DAST (Dynamic Application Security Testing) to the E2E pipeline. Run against staging after deployment.
-- Test for: SQL injection via search parameters, XSS via user-generated content (search terms, message bodies), CSRF on state-changing endpoints, auth bypass on protected routes.
-- **Effort:** 8-12h.
-
-**Specific tests recommended for the identified RLS gaps:**
-
-```python
-# tests/test_rls_security.py
-async def test_anon_cannot_insert_monthly_quota(anon_client):
-    """DB-H04: Verify anon key blocked after RLS tightening."""
-    result = await anon_client.table('monthly_quota').insert({...}).execute()
-    assert result.error is not None
-
-async def test_user_cannot_read_other_user_subscriptions(user_a_client):
-    """Verify user cannot access other users' subscription data."""
-    result = await user_a_client.table('user_subscriptions').select('*').execute()
-    # Should only return user_a's subscriptions, not others
-    for sub in result.data:
-        assert sub['user_id'] == user_a_id
-
-async def test_admin_can_read_webhook_events(admin_client):
-    """DB-C03: Verify admin with is_admin=true can read webhook events."""
-    result = await admin_client.table('stripe_webhook_events').select('*').execute()
-    assert result.error is None
-```
-
-### Q7: How to ensure schema consistency between environments given migration issues?
-
-**Current problem:**
-- 17 migration files in `supabase/migrations/`, including 3 with `006_` prefix
-- At least one migration (`006_APPLY_ME.sql`) was designed for manual dashboard paste
-- No migration tracking document exists
-- No way to verify which migrations have been applied in production
-- The column `user_subscriptions.updated_at` may have been added manually
-
-**Recommended solution (3-phase):**
-
-**Phase 1 (Immediate, Sprint 1): Audit and Document**
-1. Connect to production Supabase and dump the current schema: `supabase db pull --schema public`
-2. Compare with local migration state: `supabase db diff`
-3. Create `supabase/MIGRATIONS_APPLIED.md` documenting which migrations are applied and when (as DB specialist recommends)
-4. Resolve the `006_*` ambiguity per DB specialist's recommendation
-5. **Effort:** 2-3h
-
-**Phase 2 (Sprint 2): Enforce Migration Discipline**
-1. All schema changes go through migration files starting from `016_`
-2. Use `supabase db push` for applying migrations, never dashboard SQL editor
-3. Add a CI check that runs `supabase db diff` against a fresh Supabase instance with all migrations applied -- if the diff is non-empty, the migration files do not reproduce the expected schema
-4. **Effort:** 3-4h
-
-**Phase 3 (Sprint 3+): Environment Parity**
-1. Create a staging Supabase project (if not already existing)
-2. Apply all migrations to staging first, verify, then apply to production
-3. Add environment-specific seed files for data that differs between environments (Stripe price IDs from DB-M05, test users, etc.)
-4. Separate migration files from seed files: `supabase/migrations/` for DDL, `supabase/seeds/` for environment-specific DML
-5. **Effort:** 4-6h
-
-**Key principle:** The migration files in the repository must be the single source of truth for the schema. If you cannot start from an empty database, apply all migrations, and get a schema identical to production, then the migration system is broken. Phase 1's audit will determine how far the current state is from this ideal.
+| # | Risco | Areas Afetadas | Probabilidade | Impacto | Mitigacao |
+|---|-------|----------------|---------------|---------|-----------|
+| CR-01 | **Migration 027 falha em producao** por conflito com estado real do banco (colunas adicionadas manualmente, triggers alterados fora de migrations) | DB, Backend | Media | CRITICAL | Executar queries V1-V5 do DB Review ANTES da migration. Preparar script de rollback. Aplicar primeiro em staging se disponivel. |
+| CR-02 | **Refactor de prop drilling (FE-01/02/03) quebra testes existentes e E2E** ao alterar interfaces de componentes | Frontend (testes, E2E, componentes) | Alta | HIGH | Executar FE-01/02/03 APOS resolver parcialmente FE-04 (unquarantine de testes nao-dependentes). Cada fase do refactor deve ter testes green antes da proxima. |
+| CR-03 | **Correcao de RLS (DB-03/04) bloqueia funcionalidade se backend nao usa service_role key em todas as queries** | DB, Backend | Baixa | HIGH | Auditar TODAS as queries do backend para `pipeline_items` e `search_results_cache`. Verificar que usam `supabase_client` com service_role key, nao anon key. Se alguma usa anon key, a correcao de RLS vai quebrar a funcionalidade. |
+| CR-04 | **Eliminacao do sync client (SYS-02) quebra fallback de busca single-UF** se `PNCPLegacyAdapter.fetch()` e chamado em producao | Backend, PNCP Client | Media | HIGH | Verificar se `PNCPLegacyAdapter` e chamado em algum code path ativo. Se sim, migrar para async antes de remover sync. O pncp_client.py tem 1584 linhas -- a remocao do sync client (estimada ~785 linhas) e uma mudanca massiva. |
+| CR-05 | **Atualizacao do `plan_type` default (DB-02) sem atualizar TODOS os code paths produz inconsistencia** | DB, Backend (`quota.py`, `admin.py`) | Media | CRITICAL | O DB Review identifica **4 code paths** que usam "free" invalido: DB-02 (column default), DB-06 (`quota.py` L790), DB-15 (`admin.py` L246), DB-16 (`quota.py` L522). Todos 4 devem ser corrigidos **atomicamente** -- corrigir parcialmente e pior que nao corrigir. |
+| CR-06 | **Consolidacao de `handle_new_user()` trigger (DB-11) conflita com extensoes futuras** | DB, Frontend (signup), Backend | Baixa | MEDIUM | DB-11 deve ser feito APOS DB-02 e APOS validar que o fluxo de signup funciona com a nova default. Nao consolidar o trigger enquanto o signup nao estiver estavel. |
+| CR-07 | **Dynamic imports (FE-07) causam loading spinners excessivos ou flash of unstyled content** | Frontend (UX, Performance) | Media | MEDIUM | Implementar skeletons adequados para cada componente lazy-loaded (recharts, @dnd-kit, shepherd.js). Testar com throttled connection (3G). O UX Review fornece pattern concreto (`{ ssr: false, loading: () => <ChartSkeleton /> }`). |
+| CR-08 | **Error boundary (FE-08) e a unica forma de recuperacao para o usuario** -- botao invisivel bloqueia recuperacao | Frontend (error handling) | Baixa | CRITICAL | Verificado: `error.tsx` linha 67 usa `bg-[var(--brand-green)]` que **NAO esta definida** em `globals.css`. O botao renderiza sem background visivel. Este e o pior lugar para um CTA quebrado. Mover para P0. |
+| CR-09 | **Mudanca de `time.sleep` para `asyncio.sleep` em `quota.py` (SYS-07) pode expor race condition** | Backend (async) | Baixa | MEDIUM | O `time.sleep(0.3)` atual bloqueia o event loop mas garante que nenhum outro coroutine interfere durante o retry. Ao mudar para `asyncio.sleep(0.3)`, outro coroutine pode executar durante o sleep, potencialmente alterando estado da sessao. Verificar se `save_search_session` depende de exclusao mutua. |
+| CR-10 | **`search_pipeline.py` (1318 linhas) dificulta todas as correcoes de backend** | Backend (manutenibilidade) | Alta | MEDIUM | Qualquer correcao em stages do pipeline (filtro, enriquecimento, cache, Excel) requer navegar por 1318 linhas. A decomposicao (SYS-11) deveria ser elevada a HIGH e antecipada para antes dos refactors de backend, nao P3. |
 
 ---
 
-## 6. Quality Metrics Targets
+## 3. Dependencias Validadas
 
-Measurable quality goals for after debt resolution is complete (end of Sprint 4):
+### 3.1 Ordem de Resolucao
 
-| Metric | Current | Sprint 1 Target | Sprint 2 Target | Sprint 4 Target |
-|--------|---------|-----------------|-----------------|-----------------|
-| Backend test pass rate | 100% (1631/1631) | 100% | 100% | 100% |
-| Frontend test pass rate | 96.5% (1026/1072) | 100% (fix 38 failures) | 100% | 100% |
-| Backend coverage | ~96.69% | >= 70% (maintain) | >= 70% | >= 80% |
-| Frontend coverage | ~49.46% | >= 55% | >= 60% (threshold) | >= 65% |
-| E2E test count | 60 tests / 12 specs | 60 (no regression) | 75+ (add billing specs) | 85+ |
-| E2E pass rate | Unknown (not baselined) | Establish baseline | >= 95% | >= 98% |
-| CRITICAL debts open | 12 | 7 (resolve DB-C03, FE-C02, DB-H04, DB-H05, FE-L03) | 2 (resolve CROSS-C01, SYS-C04) | 0 |
-| HIGH debts open | 17 | 12 | 5 | 0 |
-| CI pipeline status | RED (frontend coverage gate fails) | GREEN | GREEN | GREEN |
-| Lighthouse performance (buscar) | Unknown | Establish baseline | >= 80 | >= 90 |
-| Mean time to detect regression | Unknown (CI broken) | < 15 min (CI green) | < 15 min | < 10 min |
-| Security vulnerabilities (CodeQL) | Unknown | 0 critical, 0 high | 0 critical, 0 high | 0 critical, 0 high, 0 medium |
-| Schema drift (migration diff) | Unknown | 0 untracked changes | 0 untracked changes | 0 untracked changes |
+A ordem proposta no DRAFT (P0 -> P1 -> P2 -> P3) e **correta em principio**, com os seguintes ajustes necessarios baseados nas revisoes dos especialistas:
+
+**P0 revisado (incorporando specialist reviews):**
+
+| # | Item | Acao | Horas | Notas |
+|---|------|------|-------|-------|
+| 0 | **Verificar producao** | Executar queries V1-V5 do DB Review | 1h | PRE-REQUISITO absoluto. Determina escopo real de DB-01 e DB-02. |
+| 1 | DB-02 + DB-06 + DB-16 | Backend code fixes + column default migration | 3h | 3 code paths com `"free"` invalido. Deploy backend ANTES de migration. |
+| 2 | DB-03 + DB-04 | RLS fixes em migration 027 | 2h | Seguranca. Independente de DB-02. |
+| 3 | FE-08 | Error boundary button fix | 0.5h | **Movido de P1 para P0** -- botao invisivel na pagina de erro (CR-08). |
+| 4 | UX-03 + UX-NEW-02 | Pricing "9.6" display fix | 2h | Quick win, impacto direto em confianca do usuario. 5 ocorrencias em `planos/page.tsx`. |
+| 5 | SYS-03 (reavaliar) | Verificar se STORY-251 resolveu | 1h | Se resolvido, apenas remover nota obsoleta. Se nao, manter como 8h. |
+
+**Total P0 revisado:** ~9.5h (era 19h no DRAFT; reducao por reavaliacao de SYS-03 e estimativas ajustadas)
+
+**P1 revisado:**
+
+| # | Item | Acao | Horas | Notas |
+|---|------|------|-------|-------|
+| 6 | DB-05 | Webhook INSERT policy scope to service_role | 1h | Quick win. |
+| 7 | DB-15 | Admin.py CreateUserRequest default | 0.5h | Depende de DB-02 estar feito. |
+| 8 | DB-01 (part 2) | Documentar ou remover trigger baseado em verificacao | 1h | Depende de resultado das queries V1-V5. |
+| 9 | A11Y-01 + A11Y-02 + UX-NEW-01 | Dialog primitive + focus trap | 4h | Co-implementation conforme UX Review. |
+| 10 | UX-02 | Keyboard Escape conflict fix | 0h extra | Resolvido pela mesma infra de item 9. |
+| 11 | SYS-07 | async sleep fix em quota.py | 2h | Atentar para CR-09 (race condition). |
+| 12 | SYS-10 | Adicionar mypy ao CI | 2h | Ruff JA esta no backend-ci.yml (parcialmente resolvido). |
+
+**Total P1 revisado:** ~10.5h (era 41h no DRAFT; reducao por estimativas ajustadas e itens movidos/corrigidos)
+
+### 3.2 Dependencias Criticas
+
+```
+[PREREQUISITO: Queries V1-V5 de verificacao em producao]
+        |
+        v
+DB-02 (column default) ---> DB-15 (admin.py) ---> DB-11 (trigger consolidation)
+  |                                                        |
+  +---> DB-06 (quota.py L790) ---> DB-16 (quota.py L522)  |
+  |                                                        v
+  +---> SYS-06 (legacy plan seeds) --- so apos DB-02 estavel
+        |
+        +---> DB-01 (status column decision)
+
+DB-03 + DB-04 (RLS) --- independente de DB-02, paralelizavel
+  |
+  +---> DB-05 (webhook INSERT) -- mesma migration
+  +---> DB-07 (FK standardization) -- migration seguinte
+  +---> DB-14 (cache INSERT policy) -- apos DB-04
+
+FE-04 (unquarantine) ---> SYS-01 (coverage 60%) ---> FE-09, FE-10, FE-11, FE-12
+  |                                                     (testes de componentes)
+  +---> FE-01+02+03 (refactor) -- NAO refatorar sem safety net de testes
+           |
+           +---> FE-07 (dynamic imports) -- apos refactor de componentes
+           +---> FE-09 (SearchResults tests) -- apos refactor, nao antes
+
+A11Y-01+02 (dialog) ---> UX-02 (Escape conflict) -- mesmo fix
+                     +---> UX-NEW-03 (admin confirm) -- usa o Dialog component
+
+SYS-02 (dual HTTP client) ---> SYS-20 + SYS-21 (cleanup)
+                           ---> SYS-04 (progress scalability) -- precisa entender o client
+```
+
+### 3.3 Bloqueios Potenciais
+
+**BLOQUEIO-01: Verificacao de producao (IF-01)**
+
+Se as queries revelam que `plan_type` default ja foi corrigido manualmente, DB-02 se torna documentacao (1h). Se nao foi corrigido, e urgente (P0, 2h). **Esta incerteza bloqueia a definicao do escopo real de P0.**
+
+Resolucao: Executar queries como primeiro passo da Phase 8.
+
+**BLOQUEIO-02: Dependencia circular entre testes e refactor**
+
+FE-04 (unquarantine) e requisito para SYS-01 (coverage). Porem, FE-01/02/03 (refactor) vai invalidar muitos dos testes existentes (especialmente os que testam `SearchFormProps` com 42 props). Se unquarantine ANTES do refactor, os testes serao novamente invalidados. Se refatorar ANTES de unquarantine, nao ha safety net.
+
+**Resolucao recomendada (sequencia em 4 passos):**
+1. Unquarantine testes que NAO dependem de SearchForm/SearchResults (AuthProvider, DashboardPage, MensagensPage, ContaPage, LicitacaoCard) -- ~8-10 dos 22 arquivos
+2. Escrever testes E2E (Playwright) para comportamento externo de SearchResults (sobrevive ao refactor)
+3. Executar refactor FE-01/02/03 (com E2E como safety net)
+4. Escrever testes unitarios para a nova arquitetura (SearchContext, searchReducer, sub-hooks)
+
+**BLOQUEIO-03: FE-09 timing relativo a FE-01/02/03**
+
+O refactor de prop drilling vai mudar completamente `SearchResults.tsx` (de ~35 props para 0 props via Context). Escrever 16h de testes unitarios para SearchResults ANTES do refactor seria desperdicar 16h de trabalho. Escrever APOS significa que o componente mais visivel fica sem testes durante o refactor.
+
+**Resolucao:** E2E Playwright para validacao de comportamento externo ANTES; testes unitarios APOS. Os E2E sobrevivem ao refactor porque testam output renderizado, nao estrutura interna.
 
 ---
 
-## 7. Final Assessment
+## 4. Testes Requeridos
 
-### Overall Quality of the Assessment
+### 4.1 Testes de Seguranca
 
-The DRAFT, combined with the DB specialist and UX specialist reviews, forms a comprehensive and well-structured technical debt inventory. The quality of analysis is high -- specific file paths, line numbers, and severity justifications are provided for every item. The dependency chains are well-reasoned. The sprint plan is realistic.
+| # | Teste | Debito Relacionado | Tipo | Prioridade |
+|---|-------|-------------------|------|-----------|
+| SEC-T01 | Verificar que `pipeline_items` NAO permite SELECT cross-user via PostgREST com authenticated key | DB-03 | Integracao SQL | P0 |
+| SEC-T02 | Verificar que `search_results_cache` NAO permite SELECT cross-user | DB-04 | Integracao SQL | P0 |
+| SEC-T03 | Tentar INSERT em `pipeline_items` com `user_id` de outro usuario (deve falhar com RLS error) | DB-03 | Integracao SQL | P0 |
+| SEC-T04 | Tentar INSERT em `stripe_webhook_events` com authenticated key (deve falhar) | DB-05 | Integracao SQL | P1 |
+| SEC-T05 | Tentar INSERT em `stripe_webhook_events` com `id` nao-conformante a `'^evt_'` (deve falhar por CHECK) | DB-05 | Unitario | P1 |
+| SEC-T06 | Verificar que CORS `allow_origins` nao inclui `*` em producao (verificar `config.py:get_cors_origins()`) | GAP-01 | Config audit | P2 |
+| SEC-T07 | Verificar SecurityHeadersMiddleware inclui CSP, X-Frame-Options, X-Content-Type-Options | GAP-03 | Unitario | P2 |
+| SEC-T08 | Verificar que nao ha `npm audit` com severidade high/critical no frontend | GAP-02 | CI | P2 |
 
-### Conditions for Approval
+### 4.2 Testes de Regressao
 
-The following must be addressed during final consolidation before this assessment can be used as a work plan:
+| # | Teste | Debito Relacionado | Tipo | Prioridade |
+|---|-------|-------------------|------|-----------|
+| REG-T01 | Novo usuario pode se cadastrar; profile criado com `plan_type = 'free_trial'` | DB-02 | E2E | P0 |
+| REG-T02 | `_ensure_profile_exists()` cria profile valido com `plan_type = 'free_trial'` (mock Supabase) | DB-06 | Unitario | P0 |
+| REG-T03 | Admin pode criar usuario via `/admin` sem erro de constraint de `plan_type` | DB-15 | Integracao | P1 |
+| REG-T04 | Stripe webhooks (subscription_updated, subscription_deleted, invoice_paid) continuam processando apos correcao de RLS | DB-03/04/05 | Integracao | P0 |
+| REG-T05 | Busca completa (multi-UF) funciona apos remocao do sync client (SYS-02) | SYS-02 | E2E | P1 |
+| REG-T06 | SSE progress tracking funciona apos mudanca de `time.sleep` para `asyncio.sleep` | SYS-07 | Integracao | P1 |
+| REG-T07 | `save_search_session` retry funciona com `asyncio.sleep` sem race condition | SYS-07 | Unitario | P1 |
+| REG-T08 | Error boundary renderiza botao visivel em ambos os temas (light/dark) | FE-08 | E2E + Visual | P0 |
+| REG-T09 | Pagina de pricing NAO mostra "9.6" em texto visivel; mostra "2 meses gratis" ou equivalente | UX-03 | E2E text assertion | P1 |
+| REG-T10 | Modais (save search, keyboard help) mantem focus trap ativo (Tab nao escapa do modal) | A11Y-01/02 | E2E accessibility | P1 |
+| REG-T11 | Escape fecha modal em vez de limpar selecao de UF | UX-02 | E2E interaction | P1 |
+| REG-T12 | LLM arbiter usa descricao correta do setor (nao "Vestuario" generico) para setores != vestuario | SYS-03 | Unitario | P1 |
+| REG-T13 | Dynamic imports carregam componentes corretamente com skeleton/loading state | FE-07 | E2E | P2 |
+| REG-T14 | Navegacao para fora de `/buscar` com resultados ativos mostra confirmacao | MF-01 | E2E | P2 |
 
-1. **Update failure counts.** The DRAFT references 21 backend + 70 frontend failures. The actual numbers are 0 backend + 38 frontend. This changes the effort estimate for SYS-C04 and the urgency of Chain 4 (CI/CD Green). Backend CI may already be green.
+### 4.3 Testes de Performance
 
-2. **Incorporate the 14 new debts from specialist reviews.** The DB specialist added 5 new items (NEW-DB-01 through NEW-DB-05). The UX specialist added 9 new items (FE-NEW-01 through FE-NEW-09). The UX specialist also removed 1 item (FE-M08) and upgraded FE-L03 from LOW to CRITICAL. The final consolidated document must reflect all of these, bringing the total from 72 to approximately 85 items.
+| # | Teste | Debito Relacionado | Tipo | Metrica Alvo |
+|---|-------|-------------------|------|-------------|
+| PERF-T01 | Analytics page load para usuario com 500+ sessions | DB-09/DB-17 | Load test | < 2s (P95) |
+| PERF-T02 | Bundle size total apos dynamic imports (FE-07) | FE-07 | Build metric | Initial JS < 200KB |
+| PERF-T03 | LCP da pagina de busca (first visit, cold cache) | FE-07 | Lighthouse | < 2.5s |
+| PERF-T04 | Busca paralela de 5 UFs sem blocking do event loop | SYS-07 | Load test | Nenhum stall > 300ms em concurrent requests |
+| PERF-T05 | Pipeline page carrega em < 3s com 50 items | UX-04 | E2E timing | < 3s |
+| PERF-T06 | `search_pipeline.py` execucao completa (7 stages) com 500 items | SYS-11 | Benchmark | < 10s end-to-end |
 
-3. **Add GAP-02 (Stripe production audit) as Sprint 0 prerequisite.** Before beginning any ORM consolidation work, the team must verify the current state of Stripe webhook processing in production. This is a 2-4h investigation that could reveal the ORM consolidation is even more urgent than estimated, or could reveal compensating controls that reduce urgency.
+### 4.4 Criterios de Aceite por Debito
 
-4. **Add GAP-06 (auth rate limiting) and GAP-09 (billing E2E gap) to the inventory.** These are meaningful quality gaps that should be tracked.
-
-5. **Require product owner sign-off on FE-L03 (prices).** The UX specialist correctly escalated this to CRITICAL. However, the fix requires a business decision on canonical prices. This must be flagged as blocked-by-business-decision, not just as a code task.
-
-### Strengths of the Assessment
-
-- **Evidence-based.** Every debt cites specific files, line numbers, and commits.
-- **Dependency-aware.** The chain analysis prevents wasted work from incorrect ordering.
-- **Specialist-reviewed.** Both the DB and UX specialists validated findings and added material new items.
-- **Actionable.** Sprint plan includes effort estimates, ordering, and groupings.
-- **Balanced.** Positive observations (Section 9) ensure the team knows what to preserve.
-
-### Concerns
-
-- **Effort estimates are optimistic.** The total (280-380h across all documents) assumes no rework, no discovery of additional issues during resolution, and no context-switching overhead. In my experience, debt resolution typically takes 1.3-1.5x the estimated effort. Budget accordingly.
-- **Sprint 2 is overloaded.** ORM consolidation (12-16h) + API unification (8-12h) + component consolidation (3-4h) + test fixes (8-16h) = 31-48h in one sprint. If sprints are 2-week with one developer, this is aggressive. Consider splitting Sprint 2 into 2a (ORM consolidation only) and 2b (API unification + component cleanup).
-- **No rollback plan documented.** For each sprint, document what happens if the changes need to be reverted. The DB specialist's rollback suggestion for ORM consolidation (keep dead code for 2 weeks) is good but should be a pattern for all high-risk changes.
-
-### Verdict
-
-**APPROVED WITH CONDITIONS.** The assessment is ready for final consolidation pending the 5 conditions listed above. The combined ~85 items, 4-sprint plan, and dependency chains provide a solid foundation for systematic debt reduction. The specialist reviews materially improved the assessment by adding 14 new items, correcting 7 severity ratings, and removing 1 false positive.
+| Debt ID | Criterio de Aceite | Tipo de Teste |
+|---------|-------------------|---------------|
+| DB-02 | `SELECT column_default ... WHERE column_name = 'plan_type'` retorna `'free_trial'::text`; novo signup cria profile com `plan_type = 'free_trial'` | SQL verify + E2E signup |
+| DB-03 | `SELECT * FROM pipeline_items` com authenticated key (nao service_role) retorna SOMENTE items do usuario autenticado | SQL integration |
+| DB-04 | `SELECT * FROM search_results_cache` com authenticated key retorna SOMENTE cache do usuario autenticado | SQL integration |
+| DB-05 | `INSERT INTO stripe_webhook_events` com authenticated key FALHA com RLS violation | SQL integration |
+| DB-06 | `_ensure_profile_exists()` chamado para usuario sem profile: profile criado com `plan_type = 'free_trial'`, busca funciona | Unit test (mock supabase) |
+| DB-15 | Admin cria usuario sem especificar plan; profile criado com `plan_type = 'free_trial'` | Integration test |
+| DB-16 | `get_plan_from_profile()` retorna `'free_trial'` quando `plan_type` e NULL no resultado | Unit test |
+| SYS-02 | `pncp_client.py` contem apenas `AsyncPNCPClient`; `import requests` removido; classe `PNCPClient` (sync) removida; todos os testes passam | Unit tests + grep source |
+| SYS-03 | `_build_conservative_prompt(setor_id="alimentos", ...)` gera prompt com descricao do setor "Alimentos", nao "Vestuario" | Unit test |
+| SYS-07 | `grep "time.sleep" quota.py` retorna 0 resultados; `asyncio.sleep` usado no retry; `save_search_session` funciona sem blocking | Unit test + source grep |
+| SYS-10 | `mypy backend/` roda no CI sem erros bloqueantes; `backend-ci.yml` inclui step de mypy | CI verification |
+| FE-01/02 | `SearchFormProps` e `SearchResultsProps` interfaces removidas; componentes consomem Context diretamente; 0 props passadas de page.tsx | Code review + TypeScript `npx tsc --noEmit` |
+| FE-03 | `useSearchFilters.ts` removido ou < 100 linhas; logica dividida em 4+ sub-hooks; reducer e pura funcao testavel | Unit tests do reducer |
+| FE-04 | Diretorio `__tests__/quarantine/` vazio ou removido; todos os 22 arquivos rodam no CI | CI green + test count |
+| FE-08 | `error.tsx` usa variavel CSS definida em `globals.css`; botao visivel em light E dark mode | Visual test + CSS audit |
+| UX-03 | Pagina `/planos` NAO contem string "9.6" em texto visivel; exibe calculo claro ("2 meses gratis" ou "economize R$ X") | E2E text search (`page.getByText`) |
+| A11Y-01 | Modal aberto: Tab key cicla entre elementos focaveis DENTRO do modal; Shift+Tab tambem; focus nao escapa para background | E2E accessibility test |
+| A11Y-02 | Todos os modais tem `role="dialog"` e `aria-modal="true"` no DOM renderizado | E2E DOM inspection |
+| UX-02 | Keyboard help modal aberto: Escape fecha o modal; UF selection permanece intacta | E2E interaction test |
+| IC-06 | Erro HTTP 502/503 mostra mensagem em portugues ("Servico temporariamente indisponivel"), nao "Bad Gateway" | E2E error simulation |
+| MF-01 | Navegacao para `/planos` com resultados de busca ativos mostra dialog de confirmacao | E2E interaction test |
 
 ---
 
-*Review completed by @qa (Quinn) on 2026-02-11. Test execution verified against codebase at commit `808cd05`. All gap identifications and risk assessments are based on direct codebase inspection, not assumptions.*
+## 5. Validacao dos Clusters de Trabalho (A-G)
+
+### Cluster A: Database Security Sprint -- VALIDADO com ajustes
+
+**Proposta original (DRAFT):** DB-02 + DB-03 + DB-04 + DB-05 + DB-06 + DB-07 (13h, single migration)
+
+**Ajuste DB Review:** P0 = DB-02 + DB-03 + DB-04 + DB-06 (3.5h); DB-05 + DB-07 movidos para P1/P2
+
+**Parecer QA:** Concordo com o DB Review. A migration 027 deve ser minima e focada nos items P0. DB-05 e DB-07 podem ir em migration 028. Adicionar: DB-15 e DB-16 (backend code fixes) devem ser deployados ANTES ou JUNTO com migration 027 para evitar window de inconsistencia (CR-05).
+
+### Cluster B: Backend Correctness Quick Wins -- PRECISA REVISAO
+
+**Proposta original:** SYS-03 + SYS-07 + SYS-14 + SYS-18 (12h)
+
+**Parecer QA:** SYS-03 precisa ser reavaliado contra STORY-251. Se confirmado como parcialmente resolvido (IF-03), cluster B cai para ~5h (SYS-07 2h + SYS-14 2h + SYS-18 2h - overlap). Recomendo verificar SYS-03 como primeiro passo antes de alocar as 8h.
+
+### Cluster C: CI/Quality Gates -- PARCIALMENTE RESOLVIDO
+
+**Proposta original:** SYS-10 + FE-08 (8h)
+
+**Parecer QA:** SYS-10 e parcialmente resolvido -- `ruff` ja esta no `backend-ci.yml` (IF-04). FE-08 e ~30 minutos de trabalho real (trocar uma variavel CSS). Cluster C real: ~2.5h (2h mypy + 0.5h FE-08). **Mover FE-08 para P0** (CR-08).
+
+### Cluster D: Accessibility Sprint -- VALIDADO
+
+**Proposta original:** A11Y-01 + A11Y-02 (8h)
+
+**Ajuste UX Review:** 4h (co-implementation via Dialog primitive extraido de UpgradeModal)
+
+**Parecer QA:** Concordo. Adicionar UX-02 (Escape conflict) e UX-NEW-01 ao mesmo cluster -- todos sao consequencia da mesma causa raiz (ausencia de Dialog primitive reutilizavel). O UX Review detalha que UpgradeModal.tsx JA implementa o pattern corretamente (linhas 34-51), faltando apenas focus trap (~30 linhas).
+
+### Cluster E: PNCP Client Consolidation -- VALIDADO com alerta
+
+**Proposta original:** SYS-02 + SYS-20 + SYS-21 (18h)
+
+**Parecer QA:** Validado, mas com dois alertas:
+1. Verificar se `PNCPLegacyAdapter.fetch()` e chamado em producao antes de remover o sync client (CR-04)
+2. `pncp_client.py` tem 1584 linhas -- a remocao do sync client (~785 linhas) e uma mudanca massiva. Recomendo review detalhado e testes extensivos.
+
+### Cluster F: Frontend Architecture Refactor -- VALIDADO com ajustes
+
+**Proposta original:** FE-01 + FE-02 + FE-03 (48h somadas)
+
+**Ajuste UX Review:** 32h (trabalho compartilhado via React Context + useReducer)
+
+**Parecer QA:** Concordo com 32h. O UX Review fornece pattern detalhado (SearchContext, searchReducer, sub-hooks). Dependencia critica: FE-04 deve ser parcialmente resolvido ANTES (BLOQUEIO-02); FE-09 testes unitarios devem ser escritos APOS o refactor (BLOQUEIO-03). Testes E2E ANTES do refactor como safety net.
+
+### Cluster G: Test Coverage Campaign -- VALIDADO com sequenciamento revisado
+
+**Proposta original:** SYS-01 + FE-04 + FE-09 + FE-10 + FE-11 + FE-12 (80h)
+
+**Parecer QA:** O total de 80h permanece, mas o sequenciamento e crucial para evitar desperdicio (BLOQUEIO-02 e BLOQUEIO-03):
+
+| Fase | Acao | Horas | Pre-requisito |
+|------|------|-------|--------------|
+| G.1 | Unquarantine 10-12 testes NAO-dependentes de SearchForm/SearchResults | 8h | -- |
+| G.2 | Escrever E2E Playwright para SearchResults (comportamento externo) | 8h | G.1 |
+| G.3 | Executar Cluster F (refactor FE-01/02/03) | 32h | G.2 (E2E como safety net) |
+| G.4 | Testes unitarios para nova arquitetura (SearchContext, reducer, sub-hooks) | 16h | G.3 |
+| G.5 | FE-10 (pipeline), FE-11 (onboarding), FE-12 (middleware) | 16h | G.1 |
+
+---
+
+## 6. Validacao de Ajustes de Severidade dos Especialistas
+
+### 6.1 Ajustes do DB Specialist
+
+| Item | Ajuste | Veredicto QA | Justificativa |
+|------|--------|-------------|--------------|
+| DB-01 CRITICAL -> MEDIUM | **CONCORDO** | Analise convincente: backend handles sync manualmente via 3 webhook handlers. Trigger e redundante/dead code, nao crash. |
+| DB-06 MEDIUM -> CRITICAL | **CONCORDO** | One-line fix mas impacto cascading: qualquer usuario sem profile fica bloqueado. Dois code paths independentes produzem `plan_type = 'free'` invalido. |
+| DB-08 MEDIUM -> LOW | **CONCORDO** | POC com 3 planos. Migration 021 ja documenta instrucoes por environment. |
+| DB-10 MEDIUM -> LOW | **CONCORDO** | Max-5-per-user trigger e boa mitigacao. Projecao: 1.25GB a 5000 usuarios. Monitoramento suficiente. |
+
+### 6.2 Ajustes do UX Specialist
+
+| Item | Ajuste | Veredicto QA | Justificativa |
+|------|--------|-------------|--------------|
+| FE-08 MEDIUM -> HIGH | **CONCORDO e ELEVO** | Deveria ser P0. Verificado: `bg-[var(--brand-green)]` NAO esta definida em `globals.css`. Botao invisivel na pagina de erro = usuario preso. |
+| UX-03 MEDIUM -> HIGH | **CONCORDO** | Verificado: "12 meses pelo preco de 9.6" em `planos/page.tsx` linha 738. 5 ocorrencias de "9.6". Confunde usuarios e prejudica confianca. |
+| FE-17 LOW -> MEDIUM | **CONCORDO** | `PLAN_HIERARCHY` em `planos/page.tsx` E `PLAN_CONFIGS` em `lib/plans.ts` = risco de drift de precos. |
+| IC-06 LOW -> MEDIUM | **CONCORDO** | Login traduz erros ("E-mail ou senha incorretos"), mas busca mostra "502 Bad Gateway". Jarring. |
+| MF-01 LOW -> MEDIUM | **CONCORDO** | Busca leva 15-60s. Perder resultado sem warning e frustrante. |
+| A11Y-08 LOW -> MEDIUM | **CONCORDO** | `aria-label="Icone"` e pior que nada -- cria confusao para AT users. |
+| A11Y-04 MEDIUM -> LOW | **CONCORDO** | Pull-to-refresh e mobile-only com alternativa (botao de busca). |
+| UX-05 MEDIUM -> LOW | **CONCORDO** | Admin page usada por 1-2 pessoas. Horizontal scroll funciona. |
+| FE-20 remover | **CONCORDO** | `sr-only` e uso correto de Tailwind utility. Nao e debito. |
+| FE-21 remover | **CONCORDO** | `dangerouslySetInnerHTML` para FOUC prevention e padrao documentado e necessario. |
+
+### 6.3 Itens Novos Adicionados -- Validacao
+
+| Item | Specialist | Severidade | Veredicto QA |
+|------|-----------|-----------|-------------|
+| DB-15 | DB | MEDIUM | **CONCORDO.** Impacto secundario de DB-02. One-line fix apos DB-02. |
+| DB-16 | DB | LOW | **CONCORDO.** Mitigado por `PLAN_TYPE_MAP` em `quota.py`. Defense-in-depth. |
+| DB-17 | DB | MEDIUM | **CONCORDO.** Mesma classe de problema que DB-09 mas sem date filter. Combinar com DB-09 em mesmo fix. |
+| UX-NEW-01 | UX | HIGH | **CONCORDO mas REDUNDANTE.** O UX Review diz "Co-fix with A11Y-01 and A11Y-02". Se co-fixado via Dialog primitive, UX-NEW-01 NAO e um item separado -- e a descricao detalhada do que A11Y-01+A11Y-02 significam na pratica. Recomendo: subsumir em A11Y-01+A11Y-02 para evitar double-counting de horas. |
+| UX-NEW-02 | UX | HIGH | **CONCORDO mas SUBSET de UX-03.** O UX Review diz "This is a subset of UX-03." Recomendo: incorporar em UX-03 (nao contar horas separadamente). |
+| UX-NEW-03 | UX | MEDIUM | **CONCORDO.** `window.confirm()` em acao destrutiva (delete user) e anti-pattern ja corrigido em outro lugar (FE-H04 -> toast system). |
+| UX-NEW-04 | UX | LOW | **CONCORDO.** Empty state para pipeline e nice-to-have. |
+| UX-NEW-05 | UX | MEDIUM | **CONCORDO.** 5 colunas em `flex gap-4` no tablet force scroll horizontal sem indicador. |
+
+**Nota sobre double-counting:** UX-NEW-01 (3h) e UX-NEW-02 (1h) sao subsets de items existentes. Incorporando-os, o esforco liquido de novos items e 6h (UX-NEW-03: 2h + UX-NEW-04: 2h + UX-NEW-05: 2h), nao 10h.
+
+---
+
+## 7. Parecer Final
+
+### Pontos Fortes do Assessment
+
+1. **Cobertura abrangente.** 82+ items across 3 areas (sistema, database, frontend/UX) com priorizacao clara em 4 niveis (P0-P3). Os specialist reviews adicionaram 8 items genuinamente novos.
+
+2. **Especialistas qualificados e rigorosos.** Ambos os reviews sao de alta qualidade:
+   - DB Review: Reduziu esforco de 39h para 23h (-41%) com justificativas detalhadas por item. Respondeu todas as 7 perguntas com analise de codigo-fonte.
+   - UX Review: Reduziu esforco de 218h para 194h (-11%) com patterns concretos de implementacao. Identificou 5 novos items e recomendou remocao de 2 falsos positivos.
+
+3. **Grafo de dependencias.** O DRAFT inclui grafo explicito com clusters de trabalho (A-G), facilitando planejamento de sprints. Os clusters sao logicamente coerentes.
+
+4. **Deduplicacao cuidadosa.** O Apendice A documenta 12 items que apareciam em multiplos documentos e foram consolidados com rastreabilidade.
+
+5. **Pontos positivos preservados.** O Apendice B lista 34 aspectos de qualidade a preservar -- essencial para evitar regressoes durante resolucao de debitos.
+
+6. **Queries de verificacao prontas.** O DB Review fornece SQL executavel para validar cada finding em producao, incluindo pre-deployment e post-deployment checks.
+
+### Pontos de Atencao
+
+1. **3 inconsistencias factuais verificadas no codebase:**
+   - SYS-03 (LLM Arbiter) pode estar parcialmente resolvido por STORY-251
+   - SYS-10 (linting CI) parcialmente resolvido -- ruff ja esta no backend-ci.yml
+   - FE-04 contagem de quarantine: 22 arquivos, nao 17
+
+2. **Verificacao de producao nao realizada.** DB-01 e DB-02 requerem queries no banco real. O escopo de P0 depende dos resultados. Se `plan_type` default ja foi corrigido manualmente, DB-02 e apenas documentacao.
+
+3. **Double-counting em novos items.** UX-NEW-01 e subset de A11Y-01+A11Y-02. UX-NEW-02 e subset de UX-03. Contagem inflada se nao ajustada.
+
+4. **`search_pipeline.py` (1318 linhas) subestimado.** O DRAFT classifica como MEDIUM (SYS-11). E o segundo maior arquivo do backend e absorveu complexidade da decomposicao de main.py. Considerar elevacao a HIGH.
+
+5. **Gaps em seguranca e observabilidade.** Rate limiting por usuario, dependency scanning do frontend, configuracao de Sentry, e backup/recovery nao foram analisados.
+
+6. **Estimativas otimistas.** O total revisado (~360h) assume execucao sem surpresas. Historicamente, debt resolution leva 1.3-1.5x a estimativa. Budget para ~470-540h seria mais realista.
+
+### Recomendacoes Antes de Proceder a Phase 8
+
+**Obrigatorias (bloqueantes para publicacao final):**
+
+| # | Acao | Esforco | Impacto |
+|---|------|---------|---------|
+| R-01 | Executar queries V1-V5 do DB Review no banco de producao | 1h | Define escopo real de DB-01 e DB-02 |
+| R-02 | Verificar se SYS-03 esta resolvido por STORY-251 (testar `_build_conservative_prompt` com setor != vestuario) | 0.5h | Pode remover 8h de trabalho de P0 |
+| R-03 | Corrigir contagem de quarantine de 17 para 22 no DRAFT | 5min | Precisao factual |
+| R-04 | Resolver double-counting de UX-NEW-01 e UX-NEW-02 (subsumir em items existentes) | 5min | Precisao de estimativas |
+
+**Recomendadas (nao-bloqueantes mas importantes):**
+
+| # | Acao | Esforco | Impacto |
+|---|------|---------|---------|
+| R-05 | Mover FE-08 para P0 (botao invisivel na pagina de erro) | 0h (reordenacao) | Quick win critico (30min de fix, alto impacto) |
+| R-06 | Corrigir descricao de SYS-10 para "mypy not in CI" (ruff ja esta) | 5min | Precisao factual |
+| R-07 | Adicionar `email_service.py` time.sleep como item (SYS-07 expandido ou SYS-24) | 5min | Completude |
+| R-08 | Considerar elevar SYS-11 (search_pipeline.py, 1318 linhas) de MEDIUM para HIGH | N/A | Priorizacao |
+| R-09 | Reconciliar estimativas usando valores revisados dos especialistas | 30min | Total cai de ~412h para ~360h |
+| R-10 | Documentar que backup, Sentry config, e npm audit estao fora de escopo deste assessment | 10min | Transparencia sobre gaps |
+| R-11 | Criar checklist de rollback para migration 027 | 1h | Safety net para P0 |
+
+### Totais Revisados (apos incorporacao de specialist reviews e ajustes QA)
+
+| Area | DRAFT Original | Apos Specialists | Apos QA Adjustments | Delta |
+|------|---------------|------------------|---------------------|-------|
+| Sistema (Backend/Infra) | ~155h | ~155h | ~147h | -8h (SYS-03 resolvido, SYS-10 parcial) |
+| Database | ~39h | ~23h | ~23h | -16h |
+| Frontend/UX | ~218h | ~194h | ~190h | -28h (double-counting) |
+| **Total** | **~412h** | **~372h** | **~360h** | **-52h (-13%)** |
+
+---
+
+*Review completado por @qa em 2026-02-15.*
+*Todos os achados validados contra o codebase no commit `b80e64a` (branch `main`).*
+*Verificacoes de codebase realizadas:*
+*- Quarantine count: 22 arquivos (nao 17 como no DRAFT)*
+*- SYS-03: STORY-251 adicionou lookup dinamico de setor em `llm_arbiter.py` (parcialmente resolvido)*
+*- SYS-10: `ruff check .` ja configurado em `backend-ci.yml` linhas 33-36*
+*- FE-08: `bg-[var(--brand-green)]` confirmado ausente em `globals.css`*
+*- UX-03: "9.6" confirmado em 5 locais em `planos/page.tsx`*
+*- SYS-07: `time.sleep(0.3)` confirmado em `quota.py` linha 910*
+*- search_pipeline.py: 1318 linhas (SYS-11)*
+*- pncp_client.py: 1584 linhas (SYS-02)*
+*- email_service.py: `time.sleep` em linha 112 (nao coberto pelo assessment)*
+*Documentos de entrada analisados: 3 (DRAFT v2.0 + DB specialist review v2.0 + UX specialist review v2.0).*
+*Esta review substitui a v1.0 (2026-02-11) integralmente.*

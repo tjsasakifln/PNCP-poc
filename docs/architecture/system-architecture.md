@@ -1,9 +1,27 @@
 # System Architecture - SmartLic/BidIQ
 
-**Version:** 1.0
-**Date:** 2026-02-11
-**Author:** @architect (Aria)
-**Status:** Complete analysis of production codebase on `main` branch (commit `808cd05`)
+**Version:** 2.0
+**Date:** 2026-02-15
+**Author:** @architect (Helix) - Brownfield Discovery Phase 1
+**Status:** Comprehensive analysis of production codebase on `main` branch (commit `b80e64a`)
+**Previous version:** Archived to `system-architecture.md.backup`
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#1-executive-summary)
+2. [Tech Stack Overview](#2-tech-stack-overview)
+3. [Backend Architecture](#3-backend-architecture)
+4. [Frontend Architecture](#4-frontend-architecture)
+5. [Database Architecture](#5-database-architecture)
+6. [External Integrations](#6-external-integrations)
+7. [Infrastructure & Deployment](#7-infrastructure--deployment)
+8. [Security Architecture](#8-security-architecture)
+9. [Code Quality & Testing](#9-code-quality--testing)
+10. [Performance Architecture](#10-performance-architecture)
+11. [Technical Debt Registry](#11-technical-debt-registry)
+12. [Appendix: File Inventory](#appendix-file-inventory)
 
 ---
 
@@ -11,15 +29,26 @@
 
 SmartLic (formerly BidIQ Uniformes) is a SaaS platform for automated procurement opportunity discovery from Brazil's PNCP (Portal Nacional de Contratacoes Publicas). The system is a two-tier web application with a Python FastAPI backend and a Next.js TypeScript frontend, deployed on Railway with Supabase as the database/auth layer.
 
-**Key characteristics:**
-- **Architecture style:** Monolithic API + SPA frontend with BFF (Backend-for-Frontend) proxy layer
-- **Primary data source:** PNCP public API (government procurement portal)
-- **Revenue model:** Tiered subscription (free trial, 3 paid tiers) via Stripe
-- **AI integration:** GPT-4.1-nano for executive summaries, GPT-4o-mini for contract classification (LLM Arbiter)
-- **Scale:** Single-instance deployment (Railway), in-memory state for SSE progress tracking
-- **Maturity:** POC v0.3 with production users; significant feature surface area for a proof-of-concept
+### Key Characteristics
 
-**Architecture risk rating:** MEDIUM -- The system works in production but carries technical debt from rapid feature accretion. Critical concerns include in-memory state that prevents horizontal scaling, dual ORM usage (Supabase client + SQLAlchemy), and a growing monolithic main.py (1,959 lines).
+| Attribute | Value |
+|---|---|
+| **Architecture style** | Monolithic API + SPA with BFF (Backend-for-Frontend) proxy layer |
+| **Primary data source** | PNCP public API (government procurement portal) |
+| **Secondary sources** | ComprasGov, Portal Transparencia, Querido Diario, BLL, BNC, Licitar Digital (adapters exist, varying maturity) |
+| **Revenue model** | Tiered subscription (free trial + 3 paid tiers) via Stripe |
+| **AI integration** | GPT-4.1-nano (executive summaries), GPT-4o-mini (LLM Arbiter for contract classification) |
+| **Scale** | Single-instance deployment (Railway), Redis optional for distributed state |
+| **Maturity** | POC v0.3 with production users; 26 DB migrations, 100+ backend test files |
+| **App version** | `0.2.0` (defined in `backend/main.py` line 78) |
+
+### Architecture Risk Rating: MEDIUM
+
+The system is functioning in production but carries measurable technical debt from rapid feature accretion. Primary risks:
+- In-memory state (`_active_trackers` in `progress.py`, `_token_cache` in `auth.py`) complicates horizontal scaling
+- Route decomposition (STORY-202) successfully extracted routes from main.py, but the search pipeline (`search_pipeline.py`) is now the new "god module"
+- Dual HTTP client usage (synchronous `requests` in `PNCPClient`, async `httpx` in `AsyncPNCPClient`) creates maintenance burden
+- 26 database migrations with some deprecation markers suggest schema churn
 
 ---
 
@@ -27,916 +56,747 @@ SmartLic (formerly BidIQ Uniformes) is a SaaS platform for automated procurement
 
 ### 2.1 Backend
 
-| Layer | Technology | Version | File |
-|-------|-----------|---------|------|
-| Framework | FastAPI | 0.115.9 | `backend/requirements.txt:4` |
-| Runtime | Python | 3.12 (target 3.11+) | `backend/pyproject.toml:9` |
-| ASGI Server | Uvicorn | 0.40.0 | `backend/requirements.txt:5` |
-| Validation | Pydantic | 2.12.5 | `backend/requirements.txt:6` |
-| HTTP Client (sync) | requests | 2.32.3 | `backend/requirements.txt:12` |
-| HTTP Client (async) | httpx | 0.28.1 | `backend/requirements.txt:11` |
-| Excel Generation | openpyxl | 3.1.5 | `backend/requirements.txt:15` |
-| LLM Integration | OpenAI SDK | 1.109.1 | `backend/requirements.txt:18` |
-| Auth/Database | Supabase Python | 2.13.0 | `backend/requirements.txt:22` |
-| Payments | Stripe | 11.4.1 | `backend/requirements.txt:23` |
-| Caching | Redis | 5.2.1 | `backend/requirements.txt:24` |
-| ORM | SQLAlchemy | 2.0.36 | `backend/requirements.txt:25` |
-| DB Adapter | psycopg2-binary | 2.9.10 | `backend/requirements.txt:26` |
-| Google Sheets | google-api-python-client | 2.150.0 | `backend/requirements.txt:29` |
-| Linting | Ruff | 0.9.6 | `backend/requirements.txt:49` |
-| Type Checking | mypy | 1.15.0 | `backend/requirements.txt:50` |
-| Testing | pytest | 8.4.2 | `backend/requirements.txt:38` |
-| Load Testing | Locust | 2.43.2 | `backend/requirements.txt:45` |
+| Layer | Technology | Version | Primary File(s) |
+|---|---|---|---|
+| Framework | FastAPI | 0.115.9 | `backend/main.py` |
+| ASGI Server | Uvicorn | 0.40.0 | Procfile / Railway |
+| Validation | Pydantic | 2.12.5 | `backend/schemas.py` |
+| HTTP (sync) | requests | 2.32.3 | `backend/pncp_client.py` (PNCPClient) |
+| HTTP (async) | httpx | 0.28.1 | `backend/pncp_client.py` (AsyncPNCPClient) |
+| Excel | openpyxl | 3.1.5 | `backend/excel.py` |
+| LLM | OpenAI SDK | 1.109.1 | `backend/llm.py` |
+| Auth/DB | supabase-py | 2.13.0 | `backend/supabase_client.py` |
+| JWT | PyJWT | 2.9.0 | `backend/auth.py` |
+| Payments | stripe | 11.4.1 | `backend/webhooks/stripe.py` |
+| Cache | redis | 5.2.1 | `backend/redis_pool.py` |
+| Google APIs | google-api-python-client | 2.150.0 | `backend/routes/export_sheets.py` |
+| Email | resend | >=2.0.0 | `backend/routes/emails.py` |
+| Logging | python-json-logger | >=2.0.4 | `backend/config.py` |
+| Error tracking | sentry-sdk | >=2.0.0 | `backend/main.py` |
+| Config | PyYAML | >=6.0 | `backend/sectors.py` (loads `sectors_data.yaml`) |
 
 ### 2.2 Frontend
 
-| Layer | Technology | Version | File |
-|-------|-----------|---------|------|
-| Framework | Next.js (App Router) | 16.1.6 | `frontend/package.json:33` |
-| Language | TypeScript | 5.9.3 | `frontend/package.json:61` |
-| React | React | 18.3.1 | `frontend/package.json:34` |
-| Styling | Tailwind CSS | 3.4.19 | `frontend/package.json:60` |
-| Auth Client | @supabase/supabase-js | 2.93.3 | `frontend/package.json:27` |
-| SSR Auth | @supabase/ssr | 0.8.0 | `frontend/package.json:26` |
-| Animation | Framer Motion | 12.33.0 | `frontend/package.json:30` |
-| Icons | Lucide React | 0.563.0 | `frontend/package.json:31` |
-| Charts | Recharts | 3.7.0 | `frontend/package.json:37` |
-| Analytics | Mixpanel | 2.74.0 | `frontend/package.json:32` |
-| Onboarding | Shepherd.js | 14.5.1 | `frontend/package.json:38` |
-| Toast | Sonner | 2.0.7 | `frontend/package.json:39` |
-| Date Picker | react-day-picker | 9.13.0 | `frontend/package.json:35` |
-| Testing | Jest + Testing Library | 29.7.0 / 14.1.2 | `frontend/package.json:56-57` |
-| E2E Testing | Playwright | 1.58.1 | `frontend/package.json:47` |
-| Performance | Lighthouse CI | 0.15.0 | `frontend/package.json:46` |
+| Layer | Technology | Version | Primary File(s) |
+|---|---|---|---|
+| Framework | Next.js | ^16.1.6 | `frontend/next.config.js` |
+| Language | TypeScript | ^5.9.3 | `frontend/tsconfig.json` |
+| UI | React | ^18.3.1 | `frontend/app/` |
+| Styling | Tailwind CSS | ^3.4.19 | `frontend/tailwind.config.ts` |
+| Auth | @supabase/ssr | ^0.8.0 | `frontend/middleware.ts` |
+| Charts | recharts | ^3.7.0 | Dashboard page |
+| Animation | framer-motion | ^12.33.0 | Landing page, transitions |
+| Icons | lucide-react | ^0.563.0 | Throughout |
+| Date | date-fns | ^4.1.0 | Date formatting |
+| Toast | sonner | ^2.0.7 | `frontend/app/layout.tsx` |
+| DnD | @dnd-kit | ^6.3.1 | Pipeline page |
+| Analytics | mixpanel-browser | ^2.74.0 | `AnalyticsProvider.tsx` |
+| Error tracking | @sentry/nextjs | ^10.38.0 | `next.config.js` |
+| Onboarding | shepherd.js | ^14.5.1 | Onboarding wizard |
+| Testing | Jest + Testing Library | ^29.7.0 | `frontend/__tests__/` |
+| E2E | Playwright | ^1.58.1 | `frontend/e2e-tests/` |
 
 ### 2.3 Infrastructure
 
-| Service | Provider | Purpose |
-|---------|----------|---------|
-| Backend Hosting | Railway | FastAPI deployment (standalone container) |
-| Frontend Hosting | Railway | Next.js standalone mode |
-| Database | Supabase (PostgreSQL) | User data, subscriptions, search sessions |
-| Authentication | Supabase Auth | JWT-based auth with email/password + Google OAuth |
-| Payments | Stripe | Subscription billing (monthly/annual) |
-| Caching | Redis (Railway) | Rate limiting, feature flag cache |
-| Version Control | GitHub | Source code, CI/CD workflows |
-| CI/CD | GitHub Actions | 11 workflow files |
-
-### 2.4 External APIs
-
-| API | Purpose | Rate Limit |
-|-----|---------|------------|
-| PNCP (pncp.gov.br) | Procurement data source | 10 req/s (self-imposed) |
-| OpenAI GPT-4.1-nano | Executive summaries | Standard OpenAI limits |
-| OpenAI GPT-4o-mini | LLM Arbiter (contract classification) | Standard OpenAI limits |
-| Stripe API | Payment processing | Standard Stripe limits |
-| Google Sheets API | Export functionality | Standard Google limits |
+| Service | Purpose |
+|---|---|
+| **Railway** | Backend + Frontend deployment (standalone Node.js output) |
+| **Supabase** | PostgreSQL database, Auth (email + Google OAuth), Storage |
+| **Redis** | Optional: SSE progress pub/sub, feature flag cache, search result cache |
+| **Stripe** | Payment processing, subscription management |
+| **Sentry** | Error tracking (backend + frontend) |
+| **Mixpanel** | Product analytics (frontend) |
+| **GitHub Actions** | CI/CD (tests, e2e, deploy, CodeQL, Lighthouse) |
 
 ---
 
 ## 3. Backend Architecture
 
-### 3.1 Module Map
-
-The backend is located at `backend/` and consists of the following modules:
+### 3.1 Module Dependency Graph
 
 ```
-backend/
-  main.py              (1959 lines) - Core FastAPI app, all main endpoints
-  pncp_client.py       (1032 lines) - Sync + Async PNCP API clients
-  filter.py            (800+ lines)  - Multi-criteria filtering engine
-  excel.py             (290 lines)   - openpyxl Excel report generator
-  llm.py               (370 lines)   - GPT-4.1-nano summary generation
-  schemas.py           (946 lines)   - Pydantic request/response models
-  auth.py              (118 lines)   - JWT authentication middleware
-  config.py            (325 lines)   - Configuration, feature flags, CORS
-  quota.py             (709 lines)   - Plan capabilities and quota management
-  progress.py          (129 lines)   - SSE progress tracking (in-memory)
-  rate_limiter.py      (110 lines)   - Redis + in-memory rate limiting
-  sectors.py           (300+ lines)  - Multi-sector keyword configuration
-  admin.py             (300+ lines)  - Admin user management endpoints
-  supabase_client.py   (50 lines)    - Supabase singleton client
-  log_sanitizer.py     (606 lines)   - PII masking and log sanitization
-  exceptions.py        - Custom exception types
-  status_inference.py  - Bid status enrichment from dates
-  term_parser.py       - Search term parsing (comma/phrase support)
-  relevance.py         - Relevance scoring for custom search terms
-  consolidation.py     - Multi-source data consolidation
-  database.py          - SQLAlchemy session management
-  cache.py             - Redis cache client
-  routes/
-    subscriptions.py   - Billing period management
-    features.py        - Feature flag endpoints
-    messages.py        - InMail messaging system
-    analytics.py       - Usage analytics endpoints
-    auth_oauth.py      - Google OAuth routes (STORY-180)
-    export_sheets.py   - Google Sheets export (STORY-180)
-  webhooks/
-    stripe.py          - Stripe webhook handler (idempotent)
-  models/
-    stripe_webhook_event.py - SQLAlchemy model
-    user_subscription.py    - SQLAlchemy model
-  clients/
-    base.py            - Source adapter base class
-    compras_gov_client.py   - ComprasGov adapter
-    portal_compras_client.py - Portal Compras adapter
-  source_config/
-    sources.py         - Multi-source configuration
-  services/
-    billing.py         - Pro-rata credit calculation
-  utils/
-    ordenacao.py       - Result sorting utilities
+main.py (FastAPI app, lifespan, middleware, core endpoints)
+  |
+  +-- routes/search.py --> search_pipeline.py (7-stage pipeline)
+  |     +-- search_context.py (mutable context object)
+  |     +-- pncp_client.py (PNCP API: PNCPClient + AsyncPNCPClient)
+  |     +-- clients/*.py (multi-source adapters)
+  |     +-- consolidation.py (multi-source orchestration)
+  |     +-- filter.py (keyword matching engine)
+  |     +-- llm_arbiter.py (GPT-4o-mini false positive elimination)
+  |     +-- relevance.py (scoring, min-match calculation)
+  |     +-- term_parser.py (search term parsing)
+  |     +-- llm.py (GPT-4.1-nano summaries)
+  |     +-- excel.py (openpyxl report generation)
+  |     +-- storage.py (Supabase Storage upload)
+  |     +-- progress.py (SSE progress tracker, Redis pub/sub)
+  |     +-- quota.py (plan capabilities, monthly quota)
+  |
+  +-- routes/user.py (profile, password change, account deletion)
+  +-- routes/billing.py (checkout, plan management)
+  +-- routes/plans.py (plan listing)
+  +-- routes/sessions.py (search history)
+  +-- routes/pipeline.py (opportunity pipeline CRUD)
+  +-- routes/messages.py (in-app messaging)
+  +-- routes/analytics.py (usage analytics)
+  +-- routes/emails.py (transactional emails via Resend)
+  +-- routes/auth_oauth.py (Google OAuth)
+  +-- routes/export_sheets.py (Google Sheets export)
+  +-- routes/subscriptions.py (subscription management)
+  +-- routes/features.py (feature flags)
+  +-- admin.py (admin CRUD endpoints)
+  +-- webhooks/stripe.py (Stripe webhook handler)
+  |
+  +-- auth.py (JWT validation: HS256/ES256 + JWKS)
+  +-- authorization.py (role-based access: admin, master)
+  +-- rate_limiter.py (request rate limiting)
+  +-- middleware.py (CorrelationID, SecurityHeaders, Deprecation)
+  +-- config.py (feature flags, CORS, logging, env validation)
+  +-- redis_pool.py (Redis connection pool + InMemoryCache fallback)
+  +-- supabase_client.py (Supabase admin client singleton)
+  +-- log_sanitizer.py (PII masking)
+  +-- sectors.py + sectors_data.yaml (15 sector configurations)
+  +-- exceptions.py (custom exception hierarchy)
 ```
 
-### 3.2 API Endpoints
+### 3.2 API Versioning
 
-**Main Application Endpoints** (`backend/main.py`):
+The API uses dual-mount strategy (defined in `main.py` lines 242-278):
 
-| Method | Path | Auth | Purpose |
-|--------|------|------|---------|
-| GET | `/` | No | API root with documentation links |
-| GET | `/health` | No | Health check with dependency status |
-| GET | `/sources/health` | No | Multi-source health check |
-| GET | `/setores` | No | List available procurement sectors |
-| GET | `/debug/pncp-test` | No | PNCP API connectivity diagnostic |
-| POST | `/buscar` | Yes | **Main search endpoint** (core pipeline) |
-| GET | `/buscar-progress/{search_id}` | Yes | SSE stream for search progress |
-| GET | `/me` | Yes | User profile with plan capabilities |
-| GET | `/sessions` | Yes | Search session history |
-| GET | `/plans` | No | Available subscription plans |
-| POST | `/checkout` | Yes | Create Stripe checkout session |
-| POST | `/change-password` | Yes | Password change |
+- **Versioned:** All routers mounted under `/v1/` prefix
+- **Legacy:** Same routers also mounted at root (no prefix) for backward compatibility
+- **Deprecation:** `DeprecationMiddleware` adds RFC 8594 headers to legacy routes (`Sunset: 2026-06-01`)
 
-**Router-based Endpoints**:
+### 3.3 Search Pipeline (Core Business Logic)
 
-| Router | Prefix | File | Key Endpoints |
-|--------|--------|------|---------------|
-| Admin | `/admin` | `admin.py` | User CRUD, plan management, search |
-| Subscriptions | `/api/subscriptions` | `routes/subscriptions.py` | Billing period updates |
-| Features | (varies) | `routes/features.py` | Feature flag queries |
-| Messages | (varies) | `routes/messages.py` | InMail conversations |
-| Analytics | (varies) | `routes/analytics.py` | Usage analytics |
-| OAuth | (varies) | `routes/auth_oauth.py` | Google OAuth flow |
-| Export | (varies) | `routes/export_sheets.py` | Google Sheets export |
-| Stripe Webhooks | `/webhooks/stripe` | `webhooks/stripe.py` | Stripe event processing |
+File: `backend/search_pipeline.py` (STORY-216)
 
-### 3.3 Core Patterns
+The search is decomposed into 7 stages:
 
-#### 3.3.1 Retry with Exponential Backoff
+| Stage | Name | Responsibility |
+|---|---|---|
+| 1 | ValidateRequest | Input validation, quota check, plan resolution |
+| 2 | PrepareSearch | Term parsing, sector config, query param construction |
+| 3 | ExecuteSearch | PNCP API calls (parallel UF fetch), multi-source consolidation |
+| 4 | FilterResults | Keyword matching, value/status/modality/esfera filters |
+| 5 | EnrichResults | Relevance scoring, sorting, status inference |
+| 6 | GenerateOutput | LLM summary (GPT-4.1-nano or fallback), Excel generation |
+| 7 | Persist | Session save, response construction |
 
-**File:** `backend/pncp_client.py:36-64`
+Each stage operates on a `SearchContext` (mutable dataclass) and has independent error handling -- failure in Stage 6 preserves Stage 4 results.
 
-The PNCP client implements configurable retry logic:
-- **Base delay:** 1.5s (configurable via `RetryConfig`)
-- **Max delay:** 15s cap
-- **Exponential base:** 2x per attempt
-- **Jitter:** +/-50% to prevent thundering herd
-- **Max retries:** 3 (configurable)
-- **Retryable codes:** 408, 429, 500, 502, 503, 504
+### 3.4 PNCP Client (`pncp_client.py`)
 
-```python
-@dataclass
-class RetryConfig:
-    max_retries: int = 3
-    base_delay: float = 1.5
-    max_delay: float = 15.0
-    exponential_base: int = 2
-    jitter: bool = True
-    timeout: int = 30
-```
+Two implementations coexist:
 
-#### 3.3.2 Parallel UF Fetching
+**PNCPClient (synchronous, `requests`):**
+- Used for single-UF sequential fetching
+- urllib3 Retry adapter with configurable strategy
+- Rate limiting: 100ms between requests (10 req/s)
+- Date chunking: splits ranges >30 days into 30-day windows
+- Deduplication via `seen_ids` set
+- Lines 223-712
 
-**File:** `backend/pncp_client.py:563-1032`
+**AsyncPNCPClient (async, `httpx`):**
+- Used for parallel multi-UF fetching (`buscar_todas_ufs_paralelo`)
+- `asyncio.Semaphore` for concurrency control (default 10)
+- Per-modality timeout (15s default, configurable via `PNCP_TIMEOUT_PER_MODALITY`)
+- Per-UF timeout (30s normal, 45s degraded mode)
+- Health canary probe before full search
+- Circuit breaker integration
+- Auto-retry failed UFs (1 round, 5s delay)
+- Lines 727-1585
 
-The `AsyncPNCPClient` enables parallel fetching across Brazilian states using `httpx.AsyncClient` + `asyncio.Semaphore`:
-- Default concurrency: 10 simultaneous UFs
-- Per-UF timeout: 90 seconds
-- Global fetch timeout: 4 minutes
-- Automatic fallback from parallel to sequential on failure
+**Circuit Breaker (`PNCPCircuitBreaker`):**
+- Singleton at module level (`_circuit_breaker`)
+- Threshold: 8 consecutive failures (configurable via env)
+- Cooldown: 120s (configurable)
+- Degraded mode: reduces concurrency to 3 UFs, extends timeouts to 45s
+- UF priority ordering by population in degraded mode
+- Lines 70-176
 
-#### 3.3.3 Rate Limiting (Dual Layer)
+### 3.5 Filtering Engine (`filter.py`)
 
-**Layer 1 - PNCP API:** Self-imposed 10 req/s via `_rate_limit()` method with 100ms minimum interval (`pncp_client.py:114-129`).
+The file is large (775+ lines) and handles:
 
-**Layer 2 - User API:** Per-user, per-minute rate limiting via Redis (with in-memory fallback) based on plan tier (`rate_limiter.py`). Plan-based limits range from 2/min (free) to 60/min (sala_guerra).
+1. **Keyword matching:** 50+ terms in `KEYWORDS_UNIFORMES` for the vestuario sector, plus sector-specific keywords loaded from `sectors_data.yaml`
+2. **Exclusion keywords:** `KEYWORDS_EXCLUSAO` prevents false positives
+3. **Context-required keywords:** Ambiguous terms (e.g., "mesa", "banco") only match if context keywords are also present
+4. **Unicode normalization:** `normalize_text()` strips accents for matching
+5. **Term validation:** Stopword removal, min-length (4 chars), special character filtering
+6. **LLM Arbiter integration:** For ambiguous matches (2-5% term density), GPT-4o-mini classifies as relevant/irrelevant
+7. **Filter stats tracking:** Per-filter rejection counters for transparency
 
-#### 3.3.4 Fail-Fast Sequential Filtering
+Filter application order (fail-fast):
+1. UF check (fastest)
+2. Value range
+3. Max contract value (sector ceiling)
+4. Red flag keywords
+5. Keyword matching + LLM arbiter
+6. Status/deadline validation
 
-**File:** `backend/filter.py`
+### 3.6 Multi-Source Architecture
 
-Filters are applied in order of computational cost (cheapest first):
-1. UF check (O(1) set lookup)
-2. Status filter
-3. Esfera (government sphere) filter
-4. Modalidade (procurement modality) filter
-5. Municipio filter
-6. Value range filter
-7. Keyword matching (regex -- most expensive)
-8. Minimum match floor (relevance threshold)
+Directory: `backend/clients/`
 
-Each filter stage has counters in `FilterStats` for diagnostic transparency.
+| Client | File | Status |
+|---|---|---|
+| PNCP (primary) | `pncp_client.py` | Production |
+| ComprasGov | `clients/compras_gov_client.py` | Adapter exists |
+| Portal Compras | `clients/portal_compras_client.py` | Adapter exists |
+| Portal Transparencia | `clients/portal_transparencia_client.py` | Adapter exists |
+| Querido Diario | `clients/querido_diario_client.py` | Adapter exists |
+| Licitar Digital | `clients/licitar_client.py` | Adapter exists |
+| Sanctions (CEIS/CNEP) | `clients/sanctions.py` | Production (STORY-256) |
 
-#### 3.3.5 LLM Arbiter Pattern (STORY-179)
+Base class: `clients/base.py` defines `SourceAdapter` interface with `SourceMetadata`, `SourceCapability`, `SourceStatus`, and `UnifiedProcurement` types.
 
-**File:** `backend/config.py:159-212`
+`consolidation.py` orchestrates multi-source fetching with deduplication and priority-based merging.
 
-A two-tier classification system using term density thresholds:
-- **High density (>5%):** Auto-accept (no LLM call)
-- **Medium density (2-5%):** LLM classification via GPT-4o-mini
-- **Low density (<1%):** Auto-reject (no LLM call)
-- Cost: ~R$ 0.50/month for 10K contracts
+### 3.7 Sector Configuration (`sectors.py` + `sectors_data.yaml`)
 
-#### 3.3.6 Feature Flags
+15 sectors defined in YAML, each with:
+- `keywords`: Set of Portuguese terms for the sector
+- `exclusions`: Terms that indicate false positives
+- `context_required_keywords`: Ambiguous terms needing context verification
+- `max_contract_value`: Ceiling above which contracts are likely multi-sector infrastructure (anti-false-positive)
 
-**File:** `backend/config.py:121-220`
-
-Runtime-configurable feature flags via environment variables:
-- `ENABLE_NEW_PRICING` (default: true) -- Plan-based billing
-- `LLM_ARBITER_ENABLED` (default: true) -- Contract classification
-- `SYNONYM_MATCHING_ENABLED` (default: true) -- Keyword synonyms
-- `ZERO_RESULTS_RELAXATION_ENABLED` (default: true) -- Graceful degradation
-- `FILTER_DEBUG_MODE` (default: false) -- Debug logging
-- `ENABLE_MULTI_SOURCE` (default: false) -- Multi-source consolidation
-
-### 3.4 Authentication and Authorization
-
-#### 3.4.1 Authentication Flow
-
-**File:** `backend/auth.py`
-
-Authentication uses Supabase JWT tokens with a performance-optimized cache:
-
-1. Client sends `Authorization: Bearer <supabase_jwt>` header
-2. `get_current_user()` checks a local token cache (60s TTL, keyed on first 16 chars hash)
-3. On cache miss, validates token via `supabase.auth.get_user(token)` remote call
-4. Returns `{"id": str, "email": str, "role": str}` dict
-
-Cache reduces Supabase Auth API calls by ~95% and eliminates intermittent validation failures.
-
-#### 3.4.2 Authorization (Role Hierarchy)
-
-**File:** `backend/main.py:392-498`
-
-Three-tier role hierarchy:
-1. **Admin** -- Full system access, user management via `/admin/*`. Sources: `ADMIN_USER_IDS` env var OR `profiles.is_admin = true`
-2. **Master** -- Full feature access (Excel, unlimited quota), no admin UI. Source: `profiles.plan_type = 'master'`
-3. **Regular User** -- Plan-based access controlled by subscription tier
-
-Admins and Masters bypass:
-- Quota checks
-- Rate limiting
-- Date range restrictions
-- Feature gating
-
-The `_check_user_roles()` function retries once (0.3s delay) before giving up on DB errors.
-
-### 3.5 Billing and Subscription System
-
-#### 3.5.1 Plan Tiers
-
-**File:** `backend/quota.py:62-127`
-
-| Plan | Monthly Price | Searches/mo | Excel | History | RPM |
-|------|-------------|-------------|-------|---------|-----|
-| free_trial | Free | 3 | No | 7 days | 2 |
-| consultor_agil | R$ 297 | 50 | No | 30 days | 10 |
-| maquina | R$ 597 | 300 | Yes | 365 days | 30 |
-| sala_guerra | R$ 1,497 | 1,000 | Yes | 5 years | 60 |
-
-#### 3.5.2 Quota Management
-
-**File:** `backend/quota.py:286-346`
-
-Atomic quota check-and-increment via PostgreSQL RPC function `check_and_increment_quota`. This addresses Issue #189 (TOCTOU race condition):
-- Performs check + increment in a single database transaction
-- Falls back to in-process locking if RPC unavailable
-- Monthly reset via `month_year` key (lazy reset pattern)
-
-#### 3.5.3 Subscription Resilience (Multi-Layer Lookup)
-
-**File:** `backend/quota.py:413-580`
-
-Four-layer subscription resolution prevents paid users from being downgraded to free_trial:
-1. **Active subscription** in `user_subscriptions` (primary)
-2. **Grace-period subscription** (within 3 days of expiry)
-3. **Profile fallback** via `profiles.plan_type` (last known plan)
-4. **Absolute fallback** to `free_trial` (only for truly new users)
-
-#### 3.5.4 Stripe Integration
-
-**File:** `backend/webhooks/stripe.py`
-
-Webhook handler with security features:
-- Signature verification via `stripe.Webhook.construct_event()`
-- Idempotency via `stripe_webhook_events` table
-- Atomic DB updates via SQLAlchemy `on_conflict_do_update`
-- Redis cache invalidation after subscription changes
-
-Handled events: `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`
-
-#### 3.5.5 Checkout Flow
-
-**File:** `backend/main.py:674-725`
-
-1. Frontend calls `POST /checkout?plan_id=X&billing_period=monthly`
-2. Backend looks up Stripe price ID from `plans` table
-3. Creates Stripe Checkout Session (subscription mode)
-4. Returns `checkout_url` for client redirect
-5. On success, Stripe redirects to `/planos/obrigado?plan=X`
-6. Webhook `checkout.session.completed` triggers `_activate_plan()`
+Sectors: vestuario, alimentos, informatica, mobiliario, papelaria, engenharia, software, facilities, saude, vigilancia, transporte, manutencao_predial, engenharia_rodoviaria, materiais_eletricos, materiais_hidraulicos.
 
 ---
 
 ## 4. Frontend Architecture
 
-### 4.1 Page Structure
+### 4.1 App Router Structure
 
-**File:** `frontend/next.config.js` -- Standalone output mode for Railway deployment
+```
+frontend/app/
+  page.tsx              # Landing page (institutional, public)
+  layout.tsx            # Root layout: providers (Theme, Auth, Analytics, NProgress)
+  buscar/page.tsx       # Core search page (authenticated)
+  dashboard/page.tsx    # Personal analytics dashboard
+  historico/page.tsx    # Search history
+  pipeline/page.tsx     # Opportunity pipeline (kanban-style)
+  planos/page.tsx       # Pricing/plans page
+  planos/obrigado/      # Post-purchase thank you
+  login/page.tsx        # Login page
+  signup/page.tsx       # Registration page
+  conta/page.tsx        # Account settings
+  admin/page.tsx        # Admin dashboard
+  mensagens/page.tsx    # In-app messaging
+  ajuda/page.tsx        # Help/FAQ page
+  onboarding/page.tsx   # Onboarding wizard
+  features/page.tsx     # Feature showcase
+  pricing/page.tsx      # Alternative pricing page
+  termos/page.tsx       # Terms of service
+  privacidade/page.tsx  # Privacy policy
+  recuperar-senha/      # Password recovery
+  redefinir-senha/      # Password reset
+  auth/callback/        # OAuth callback handler
+```
 
-The frontend uses Next.js App Router with 16 pages:
+### 4.2 Component Inventory (50+ components)
 
-| Path | File | Purpose | Auth |
-|------|------|---------|------|
-| `/` | `app/page.tsx` | Landing page (marketing) | No |
-| `/login` | `app/login/page.tsx` | Email/password login | No |
-| `/signup` | `app/signup/page.tsx` | Account registration | No |
-| `/buscar` | `app/buscar/page.tsx` | **Main search interface** | Yes |
-| `/dashboard` | `app/dashboard/page.tsx` | User dashboard | Yes |
-| `/historico` | `app/historico/page.tsx` | Search history | Yes |
-| `/planos` | `app/planos/page.tsx` | Pricing/plans display | No |
-| `/planos/obrigado` | `app/planos/obrigado/page.tsx` | Post-payment thank you | Yes |
-| `/pricing` | `app/pricing/page.tsx` | Alternative pricing page | No |
-| `/conta` | `app/conta/page.tsx` | Account settings | Yes |
-| `/admin` | `app/admin/page.tsx` | Admin panel | Yes (admin) |
-| `/mensagens` | `app/mensagens/page.tsx` | InMail messaging | Yes |
-| `/features` | `app/features/page.tsx` | Feature showcase | No |
-| `/termos` | `app/termos/page.tsx` | Terms of service | No |
-| `/privacidade` | `app/privacidade/page.tsx` | Privacy policy | No |
-| `/auth/callback` | `app/auth/callback/page.tsx` | OAuth callback handler | No |
+**Search UI:**
+- `RegionSelector.tsx` - UF multi-select with region grouping
+- `CustomDateInput.tsx` - Date range picker
+- `CustomSelect.tsx` - Sector selector
+- `EsferaFilter.tsx` - Government sphere filter (Federal/State/Municipal)
+- `OrgaoFilter.tsx` - Agency name filter
+- `MunicipioFilter.tsx` - Municipality filter
+- `OrdenacaoSelect.tsx` - Sort order selector
+- `PaginacaoSelect.tsx` - Items per page selector
+- `SavedSearchesDropdown.tsx` - Saved search management
+- `LoadingProgress.tsx` - SSE-powered progress bar
+- `LicitacaoCard.tsx` - Individual bid result card
+- `LicitacoesPreview.tsx` - Results preview (free tier blur)
+- `EmptyState.tsx` - No results guidance
 
-### 4.2 Component Architecture
+**Pipeline:**
+- `AddToPipelineButton.tsx` - Add bid to pipeline
+- `PipelineAlerts.tsx` - Deadline alert badges
 
-**File:** `frontend/app/components/`
+**Billing/Plans:**
+- `PlanBadge.tsx` - Current plan indicator
+- `QuotaBadge.tsx` - Quota usage indicator
+- `QuotaCounter.tsx` - Detailed quota display
+- `UpgradeModal.tsx` - Plan upgrade dialog
 
-48 components organized in three categories:
+**Layout:**
+- `AppHeader.tsx` - Authenticated header
+- `UserMenu.tsx` - User dropdown menu
+- `Footer.tsx` - Site footer
+- `Breadcrumbs.tsx` - Navigation breadcrumbs
+- `InstitutionalSidebar.tsx` - Marketing sidebar
 
-**Core UI Components:**
-- `ThemeProvider.tsx` / `ThemeToggle.tsx` -- Dark/light theme with localStorage persistence
-- `AuthProvider.tsx` -- Supabase auth context provider
-- `AnalyticsProvider.tsx` -- Mixpanel analytics wrapper
-- `Footer.tsx` -- Site-wide footer
-- `InstitutionalSidebar.tsx` -- Institutional page sidebar
+**Landing Page (7 sections):**
+- `landing/LandingNavbar.tsx`, `HeroSection.tsx`, `OpportunityCost.tsx`, `BeforeAfter.tsx`, `DifferentialsGrid.tsx`, `HowItWorks.tsx`, `StatsSection.tsx`, `DataSourcesSection.tsx`, `SectorsGrid.tsx`, `FinalCTA.tsx`, `TestimonialsCarousel.tsx`
 
-**Search Components:**
-- `RegionSelector.tsx` -- Multi-state (UF) selection
-- `CustomDateInput.tsx` -- Date range picker
-- `EsferaFilter.tsx` -- Government sphere filter
-- `MunicipioFilter.tsx` -- Municipality filter
-- `OrgaoFilter.tsx` -- Agency filter
-- `OrdenacaoSelect.tsx` -- Sort order selector
-- `PaginacaoSelect.tsx` -- Items per page selector
-- `CustomSelect.tsx` -- Generic styled select
-- `StatusBadge.tsx` -- Bid status indicator
-- `SavedSearchesDropdown.tsx` -- Recent searches dropdown
+**System:**
+- `ThemeProvider.tsx` - Dark/light theme with localStorage persistence
+- `AuthProvider.tsx` - Supabase auth context
+- `AnalyticsProvider.tsx` - Mixpanel tracking context
+- `NProgressProvider.tsx` - Page transition progress bar
+- `CookieConsentBanner.tsx` - LGPD compliance
+- `SessionExpiredBanner.tsx` - Re-auth prompt
 
-**Results & Display Components:**
-- `LicitacoesPreview.tsx` -- Bid results list with plan-based blur
-- `LicitacaoCard.tsx` -- Individual bid card
-- `LoadingProgress.tsx` -- SSE-connected progress indicator
-- `LoadingResultsSkeleton.tsx` -- Skeleton loading state
-- `EmptyState.tsx` -- Zero results illustration
+### 4.3 API Proxy Layer
 
-**User & Billing Components:**
-- `UserMenu.tsx` -- Authenticated user dropdown
-- `PlanBadge.tsx` -- Current plan indicator
-- `QuotaBadge.tsx` / `QuotaCounter.tsx` -- Quota usage display
-- `UpgradeModal.tsx` -- Plan upgrade prompt
-- `Countdown.tsx` -- Trial countdown timer
-- `MessageBadge.tsx` -- Unread message indicator
-- `ComparisonTable.tsx` -- Plan comparison table
-- `ValuePropSection.tsx` -- Value proposition display
+The frontend uses Next.js API routes as a BFF (Backend-for-Frontend) proxy. 19 API routes in `frontend/app/api/`:
 
-**Landing Page Components** (`components/landing/`):
-- `HeroSection.tsx` -- Landing page hero
-- `HowItWorks.tsx` -- Process explanation
-- `SectorsGrid.tsx` -- Sector showcase
-- `DifferentialsGrid.tsx` -- Feature differentiators
-- `StatsSection.tsx` -- Platform statistics
-- `TestimonialsCarousel.tsx` -- Customer testimonials
-- `DataSourcesSection.tsx` -- Data source logos
-- `FinalCTA.tsx` -- Call-to-action
-- `OpportunityCost.tsx` -- Opportunity cost calculator
-- `BeforeAfter.tsx` -- Before/after comparison
-- `LandingNavbar.tsx` -- Landing page navigation
+| Route | Method | Backend Target | Purpose |
+|---|---|---|---|
+| `/api/buscar` | POST | `/v1/buscar` | Search proxy with retry logic (2 attempts) |
+| `/api/buscar-progress` | GET | `/v1/buscar-progress/{id}` | SSE progress streaming |
+| `/api/download` | GET | Filesystem/Storage | Excel file download |
+| `/api/me` | GET | `/v1/me` | User profile/plan info |
+| `/api/me/export` | POST | `/v1/export/google-sheets` | Google Sheets export |
+| `/api/sessions` | GET | `/v1/sessions` | Search history |
+| `/api/search-history` | GET | `/v1/sessions` | Search history (alias) |
+| `/api/pipeline` | GET/POST/PUT/DELETE | `/v1/pipeline` | Pipeline CRUD |
+| `/api/setores` | GET | `/v1/setores` | Sector list |
+| `/api/health` | GET | Direct | Frontend health check |
+| `/api/analytics` | POST | `/v1/analytics` | Usage analytics |
+| `/api/change-password` | POST | `/v1/change-password` | Password change |
+| `/api/profile-context` | GET/POST | `/v1/profile/context` | Onboarding context |
+| `/api/messages/*` | Various | `/v1/messages/*` | In-app messaging |
+| `/api/admin/[...path]` | Various | `/v1/admin/*` | Admin catch-all proxy |
 
-**Reusable UI Primitives** (`components/ui/`):
-- `GlassCard.tsx` -- Glassmorphism card
-- `GradientButton.tsx` -- Gradient animated button
-- `BentoGrid.tsx` -- Bento-style layout
-- `Tooltip.tsx` -- Tooltip component
+### 4.4 State Management
 
-**Onboarding:**
-- `ContextualTutorialTooltip.tsx` -- Shepherd.js tutorial integration
+- **No external state library** -- React `useState`/`useEffect` hooks only
+- **Custom hooks:** `useSavedSearches`, `useOnboarding`, `useKeyboardShortcuts`, `useSearchFilters`, `useAnalytics`, `useFeatureFlags`
+- **Server-side auth:** `@supabase/ssr` with `getAll/setAll` cookie pattern in `middleware.ts`
+- **localStorage:** Theme preference (`bidiq-theme`), plan cache (1hr TTL), saved searches
+- **SSE:** Dual-connection pattern for search progress (`GET /buscar-progress/{search_id}` + `POST /buscar`)
+- **Token refresh:** `lib/serverAuth.ts` handles server-side token refresh, falls back to header token
 
-### 4.3 State Management
+### 4.5 Build & Output
 
-The frontend uses React hooks exclusively (no external state library):
-
-- **Authentication state:** `AuthProvider.tsx` with React Context wrapping `@supabase/ssr`
-- **Theme state:** `ThemeProvider.tsx` with localStorage persistence (`bidiq-theme` key)
-- **Search state:** Local `useState` in `buscar/page.tsx` (~480+ lines)
-- **Plan cache:** localStorage with 1-hour TTL to prevent instant UI downgrades on transient errors
-- **Analytics:** Mixpanel via `AnalyticsProvider.tsx`
-
-### 4.4 API Integration Layer
-
-**File:** `frontend/app/api/`
-
-The frontend uses Next.js API routes as a BFF (Backend-for-Frontend) proxy layer:
-
-| Frontend Route | Backend Proxy Target | Purpose |
-|---------------|---------------------|---------|
-| `POST /api/buscar` | `POST ${BACKEND_URL}/buscar` | Main search proxy |
-| `GET /api/buscar-progress` | SSE proxy | Progress streaming |
-| `GET /api/me` | `GET ${BACKEND_URL}/me` | Profile proxy |
-| `GET /api/health` | `GET ${BACKEND_URL}/health` | Health proxy |
-| `GET /api/setores` | `GET ${BACKEND_URL}/setores` | Sectors proxy |
-| `GET /api/download` | Local filesystem | Excel file serving |
-| `GET /api/analytics` | `GET ${BACKEND_URL}/analytics` | Analytics proxy |
-| Messages routes | `${BACKEND_URL}/...` | Messaging proxy |
-
-**Key proxy behaviors** (`frontend/app/api/buscar/route.ts`):
-- Auth header forwarding (line 62-66)
-- 5-minute timeout (line 84-85)
-- Retry logic: 2 attempts with 3s delay, only retries 503 (line 68-72)
-- Excel file saved to temp filesystem with 60-minute TTL (line 180-204)
-- `BACKEND_URL` required (no localhost fallback in production)
+- `output: 'standalone'` in `next.config.js` for Docker-compatible production deployment
+- Custom `postbuild` script copies `public/` and `.next/static/` into standalone directory
+- Dynamic build IDs (`build-${Date.now()}-${random}`) to prevent stale cache issues
+- Sentry source map upload via `@sentry/nextjs` wrapper
 
 ---
 
-## 5. External Integrations
+## 5. Database Architecture
 
-### 5.1 PNCP API
+### 5.1 Supabase PostgreSQL Schema
 
-**File:** `backend/pncp_client.py`
+26 migrations in `supabase/migrations/`, establishing these core tables:
 
-**Base URL:** `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao`
+| Table | Migration | Purpose | RLS |
+|---|---|---|---|
+| `profiles` | 001 | User profiles (extends `auth.users`) | Yes |
+| `plans` | 001 | Plan catalog (free, consultor_agil, maquina, sala_guerra) | No |
+| `user_subscriptions` | 001 | Active subscriptions, Stripe refs | Yes |
+| `search_sessions` | 001 | Search history per user | Yes |
+| `monthly_quota` | 002 | Monthly search usage tracking | Yes |
+| `plan_features` | 009 | Feature flags per plan | No |
+| `stripe_webhook_events` | 010 | Idempotent webhook processing | No |
+| `messages_conversations` | 012 | In-app support conversations | Yes |
+| `messages_messages` | 012 | Individual messages in threads | Yes |
+| `google_oauth_tokens` | 013 | OAuth refresh tokens for Google | Yes |
+| `google_sheets_exports` | 014 | Google Sheets export history | Yes |
+| `audit_events` | 023 | Security audit log | No |
+| `profile_context` | 024 | Onboarding business context (JSONB) | Yes |
+| `pipeline_items` | 025 | Opportunity pipeline tracking | Yes |
+| `search_results_cache` | 026 | Cached search results (TTL-based) | No |
 
-**Request parameters:**
-- `dataInicial` / `dataFinal` -- Date range (yyyyMMdd format)
-- `codigoModalidadeContratacao` -- Modality code (default: 6 = Pregao Eletronico)
-- `uf` -- Optional state filter
-- `pagina` / `tamanhoPagina` -- Pagination (default page size: 20)
-- `situacaoCompra` -- Optional status filter
+### 5.2 Key Relationships
 
-**Response normalization:** The `_normalize_item()` method (line 428-452) flattens nested `orgaoEntidade` and `unidadeOrgao` objects into top-level keys expected by downstream modules.
+```
+auth.users (Supabase Auth)
+  |-- profiles (1:1, on delete cascade)
+  |     |-- user_subscriptions (1:many)
+  |     |-- search_sessions (1:many)
+  |     |-- monthly_quota (1:many, partitioned by month_year)
+  |     |-- messages_conversations (1:many)
+  |     |-- google_oauth_tokens (1:many)
+  |     |-- google_sheets_exports (1:many)
+  |     |-- pipeline_items (1:many, unique on user_id+pncp_id)
+  |     +-- profile_context (1:1)
+  |
+  +-- plans (referenced by user_subscriptions.plan_id)
+```
 
-**Resilience features:**
-- Sync client (`PNCPClient`) using `requests.Session` with `urllib3.Retry`
-- Async client (`AsyncPNCPClient`) using `httpx.AsyncClient` with semaphore-based concurrency
-- Date range chunking for ranges > 30 days (`_chunk_date_range()`)
-- Max 500 pages per UF+modality combination (STORY-183 hotfix)
-- Non-JSON response detection and retry
-- Per-UF timeout: 90s; global fetch timeout: 4 minutes
+### 5.3 RLS (Row-Level Security) Policies
 
-### 5.2 OpenAI / LLM
+All user-facing tables have RLS enabled with policies:
+- Users can only SELECT/INSERT/UPDATE/DELETE their own rows (`auth.uid() = user_id`)
+- Service role (backend) has full access for admin operations
+- `pipeline_items` (migration 025) has comprehensive RLS: separate policies for SELECT, INSERT, UPDATE, DELETE
 
-**File:** `backend/llm.py`
+### 5.4 Database Functions
 
-**Summary Generation (GPT-4.1-nano):**
-- Model: `gpt-4.1-nano`
-- Temperature: 0.3
-- Max tokens: 500
-- Input: max 50 bids, descriptions truncated to 200 chars
-- Output: Pydantic structured output via `client.beta.chat.completions.parse()`
-- Post-validation: Checks for ambiguous deadline terminology
-- Fallback: `gerar_resumo_fallback()` generates statistical summary without LLM
+| Function | Migration | Purpose |
+|---|---|---|
+| `handle_new_user()` | 001 | Auto-create profile on signup (trigger) |
+| `increment_quota_atomic()` | 003 | Atomic quota increment with limit check |
+| `check_and_increment_quota()` | 003 | Combined check+increment (TOCTOU prevention) |
+| `increment_existing_quota()` | 003 | Fallback atomic increment |
+| `sync_plan_type_on_subscription()` | 017 | Keep `profiles.plan_type` in sync with subscriptions |
+| `update_pipeline_updated_at()` | 025 | Auto-update timestamp trigger |
 
-**Contract Classification (GPT-4o-mini, LLM Arbiter):**
-- Model: `gpt-4o-mini` (configurable via `LLM_ARBITER_MODEL`)
-- Temperature: 0 (deterministic)
-- Max tokens: 1 (forces YES/NO)
-- Used in filter pipeline for medium-confidence classifications
+### 5.5 Notable Migrations
 
-### 5.3 Stripe
-
-**Files:** `backend/main.py:674-920`, `backend/webhooks/stripe.py`, `backend/routes/subscriptions.py`
-
-**Integration points:**
-- `POST /checkout` -- Creates Stripe Checkout Sessions for subscription purchases
-- `POST /webhooks/stripe` -- Receives Stripe events with signature verification
-- Billing period switching (monthly/annual) with pro-rata credit calculation
-- Three subscription plans mapped to Stripe Price IDs
-
-**Database sync pattern:**
-- Webhook updates `user_subscriptions` table AND `profiles.plan_type` column
-- This dual-write ensures the profile-based fallback always reflects current plan
-
-### 5.4 Supabase
-
-**File:** `backend/supabase_client.py`
-
-**Usage:** Singleton client using service role key (admin privileges).
-
-**Tables used (inferred from code):**
-- `profiles` -- User profiles with `is_admin`, `plan_type`, `email`
-- `user_subscriptions` -- Active subscriptions with Stripe IDs
-- `plans` -- Available plans with Stripe price IDs
-- `monthly_quota` -- Per-user, per-month search counts
-- `search_sessions` -- Search history records
-- `stripe_webhook_events` -- Webhook idempotency tracking (via SQLAlchemy)
-- `conversations` / `messages` -- InMail messaging tables
-
-**Auth integration:** Supabase Auth handles email/password + Google OAuth. JWTs are validated server-side via `supabase.auth.get_user(token)`.
+- **006b (DEPRECATED):** Duplicate migration file exists with `_DUPLICATE` suffix -- should be cleaned up
+- **020:** Tightened `plan_type` CHECK constraint to current tier names
+- **026:** Search results cache table with TTL for the STORY-257A cache layer
 
 ---
 
-## 6. Data Flow Diagrams
+## 6. External Integrations
 
-### 6.1 Main Search Pipeline
+### 6.1 PNCP API
 
-```
-User (Browser)
-    |
-    | POST /api/buscar (Next.js BFF)
-    |     + Authorization: Bearer <jwt>
-    |     + body: { ufs, data_inicial, data_final, setor_id, termos_busca, ... }
-    |
-    v
-Next.js API Route (/api/buscar/route.ts)
-    |
-    | POST ${BACKEND_URL}/buscar
-    |     + Forward auth header
-    |     + 5-min timeout
-    |     + 2 retries (503 only)
-    |
-    v
-FastAPI Backend (main.py:buscar_licitacoes)
-    |
-    |-- [1] Auth Check (require_auth -> auth.py)
-    |       JWT cache (60s) -> Supabase Auth API
-    |
-    |-- [2] Role Check (_check_user_roles)
-    |       Admin/Master bypass all limits
-    |
-    |-- [3] Rate Limit Check (rate_limiter.py)
-    |       Redis -> in-memory fallback
-    |
-    |-- [4] Quota Check + Atomic Increment (quota.py)
-    |       4-layer subscription resolution
-    |       PostgreSQL RPC: check_and_increment_quota
-    |
-    |-- [5] Sector Configuration (sectors.py)
-    |       Load keywords, exclusions, context_required
-    |
-    |-- [6] Term Parsing (term_parser.py)
-    |       Comma-delimited phrases, stopword removal
-    |       Term validation (filter.py:validate_terms)
-    |
-    |-- [7] PNCP Fetch (pncp_client.py)
-    |       |-- Parallel: AsyncPNCPClient (multi-UF)
-    |       |-- Sequential: PNCPClient (single-UF)
-    |       |-- Multi-source: ConsolidationService (if enabled)
-    |       Timeout: 4 minutes
-    |
-    |-- [8] Status Enrichment (status_inference.py)
-    |       Infer bid status from dates
-    |
-    |-- [9] Filter Pipeline (filter.py)
-    |       UF -> Status -> Esfera -> Modalidade -> Municipio -> Valor -> Keywords
-    |       Min match floor with graceful degradation
-    |
-    |-- [10] Relevance Scoring (relevance.py)
-    |        Score 0.0-1.0 for custom terms
-    |
-    |-- [11] Sorting (utils/ordenacao.py)
-    |        By date, value, deadline, or relevance
-    |
-    |-- [12] LLM Summary (llm.py)
-    |        GPT-4.1-nano structured output
-    |        Fallback: statistical summary
-    |        Post-validation: override hallucinated counts
-    |
-    |-- [13] Excel Generation (excel.py)
-    |        Only if plan allows (maquina+)
-    |        openpyxl with styled headers
-    |
-    |-- [14] Save Session (quota.py:save_search_session)
-    |        Persist to search_sessions table
-    |
-    v
-BuscaResponse (JSON)
-    |
-    | { resumo, licitacoes[], excel_base64, quota_used, quota_remaining,
-    |   total_raw, total_filtrado, filter_stats, termos_utilizados, ... }
-    |
-    v
-Next.js API Route
-    |
-    | Save Excel to temp file (60min TTL)
-    | Generate download_id (UUID)
-    |
-    v
-Browser
-    |
-    | Display results, summary, download button
-```
+- **Base URL:** `https://pncp.gov.br/api/consulta/v1`
+- **Endpoint:** `/contratacoes/publicacao`
+- **Auth:** None (public API)
+- **Rate limit:** 10 req/s (self-imposed in `PNCPClient._rate_limit()`)
+- **Pagination:** API returns `paginasRestantes` for next-page detection
+- **Date format:** `yyyyMMdd` (converted from `YYYY-MM-DD` in client)
+- **Resilience:** Retry (3 attempts), exponential backoff (1.5s base), circuit breaker (8 failures / 120s cooldown)
+- **Modalities queried:** 4 (Concorrencia Eletronica), 5 (Concorrencia Presencial), 6 (Pregao Eletronico), 7 (Pregao Presencial)
+- **Excluded modalities:** 9 (Inexigibilidade), 14 (Inaplicabilidade)
 
-### 6.2 SSE Progress Tracking
+### 6.2 OpenAI
 
-```
-Browser
-    |
-    |-- [A] GET /api/buscar-progress/{search_id}  (SSE connection)
-    |       Opens before POST /api/buscar
-    |
-    |-- [B] POST /api/buscar  (with same search_id)
-    |
-    v
-Backend
-    |
-    |-- SSE Endpoint (GET /buscar-progress/{search_id})
-    |       Waits up to 30s for tracker creation
-    |       Streams ProgressEvents from asyncio.Queue
-    |       Heartbeat every 30s
-    |
-    |-- Search Pipeline (POST /buscar)
-    |       Creates ProgressTracker with search_id
-    |       Emits events at each stage:
-    |         connecting (3-8%)
-    |         fetching (10-55%, per-UF granularity)
-    |         filtering (60-70%)
-    |         llm (75-90%)
-    |         excel (92-98%)
-    |         complete (100%)
-    |
-    v
-Browser
-    |
-    | LoadingProgress component renders real-time bar
-    | Fallback: calibrated time-based simulation if SSE fails
-```
+- **Summary model:** `gpt-4.1-nano` (500-1200 tokens, temp=0.3)
+- **Arbiter model:** `gpt-4o-mini` (1 token, temp=0, deterministic SIM/NAO classification)
+- **Structured output:** Pydantic `ResumoEstrategico` schema via `response_format` parameter
+- **Fallback:** `gerar_resumo_fallback()` generates heuristic summary without API call
+- **Input limit:** 50 bids max, 200-char truncation on `objetoCompra`
+- **Cost estimate:** LLM Arbiter ~R$ 0.50/month for 10K classifications
 
-### 6.3 Stripe Subscription Flow
+### 6.3 Stripe
 
-```
-User clicks "Assinar" on /planos
-    |
-    v
-POST /checkout?plan_id=maquina&billing_period=monthly
-    |
-    v
-Backend creates Stripe Checkout Session
-    | mode: subscription
-    | success_url: /planos/obrigado?plan=maquina
-    | cancel_url: /planos?cancelled=true
-    |
-    v
-User redirected to Stripe Checkout page
-    |
-    v
-Payment succeeds -> Stripe sends webhook
-    |
-    v
-POST /webhooks/stripe
-    |
-    |-- Verify signature (STRIPE_WEBHOOK_SECRET)
-    |-- Idempotency check (stripe_webhook_events table)
-    |-- customer.subscription.updated:
-    |       Update user_subscriptions.billing_period
-    |       Invalidate Redis cache
-    |-- invoice.payment_succeeded:
-    |       Extend subscription expiry
-    |       Sync profiles.plan_type
-    |-- customer.subscription.deleted:
-    |       Deactivate subscription
-    |       Reset profiles.plan_type to free_trial
-```
+- **Webhook endpoint:** `POST /webhooks/stripe` (`backend/webhooks/stripe.py`)
+- **Events handled:** `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`
+- **Security:** Signature verification via `STRIPE_WEBHOOK_SECRET`
+- **Idempotency:** Event deduplication via `stripe_webhook_events` table
+- **Plan sync:** Updates `profiles.plan_type` on every webhook for reliable fallback
+
+### 6.4 Supabase
+
+- **Database:** PostgreSQL with RLS
+- **Auth:** Email/password + Google OAuth (STORY-180)
+- **Storage:** Excel file upload for signed URL download
+- **Client:** Service role key (admin privileges) in `supabase_client.py`
+- **JWT:** ES256 (JWKS) with HS256 backward compatibility (`auth.py` STORY-227)
+
+### 6.5 Google APIs
+
+- **Google Sheets:** Export search results to user's Google Sheets (`routes/export_sheets.py`)
+- **Google OAuth:** Login via Google account (`routes/auth_oauth.py`)
+- **Token storage:** OAuth refresh tokens in `google_oauth_tokens` table
+
+### 6.6 Resend (Transactional Email)
+
+- **Route:** `routes/emails.py` (STORY-225)
+- **Use cases:** Quota warning (80%), quota exhaustion (100%), welcome email
+
+### 6.7 Sanctions Check (CEIS/CNEP)
+
+- **Client:** `clients/sanctions.py` (STORY-256)
+- **API:** Brazil's CEIS (Empresas Inidôneas e Suspensas) and CNEP (Empresas Punidas) registries
+- **Optional:** Triggered by `check_sanctions: true` in `BuscaRequest`
 
 ---
 
-## 7. Infrastructure and Deployment
+## 7. Infrastructure & Deployment
 
 ### 7.1 Railway Deployment
 
-**Backend:**
-- FastAPI served by Uvicorn
-- Port from `PORT` env var (Railway convention)
-- No Dockerfile found (likely using Railway Nixpacks auto-detection)
+- **Backend:** Python 3.11/3.12, Uvicorn ASGI server
+- **Frontend:** Next.js standalone output (`node .next/standalone/server.js`)
+- **Health check:** `GET /health` (backend), `GET /api/health` (frontend)
+- **Environment:** Managed via Railway dashboard + `railway variables`
+- **Custom domain:** `smartlic.tech` (STORY-210 AC14)
+- **Domain redirect:** `middleware.ts` forces `railway.app` -> `smartlic.tech` (301)
 
-**Frontend:**
-- Next.js in standalone mode (`output: 'standalone'` in `next.config.js`)
-- `npm run build` creates `.next/standalone/`
-- `npm start` runs `node .next/standalone/server.js`
-- Post-build copies public and static assets
+### 7.2 CI/CD (GitHub Actions)
 
-**Production URL:** `https://bidiq-frontend-production.up.railway.app/`
-
-### 7.2 CI/CD Workflows
-
-**File:** `.github/workflows/` (11 workflow files)
+12 workflow files in `.github/workflows/`:
 
 | Workflow | File | Trigger | Purpose |
-|----------|------|---------|---------|
-| Backend CI | `backend-ci.yml` | Push/PR | Backend linting, tests |
-| Tests | `tests.yml` | Push/PR | Frontend Jest tests with coverage |
-| E2E | `e2e.yml` | Push/PR | Playwright browser tests |
-| CodeQL | `codeql.yml` | Schedule/PR | Security scanning |
-| Deploy | `deploy.yml` | Push to main | Production deployment |
-| Staging Deploy | `staging-deploy.yml` | Push to develop | Staging deployment |
-| Lighthouse | `lighthouse.yml` | Schedule | Performance auditing |
-| Load Test | `load-test.yml` | Manual | Locust load testing |
-| PR Validation | `pr-validation.yml` | PR | PR quality gates |
-| Cleanup | `cleanup.yml` | Schedule | Resource cleanup |
-| Dependabot Auto-merge | `dependabot-auto-merge.yml` | Dependabot PR | Auto-merge minor updates |
+|---|---|---|---|
+| Tests | `tests.yml` | push/PR to main | Backend tests (Python 3.11+3.12), Frontend tests, Integration tests, E2E tests |
+| Backend CI | `backend-ci.yml` | push/PR | Backend-specific CI |
+| E2E | `e2e.yml` | push/PR | Playwright E2E tests |
+| Deploy | `deploy.yml` | push to main | Production deployment |
+| Staging | `staging-deploy.yml` | push to develop | Staging deployment |
+| CodeQL | `codeql.yml` | schedule/PR | Security analysis |
+| Lighthouse | `lighthouse.yml` | PR | Performance audit |
+| Load Test | `load-test.yml` | manual | Load testing |
+| PR Validation | `pr-validation.yml` | PR | PR quality checks |
+| Sync Sectors | `sync-sectors.yml` | schedule | Frontend sector fallback sync |
+| Cleanup | `cleanup.yml` | schedule | Artifact cleanup |
+| Dependabot | `dependabot-auto-merge.yml` | PR | Auto-merge minor updates |
 
-### 7.3 Environment Configuration
+### 7.3 Redis (Optional Dependency)
 
-**Critical environment variables** (from code analysis):
-
-| Variable | Required | Used By | Purpose |
-|----------|----------|---------|---------|
-| `OPENAI_API_KEY` | Yes | Backend | LLM summaries + arbiter |
-| `SUPABASE_URL` | Yes | Both | Database connection |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Backend | Admin DB access |
-| `SUPABASE_ANON_KEY` | Yes | Frontend | Client-side auth |
-| `STRIPE_SECRET_KEY` | Yes | Backend | Payment processing |
-| `STRIPE_WEBHOOK_SECRET` | Yes | Backend | Webhook validation |
-| `BACKEND_URL` | Yes | Frontend | API proxy target |
-| `FRONTEND_URL` | Yes | Backend | Stripe redirect URLs |
-| `REDIS_URL` | Optional | Backend | Rate limiting, feature cache |
-| `CORS_ORIGINS` | Optional | Backend | CORS configuration |
-| `ADMIN_USER_IDS` | Optional | Backend | Admin user override |
-| `ENABLE_NEW_PRICING` | Optional | Backend | Feature flag (default: true) |
-| `LLM_ARBITER_ENABLED` | Optional | Backend | Feature flag (default: true) |
-| `ENABLE_MULTI_SOURCE` | Optional | Backend | Feature flag (default: false) |
-| `LOG_LEVEL` | Optional | Backend | Logging verbosity |
-| `ENVIRONMENT` | Optional | Backend | Production mode detection |
-| `NEXT_PUBLIC_APP_NAME` | Optional | Frontend | Branding override |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Frontend | Client Supabase URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Frontend | Client Supabase key |
+- **Pool:** `redis_pool.py` with 20 max connections, 5s timeout
+- **Fallback:** `InMemoryCache` (LRU, 10K entries) when Redis unavailable
+- **Uses:** SSE progress pub/sub, feature flag cache, search result cache
+- **Health:** Checked in `/health` endpoint; Redis being down = "degraded" not "unhealthy"
 
 ---
 
-## 8. Security Analysis
+## 8. Security Architecture
 
-### 8.1 Authentication Security
+### 8.1 Authentication Flow
 
-**Strengths:**
-- Supabase JWT validation with server-side token verification
-- Token cache prevents repeated remote validation (DDoS resilience)
-- No token content logged (Issue #168 remediation)
-- `HTTPBearer` scheme with explicit `auto_error=False`
+```
+Browser -> Next.js middleware (Supabase SSR cookie check)
+   |
+   +-- Protected route? -> Redirect to /login with reason code
+   |
+   +-- API route? -> Forward to BFF proxy
+         |
+         +-- getRefreshedToken() (server-side token refresh)
+         |
+         +-- Authorization: Bearer <JWT> -> Backend
+               |
+               +-- auth.py: require_auth()
+                     |
+                     +-- JWT decode (ES256/JWKS or HS256)
+                     +-- Token cache (SHA256 hash, 60s TTL)
+                     +-- Return user dict {sub, email, role}
+```
 
-**Concerns:**
-- Token cache keyed on `hash(token[:16])` -- potential collision risk (MEDIUM). A SHA-256 hash of the full token would be safer.
-- 60s cache TTL means a revoked token remains valid for up to 60 seconds
-- No token rotation or refresh token flow visible in backend code
+### 8.2 Authorization Model
 
-### 8.2 Input Validation
+- **require_auth:** JWT validation, returns user dict (all authenticated routes)
+- **require_admin:** Checks `app_metadata.role == 'admin'` or `user_metadata.role == 'admin'`
+- **check_user_roles:** Returns admin/master status with retry (0.3s delay)
+- **Admin IDs:** Loaded from `profiles` where `is_admin = true`
+- **Master role:** Special plan (`sala_guerra`) with unlimited access
 
-**Strengths:**
-- UUID v4 validation for all user IDs (Issue #203)
-- Plan ID pattern validation
-- Search query sanitization with character allowlist
-- SQL pattern escaping (`%`, `_` removal)
-- Modalidade codes validated against Lei 14.133/2021
+### 8.3 Security Headers
 
-**Concerns:**
-- Admin search input sanitization in `admin.py:37+` is a custom implementation rather than parameterized queries (MEDIUM)
-- The `SAFE_SEARCH_PATTERN` regex explicitly excludes `$` but allows quotes and parentheses
+Applied by both backend (`SecurityHeadersMiddleware`) and frontend (`next.config.js`):
 
-### 8.3 Log Sanitization (Issue #168)
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains` (frontend only)
+- Content Security Policy (frontend only, with specific domain allowlists)
 
-**File:** `backend/log_sanitizer.py`
+### 8.4 Input Validation
 
-Comprehensive PII masking system:
-- Email: `u***@domain.com`
-- User IDs: `550e8400-***`
-- API keys: `sk-***cdef`
-- Tokens: `eyJ***[JWT]`
-- IPs: `192.168.x.x`
-- Passwords: `[PASSWORD_REDACTED]`
-- Auto-detection via regex patterns
-- `SanitizedLogAdapter` for automatic sanitization
-- Production-enforced minimum INFO log level
+- **Backend:** Pydantic models with field validators (`BuscaRequest`, `PipelineItemCreate`, etc.)
+- **UUID validation:** `validate_uuid()` in `schemas.py` with UUID v4 regex
+- **Search sanitization:** `sanitize_search_query()` with safe character regex, SQL pattern escaping
+- **Password policy:** 8+ chars, 1 uppercase, 1 digit (`validate_password()`)
+- **Plan ID validation:** Alphanumeric + underscore, 50 char max
 
-### 8.4 CORS Configuration
+### 8.5 PII Protection
 
-**File:** `backend/config.py:222-325`
+- **Log sanitizer:** `log_sanitizer.py` with `mask_email()`, `mask_token()`, `mask_user_id()`, `mask_ip_address()`, `sanitize_dict()`, `sanitize_string()`
+- **Sentry scrubbing:** `scrub_pii()` callback in `main.py` strips emails, tokens, user IDs from error events
+- **Production logging:** DEBUG level elevated to INFO in production to prevent sensitive data exposure
 
-- Development: `localhost:3000` and `127.0.0.1:3000`
-- Production: Hardcoded Railway URLs + any custom `CORS_ORIGINS`
-- Wildcard (`*`) explicitly rejected with warning
-- Production environment auto-detected via Railway env vars
+### 8.6 API Documentation in Production
 
-### 8.5 Stripe Webhook Security
+- **Disabled:** `docs_url=None`, `redoc_url=None`, `openapi_url=None` when `ENVIRONMENT=production` (`main.py` line 211)
+- **Prevents:** API reconnaissance by unauthorized actors
 
-- Signature verification via `stripe.Webhook.construct_event()`
-- Missing `stripe-signature` header returns 400
-- Invalid signature returns 400
-- Idempotency via database event tracking
+### 8.7 CORS Configuration
 
-### 8.6 Known Security Gaps
-
-1. **No CSRF protection** on the API proxy layer (MEDIUM) -- The Next.js BFF forwards requests without CSRF tokens. Mitigated by JWT auth requirement.
-2. **Service role key in backend** -- The backend uses `SUPABASE_SERVICE_ROLE_KEY` for all DB operations. A more granular approach with RLS policies would be safer.
-3. **In-memory token cache not distributed** -- Token revocation only takes effect after cache TTL on the specific instance.
-
----
-
-## 9. Technical Debt Inventory
-
-### 9.1 Critical (Must Fix)
-
-| # | Issue | Location | Impact | Effort |
-|---|-------|----------|--------|--------|
-| C1 | **In-memory state prevents horizontal scaling** | `backend/progress.py:98` (`_active_trackers` dict) | SSE progress breaks if more than 1 instance deployed. Search state is lost on restart. | HIGH -- requires Redis-backed pub/sub or external queue |
-| C2 | **Monolithic main.py (1,959 lines)** | `backend/main.py` | Contains 20+ endpoints, business logic, helper functions, billing handlers. Difficult to maintain and test in isolation. | MEDIUM -- extract into separate router modules |
-| C3 | **Dual ORM/DB access pattern** | `backend/supabase_client.py` + `backend/database.py` (SQLAlchemy) | Two competing database access patterns: Supabase Python client (most endpoints) and SQLAlchemy (Stripe webhooks, models). Schema drift risk. | HIGH -- consolidate on one pattern |
-| C4 | **Test failures (pre-existing)** | Backend: 21 failures; Frontend: 70 failures | CI pipeline failures mask new regressions. Quality gate is non-functional. | MEDIUM -- fix or skip/mark expected failures |
-
-### 9.2 High (Should Fix Soon)
-
-| # | Issue | Location | Impact | Effort |
-|---|-------|----------|--------|--------|
-| H1 | **Synchronous PNCP client in async context** | `backend/pncp_client.py:67-557` (`PNCPClient` uses `requests`, not `httpx`) | The sync `PNCPClient` blocks the event loop when used as fallback. Only `AsyncPNCPClient` is non-blocking. | MEDIUM -- remove sync client or wrap in executor |
-| H2 | **Excel file stored in temp filesystem** | `frontend/app/api/buscar/route.ts:180-204` | Temp files are not shared across instances. 60-minute TTL via `setTimeout` is unreliable. Files survive process restart. | MEDIUM -- use object storage or stream directly |
-| H3 | **No database migrations tracked in repo** | No `migrations/` directory found | Schema changes rely on manual Supabase dashboard operations. Risk of environment drift. | LOW -- add Supabase migration files |
-| H4 | **Business logic in main.py helper functions** | `backend/main.py:392-523` (`_check_user_roles`, `_is_admin`, `_has_master_access`, `_get_master_quota_info`) | Core authorization logic co-located with route handlers. Cannot be unit tested independently. | LOW -- extract to `authorization.py` |
-| H5 | **Development dependencies in production requirements** | `backend/requirements.txt:37-50` | pytest, ruff, mypy, locust, faker all installed in production. Increases attack surface and image size. | LOW -- split into requirements-dev.txt |
-
-### 9.3 Medium (Plan to Fix)
-
-| # | Issue | Location | Impact | Effort |
-|---|-------|----------|--------|--------|
-| M1 | **No request ID / correlation ID** | Throughout backend | Cannot trace a request across log entries or between frontend proxy and backend. Debugging production issues is difficult. | LOW |
-| M2 | **Token cache uses `hash()` of token prefix** | `backend/auth.py:45` | Python's `hash()` is not cryptographically secure and varies between runs. Potential for collisions on long-running instances. | LOW |
-| M3 | **Rate limiter in-memory store has no max size** | `backend/rate_limiter.py:84-89` | Memory grows unbounded with unique user IDs in the in-memory fallback. Garbage collection only removes entries > 60s old. | LOW |
-| M4 | **Hardcoded plan capabilities** | `backend/quota.py:62-95` | Plan definitions are in Python code, not database. Adding a new plan requires a code deployment. | LOW -- move to plans table |
-| M5 | **Google API credentials handling** | `backend/requirements.txt:29-33` | Google Sheets integration adds 4 heavy dependencies. OAuth token storage mechanism not visible. | LOW |
-| M6 | **`datetime.utcnow()` deprecated** | Multiple files | Python 3.12 deprecates `datetime.utcnow()`. Should use `datetime.now(timezone.utc)` consistently. | LOW |
-| M7 | **Frontend coverage below threshold** | `frontend/` (49.46% vs 60% target) | CI coverage gate fails. Coverage gap primarily in LoadingProgress, RegionSelector, SavedSearchesDropdown, AnalyticsProvider. | MEDIUM |
-| M8 | **No API versioning** | `backend/main.py` | All endpoints are unversioned. Breaking changes require coordinated frontend/backend deployments. | LOW |
-
-### 9.4 Low (Nice to Have)
-
-| # | Issue | Location | Impact | Effort |
-|---|-------|----------|--------|--------|
-| L1 | **No OpenAPI schema validation in tests** | Backend tests | API contract drift between backend and frontend could go unnoticed. | LOW |
-| L2 | **Emoji usage in production logs** | `backend/pncp_client.py:525,533` | Log aggregators may not render emojis correctly. | TRIVIAL |
-| L3 | **Inline CSS in layout.tsx** | `frontend/app/layout.tsx:62-77` | Theme initialization script uses inline styles. Should use CSS variables exclusively. | TRIVIAL |
-| L4 | **No request/response logging middleware** | Backend | No centralized request logging (duration, status code, path). Each endpoint logs individually. | LOW |
-| L5 | **Unused imports in main.py** | `backend/main.py:1694` | `from filter import match_keywords, KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO` imported inside diagnostic loop. | TRIVIAL |
-| L6 | **No health check for Redis** | `backend/main.py:162-229` | Health endpoint checks Supabase and OpenAI but not Redis. Rate limiting silently degrades. | LOW |
+- **Development:** `http://localhost:3000`, `http://127.0.0.1:3000`
+- **Production:** Railway app URLs + `smartlic.tech` + `www.smartlic.tech`
+- **Security:** Wildcard `*` explicitly rejected with warning
 
 ---
 
-## 10. Recommendations
+## 9. Code Quality & Testing
 
-### 10.1 Immediate (Next Sprint)
+### 9.1 Backend Test Suite
 
-1. **Extract main.py into router modules** (C2) -- Split the 1,959-line main.py into:
-   - `routes/search.py` -- `/buscar` and `/buscar-progress` endpoints
-   - `routes/auth_routes.py` -- `/me`, `/change-password`
-   - `routes/billing.py` -- `/checkout`, `/plans`, plan activation
-   - `routes/sessions.py` -- `/sessions`
-   - `services/authorization.py` -- Role checking functions
-   This alone would improve maintainability significantly.
+**100+ test files** in `backend/tests/`:
 
-2. **Fix CI pipeline** (C4) -- Mark known-failing tests with `@pytest.mark.skip(reason="pre-existing")` or fix them. A green CI is prerequisite for safe deployments.
+Key test areas:
+- `test_filter.py` - Keyword matching engine
+- `test_pncp_resilience.py` - PNCP client retry/timeout behavior
+- `test_llm.py`, `test_llm_fallback.py`, `test_llm_arbiter.py` - LLM integration
+- `test_excel.py`, `test_excel_validation.py` - Excel generation
+- `test_quota.py`, `test_quota_race_condition.py` - Quota management
+- `test_auth.py`, `test_auth_cache.py`, `test_auth_es256.py` - Authentication
+- `test_stripe_webhook.py` - Stripe integration
+- `test_sanctions.py` - CEIS/CNEP sanctions
+- `test_pipeline.py` - Pipeline CRUD
+- `test_golden_samples.py` - Regression tests against known good outputs
+- `test_security_story210.py`, `test_security_headers.py` - Security
+- `test_structured_logging.py` - Log format verification
 
-3. **Add request correlation IDs** (M1) -- FastAPI middleware that generates a UUID per request and propagates it through all log entries. Essential for production debugging.
+**Coverage:** Claimed 96.69% (from CLAUDE.md), threshold enforced at 70%.
 
-### 10.2 Short-Term (1-2 Sprints)
+### 9.2 Frontend Test Suite
 
-4. **Migrate SSE state to Redis** (C1) -- Replace `_active_trackers` dict with Redis pub/sub for progress tracking. This is the single largest blocker to horizontal scaling.
+**93+ test files** in `frontend/__tests__/`:
 
-5. **Consolidate database access** (C3) -- Choose either Supabase Python client OR SQLAlchemy. The Stripe webhook handler should use the same pattern as the rest of the application.
+- Active tests: ~45 files across components, hooks, pages, API routes, pipeline
+- Quarantined tests: ~20 files in `__tests__/quarantine/` (known flaky or broken)
+- Coverage threshold: 60% (enforced in `jest.config.js`)
+- Current coverage: ~49.46% (below threshold, CI will fail)
 
-6. **Split requirements** (H5) -- Create `requirements.txt` (production) and `requirements-dev.txt` (development). Reduces production image size by ~200MB.
+Notable test categories:
+- Component tests: RegionSelector, CustomDateInput, LoadingProgress, LicitacaoCard, etc.
+- Hook tests: useKeyboardShortcuts, useFeatureFlags, useAnalytics, useSearchFilters
+- API route tests: buscar, download, health, analytics, messages
+- Page tests: Login, Signup, Admin, Historico, Planos, Buscar
+- Pipeline tests: AddToPipelineButton, PipelineCard, PipelineAlerts
+- Landing page tests: HeroSection, BeforeAfter, DifferentialsGrid, OpportunityCost
 
-### 10.3 Medium-Term (1-3 Months)
+### 9.3 E2E Tests
 
-7. **API versioning** (M8) -- Introduce `/api/v1/` prefix for all backend endpoints. The BFF proxy layer makes this relatively low-risk.
+**Playwright** (`frontend/e2e-tests/`):
+- Browsers: Chromium + Mobile Safari (iPhone 13)
+- Critical flows: Search, Theme switching, Saved searches, Empty state, Error handling
+- CI integration: Runs after unit tests pass, 15-min timeout
 
-8. **Move plan definitions to database** (M4) -- Store plan capabilities in the `plans` table. Enables plan changes without code deployments.
+### 9.4 Type Safety
 
-9. **Replace synchronous PNCPClient** (H1) -- The sync client exists only as a fallback. Remove it entirely and use `AsyncPNCPClient` exclusively.
+- **Backend:** Type hints on most functions; Pydantic models for API contracts
+- **Frontend:** TypeScript strict mode; generated API types (`app/api-types.generated.ts`)
+- **CI check:** `npx tsc --noEmit --pretty` in frontend CI
 
-10. **Object storage for Excel files** (H2) -- Use Supabase Storage or S3 for generated Excel files instead of temp filesystem. Enables multi-instance deployments.
+### 9.5 Linting & Code Quality
 
-### 10.4 Architectural Evolution
-
-11. **Consider event-driven architecture** for long-running searches. The current synchronous request-response model with 5-minute timeouts is fragile. A job queue (Redis + Celery or similar) would allow:
-    - Search submission returns immediately with job ID
-    - Progress updates via SSE connected to job state
-    - Results fetched when job completes
-    - Automatic retry on failure
-
-12. **Database migration tracking** -- Adopt Supabase CLI migrations (`npx supabase migration new`) to version-control all schema changes. Currently, schema state is not reproducible from the repository alone.
+- Backend: `ruff` and `mypy` mentioned in CLAUDE.md but not enforced in CI
+- Frontend: `next lint` configured but enforcement unclear
+- No pre-commit hooks visible in repository
 
 ---
 
-*This document was generated by @architect (Aria) based on analysis of the production codebase at commit `808cd05` on branch `main`. All file paths and line numbers reference the state of the code as of 2026-02-11.*
+## 10. Performance Architecture
+
+### 10.1 Rate Limiting
+
+| Layer | Mechanism | Limit |
+|---|---|---|
+| PNCP API | `PNCPClient._rate_limit()` | 10 req/s (100ms min interval) |
+| Backend per-user | `rate_limiter.py` | Plan-based (2-60 req/min) |
+| Frontend proxy | Retry with backoff | 2 attempts, 3s delay |
+
+### 10.2 Caching Strategy
+
+| Cache | Storage | TTL | Purpose |
+|---|---|---|---|
+| Auth token | In-memory dict | 60s | Reduce JWT validation API calls |
+| Plan capabilities | In-memory dict | 300s (5min) | Reduce DB lookups |
+| Feature flags | In-memory dict | 60s | Runtime-reloadable config |
+| Search results | Redis or InMemoryCache | Configurable | Avoid duplicate PNCP queries |
+| JWKS keys | PyJWKClient internal | 300s (5min) | JWT public key caching |
+| Frontend plan | localStorage | 1hr | Prevent instant UI downgrades |
+
+### 10.3 Async Patterns
+
+- **Parallel UF fetching:** `asyncio.gather()` with semaphore-controlled concurrency
+- **Per-modality timeout:** `asyncio.wait_for()` wraps each modality fetch (15s)
+- **SSE streaming:** `StreamingResponse` with `asyncio.Queue` or Redis pub/sub
+- **Background callbacks:** `_safe_callback()` handles both sync and async callbacks
+
+### 10.4 Pagination
+
+- **PNCP API:** Server-side pagination (20 items/page, up to 500 pages max)
+- **Search results:** Client-side pagination via `pagina` + `itens_por_pagina` (10/20/50/100)
+- **Session history:** `limit` + `offset` parameters
+
+---
+
+## 11. Technical Debt Registry
+
+### 11.1 Critical (Must Fix)
+
+| ID | Issue | Location | Impact |
+|---|---|---|---|
+| TD-C01 | **Frontend test coverage below threshold** | `frontend/__tests__/` | CI fails; 49.46% vs 60% threshold. 20+ quarantined test files indicate systemic test quality issues. |
+| TD-C02 | **Dual HTTP client implementations** | `backend/pncp_client.py` | `PNCPClient` (sync, requests) and `AsyncPNCPClient` (async, httpx) duplicate retry logic, rate limiting, and error handling. 1585 lines total. The sync client is only used in `PNCPLegacyAdapter.fetch()` single-UF fallback path. |
+| TD-C03 | **LLM Arbiter hardcoded sector description** | `backend/llm_arbiter.py` lines 115-137 | Conservative prompt has hardcoded "Vestuario e Uniformes" sector description that is incorrectly applied to ALL 15 sectors. Acknowledged in `config.py` line 263. |
+
+### 11.2 High (Should Fix)
+
+| ID | Issue | Location | Impact |
+|---|---|---|---|
+| TD-H01 | **In-memory progress tracker not horizontally scalable** | `backend/progress.py` `_active_trackers` dict | Redis pub/sub mode exists but the in-memory tracker is still the primary registry. Two Railway instances would have split progress state. |
+| TD-H02 | **Deprecated migration file not cleaned up** | `supabase/migrations/006b_DEPRECATED_search_sessions_service_role_policy_DUPLICATE.sql` | Confuses schema understanding; should be removed. |
+| TD-H03 | **In-memory auth token cache** | `backend/auth.py` `_token_cache` dict | Not shared across instances. Redundant with JWT self-validation but still populated. |
+| TD-H04 | **Legacy plan seeds in migration 001 vs current plan IDs** | `supabase/migrations/001` seeds `free`, `pack_5`, `pack_10`, `monthly`, `annual`, `master`; current code uses `free_trial`, `consultor_agil`, `maquina`, `sala_guerra` | Plan mapping logic in `quota.py` `get_plan_from_profile()` (lines 525-531) handles this translation, but it adds complexity. |
+| TD-H05 | **`save_search_session` uses synchronous sleep** | `backend/quota.py` line 910 | `time.sleep(0.3)` blocks the async event loop on retry. Should use `asyncio.sleep()`. |
+| TD-H06 | **Excel base64 fallback in frontend proxy** | `frontend/app/api/buscar/route.ts` lines 197-223 | Writes base64 Excel to filesystem `tmpdir()` as fallback. Not scalable, not cleaned on crash. Signed URL from storage is preferred path. |
+| TD-H07 | **Backend routes mounted twice** | `backend/main.py` lines 242-278 | Every router mounted at both `/v1/` and root. Doubles route table size and complicates debugging. Sunset date 2026-06-01 set. |
+| TD-H08 | **No backend linting enforcement in CI** | `.github/workflows/tests.yml` | `ruff` and `mypy` not run in CI pipeline despite being mentioned in CLAUDE.md. |
+
+### 11.3 Medium (Plan to Fix)
+
+| ID | Issue | Location | Impact |
+|---|---|---|---|
+| TD-M01 | **`search_pipeline.py` becoming a god module** | `backend/search_pipeline.py` | After STORY-216 decomposition, this file absorbed the complexity from `main.py`. 7 stages with inline helper functions. |
+| TD-M02 | **Feature flags in environment variables** | `backend/config.py` | 7+ feature flags managed via env vars with in-memory TTL cache. No runtime toggle UI (admin can POST to reload, but flags require container restart to change). |
+| TD-M03 | **`dotenv` loaded before FastAPI imports** | `backend/main.py` line 33 | `load_dotenv()` called at module level, before `setup_logging()`. Means some env vars read at import time may use stale values. |
+| TD-M04 | **`AssertionError` typo** | `backend/filter.py` line 148 | `raise AssertionError(...)` -- typo for `AssertionError` (should be `AssertionError`). Actually this IS the correct Python built-in name, not a typo. Disregard. |
+| TD-M05 | **Hardcoded User-Agent string** | `backend/pncp_client.py` line 264 | `"BidIQ/1.0 (procurement-search; contact@bidiq.com.br)"` -- still references BidIQ, not SmartLic. Also hardcoded in `AsyncPNCPClient`. |
+| TD-M06 | **No database connection pooling in Supabase client** | `backend/supabase_client.py` | Single global client instance. No explicit connection pool management. Relies on supabase-py internal handling. |
+| TD-M07 | **Integration tests placeholder** | `.github/workflows/tests.yml` lines 216-221 | Integration test job exists but just echoes a skip message. |
+| TD-M08 | **Frontend quarantine tests growing** | `frontend/__tests__/quarantine/` | 20+ test files quarantined. Indicates either flaky tests or broken component contracts. |
+| TD-M09 | **No request timeout for Stripe webhooks** | `backend/webhooks/stripe.py` | Webhook handler has no explicit timeout. Long-running DB operations could block the worker. |
+| TD-M10 | **`datetime.now()` without timezone in `excel.py` and `llm.py`** | `backend/excel.py` line 227, `backend/llm.py` line 97 | Uses naive `datetime.now()` instead of `datetime.now(timezone.utc)`. Could cause issues in non-UTC server environments. |
+
+### 11.4 Low (Nice to Fix)
+
+| ID | Issue | Location | Impact |
+|---|---|---|---|
+| TD-L01 | **Screenshot files in git status** | Root directory | 18 untracked `.png` files in repository root. Should be gitignored. |
+| TD-L02 | **`_request_count` never reset** | `backend/pncp_client.py` line 237 | Counter grows indefinitely per client instance. Only diagnostic, but could overflow in very long-lived processes. |
+| TD-L03 | **`asyncio.get_event_loop().time()` deprecated pattern** | `backend/pncp_client.py` line 861 | Should use `asyncio.get_running_loop().time()` in Python 3.10+. |
+| TD-L04 | **CSS class `sr-only` hardcoded inline** | `frontend/app/layout.tsx` line 96 | Skip navigation link styles inline rather than using Tailwind utility properly. |
+| TD-L05 | **`format_resumo_html` function unused** | `backend/llm.py` lines 232-300 | Generates HTML for summaries but the frontend renders from JSON, not HTML. Dead code. |
+| TD-L06 | **`dangerouslySetInnerHTML` for theme script** | `frontend/app/layout.tsx` lines 73-89 | Necessary for FOUC prevention but should have a comment explaining XSS safety. |
+
+---
+
+## Appendix: File Inventory
+
+### Backend Module Count
+
+| Category | Count | Key Files |
+|---|---|---|
+| Core modules | ~20 | main.py, pncp_client.py, filter.py, excel.py, llm.py, schemas.py, config.py, etc. |
+| Route modules | 14 | routes/search.py, routes/user.py, routes/billing.py, etc. |
+| Client adapters | 9 | clients/base.py, sanctions.py, compras_gov_client.py, etc. |
+| Test files | 100+ | tests/test_*.py |
+| Utility modules | ~10 | middleware.py, log_sanitizer.py, redis_pool.py, etc. |
+
+### Frontend Page Count
+
+| Type | Count |
+|---|---|
+| Pages (app router) | 21 |
+| API routes | 19 |
+| Components | 50+ |
+| Test files | 93+ |
+| Hooks | 6+ |
+
+### Database
+
+| Item | Count |
+|---|---|
+| Migrations | 26 |
+| Tables | ~15 |
+| RLS policies | ~20 |
+| Functions/triggers | 6 |
+
+### CI/CD Workflows
+
+| Workflows | 12 |
+|---|---|
+
+---
+
+*End of System Architecture Document - SmartLic/BidIQ v2.0*
+*Generated 2026-02-15 by @architect (Helix) during Brownfield Discovery Phase 1*

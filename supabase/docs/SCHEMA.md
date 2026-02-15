@@ -1,9 +1,9 @@
-# Database Schema - SmartLic/BidIQ
+# Database Schema Documentation - SmartLic/BidIQ
 
 **Provider:** Supabase (PostgreSQL 17)
-**Project ID:** `pncp-poc`
 **Project Ref:** `fqqyovlzdzimiwfofdjk`
-**Schema Generated:** 2026-02-11
+**Schema Generated:** 2026-02-15
+**Migrations Analyzed:** 001 through 026 (26 migration files)
 
 ---
 
@@ -23,11 +23,15 @@
    - [messages](#9-messages)
    - [user_oauth_tokens](#10-user_oauth_tokens)
    - [google_sheets_exports](#11-google_sheets_exports)
+   - [audit_events](#12-audit_events)
+   - [pipeline_items](#13-pipeline_items)
+   - [search_results_cache](#14-search_results_cache)
 4. [Functions & Triggers](#functions--triggers)
 5. [Indexes](#indexes)
 6. [Enums & Constraints](#enums--constraints)
 7. [Row Level Security Policies](#row-level-security-policies)
 8. [Data Access Patterns](#data-access-patterns)
+9. [pg_cron Scheduled Jobs](#pg_cron-scheduled-jobs)
 
 ---
 
@@ -43,10 +47,16 @@ SmartLic uses Supabase (hosted PostgreSQL 17) as its primary database. The schem
 - **InMail Messaging** for support conversations
 - **Google Sheets Integration** with encrypted OAuth token storage
 - **Webhook Idempotency** for Stripe event deduplication
+- **Audit Logging** with SHA-256 hashed PII for LGPD/GDPR compliance
+- **Opportunity Pipeline** for tracking procurement through stages
+- **Search Results Cache** for resilient "never empty-handed" fallback
 
-**Total Tables:** 11 (in `public` schema) + Supabase `auth.users` (managed)
-**Total Migrations:** 15 (numbered 001-015)
-**Total RLS Policies:** ~25
+**Total Tables:** 14 (in `public` schema) + Supabase `auth.users` (managed)
+**Total Migrations:** 26 files (numbered 001-026, including 006a/006b, rollback, deprecated)
+**Total RLS Policies:** ~38
+**Total Functions:** 14
+**Total Triggers:** 8
+**Total Indexes:** ~52
 
 ---
 
@@ -57,20 +67,26 @@ auth.users (managed by Supabase Auth)
     |
     | 1:1 (trigger: handle_new_user)
     v
-profiles
-    |
-    |--- 1:N ---> user_subscriptions ---> plans
-    |--- 1:N ---> search_sessions
-    |--- 1:N ---> monthly_quota (via auth.users FK)
-    |--- 1:N ---> conversations ---> messages
-    |--- 1:N ---> user_oauth_tokens (via auth.users FK)
-    |--- 1:N ---> google_sheets_exports (via auth.users FK)
+profiles -------+-------+-------+-------+-------+
+    |           |       |       |       |       |
+    | 1:N       | 1:N   | 1:N   | 1:N   | 1:N   |
+    v           v       v       v       v       v
+user_subs  search_  monthly  convers-  user_   google_
+criptions  sessions  _quota   ations  oauth_  sheets_
+    |                           |     tokens  exports
+    | N:1                       |
+    v                           | 1:N
+  plans ----+                   v
+    |       |               messages
+    | 1:N   |
+    v       v
+plan_     (stripe_
+features   price_ids)
 
-plans
-    |--- 1:N ---> user_subscriptions
-    |--- 1:N ---> plan_features
-
-stripe_webhook_events (standalone audit table)
+pipeline_items -----------> auth.users (FK)
+search_results_cache -----> auth.users (FK)
+audit_events (standalone, no FKs)
+stripe_webhook_events (standalone, no FKs)
 ```
 
 ---
@@ -80,30 +96,48 @@ stripe_webhook_events (standalone audit table)
 ### 1. profiles
 
 **Purpose:** Extends `auth.users` with application-specific user data.
-**Migration:** `001_profiles_and_sessions.sql`, `004_add_is_admin.sql`, `007_add_whatsapp_consent.sql`
+**Migrations:** 001, 004, 007, 016 (handle_new_user fix), 020 (plan_type constraint tightened, INSERT policies), 024 (context_data)
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | - | **PK**, FK -> `auth.users(id) ON DELETE CASCADE` |
-| `email` | `text` | NO | - | |
+| `email` | `text` | NO | - | Trigram index (gin_trgm_ops) for admin ILIKE search |
 | `full_name` | `text` | YES | NULL | |
 | `company` | `text` | YES | NULL | |
-| `plan_type` | `text` | NO | `'free'` | CHECK: see constraint below |
+| `plan_type` | `text` | NO | `'free'` (orig) / `'free_trial'` (via handle_new_user after 016) | CHECK: see constraint below |
 | `avatar_url` | `text` | YES | NULL | |
 | `is_admin` | `boolean` | NO | `false` | Added in migration 004 |
 | `sector` | `text` | YES | NULL | Added in migration 007 |
 | `phone_whatsapp` | `text` | YES | NULL | CHECK: `^[0-9]{10,11}$` or NULL |
 | `whatsapp_consent` | `boolean` | YES | `false` | |
 | `whatsapp_consent_at` | `timestamptz` | YES | NULL | LGPD audit trail |
+| `context_data` | `jsonb` | YES | `'{}'::jsonb` | Added in migration 024. Onboarding wizard data |
 | `created_at` | `timestamptz` | NO | `now()` | |
 | `updated_at` | `timestamptz` | NO | `now()` | Auto-updated via trigger |
 
-**CHECK Constraint (`profiles_plan_type_check`):**
+**CHECK Constraint (`profiles_plan_type_check`) -- tightened in migration 020:**
 ```sql
 plan_type IN (
-  'free', 'avulso', 'pack', 'monthly', 'annual', 'master',
-  'free_trial', 'consultor_agil', 'maquina', 'sala_guerra'
+  'free_trial',      -- Trial plan (default for new users)
+  'consultor_agil',  -- Tier 1: 25-50 searches/month
+  'maquina',         -- Tier 2: 100-300 searches/month
+  'sala_guerra',     -- Tier 3: Unlimited searches
+  'master'           -- Admin/internal accounts
 )
+```
+Legacy values `('free', 'avulso', 'pack', 'monthly', 'annual')` were removed by migration 020 after data migration.
+
+**context_data JSONB Schema (migration 024, STORY-247):**
+```json
+{
+  "ufs_atuacao": ["SP", "RJ"],
+  "faixa_valor_min": 50000.0,
+  "faixa_valor_max": 5000000.0,
+  "porte_empresa": "ME|EPP|MEDIO|GRANDE",
+  "modalidades_interesse": [4, 6],
+  "palavras_chave": ["uniforme", "fardamento"],
+  "experiencia_licitacoes": "PRIMEIRA_VEZ|INICIANTE|EXPERIENTE"
+}
 ```
 
 **Indexes:**
@@ -112,6 +146,8 @@ plan_type IN (
 | `profiles_pkey` | `id` | B-tree (PK) | - |
 | `idx_profiles_is_admin` | `is_admin` | B-tree (partial) | `WHERE is_admin = true` |
 | `idx_profiles_whatsapp_consent` | `whatsapp_consent` | B-tree (partial) | `WHERE whatsapp_consent = true` |
+| `idx_profiles_email_trgm` | `email` | **GIN** (trigram) | - (migration 016) |
+| `idx_profiles_context_porte` | `(context_data->>'porte_empresa')` | B-tree | `WHERE context_data->>'porte_empresa' IS NOT NULL` (migration 024) |
 
 **Triggers:**
 - `profiles_updated_at` -> `update_updated_at()` (BEFORE UPDATE)
@@ -122,23 +158,24 @@ plan_type IN (
 ### 2. plans
 
 **Purpose:** Plan catalog with pricing and Stripe integration.
-**Migration:** `001_profiles_and_sessions.sql`, `005_update_plans_to_new_tiers.sql`, `015_add_stripe_price_ids_monthly_annual.sql`
+**Migrations:** 001, 005, 015, 020 (updated_at column + trigger)
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `text` | NO | - | **PK** |
 | `name` | `text` | NO | - | |
 | `description` | `text` | YES | NULL | |
 | `max_searches` | `int` | YES | NULL | NULL = unlimited |
 | `price_brl` | `numeric(10,2)` | NO | `0` | |
 | `duration_days` | `int` | YES | NULL | NULL = perpetual |
-| `stripe_price_id` | `text` | YES | NULL | Default Stripe price (monthly) |
+| `stripe_price_id` | `text` | YES | NULL | Legacy default (= monthly). Hardcoded production IDs in migration 015 |
 | `stripe_price_id_monthly` | `text` | YES | NULL | Added in migration 015 |
 | `stripe_price_id_annual` | `text` | YES | NULL | Added in migration 015 |
 | `is_active` | `boolean` | NO | `true` | |
 | `created_at` | `timestamptz` | NO | `now()` | |
+| `updated_at` | `timestamptz` | NO | `now()` | Added in migration 020, auto-updated via trigger |
 
-**Seeded Data (active plans after migration 005):**
+**Seeded Data (after migrations 001 + 005):**
 
 | id | name | max_searches | price_brl | is_active |
 |----|------|-------------|-----------|-----------|
@@ -153,27 +190,40 @@ plan_type IN (
 | `monthly` | Mensal Ilimitado | NULL | 149.90 | **false** (legacy) |
 | `annual` | Anual Ilimitado | NULL | 1199.90 | **false** (legacy) |
 
+**Stripe Price IDs (migration 015, PRODUCTION values):**
+
+| plan_id | stripe_price_id_monthly | stripe_price_id_annual |
+|---------|------------------------|----------------------|
+| consultor_agil | `price_1Syir09FhmvPslGYOCbOvWVB` | `price_1SzRAC9FhmvPslGYLBuYTaSa` |
+| maquina | `price_1Syirk9FhmvPslGY1kbNWxaz` | `price_1SzR8F9FhmvPslGYDW84AzYA` |
+| sala_guerra | `price_1Syise9FhmvPslGYAR8Fbf5E` | `price_1SzR5c9FhmvPslGYQym74G6K` |
+
+**WARNING:** Migration 015 hardcodes PRODUCTION Stripe price IDs. For staging/dev, manually update with test mode IDs.
+
 ---
 
 ### 3. user_subscriptions
 
 **Purpose:** Active and historical subscriptions for each user.
-**Migration:** `001_profiles_and_sessions.sql`, `008_add_billing_period.sql`
+**Migrations:** 001, 008 (billing_period, annual_benefits), 016 (unique index on stripe_subscription_id, service role policy), 017 (sync trigger references `status` column), 021 (updated_at column + trigger), 022 (stripe_customer_id index)
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
 | `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` |
-| `plan_id` | `text` | NO | - | FK -> `plans(id) ON DELETE RESTRICT` |
-| `credits_remaining` | `int` | YES | NULL | NULL = unlimited |
+| `plan_id` | `text` | NO | - | FK -> `plans(id)` ON DELETE RESTRICT (intentional, documented in migration 022) |
+| `credits_remaining` | `int` | YES | NULL | NULL = unlimited (deprecated by monthly quota) |
 | `starts_at` | `timestamptz` | NO | `now()` | |
 | `expires_at` | `timestamptz` | YES | NULL | NULL = never expires |
-| `stripe_subscription_id` | `text` | YES | NULL | UNIQUE (for Stripe integration) |
-| `stripe_customer_id` | `text` | YES | NULL | |
-| `billing_period` | `varchar(10)` | NO | `'monthly'` | CHECK: `IN ('monthly', 'annual')` |
+| `stripe_subscription_id` | `text` | YES | NULL | UNIQUE partial index (WHERE NOT NULL) |
+| `stripe_customer_id` | `text` | YES | NULL | Partial index for webhook lookups |
+| `billing_period` | `varchar(10)` | NO | `'monthly'` | CHECK: `IN ('monthly', 'annual')` (migration 008) |
 | `annual_benefits` | `jsonb` | NO | `'{}'` | Added in migration 008 |
 | `is_active` | `boolean` | NO | `true` | |
 | `created_at` | `timestamptz` | NO | `now()` | |
+| `updated_at` | `timestamptz` | NO | `now()` | Added in migration 021, auto-updated via trigger |
+
+**CRITICAL NOTE: Missing `status` column.** Migration 017 creates trigger `sync_profile_plan_type()` which references `NEW.status` on this table with values `('active', 'trialing', 'canceled', 'expired', 'past_due')`. However, NO migration defines a `status` column on `user_subscriptions`. The trigger will fail silently or reference a nonexistent column unless `status` was added manually outside the migration sequence.
 
 **Indexes:**
 | Name | Columns | Type | Condition |
@@ -181,45 +231,23 @@ plan_type IN (
 | `user_subscriptions_pkey` | `id` | B-tree (PK) | - |
 | `idx_user_subscriptions_user` | `user_id` | B-tree | - |
 | `idx_user_subscriptions_active` | `user_id, is_active` | B-tree (partial) | `WHERE is_active = true` |
-| `idx_user_subscriptions_billing` | `user_id, billing_period, is_active` | B-tree (partial) | `WHERE is_active = true` |
+| `idx_user_subscriptions_billing` | `user_id, billing_period, is_active` | B-tree (partial) | `WHERE is_active = true` (migration 008) |
+| `idx_user_subscriptions_stripe_sub_id` | `stripe_subscription_id` | B-tree (UNIQUE, partial) | `WHERE stripe_subscription_id IS NOT NULL` (migration 016) |
+| `idx_user_subscriptions_customer_id` | `stripe_customer_id` | B-tree (partial) | `WHERE stripe_customer_id IS NOT NULL` (migration 022) |
 
-**Notes:**
-
-1. **stripe_subscription_id index:** The `stripe_subscription_id` has a UNIQUE constraint but no explicit index was created in migrations -- PostgreSQL auto-creates an index for UNIQUE constraints via the SQLAlchemy model definition.
-
-2. **plan_id FK ON DELETE behavior (NEW-DB-05):**
-   - The `plan_id` foreign key uses **RESTRICT** (PostgreSQL default when ON DELETE is not specified)
-   - This is an **intentional safety feature** to prevent accidental data loss
-   - **Behavior:** Cannot delete a plan from `plans` table if any active subscriptions reference it
-   - **Rationale:**
-     - Plans are business-critical entities with pricing, features, and Stripe integration
-     - Deleting a plan with active subscriptions would orphan billing records
-     - Forces explicit handling: deactivate subscriptions first (`is_active = false`), then optionally delete plan
-   - **Alternative approaches considered:**
-     - `ON DELETE CASCADE`: Too dangerous - would delete all user subscriptions if plan is removed
-     - `ON DELETE SET NULL`: Invalid - `plan_id` is NOT NULL (required for billing logic)
-     - `RESTRICT` (current): Safest option - requires intentional cleanup workflow
-   - **How to retire a plan:**
-     ```sql
-     -- 1. Mark plan as inactive (hides from catalog)
-     UPDATE plans SET is_active = false WHERE id = 'old_plan';
-
-     -- 2. Migrate or expire active subscriptions
-     UPDATE user_subscriptions SET is_active = false WHERE plan_id = 'old_plan' AND is_active = true;
-
-     -- 3. Only then can you delete the plan (if needed)
-     DELETE FROM plans WHERE id = 'old_plan';
-     ```
+**ON DELETE RESTRICT on plan_id** is intentional (documented in migration 022):
+- Prevents deleting plans with active subscriptions
+- To retire a plan: set `plans.is_active = false`, then deactivate subscriptions, then optionally delete
 
 ---
 
 ### 4. search_sessions
 
 **Purpose:** Search history for analytics, session replay, and the /historico page.
-**Migration:** `001_profiles_and_sessions.sql`
+**Migration:** 001
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
 | `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` |
 | `sectors` | `text[]` | NO | - | |
@@ -246,13 +274,13 @@ plan_type IN (
 
 ### 5. monthly_quota
 
-**Purpose:** Tracks monthly search usage per user. Uses lazy reset (no cron job -- new month key means fresh counter).
-**Migration:** `002_monthly_quota.sql`
+**Purpose:** Tracks monthly search usage per user. Uses lazy reset (new month key means fresh counter).
+**Migrations:** 002, 018 (FK standardized to profiles(id))
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
-| `user_id` | `uuid` | NO | - | FK -> `auth.users(id) ON DELETE CASCADE` |
+| `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` (changed from auth.users in migration 018) |
 | `month_year` | `varchar(7)` | NO | - | Format: "2026-02" |
 | `searches_count` | `int` | NO | `0` | |
 | `created_at` | `timestamptz` | NO | `now()` | |
@@ -266,19 +294,19 @@ plan_type IN (
 |------|---------|------|
 | `monthly_quota_pkey` | `id` | B-tree (PK) |
 | `idx_monthly_quota_user_month` | `user_id, month_year` | B-tree |
-| `unique_user_month` | `user_id, month_year` | B-tree (UNIQUE) |
+| `unique_user_month` | `user_id, month_year` | B-tree (UNIQUE, auto-created) |
 
-**Note:** FK references `auth.users(id)` directly, NOT `profiles(id)`. This is inconsistent with other tables.
+**Retention:** 24 months. pg_cron job `cleanup-monthly-quota` runs on 1st of each month at 2:00 AM UTC (migration 022).
 
 ---
 
 ### 6. plan_features
 
 **Purpose:** Feature flags per plan + billing period (e.g., annual-exclusive features).
-**Migration:** `009_create_plan_features.sql`
+**Migration:** 009
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `serial` | NO | auto-increment | **PK** |
 | `plan_id` | `text` | NO | - | FK -> `plans(id) ON DELETE CASCADE` |
 | `billing_period` | `varchar(10)` | NO | - | CHECK: `IN ('monthly', 'annual')` |
@@ -297,7 +325,7 @@ plan_type IN (
 | `plan_features_pkey` | `id` | B-tree (PK) | - |
 | `idx_plan_features_lookup` | `plan_id, billing_period, enabled` | B-tree (partial) | `WHERE enabled = true` |
 
-**Seeded Features (7 rows):**
+**Seeded Features (7 rows, migration 009):**
 
 | plan_id | billing_period | feature_key | enabled |
 |---------|---------------|-------------|---------|
@@ -314,14 +342,14 @@ plan_type IN (
 ### 7. stripe_webhook_events
 
 **Purpose:** Idempotency table for Stripe webhook deduplication and audit trail.
-**Migration:** `010_stripe_webhook_events.sql`
+**Migrations:** 010, 016 (admin policy fix)
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `varchar(255)` | NO | - | **PK**, CHECK: `id ~ '^evt_'` |
-| `type` | `varchar(100)` | NO | - | |
+| `type` | `varchar(100)` | NO | - | e.g., `customer.subscription.updated` |
 | `processed_at` | `timestamptz` | NO | `now()` | |
-| `payload` | `jsonb` | YES | NULL | |
+| `payload` | `jsonb` | YES | NULL | Full Stripe event object |
 
 **Indexes:**
 | Name | Columns | Type |
@@ -330,21 +358,23 @@ plan_type IN (
 | `idx_webhook_events_type` | `type, processed_at` | B-tree |
 | `idx_webhook_events_recent` | `processed_at DESC` | B-tree |
 
+**Retention:** 90 days. pg_cron job `cleanup-webhook-events` runs daily at 3:00 AM UTC (migration 022).
+
 ---
 
 ### 8. conversations
 
 **Purpose:** Support conversation threads between users and admins (InMail system).
-**Migration:** `012_create_messages.sql`
+**Migration:** 012
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
 | `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` |
 | `subject` | `text` | NO | - | CHECK: `char_length(subject) <= 200` |
 | `category` | `text` | NO | - | CHECK: `IN ('suporte', 'sugestao', 'funcionalidade', 'bug', 'outro')` |
 | `status` | `text` | NO | `'aberto'` | CHECK: `IN ('aberto', 'respondido', 'resolvido')` |
-| `last_message_at` | `timestamptz` | NO | `now()` | Auto-updated via trigger |
+| `last_message_at` | `timestamptz` | NO | `now()` | Auto-updated via trigger on messages INSERT |
 | `created_at` | `timestamptz` | NO | `now()` | |
 | `updated_at` | `timestamptz` | NO | `now()` | |
 
@@ -361,10 +391,10 @@ plan_type IN (
 ### 9. messages
 
 **Purpose:** Individual messages within conversation threads.
-**Migration:** `012_create_messages.sql`
+**Migration:** 012
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
 | `conversation_id` | `uuid` | NO | - | FK -> `conversations(id) ON DELETE CASCADE` |
 | `sender_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` |
@@ -387,15 +417,15 @@ plan_type IN (
 ### 10. user_oauth_tokens
 
 **Purpose:** Encrypted OAuth 2.0 tokens for Google Sheets (and future) integrations.
-**Migration:** `013_google_oauth_tokens.sql`
+**Migrations:** 013, 018 (FK standardized to profiles(id)), 022 (redundant provider index dropped)
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
-| `user_id` | `uuid` | NO | - | FK -> `auth.users(id) ON DELETE CASCADE` |
+| `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` (changed from auth.users in migration 018) |
 | `provider` | `varchar(50)` | NO | - | CHECK: `IN ('google', 'microsoft', 'dropbox')` |
-| `access_token` | `text` | NO | - | AES-256 encrypted |
-| `refresh_token` | `text` | YES | NULL | AES-256 encrypted |
+| `access_token` | `text` | NO | - | AES-256 encrypted at application layer |
+| `refresh_token` | `text` | YES | NULL | AES-256 encrypted at application layer |
 | `expires_at` | `timestamptz` | NO | - | |
 | `scope` | `text` | NO | - | |
 | `created_at` | `timestamptz` | YES | `now()` | |
@@ -405,26 +435,24 @@ plan_type IN (
 - `unique_user_provider`: UNIQUE(`user_id`, `provider`)
 
 **Indexes:**
-| Name | Columns | Type |
-|------|---------|------|
-| `user_oauth_tokens_pkey` | `id` | B-tree (PK) |
-| `idx_user_oauth_tokens_user_id` | `user_id` | B-tree |
-| `idx_user_oauth_tokens_expires_at` | `expires_at` | B-tree |
-| `idx_user_oauth_tokens_provider` | `provider` | B-tree |
-
-**Note:** FK references `auth.users(id)` directly, not `profiles(id)`.
+| Name | Columns | Type | Notes |
+|------|---------|------|-------|
+| `user_oauth_tokens_pkey` | `id` | B-tree (PK) | |
+| `idx_user_oauth_tokens_user_id` | `user_id` | B-tree | |
+| `idx_user_oauth_tokens_expires_at` | `expires_at` | B-tree | For token refresh job |
+| ~~`idx_user_oauth_tokens_provider`~~ | ~~`provider`~~ | ~~B-tree~~ | **DROPPED** in migration 022 (redundant with unique_user_provider) |
 
 ---
 
 ### 11. google_sheets_exports
 
 **Purpose:** Audit trail and "re-open last export" for Google Sheets exports.
-**Migration:** `014_google_sheets_exports.sql`
+**Migrations:** 014, 018 (FK standardized to profiles(id))
 
-| Column | Type | Nullable | Default | Constraints |
-|--------|------|----------|---------|-------------|
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
 | `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
-| `user_id` | `uuid` | NO | - | FK -> `auth.users(id) ON DELETE CASCADE` |
+| `user_id` | `uuid` | NO | - | FK -> `profiles(id) ON DELETE CASCADE` (changed from auth.users in migration 018) |
 | `spreadsheet_id` | `varchar(255)` | NO | - | |
 | `spreadsheet_url` | `text` | NO | - | |
 | `search_params` | `jsonb` | NO | - | Snapshot of search parameters |
@@ -443,20 +471,119 @@ plan_type IN (
 
 ---
 
+### 12. audit_events
+
+**Purpose:** Persistent audit log for security-relevant events with SHA-256 hashed PII.
+**Migration:** 023 (STORY-226 Track 5)
+
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
+| `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
+| `timestamp` | `timestamptz` | NO | `now()` | |
+| `event_type` | `text` | NO | - | See valid types below |
+| `actor_id_hash` | `text` | YES | NULL | SHA-256 hash truncated to 16 hex chars |
+| `target_id_hash` | `text` | YES | NULL | SHA-256 hash truncated to 16 hex chars |
+| `details` | `jsonb` | YES | NULL | Structured event metadata, no PII |
+| `ip_hash` | `text` | YES | NULL | SHA-256 hash truncated to 16 hex chars |
+
+**Valid event_type values:**
+`auth.login`, `auth.logout`, `auth.signup`, `admin.user_create`, `admin.user_delete`, `admin.plan_assign`, `billing.checkout`, `billing.subscription_change`, `data.search`, `data.download`
+
+**Indexes:**
+| Name | Columns | Type | Condition |
+|------|---------|------|-----------|
+| `audit_events_pkey` | `id` | B-tree (PK) | - |
+| `idx_audit_events_event_type` | `event_type` | B-tree | - |
+| `idx_audit_events_timestamp` | `timestamp` | B-tree | - |
+| `idx_audit_events_actor` | `actor_id_hash` | B-tree (partial) | `WHERE actor_id_hash IS NOT NULL` |
+| `idx_audit_events_type_timestamp` | `event_type, timestamp DESC` | B-tree | Composite for dashboard queries |
+
+**Retention:** 12 months. pg_cron job `cleanup-audit-events` runs on 1st of each month at 4:00 AM UTC (migration 023).
+
+---
+
+### 13. pipeline_items
+
+**Purpose:** Tracks procurement opportunities through pipeline stages (descoberta -> analise -> preparando -> enviada -> resultado).
+**Migration:** 025 (STORY-250)
+
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
+| `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
+| `user_id` | `uuid` | NO | - | FK -> `auth.users(id) ON DELETE CASCADE` (**inconsistent: should be profiles(id)**) |
+| `pncp_id` | `text` | NO | - | PNCP procurement ID (snapshot) |
+| `objeto` | `text` | NO | - | |
+| `orgao` | `text` | YES | NULL | |
+| `uf` | `text` | YES | NULL | |
+| `valor_estimado` | `numeric` | YES | NULL | |
+| `data_encerramento` | `timestamptz` | YES | NULL | |
+| `link_pncp` | `text` | YES | NULL | |
+| `stage` | `text` | NO | `'descoberta'` | CHECK: `IN ('descoberta', 'analise', 'preparando', 'enviada', 'resultado')` |
+| `notes` | `text` | YES | NULL | |
+| `created_at` | `timestamptz` | NO | `now()` | |
+| `updated_at` | `timestamptz` | NO | `now()` | Auto-updated via trigger |
+
+**Constraints:**
+- UNIQUE(`user_id`, `pncp_id`) -- prevents duplicate pipeline entries per user
+
+**Indexes:**
+| Name | Columns | Type | Condition |
+|------|---------|------|-----------|
+| `pipeline_items_pkey` | `id` | B-tree (PK) | - |
+| `idx_pipeline_user_stage` | `user_id, stage` | B-tree | - |
+| `idx_pipeline_encerramento` | `data_encerramento` | B-tree (partial) | `WHERE stage NOT IN ('enviada', 'resultado')` |
+| `idx_pipeline_user_created` | `user_id, created_at DESC` | B-tree | - |
+
+---
+
+### 14. search_results_cache
+
+**Purpose:** Persistent cache of last 5 search results per user. Serves cached data when all sources fail ("Never Empty-Handed" principle).
+**Migration:** 026 (STORY-257A)
+
+| Column | Type | Nullable | Default | Constraints / Notes |
+|--------|------|----------|---------|---------------------|
+| `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
+| `user_id` | `uuid` | NO | - | FK -> `auth.users(id) ON DELETE CASCADE` (**inconsistent: should be profiles(id)**) |
+| `params_hash` | `text` | NO | - | Hash of search parameters |
+| `search_params` | `jsonb` | NO | - | Full search parameters snapshot |
+| `results` | `jsonb` | NO | - | Cached search results |
+| `total_results` | `integer` | NO | `0` | |
+| `created_at` | `timestamptz` | NO | `now()` | |
+
+**Constraints:**
+- UNIQUE(`user_id`, `params_hash`) -- one cache entry per user per unique search
+
+**Indexes:**
+| Name | Columns | Type |
+|------|---------|------|
+| `search_results_cache_pkey` | `id` | B-tree (PK) |
+| `idx_search_cache_user` | `user_id, created_at DESC` | B-tree |
+| `idx_search_cache_params_hash` | `params_hash` | B-tree |
+
+**Auto-cleanup:** Trigger `trg_cleanup_search_cache` fires AFTER INSERT and invokes `cleanup_search_cache_per_user()` to keep max 5 entries per user (oldest beyond 5 are deleted).
+
+---
+
 ## Functions & Triggers
 
 ### Functions
 
 | Function | Returns | Language | Security | Purpose | Migration |
 |----------|---------|----------|----------|---------|-----------|
-| `handle_new_user()` | trigger | plpgsql | DEFINER | Auto-create profile on auth.users INSERT | 001 (updated in 007) |
+| `handle_new_user()` | trigger | plpgsql | DEFINER | Auto-create profile on auth.users INSERT. Sets plan_type to free_trial (migration 016), includes context_data default (migration 024) | 001, 007, 016, 024 |
 | `update_updated_at()` | trigger | plpgsql | INVOKER | Set `updated_at = now()` on UPDATE | 001 |
 | `increment_quota_atomic(p_user_id, p_month_year, p_max_quota)` | TABLE(new_count, was_at_limit, previous_count) | plpgsql | INVOKER | Atomic quota increment with limit check | 003 |
 | `check_and_increment_quota(p_user_id, p_month_year, p_max_quota)` | TABLE(allowed, new_count, previous_count, quota_remaining) | plpgsql | INVOKER | Combined check+increment (race-condition-safe) | 003 |
-| `get_user_billing_period(p_user_id)` | varchar(10) | plpgsql | DEFINER | Get user's current billing period | 011 |
+| `get_user_billing_period(p_user_id)` | varchar(10) | plpgsql | DEFINER | Get user's current billing period (monthly/annual) | 011 |
 | `user_has_feature(p_user_id, p_feature_key)` | boolean | plpgsql | DEFINER | Check if user has specific feature | 011 |
 | `get_user_features(p_user_id)` | text[] | plpgsql | DEFINER | Get all enabled features for user | 011 |
 | `update_conversation_last_message()` | trigger | plpgsql | INVOKER | Update conversations.last_message_at on new message | 012 |
+| `sync_profile_plan_type()` | trigger | plpgsql | DEFINER | Auto-sync profiles.plan_type from user_subscriptions changes. **WARNING: References nonexistent `status` column** | 017 |
+| `get_conversations_with_unread_count(...)` | TABLE(...) | plpgsql | DEFINER | Eliminates N+1 query in conversation list | 019 |
+| `get_analytics_summary(...)` | TABLE(...) | plpgsql | DEFINER | Eliminates full-table-scan in analytics summary | 019 |
+| `update_pipeline_updated_at()` | trigger | plpgsql | INVOKER | Set updated_at on pipeline_items | 025 |
+| `cleanup_search_cache_per_user()` | trigger | plpgsql | DEFINER | Enforce max 5 cache entries per user | 026 |
 
 ### Triggers
 
@@ -465,7 +592,12 @@ plan_type IN (
 | `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` |
 | `profiles_updated_at` | `profiles` | BEFORE UPDATE | `update_updated_at()` |
 | `plan_features_updated_at` | `plan_features` | BEFORE UPDATE | `update_updated_at()` |
+| `plans_updated_at` | `plans` | BEFORE UPDATE | `update_updated_at()` (migration 020) |
+| `user_subscriptions_updated_at` | `user_subscriptions` | BEFORE UPDATE | `update_updated_at()` (migration 021) |
+| `trg_sync_profile_plan_type` | `user_subscriptions` | AFTER INSERT OR UPDATE | `sync_profile_plan_type()` (migration 017) |
 | `trg_update_conversation_last_message` | `messages` | AFTER INSERT | `update_conversation_last_message()` |
+| `tr_pipeline_items_updated_at` | `pipeline_items` | BEFORE UPDATE | `update_pipeline_updated_at()` (migration 025) |
+| `trg_cleanup_search_cache` | `search_results_cache` | AFTER INSERT | `cleanup_search_cache_per_user()` (migration 026) |
 
 ### Grants
 
@@ -482,18 +614,21 @@ plan_type IN (
 
 | Table | Index Count | Partial Indexes | GIN Indexes |
 |-------|-------------|-----------------|-------------|
-| profiles | 3 | 2 | 0 |
+| profiles | 5 | 2 | 1 (trigram) |
 | plans | 1 | 0 | 0 |
-| user_subscriptions | 4 | 2 | 0 |
+| user_subscriptions | 6 | 3 | 0 |
 | search_sessions | 3 | 0 | 0 |
 | monthly_quota | 3 | 0 | 0 |
 | plan_features | 2 | 1 | 0 |
 | stripe_webhook_events | 3 | 0 | 0 |
 | conversations | 4 | 0 | 0 |
 | messages | 4 | 2 | 0 |
-| user_oauth_tokens | 4 | 0 | 0 |
+| user_oauth_tokens | 3 | 0 | 0 |
 | google_sheets_exports | 5 | 0 | 1 |
-| **TOTAL** | **36** | **7** | **1** |
+| audit_events | 5 | 1 | 0 |
+| pipeline_items | 4 | 1 | 0 |
+| search_results_cache | 3 | 0 | 0 |
+| **TOTAL** | **~51** | **10** | **2** |
 
 ---
 
@@ -501,9 +636,9 @@ plan_type IN (
 
 ### CHECK Constraints
 
-| Table | Constraint | Expression |
-|-------|-----------|------------|
-| profiles | `profiles_plan_type_check` | `plan_type IN ('free', 'avulso', 'pack', 'monthly', 'annual', 'master', 'free_trial', 'consultor_agil', 'maquina', 'sala_guerra')` |
+| Table | Constraint Name | Expression |
+|-------|----------------|------------|
+| profiles | `profiles_plan_type_check` | `plan_type IN ('free_trial', 'consultor_agil', 'maquina', 'sala_guerra', 'master')` |
 | profiles | `phone_whatsapp_format` | `phone_whatsapp IS NULL OR phone_whatsapp ~ '^[0-9]{10,11}$'` |
 | user_subscriptions | (unnamed) | `billing_period IN ('monthly', 'annual')` |
 | plan_features | (unnamed) | `billing_period IN ('monthly', 'annual')` |
@@ -514,30 +649,36 @@ plan_type IN (
 | messages | (unnamed) | `char_length(body) >= 1 AND char_length(body) <= 5000` |
 | user_oauth_tokens | (unnamed) | `provider IN ('google', 'microsoft', 'dropbox')` |
 | google_sheets_exports | (unnamed) | `total_rows >= 0` |
+| pipeline_items | (unnamed) | `stage IN ('descoberta', 'analise', 'preparando', 'enviada', 'resultado')` |
 
 ### UNIQUE Constraints
 
-| Table | Constraint | Columns |
-|-------|-----------|---------|
+| Table | Constraint Name | Columns |
+|-------|----------------|---------|
 | monthly_quota | `unique_user_month` | `(user_id, month_year)` |
 | plan_features | (unnamed) | `(plan_id, billing_period, feature_key)` |
 | user_oauth_tokens | `unique_user_provider` | `(user_id, provider)` |
+| pipeline_items | (unnamed) | `(user_id, pncp_id)` |
+| search_results_cache | (unnamed) | `(user_id, params_hash)` |
+| user_subscriptions | (partial unique index) | `stripe_subscription_id` WHERE NOT NULL |
 
 ### Foreign Keys
 
-| Source Table | Column | Target Table | Target Column | On Delete |
-|-------------|--------|-------------|---------------|-----------|
-| profiles | id | auth.users | id | CASCADE |
-| user_subscriptions | user_id | profiles | id | CASCADE |
-| user_subscriptions | plan_id | plans | id | (none/restrict) |
-| search_sessions | user_id | profiles | id | CASCADE |
-| monthly_quota | user_id | auth.users | id | CASCADE |
-| plan_features | plan_id | plans | id | CASCADE |
-| conversations | user_id | profiles | id | CASCADE |
-| messages | conversation_id | conversations | id | CASCADE |
-| messages | sender_id | profiles | id | CASCADE |
-| user_oauth_tokens | user_id | auth.users | id | CASCADE |
-| google_sheets_exports | user_id | auth.users | id | CASCADE |
+| Source Table | Column | Target Table | Target Column | On Delete | Notes |
+|-------------|--------|-------------|---------------|-----------|-------|
+| profiles | id | auth.users | id | CASCADE | Bridge table |
+| user_subscriptions | user_id | profiles | id | CASCADE | |
+| user_subscriptions | plan_id | plans | id | RESTRICT (default) | Intentional (migration 022 documents) |
+| search_sessions | user_id | profiles | id | CASCADE | |
+| monthly_quota | user_id | profiles | id | CASCADE | Changed from auth.users in migration 018 |
+| plan_features | plan_id | plans | id | CASCADE | |
+| conversations | user_id | profiles | id | CASCADE | |
+| messages | conversation_id | conversations | id | CASCADE | |
+| messages | sender_id | profiles | id | CASCADE | |
+| user_oauth_tokens | user_id | profiles | id | CASCADE | Changed from auth.users in migration 018 |
+| google_sheets_exports | user_id | profiles | id | CASCADE | Changed from auth.users in migration 018 |
+| **pipeline_items** | **user_id** | **auth.users** | **id** | **CASCADE** | **NOT standardized -- should be profiles(id)** |
+| **search_results_cache** | **user_id** | **auth.users** | **id** | **CASCADE** | **NOT standardized -- should be profiles(id)** |
 
 ---
 
@@ -545,84 +686,111 @@ plan_type IN (
 
 ### profiles (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `profiles_select_own` | SELECT | `auth.uid() = id` |
-| `profiles_update_own` | UPDATE | `auth.uid() = id` |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `profiles_select_own` | SELECT | public | `auth.uid() = id` |
+| `profiles_update_own` | UPDATE | public | `auth.uid() = id` |
+| `profiles_insert_own` | INSERT | authenticated | `auth.uid() = id` (migration 020) |
+| `profiles_insert_service` | INSERT | service_role | `true` (migration 020) |
 
 ### plans (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `plans_select_all` | SELECT | `true` (public catalog) |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `plans_select_all` | SELECT | public | `true` (public catalog) |
 
 ### user_subscriptions (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `subscriptions_select_own` | SELECT | `auth.uid() = user_id` |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `subscriptions_select_own` | SELECT | public | `auth.uid() = user_id` |
+| `Service role can manage subscriptions` | ALL | service_role | `true` (migration 016) |
 
 ### search_sessions (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `sessions_select_own` | SELECT | `auth.uid() = user_id` |
-| `sessions_insert_own` | INSERT | `auth.uid() = user_id` |
-| `Service role can manage search sessions` | ALL | `true` |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `sessions_select_own` | SELECT | public | `auth.uid() = user_id` |
+| `sessions_insert_own` | INSERT | public | `auth.uid() = user_id` |
+| `Service role can manage search sessions` | ALL | service_role | `true` (migration 016 fixed TO service_role) |
 
 ### monthly_quota (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `Users can view own quota` | SELECT | `auth.uid() = user_id` |
-| `Service role can manage quota` | ALL | `true` |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `Users can view own quota` | SELECT | public | `auth.uid() = user_id` |
+| `Service role can manage quota` | ALL | service_role | `true` (migration 016 fixed TO service_role) |
 
 ### plan_features (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `plan_features_select_all` | SELECT | `true` (public catalog) |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `plan_features_select_all` | SELECT | public | `true` (public catalog) |
 
 ### stripe_webhook_events (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `webhook_events_insert_service` | INSERT | `true` (service role) |
-| `webhook_events_select_admin` | SELECT | `EXISTS (profiles WHERE id = auth.uid() AND plan_type = 'master')` |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `webhook_events_insert_service` | INSERT | public | `true` |
+| `webhook_events_select_admin` | SELECT | public | `EXISTS (profiles WHERE id = auth.uid() AND is_admin = true)` (fixed in migration 016) |
 
 ### conversations (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `conversations_select_own` | SELECT | `user_id = auth.uid() OR is_admin(auth.uid())` |
-| `conversations_insert_own` | INSERT | `auth.uid() = user_id` |
-| `conversations_update_admin` | UPDATE | `is_admin(auth.uid())` |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `conversations_select_own` | SELECT | public | `user_id = auth.uid() OR is_admin(auth.uid())` |
+| `conversations_insert_own` | INSERT | public | `auth.uid() = user_id` |
+| `conversations_update_admin` | UPDATE | public | `is_admin(auth.uid())` |
 
 ### messages (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `messages_select` | SELECT | user owns conversation OR is admin |
-| `messages_insert_user` | INSERT | sender_id = auth.uid() AND (owns conversation OR is admin) |
-| `messages_update_read` | UPDATE | owns conversation OR is admin |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `messages_select` | SELECT | public | User owns conversation OR is admin |
+| `messages_insert_user` | INSERT | public | sender_id = auth.uid() AND (owns conversation OR is admin) |
+| `messages_update_read` | UPDATE | public | Owns conversation OR is admin |
 
 ### user_oauth_tokens (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `Users can view own OAuth tokens` | SELECT | `auth.uid() = user_id` |
-| `Users can update own OAuth tokens` | UPDATE | `auth.uid() = user_id` |
-| `Users can delete own OAuth tokens` | DELETE | `auth.uid() = user_id` |
-| `Service role can manage all OAuth tokens` | ALL | `true` (TO service_role) |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `Users can view own OAuth tokens` | SELECT | public | `auth.uid() = user_id` |
+| `Users can update own OAuth tokens` | UPDATE | public | `auth.uid() = user_id` |
+| `Users can delete own OAuth tokens` | DELETE | public | `auth.uid() = user_id` |
+| `Service role can manage all OAuth tokens` | ALL | service_role | `true` |
 
 ### google_sheets_exports (RLS: ENABLED)
 
-| Policy | Operation | Expression |
-|--------|-----------|------------|
-| `Users can view own Google Sheets exports` | SELECT | `auth.uid() = user_id` |
-| `Users can create Google Sheets exports` | INSERT | `auth.uid() = user_id` |
-| `Users can update own Google Sheets exports` | UPDATE | `auth.uid() = user_id` |
-| `Service role can manage all Google Sheets exports` | ALL | `true` (TO service_role) |
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `Users can view own Google Sheets exports` | SELECT | public | `auth.uid() = user_id` |
+| `Users can create Google Sheets exports` | INSERT | public | `auth.uid() = user_id` |
+| `Users can update own Google Sheets exports` | UPDATE | public | `auth.uid() = user_id` |
+| `Service role can manage all Google Sheets exports` | ALL | service_role | `true` |
+
+### audit_events (RLS: ENABLED)
+
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `Service role can manage audit events` | ALL | service_role | `true` |
+| `Admins can read audit events` | SELECT | public | `EXISTS (profiles WHERE id = auth.uid() AND is_admin = true)` |
+
+### pipeline_items (RLS: ENABLED)
+
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `Users can view own pipeline items` | SELECT | public | `auth.uid() = user_id` |
+| `Users can insert own pipeline items` | INSERT | public | `auth.uid() = user_id` |
+| `Users can update own pipeline items` | UPDATE | public | `auth.uid() = user_id` (USING + WITH CHECK) |
+| `Users can delete own pipeline items` | DELETE | public | `auth.uid() = user_id` |
+| `Service role full access on pipeline_items` | ALL | **public** | `true` **-- SECURITY: missing `TO service_role`** |
+
+### search_results_cache (RLS: ENABLED)
+
+| Policy | Operation | Role | Expression |
+|--------|-----------|------|------------|
+| `Users can read own search cache` | SELECT | public | `auth.uid() = user_id` |
+| `Service role full access on search_results_cache` | ALL | **public** | `true` **-- SECURITY: missing `TO service_role`** |
 
 ---
 
@@ -630,27 +798,121 @@ plan_type IN (
 
 ### Backend Client
 
-The backend uses **two separate database access mechanisms:**
+The backend uses the **Supabase Python Client** (`supabase_client.py`) as the primary database access mechanism:
+- Uses `SUPABASE_SERVICE_ROLE_KEY` (admin privileges, bypasses RLS)
+- Singleton pattern via `get_supabase()`
+- FastAPI dependency injection via `database.py:get_db()`
 
-1. **Supabase Python Client** (`supabase_client.py`) -- Used by most modules
-   - Uses `SUPABASE_SERVICE_ROLE_KEY` (admin privileges, bypasses RLS)
-   - Tables accessed: profiles, plans, user_subscriptions, search_sessions, monthly_quota, plan_features, user_oauth_tokens, google_sheets_exports, conversations, messages
+**Tables accessed by each module:**
 
-2. **SQLAlchemy ORM** (`database.py`) -- Used exclusively by Stripe webhook handler
-   - Uses direct PostgreSQL connection (derived from `SUPABASE_URL`)
-   - Models: `StripeWebhookEvent`, `UserSubscription`
-   - Tables accessed: stripe_webhook_events, user_subscriptions
+| Backend Module | Tables Accessed | Operations |
+|----------------|----------------|------------|
+| `quota.py` | profiles, plans, user_subscriptions, monthly_quota, search_sessions | SELECT, INSERT, UPDATE, RPC |
+| `admin.py` | profiles, user_subscriptions, plans | SELECT (with JOIN), UPDATE, INSERT |
+| `auth.py` / `authorization.py` | profiles | SELECT |
+| `audit.py` | audit_events | INSERT |
+| `oauth.py` | user_oauth_tokens | SELECT, INSERT (upsert), UPDATE, DELETE |
+| `routes/analytics.py` | search_sessions | RPC (get_analytics_summary), SELECT |
+| `routes/billing.py` | plans, user_subscriptions, profiles | SELECT, INSERT, UPDATE |
+| `routes/messages.py` | conversations, messages | SELECT, INSERT, UPDATE, RPC (get_conversations_with_unread_count) |
+| `routes/pipeline.py` | pipeline_items | SELECT, INSERT, UPDATE, DELETE |
+| `routes/export_sheets.py` | google_sheets_exports | SELECT, INSERT |
+| `routes/features.py` | user_subscriptions, plan_features | SELECT |
+| `routes/sessions.py` | search_sessions | SELECT |
+| `routes/user.py` | profiles, user_subscriptions | SELECT, UPDATE |
+| `routes/plans.py` | plans | SELECT |
+| `routes/emails.py` | profiles | SELECT, UPDATE |
+| `search_pipeline.py` | profiles | SELECT |
 
-### Common Query Patterns
+### RPC Function Usage (Backend)
 
-| Operation | Table(s) | Access Method | Frequency |
-|-----------|----------|--------------|-----------|
-| Auth token validation | auth.users | Supabase Auth API | Every request |
-| Check user plan | user_subscriptions, profiles | Supabase client | Every search |
-| Quota check + increment | monthly_quota | RPC function | Every search |
-| Save search session | search_sessions | Supabase client | Every search |
-| List admin users | profiles + user_subscriptions | Supabase client | Admin page loads |
-| Feature flag lookup | user_subscriptions + plan_features | Supabase client (Redis cached) | Feature checks |
-| Stripe webhook | stripe_webhook_events, user_subscriptions | SQLAlchemy | Stripe events |
-| Messaging | conversations, messages | Supabase client | User interactions |
-| Google export | user_oauth_tokens, google_sheets_exports | Supabase client | Export actions |
+| RPC Function | Called By | Purpose |
+|-------------|----------|---------|
+| `increment_quota_atomic` | `quota.py:increment_monthly_quota()` | Atomic quota increment |
+| `check_and_increment_quota` | `quota.py:check_and_increment_quota_atomic()` | Atomic check+increment |
+| `get_analytics_summary` | `routes/analytics.py:get_analytics_summary()` | Aggregated user stats |
+| `get_conversations_with_unread_count` | `routes/messages.py:list_conversations()` | Conversations with counts |
+
+---
+
+## pg_cron Scheduled Jobs
+
+| Job Name | Schedule | Action | Retention | Migration |
+|----------|----------|--------|-----------|-----------|
+| `cleanup-monthly-quota` | `0 2 1 * *` (1st of month, 2:00 AM UTC) | DELETE rows older than 24 months | 24 months | 022 |
+| `cleanup-webhook-events` | `0 3 * * *` (daily, 3:00 AM UTC) | DELETE rows older than 90 days | 90 days | 022 |
+| `cleanup-audit-events` | `0 4 1 * *` (1st of month, 4:00 AM UTC) | DELETE rows older than 12 months | 12 months | 023 |
+
+**NOTE:** pg_cron extension must be enabled by Supabase support. Jobs will fail silently if extension is not installed.
+
+---
+
+## Migration History
+
+| # | File | Date | Story/Issue | Summary |
+|---|------|------|-------------|---------|
+| 001 | `001_profiles_and_sessions.sql` | - | - | Core schema: profiles, plans, user_subscriptions, search_sessions, RLS, triggers |
+| 002 | `002_monthly_quota.sql` | 2026-02-03 | PNCP-165 | monthly_quota table |
+| 003 | `003_atomic_quota_increment.sql` | 2026-02-04 | Issue #189 | Atomic quota functions |
+| 004 | `004_add_is_admin.sql` | - | - | profiles.is_admin column |
+| 005 | `005_update_plans_to_new_tiers.sql` | 2026-02-05 | - | New pricing tiers, deactivate legacy plans |
+| 006a | `006a_update_profiles_plan_type_constraint.sql` | 2026-02-06 | - | Update CHECK constraint for new plan types |
+| 006b | `006b_search_sessions_service_role_policy.sql` | 2026-02-10 | P0-CRITICAL | Service role policy for search_sessions |
+| - | `006b_DEPRECATED_...DUPLICATE.sql` | - | - | Deprecated duplicate of 006b (DO NOT APPLY) |
+| 007 | `007_add_whatsapp_consent.sql` | - | STORY-166 | Marketing consent fields, updated handle_new_user trigger |
+| 008 | `008_add_billing_period.sql` | 2026-02-07 | STORY-171 | billing_period + annual_benefits on user_subscriptions |
+| - | `008_rollback.sql.bak` | 2026-02-07 | STORY-171 | Rollback script for 008 (reference only) |
+| 009 | `009_create_plan_features.sql` | 2026-02-07 | STORY-171 | plan_features table + seed data |
+| 010 | `010_stripe_webhook_events.sql` | - | STORY-171 | stripe_webhook_events table |
+| 011 | `011_add_billing_helper_functions.sql` | 2026-02-07 | STORY-171 | Billing helper DB functions |
+| 012 | `012_create_messages.sql` | - | - | conversations + messages tables (InMail) |
+| 013 | `013_google_oauth_tokens.sql` | - | STORY-180 | user_oauth_tokens table |
+| 014 | `014_google_sheets_exports.sql` | - | STORY-180 | google_sheets_exports table |
+| 015 | `015_add_stripe_price_ids_monthly_annual.sql` | 2026-02-10 | - | Stripe price ID columns on plans |
+| 016 | `016_security_and_index_fixes.sql` | 2026-02-11 | STORY-200 | Fix webhook admin policy, tighten RLS, stripe_sub_id index, trigram index, service role policies, fix handle_new_user default |
+| 017 | `017_sync_plan_type_trigger.sql` | - | STORY-202 | Auto-sync profiles.plan_type trigger (references missing `status` column) |
+| 018 | `018_standardize_fk_references.sql` | - | STORY-202 | Standardize FKs to profiles(id) for monthly_quota, user_oauth_tokens, google_sheets_exports |
+| 019 | `019_rpc_performance_functions.sql` | - | STORY-202 | RPC functions: get_conversations_with_unread_count, get_analytics_summary |
+| 020 | `020_tighten_plan_type_constraint.sql` | 2026-02-12 | STORY-203 | Remove legacy plan_type values, add INSERT policies, add plans.updated_at |
+| 021 | `021_user_subscriptions_updated_at.sql` | 2026-02-12 | STORY-203 | Add updated_at to user_subscriptions, document Stripe price ID env awareness |
+| 022 | `022_retention_cleanup.sql` | 2026-02-12 | STORY-203 | pg_cron cleanup jobs, drop redundant index, add customer_id index, document plan_id FK |
+| 023 | `023_audit_events.sql` | 2026-02-13 | STORY-226 | audit_events table with hashed PII, pg_cron retention |
+| 024 | `024_add_profile_context.sql` | - | STORY-247 | profiles.context_data JSONB column, updated handle_new_user |
+| 025 | `025_create_pipeline_items.sql` | - | STORY-250 | pipeline_items table for opportunity tracking |
+| 026 | `026_search_results_cache.sql` | - | STORY-257A | search_results_cache table with auto-cleanup trigger |
+
+---
+
+## Environment Variables for Database
+
+| Variable | Required | Used By | Purpose |
+|----------|----------|---------|---------|
+| `SUPABASE_URL` | YES | supabase_client.py | Supabase project URL |
+| `SUPABASE_ANON_KEY` | YES | supabase_client.py | Public anonymous key (frontend JWT verify) |
+| `SUPABASE_SERVICE_ROLE_KEY` | YES | supabase_client.py | Admin access key (bypasses RLS) |
+| `SUPABASE_JWT_SECRET` | YES | auth.py | JWT token verification |
+| `ENCRYPTION_KEY` | Recommended | oauth.py | AES-256 key for OAuth token encryption |
+| `REDIS_URL` | Optional | routes/features.py | Feature flag cache |
+
+---
+
+## Database Size Estimates
+
+| Table | Expected Row Count (1 year) | Growth Pattern |
+|-------|---------------------------|----------------|
+| profiles | 500-5,000 | Linear with signups |
+| plans | 10-15 | Static (manual changes) |
+| user_subscriptions | 1,000-10,000 | Linear (new subs + historical) |
+| search_sessions | 10,000-100,000 | **High growth** (every search) |
+| monthly_quota | 500-60,000 | Linear (users x months), cleaned after 24 months |
+| plan_features | 10-50 | Static (manual changes) |
+| stripe_webhook_events | 1,000-50,000 | Linear, cleaned after 90 days |
+| conversations | 100-1,000 | Low growth |
+| messages | 500-5,000 | Low-medium growth |
+| user_oauth_tokens | 100-2,000 | Linear with Google integrations |
+| google_sheets_exports | 500-10,000 | Moderate growth |
+| audit_events | 5,000-100,000 | **High growth** (every auth/search event), cleaned after 12 months |
+| pipeline_items | 1,000-20,000 | Moderate growth (user pipeline actions) |
+| search_results_cache | 500-25,000 | Self-limiting (max 5 per user via trigger) |
+
+**Largest tables to monitor:** `search_sessions`, `audit_events`, `search_results_cache` (JSONB payload size)

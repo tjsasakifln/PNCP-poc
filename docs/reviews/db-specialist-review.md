@@ -1,476 +1,569 @@
-# Database Specialist Review
+# Database Specialist Review -- v2.0
 
-**Reviewer:** @data-engineer (Dara)
-**Date:** 2026-02-11
-**Reviewed Document:** docs/prd/technical-debt-DRAFT.md (Section 3)
-**Reference Sources:** supabase/docs/DB-AUDIT.md, supabase/docs/SCHEMA.md
-**Codebase State:** commit `808cd05`, branch `main`
-
----
-
-## 1. Debts Validated
-
-All 19 database debts listed in Section 3 of the DRAFT are real issues. Below is the item-by-item validation with adjusted severity, refined hour estimates, and complexity ratings.
-
-| ID | Debt | Original Severity | Validated Severity | Hours | Complexity | Notes |
-|----|------|-------------------|-------------------|-------|------------|-------|
-| DB-C01 | `database.py` derives PostgreSQL URL incorrectly from `SUPABASE_URL` | CRITICAL | **CRITICAL** | 2-4h | Simple | Confirmed: `SUPABASE_URL` is `https://fqqyovlzdzimiwfofdjk.supabase.co`. Line 33 produces `postgresql://fqqyovlzdzimiwfofdjk.supabase.co` which is NOT a valid PostgreSQL connection string (missing port, database name, credentials). The engine either fails on first use or falls back to `postgresql://localhost/smartlic`. See Q1 answer for full analysis. |
-| DB-C02 | `user_subscriptions` missing service role RLS policy for writes | CRITICAL | **HIGH** | 1h | Simple | Valid concern but downgraded. See Q2 answer for nuance. The service_role key bypasses RLS in all current Supabase versions. The risk is future-proofing, not present breakage. Still must be fixed for consistency. |
-| DB-C03 | `stripe_webhook_events` admin check uses `plan_type = 'master'` instead of `is_admin` | CRITICAL | **CRITICAL** | 0.5h | Simple | Confirmed by reading migration 010 lines 61-68. The policy checks `profiles.plan_type = 'master'` but the canonical admin flag is `profiles.is_admin`. These are independent columns. An admin with plan_type `consultor_agil` cannot view webhook events. A master user who is not an admin CAN view them. Direct access control bug. |
-| DB-H01 | Dual ORM Architecture (Supabase Client + SQLAlchemy) | HIGH | **CRITICAL** (upgrade) | 10-14h | Complex | Upgraded to CRITICAL. Analysis reveals the situation is worse than documented: `main.py` (lines 733-829) has Supabase-client-based Stripe handlers (`_activate_plan`, `_deactivate_stripe_subscription`, `_handle_subscription_updated`), while `webhooks/stripe.py` has SQLAlchemy-based handlers for the SAME event types. Two competing implementations for the same business logic. This is not just architectural debt -- it is an active correctness risk. |
-| DB-H02 | Migration 006 duplicated (3 files) | HIGH | **HIGH** | 1-2h | Simple | Confirmed: 3 files with `006_` prefix. `006_APPLY_ME.sql` and `006_search_sessions_service_role_policy.sql` are byte-for-byte identical in SQL effect (both create the same policy). The `006_APPLY_ME.sql` has dashboard-paste instructions. The risk is operational confusion, not data corruption. See Q4 answer. |
-| DB-H03 | Index missing on `user_subscriptions.stripe_subscription_id` | HIGH | **HIGH** | 0.5h | Simple | Confirmed: Migration 001 defines `stripe_subscription_id text` with NO unique constraint. The SQLAlchemy model defines `unique=True` but `Base.metadata.create_all()` was never called (the engine URL is invalid). The `main.py` queries this column at lines 785, 795, 822, 886. Without an index, these are sequential scans on `user_subscriptions`. |
-| DB-H04 | RLS policies overly permissive (`USING (true)` without `TO service_role`) | HIGH | **HIGH** | 1h | Simple | Confirmed in migration 002 (monthly_quota) and 006 (search_sessions). Compare with migrations 013/014 (user_oauth_tokens, google_sheets_exports) which correctly use `TO service_role`. The permissive policies allow any authenticated user to INSERT/UPDATE/DELETE rows on monthly_quota and search_sessions via PostgREST. In practice, PostgREST URL is not exposed to client-side code, but this is defense-in-depth failure. |
-| DB-H05 | `profiles` missing INSERT policy for auth trigger | HIGH | **MEDIUM** (downgrade) | 0.5h | Simple | Downgraded. The `handle_new_user()` trigger runs as `SECURITY DEFINER` which inherently bypasses RLS. The `_ensure_profile_exists()` in quota.py uses service_role key which also bypasses RLS. There is no code path where a regular user or anon key attempts to INSERT into profiles. Adding an explicit INSERT policy is good hygiene but not a security gap in the current system. |
-| DB-M01 | FK inconsistencies (auth.users vs profiles) | MEDIUM | **MEDIUM** | 3-4h | Medium | Confirmed: `monthly_quota` (migration 002), `user_oauth_tokens` (013), and `google_sheets_exports` (014) reference `auth.users(id)` while all other tables reference `profiles(id)`. Functionally equivalent because `profiles.id` has a cascading FK to `auth.users.id`, so deletions propagate correctly either way. The inconsistency is a maintenance burden, not a data integrity risk. See Q3 answer. |
-| DB-M02 | CHECK constraint `plan_type` includes legacy values | MEDIUM | **MEDIUM** | 1-2h | Simple | Confirmed: constraint allows 10 values including legacy `free`, `avulso`, `pack`, `monthly`, `annual`. The `quota.py:386-392` PLAN_TYPE_MAP handles legacy-to-current mapping, but nothing prevents new profile insertions with legacy types. The `handle_new_user()` trigger sets `plan_type = 'free'` (a legacy value!) by default. This means every new user starts with a legacy plan_type. |
-| DB-M03 | `updated_at` missing in migration for `user_subscriptions` | MEDIUM | **MEDIUM** | 1h | Simple | Confirmed: Migration 001 (line 63-73) does NOT define `updated_at`. Migration 008 does NOT add it either (verified by grep). The SQLAlchemy model defines it (line 83). This column was likely added manually via Supabase dashboard. If it exists in production, this is documentation/migration gap only. If it does not exist, SQLAlchemy writes to it would fail silently (Supabase client ignores unknown columns in UPDATE). |
-| DB-M04 | `profiles.plan_type` and `user_subscriptions.plan_id` can drift | MEDIUM | **MEDIUM** | 4-6h | Complex | Confirmed. The 4-layer fallback in `quota.py:413-504` is well-designed resilience, but drift is not merely theoretical: `_activate_plan()` (main.py:764) syncs profiles.plan_type on activation, `_deactivate_stripe_subscription()` (main.py:799) syncs on cancellation, but `webhooks/stripe.py:handle_subscription_updated()` does NOT sync profiles.plan_type. So subscription updates via the SQLAlchemy handler create drift. See Q5 answer. |
-| DB-M05 | Stripe price IDs hardcoded in migration 015 | MEDIUM | **MEDIUM** | 2h | Simple | Confirmed: Migration 015 contains 6 production Stripe price IDs (e.g., `price_1Syir09FhmvPslGYOCbOvWVB`). If applied to staging/dev, it sets production price IDs which would charge real money or fail Stripe API calls. |
-| DB-M06 | N+1 query in conversation list endpoint | MEDIUM | **MEDIUM** | 2-3h | Medium | Confirmed in `routes/messages.py:112-122`. For each conversation, a separate Supabase call counts unread messages. The Supabase client does not support subqueries or JOINs natively, but this can be solved with an RPC function or database view. See Q6 answer. |
-| DB-M07 | Analytics endpoints fetch ALL sessions | MEDIUM | **MEDIUM** | 2-3h | Medium | Confirmed in `routes/analytics.py:78-83`. `SELECT id, total_raw, total_filtered, valor_total, created_at` with no pagination or date limit. All aggregation done in Python. Should be an RPC or view with server-side aggregation. See Q6 answer. |
-| DB-L01 | `plans` table missing `updated_at` column | LOW | **LOW** | 0.5h | Simple | Confirmed. Plans table has `created_at` only. Given plans change infrequently (5 updates total across 15 migrations), impact is minimal. |
-| DB-L02 | No retention/cleanup for `monthly_quota` historical rows | LOW | **LOW** | 3-4h | Medium | Confirmed. One row per user per month, accumulates indefinitely. At 5,000 users for 5 years = 300,000 rows. Manageable for PostgreSQL but worth cleaning rows older than 24 months. |
-| DB-L03 | No retention/cleanup for `stripe_webhook_events` | LOW | **LOW** | 3-4h | Medium | Confirmed. Migration 010 comment mentions 90-day retention but nothing implements it. With JSONB payload, this table grows faster in disk usage. |
-| DB-L04 | Redundant index `idx_user_oauth_tokens_provider` | LOW | **LOW** | 0.25h | Simple | Confirmed. Table has at most hundreds of rows. The `unique_user_provider` constraint on `(user_id, provider)` already covers lookups. A standalone index on `provider` (3 possible values) has negligible selectivity. |
+**Reviewer:** @data-engineer (Datum)
+**Date:** 2026-02-15
+**Status:** REVIEWED
+**Source Document:** `docs/prd/technical-debt-DRAFT.md` v2.0 (2026-02-15)
+**Reference Documents:** `supabase/docs/DB-AUDIT.md` v2.0, `supabase/docs/SCHEMA.md` v2.0
+**Previous Review:** `docs/reviews/db-specialist-review.md` v1.0 (2026-02-11, commit `808cd05`)
+**Current Commit:** `b80e64a` (branch `main`)
+**Migrations Analyzed:** 001 through 026 (all files re-read and cross-referenced against backend code)
+**Backend Code Analyzed:** `quota.py`, `admin.py`, `webhooks/stripe.py`, `routes/analytics.py`, `routes/billing.py`
 
 ---
 
-## 2. Debts Removed/Downgraded
+## Changelog v1.0 -> v2.0
 
-### 2.1 DB-C02: CRITICAL -> HIGH
+This review replaces the v1.0 review entirely. Since the v1.0 review (Feb 11), 11 migrations (016-026) were applied that resolved 15 of the 19 original debt items. The DRAFT v2.0 identifies a new set of 14 DB items (DB-01 through DB-14). This review validates those items, adjusts severities, adds 3 new items, and answers the architect's 7 questions.
 
-**Reason:** The Supabase service_role key has bypassed RLS since Supabase's inception. This is a documented, core behavior of PostgREST's service_role. The risk of Supabase changing this behavior without a major version bump is extremely low -- it would break every Supabase project in existence. The inconsistency with other tables is worth fixing for code clarity, but calling it CRITICAL implies imminent production breakage, which is not the case. Reclassified as HIGH.
-
-### 2.2 DB-H05: HIGH -> MEDIUM
-
-**Reason:** No code path in the current system attempts to INSERT into profiles via a non-service-role client. The trigger uses SECURITY DEFINER. The service_role key bypasses RLS. Adding an INSERT policy is good practice for documentation purposes and defense-in-depth, but the lack of it is not exploitable in the current architecture.
+**Items resolved since v1.0 review (no longer active):**
+- DB-C01 (database.py URL): Still exists architecturally but backend routes now exclusively use Supabase client
+- DB-C02 (user_subscriptions service role): RESOLVED by migration 016
+- DB-C03 (webhook admin check): RESOLVED by migration 016
+- DB-H01 (dual ORM): PARTIALLY RESOLVED -- webhooks/stripe.py now uses Supabase client
+- DB-H02 (migration 006 duplicates): Renamed to DEPRECATED
+- DB-H03 (stripe_subscription_id index): RESOLVED by migration 016
+- DB-H04 (overly permissive RLS): RESOLVED for old tables by migration 016; REGRESSED for 2 new tables
+- DB-H05 (profiles INSERT policy): RESOLVED by migration 020
+- DB-M01 (inconsistent FKs): PARTIALLY RESOLVED by migration 018 (3 of 5 tables)
+- DB-M02 (legacy plan_type CHECK): RESOLVED by migration 020
+- DB-M03 (user_subscriptions updated_at): RESOLVED by migration 021
+- DB-M06 (N+1 conversations): RESOLVED by migration 019 RPC
+- DB-L01 (plans updated_at): RESOLVED by migration 020
+- DB-L02 (monthly_quota cleanup): RESOLVED by migration 022 pg_cron
+- DB-L03 (webhook_events cleanup): RESOLVED by migration 022 pg_cron
+- DB-L04 (redundant provider index): RESOLVED by migration 022
 
 ---
 
-## 3. NEW Debts Added
+## 1. Debitos Validados
 
-### NEW-DB-01: Competing Stripe webhook handler implementations (CRITICAL)
+| ID | Debito | Severidade Original | Severidade Ajustada | Horas | Complexidade | Prioridade | Notas |
+|----|--------|---------------------|---------------------|-------|-------------|------------|-------|
+| DB-01 | Missing `status` column on `user_subscriptions` | CRITICAL | **MEDIUM** (downgraded) | 2h | Simple | P2 | Trigger is dead code, not a production crash. Backend handles sync manually. See detailed analysis in Section 3, Q1. |
+| DB-02 | `handle_new_user()` trigger omits `plan_type`, column default `'free'` violates CHECK | CRITICAL | **CRITICAL** (confirmed) | 2h | Simple | P0 | Confirmed: migration 024 INSERT omits plan_type; column default is `'free'` from migration 001; CHECK from migration 020 excludes `'free'`. New signups WILL fail with constraint violation. |
+| DB-03 | `pipeline_items` RLS `FOR ALL USING(true)` without `TO service_role` | HIGH | **HIGH** (confirmed) | 1h | Simple | P0 | Confirmed at migration 025 lines 102-105. Exact same bug previously fixed in migration 016 for `monthly_quota` and `search_sessions`. |
+| DB-04 | `search_results_cache` RLS `FOR ALL USING(true)` without `TO service_role` | HIGH | **HIGH** (confirmed) | 1h | Simple | P0 | Confirmed at migration 026 lines 31-35. Same pattern as DB-03. |
+| DB-05 | `stripe_webhook_events` INSERT policy not scoped to `service_role` | MEDIUM | **MEDIUM** (confirmed) | 1h | Simple | P1 | Confirmed at migration 010 lines 56-58. The `CHECK (id ~ '^evt_')` constraint and `GRANT INSERT ON ... TO service_role` (line 72) provide partial mitigation. Risk limited: exploiting requires knowledge of Stripe event ID format AND idempotency behavior. |
+| DB-06 | `_ensure_profile_exists()` uses `plan_type: "free"` violating CHECK | MEDIUM | **CRITICAL** (upgraded) | 0.5h | Simple | P0 | One-line fix but CRITICAL impact: any user whose profile is missing (trigger failure, race condition) will fail to get a fallback profile, breaking their entire search flow. Two independent code paths produce invalid `plan_type = 'free'` (this + DB-02). |
+| DB-07 | `pipeline_items` and `search_results_cache` FK to `auth.users` instead of `profiles` | MEDIUM | **MEDIUM** (confirmed) | 2h | Simple | P2 | Inconsistency with migration 018 standardization. Functionally benign since `profiles.id` and `auth.users.id` are always identical (1:1 FK with ON DELETE CASCADE). Schema hygiene warrants fixing. |
+| DB-08 | Hardcoded Stripe production price IDs in migration 015 | MEDIUM | **LOW** (downgraded) | 4h | Medium | P3 | Migration 021 already documents environment-specific instructions. For a POC with 3 plans, current approach is adequate. See Q5 answer. |
+| DB-09 | `search_sessions` time-series query fetches all rows into Python | MEDIUM | **MEDIUM** (confirmed, scope expanded) | 6h | Medium | P2 | Confirmed in `routes/analytics.py` lines 147-189. Time-series DOES filter by `range_days` via `.gte()`. However, `top-dimensions` (lines 206-245) fetches ALL sessions with NO date filter. DB-09 scope should include top-dimensions. |
+| DB-10 | `search_results_cache.results` JSONB 10-100KB per entry | MEDIUM | **LOW** (downgraded) | 2h | Simple | P3 | Max-5-per-user trigger is excellent mitigation. At 5,000 users x 5 entries x 50KB avg = 1.25GB. Supabase Pro has 8GB included. Not urgent until >10K users. Monitoring sufficient. |
+| DB-11 | `handle_new_user()` trigger redefined 4 times (001, 007, 016, 024) | MEDIUM | **MEDIUM** (confirmed) | 3h | Medium | P2 | Root cause of DB-02. Each `CREATE OR REPLACE` is valid PostgreSQL (latest wins). Latest version (024) dropped explicit `plan_type = 'free_trial'` from version 016. Consolidation should happen AFTER fixing DB-02. |
+| DB-12 | Deprecated migration file 006b in directory | LOW | **LOW** (confirmed) | 0.5h | Simple | P3 | Cosmetic. Supabase CLI processes by timestamp prefix; file is clearly named `DEPRECATED`. Move to `supabase/archive/` or delete. |
+| DB-13 | `pipeline_items` uses separate `update_pipeline_updated_at()` | LOW | **LOW** (confirmed) | 0.5h | Simple | P3 | Functionally identical to `update_updated_at()`. Only difference is function name. |
+| DB-14 | `search_results_cache` missing INSERT policy for users | LOW | **LOW** (confirmed) | 1h | Simple | P3 | Backend uses `service_role` key which bypasses RLS. Only relevant if client-side caching is ever implemented. |
 
-**Severity:** CRITICAL
-**Files:** `backend/main.py:733-900` (Supabase client), `backend/webhooks/stripe.py:104-144` (SQLAlchemy)
-**Description:** There are TWO complete implementations of Stripe subscription lifecycle handlers:
+---
 
-1. `main.py` contains `_activate_plan()`, `_deactivate_stripe_subscription()`, `_handle_subscription_updated()`, `_handle_invoice_payment()` -- all using the Supabase client.
-2. `webhooks/stripe.py` contains `handle_subscription_updated()`, `handle_subscription_deleted()`, `handle_invoice_payment_succeeded()` -- all using SQLAlchemy.
+## 2. Debitos Adicionados
 
-The webhook router in `webhooks/stripe.py` is mounted on the app (line 100 of main.py). The main.py helper functions are called from the Stripe checkout success handler (`_activate_plan`) and potentially from other inline handlers.
-
-**Impact:** If both code paths can be triggered for the same event type, they will execute different logic against the database using different access mechanisms. The SQLAlchemy handlers do NOT sync `profiles.plan_type`, while the main.py handlers DO. This means the behavior of a subscription update depends on WHICH code path handles it, leading to unpredictable plan_type drift.
-
-**Recommendation:** This is the single most dangerous database-related debt. Consolidate to one implementation (Supabase client, matching 95% of the codebase).
-
-**Hours:** 6-8h (included in DB-H01 estimate)
-
-### NEW-DB-02: `handle_new_user()` trigger sets `plan_type = 'free'` (legacy value) (MEDIUM)
+### DB-15: `admin.py` CreateUserRequest uses `plan_id: "free"` default (NEW)
 
 **Severity:** MEDIUM
-**Files:** `supabase/migrations/001_profiles_and_sessions.sql` (handle_new_user function), `supabase/migrations/007_add_whatsapp_consent.sql` (updated version)
-**Description:** The trigger that creates profiles for new auth users sets `plan_type` to `'free'` (the default in the column definition). But `'free'` is a legacy plan_type -- the current equivalent is `'free_trial'`. The `PLAN_TYPE_MAP` in `quota.py:386-392` maps `free` -> `free_trial`, so functionally it works, but every new user starts with an inconsistent legacy value that requires runtime mapping.
+**File:** `backend/admin.py`, line 246
+**Issue:** The `CreateUserRequest` Pydantic model defaults `plan_id` to `"free"`. The `plan_id` refers to the `plans` table where `"free"` is a valid row (the `Gratuito` plan). This is NOT a direct CHECK violation on `profiles.plan_type`. However, the comparison logic at lines 348 and 357 uses `plan_id != "free"` as a gate for plan assignment. When admin creates a user with default `plan_id="free"`, the `handle_new_user()` trigger sets `plan_type` to the column default (currently `'free'`), which violates the CHECK. This is a secondary impact of DB-02.
 
-**Recommendation:** Either update the trigger/column default to `'free_trial'`, or update the CHECK constraint to remove `'free'` and accept the mapping layer. The cleaner fix is changing the default.
-
-**Hours:** 0.5h
+**Impact:** Admin-created users without explicit plan assignment fail due to DB-02 trigger issue.
+**Recommendation:** Fix DB-02 first (column default to `'free_trial'`), then update admin.py default to `"free_trial"`.
+**Hours:** 0.5h (once DB-02 is fixed)
 **Complexity:** Simple
+**Priority:** P1
 
-### NEW-DB-03: Missing index on `profiles.email` for admin ILIKE search (MEDIUM)
+### DB-16: `quota.py` fallback `get("plan_type", "free")` returns invalid value (NEW)
+
+**Severity:** LOW
+**File:** `backend/quota.py`, line 522
+**Issue:** The `get_plan_from_profile()` function uses `result.data.get("plan_type", "free")` as a Python-side default. If `plan_type` were somehow NULL, the fallback is `"free"`. The `PLAN_TYPE_MAP` at line 529 maps `"free" -> "free_trial"`, so this is currently mitigated. However, it is fragile -- removing the mapping would propagate an invalid value.
+
+**Impact:** Low (mitigated by PLAN_TYPE_MAP).
+**Recommendation:** Change to `result.data.get("plan_type", "free_trial")` for defense-in-depth.
+**Hours:** 0.25h
+**Complexity:** Simple
+**Priority:** P2
+
+### DB-17: `top-dimensions` endpoint fetches ALL search sessions without date filter (NEW)
 
 **Severity:** MEDIUM
-**Files:** `backend/admin.py:268-269`
-**Description:** This was identified in the DB-AUDIT (PERF-IDX-3) but NOT carried over into the DRAFT. The admin panel searches users by email using `email.ilike.%search%`. Without a trigram index, this performs a sequential scan on the profiles table. At 5,000+ users, this will be noticeably slow.
+**File:** `backend/routes/analytics.py`, lines 206-245
+**Issue:** Unlike the time-series endpoint (which filters by `range_days`), `GET /analytics/top-dimensions` fetches ALL search sessions for a user with no date boundary. For power users with thousands of sessions, this transfers significant data and performs aggregation in Python. Same anti-pattern class as DB-09 but with no mitigation.
 
-**Recommendation:** Add pg_trgm extension and GIN index:
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX idx_profiles_email_trgm ON profiles USING GIN(email gin_trgm_ops);
-```
-
-**Hours:** 1h
-**Complexity:** Simple
-
-### NEW-DB-04: Missing index on `user_subscriptions.stripe_customer_id` (LOW)
-
-**Severity:** LOW
-**Files:** `backend/webhooks/stripe.py`, `backend/main.py`
-**Description:** This was identified in the DB-AUDIT (PERF-IDX-2) but NOT carried over into the DRAFT. Admin panel and Stripe reconciliation may query by customer_id. Currently no index exists.
-
-**Hours:** 0.5h
-**Complexity:** Simple
-
-### NEW-DB-05: `user_subscriptions.plan_id` FK has no explicit ON DELETE action (LOW)
-
-**Severity:** LOW
-**Files:** `supabase/migrations/001_profiles_and_sessions.sql:66`
-**Description:** This was identified in the DB-AUDIT (INTEGRITY-2) but NOT carried over. The FK `plan_id text NOT NULL REFERENCES public.plans(id)` defaults to RESTRICT. This is actually the correct behavior (you should not delete a plan with active subscriptions), but it should be explicitly documented as intentional.
-
-**Hours:** 0.25h (documentation only)
-**Complexity:** Simple
+**Impact:** Slow analytics page load for high-volume users. Grows linearly with session count.
+**Recommendation:** Add a date filter (e.g., last 12 months) or create an RPC function for server-side aggregation.
+**Hours:** 4h
+**Complexity:** Medium
+**Priority:** P2 (combine with DB-09)
 
 ---
 
-## 4. Answers to Architect Questions
+## 3. Respostas ao Architect
 
-### Q1: database.py URL -- is SQLAlchemy actually failing in production?
+### Q1: DB-01 -- Does `status` column exist in `user_subscriptions` in production?
 
-**Answer: Almost certainly yes, the SQLAlchemy connection is broken.**
+**Analysis from migration sequence and backend code:**
 
-The derivation at `database.py:33`:
-```python
-DATABASE_URL = SUPABASE_URL.replace("https://", "postgresql://")
+After reading ALL 26 migrations and ALL backend code that writes to `user_subscriptions`, my conclusion is that **the `status` column almost certainly does NOT exist in the migrations**, but **may have been added manually**. Here is the evidence:
+
+**Evidence that `status` column is NOT in migrations:**
+1. None of the 26 migration files contain `ALTER TABLE user_subscriptions ADD COLUMN status` or define the table with a `status` column.
+2. Migration 001 creates the table with columns: `id`, `user_id`, `plan_id`, `credits_remaining`, `starts_at`, `expires_at`, `stripe_subscription_id`, `stripe_customer_id`, `is_active`, `created_at`. No `status`.
+
+**Evidence that backend does NOT write `status`:**
+All five write paths to `user_subscriptions` were examined:
+- `webhooks/stripe.py:_handle_subscription_updated()` (line 190-198): Updates `billing_period`, `is_active`, optionally `plan_id`. No `status`.
+- `webhooks/stripe.py:_handle_subscription_deleted()` (line 246-248): Updates `is_active = False`. No `status`.
+- `webhooks/stripe.py:_handle_invoice_payment_succeeded()` (line 308-311): Updates `is_active`, `expires_at`. No `status`.
+- `routes/billing.py:_activate_plan()` (line 100-108): Inserts `user_id`, `plan_id`, `credits_remaining`, `expires_at`, `stripe_subscription_id`, `stripe_customer_id`, `is_active`. No `status`.
+- `admin.py:_assign_plan()` (line 614-619): Same pattern, no `status`.
+
+**Key behavioral analysis:** PostgreSQL trigger functions that reference `NEW.status` where `status` is not a column will raise `record "new" has no field "status"` at runtime. This would cause **every INSERT and UPDATE to `user_subscriptions` to fail**.
+
+Since the application IS in production and subscriptions ARE working (Stripe webhooks process successfully per `stripe.py` logic), one of these scenarios must be true:
+
+**(a) The column was added manually via Supabase SQL editor** -- Most likely. The trigger function was written with the expectation that `status` would be added. Someone added it outside the migration sequence.
+
+**(b) The trigger silently fails** -- In PostgreSQL, if `NEW.status` is NULL (which happens if the column exists but is not set), the `IN (...)` check returns FALSE and the function body does nothing, returning NEW without error. This means the trigger is dead code but not breaking anything.
+
+**(c) The trigger was dropped or disabled** -- Less likely but possible.
+
+**Backend handles sync manually regardless.** All three Stripe webhook handlers explicitly sync `profiles.plan_type`:
+- `_handle_subscription_updated()` at line 202
+- `_handle_subscription_deleted()` at line 251
+- `_handle_invoice_payment_succeeded()` at line 314
+
+This makes the trigger from migration 017 **redundant** even if it works correctly.
+
+**Severity downgrade justification:** Given that (a) production is working, (b) backend handles sync manually, and (c) the worst case is dead code rather than a crash, I downgrade DB-01 from CRITICAL to MEDIUM. It is a migration tracking/documentation issue, not a production breakage.
+
+**Verification queries:**
+```sql
+-- Q1a: Does the status column exist?
+SELECT column_name, data_type, column_default, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'user_subscriptions' AND column_name = 'status';
+
+-- Q1b: Is the trigger currently active?
+SELECT tgname, tgenabled FROM pg_trigger
+WHERE tgrelid = 'public.user_subscriptions'::regclass
+  AND tgname = 'trg_sync_profile_plan_type';
+
+-- Q1c: Current trigger function source
+SELECT prosrc FROM pg_proc WHERE proname = 'sync_profile_plan_type';
+
+-- Q1d: Has plan_type been synced recently?
+SELECT id, plan_type, updated_at FROM profiles ORDER BY updated_at DESC LIMIT 10;
 ```
 
-Transforms `https://fqqyovlzdzimiwfofdjk.supabase.co` into `postgresql://fqqyovlzdzimiwfofdjk.supabase.co`.
+**Recommended action:** If column exists (scenario a), create migration to formally document it. If column does not exist, drop the trigger (backend's manual sync is more reliable and already tested in production).
 
-This is missing:
-- Port (Supabase PostgreSQL uses port 5432 or 6543 for pooler)
-- Database name (typically `postgres`)
-- Username (`postgres` or `postgres.fqqyovlzdzimiwfofdjk`)
-- Password (the database password)
+---
 
-SQLAlchemy will attempt to connect and fail. The `pool_pre_ping=True` on line 42 means it retries on each request, so each webhook call will:
-1. Attempt connection -> fail
-2. Raise `OperationalError`
-3. Get caught by the `except SQLAlchemyError` in `webhooks/stripe.py:139-142`
-4. Return HTTP 500 to Stripe
+### Q2: What is the current `profiles.plan_type` default?
 
-**How are Stripe webhooks working then?**
+**The column default is almost certainly `'free'`.**
 
-They are likely NOT working via the SQLAlchemy path. Instead, Stripe payments work because:
-1. **Checkout success** is handled by `_activate_plan()` in `main.py:733` which uses the Supabase client (works correctly).
-2. **Subscription lifecycle events** (updated, deleted) have TWO handlers. If the SQLAlchemy handler in `webhooks/stripe.py` fails with HTTP 500, Stripe retries the webhook up to ~15 times over 72 hours. Each retry fails.
-3. Meanwhile, user-facing functionality (quota checks, plan lookups) uses the Supabase client via `quota.py` which has the robust 4-layer fallback.
+Evidence chain:
+1. Migration 001 sets: `plan_type text not null default 'free'`
+2. Migration 020 tightens the CHECK constraint to exclude `'free'`, but does NOT run `ALTER TABLE profiles ALTER COLUMN plan_type SET DEFAULT 'free_trial'`.
+3. Migration 024 redefines `handle_new_user()` omitting `plan_type` from the INSERT column list, relying on the column default.
 
-**Implication:** Stripe webhook-driven updates (subscription changes, cancellations originating from Stripe dashboard, failed payment -> subscription deletion) are likely NOT being recorded. Users who cancel via Stripe are probably still showing as active in the system until the profile-based fallback eventually resets them. The idempotency table (`stripe_webhook_events`) via SQLAlchemy is also non-functional, meaning there is no webhook audit trail.
+The column default was never changed from `'free'` in any migration.
 
-**Recommendation:** This is a P0 fix. Either:
-- (A) Add `DATABASE_URL` env var in Railway with the Supabase PostgreSQL connection string (quick fix, 1h)
-- (B) Migrate `webhooks/stripe.py` to Supabase client and remove SQLAlchemy entirely (correct fix, 10-14h)
+**Impact analysis:** The `handle_new_user()` function (migration 024) inserts `(id, email, full_name, company, sector, phone_whatsapp, whatsapp_consent, context_data)` without `plan_type`. PostgreSQL uses the column default `'free'`, which violates `CHECK (plan_type IN ('free_trial', 'consultor_agil', 'maquina', 'sala_guerra', 'master'))`.
 
-Option (B) is strongly recommended because it eliminates the dual-ORM debt permanently.
+**However:** The `ON CONFLICT (id) DO NOTHING` clause means if the profile already exists, the INSERT silently does nothing. This masks the issue for users created before migration 020.
 
-### Q2: user_subscriptions RLS -- is explicit policy needed given service_role bypass?
+**Critical question:** Are there users who signed up AFTER both migrations 020 and 024 were applied? If yes and they succeeded, then the column default was fixed manually.
 
-**Answer: Recommended but not urgent. Reclassify from CRITICAL to HIGH.**
-
-The service_role key bypasses RLS in Supabase by design. This behavior is:
-- Documented in Supabase official docs
-- Implemented at the PostgREST level (not in PostgreSQL itself)
-- Has been stable since Supabase v1
-
-The risk of this changing is minimal. However, the inconsistency IS worth fixing because:
-1. `monthly_quota` (migration 002) and `search_sessions` (migration 006) both have explicit `FOR ALL USING (true)` service role policies.
-2. `user_oauth_tokens` (013) and `google_sheets_exports` (014) have proper `TO service_role` variants.
-3. `user_subscriptions` has NEITHER. This is an inconsistency that makes security review harder.
-
-**Recommendation:** Add the policy in the next migration batch, but do not treat as an emergency. Use the correct pattern with `TO service_role`:
-
+**Verification queries:**
 ```sql
-CREATE POLICY "Service role can manage subscriptions" ON user_subscriptions
-    FOR ALL TO service_role USING (true);
+-- Q2a: Current column default
+SELECT column_default FROM information_schema.columns
+WHERE table_name = 'profiles' AND column_name = 'plan_type';
+
+-- Q2b: Any profiles with plan_type = 'free'?
+SELECT COUNT(*) FROM profiles WHERE plan_type = 'free';
+
+-- Q2c: Most recent profile creation
+SELECT id, email, plan_type, created_at FROM profiles
+ORDER BY created_at DESC LIMIT 5;
 ```
 
-### Q3: FK inconsistencies -- effort to migrate 3 tables without downtime?
+---
 
-**Answer: 3-4 hours, low risk, no downtime required.**
+### Q3: DB-10 -- `search_results_cache` size?
 
-The migration involves:
-1. `monthly_quota`: FK `user_id -> auth.users(id)` -> change to `user_id -> profiles(id)`
-2. `user_oauth_tokens`: Same change
-3. `google_sheets_exports`: Same change
+Cannot query live database. Providing estimation and monitoring queries.
 
-**Orphan data risk:** Zero. Since `profiles.id` has `ON DELETE CASCADE` from `auth.users.id`, every `auth.users.id` that has data in these tables also has a corresponding `profiles.id`. The sets are identical by construction (the `handle_new_user` trigger guarantees this).
+**Estimation:**
+- Table created by migration 026 (STORY-257A, approximately Feb 14-15 2026)
+- Very new table -- likely less than 100 rows
+- At 5 entries max per user and ~50 active users in POC, expect ~250 rows max
+- Average result JSONB size: 20-50KB (50-200 items at 200-500 bytes each)
+- Estimated total: 5-12MB currently
 
-**Migration steps (no downtime):**
+**Verification queries:**
 ```sql
--- Step 1: Verify no orphans (safety check)
-SELECT COUNT(*) FROM monthly_quota mq
-  LEFT JOIN profiles p ON p.id = mq.user_id
-  WHERE p.id IS NULL;
--- Must return 0
+-- Q3a: Table size
+SELECT pg_size_pretty(pg_total_relation_size('search_results_cache'));
 
--- Step 2: Drop old FK, add new FK
-ALTER TABLE monthly_quota DROP CONSTRAINT monthly_quota_user_id_fkey;
-ALTER TABLE monthly_quota ADD CONSTRAINT monthly_quota_user_id_fkey
-  FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+-- Q3b: Row count and average size
+SELECT
+  COUNT(*) as total_rows,
+  pg_size_pretty(AVG(pg_column_size(results))::bigint) as avg_results_size,
+  pg_size_pretty(MAX(pg_column_size(results))::bigint) as max_results_size,
+  COUNT(DISTINCT user_id) as unique_users
+FROM search_results_cache;
 
--- Repeat for user_oauth_tokens and google_sheets_exports
+-- Q3c: Distribution per user
+SELECT user_id, COUNT(*) as entries, SUM(total_results) as total_cached_results
+FROM search_results_cache
+GROUP BY user_id ORDER BY entries DESC LIMIT 20;
 ```
 
-PostgreSQL acquires a brief `ACCESS EXCLUSIVE` lock on the table when adding/dropping FK constraints. For tables with hundreds of rows, this lock is held for milliseconds. Zero practical downtime.
+**Recommendation:** Max-5-per-user trigger is sufficient for now. Add monitoring alert at 500MB. Consider `size_bytes` computed column when user base exceeds 5,000.
 
-**Complexity:** Simple. The only risk is if the FK constraint names differ from the default convention. Run `\d+ monthly_quota` in production to get the exact constraint name before writing the migration.
+---
 
-### Q4: Migration 006 duplicates -- which is actually applied?
+### Q4: DB-09 -- Average `search_sessions` per user?
 
-**Answer: `006_APPLY_ME.sql` was applied manually; `006_search_sessions_service_role_policy.sql` is the code-tracked duplicate.**
+Cannot query live database. Providing estimation and queries.
 
-Evidence:
-1. `006_APPLY_ME.sql` contains "COPY AND PASTE THIS SQL INTO SUPABASE DASHBOARD SQL EDITOR" header, indicating it was designed for manual application.
-2. `006_search_sessions_service_role_policy.sql` is the "clean" version for version control, with the verification query commented out.
-3. Both produce the identical result: a `FOR ALL USING (true)` policy on `search_sessions`.
-4. The third file `006_update_profiles_plan_type_constraint.sql` is a DIFFERENT migration (updates the plan_type CHECK constraint).
+**Estimation:**
+- Application in production approximately 3 weeks
+- Free trial: 3 searches/month max
+- Paid (consultor_agil): 50/month
+- Most POC users on free_trial
+- Estimate: 5-15 sessions per active user, power users at 50-100
 
-**Recommendation:**
-1. Verify in production that the policy exists: `SELECT * FROM pg_policies WHERE tablename = 'search_sessions';`
-2. Rename `006_update_profiles_plan_type_constraint.sql` to keep its `006_` prefix (it was first chronologically).
-3. Delete `006_APPLY_ME.sql` (it was a one-time manual apply script).
-4. Renumber `006_search_sessions_service_role_policy.sql` to `016_` or the next available number, noting it was already applied.
-5. Add a `MIGRATIONS_APPLIED.md` document tracking which migrations have been applied and when.
+**At this scale, Python-side aggregation is NOT a bottleneck.** Even 200 sessions for a power user is ~20KB transfer. The RPC function should be created when:
+- Users average >500 sessions, OR
+- Analytics page load exceeds 2 seconds
 
-**Hours:** 1-2h (including verification and documentation).
+**Verification queries:**
+```sql
+-- Q4a: Average sessions per user
+SELECT
+  AVG(session_count) as avg_sessions,
+  MAX(session_count) as max_sessions,
+  PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY session_count) as p95_sessions
+FROM (
+  SELECT user_id, COUNT(*) as session_count
+  FROM search_sessions GROUP BY user_id
+) subq;
 
-### Q5: plan_type drift -- is quota.py fallback sufficient or need PostgreSQL trigger?
+-- Q4b: Total sessions and active users
+SELECT COUNT(*) as total_sessions, COUNT(DISTINCT user_id) as active_users
+FROM search_sessions;
 
-**Answer: The fallback is resilient but a PostgreSQL trigger is the correct long-term solution.**
+-- Q4c: Sessions in last 30 days
+SELECT COUNT(*) as recent_sessions, COUNT(DISTINCT user_id) as recent_users
+FROM search_sessions WHERE created_at > NOW() - INTERVAL '30 days';
+```
 
-**Current state:**
-- The 4-layer fallback in `quota.py:413-504` handles drift gracefully for READ operations (checking what plan a user has).
-- `_activate_plan()` (main.py:764) syncs `profiles.plan_type` on new subscription creation.
-- `_deactivate_stripe_subscription()` (main.py:799) syncs on cancellation.
-- BUT `webhooks/stripe.py:handle_subscription_updated()` does NOT sync `profiles.plan_type`. If this handler ever works (after fixing DB-C01), it will create drift.
-- There is no periodic reconciliation.
+**Priority assessment:** P3 (backlog) until production metrics show a problem.
 
-**Recommendation:** Two-phase approach:
+---
 
-**Phase 1 (immediate, with ORM consolidation):** Ensure ALL write paths to `user_subscriptions` also update `profiles.plan_type`. This is best done during the ORM consolidation (DB-H01) since you are rewriting the Stripe handlers anyway.
+### Q5: DB-08 -- Stripe price ID strategy?
 
-**Phase 2 (medium-term):** Add a PostgreSQL trigger on `user_subscriptions` that automatically syncs `profiles.plan_type`:
+**Recommended: Keep current approach (manual UPDATE per environment).**
+
+| Strategy | Pros | Cons | Verdict |
+|----------|------|------|---------|
+| Env vars at runtime | Configurable | Requires backend code change, startup validation | Overcomplicated for DB seeds |
+| Conditional migration | Clean, automated | Complex SQL, PostgreSQL has no native env var access | Not practical |
+| Manual UPDATE per env | Simple, one-time | Not automated, forgettable | **Current approach (adequate for POC)** |
+| Separate seed files | Clear separation | Requires tooling changes | Best for production at scale |
+
+Migration 021 already documents environment-specific instructions as SQL comments. For a POC with 3 plans, this is sufficient. Switch to separate seed files when multi-environment CI/CD (staging + production) is implemented.
+
+---
+
+### Q6: Migration squash recommendation?
+
+**Recommendation: Do NOT squash at this time.**
+
+Rationale:
+1. **Documentary value.** The 26 migrations tell the complete evolutionary story with STORY references, inline comments, and verification queries.
+2. **Supabase CLI behavior.** Supabase tracks applied migrations by filename in `supabase_migrations.schema_migrations`. Squashing requires careful coordination.
+3. **Active development.** Migrations being added weekly. Squashing now provides minimal benefit.
+4. **26 is manageable.** Projects squash at 50-100+ migrations, not 26.
+
+**When to squash:**
+- After reaching v1.0 (feature-complete milestone)
+- Before onboarding a second development team
+- When migration count exceeds 50
+
+---
+
+### Q7: pg_cron status?
+
+Migration 022 runs `CREATE EXTENSION IF NOT EXISTS pg_cron` and `SELECT cron.schedule(...)` for 2 jobs. Migration 023 adds a 3rd job for `audit_events`.
+
+Supabase Pro plans include pg_cron. Since the project has Stripe integration and production deployment, pg_cron is likely enabled and the 3 jobs should be running.
+
+If the extension was NOT enabled when migration 022 was applied, `CREATE EXTENSION IF NOT EXISTS pg_cron` would require superuser privileges and fail. This would cause the entire migration to fail, meaning either: (a) it succeeded (pg_cron works), or (b) it was manually adjusted.
+
+**Verification queries:**
+```sql
+-- Q7a: Is pg_cron extension enabled?
+SELECT * FROM pg_extension WHERE extname = 'pg_cron';
+
+-- Q7b: List scheduled jobs
+SELECT jobid, jobname, schedule, command, active FROM cron.job;
+
+-- Q7c: Recent job execution history
+SELECT jobid, jobname, status, return_message, start_time, end_time
+FROM cron.job_run_details ORDER BY start_time DESC LIMIT 20;
+
+-- Q7d: Verify cleanup is working
+SELECT COUNT(*) as old_quota FROM monthly_quota
+WHERE created_at < NOW() - INTERVAL '24 months';
+SELECT COUNT(*) as old_webhooks FROM stripe_webhook_events
+WHERE processed_at < NOW() - INTERVAL '90 days';
+SELECT COUNT(*) as old_audits FROM audit_events
+WHERE timestamp < NOW() - INTERVAL '12 months';
+```
+
+---
+
+## 4. Recomendacoes
+
+### 4.1 Resolution Order
+
+#### Group 1: P0 -- Fix Immediately (3.5h, single migration + backend fixes)
+
+**Step 1: Backend code fixes (1h)**
+- `backend/quota.py` line 790: Change `"plan_type": "free"` to `"plan_type": "free_trial"` (DB-06)
+- `backend/quota.py` line 522: Change `get("plan_type", "free")` to `get("plan_type", "free_trial")` (DB-16)
+- Deploy backend
+
+**Step 2: Create migration `027_security_and_integrity_fixes.sql` (2.5h)**
+
+This single migration addresses DB-02, DB-03, DB-04:
 
 ```sql
-CREATE OR REPLACE FUNCTION sync_profile_plan_type()
+-- 1. DB-02: Fix column default
+ALTER TABLE public.profiles ALTER COLUMN plan_type SET DEFAULT 'free_trial';
+
+-- 2. DB-02: Fix handle_new_user() with explicit plan_type
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.is_active = true THEN
-        UPDATE profiles SET plan_type = NEW.plan_id WHERE id = NEW.user_id;
-    ELSIF OLD.is_active = true AND NEW.is_active = false THEN
-        -- Check if user has another active subscription
-        IF NOT EXISTS (
-            SELECT 1 FROM user_subscriptions
-            WHERE user_id = NEW.user_id AND is_active = true AND id != NEW.id
-        ) THEN
-            UPDATE profiles SET plan_type = 'free_trial' WHERE id = NEW.user_id;
-        END IF;
-    END IF;
-    RETURN NEW;
+  INSERT INTO public.profiles (
+    id, email, full_name, company, sector, phone_whatsapp,
+    whatsapp_consent, context_data, plan_type
+  ) VALUES (
+    new.id, new.email,
+    COALESCE(new.raw_user_meta_data->>'full_name', ''),
+    COALESCE(new.raw_user_meta_data->>'company', ''),
+    COALESCE(new.raw_user_meta_data->>'sector', ''),
+    COALESCE(new.raw_user_meta_data->>'phone_whatsapp', ''),
+    COALESCE((new.raw_user_meta_data->>'whatsapp_consent')::boolean, FALSE),
+    '{}'::jsonb,
+    'free_trial'
+  ) ON CONFLICT (id) DO NOTHING;
+  RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER trg_sync_profile_plan_type
-    AFTER INSERT OR UPDATE ON user_subscriptions
-    FOR EACH ROW EXECUTE FUNCTION sync_profile_plan_type();
+-- 3. DB-03: Fix pipeline_items RLS
+DROP POLICY IF EXISTS "Service role full access on pipeline_items"
+  ON public.pipeline_items;
+CREATE POLICY "Service role full access on pipeline_items"
+  ON public.pipeline_items FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+
+-- 4. DB-04: Fix search_results_cache RLS
+DROP POLICY IF EXISTS "Service role full access on search_results_cache"
+  ON search_results_cache;
+CREATE POLICY "Service role full access on search_results_cache"
+  ON search_results_cache FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
 ```
 
-This trigger eliminates drift regardless of which code path (Supabase client, SQLAlchemy, manual SQL, future microservice) modifies subscriptions.
+**Step 3: Verify DB-01 in production** (run Q1 queries). Based on results:
+- If `status` column EXISTS: Create documentation migration
+- If `status` column MISSING: Drop trigger `trg_sync_profile_plan_type` (backend handles sync manually)
 
-**Hours:** Phase 1 is included in DB-H01 (0h incremental). Phase 2 is 2-3h.
+#### Group 2: P1 -- This Sprint (2h)
 
-### Q6: N+1 and analytics queries -- production data on typical sizes?
+| Item | Action | Hours |
+|------|--------|-------|
+| DB-05 | Fix `stripe_webhook_events` INSERT policy: add `TO service_role` | 0.5h |
+| DB-15 | Update `admin.py` `CreateUserRequest.plan_id` default to `"free_trial"` | 0.5h |
+| DB-01 (part 2) | Based on verification, document or drop trigger | 1h |
 
-**Answer: Based on table growth estimates from the DB-AUDIT and the current user base.**
+Can be combined into migration 027 if done at same time as Group 1.
 
-**Conversations (DB-M06):**
-- Based on Appendix C of the DB-AUDIT: 100-1,000 conversations expected in year 1.
-- The admin panel loads ALL conversations. A typical admin page load might fetch 20-50 conversations with pagination.
-- Each conversation triggers 1 unread-count subquery.
-- **Impact:** 21-51 Supabase REST API calls per page load. Each call has ~10-30ms network overhead to PostgREST. Total: 200ms-1.5s added latency.
-- **Priority:** MEDIUM. Noticeable but not critical given low conversation volume.
+#### Group 3: P2 -- Next Sprint (14h)
 
-**Search sessions (DB-M07):**
-- Based on Appendix C: 10,000-100,000 sessions expected in year 1.
-- Power users (sales teams) might have 50-200 sessions per month.
-- `get_analytics_summary()` fetches ALL sessions for a user with no date filter.
-- A user with 1,000 sessions transfers ~100KB of data that is then aggregated in Python.
-- **Impact:** 200-500ms for typical users, 1-3s for power users. Grows linearly.
-- **Priority:** MEDIUM. Should be addressed before exceeding 500 active users.
+| Item | Action | Hours |
+|------|--------|-------|
+| DB-07 | Standardize FKs on `pipeline_items` and `search_results_cache` to `profiles(id)` | 2h |
+| DB-09 + DB-17 | Add date filter to `top-dimensions`; consider RPC for time-series | 8h |
+| DB-11 | Document current `handle_new_user()` as authoritative in migration 027 comments | 1h |
+| DB-13 | Consolidate `update_pipeline_updated_at()` with `update_updated_at()` | 1h |
+| DB-16 | Update `quota.py` fallback default (if not done in P0) | 0.25h |
+| DB-01 (consolidation) | Formalize `status` column or remove dead trigger | 1.75h |
 
-**Recommended fix for both:**
+#### Group 4: P3 -- Backlog (8h)
 
-For DB-M06, create an RPC function:
-```sql
-CREATE OR REPLACE FUNCTION get_conversations_with_unread(p_user_id uuid, p_is_admin boolean, p_limit int, p_offset int)
-RETURNS TABLE(...) AS $$
--- Single query with LEFT JOIN and COUNT aggregate
-$$;
+| Item | Action | Hours |
+|------|--------|-------|
+| DB-08 | Document environment-specific Stripe ID strategy (already partially done) | 1h |
+| DB-10 | Add monitoring query for cache table size | 1h |
+| DB-12 | Move deprecated migration file to archive/ | 0.5h |
+| DB-14 | Add user-level INSERT policy for search_results_cache | 1h |
+
+### 4.2 Dependency Graph
+
+```
+DB-02 (column default) -----> DB-11 (trigger consolidation)
+  |                               |
+  +---> DB-15 (admin.py default)  +---> DB-01 (status column verification)
+  |
+  +---> DB-06 (quota.py "free") ---> DB-16 (quota.py fallback default)
+
+DB-03 (pipeline RLS) ----independent----> DB-04 (cache RLS)
+  |
+  +---same migration as---> DB-05 (webhook INSERT RLS)
+  |
+  +---can combine---> DB-07 (FK standardization)
+
+DB-09 (time-series) ---same fix pattern---> DB-17 (top-dimensions)
 ```
 
-For DB-M07, create a materialized view or RPC:
-```sql
-CREATE OR REPLACE FUNCTION get_user_analytics_summary(p_user_id uuid)
-RETURNS TABLE(total_searches bigint, total_opportunities bigint, total_value numeric, ...) AS $$
-SELECT COUNT(*), SUM(total_filtered), SUM(valor_total), ...
-FROM search_sessions WHERE user_id = p_user_id;
-$$;
-```
+### 4.3 Migration Strategy
 
-### Q7: Retention strategy -- pg_cron, Edge Function, or app-level cleanup?
+- **Groups 1+2:** Single migration `027_security_and_integrity_fixes.sql` (atomic application)
+- **Group 3:** Migration `028_fk_standardization_and_cleanup.sql` for DB-07, DB-13
+- **DB-09/DB-17:** Migration `029_analytics_rpc_functions.sql` (only if production metrics justify)
+- **Do NOT squash** existing 26 migrations (see Q6)
 
-**Answer: pg_cron is the recommended approach. Edge Function is the fallback if pg_cron is unavailable.**
+### 4.4 Revised Effort Summary
 
-| Approach | Pros | Cons | Recommendation |
-|----------|------|------|----------------|
-| **pg_cron** | Runs inside PostgreSQL, no external dependencies, transactional, no network overhead | Requires pg_cron extension (available on Supabase Pro+), limited scheduling UI | **PREFERRED** |
-| **Supabase Edge Function + cron** | Works on all Supabase tiers, visible in dashboard, can send notifications | Network overhead, non-transactional, cold start latency, Deno runtime | **FALLBACK** |
-| **Application-level cleanup** | No infrastructure changes, easy to test | Requires running backend instance, not reliable if backend restarts, couples cleanup to app lifecycle | **NOT RECOMMENDED** |
+| Priority | Items | Original Hours (DRAFT) | Revised Hours | Delta |
+|----------|-------|------------------------|---------------|-------|
+| P0 | DB-02, DB-03, DB-04, DB-06 | 7h | 3.5h | -3.5h |
+| P1 | DB-05, DB-01 (part 2), DB-15 | 3h | 2h | -1h |
+| P2 | DB-01, DB-07, DB-09, DB-11, DB-13, DB-16, DB-17 | 20h | 14h | -6h |
+| P3 | DB-08, DB-10, DB-12, DB-14 | 7h | 3.5h | -3.5h |
+| **Total** | **17 items** | **37h** | **23h** | **-14h** |
 
-**Recommended implementation (pg_cron):**
-
-```sql
--- Supabase Pro plans include pg_cron
-SELECT cron.schedule(
-    'cleanup-webhook-events',
-    '0 3 * * 0',  -- Every Sunday at 3 AM UTC
-    $$DELETE FROM stripe_webhook_events WHERE processed_at < NOW() - INTERVAL '90 days'$$
-);
-
-SELECT cron.schedule(
-    'cleanup-monthly-quota',
-    '0 4 1 * *',  -- First day of month at 4 AM UTC
-    $$DELETE FROM monthly_quota WHERE month_year < to_char(NOW() - INTERVAL '24 months', 'YYYY-MM')$$
-);
-```
-
-If on Supabase Free tier (no pg_cron), use Edge Function:
-
-```typescript
-// supabase/functions/cleanup-retention/index.ts
-Deno.serve(async () => {
-    const supabase = createClient(/* service_role */);
-    await supabase.rpc('cleanup_old_records');
-    return new Response('OK');
-});
-```
-
-Then schedule via Supabase Dashboard > Edge Functions > Schedules.
-
-**Hours:** 3-4h for either approach (including testing and monitoring).
+Note: The DRAFT estimated 39h for 14 items. This review covers 17 items (3 new) with a tighter estimate of 23h. The reduction comes from more precise scoping after verifying each item against source code, and the DB-01 severity downgrade.
 
 ---
 
-## 5. Priority Recommendations
+## 5. Verification Queries
 
-Ordered by risk impact and dependency chain. Items that must precede others are explicitly noted.
+### Critical (run BEFORE creating migration 027)
 
-### P0 -- Fix Immediately (Week 1)
+```sql
+-- V1: Does status column exist on user_subscriptions?
+SELECT column_name, data_type, column_default, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'user_subscriptions'
+  AND column_name = 'status';
+-- Expected: 0 rows (column missing) or 1 row (added manually)
 
-| Order | ID | Debt | Hours | Rationale |
-|-------|-----|------|-------|-----------|
-| 1 | DB-C03 | Fix `stripe_webhook_events` admin policy (`plan_type='master'` -> `is_admin=true`) | 0.5h | Direct access control bug. Single ALTER POLICY statement. Zero risk. |
-| 2 | DB-H04 | Tighten overly permissive RLS (`TO service_role` on monthly_quota, search_sessions) | 1h | Security hardening. No behavior change for existing code (service_role still passes). |
-| 3 | DB-H03 | Add unique index on `stripe_subscription_id` | 0.5h | Performance + data integrity. Prevents duplicate subscription IDs. |
-| 4 | NEW-DB-03 | Add trigram index on `profiles.email` | 1h | Admin panel performance. Prevents full table scan on user search. |
+-- V2: What is profiles.plan_type column default?
+SELECT column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'profiles'
+  AND column_name = 'plan_type';
+-- Expected: 'free'::text (if unfixed) or 'free_trial'::text (if fixed manually)
 
-**Subtotal P0:** 3h. All are independent, can be applied in a single migration file.
+-- V3: Are there profiles with invalid plan_type?
+SELECT plan_type, COUNT(*) FROM profiles GROUP BY plan_type ORDER BY count DESC;
+-- Expected: No rows with plan_type = 'free' (migrated by migration 020)
 
-### P1 -- Fix This Sprint (Week 1-2)
+-- V4: Most recent profile creations (verify signups work)
+SELECT id, email, plan_type, created_at
+FROM profiles ORDER BY created_at DESC LIMIT 10;
+-- If plan_type shows 'free_trial' for recent users, signups work
 
-| Order | ID | Debt | Hours | Rationale |
-|-------|-----|------|-------|-----------|
-| 5 | DB-C01 + DB-H01 + NEW-DB-01 | Consolidate ORM: migrate `webhooks/stripe.py` to Supabase client, delete `database.py` and `models/` | 10-14h | **The most impactful single fix.** Resolves 3 debts simultaneously. Eliminates broken SQLAlchemy connection, competing handler implementations, and dual ORM risk. MUST be done before any other Stripe-related work. |
-| 6 | DB-C02 | Add service role RLS policy on `user_subscriptions` | 1h | Consistency. Can be done in same migration batch as P0 items. |
-| 7 | DB-H02 | Consolidate migration 006 files | 1-2h | Clean up confusion. Verify production state, remove duplicates, document. |
-| 8 | NEW-DB-02 | Fix `handle_new_user()` default plan_type (`'free'` -> `'free_trial'`) | 0.5h | Data consistency. Every new user currently gets a legacy value. |
+-- V5: Is sync trigger active?
+SELECT tgname, tgenabled FROM pg_trigger
+WHERE tgrelid = 'public.user_subscriptions'::regclass;
+-- Check if trg_sync_profile_plan_type is 'O' (always on)
+```
 
-**Subtotal P1:** 13-18h.
+### Post-Deployment (run AFTER migration 027)
 
-### P2 -- Fix Within 2 Sprints (Week 3-4)
+```sql
+-- V6: Verify RLS policies are role-scoped
+SELECT policyname, roles, cmd
+FROM pg_policies
+WHERE tablename IN ('pipeline_items', 'search_results_cache', 'stripe_webhook_events')
+ORDER BY tablename, policyname;
+-- All service role policies should show {service_role}, NOT {public}
 
-| Order | ID | Debt | Hours | Rationale |
-|-------|-----|------|-------|-----------|
-| 9 | DB-M04 | Add `sync_profile_plan_type` trigger (Phase 2) | 2-3h | Eliminates plan_type drift permanently. Depends on P1 ORM consolidation. |
-| 10 | DB-M02 | Tighten plan_type CHECK constraint (remove legacy values) | 1-2h | Depends on NEW-DB-02 and a data migration of existing `'free'` users. |
-| 11 | DB-M01 | Standardize FK references (auth.users -> profiles) | 3-4h | Consistency. Low risk but requires careful migration. |
-| 12 | DB-M06 | Fix N+1 query in conversation list | 2-3h | Performance for admin panel. |
-| 13 | DB-M07 | Server-side aggregation for analytics | 2-3h | Performance for power users. |
-| 14 | DB-M03 | Add remediation migration for `updated_at` on user_subscriptions | 1h | Schema consistency. |
-| 15 | DB-M05 | Environment-aware Stripe price ID loading | 2h | DevOps hygiene. |
-| 16 | DB-H05 | Add explicit INSERT policy on profiles | 0.5h | Documentation/hygiene. |
+-- V7: Verify column default updated
+SELECT column_default FROM information_schema.columns
+WHERE table_name = 'profiles' AND column_name = 'plan_type';
+-- Expected: 'free_trial'::text
 
-**Subtotal P2:** 14-19h.
+-- V8: Test new user creation
+-- Create test user via Supabase Auth, then:
+SELECT plan_type FROM profiles ORDER BY created_at DESC LIMIT 1;
+-- Expected: 'free_trial'
+```
 
-### P3 -- Backlog
+### Monitoring (periodic)
 
-| Order | ID | Debt | Hours | Rationale |
-|-------|-----|------|-------|-----------|
-| 17 | DB-L02 | Retention cleanup for monthly_quota | 3-4h | Maintenance. Not urgent at current scale. |
-| 18 | DB-L03 | Retention cleanup for stripe_webhook_events | 3-4h | Maintenance. Combined with DB-L02 for shared pg_cron setup. |
-| 19 | DB-L01 | Add `updated_at` to plans table | 0.5h | Audit trail. Very low priority. |
-| 20 | DB-L04 | Drop redundant oauth provider index | 0.25h | Trivial cleanup. |
-| 21 | NEW-DB-04 | Add index on stripe_customer_id | 0.5h | Low priority optimization. |
-| 22 | NEW-DB-05 | Document intentional ON DELETE RESTRICT on plan_id FK | 0.25h | Documentation only. |
+```sql
+-- V9: pg_cron job health
+SELECT jobname, schedule, active FROM cron.job;
+SELECT jobname, status, start_time, return_message
+FROM cron.job_run_details ORDER BY start_time DESC LIMIT 20;
 
-**Subtotal P3:** 8-10h.
+-- V10: Cache table size
+SELECT
+  pg_size_pretty(pg_total_relation_size('search_results_cache')) as table_size,
+  COUNT(*) as row_count,
+  COUNT(DISTINCT user_id) as unique_users
+FROM search_results_cache;
+
+-- V11: Session count per user (DB-09 urgency check)
+SELECT
+  AVG(cnt)::int as avg_sessions,
+  MAX(cnt) as max_sessions,
+  PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY cnt) as p95
+FROM (SELECT COUNT(*) as cnt FROM search_sessions GROUP BY user_id) s;
+
+-- V12: Full table size overview
+SELECT
+  relname as table_name,
+  pg_size_pretty(pg_total_relation_size(relid)) as total_size,
+  n_live_tup as estimated_rows
+FROM pg_stat_user_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(relid) DESC;
+```
 
 ---
 
-## 6. Migration Plan Considerations
+## 6. Risk Assessment Update
 
-### 6.1 Production Safety
-
-All P0 database changes (items 1-4) are **additive only** (CREATE INDEX, CREATE POLICY, ALTER POLICY). They:
-- Do not modify existing data
-- Do not change column types
-- Do not drop anything
-- Can be applied during business hours with zero downtime
-- Are idempotent (use `IF NOT EXISTS`, `DROP POLICY IF EXISTS` before CREATE)
-
-### 6.2 ORM Consolidation (P1, item 5) -- Critical Path
-
-The ORM consolidation is the highest-risk change. Recommended approach:
-
-1. **Before starting:** Verify which Stripe webhook events are being received in production. Check Railway logs for `"Database error processing webhook"` entries from `webhooks/stripe.py:141`. This confirms the SQLAlchemy path is failing.
-
-2. **Implementation order:**
-   - Rewrite `webhooks/stripe.py` handlers to use Supabase client
-   - Ensure ALL handlers sync `profiles.plan_type` (matching main.py pattern)
-   - Remove `from database import get_db` dependency
-   - Add integration tests against Supabase
-   - Deploy and monitor Stripe webhook delivery in Stripe Dashboard
-   - After 1 week of clean webhook delivery, delete `database.py` and `models/` directory
-
-3. **Rollback plan:** Keep `database.py` and models as dead code for 2 weeks after migration. If issues arise, re-enable by restoring the import.
-
-### 6.3 Migration File Strategy
-
-Going forward, migrations should:
-1. Use sequential numbering starting from `016_`
-2. Never include environment-specific data (use seed scripts for Stripe IDs, plan data)
-3. Include `DO $$ ... $$` validation blocks (following the good pattern from migration 008)
-4. Be applied via `supabase db push`, never via manual dashboard paste
-5. Include rollback SQL in comments or companion `.rollback.sql` files
-
-### 6.4 Recommended Migration Batch
-
-Combine P0 + some P1 items into a single migration file for atomic application:
-
-```
-016_security_and_index_fixes.sql
-  - Fix stripe_webhook_events admin policy
-  - Tighten RLS on monthly_quota and search_sessions (add TO service_role)
-  - Add unique index on stripe_subscription_id
-  - Add trigram index on profiles.email
-  - Add service role policy on user_subscriptions
-  - Update profiles default plan_type to 'free_trial'
-```
-
-This single migration resolves 6 debts in one atomic application. Estimated application time: < 5 seconds.
-
-### 6.5 Total Effort Summary
-
-| Priority | Debts | Hours (min) | Hours (max) |
-|----------|-------|-------------|-------------|
-| P0 | 4 | 3 | 3 |
-| P1 | 4 | 13 | 18 |
-| P2 | 8 | 14 | 19 |
-| P3 | 6 | 8 | 10 |
-| **Total** | **22** | **38** | **50** |
-
-Note: The DRAFT estimated 43-62h for 19 database debts. This review identifies 22 debts (3 new) with a tighter estimate of 38-50h. The reduction comes from more accurate scoping of individual items after code verification, and the consolidation of DB-C01 + DB-H01 + NEW-DB-01 into a single work item.
+| Risk | Likelihood | Impact | Revised Severity | Notes |
+|------|-----------|--------|-----------------|-------|
+| New signups fail (DB-02) | HIGH | CRITICAL | **P0** | Unless column default was fixed manually outside migrations. |
+| Fallback profile creation fails (DB-06) | MEDIUM | CRITICAL | **P0** | Edge case (missing profile) but breaks entire search flow. |
+| Cross-user pipeline access (DB-03) | LOW | HIGH | **P0** | Requires PostgREST direct access knowledge to exploit. |
+| Cross-user cache access (DB-04) | LOW | HIGH | **P0** | Same pattern as DB-03. |
+| Webhook event poisoning (DB-05) | LOW | MEDIUM | **P1** | `CHECK (id ~ '^evt_')` provides partial mitigation. |
+| sync_profile_plan_type trigger dead code (DB-01) | MEDIUM | LOW | **P2** | Backend handles sync manually. Not a crash. |
+| Analytics slow for power users (DB-09, DB-17) | LOW | LOW | **P3** | POC user base is small. Monitor. |
 
 ---
 
-*Review completed by @data-engineer (Dara) on 2026-02-11. All findings verified against source code at commit `808cd05`.*
+*Review completed by @data-engineer (Datum) on 2026-02-15.*
+*All findings validated against migration source files (001-026) and backend code.*
+*17 items total: 14 from DRAFT (validated with 3 severity changes), 3 new items added (DB-15, DB-16, DB-17).*
+*Total revised effort: 23h (down from 39h DRAFT estimate).*
+*Commit reference: `b80e64a` (branch `main`).*
