@@ -1514,3 +1514,67 @@ class PipelineAlertsResponse(BaseModel):
     """Pipeline items with approaching deadlines."""
     items: List[PipelineItemResponse]
     total: int
+
+
+# ============================================================================
+# Querido Diario Extraction Schemas (STORY-255)
+# ============================================================================
+
+class ExtractedProcurement(BaseModel):
+    """
+    Structured procurement data extracted from gazette text via LLM or regex.
+
+    Used by the Querido Diario adapter to convert unstructured gazette text
+    into structured procurement records.
+    """
+    modality: Optional[str] = Field(
+        default=None,
+        description="Procurement modality (e.g., 'Pregao Eletronico', 'Concorrencia')"
+    )
+    number: Optional[str] = Field(
+        default=None,
+        description="Procurement number (e.g., '023/2026')"
+    )
+    object_description: str = Field(
+        ...,
+        description="Description of the procurement object"
+    )
+    estimated_value: Optional[float] = Field(
+        default=None,
+        ge=0,
+        description="Estimated value in BRL (e.g., 450000.0)"
+    )
+    opening_date: Optional[str] = Field(
+        default=None,
+        description="Opening date in YYYY-MM-DD format"
+    )
+    agency_name: Optional[str] = Field(
+        default=None,
+        description="Name of the contracting agency/municipality"
+    )
+    municipality: str = Field(
+        ...,
+        description="Municipality name (from territory_name)"
+    )
+    uf: str = Field(
+        ...,
+        description="State code (from state_code)"
+    )
+    source_url: str = Field(
+        ...,
+        description="URL to the gazette text/PDF"
+    )
+    gazette_date: str = Field(
+        ...,
+        description="Publication date of the gazette (YYYY-MM-DD)"
+    )
+    extraction_confidence: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score of the extraction (0-1)"
+    )
+    raw_excerpt: str = Field(
+        default="",
+        description="Original text excerpt that was extracted from"
+    )

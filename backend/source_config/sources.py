@@ -11,6 +11,7 @@ Sources:
     - Licitar: Licitar Digital
     - BLL: BLL Compras (disabled - syncs to PNCP)
     - BNC: Bolsa Nacional de Compras (disabled - syncs to PNCP)
+    - Querido Diário: Diários Oficiais Municipais (experimental, opt-in)
 
 Security:
     - API keys are loaded from environment variables only
@@ -46,6 +47,7 @@ class SourceCode(str, Enum):
     PORTAL_TRANSPARENCIA = "PortalTransparencia"
     BLL = "BLL"
     BNC = "BNC"
+    QUERIDO_DIARIO = "QueridoDiario"
 
 
 @dataclass
@@ -230,8 +232,8 @@ class SingleSourceConfig:
         """Check if source is enabled and has required credentials."""
         if not self.enabled:
             return False
-        # PNCP and ComprasGov don't require credentials (open data)
-        if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV):
+        # PNCP, ComprasGov, and Querido Diário don't require credentials (open data)
+        if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV, SourceCode.QUERIDO_DIARIO):
             return True
         # Portal Transparência requires API key
         if self.code == SourceCode.PORTAL_TRANSPARENCIA:
@@ -348,6 +350,16 @@ class SourceConfig:
         priority=5,
     ))
 
+    querido_diario: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
+        code=SourceCode.QUERIDO_DIARIO,
+        name="Querido Diário - Diários Oficiais Municipais",
+        base_url="https://api.queridodiario.ok.org.br",
+        enabled=False,  # Experimental — opt-in (AC14)
+        timeout=30,
+        rate_limit_rps=1.0,  # Conservative: 1 req/s
+        priority=5,  # Lowest priority (complement to PNCP)
+    ))
+
     consolidation: ConsolidationConfig = field(
         default_factory=ConsolidationConfig.from_env
     )
@@ -363,6 +375,7 @@ class SourceConfig:
             ENABLE_SOURCE_LICITAR: Enable/disable Licitar source (default: true)
             ENABLE_SOURCE_BLL: Enable/disable BLL source (default: false)
             ENABLE_SOURCE_BNC: Enable/disable BNC source (default: false)
+            ENABLE_SOURCE_QUERIDO_DIARIO: Enable/disable Querido Diário source (default: false)
             PORTAL_COMPRAS_API_KEY: API key for Portal de Compras Publicas
             LICITAR_API_KEY: API key for Licitar Digital
             LICITAR_API_URL: Custom API URL for Licitar Digital
@@ -390,6 +403,9 @@ class SourceConfig:
         )
         config.bll.enabled = os.getenv("ENABLE_SOURCE_BLL", "false").lower() == "true"
         config.bnc.enabled = os.getenv("ENABLE_SOURCE_BNC", "false").lower() == "true"
+        config.querido_diario.enabled = (
+            os.getenv("ENABLE_SOURCE_QUERIDO_DIARIO", "false").lower() == "true"
+        )
 
         # Load credentials
         config.portal_transparencia.credentials = SourceCredentials(
@@ -422,7 +438,7 @@ class SourceConfig:
             List of enabled source code strings
         """
         sources = []
-        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc, self.querido_diario]:
             if source.enabled:
                 sources.append(source.code.value)
         return sources
@@ -445,6 +461,7 @@ class SourceConfig:
             "PortalTransparencia": self.portal_transparencia,
             "BLL": self.bll,
             "BNC": self.bnc,
+            "QueridoDiario": self.querido_diario,
         }
         return source_map.get(code)
 
@@ -456,7 +473,7 @@ class SourceConfig:
             List of SingleSourceConfig objects for enabled sources
         """
         configs = []
-        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc]:
+        for source in [self.pncp, self.portal, self.licitar, self.compras_gov, self.portal_transparencia, self.bll, self.bnc, self.querido_diario]:
             if source.enabled:
                 configs.append(source)
         return sorted(configs, key=lambda s: s.priority)

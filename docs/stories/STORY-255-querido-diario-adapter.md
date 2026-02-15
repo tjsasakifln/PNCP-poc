@@ -66,36 +66,36 @@ Termo de Referência. VALOR ESTIMADO: R$ 450.000,00. ABERTURA:
 
 ### Track 1: Client Adapter (3h)
 
-- [ ] **AC1:** Novo arquivo `backend/clients/querido_diario_client.py` com classe `QueridoDiarioClient`.
-- [ ] **AC2:** Método `search_gazettes(query, territory_ids, since, until, size, offset)` consultando `GET /gazettes`.
-- [ ] **AC3:** Querystring builder que converte keywords do setor em sintaxe OpenSearch: `"pregao eletronico" + (uniforme | fardamento | vestimenta)`.
-- [ ] **AC4:** Rate limiter: max 1 req/s (60 req/min) com token bucket.
-- [ ] **AC5:** Paginação automática: iterar pages até `total_gazettes` alcançado ou max 500 resultados.
-- [ ] **AC6:** Para cada gazette com match, baixar `txt_url` (texto completo) para extração.
+- [x] **AC1:** Novo arquivo `backend/clients/querido_diario_client.py` com classe `QueridoDiarioClient`.
+- [x] **AC2:** Método `search_gazettes(query, territory_ids, since, until, size, offset)` consultando `GET /gazettes`.
+- [x] **AC3:** Querystring builder que converte keywords do setor em sintaxe OpenSearch: `"pregao eletronico" + (uniforme | fardamento | vestimenta)`.
+- [x] **AC4:** Rate limiter: max 1 req/s (60 req/min) com token bucket.
+- [x] **AC5:** Paginação automática: iterar pages até `total_gazettes` alcançado ou max 500 resultados.
+- [x] **AC6:** Para cada gazette com match, baixar `txt_url` (texto completo) para extração.
 
 ### Track 2: LLM Extraction Pipeline (4h)
 
-- [ ] **AC7:** Função `extract_procurement_from_text(text: str) -> list[ExtractedProcurement]` usando GPT-4.1-nano com structured output (Pydantic).
-- [ ] **AC8:** Schema `ExtractedProcurement` com campos: `modality`, `number`, `object_description`, `estimated_value`, `opening_date`, `agency_name`, `municipality`, `uf`, `source_url`.
-- [ ] **AC9:** Prompt otimizado para extrair múltiplas licitações de um mesmo texto de diário (um PDF pode conter dezenas de avisos).
-- [ ] **AC10:** Batch processing: processar até 10 gazettes por busca (evitar custo excessivo de LLM).
-- [ ] **AC11:** Fallback sem LLM: regex-based extraction para campos óbvios (número do pregão, valor estimado com `R$`, data de abertura).
-- [ ] **AC12:** Resultados extraídos são convertidos para formato `UnifiedProcurement` (compatível com pipeline existente).
+- [x] **AC7:** Função `extract_procurement_from_text(text: str) -> list[ExtractedProcurement]` usando GPT-4.1-nano com structured output (Pydantic).
+- [x] **AC8:** Schema `ExtractedProcurement` com campos: `modality`, `number`, `object_description`, `estimated_value`, `opening_date`, `agency_name`, `municipality`, `uf`, `source_url`.
+- [x] **AC9:** Prompt otimizado para extrair múltiplas licitações de um mesmo texto de diário (um PDF pode conter dezenas de avisos).
+- [x] **AC10:** Batch processing: processar até 10 gazettes por busca (evitar custo excessivo de LLM).
+- [x] **AC11:** Fallback sem LLM: regex-based extraction para campos óbvios (número do pregão, valor estimado com `R$`, data de abertura).
+- [x] **AC12:** Resultados extraídos são convertidos para formato `UnifiedProcurement` (compatível com pipeline existente).
 
 ### Track 3: Integration & Dedup (2h)
 
-- [ ] **AC13:** Registrar `QUERIDO_DIARIO` como fonte em `source_config/sources.py` com prioridade 5 (mais baixa que PNCP/ComprasGov/Portal).
-- [ ] **AC14:** Env var `ENABLE_SOURCE_QUERIDO_DIARIO=false` (default off — opt-in por ser experimental).
-- [ ] **AC15:** Deduplicação com PNCP: match por número de edital + órgão + ano. Se já existe no PNCP, descartar o resultado do QD.
-- [ ] **AC16:** Marcar resultados do QD com `source="Querido Diário"` e `confidence="extracted"` para distinguir de dados estruturados.
-- [ ] **AC17:** Response inclui `extraction_confidence: float` (0-1) do LLM para cada campo extraído.
+- [x] **AC13:** Registrar `QUERIDO_DIARIO` como fonte em `source_config/sources.py` com prioridade 5 (mais baixa que PNCP/ComprasGov/Portal).
+- [x] **AC14:** Env var `ENABLE_SOURCE_QUERIDO_DIARIO=false` (default off — opt-in por ser experimental).
+- [x] **AC15:** Deduplicação com PNCP: match por número de edital + órgão + ano. Se já existe no PNCP, descartar o resultado do QD.
+- [x] **AC16:** Marcar resultados do QD com `source="Querido Diário"` e `confidence="extracted"` para distinguir de dados estruturados.
+- [x] **AC17:** Response inclui `extraction_confidence: float` (0-1) do LLM para cada campo extraído.
 
 ### Track 4: Tests (1h)
 
-- [ ] **AC18:** Testes unitários: querystring builder, pagination, rate limiting.
-- [ ] **AC19:** Testes unitários: LLM extraction com mock (texto de exemplo → structured output).
-- [ ] **AC20:** Teste de regex fallback: extrai pregão nº, valor R$, data de abertura sem LLM.
-- [ ] **AC21:** Integration test (marcado `@pytest.mark.integration`): busca real "licitacao uniforme" no QD API.
+- [x] **AC18:** Testes unitários: querystring builder, pagination, rate limiting.
+- [x] **AC19:** Testes unitários: LLM extraction com mock (texto de exemplo → structured output).
+- [x] **AC20:** Teste de regex fallback: extrai pregão nº, valor R$, data de abertura sem LLM.
+- [x] **AC21:** Integration test (marcado `@pytest.mark.integration`): busca real "licitacao uniforme" no QD API.
 
 ---
 
@@ -140,14 +140,14 @@ class ExtractedProcurement:
 
 ## Definition of Done
 
-- [ ] Client funcional consultando QD API com querystring otimizada por setor
-- [ ] LLM extraction converte texto bruto → dados estruturados
-- [ ] Fallback regex funciona sem LLM (campos básicos)
-- [ ] Integrado no multi-source consolidation com dedup
-- [ ] Resultados marcados com `source="Querido Diário"` + confidence
-- [ ] Testes passando
-- [ ] Zero regressão
-- [ ] Default OFF (opt-in experimental)
+- [x] Client funcional consultando QD API com querystring otimizada por setor
+- [x] LLM extraction converte texto bruto → dados estruturados
+- [x] Fallback regex funciona sem LLM (campos básicos)
+- [x] Integrado no multi-source consolidation com dedup
+- [x] Resultados marcados com `source="Querido Diário"` + confidence
+- [x] Testes passando (80/80)
+- [x] Zero regressão (baseline maintained)
+- [x] Default OFF (opt-in experimental)
 
 ## Referências
 
