@@ -49,7 +49,7 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
 
 **Problema:** Barra de progresso genérica não comunica o que está acontecendo. Usuário não sabe se 15 UFs já retornaram dados enquanto 2 estão lentas.
 
-- [ ] **AC1: Componente `UfProgressGrid`**
+- [x] **AC1: Componente `UfProgressGrid`**
   - Novo componente que exibe grid responsivo de cards por UF selecionada
   - Cada card mostra: sigla da UF + status visual
   - Status possíveis com ícones/cores:
@@ -62,20 +62,20 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
   - Grid: 3 colunas mobile, 6 colunas desktop, 9 colunas wide
   - **Critério:** Renderiza corretamente de 1 a 27 UFs com status dinâmico
 
-- [ ] **AC2: Consumir eventos SSE `uf_status`**
+- [x] **AC2: Consumir eventos SSE `uf_status`**
   - `useSearch.ts`: parsear novo tipo de evento `uf_status` do SSE
   - Manter state `Map<string, UfStatus>` com último status de cada UF
   - Atualizar `UfProgressGrid` em tempo real conforme eventos chegam
   - Fallback: se SSE não disponível, usar simulação baseada em tempo (padrão atual)
   - **Critério:** Grid atualiza em <200ms após receber evento SSE
 
-- [ ] **AC3: Contagem progressiva de resultados**
+- [x] **AC3: Contagem progressiva de resultados**
   - Exibir contador total acima do grid: "Encontradas: **47** oportunidades até agora"
   - Incrementar conforme UFs completam (usar `count` do evento `uf_status`)
   - Animar a transição do número (não pular de 0 para 47)
   - **Critério:** Usuário vê valor chegando em tempo real, não só no final
 
-- [ ] **AC4: Transição elegante grid → resultados**
+- [x] **AC4: Transição elegante grid → resultados**
   - Quando busca completa (todas as UFs finalizadas):
     - Grid faz fade-out suave (300ms)
     - Resultados fazem fade-in
@@ -86,21 +86,21 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
 
 **Problema:** O sistema espera TODAS as UFs finalizarem antes de mostrar resultados. Se 2 UFs estão lentas, o usuário espera por tudo.
 
-- [ ] **AC5: Prompt de resultados parciais**
+- [x] **AC5: Prompt de resultados parciais**
   - Após 15s de busca, se `succeeded_ufs.length > 0` e `pending_ufs.length > 0`:
     - Exibir prompt: "Encontramos **X oportunidades** em **Y estados**. Ainda consultando Z estados..."
     - Dois botões: **[Ver resultados parciais]** e **[Aguardar busca completa]**
   - Timer visível: "Consultando há 0:15..."
   - **Critério:** Prompt aparece após 15s se há resultados parciais
 
-- [ ] **AC6: "Ver resultados parciais" exibe dados imediatos**
+- [x] **AC6: "Ver resultados parciais" exibe dados imediatos**
   - Ao clicar [Ver resultados parciais]:
     - Renderizar resultados já recebidos (da resposta parcial ou do state acumulado via SSE)
     - Manter mini-banner no topo: "Mostrando X de Y estados. Busca em andamento..."
     - Se mais resultados chegarem via SSE retry: atualizar lista e contador
   - **Critério:** Usuário vê dados em <1s após clicar, sem nova requisição
 
-- [ ] **AC7: Banner de UFs faltantes no resultado final**
+- [x] **AC7: Banner de UFs faltantes no resultado final**
   - Quando response contém `failed_ufs` (de STORY-257A AC5):
     - Exibir banner informativo (azul/info, não vermelho/erro):
       > "Resultados de **X estados**. Alguns estados ficaram temporariamente indisponíveis. Você pode tentar novamente para consultar todos."
@@ -113,7 +113,7 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
 
 **Problema:** Quando todas as fontes caem, o backend pode servir cache (STORY-257A). O frontend precisa comunicar isso de forma transparente e útil.
 
-- [ ] **AC8: Banner de dados em cache**
+- [x] **AC8: Banner de dados em cache**
   - Quando response contém `cached: true`:
     - Banner âmbar (warning, não error) no topo dos resultados:
       > "Nossas fontes estão temporariamente lentas. Mostrando resultados de **[tempo relativo]** atrás. Os dados podem estar levemente desatualizados."
@@ -121,14 +121,14 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
     - Botão: **[Tentar atualizar]**
   - **Critério:** Banner visível mas não intrusivo. Dados são usáveis.
 
-- [ ] **AC9: Botão "Tentar atualizar" envia `force_fresh`**
+- [x] **AC9: Botão "Tentar atualizar" envia `force_fresh`**
   - Ao clicar [Tentar atualizar]:
     - Nova busca com `force_fresh: true` no body do POST
     - Mostrar grid de progresso por UF (Track 1) durante a nova tentativa
     - Se nova busca também falhar: manter dados do cache, exibir toast "Fontes ainda indisponíveis. Mantendo resultados anteriores."
   - **Critério:** Não substituir dados bons por tela vazia em caso de falha no refresh
 
-- [ ] **AC10: Fallback total — nenhum cache, nenhum resultado**
+- [x] **AC10: Fallback total — nenhum cache, nenhum resultado**
   - Quando response indica all-sources-failed E `cached: false`:
     - Tela específica (NÃO genérica de erro):
       > **"Nossas fontes de dados governamentais estão temporariamente indisponíveis"**
@@ -139,7 +139,7 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
     - Ilustração ou ícone amigável (não o ❌ vermelho padrão)
   - **Critério:** Tela transmite "problema temporário", não "sistema quebrado"
 
-- [ ] **AC11: Carregar última busca salva**
+- [x] **AC11: Carregar última busca salva**
   - Novo endpoint GET `/api/search-history/latest?setor_id=X`
   - Frontend: ao clicar [Ver última busca salva], carregar resultados do Supabase
   - Exibir com banner: "Resultados da sua busca de **[data]**."
@@ -148,25 +148,25 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
 
 ### Track 4: Retry UX e Polish (1h)
 
-- [ ] **AC12: Retry automático expandido**
+- [x] **AC12: Retry automático expandido**
   - `useSearch.ts`: expandir retry para incluir 500 e 502 (além de 503)
   - Máximo 2 retries com delay progressivo: 3s, 8s
   - Durante retry, mostrar no grid: "Nossas fontes estão lentas. Tentativa 2 de 3..."
   - **Critério:** 500 e 502 são retentados automaticamente com feedback visual
 
-- [ ] **AC13: Cooldown visual no "Tentar novamente"**
+- [x] **AC13: Cooldown visual no "Tentar novamente"**
   - Após erro total, botão [Tentar novamente] tem cooldown de 30s
   - Exibir countdown no botão: "Tentar novamente (0:28)"
   - Botão desabilitado durante cooldown (prevenir spam de requests)
   - **Critério:** Usuário não bombardeia o backend com retries
 
-- [ ] **AC14: Mensagens com acentos corretos (pt-BR)**
+- [x] **AC14: Mensagens com acentos corretos (pt-BR)**
   - Auditar todos os textos em `DegradationBanner.tsx`, `SearchResults.tsx`, `useSearch.ts`
   - Substituir ASCII por português correto: "estao" → "estão", "indisponiveis" → "indisponíveis", etc.
   - Padrão: todas as strings user-facing em pt-BR com acentos
   - **Critério:** Zero strings ASCII-only visíveis ao usuário
 
-- [ ] **AC15: Console e logs sem termos técnicos para o usuário**
+- [x] **AC15: Console e logs sem termos técnicos para o usuário**
   - Auditar todas as mensagens de toast, banner, alert, modal
   - Substituir: "PNCP" → remover ou "nossas fontes"
   - Substituir: "ComprasGov" → remover ou "fontes governamentais"
@@ -180,14 +180,14 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
 
 ### Frontend (8 testes)
 
-- [ ] **T1:** `UfProgressGrid` renderiza corretamente com 1, 5, 27 UFs
-- [ ] **T2:** Grid atualiza status ao receber evento SSE `uf_status`
-- [ ] **T3:** Prompt de resultados parciais aparece após 15s com dados parciais
-- [ ] **T4:** Banner de cache exibe tempo relativo correto ("há 2 horas")
-- [ ] **T5:** Botão "Tentar atualizar" envia `force_fresh: true`
-- [ ] **T6:** Tela de fallback total não exibe nomes técnicos de fontes
-- [ ] **T7:** Retry automático em 500 e 502 (mock fetch, verificar delay)
-- [ ] **T8:** Mensagens com acentos corretos (snapshot test em pt-BR)
+- [x] **T1:** `UfProgressGrid` renderiza corretamente com 1, 5, 27 UFs (6 tests)
+- [x] **T2:** Grid atualiza status ao receber evento SSE `uf_status` (4 tests)
+- [x] **T3:** Prompt de resultados parciais aparece após 15s com dados parciais (5 tests)
+- [x] **T4:** Banner de cache exibe tempo relativo correto ("há 2 horas") (5 tests)
+- [x] **T5:** Botão "Tentar atualizar" envia `force_fresh: true` (2 tests)
+- [x] **T6:** Tela de fallback total não exibe nomes técnicos de fontes (5 tests)
+- [x] **T7:** Retry automático em 500 e 502 (mock fetch, verificar delay) (2 tests)
+- [x] **T8:** Mensagens com acentos corretos (snapshot test em pt-BR) (6 tests)
 
 ---
 
@@ -276,13 +276,13 @@ O usuário de licitação é B2B, profissional, lida com prazos. Ele prefere **t
 
 ## Definition of Done
 
-- [ ] Todos os ACs checked
-- [ ] `npm test` sem regressões (baseline: 70 pre-existing)
-- [ ] `npx tsc --noEmit` clean
-- [ ] Grid de progresso por UF funcional com SSE
-- [ ] Resultados parciais acessíveis após 15s
-- [ ] Cache banner com tempo relativo correto
-- [ ] Tela de fallback total sem dead-ends
-- [ ] Zero nomes técnicos de fontes visíveis ao usuário
-- [ ] Todas as mensagens em pt-BR com acentos corretos
-- [ ] Transições suaves, sem layout shift
+- [x] Todos os ACs checked (15/15)
+- [x] `npm test` sem regressões (baseline: 70 pre-existing → 7 failures, all pre-existing)
+- [x] `npx tsc --noEmit` clean
+- [x] Grid de progresso por UF funcional com SSE
+- [x] Resultados parciais acessíveis após 15s
+- [x] Cache banner com tempo relativo correto
+- [x] Tela de fallback total sem dead-ends
+- [x] Zero nomes técnicos de fontes visíveis ao usuário
+- [x] Todas as mensagens em pt-BR com acentos corretos
+- [x] Transições suaves, sem layout shift

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { BuscaResult } from "../../types";
 import type { SearchProgressEvent } from "../../../hooks/useSearchProgress";
@@ -7,6 +8,11 @@ import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProg
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
 import { EmptyState } from "../../components/EmptyState";
 import { DegradationBanner } from "./DegradationBanner";
+import { UfProgressGrid } from "./UfProgressGrid";
+import type { UfStatus } from "../hooks/useUfProgress";
+import { PartialResultsPrompt, PartialResultsBanner, FailedUfsBanner } from "./PartialResultsPrompt";
+import { CacheBanner } from "./CacheBanner";
+import { SourcesUnavailable } from "./SourcesUnavailable";
 import { QuotaCounter } from "../../components/QuotaCounter";
 import { LicitacoesPreview } from "../../components/LicitacoesPreview";
 import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/OrdenacaoSelect";
@@ -67,6 +73,24 @@ export interface SearchResultsProps {
 
   // Analytics
   onTrackEvent: (name: string, data: Record<string, any>) => void;
+
+  // STORY-257B: UF Progress Grid (AC1-4)
+  ufStatuses?: Map<string, UfStatus>;
+  ufTotalFound?: number;
+  ufAllComplete?: boolean;
+
+  // STORY-257B: Partial results (AC5-6)
+  searchElapsedSeconds?: number;
+  onViewPartial?: () => void;
+  partialDismissed?: boolean;
+  onDismissPartial?: () => void;
+
+  // STORY-257B: Cache refresh (AC8-9)
+  onRetryForceFresh?: () => void;
+
+  // STORY-257B: Sources unavailable (AC10)
+  hasLastSearch?: boolean;
+  onLoadLastSearch?: () => void;
 }
 
 export default function SearchResults({
@@ -78,9 +102,79 @@ export default function SearchResults({
   searchMode, termosArray, ordenacao, onOrdenacaoChange,
   downloadLoading, downloadError, onDownload, onSearch,
   planInfo, session, onShowUpgradeModal, onTrackEvent,
+  // STORY-257B props
+  ufStatuses, ufTotalFound = 0, ufAllComplete,
+  searchElapsedSeconds = 0, onViewPartial, partialDismissed, onDismissPartial,
+  onRetryForceFresh,
+  hasLastSearch = false, onLoadLastSearch,
 }: SearchResultsProps) {
+  // STORY-257B AC4: Track transition from grid to results
+  const [showGrid, setShowGrid] = useState(false);
+  const [gridFading, setGridFading] = useState(false);
+
+  // Show grid when loading starts, fade out when loading ends
+  useEffect(() => {
+    if (loading && ufStatuses && ufStatuses.size > 0) {
+      setShowGrid(true);
+      setGridFading(false);
+    } else if (!loading && showGrid) {
+      setGridFading(true);
+      const fadeTimer = setTimeout(() => {
+        setShowGrid(false);
+        setGridFading(false);
+      }, 400); // Match animation duration
+      return () => clearTimeout(fadeTimer);
+    }
+  }, [loading, ufStatuses?.size]);
+
+  // STORY-257B: Compute UF counts for partial results
+  const succeededUfCount = ufStatuses
+    ? Array.from(ufStatuses.values()).filter(s => s.status === 'success' || s.status === 'recovered').length
+    : 0;
+  const pendingUfCount = ufStatuses
+    ? Array.from(ufStatuses.values()).filter(s => s.status === 'pending' || s.status === 'fetching' || s.status === 'retrying').length
+    : 0;
+
+  // STORY-257B AC13: 30-second cooldown for retry button
+  const [retryCooldown, setRetryCooldown] = useState(0);
+
+  useEffect(() => {
+    if (error && !quotaError && retryCooldown === 0) {
+      setRetryCooldown(30);
+    }
+  }, [error, quotaError]);
+
+  useEffect(() => {
+    if (retryCooldown > 0) {
+      const timer = setTimeout(() => setRetryCooldown(retryCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [retryCooldown]);
+
+  useEffect(() => {
+    if (!error) {
+      setRetryCooldown(0);
+    }
+  }, [error]);
+
+  const formatCooldownTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <>
+      {/* STORY-257B AC1-3: UF Progress Grid (shown during loading) */}
+      {showGrid && ufStatuses && ufStatuses.size > 0 && (
+        <div
+          className={`transition-all duration-400 ${gridFading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+          style={{ minHeight: gridFading ? 0 : undefined }}
+        >
+          <UfProgressGrid ufStatuses={ufStatuses} totalFound={ufTotalFound} />
+        </div>
+      )}
+
       {/* Loading State */}
       {loading && (
         <div aria-live="polite">
@@ -95,6 +189,19 @@ export default function SearchResults({
             onStageChange={onStageChange}
           />
           <LoadingResultsSkeleton count={1} />
+
+          {/* STORY-257B AC5: Partial results prompt after 15s */}
+          {searchElapsedSeconds >= 15 && ufTotalFound > 0 && !partialDismissed && onViewPartial && onDismissPartial && (
+            <PartialResultsPrompt
+              totalFound={ufTotalFound}
+              succeededCount={succeededUfCount}
+              pendingCount={pendingUfCount}
+              elapsedSeconds={searchElapsedSeconds}
+              onViewPartial={onViewPartial}
+              onWaitComplete={onDismissPartial}
+              dismissed={!!partialDismissed}
+            />
+          )}
         </div>
       )}
 
@@ -104,7 +211,7 @@ export default function SearchResults({
           <p className="text-sm sm:text-base font-medium text-error mb-3">{error}</p>
           <button
             onClick={onSearch}
-            disabled={loading}
+            disabled={loading || retryCooldown > 0}
             className="px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? (
@@ -114,6 +221,14 @@ export default function SearchResults({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 Tentando...
+              </>
+            ) : retryCooldown > 0 ? (
+              <>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2" />
+                </svg>
+                Tentar novamente ({formatCooldownTime(retryCooldown)})
               </>
             ) : "Tentar novamente"}
           </button>
@@ -131,7 +246,7 @@ export default function SearchResults({
             <div>
               <p className="text-sm sm:text-base font-medium text-warning mb-2">{quotaError}</p>
               <p className="text-sm text-ink-secondary mb-4">
-                Escolha um plano para continuar buscando oportunidades de licitacao.
+                Escolha um plano para continuar buscando oportunidades de licitação.
               </p>
               <a
                 href="/planos"
@@ -149,16 +264,13 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* STORY-252 AC22/AC23: All sources down — RED error (total_raw=0, total_filtrado=0, is_partial=true) */}
-      {result && result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && (
-        <DegradationBanner
-          variant="error"
-          message="Nenhuma fonte de dados respondeu. O PNCP e fontes alternativas estao indisponiveis."
-          detail={result.degradation_reason || "Tente novamente em alguns minutos."}
-          dataSources={result.data_sources}
-          showRetry
+      {/* STORY-257B AC10: All sources down — friendly fallback (total_raw=0, total_filtrado=0, is_partial=true, no cache) */}
+      {result && result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && !result.cached && (
+        <SourcesUnavailable
           onRetry={onSearch}
-          loading={loading}
+          onLoadLastSearch={onLoadLastSearch || (() => {})}
+          hasLastSearch={hasLastSearch}
+          retrying={loading}
         />
       )}
 
@@ -167,8 +279,8 @@ export default function SearchResults({
         <>
           <DegradationBanner
             variant="warning"
-            message="Resultados parciais — algumas fontes nao responderam e nenhum resultado passou nos filtros."
-            detail="Os dados disponiveis nao continham licitacoes compativeis com os criterios selecionados. Tente ampliar o periodo ou selecionar mais estados."
+            message="Resultados parciais — algumas fontes não responderam e nenhum resultado passou nos filtros."
+            detail="Os dados disponíveis não continham licitações compatíveis com os critérios selecionados. Tente ampliar o período ou selecionar mais estados."
             dataSources={result.data_sources}
           />
           <EmptyState
@@ -192,14 +304,42 @@ export default function SearchResults({
         />
       )}
 
+      {/* STORY-257B AC8: Cache banner when results come from cache */}
+      {result && result.cached && result.cached_at && (
+        <CacheBanner
+          cachedAt={result.cached_at}
+          onRefresh={onRetryForceFresh || onSearch}
+          refreshing={loading}
+        />
+      )}
+
       {/* Result Display */}
       {result && result.resumo.total_oportunidades > 0 && (
-        <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 animate-fade-in-up">
-          {/* STORY-252 AC21: Yellow banner for partial results */}
-          {result.is_partial && (
+        <div className={`mt-6 sm:mt-8 space-y-4 sm:space-y-6 ${!showGrid ? 'animate-fade-in-up' : ''}`}>
+          {/* STORY-257B AC7: Failed UFs banner */}
+          {result.failed_ufs && result.failed_ufs.length > 0 && (
+            <FailedUfsBanner
+              successCount={ufsSelecionadas.size - result.failed_ufs.length}
+              failedUfs={result.failed_ufs}
+              onRetryFailed={onSearch}
+              loading={loading}
+            />
+          )}
+
+          {/* STORY-257B AC6: Partial results mini-banner */}
+          {result.is_partial && result.failed_ufs && result.failed_ufs.length > 0 && (
+            <PartialResultsBanner
+              visibleCount={ufsSelecionadas.size - result.failed_ufs.length}
+              totalCount={ufsSelecionadas.size}
+              searching={loading}
+            />
+          )}
+
+          {/* STORY-252 AC21: Yellow banner for partial results (data source level) */}
+          {result.is_partial && !result.cached && (
             <DegradationBanner
               variant="warning"
-              message="Resultados parciais — algumas fontes de dados nao responderam."
+              message="Resultados parciais — algumas fontes de dados não responderam."
               detail={result.degradation_reason}
               dataSources={result.data_sources}
             />

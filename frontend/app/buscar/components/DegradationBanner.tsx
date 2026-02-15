@@ -46,12 +46,12 @@ function sourceStatusLabel(status: DataSourceStatus["status"]): {
 /** Human-readable name for data source codes */
 function sourceDisplayName(source: string): string {
   const names: Record<string, string> = {
-    pncp: "PNCP (Portal Nacional de Contratacoes Publicas)",
-    compras_gov: "ComprasGov",
-    transparencia: "Portal da Transparencia",
-    querido_diario: "Querido Diario",
+    pncp: "Fonte principal",
+    compras_gov: "Fonte secundária",
+    transparencia: "Fonte complementar",
+    querido_diario: "Diários oficiais",
   };
-  return names[source] || source;
+  return names[source] || "Fonte de dados";
 }
 
 export function DegradationBanner({

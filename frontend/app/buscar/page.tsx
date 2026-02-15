@@ -17,6 +17,7 @@ import { MessageBadge } from "../components/MessageBadge";
 import { UpgradeModal } from "../components/UpgradeModal";
 import { useSearchFilters } from "./hooks/useSearchFilters";
 import { useSearch } from "./hooks/useSearch";
+import { useUfProgress } from "./hooks/useUfProgress";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
 
@@ -60,6 +61,28 @@ function HomePageContent() {
   const filters = useSearchFilters(() => clearResultRef.current());
   const search = useSearch(filters);
   clearResultRef.current = () => search.setResult(null);
+
+  // STORY-257B: UF progress tracking via SSE (AC1-4)
+  const ufProgress = useUfProgress({
+    searchId: search.searchId,
+    enabled: search.loading,
+    authToken: session?.access_token,
+    selectedUfs: Array.from(filters.ufsSelecionadas),
+  });
+
+  // STORY-257B AC5: Elapsed seconds tracker for partial results prompt
+  const [searchElapsed, setSearchElapsed] = useState(0);
+  const [partialDismissed, setPartialDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!search.loading) {
+      setSearchElapsed(0);
+      setPartialDismissed(false);
+      return;
+    }
+    const interval = setInterval(() => setSearchElapsed(prev => prev + 1), 1000);
+    return () => clearInterval(interval);
+  }, [search.loading]);
 
   // Restore search state on mount
   useEffect(() => { search.restoreSearchStateOnMount(); }, []);
@@ -192,6 +215,20 @@ function HomePageContent() {
               session={session}
               onShowUpgradeModal={handleShowUpgradeModal}
               onTrackEvent={trackEvent}
+              // STORY-257B: UF Progress Grid (AC1-4)
+              ufStatuses={ufProgress.ufStatuses}
+              ufTotalFound={ufProgress.totalFound}
+              ufAllComplete={ufProgress.allComplete}
+              // STORY-257B: Partial results (AC5)
+              searchElapsedSeconds={searchElapsed}
+              onViewPartial={search.cancelSearch}
+              partialDismissed={partialDismissed}
+              onDismissPartial={() => setPartialDismissed(true)}
+              // STORY-257B: Cache refresh (AC9)
+              onRetryForceFresh={search.buscarForceFresh}
+              // STORY-257B: Sources unavailable (AC10)
+              hasLastSearch={false}
+              onLoadLastSearch={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             />
           </div>
         </PullToRefresh>

@@ -23,11 +23,19 @@ export interface SearchProgressEvent {
   };
 }
 
+export interface UfStatusEvent {
+  uf: string;
+  status: string;
+  count?: number;
+  attempt?: number;
+}
+
 interface UseSearchProgressOptions {
   searchId: string | null;
   enabled: boolean;
   authToken?: string;
   onEvent?: (event: SearchProgressEvent) => void;
+  onUfStatus?: (event: UfStatusEvent) => void;
   onError?: () => void;
 }
 
@@ -42,6 +50,7 @@ export function useSearchProgress({
   enabled,
   authToken,
   onEvent,
+  onUfStatus,
   onError,
 }: UseSearchProgressOptions): UseSearchProgressReturn {
   const [currentEvent, setCurrentEvent] = useState<SearchProgressEvent | null>(null);
@@ -49,9 +58,11 @@ export function useSearchProgress({
   const [sseAvailable, setSseAvailable] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null);
   const onEventRef = useRef(onEvent);
+  const onUfStatusRef = useRef(onUfStatus);
   const onErrorRef = useRef(onError);
 
   useEffect(() => { onEventRef.current = onEvent; }, [onEvent]);
+  useEffect(() => { onUfStatusRef.current = onUfStatus; }, [onUfStatus]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
 
   const cleanup = useCallback(() => {
@@ -96,6 +107,16 @@ export function useSearchProgress({
         console.warn('Failed to parse SSE event:', err);
       }
     };
+
+    // Listen for uf_status events (STORY-257B AC2)
+    eventSource.addEventListener('uf_status', (e: MessageEvent) => {
+      try {
+        const event: UfStatusEvent = JSON.parse(e.data);
+        onUfStatusRef.current?.(event);
+      } catch (err) {
+        console.warn('Failed to parse uf_status event:', err);
+      }
+    });
 
     eventSource.onerror = () => {
       console.warn('SSE connection failed, falling back to simulated progress');

@@ -92,6 +92,12 @@ export interface BuscaResult {
   data_sources?: DataSourceStatus[];
   /** STORY-252 AC22: Human-readable reason for degradation */
   degradation_reason?: string;
+  /** STORY-257B AC8: True when results come from cache (all sources failed) */
+  cached?: boolean;
+  /** STORY-257B AC8: ISO timestamp of when cache was created */
+  cached_at?: string;
+  /** STORY-257B AC10: List of UF codes that failed during search */
+  failed_ufs?: string[];
 }
 
 // ============================================================================

@@ -89,7 +89,8 @@ export interface UseSearchReturn {
   setSaveSearchName: (name: string) => void;
   saveError: string | null;
   isMaxCapacity: boolean;
-  buscar: () => Promise<void>;
+  buscar: (options?: { forceFresh?: boolean }) => Promise<void>;
+  buscarForceFresh: () => Promise<void>;
   cancelSearch: () => void;
   handleDownload: () => Promise<void>;
   handleSaveSearch: () => void;
@@ -161,8 +162,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     setUseRealProgress(false);
   };
 
-  const buscar = async () => {
+  const buscar = async (options?: { forceFresh?: boolean }) => {
     if (!filters.canSearch) return;
+
+    const forceFresh = options?.forceFresh ?? false;
+    const previousResult = forceFresh ? result : null;
 
     // Save params for pull-to-refresh
     lastSearchParamsRef.current = {
@@ -186,8 +190,10 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     setStatesProcessed(0);
     setError(null);
     setQuotaError(null);
-    setResult(null);
-    setRawCount(0);
+    if (!forceFresh) {
+      setResult(null);
+      setRawCount(0);
+    }
 
     const newSearchId = crypto.randomUUID();
     setSearchId(newSearchId);
@@ -239,8 +245,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       };
       if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
 
-      const MAX_CLIENT_RETRIES = 1;
-      const CLIENT_RETRY_DELAYS = [4000];
+      const MAX_CLIENT_RETRIES = 2;
+      const CLIENT_RETRY_DELAYS = [3000, 8000];
       let data: BuscaResult | null = null;
 
       for (let clientAttempt = 0; clientAttempt <= MAX_CLIENT_RETRIES; clientAttempt++) {
@@ -269,11 +275,12 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
             esferas: filters.esferas.length > 0 ? filters.esferas : undefined,
             municipios: filters.municipios.length > 0 ? filters.municipios.map(m => m.codigo) : undefined,
             ordenacao: filters.ordenacao,
+            force_fresh: forceFresh || undefined,
           })
         });
 
         if (!response.ok) {
-          if (response.status === 503 && clientAttempt < MAX_CLIENT_RETRIES) continue;
+          if ((response.status === 500 || response.status === 502 || response.status === 503) && clientAttempt < MAX_CLIENT_RETRIES) continue;
 
           const err = await response.json().catch(() => ({ message: null, error_code: null, data: null }));
 
@@ -348,8 +355,15 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
       const errorMessage = getUserFriendlyError(e);
-      setError(errorMessage);
-      trackEvent('search_failed', { error_message: errorMessage, search_mode: filters.searchMode });
+      if (forceFresh && previousResult) {
+        // AC9: Keep cached data visible, show toast instead of error
+        setResult(previousResult);
+        setError(null);
+        toast.info("Não foi possível atualizar os dados. Mostrando resultados anteriores.");
+      } else {
+        setError(errorMessage);
+      }
+      trackEvent('search_failed', { error_message: errorMessage, search_mode: filters.searchMode, force_fresh: forceFresh });
     } finally {
       cleanupInterval();
       setLoading(false);
@@ -512,6 +526,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     }
   };
 
+  const buscarForceFresh = async () => buscar({ forceFresh: true });
+
   return {
     loading, loadingStep, statesProcessed, error, quotaError,
     result, setResult, rawCount,
@@ -521,7 +537,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     showSaveDialog, setShowSaveDialog,
     saveSearchName, setSaveSearchName,
     saveError, isMaxCapacity,
-    buscar, cancelSearch, handleDownload,
+    buscar, buscarForceFresh, cancelSearch, handleDownload,
     handleSaveSearch, confirmSaveSearch, handleLoadSearch, handleRefresh,
     estimateSearchTime, restoreSearchStateOnMount,
   };
