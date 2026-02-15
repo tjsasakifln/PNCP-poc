@@ -1,0 +1,1807 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - img "Swagger UI" [ref=e8]
+    - generic [ref=e9]:
+      - textbox [ref=e10]: /v3/api-docs
+      - button "Explore" [ref=e11] [cursor=pointer]
+  - generic [ref=e12]:
+    - generic:
+      - img
+    - generic [ref=e14]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - heading "API REST do Portal da Transparência do Governo Federal 1.0 OAS 3.0" [level=2] [ref=e20]:
+            - text: API REST do Portal da Transparência do Governo Federal
+            - generic [ref=e21]:
+              - generic [ref=e23]: "1.0"
+              - generic [ref=e25]: OAS 3.0
+          - link "/v3/api-docs" [ref=e26] [cursor=pointer]:
+            - /url: /v3/api-docs
+            - generic [ref=e27]: /v3/api-docs
+        - generic [ref=e28]:
+          - link "Diretoria de Tecnologia da Informação - DTI - Website" [ref=e30] [cursor=pointer]:
+            - /url: https://www.cgu.gov.br
+          - link "Send email to Diretoria de Tecnologia da Informação - DTI" [ref=e31] [cursor=pointer]:
+            - /url: mailto:listaapitransparencia@cgu.gov.br
+        - link "Decreto nº 8.777, de 11 de maio de 2016" [ref=e34] [cursor=pointer]:
+          - /url: https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2016/decreto/d8777.htm
+        - link "Changelog" [ref=e35] [cursor=pointer]:
+          - /url: https://api.portaldatransparencia.gov.br/changelog
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - text: Servers
+          - combobox [ref=e41]:
+            - option "https://api.portaldatransparencia.gov.br - Generated server url" [selected]
+        - button "Authorize" [ref=e43] [cursor=pointer]:
+          - generic [ref=e44]: Authorize
+          - img [ref=e45]
+      - generic [ref=e49]:
+        - generic [ref=e51]:
+          - heading "Viagens a serviço Collapse operation" [level=3] [ref=e52] [cursor=pointer]:
+            - link "Viagens a serviço" [ref=e53]:
+              - /url: "#/Viagens%20a%20serviço"
+            - button "Collapse operation" [expanded] [ref=e54]:
+              - img [ref=e55]
+          - generic [ref=e58]:
+            - generic [ref=e61] [cursor=pointer]:
+              - button "get /api-de-dados/viagens" [ref=e62]:
+                - generic [ref=e63]: GET
+                - link "/api-de-dados/viagens" [ref=e65]:
+                  - /url: "#/Viagens%20a%20serviço/viagensPorPeriodoEOrgao"
+                  - generic [ref=e66]:
+                    - text: /api-de-dados
+                    - text: /viagens
+                - generic [ref=e67]: Consulta viagens por período
+                - img [ref=e68]
+              - button "authorization button unlocked" [ref=e70]:
+                - img [ref=e71]
+              - generic "Copy to clipboard"
+            - generic [ref=e77] [cursor=pointer]:
+              - 'button "get /api-de-dados/viagens/{id}" [ref=e78]':
+                - generic [ref=e79]: GET
+                - 'link "/api-de-dados/viagens/{id}" [ref=e81]':
+                  - /url: "#/Viagens%20a%20serviço/viagem"
+                  - generic [ref=e82]:
+                    - text: /api-de-dados
+                    - text: /viagens
+                    - text: "/{id}"
+                - generic [ref=e83]: Consulta uma viagem pelo ID
+                - img [ref=e84]
+              - button "authorization button unlocked" [ref=e86]:
+                - img [ref=e87]
+              - generic "Copy to clipboard"
+            - generic [ref=e93] [cursor=pointer]:
+              - button "get /api-de-dados/viagens-por-cpf" [ref=e94]:
+                - generic [ref=e95]: GET
+                - link "/api-de-dados/viagens-por-cpf" [ref=e97]:
+                  - /url: "#/Viagens%20a%20serviço/viagensPorCpf"
+                  - generic [ref=e98]:
+                    - text: /api-de-dados
+                    - text: /viagens-por-cpf
+                - generic [ref=e99]: Consulta viagens por CPF
+                - img [ref=e100]
+              - button "authorization button unlocked" [ref=e102]:
+                - img [ref=e103]
+              - generic "Copy to clipboard"
+        - generic [ref=e108]:
+          - heading "Imóveis Funcionais Collapse operation" [level=3] [ref=e109] [cursor=pointer]:
+            - link "Imóveis Funcionais" [ref=e110]:
+              - /url: "#/Imóveis%20Funcionais"
+            - button "Collapse operation" [expanded] [ref=e111]:
+              - img [ref=e112]
+          - generic [ref=e115]:
+            - generic [ref=e118] [cursor=pointer]:
+              - button "get /api-de-dados/situacao-imovel" [ref=e119]:
+                - generic [ref=e120]: GET
+                - link "/api-de-dados/situacao-imovel" [ref=e122]:
+                  - /url: "#/Imóveis%20Funcionais/situacaoImovel"
+                  - generic [ref=e123]:
+                    - text: /api-de-dados
+                    - text: /situacao-imovel
+                - generic [ref=e124]: Consulta situações dos imóveis funcionais
+                - img [ref=e125]
+              - button "authorization button unlocked" [ref=e127]:
+                - img [ref=e128]
+              - generic "Copy to clipboard"
+            - generic [ref=e134] [cursor=pointer]:
+              - button "get /api-de-dados/permissionarios" [ref=e135]:
+                - generic [ref=e136]: GET
+                - link "/api-de-dados/permissionarios" [ref=e138]:
+                  - /url: "#/Imóveis%20Funcionais/relacaoOcupantes"
+                  - generic [ref=e139]:
+                    - text: /api-de-dados
+                    - text: /permissionarios
+                - generic [ref=e140]: Consulta relação de ocupantes
+                - img [ref=e141]
+              - button "authorization button unlocked" [ref=e143]:
+                - img [ref=e144]
+              - generic "Copy to clipboard"
+            - generic [ref=e150] [cursor=pointer]:
+              - button "get /api-de-dados/imoveis" [ref=e151]:
+                - generic [ref=e152]: GET
+                - link "/api-de-dados/imoveis" [ref=e154]:
+                  - /url: "#/Imóveis%20Funcionais/relacaoImoveis"
+                  - generic [ref=e155]:
+                    - text: /api-de-dados
+                    - text: /imoveis
+                - generic [ref=e156]: Consulta relação de imóveis
+                - img [ref=e157]
+              - button "authorization button unlocked" [ref=e159]:
+                - img [ref=e160]
+              - generic "Copy to clipboard"
+        - generic [ref=e165]:
+          - heading "Servidores do Poder Executivo Federal Collapse operation" [level=3] [ref=e166] [cursor=pointer]:
+            - link "Servidores do Poder Executivo Federal" [ref=e167]:
+              - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal"
+            - button "Collapse operation" [expanded] [ref=e168]:
+              - img [ref=e169]
+          - generic [ref=e172]:
+            - generic [ref=e175] [cursor=pointer]:
+              - button "get /api-de-dados/servidores" [ref=e176]:
+                - generic [ref=e177]: GET
+                - link "/api-de-dados/servidores" [ref=e179]:
+                  - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal/dadosServidores"
+                  - generic [ref=e180]:
+                    - text: /api-de-dados
+                    - text: /servidores
+                - generic [ref=e181]: Consulta todos servidores do Poder Executivo Federal
+                - img [ref=e182]
+              - button "authorization button unlocked" [ref=e184]:
+                - img [ref=e185]
+              - generic "Copy to clipboard"
+            - generic [ref=e191] [cursor=pointer]:
+              - 'button "get /api-de-dados/servidores/{id}" [ref=e192]':
+                - generic [ref=e193]: GET
+                - 'link "/api-de-dados/servidores/{id}" [ref=e195]':
+                  - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal/servidor"
+                  - generic [ref=e196]:
+                    - text: /api-de-dados
+                    - text: /servidores
+                    - text: "/{id}"
+                - generic [ref=e197]: Consulta um servidor do Poder Executivo Federal pelo idServidorAposentadoPensionista
+                - img [ref=e198]
+              - button "authorization button unlocked" [ref=e200]:
+                - img [ref=e201]
+              - generic "Copy to clipboard"
+            - generic [ref=e207] [cursor=pointer]:
+              - button "get /api-de-dados/servidores/remuneracao" [ref=e208]:
+                - generic [ref=e209]: GET
+                - link "/api-de-dados/servidores/remuneracao" [ref=e211]:
+                  - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal/remuneracoesServidores"
+                  - generic [ref=e212]:
+                    - text: /api-de-dados
+                    - text: /servidores
+                    - text: /remuneracao
+                - generic [ref=e213]: Consulta remunerações de um servidor do Poder Executivo Federal pelo CPF ou idServidorAposentadoPensionista e mês/ano
+                - img [ref=e214]
+              - button "authorization button unlocked" [ref=e216]:
+                - img [ref=e217]
+              - generic "Copy to clipboard"
+            - generic [ref=e223] [cursor=pointer]:
+              - button "get /api-de-dados/servidores/por-orgao" [ref=e224]:
+                - generic [ref=e225]: GET
+                - link "/api-de-dados/servidores/por-orgao" [ref=e227]:
+                  - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal/servidorAgregadoPorOrgao"
+                  - generic [ref=e228]:
+                    - text: /api-de-dados
+                    - text: /servidores
+                    - text: /por-orgao
+                - generic [ref=e229]: Consulta de servidores agregados por órgão
+                - img [ref=e230]
+              - button "authorization button unlocked" [ref=e232]:
+                - img [ref=e233]
+              - generic "Copy to clipboard"
+            - generic [ref=e239] [cursor=pointer]:
+              - button "get /api-de-dados/servidores/funcoes-e-cargos" [ref=e240]:
+                - generic [ref=e241]: GET
+                - link "/api-de-dados/servidores/funcoes-e-cargos" [ref=e243]:
+                  - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal/listarFuncoesECargos"
+                  - generic [ref=e244]:
+                    - text: /api-de-dados
+                    - text: /servidores
+                    - text: /funcoes-e-cargos
+                - generic [ref=e245]: Código da Função ou Cargo de Confiança
+                - img [ref=e246]
+              - button "authorization button unlocked" [ref=e248]:
+                - img [ref=e249]
+              - generic "Copy to clipboard"
+            - generic [ref=e255] [cursor=pointer]:
+              - button "get /api-de-dados/peps" [ref=e256]:
+                - generic [ref=e257]: GET
+                - link "/api-de-dados/peps" [ref=e259]:
+                  - /url: "#/Servidores%20do%20Poder%20Executivo%20Federal/dadosPEPs"
+                  - generic [ref=e260]:
+                    - text: /api-de-dados
+                    - text: /peps
+                - generic [ref=e261]: Consulta PEPs
+                - img [ref=e262]
+              - button "authorization button unlocked" [ref=e264]:
+                - img [ref=e265]
+              - generic "Copy to clipboard"
+        - generic [ref=e270]:
+          - heading "Benefícios Collapse operation" [level=3] [ref=e271] [cursor=pointer]:
+            - link "Benefícios" [ref=e272]:
+              - /url: "#/Benefícios"
+            - button "Collapse operation" [expanded] [ref=e273]:
+              - img [ref=e274]
+          - generic [ref=e277]:
+            - generic [ref=e280] [cursor=pointer]:
+              - button "get /api-de-dados/seguro-defeso-por-municipio" [ref=e281]:
+                - generic [ref=e282]: GET
+                - link "/api-de-dados/seguro-defeso-por-municipio" [ref=e284]:
+                  - /url: "#/Benefícios/seguroDefesos"
+                  - generic [ref=e285]:
+                    - text: /api-de-dados
+                    - text: /seguro-defeso-por-municipio
+                - generic [ref=e286]: Consulta os registros Seguro Defeso
+                - img [ref=e287]
+              - button "authorization button unlocked" [ref=e289]:
+                - img [ref=e290]
+              - generic "Copy to clipboard"
+            - generic [ref=e296] [cursor=pointer]:
+              - button "get /api-de-dados/seguro-defeso-codigo" [ref=e297]:
+                - generic [ref=e298]: GET
+                - link "/api-de-dados/seguro-defeso-codigo" [ref=e300]:
+                  - /url: "#/Benefícios/seguroDefesosPorCodigo"
+                  - generic [ref=e301]:
+                    - text: /api-de-dados
+                    - text: /seguro-defeso-codigo
+                - generic [ref=e302]: Consulta os registros Seguro Defeso por CPF/NIS
+                - img [ref=e303]
+              - button "authorization button unlocked" [ref=e305]:
+                - img [ref=e306]
+              - generic "Copy to clipboard"
+            - generic [ref=e312] [cursor=pointer]:
+              - button "get /api-de-dados/seguro-defeso-beneficiario-por-municipio" [ref=e313]:
+                - generic [ref=e314]: GET
+                - link "/api-de-dados/seguro-defeso-beneficiario-por-municipio" [ref=e316]:
+                  - /url: "#/Benefícios/seguroDefesosDosBeneficiariosPorMunicipio"
+                  - generic [ref=e317]:
+                    - text: /api-de-dados
+                    - text: /seguro-defeso-beneficiario-por-municipio
+                - generic [ref=e318]: Consulta os registros Seguro Defeso dos Beneficiários por Município e Mes/Ano
+                - img [ref=e319]
+              - button "authorization button unlocked" [ref=e321]:
+                - img [ref=e322]
+              - generic "Copy to clipboard"
+            - generic [ref=e328] [cursor=pointer]:
+              - button "get /api-de-dados/safra-por-municipio" [ref=e329]:
+                - generic [ref=e330]: GET
+                - link "/api-de-dados/safra-por-municipio" [ref=e332]:
+                  - /url: "#/Benefícios/safra"
+                  - generic [ref=e333]:
+                    - text: /api-de-dados
+                    - text: /safra-por-municipio
+                - generic [ref=e334]: Consulta os registros Garantia-Safra
+                - img [ref=e335]
+              - button "authorization button unlocked" [ref=e337]:
+                - img [ref=e338]
+              - generic "Copy to clipboard"
+            - generic [ref=e344] [cursor=pointer]:
+              - button "get /api-de-dados/safra-codigo-por-cpf-ou-nis" [ref=e345]:
+                - generic [ref=e346]: GET
+                - link "/api-de-dados/safra-codigo-por-cpf-ou-nis" [ref=e348]:
+                  - /url: "#/Benefícios/safraPorNisOuCPF"
+                  - generic [ref=e349]:
+                    - text: /api-de-dados
+                    - text: /safra-codigo-por-cpf-ou-nis
+                - generic [ref=e350]: Consulta os registros Garantia-Safra por CPF/NIS
+                - img [ref=e351]
+              - button "authorization button unlocked" [ref=e353]:
+                - img [ref=e354]
+              - generic "Copy to clipboard"
+            - generic [ref=e360] [cursor=pointer]:
+              - button "get /api-de-dados/safra-beneficiario-por-municipio" [ref=e361]:
+                - generic [ref=e362]: GET
+                - link "/api-de-dados/safra-beneficiario-por-municipio" [ref=e364]:
+                  - /url: "#/Benefícios/safraDosBeneficiariosPorMunicipio"
+                  - generic [ref=e365]:
+                    - text: /api-de-dados
+                    - text: /safra-beneficiario-por-municipio
+                - generic [ref=e366]: Consulta os registros Garantia-Safra dos beneficiários por município e mes/ano
+                - img [ref=e367]
+              - button "authorization button unlocked" [ref=e369]:
+                - img [ref=e370]
+              - generic "Copy to clipboard"
+            - generic [ref=e376] [cursor=pointer]:
+              - button "get /api-de-dados/peti-por-municipio" [ref=e377]:
+                - generic [ref=e378]: GET
+                - link "/api-de-dados/peti-por-municipio" [ref=e380]:
+                  - /url: "#/Benefícios/peti"
+                  - generic [ref=e381]:
+                    - text: /api-de-dados
+                    - text: /peti-por-municipio
+                - generic [ref=e382]: Consulta os registros Programa de Erradicação do Trabalho Infantil
+                - img [ref=e383]
+              - button "authorization button unlocked" [ref=e385]:
+                - img [ref=e386]
+              - generic "Copy to clipboard"
+            - generic [ref=e392] [cursor=pointer]:
+              - button "get /api-de-dados/peti-por-cpf-ou-nis" [ref=e393]:
+                - generic [ref=e394]: GET
+                - link "/api-de-dados/peti-por-cpf-ou-nis" [ref=e396]:
+                  - /url: "#/Benefícios/peti_1"
+                  - generic [ref=e397]:
+                    - text: /api-de-dados
+                    - text: /peti-por-cpf-ou-nis
+                - generic [ref=e398]: Consulta os registros Programa de Erradicação do Trabalho Infantil por CPF/NIS
+                - img [ref=e399]
+              - button "authorization button unlocked" [ref=e401]:
+                - img [ref=e402]
+              - generic "Copy to clipboard"
+            - generic [ref=e408] [cursor=pointer]:
+              - button "get /api-de-dados/peti-beneficiario-por-municipio" [ref=e409]:
+                - generic [ref=e410]: GET
+                - link "/api-de-dados/peti-beneficiario-por-municipio" [ref=e412]:
+                  - /url: "#/Benefícios/petiBeneficiarioPorMunicipio"
+                  - generic [ref=e413]:
+                    - text: /api-de-dados
+                    - text: /peti-beneficiario-por-municipio
+                - generic [ref=e414]: Consulta os registros PETI dos beneficiários por município e mês/ano
+                - img [ref=e415]
+              - button "authorization button unlocked" [ref=e417]:
+                - img [ref=e418]
+              - generic "Copy to clipboard"
+            - generic [ref=e424] [cursor=pointer]:
+              - button "get /api-de-dados/novo-bolsa-familia-sacado-por-nis" [ref=e425]:
+                - generic [ref=e426]: GET
+                - link "/api-de-dados/novo-bolsa-familia-sacado-por-nis" [ref=e428]:
+                  - /url: "#/Benefícios/novoBolsaFamiliaSacadoPorNis"
+                  - generic [ref=e429]:
+                    - text: /api-de-dados
+                    - text: /novo-bolsa-familia-sacado-por-nis
+                - img [ref=e430]
+              - button "authorization button unlocked" [ref=e432]:
+                - img [ref=e433]
+              - generic "Copy to clipboard"
+            - generic [ref=e439] [cursor=pointer]:
+              - button "get /api-de-dados/novo-bolsa-familia-sacado-beneficiario-por-municipio" [ref=e440]:
+                - generic [ref=e441]: GET
+                - link "/api-de-dados/novo-bolsa-familia-sacado-beneficiario-por-municipio" [ref=e443]:
+                  - /url: "#/Benefícios/novoBolsaFamiliaSacadoDosBeneficiariosPorMunicipio"
+                  - generic [ref=e444]:
+                    - text: /api-de-dados
+                    - text: /novo-bolsa-familia-sacado-beneficiario-por-municipio
+                - img [ref=e445]
+              - button "authorization button unlocked" [ref=e447]:
+                - img [ref=e448]
+              - generic "Copy to clipboard"
+            - generic [ref=e454] [cursor=pointer]:
+              - button "get /api-de-dados/novo-bolsa-familia-por-municipio" [ref=e455]:
+                - generic [ref=e456]: GET
+                - link "/api-de-dados/novo-bolsa-familia-por-municipio" [ref=e458]:
+                  - /url: "#/Benefícios/novoBolsaFamiliaPorMunicipio"
+                  - generic [ref=e459]:
+                    - text: /api-de-dados
+                    - text: /novo-bolsa-familia-por-municipio
+                - img [ref=e460]
+              - button "authorization button unlocked" [ref=e462]:
+                - img [ref=e463]
+              - generic "Copy to clipboard"
+            - generic [ref=e469] [cursor=pointer]:
+              - button "get /api-de-dados/bpc-por-municipio" [ref=e470]:
+                - generic [ref=e471]: GET
+                - link "/api-de-dados/bpc-por-municipio" [ref=e473]:
+                  - /url: "#/Benefícios/bpc"
+                  - generic [ref=e474]:
+                    - text: /api-de-dados
+                    - text: /bpc-por-municipio
+                - generic [ref=e475]: Consulta os registros de Benefício de Prestação Continuada por Município
+                - img [ref=e476]
+              - button "authorization button unlocked" [ref=e478]:
+                - img [ref=e479]
+              - generic "Copy to clipboard"
+            - generic [ref=e485] [cursor=pointer]:
+              - button "get /api-de-dados/bpc-por-cpf-ou-nis" [ref=e486]:
+                - generic [ref=e487]: GET
+                - link "/api-de-dados/bpc-por-cpf-ou-nis" [ref=e489]:
+                  - /url: "#/Benefícios/bpcPorNisOuCPF"
+                  - generic [ref=e490]:
+                    - text: /api-de-dados
+                    - text: /bpc-por-cpf-ou-nis
+                - generic [ref=e491]: Consulta os registros de Benefício de Prestação Continuada por CPF/NIS
+                - img [ref=e492]
+              - button "authorization button unlocked" [ref=e494]:
+                - img [ref=e495]
+              - generic "Copy to clipboard"
+            - generic [ref=e501] [cursor=pointer]:
+              - button "get /api-de-dados/bpc-beneficiario-por-municipio" [ref=e502]:
+                - generic [ref=e503]: GET
+                - link "/api-de-dados/bpc-beneficiario-por-municipio" [ref=e505]:
+                  - /url: "#/Benefícios/bpcDosBeneficiariosPorMunicipio"
+                  - generic [ref=e506]:
+                    - text: /api-de-dados
+                    - text: /bpc-beneficiario-por-municipio
+                - generic [ref=e507]: Consulta os registros de Benefício de Prestação Continuada dos Beneficiários por Município e Mes/Ano
+                - img [ref=e508]
+              - button "authorization button unlocked" [ref=e510]:
+                - img [ref=e511]
+              - generic "Copy to clipboard"
+            - generic [ref=e517] [cursor=pointer]:
+              - button "get /api-de-dados/bolsa-familia-sacado-por-nis" [ref=e518]:
+                - generic [ref=e519]: GET
+                - link "/api-de-dados/bolsa-familia-sacado-por-nis" [ref=e521]:
+                  - /url: "#/Benefícios/bolsaFamiliaSacadoPorNis"
+                  - generic [ref=e522]:
+                    - text: /api-de-dados
+                    - text: /bolsa-familia-sacado-por-nis
+                - generic [ref=e523]: Consulta as parcelas sacadas pelo Bolsa Família pelo NIS
+                - img [ref=e524]
+              - button "authorization button unlocked" [ref=e526]:
+                - img [ref=e527]
+              - generic "Copy to clipboard"
+            - generic [ref=e533] [cursor=pointer]:
+              - button "get /api-de-dados/bolsa-familia-sacado-beneficiario-por-municipio" [ref=e534]:
+                - generic [ref=e535]: GET
+                - link "/api-de-dados/bolsa-familia-sacado-beneficiario-por-municipio" [ref=e537]:
+                  - /url: "#/Benefícios/bolsaFamiliaSacadoDosBeneficiariosPorMunicipio"
+                  - generic [ref=e538]:
+                    - text: /api-de-dados
+                    - text: /bolsa-familia-sacado-beneficiario-por-municipio
+                - generic [ref=e539]: Consulta as parcelas do Bolsa Família Sacado dos Beneficiários por Município e Mes/Ano
+                - img [ref=e540]
+              - button "authorization button unlocked" [ref=e542]:
+                - img [ref=e543]
+              - generic "Copy to clipboard"
+            - generic [ref=e549] [cursor=pointer]:
+              - button "get /api-de-dados/bolsa-familia-por-municipio" [ref=e550]:
+                - generic [ref=e551]: GET
+                - link "/api-de-dados/bolsa-familia-por-municipio" [ref=e553]:
+                  - /url: "#/Benefícios/bolsaFamiliaPorMunicipio"
+                  - generic [ref=e554]:
+                    - text: /api-de-dados
+                    - text: /bolsa-familia-por-municipio
+                - generic [ref=e555]: Consulta as parcelas do Bolsa Família por Município
+                - img [ref=e556]
+              - button "authorization button unlocked" [ref=e558]:
+                - img [ref=e559]
+              - generic "Copy to clipboard"
+            - generic [ref=e565] [cursor=pointer]:
+              - button "get /api-de-dados/bolsa-familia-disponivel-por-cpf-ou-nis" [ref=e566]:
+                - generic [ref=e567]: GET
+                - link "/api-de-dados/bolsa-familia-disponivel-por-cpf-ou-nis" [ref=e569]:
+                  - /url: "#/Benefícios/bolsaFamiliaDisponivelPorCpfOuNis"
+                  - generic [ref=e570]:
+                    - text: /api-de-dados
+                    - text: /bolsa-familia-disponivel-por-cpf-ou-nis
+                - generic [ref=e571]: Consulta as parcelas disponibilizadas pelo Bolsa Família pelo CPF/NIS
+                - img [ref=e572]
+              - button "authorization button unlocked" [ref=e574]:
+                - img [ref=e575]
+              - generic "Copy to clipboard"
+            - generic [ref=e581] [cursor=pointer]:
+              - button "get /api-de-dados/bolsa-familia-disponivel-beneficiario-por-municipio" [ref=e582]:
+                - generic [ref=e583]: GET
+                - link "/api-de-dados/bolsa-familia-disponivel-beneficiario-por-municipio" [ref=e585]:
+                  - /url: "#/Benefícios/bolsaFamiliaDisponivelDosBeneficiariosPorMunicipio"
+                  - generic [ref=e586]:
+                    - text: /api-de-dados
+                    - text: /bolsa-familia-disponivel-beneficiario-por-municipio
+                - generic [ref=e587]: Consulta as parcelas do Bolsa Família Disponível dos Beneficiários por Município e Mes/Ano
+                - img [ref=e588]
+              - button "authorization button unlocked" [ref=e590]:
+                - img [ref=e591]
+              - generic "Copy to clipboard"
+            - generic [ref=e597] [cursor=pointer]:
+              - button "get /api-de-dados/auxilio-emergencial-por-municipio" [ref=e598]:
+                - generic [ref=e599]: GET
+                - link "/api-de-dados/auxilio-emergencial-por-municipio" [ref=e601]:
+                  - /url: "#/Benefícios/auxilioEmergencialPorMunicipio"
+                  - generic [ref=e602]:
+                    - text: /api-de-dados
+                    - text: /auxilio-emergencial-por-municipio
+                - generic [ref=e603]: Consulta os registros de auxílio emergencial por Município
+                - img [ref=e604]
+              - button "authorization button unlocked" [ref=e606]:
+                - img [ref=e607]
+              - generic "Copy to clipboard"
+            - generic [ref=e613] [cursor=pointer]:
+              - button "get /api-de-dados/auxilio-emergencial-por-cpf-ou-nis" [ref=e614]:
+                - generic [ref=e615]: GET
+                - link "/api-de-dados/auxilio-emergencial-por-cpf-ou-nis" [ref=e617]:
+                  - /url: "#/Benefícios/auxilioEmergencialPorNisOuCPF"
+                  - generic [ref=e618]:
+                    - text: /api-de-dados
+                    - text: /auxilio-emergencial-por-cpf-ou-nis
+                - generic [ref=e619]: Consulta os registros de auxílio emergencial por CPF/NIS
+                - img [ref=e620]
+              - button "authorization button unlocked" [ref=e622]:
+                - img [ref=e623]
+              - generic "Copy to clipboard"
+            - generic [ref=e629] [cursor=pointer]:
+              - button "get /api-de-dados/auxilio-emergencial-beneficiario-por-municipio" [ref=e630]:
+                - generic [ref=e631]: GET
+                - link "/api-de-dados/auxilio-emergencial-beneficiario-por-municipio" [ref=e633]:
+                  - /url: "#/Benefícios/auxilioEmergencialBeneficiarosPorMunicipio"
+                  - generic [ref=e634]:
+                    - text: /api-de-dados
+                    - text: /auxilio-emergencial-beneficiario-por-municipio
+                - generic [ref=e635]: Consulta os registros dos beneficiários por município e mês/ano
+                - img [ref=e636]
+              - button "authorization button unlocked" [ref=e638]:
+                - img [ref=e639]
+              - generic "Copy to clipboard"
+            - generic [ref=e645] [cursor=pointer]:
+              - button "get /api-de-dados/auxilio-brasil-sacado-por-nis" [ref=e646]:
+                - generic [ref=e647]: GET
+                - link "/api-de-dados/auxilio-brasil-sacado-por-nis" [ref=e649]:
+                  - /url: "#/Benefícios/auxilioBrasilSacadoPorNis"
+                  - generic [ref=e650]:
+                    - text: /api-de-dados
+                    - text: /auxilio-brasil-sacado-por-nis
+                - generic [ref=e651]: Consulta as parcelas disponibilizadas pelo Auxílio Brasil pelo NIS
+                - img [ref=e652]
+              - button "authorization button unlocked" [ref=e654]:
+                - img [ref=e655]
+              - generic "Copy to clipboard"
+            - generic [ref=e661] [cursor=pointer]:
+              - button "get /api-de-dados/auxilio-brasil-sacado-beneficiario-por-municipio" [ref=e662]:
+                - generic [ref=e663]: GET
+                - link "/api-de-dados/auxilio-brasil-sacado-beneficiario-por-municipio" [ref=e665]:
+                  - /url: "#/Benefícios/auxilioBrasilSacadoDosBeneficiariosPorMunicipio"
+                  - generic [ref=e666]:
+                    - text: /api-de-dados
+                    - text: /auxilio-brasil-sacado-beneficiario-por-municipio
+                - generic [ref=e667]: Consulta as parcelas do Auxílio Brasil Sacado dos Beneficiários por Município e Mes/Ano
+                - img [ref=e668]
+              - button "authorization button unlocked" [ref=e670]:
+                - img [ref=e671]
+              - generic "Copy to clipboard"
+            - generic [ref=e677] [cursor=pointer]:
+              - button "get /api-de-dados/auxilio-brasil-por-municipio" [ref=e678]:
+                - generic [ref=e679]: GET
+                - link "/api-de-dados/auxilio-brasil-por-municipio" [ref=e681]:
+                  - /url: "#/Benefícios/auxilioBrasilPorMunicipio"
+                  - generic [ref=e682]:
+                    - text: /api-de-dados
+                    - text: /auxilio-brasil-por-municipio
+                - generic [ref=e683]: Consulta as parcelas do Auxílio Brasil por Município
+                - img [ref=e684]
+              - button "authorization button unlocked" [ref=e686]:
+                - img [ref=e687]
+              - generic "Copy to clipboard"
+        - generic [ref=e692]:
+          - heading "Renúncias Fiscais Collapse operation" [level=3] [ref=e693] [cursor=pointer]:
+            - link "Renúncias Fiscais" [ref=e694]:
+              - /url: "#/Renúncias%20Fiscais"
+            - button "Collapse operation" [expanded] [ref=e695]:
+              - img [ref=e696]
+          - generic [ref=e699]:
+            - generic [ref=e702] [cursor=pointer]:
+              - button "get /api-de-dados/renuncias-valor" [ref=e703]:
+                - generic [ref=e704]: GET
+                - link "/api-de-dados/renuncias-valor" [ref=e706]:
+                  - /url: "#/Renúncias%20Fiscais/consultaValoresRenuncia"
+                  - generic [ref=e707]:
+                    - text: /api-de-dados
+                    - text: /renuncias-valor
+                - generic [ref=e708]: Consulta de Valores Renunciados
+                - img [ref=e709]
+              - button "authorization button unlocked" [ref=e711]:
+                - img [ref=e712]
+              - generic "Copy to clipboard"
+            - generic [ref=e718] [cursor=pointer]:
+              - button "get /api-de-dados/renuncias-fiscais-empresas-imunes-isentas" [ref=e719]:
+                - generic [ref=e720]: GET
+                - link "/api-de-dados/renuncias-fiscais-empresas-imunes-isentas" [ref=e722]:
+                  - /url: "#/Renúncias%20Fiscais/consultaPessoaJuridicasImunesIsentas"
+                  - generic [ref=e723]:
+                    - text: /api-de-dados
+                    - text: /renuncias-fiscais-empresas-imunes-isentas
+                - generic [ref=e724]: Consulta Pessoas Jurídicas Imunes e Isentas
+                - img [ref=e725]
+              - button "authorization button unlocked" [ref=e727]:
+                - img [ref=e728]
+              - generic "Copy to clipboard"
+            - generic [ref=e734] [cursor=pointer]:
+              - button "get /api-de-dados/renuncias-fiscais-empresas-habilitadas-beneficios-fiscais" [ref=e735]:
+                - generic [ref=e736]: GET
+                - link "/api-de-dados/renuncias-fiscais-empresas-habilitadas-beneficios-fiscais" [ref=e738]:
+                  - /url: "#/Renúncias%20Fiscais/consultaPessoasJuridicasHabilitadasBeneficioFiscal"
+                  - generic [ref=e739]:
+                    - text: /api-de-dados
+                    - text: /renuncias-fiscais-empresas-habilitadas-beneficios-fiscais
+                - generic [ref=e740]: Consulta Pessoas Jurídicas Habilitadas a Benefício Fiscal
+                - img [ref=e741]
+              - button "authorization button unlocked" [ref=e743]:
+                - img [ref=e744]
+              - generic "Copy to clipboard"
+        - generic [ref=e749]:
+          - heading "Pessoas físicas e jurídicas Collapse operation" [level=3] [ref=e750] [cursor=pointer]:
+            - link "Pessoas físicas e jurídicas" [ref=e751]:
+              - /url: "#/Pessoas%20físicas%20e%20jurídicas"
+            - button "Collapse operation" [expanded] [ref=e752]:
+              - img [ref=e753]
+          - generic [ref=e756]:
+            - generic [ref=e759] [cursor=pointer]:
+              - button "get /api-de-dados/pessoa-juridica" [ref=e760]:
+                - generic [ref=e761]: GET
+                - link "/api-de-dados/pessoa-juridica" [ref=e763]:
+                  - /url: "#/Pessoas%20físicas%20e%20jurídicas/pj"
+                  - generic [ref=e764]:
+                    - text: /api-de-dados
+                    - text: /pessoa-juridica
+                - generic [ref=e765]: Consulta os registros de Pessoas Jurídicas
+                - img [ref=e766]
+              - button "authorization button unlocked" [ref=e768]:
+                - img [ref=e769]
+              - generic "Copy to clipboard"
+            - generic [ref=e775] [cursor=pointer]:
+              - button "get /api-de-dados/pessoa-fisica" [ref=e776]:
+                - generic [ref=e777]: GET
+                - link "/api-de-dados/pessoa-fisica" [ref=e779]:
+                  - /url: "#/Pessoas%20físicas%20e%20jurídicas/pf"
+                  - generic [ref=e780]:
+                    - text: /api-de-dados
+                    - text: /pessoa-fisica
+                - generic [ref=e781]: Consulta os registros de Pessoas Físicas
+                - img [ref=e782]
+              - button "authorization button unlocked" [ref=e784]:
+                - img [ref=e785]
+              - generic "Copy to clipboard"
+        - generic [ref=e790]:
+          - heading "Órgãos Collapse operation" [level=3] [ref=e791] [cursor=pointer]:
+            - link "Órgãos" [ref=e792]:
+              - /url: "#/Órgãos"
+            - button "Collapse operation" [expanded] [ref=e793]:
+              - img [ref=e794]
+          - generic [ref=e797]:
+            - generic [ref=e800] [cursor=pointer]:
+              - button "get /api-de-dados/orgaos-siape" [ref=e801]:
+                - generic [ref=e802]: GET
+                - link "/api-de-dados/orgaos-siape" [ref=e804]:
+                  - /url: "#/Órgãos/orgaosSiape"
+                  - generic [ref=e805]:
+                    - text: /api-de-dados
+                    - text: /orgaos-siape
+                - generic [ref=e806]: Consulta de órgãos cadastrados no Sistema Integrado de Administração de Pessoal (SIAPE)
+                - img [ref=e807]
+              - button "authorization button unlocked" [ref=e809]:
+                - img [ref=e810]
+              - generic "Copy to clipboard"
+            - generic [ref=e816] [cursor=pointer]:
+              - button "get /api-de-dados/orgaos-siafi" [ref=e817]:
+                - generic [ref=e818]: GET
+                - link "/api-de-dados/orgaos-siafi" [ref=e820]:
+                  - /url: "#/Órgãos/orgaosSiafi"
+                  - generic [ref=e821]:
+                    - text: /api-de-dados
+                    - text: /orgaos-siafi
+                - generic [ref=e822]: Consulta de órgãos cadastrados no Sistema Integrado de Administração Financeira do Governo Federal (SIAFI)
+                - img [ref=e823]
+              - button "authorization button unlocked" [ref=e825]:
+                - img [ref=e826]
+              - generic "Copy to clipboard"
+        - generic [ref=e831]:
+          - heading "Notas Fiscais Collapse operation" [level=3] [ref=e832] [cursor=pointer]:
+            - link "Notas Fiscais" [ref=e833]:
+              - /url: "#/Notas%20Fiscais"
+            - button "Collapse operation" [expanded] [ref=e834]:
+              - img [ref=e835]
+          - generic [ref=e838]:
+            - generic [ref=e841] [cursor=pointer]:
+              - button "get /api-de-dados/notas-fiscais" [ref=e842]:
+                - generic [ref=e843]: GET
+                - link "/api-de-dados/notas-fiscais" [ref=e845]:
+                  - /url: "#/Notas%20Fiscais/notasFiscais"
+                  - generic [ref=e846]:
+                    - text: /api-de-dados
+                    - text: /notas-fiscais
+                - generic [ref=e847]: Consulta todas as notas fiscais eletrônicas (NFe´s) do Poder Executivo Federal
+                - img [ref=e848]
+              - button "authorization button unlocked" [ref=e850]:
+                - img [ref=e851]
+              - generic "Copy to clipboard"
+            - generic [ref=e857] [cursor=pointer]:
+              - button "get /api-de-dados/notas-fiscais-por-chave" [ref=e858]:
+                - generic [ref=e859]: GET
+                - link "/api-de-dados/notas-fiscais-por-chave" [ref=e861]:
+                  - /url: "#/Notas%20Fiscais/notaFiscal"
+                  - generic [ref=e862]:
+                    - text: /api-de-dados
+                    - text: /notas-fiscais-por-chave
+                - generic [ref=e863]: Consulta uma nota fiscal eletrônica (NFe) do Poder Executivo Federal pela chave única
+                - img [ref=e864]
+              - button "authorization button unlocked" [ref=e866]:
+                - img [ref=e867]
+              - generic "Copy to clipboard"
+        - generic [ref=e872]:
+          - heading "Licitações do Poder Executivo Federal Collapse operation" [level=3] [ref=e873] [cursor=pointer]:
+            - link "Licitações do Poder Executivo Federal" [ref=e874]:
+              - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal"
+            - button "Collapse operation" [expanded] [ref=e875]:
+              - img [ref=e876]
+          - generic [ref=e879]:
+            - generic [ref=e882] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes" [ref=e883]:
+                - generic [ref=e884]: GET
+                - link "/api-de-dados/licitacoes" [ref=e886]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/licitacoes"
+                  - generic [ref=e887]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                - generic [ref=e888]: Consulta todas as licitações do Poder Executivo Federal
+                - img [ref=e889]
+              - button "authorization button unlocked" [ref=e891]:
+                - img [ref=e892]
+              - generic "Copy to clipboard"
+            - generic [ref=e898] [cursor=pointer]:
+              - 'button "get /api-de-dados/licitacoes/{id}" [ref=e899]':
+                - generic [ref=e900]: GET
+                - 'link "/api-de-dados/licitacoes/{id}" [ref=e902]':
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/licitacao"
+                  - generic [ref=e903]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: "/{id}"
+                - generic [ref=e904]: Consulta uma licitação do Poder Executivo Federal pelo id
+                - img [ref=e905]
+              - button "authorization button unlocked" [ref=e907]:
+                - img [ref=e908]
+              - generic "Copy to clipboard"
+            - generic [ref=e914] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/ugs" [ref=e915]:
+                - generic [ref=e916]: GET
+                - link "/api-de-dados/licitacoes/ugs" [ref=e918]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/ugs"
+                  - generic [ref=e919]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /ugs
+                - generic [ref=e920]: Consulta as Unidades Gestoras que realizaram licitações
+                - img [ref=e921]
+              - button "authorization button unlocked" [ref=e923]:
+                - img [ref=e924]
+              - generic "Copy to clipboard"
+            - generic [ref=e930] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/por-ug-modalidade-numero" [ref=e931]:
+                - generic [ref=e932]: GET
+                - link "/api-de-dados/licitacoes/por-ug-modalidade-numero" [ref=e934]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/licitacoesPorUgModalidadeENumero"
+                  - generic [ref=e935]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /por-ug-modalidade-numero
+                - generic [ref=e936]: Consulta uma licitação pelo código da Unidade Gestora, número e modalidade
+                - img [ref=e937]
+              - button "authorization button unlocked" [ref=e939]:
+                - img [ref=e940]
+              - generic "Copy to clipboard"
+            - generic [ref=e946] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/por-processo" [ref=e947]:
+                - generic [ref=e948]: GET
+                - link "/api-de-dados/licitacoes/por-processo" [ref=e950]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/licitacoesPorProcesso"
+                  - generic [ref=e951]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /por-processo
+                - generic [ref=e952]: Consulta uma licitação pelo número do processo
+                - img [ref=e953]
+              - button "authorization button unlocked" [ref=e955]:
+                - img [ref=e956]
+              - generic "Copy to clipboard"
+            - generic [ref=e962] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/participantes" [ref=e963]:
+                - generic [ref=e964]: GET
+                - link "/api-de-dados/licitacoes/participantes" [ref=e966]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/participantes"
+                  - generic [ref=e967]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /participantes
+                - generic [ref=e968]: Consulta os participantes de uma licitação
+                - img [ref=e969]
+              - button "authorization button unlocked" [ref=e971]:
+                - img [ref=e972]
+              - generic "Copy to clipboard"
+            - generic [ref=e978] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/modalidades" [ref=e979]:
+                - generic [ref=e980]: GET
+                - link "/api-de-dados/licitacoes/modalidades" [ref=e982]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/modalidades"
+                  - generic [ref=e983]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /modalidades
+                - generic [ref=e984]: Consulta as modalidades de licitação
+                - img [ref=e985]
+              - button "authorization button unlocked" [ref=e987]:
+                - img [ref=e988]
+              - generic "Copy to clipboard"
+            - generic [ref=e994] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/itens-licitados" [ref=e995]:
+                - generic [ref=e996]: GET
+                - link "/api-de-dados/licitacoes/itens-licitados" [ref=e998]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/itensLicitados"
+                  - generic [ref=e999]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /itens-licitados
+                - generic [ref=e1000]: Consulta os itens licitados pelo id licitação
+                - img [ref=e1001]
+              - button "authorization button unlocked" [ref=e1003]:
+                - img [ref=e1004]
+              - generic "Copy to clipboard"
+            - generic [ref=e1010] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/empenhos" [ref=e1011]:
+                - generic [ref=e1012]: GET
+                - link "/api-de-dados/licitacoes/empenhos" [ref=e1014]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/empenhos"
+                  - generic [ref=e1015]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /empenhos
+                - generic [ref=e1016]: Consulta os empenhos de uma licitação
+                - img [ref=e1017]
+              - button "authorization button unlocked" [ref=e1019]:
+                - img [ref=e1020]
+              - generic "Copy to clipboard"
+            - generic [ref=e1026] [cursor=pointer]:
+              - button "get /api-de-dados/licitacoes/contratos-relacionados-licitacao" [ref=e1027]:
+                - generic [ref=e1028]: GET
+                - link "/api-de-dados/licitacoes/contratos-relacionados-licitacao" [ref=e1030]:
+                  - /url: "#/Licitações%20do%20Poder%20Executivo%20Federal/contratosRelacionados"
+                  - generic [ref=e1031]:
+                    - text: /api-de-dados
+                    - text: /licitacoes
+                    - text: /contratos-relacionados-licitacao
+                - generic [ref=e1032]: Consulta os contratos relacionados a licitação
+                - img [ref=e1033]
+              - button "authorization button unlocked" [ref=e1035]:
+                - img [ref=e1036]
+              - generic "Copy to clipboard"
+        - generic [ref=e1041]:
+          - heading "Emendas parlamentares Collapse operation" [level=3] [ref=e1042] [cursor=pointer]:
+            - link "Emendas parlamentares" [ref=e1043]:
+              - /url: "#/Emendas%20parlamentares"
+            - button "Collapse operation" [expanded] [ref=e1044]:
+              - img [ref=e1045]
+          - generic [ref=e1048]:
+            - generic [ref=e1051] [cursor=pointer]:
+              - button "get /api-de-dados/emendas" [ref=e1052]:
+                - generic [ref=e1053]: GET
+                - link "/api-de-dados/emendas" [ref=e1055]:
+                  - /url: "#/Emendas%20parlamentares/emendas"
+                  - generic [ref=e1056]:
+                    - text: /api-de-dados
+                    - text: /emendas
+                - generic [ref=e1057]: Consulta as emendas parlamentares
+                - img [ref=e1058]
+              - button "authorization button unlocked" [ref=e1060]:
+                - img [ref=e1061]
+              - generic "Copy to clipboard"
+            - generic [ref=e1067] [cursor=pointer]:
+              - 'button "get /api-de-dados/emendas/documentos/{codigo}" [ref=e1068]':
+                - generic [ref=e1069]: GET
+                - 'link "/api-de-dados/emendas/documentos/{codigo}" [ref=e1071]':
+                  - /url: "#/Emendas%20parlamentares/documentosRelacionadosAEmenda"
+                  - generic [ref=e1072]:
+                    - text: /api-de-dados
+                    - text: /emendas
+                    - text: /documentos
+                    - text: "/{codigo}"
+                - generic [ref=e1073]: Consulta os documentos relacionados à emenda parlamentar pelo código da emenda
+                - img [ref=e1074]
+              - button "authorization button unlocked" [ref=e1076]:
+                - img [ref=e1077]
+              - generic "Copy to clipboard"
+        - generic [ref=e1082]:
+          - heading "Despesas Públicas Collapse operation" [level=3] [ref=e1083] [cursor=pointer]:
+            - link "Despesas Públicas" [ref=e1084]:
+              - /url: "#/Despesas%20Públicas"
+            - button "Collapse operation" [expanded] [ref=e1085]:
+              - img [ref=e1086]
+          - generic [ref=e1089]:
+            - generic [ref=e1092] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/tipo-transferencia" [ref=e1093]:
+                - generic [ref=e1094]: GET
+                - link "/api-de-dados/despesas/tipo-transferencia" [ref=e1096]:
+                  - /url: "#/Despesas%20Públicas/listaTipoTransferencia"
+                  - generic [ref=e1097]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /tipo-transferencia
+                - generic [ref=e1098]: Consulta os tipos de transferências usados nas despesas
+                - img [ref=e1099]
+              - button "authorization button unlocked" [ref=e1101]:
+                - img [ref=e1102]
+              - generic "Copy to clipboard"
+            - generic [ref=e1108] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/recursos-recebidos" [ref=e1109]:
+                - generic [ref=e1110]: GET
+                - link "/api-de-dados/despesas/recursos-recebidos" [ref=e1112]:
+                  - /url: "#/Despesas%20Públicas/recursosRecebidos"
+                  - generic [ref=e1113]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /recursos-recebidos
+                - generic [ref=e1114]: Recebimento de recursos por favorecido
+                - img [ref=e1115]
+              - button "authorization button unlocked" [ref=e1117]:
+                - img [ref=e1118]
+              - generic "Copy to clipboard"
+            - generic [ref=e1124] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/por-orgao" [ref=e1125]:
+                - generic [ref=e1126]: GET
+                - link "/api-de-dados/despesas/por-orgao" [ref=e1128]:
+                  - /url: "#/Despesas%20Públicas/despesasPorOrgao"
+                  - generic [ref=e1129]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /por-orgao
+                - generic [ref=e1130]: Consulta as despesas dos órgão do Poder Executivo Federal
+                - img [ref=e1131]
+              - button "authorization button unlocked" [ref=e1133]:
+                - img [ref=e1134]
+              - generic "Copy to clipboard"
+            - generic [ref=e1140] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/por-funcional-programatica" [ref=e1141]:
+                - generic [ref=e1142]: GET
+                - link "/api-de-dados/despesas/por-funcional-programatica" [ref=e1144]:
+                  - /url: "#/Despesas%20Públicas/despesasPorFuncao"
+                  - generic [ref=e1145]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /por-funcional-programatica
+                - generic [ref=e1146]: Consulta as despesas do Poder Executivo Federal pela classificação funcional programática
+                - img [ref=e1147]
+              - button "authorization button unlocked" [ref=e1149]:
+                - img [ref=e1150]
+              - generic "Copy to clipboard"
+            - generic [ref=e1156] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/por-funcional-programatica/movimentacao-liquida" [ref=e1157]:
+                - generic [ref=e1158]: GET
+                - link "/api-de-dados/despesas/por-funcional-programatica/movimentacao-liquida" [ref=e1160]:
+                  - /url: "#/Despesas%20Públicas/despesasPorFuncaoMovimentacaoLiquida"
+                  - generic [ref=e1161]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /por-funcional-programatica
+                    - text: /movimentacao-liquida
+                - generic [ref=e1162]: Consulta de movimentação líquida anual das despesas do Poder Executivo Federal pela classificação funcional programática
+                - img [ref=e1163]
+              - button "authorization button unlocked" [ref=e1165]:
+                - img [ref=e1166]
+              - generic "Copy to clipboard"
+            - generic [ref=e1172] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/plano-orcamentario" [ref=e1173]:
+                - generic [ref=e1174]: GET
+                - link "/api-de-dados/despesas/plano-orcamentario" [ref=e1176]:
+                  - /url: "#/Despesas%20Públicas/despesasPorPlanoOrcamentario"
+                  - generic [ref=e1177]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /plano-orcamentario
+                - generic [ref=e1178]: Consulta Plano orçamentário
+                - img [ref=e1179]
+              - button "authorization button unlocked" [ref=e1181]:
+                - img [ref=e1182]
+              - generic "Copy to clipboard"
+            - generic [ref=e1188] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/itens-de-empenho" [ref=e1189]:
+                - generic [ref=e1190]: GET
+                - link "/api-de-dados/despesas/itens-de-empenho" [ref=e1192]:
+                  - /url: "#/Despesas%20Públicas/itensDeEmpenho"
+                  - generic [ref=e1193]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /itens-de-empenho
+                - generic [ref=e1194]: Consulta os itens de um Empenho
+                - img [ref=e1195]
+              - button "authorization button unlocked" [ref=e1197]:
+                - img [ref=e1198]
+              - generic "Copy to clipboard"
+            - generic [ref=e1204] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/itens-de-empenho/historico" [ref=e1205]:
+                - generic [ref=e1206]: GET
+                - link "/api-de-dados/despesas/itens-de-empenho/historico" [ref=e1208]:
+                  - /url: "#/Despesas%20Públicas/consultaHistorico"
+                  - generic [ref=e1209]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /itens-de-empenho
+                    - text: /historico
+                - generic [ref=e1210]: Consulta o histórico de um item de empenho
+                - img [ref=e1211]
+              - button "authorization button unlocked" [ref=e1213]:
+                - img [ref=e1214]
+              - generic "Copy to clipboard"
+            - generic [ref=e1220] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/favorecidos-finais-por-documento" [ref=e1221]:
+                - generic [ref=e1222]: GET
+                - link "/api-de-dados/despesas/favorecidos-finais-por-documento" [ref=e1224]:
+                  - /url: "#/Despesas%20Públicas/favorecidosFinaisPorDocumento"
+                  - generic [ref=e1225]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /favorecidos-finais-por-documento
+                - generic [ref=e1226]: Consulta favorecidos finais por documento
+                - img [ref=e1227]
+              - button "authorization button unlocked" [ref=e1229]:
+                - img [ref=e1230]
+              - generic "Copy to clipboard"
+            - generic [ref=e1236] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/empenhos-impactados" [ref=e1237]:
+                - generic [ref=e1238]: GET
+                - link "/api-de-dados/despesas/empenhos-impactados" [ref=e1240]:
+                  - /url: "#/Despesas%20Públicas/empenhosImpactados"
+                  - generic [ref=e1241]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /empenhos-impactados
+                - generic [ref=e1242]: Consulta empenhos impactados por documento/fase
+                - img [ref=e1243]
+              - button "authorization button unlocked" [ref=e1245]:
+                - img [ref=e1246]
+              - generic "Copy to clipboard"
+            - generic [ref=e1252] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/documentos" [ref=e1253]:
+                - generic [ref=e1254]: GET
+                - link "/api-de-dados/despesas/documentos" [ref=e1256]:
+                  - /url: "#/Despesas%20Públicas/documentos"
+                  - generic [ref=e1257]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /documentos
+                - generic [ref=e1258]: Consulta todos os documentos de despesas
+                - img [ref=e1259]
+              - button "authorization button unlocked" [ref=e1261]:
+                - img [ref=e1262]
+              - generic "Copy to clipboard"
+            - generic [ref=e1268] [cursor=pointer]:
+              - 'button "get /api-de-dados/despesas/documentos/{codigo}" [ref=e1269]':
+                - generic [ref=e1270]: GET
+                - 'link "/api-de-dados/despesas/documentos/{codigo}" [ref=e1272]':
+                  - /url: "#/Despesas%20Públicas/documentoPorCodigo"
+                  - generic [ref=e1273]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /documentos
+                    - text: "/{codigo}"
+                - generic [ref=e1274]: Consulta um documento pelo código (Unidade Gestora + Gestão + Número do documento)
+                - img [ref=e1275]
+              - button "authorization button unlocked" [ref=e1277]:
+                - img [ref=e1278]
+              - generic "Copy to clipboard"
+            - generic [ref=e1284] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/documentos-relacionados" [ref=e1285]:
+                - generic [ref=e1286]: GET
+                - link "/api-de-dados/despesas/documentos-relacionados" [ref=e1288]:
+                  - /url: "#/Despesas%20Públicas/documentosRelacionados"
+                  - generic [ref=e1289]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /documentos-relacionados
+                - generic [ref=e1290]: Consulta os documentos relacionados a um Empenho, Liquidação ou Pagamento
+                - img [ref=e1291]
+              - button "authorization button unlocked" [ref=e1293]:
+                - img [ref=e1294]
+              - generic "Copy to clipboard"
+            - generic [ref=e1300] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/documentos-por-favorecido" [ref=e1301]:
+                - generic [ref=e1302]: GET
+                - link "/api-de-dados/despesas/documentos-por-favorecido" [ref=e1304]:
+                  - /url: "#/Despesas%20Públicas/documentosPorFavorecido"
+                  - generic [ref=e1305]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /documentos-por-favorecido
+                - generic [ref=e1306]: Consulta Empenhos, Liquidações e Pagamentos emitidos para um favorecido
+                - img [ref=e1307]
+              - button "authorization button unlocked" [ref=e1309]:
+                - img [ref=e1310]
+              - generic "Copy to clipboard"
+        - generic [ref=e1315]:
+          - heading "api-funcional-programatica-controller Collapse operation" [level=3] [ref=e1316] [cursor=pointer]:
+            - link "api-funcional-programatica-controller" [ref=e1317]:
+              - /url: "#/api-funcional-programatica-controller"
+            - button "Collapse operation" [expanded] [ref=e1318]:
+              - img [ref=e1319]
+          - generic [ref=e1322]:
+            - generic [ref=e1325] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/funcional-programatica/subfuncoes" [ref=e1326]:
+                - generic [ref=e1327]: GET
+                - link "/api-de-dados/despesas/funcional-programatica/subfuncoes" [ref=e1329]:
+                  - /url: "#/api-funcional-programatica-controller/subfuncoes"
+                  - generic [ref=e1330]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /funcional-programatica
+                    - text: /subfuncoes
+                - img [ref=e1331]
+              - button "authorization button unlocked" [ref=e1333]:
+                - img [ref=e1334]
+              - generic "Copy to clipboard"
+            - generic [ref=e1340] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/funcional-programatica/programas" [ref=e1341]:
+                - generic [ref=e1342]: GET
+                - link "/api-de-dados/despesas/funcional-programatica/programas" [ref=e1344]:
+                  - /url: "#/api-funcional-programatica-controller/programas"
+                  - generic [ref=e1345]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /funcional-programatica
+                    - text: /programas
+                - img [ref=e1346]
+              - button "authorization button unlocked" [ref=e1348]:
+                - img [ref=e1349]
+              - generic "Copy to clipboard"
+            - generic [ref=e1355] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/funcional-programatica/listar" [ref=e1356]:
+                - generic [ref=e1357]: GET
+                - link "/api-de-dados/despesas/funcional-programatica/listar" [ref=e1359]:
+                  - /url: "#/api-funcional-programatica-controller/funcionalProgramatica"
+                  - generic [ref=e1360]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /funcional-programatica
+                    - text: /listar
+                - img [ref=e1361]
+              - button "authorization button unlocked" [ref=e1363]:
+                - img [ref=e1364]
+              - generic "Copy to clipboard"
+            - generic [ref=e1370] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/funcional-programatica/funcoes" [ref=e1371]:
+                - generic [ref=e1372]: GET
+                - link "/api-de-dados/despesas/funcional-programatica/funcoes" [ref=e1374]:
+                  - /url: "#/api-funcional-programatica-controller/funcoes"
+                  - generic [ref=e1375]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /funcional-programatica
+                    - text: /funcoes
+                - img [ref=e1376]
+              - button "authorization button unlocked" [ref=e1378]:
+                - img [ref=e1379]
+              - generic "Copy to clipboard"
+            - generic [ref=e1385] [cursor=pointer]:
+              - button "get /api-de-dados/despesas/funcional-programatica/acoes" [ref=e1386]:
+                - generic [ref=e1387]: GET
+                - link "/api-de-dados/despesas/funcional-programatica/acoes" [ref=e1389]:
+                  - /url: "#/api-funcional-programatica-controller/acoes"
+                  - generic [ref=e1390]:
+                    - text: /api-de-dados
+                    - text: /despesas
+                    - text: /funcional-programatica
+                    - text: /acoes
+                - img [ref=e1391]
+              - button "authorization button unlocked" [ref=e1393]:
+                - img [ref=e1394]
+              - generic "Copy to clipboard"
+        - generic [ref=e1399]:
+          - heading "Coronavírus Collapse operation" [level=3] [ref=e1400] [cursor=pointer]:
+            - link "Coronavírus" [ref=e1401]:
+              - /url: "#/Coronavírus"
+            - button "Collapse operation" [expanded] [ref=e1402]:
+              - img [ref=e1403]
+          - generic [ref=e1406]:
+            - generic [ref=e1409] [cursor=pointer]:
+              - button "get /api-de-dados/coronavirus/transferencias" [ref=e1410]:
+                - generic [ref=e1411]: GET
+                - link "/api-de-dados/coronavirus/transferencias" [ref=e1413]:
+                  - /url: "#/Coronavírus/buscarTransferencias"
+                  - generic [ref=e1414]:
+                    - text: /api-de-dados
+                    - text: /coronavirus
+                    - text: /transferencias
+                - generic [ref=e1415]: Consulta de transferências mensal das despesas do Poder Executivo Federal pela classificação funcional programática
+                - img [ref=e1416]
+              - button "authorization button unlocked" [ref=e1418]:
+                - img [ref=e1419]
+              - generic "Copy to clipboard"
+            - generic [ref=e1425] [cursor=pointer]:
+              - button "get /api-de-dados/coronavirus/movimento-liquido-despesa" [ref=e1426]:
+                - generic [ref=e1427]: GET
+                - link "/api-de-dados/coronavirus/movimento-liquido-despesa" [ref=e1429]:
+                  - /url: "#/Coronavírus/despesasPorFuncaoMovimentacaoLiquida_1"
+                  - generic [ref=e1430]:
+                    - text: /api-de-dados
+                    - text: /coronavirus
+                    - text: /movimento-liquido-despesa
+                - generic [ref=e1431]: Consulta de movimentação líquida mensal das despesas do Poder Executivo Federal pela classificação funcional programática
+                - img [ref=e1432]
+              - button "authorization button unlocked" [ref=e1434]:
+                - img [ref=e1435]
+              - generic "Copy to clipboard"
+        - generic [ref=e1440]:
+          - heading "Convênios do Poder Executivo Federal Collapse operation" [level=3] [ref=e1441] [cursor=pointer]:
+            - link "Convênios do Poder Executivo Federal" [ref=e1442]:
+              - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal"
+            - button "Collapse operation" [expanded] [ref=e1443]:
+              - img [ref=e1444]
+          - generic [ref=e1447]:
+            - generic [ref=e1450] [cursor=pointer]:
+              - button "get /api-de-dados/convenios" [ref=e1451]:
+                - generic [ref=e1452]: GET
+                - link "/api-de-dados/convenios" [ref=e1454]:
+                  - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal/convenios"
+                  - generic [ref=e1455]:
+                    - text: /api-de-dados
+                    - text: /convenios
+                - generic [ref=e1456]: Consulta todos convênios do Poder Executivo Federal
+                - img [ref=e1457]
+              - button "authorization button unlocked" [ref=e1459]:
+                - img [ref=e1460]
+              - generic "Copy to clipboard"
+            - generic [ref=e1466] [cursor=pointer]:
+              - button "get /api-de-dados/convenios/tipo-instrumento" [ref=e1467]:
+                - generic [ref=e1468]: GET
+                - link "/api-de-dados/convenios/tipo-instrumento" [ref=e1470]:
+                  - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal/listaTiposDeInstrumento"
+                  - generic [ref=e1471]:
+                    - text: /api-de-dados
+                    - text: /convenios
+                    - text: /tipo-instrumento
+                - generic [ref=e1472]: Consulta os tipos de instrumentos usados nos convênios
+                - img [ref=e1473]
+              - button "authorization button unlocked" [ref=e1475]:
+                - img [ref=e1476]
+              - generic "Copy to clipboard"
+            - generic [ref=e1482] [cursor=pointer]:
+              - button "get /api-de-dados/convenios/numero" [ref=e1483]:
+                - generic [ref=e1484]: GET
+                - link "/api-de-dados/convenios/numero" [ref=e1486]:
+                  - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal/conveniosPorNumero"
+                  - generic [ref=e1487]:
+                    - text: /api-de-dados
+                    - text: /convenios
+                    - text: /numero
+                - generic [ref=e1488]: Consulta um convênio do Poder Executivo Federal pelo número do contrato
+                - img [ref=e1489]
+              - button "authorization button unlocked" [ref=e1491]:
+                - img [ref=e1492]
+              - generic "Copy to clipboard"
+            - generic [ref=e1498] [cursor=pointer]:
+              - button "get /api-de-dados/convenios/numero-processo" [ref=e1499]:
+                - generic [ref=e1500]: GET
+                - link "/api-de-dados/convenios/numero-processo" [ref=e1502]:
+                  - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal/conveniosPorNumeroProcesso"
+                  - generic [ref=e1503]:
+                    - text: /api-de-dados
+                    - text: /convenios
+                    - text: /numero-processo
+                - generic [ref=e1504]: Consulta um convênio do Poder Executivo Federal pelo número do processo
+                - img [ref=e1505]
+              - button "authorization button unlocked" [ref=e1507]:
+                - img [ref=e1508]
+              - generic "Copy to clipboard"
+            - generic [ref=e1514] [cursor=pointer]:
+              - button "get /api-de-dados/convenios/numero-original" [ref=e1515]:
+                - generic [ref=e1516]: GET
+                - link "/api-de-dados/convenios/numero-original" [ref=e1518]:
+                  - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal/conveniosPorNumeroOriginal"
+                  - generic [ref=e1519]:
+                    - text: /api-de-dados
+                    - text: /convenios
+                    - text: /numero-original
+                - generic [ref=e1520]: Consulta um convênio do Poder Executivo Federal pelo número original do contrato
+                - img [ref=e1521]
+              - button "authorization button unlocked" [ref=e1523]:
+                - img [ref=e1524]
+              - generic "Copy to clipboard"
+            - generic [ref=e1530] [cursor=pointer]:
+              - button "get /api-de-dados/convenios/id" [ref=e1531]:
+                - generic [ref=e1532]: GET
+                - link "/api-de-dados/convenios/id" [ref=e1534]:
+                  - /url: "#/Convênios%20do%20Poder%20Executivo%20Federal/convenio"
+                  - generic [ref=e1535]:
+                    - text: /api-de-dados
+                    - text: /convenios
+                    - text: /id
+                - generic [ref=e1536]: Consulta um convênio do Poder Executivo Federal pelo id
+                - img [ref=e1537]
+              - button "authorization button unlocked" [ref=e1539]:
+                - img [ref=e1540]
+              - generic "Copy to clipboard"
+        - generic [ref=e1545]:
+          - heading "Contratos do Poder Executivo Federal Collapse operation" [level=3] [ref=e1546] [cursor=pointer]:
+            - link "Contratos do Poder Executivo Federal" [ref=e1547]:
+              - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal"
+            - button "Collapse operation" [expanded] [ref=e1548]:
+              - img [ref=e1549]
+          - generic [ref=e1552]:
+            - generic [ref=e1555] [cursor=pointer]:
+              - button "get /api-de-dados/contratos" [ref=e1556]:
+                - generic [ref=e1557]: GET
+                - link "/api-de-dados/contratos" [ref=e1559]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/contratos"
+                  - generic [ref=e1560]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                - generic [ref=e1561]: Consulta os todos contratos do Poder Executivo Federal
+                - img [ref=e1562]
+              - button "authorization button unlocked" [ref=e1564]:
+                - img [ref=e1565]
+              - generic "Copy to clipboard"
+            - generic [ref=e1571] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/termo-aditivo" [ref=e1572]:
+                - generic [ref=e1573]: GET
+                - link "/api-de-dados/contratos/termo-aditivo" [ref=e1575]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/termosAditivosDoContrato"
+                  - generic [ref=e1576]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /termo-aditivo
+                - generic [ref=e1577]: Consulta os termos aditivos do contrato pelo id do contrato
+                - img [ref=e1578]
+              - button "authorization button unlocked" [ref=e1580]:
+                - img [ref=e1581]
+              - generic "Copy to clipboard"
+            - generic [ref=e1587] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/processo" [ref=e1588]:
+                - generic [ref=e1589]: GET
+                - link "/api-de-dados/contratos/processo" [ref=e1591]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/contratosPorProcesso"
+                  - generic [ref=e1592]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /processo
+                - generic [ref=e1593]: Consulta um contrato do Poder Executivo Federal pelo número do processo
+                - img [ref=e1594]
+              - button "authorization button unlocked" [ref=e1596]:
+                - img [ref=e1597]
+              - generic "Copy to clipboard"
+            - generic [ref=e1603] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/numero" [ref=e1604]:
+                - generic [ref=e1605]: GET
+                - link "/api-de-dados/contratos/numero" [ref=e1607]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/contratosPorNumero"
+                  - generic [ref=e1608]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /numero
+                - generic [ref=e1609]: Consulta um contrato do Poder Executivo Federal pelo número do contrato
+                - img [ref=e1610]
+              - button "authorization button unlocked" [ref=e1612]:
+                - img [ref=e1613]
+              - generic "Copy to clipboard"
+            - generic [ref=e1619] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/itens-contratados" [ref=e1620]:
+                - generic [ref=e1621]: GET
+                - link "/api-de-dados/contratos/itens-contratados" [ref=e1623]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/itensContratados"
+                  - generic [ref=e1624]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /itens-contratados
+                - generic [ref=e1625]: Consulta os itens contratados pelo id do contrato
+                - img [ref=e1626]
+              - button "authorization button unlocked" [ref=e1628]:
+                - img [ref=e1629]
+              - generic "Copy to clipboard"
+            - generic [ref=e1635] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/id" [ref=e1636]:
+                - generic [ref=e1637]: GET
+                - link "/api-de-dados/contratos/id" [ref=e1639]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/contrato"
+                  - generic [ref=e1640]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /id
+                - generic [ref=e1641]: Consulta um contrato do Poder Executivo Federal pelo id
+                - img [ref=e1642]
+              - button "authorization button unlocked" [ref=e1644]:
+                - img [ref=e1645]
+              - generic "Copy to clipboard"
+            - generic [ref=e1651] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/documentos-relacionados" [ref=e1652]:
+                - generic [ref=e1653]: GET
+                - link "/api-de-dados/contratos/documentos-relacionados" [ref=e1655]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/documentosRelacionadosAoContrato"
+                  - generic [ref=e1656]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /documentos-relacionados
+                - generic [ref=e1657]: Consulta os documentos relacionados a um contrato pelo id do contrato
+                - img [ref=e1658]
+              - button "authorization button unlocked" [ref=e1660]:
+                - img [ref=e1661]
+              - generic "Copy to clipboard"
+            - generic [ref=e1667] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/cpf-cnpj" [ref=e1668]:
+                - generic [ref=e1669]: GET
+                - link "/api-de-dados/contratos/cpf-cnpj" [ref=e1671]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/contratoPorCpfCnpj"
+                  - generic [ref=e1672]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /cpf-cnpj
+                - generic [ref=e1673]: Consulta um contrato do Poder Executivo Federal pelo CPF/CNPJ do Fornecedor
+                - img [ref=e1674]
+              - button "authorization button unlocked" [ref=e1676]:
+                - img [ref=e1677]
+              - generic "Copy to clipboard"
+            - generic [ref=e1683] [cursor=pointer]:
+              - button "get /api-de-dados/contratos/apostilamento" [ref=e1684]:
+                - generic [ref=e1685]: GET
+                - link "/api-de-dados/contratos/apostilamento" [ref=e1687]:
+                  - /url: "#/Contratos%20do%20Poder%20Executivo%20Federal/apostilamentosDoContrato"
+                  - generic [ref=e1688]:
+                    - text: /api-de-dados
+                    - text: /contratos
+                    - text: /apostilamento
+                - generic [ref=e1689]: Consulta os apostilamentos do contrato pelo id do contrato
+                - img [ref=e1690]
+              - button "authorization button unlocked" [ref=e1692]:
+                - img [ref=e1693]
+              - generic "Copy to clipboard"
+        - generic [ref=e1698]:
+          - heading "Sanções Collapse operation" [level=3] [ref=e1699] [cursor=pointer]:
+            - link "Sanções" [ref=e1700]:
+              - /url: "#/Sanções"
+            - button "Collapse operation" [expanded] [ref=e1701]:
+              - img [ref=e1702]
+          - generic [ref=e1705]:
+            - generic [ref=e1708] [cursor=pointer]:
+              - button "get /api-de-dados/cnep" [ref=e1709]:
+                - generic [ref=e1710]: GET
+                - link "/api-de-dados/cnep" [ref=e1712]:
+                  - /url: "#/Sanções/cnep"
+                  - generic [ref=e1713]:
+                    - text: /api-de-dados
+                    - text: /cnep
+                - generic [ref=e1714]: Consulta os registros do CNEP por CNPJ ou CPF Sancionado/Órgão Sancionador/Período
+                - img [ref=e1715]
+              - button "authorization button unlocked" [ref=e1717]:
+                - img [ref=e1718]
+              - generic "Copy to clipboard"
+            - generic [ref=e1724] [cursor=pointer]:
+              - 'button "get /api-de-dados/cnep/{id}" [ref=e1725]':
+                - generic [ref=e1726]: GET
+                - 'link "/api-de-dados/cnep/{id}" [ref=e1728]':
+                  - /url: "#/Sanções/cnep_1"
+                  - generic [ref=e1729]:
+                    - text: /api-de-dados
+                    - text: /cnep
+                    - text: "/{id}"
+                - generic [ref=e1730]: Consulta um registro do CNEP pelo id
+                - img [ref=e1731]
+              - button "authorization button unlocked" [ref=e1733]:
+                - img [ref=e1734]
+              - generic "Copy to clipboard"
+            - generic [ref=e1740] [cursor=pointer]:
+              - button "get /api-de-dados/cepim" [ref=e1741]:
+                - generic [ref=e1742]: GET
+                - link "/api-de-dados/cepim" [ref=e1744]:
+                  - /url: "#/Sanções/cepim"
+                  - generic [ref=e1745]:
+                    - text: /api-de-dados
+                    - text: /cepim
+                - generic [ref=e1746]: Consulta os registros do CEPIM por CNPJ ou CPF Sancionado/Órgão superior
+                - img [ref=e1747]
+              - button "authorization button unlocked" [ref=e1749]:
+                - img [ref=e1750]
+              - generic "Copy to clipboard"
+            - generic [ref=e1756] [cursor=pointer]:
+              - 'button "get /api-de-dados/cepim/{id}" [ref=e1757]':
+                - generic [ref=e1758]: GET
+                - 'link "/api-de-dados/cepim/{id}" [ref=e1760]':
+                  - /url: "#/Sanções/cepim_1"
+                  - generic [ref=e1761]:
+                    - text: /api-de-dados
+                    - text: /cepim
+                    - text: "/{id}"
+                - generic [ref=e1762]: Consulta um registro do CEPIM pelo id
+                - img [ref=e1763]
+              - button "authorization button unlocked" [ref=e1765]:
+                - img [ref=e1766]
+              - generic "Copy to clipboard"
+            - generic [ref=e1772] [cursor=pointer]:
+              - button "get /api-de-dados/ceis" [ref=e1773]:
+                - generic [ref=e1774]: GET
+                - link "/api-de-dados/ceis" [ref=e1776]:
+                  - /url: "#/Sanções/ceis"
+                  - generic [ref=e1777]:
+                    - text: /api-de-dados
+                    - text: /ceis
+                - generic [ref=e1778]: Consulta os registros do CEIS por CNPJ ou CPF Sancionado/Órgão Sancionador/Período
+                - img [ref=e1779]
+              - button "authorization button unlocked" [ref=e1781]:
+                - img [ref=e1782]
+              - generic "Copy to clipboard"
+            - generic [ref=e1788] [cursor=pointer]:
+              - 'button "get /api-de-dados/ceis/{id}" [ref=e1789]':
+                - generic [ref=e1790]: GET
+                - 'link "/api-de-dados/ceis/{id}" [ref=e1792]':
+                  - /url: "#/Sanções/ceis_1"
+                  - generic [ref=e1793]:
+                    - text: /api-de-dados
+                    - text: /ceis
+                    - text: "/{id}"
+                - generic [ref=e1794]: Consulta um registro do CEIS pelo id
+                - img [ref=e1795]
+              - button "authorization button unlocked" [ref=e1797]:
+                - img [ref=e1798]
+              - generic "Copy to clipboard"
+            - generic [ref=e1804] [cursor=pointer]:
+              - button "get /api-de-dados/ceaf" [ref=e1805]:
+                - generic [ref=e1806]: GET
+                - link "/api-de-dados/ceaf" [ref=e1808]:
+                  - /url: "#/Sanções/ceaf"
+                  - generic [ref=e1809]:
+                    - text: /api-de-dados
+                    - text: /ceaf
+                - generic [ref=e1810]: Consulta os registros do CEAF por CPF/Órgão de Lotação/Período
+                - img [ref=e1811]
+              - button "authorization button unlocked" [ref=e1813]:
+                - img [ref=e1814]
+              - generic "Copy to clipboard"
+            - generic [ref=e1820] [cursor=pointer]:
+              - 'button "get /api-de-dados/ceaf/{id}" [ref=e1821]':
+                - generic [ref=e1822]: GET
+                - 'link "/api-de-dados/ceaf/{id}" [ref=e1824]':
+                  - /url: "#/Sanções/ceaf_1"
+                  - generic [ref=e1825]:
+                    - text: /api-de-dados
+                    - text: /ceaf
+                    - text: "/{id}"
+                - generic [ref=e1826]: Consulta um registro do CEAF pelo id
+                - img [ref=e1827]
+              - button "authorization button unlocked" [ref=e1829]:
+                - img [ref=e1830]
+              - generic "Copy to clipboard"
+            - generic [ref=e1836] [cursor=pointer]:
+              - button "get /api-de-dados/acordos-leniencia" [ref=e1837]:
+                - generic [ref=e1838]: GET
+                - link "/api-de-dados/acordos-leniencia" [ref=e1840]:
+                  - /url: "#/Sanções/acordosLeniencia"
+                  - generic [ref=e1841]:
+                    - text: /api-de-dados
+                    - text: /acordos-leniencia
+                - generic [ref=e1842]: Consulta os registros de Acordos de Leniência por Nome ou CNPJ do Sancionado/Situação/Período
+                - img [ref=e1843]
+              - button "authorization button unlocked" [ref=e1845]:
+                - img [ref=e1846]
+              - generic "Copy to clipboard"
+            - generic [ref=e1852] [cursor=pointer]:
+              - 'button "get /api-de-dados/acordos-leniencia/{id}" [ref=e1853]':
+                - generic [ref=e1854]: GET
+                - 'link "/api-de-dados/acordos-leniencia/{id}" [ref=e1856]':
+                  - /url: "#/Sanções/acordoLeniencia"
+                  - generic [ref=e1857]:
+                    - text: /api-de-dados
+                    - text: /acordos-leniencia
+                    - text: "/{id}"
+                - generic [ref=e1858]: Consulta um registro de Acordo de Leniência pelo id
+                - img [ref=e1859]
+              - button "authorization button unlocked" [ref=e1861]:
+                - img [ref=e1862]
+              - generic "Copy to clipboard"
+        - generic [ref=e1867]:
+          - heading "Gastos por meio de cartão de pagamento Collapse operation" [level=3] [ref=e1868] [cursor=pointer]:
+            - link "Gastos por meio de cartão de pagamento" [ref=e1869]:
+              - /url: "#/Gastos%20por%20meio%20de%20cartão%20de%20pagamento"
+            - button "Collapse operation" [expanded] [ref=e1870]:
+              - img [ref=e1871]
+          - generic [ref=e1877] [cursor=pointer]:
+            - button "get /api-de-dados/cartoes" [ref=e1878]:
+              - generic [ref=e1879]: GET
+              - link "/api-de-dados/cartoes" [ref=e1881]:
+                - /url: "#/Gastos%20por%20meio%20de%20cartão%20de%20pagamento/cartao"
+                - generic [ref=e1882]:
+                  - text: /api-de-dados
+                  - text: /cartoes
+              - generic [ref=e1883]: Consulta os registros de Cartões de Pagamento
+              - img [ref=e1884]
+            - button "authorization button unlocked" [ref=e1886]:
+              - img [ref=e1887]
+            - generic "Copy to clipboard"
+      - generic [ref=e1893]:
+        - heading "Schemas" [level=4] [ref=e1894] [cursor=pointer]:
+          - button "Schemas" [expanded] [ref=e1895]:
+            - generic [ref=e1896]: Schemas
+            - img [ref=e1897]
+        - generic [ref=e1899]:
+          - button "BeneficiarioDTO" [ref=e1902] [cursor=pointer]:
+            - generic [ref=e1904]: BeneficiarioDTO
+          - button "CargoBeneficiarioDTO" [ref=e1908] [cursor=pointer]:
+            - generic [ref=e1910]: CargoBeneficiarioDTO
+          - button "DimViagemDTO" [ref=e1914] [cursor=pointer]:
+            - generic [ref=e1916]: DimViagemDTO
+          - button "FuncaoBeneficiarioDTO" [ref=e1920] [cursor=pointer]:
+            - generic [ref=e1922]: FuncaoBeneficiarioDTO
+          - button "OrgaoDTO" [ref=e1926] [cursor=pointer]:
+            - generic [ref=e1928]: OrgaoDTO
+          - button "OrgaoMaximoDTO" [ref=e1932] [cursor=pointer]:
+            - generic [ref=e1934]: OrgaoMaximoDTO
+          - button "OrgaoVinculadoDTO" [ref=e1938] [cursor=pointer]:
+            - generic [ref=e1940]: OrgaoVinculadoDTO
+          - button "UnidadeGestoraDTO" [ref=e1944] [cursor=pointer]:
+            - generic [ref=e1946]: UnidadeGestoraDTO
+          - button "ViagemDTO" [ref=e1950] [cursor=pointer]:
+            - generic [ref=e1952]: ViagemDTO
+          - button "CadastroServidorDTO" [ref=e1956] [cursor=pointer]:
+            - generic [ref=e1958]: CadastroServidorDTO
+          - button "FichaAposentadoriaDTO" [ref=e1962] [cursor=pointer]:
+            - generic [ref=e1964]: FichaAposentadoriaDTO
+          - button "FichaCargoEfetivoDTO" [ref=e1968] [cursor=pointer]:
+            - generic [ref=e1970]: FichaCargoEfetivoDTO
+          - button "FichaFuncaoDTO" [ref=e1974] [cursor=pointer]:
+            - generic [ref=e1976]: FichaFuncaoDTO
+          - button "FichaMilitarDTO" [ref=e1980] [cursor=pointer]:
+            - generic [ref=e1982]: FichaMilitarDTO
+          - button "FichaPensaoCivilDTO" [ref=e1986] [cursor=pointer]:
+            - generic [ref=e1988]: FichaPensaoCivilDTO
+          - button "FichaPensaoMilitarDTO" [ref=e1992] [cursor=pointer]:
+            - generic [ref=e1994]: FichaPensaoMilitarDTO
+          - button "FichaReformadoDTO" [ref=e1998] [cursor=pointer]:
+            - generic [ref=e2000]: FichaReformadoDTO
+          - button "FichaServidorCivilDTO" [ref=e2004] [cursor=pointer]:
+            - generic [ref=e2006]: FichaServidorCivilDTO
+          - button "FuncaoServidorDTO" [ref=e2010] [cursor=pointer]:
+            - generic [ref=e2012]: FuncaoServidorDTO
+          - button "OrgaoServidorDTO" [ref=e2016] [cursor=pointer]:
+            - generic [ref=e2018]: OrgaoServidorDTO
+          - button "PensionistaRepresentanteDTO" [ref=e2022] [cursor=pointer]:
+            - generic [ref=e2024]: PensionistaRepresentanteDTO
+          - button "PessoaDTO" [ref=e2028] [cursor=pointer]:
+            - generic [ref=e2030]: PessoaDTO
+          - button "ServidorAposentadoPensionistaDTO" [ref=e2034] [cursor=pointer]:
+            - generic [ref=e2036]: ServidorAposentadoPensionistaDTO
+          - button "ServidorInativoDTO" [ref=e2040] [cursor=pointer]:
+            - generic [ref=e2042]: ServidorInativoDTO
+          - button "UFDTO" [ref=e2046] [cursor=pointer]:
+            - generic [ref=e2048]: UFDTO
+          - button "HonorariosAdvocaticiosDTO" [ref=e2052] [cursor=pointer]:
+            - generic [ref=e2054]: HonorariosAdvocaticiosDTO
+          - button "JetomDTO" [ref=e2058] [cursor=pointer]:
+            - generic [ref=e2060]: JetomDTO
+          - button "RemuneracaoDTO" [ref=e2064] [cursor=pointer]:
+            - generic [ref=e2066]: RemuneracaoDTO
+          - button "RubricaDTO" [ref=e2070] [cursor=pointer]:
+            - generic [ref=e2072]: RubricaDTO
+          - button "ServidorRemuneracaoDTO" [ref=e2076] [cursor=pointer]:
+            - generic [ref=e2078]: ServidorRemuneracaoDTO
+          - button "ServidorPorOrgaoDTO" [ref=e2082] [cursor=pointer]:
+            - generic [ref=e2084]: ServidorPorOrgaoDTO
+          - button "BeneficioPorMunicipioDTO" [ref=e2088] [cursor=pointer]:
+            - generic [ref=e2090]: BeneficioPorMunicipioDTO
+          - button "MunicipioDTO" [ref=e2094] [cursor=pointer]:
+            - generic [ref=e2096]: MunicipioDTO
+          - button "TipoBeneficioDTO" [ref=e2100] [cursor=pointer]:
+            - generic [ref=e2102]: TipoBeneficioDTO
+          - button "SeguroDefesoDTO" [ref=e2106] [cursor=pointer]:
+            - generic [ref=e2108]: SeguroDefesoDTO
+          - button "SafraDTO" [ref=e2112] [cursor=pointer]:
+            - generic [ref=e2114]: SafraDTO
+          - button "RenunciaDTO" [ref=e2118] [cursor=pointer]:
+            - generic [ref=e2120]: RenunciaDTO
+          - button "EmpresaImuneIsentaDTO" [ref=e2124] [cursor=pointer]:
+            - generic [ref=e2126]: EmpresaImuneIsentaDTO
+          - button "EmpresaHabilitadaBeneficioFiscalDTO" [ref=e2130] [cursor=pointer]:
+            - generic [ref=e2132]: EmpresaHabilitadaBeneficioFiscalDTO
+          - button "PetiDTO" [ref=e2136] [cursor=pointer]:
+            - generic [ref=e2138]: PetiDTO
+          - button "PessoaJuridicaDTO" [ref=e2142] [cursor=pointer]:
+            - generic [ref=e2144]: PessoaJuridicaDTO
+          - button "PessoaFisicaDTO" [ref=e2148] [cursor=pointer]:
+            - generic [ref=e2150]: PessoaFisicaDTO
+          - button "OrgaoResponsavelDTO" [ref=e2154] [cursor=pointer]:
+            - generic [ref=e2156]: OrgaoResponsavelDTO
+          - button "PermissionarioDTO" [ref=e2160] [cursor=pointer]:
+            - generic [ref=e2162]: PermissionarioDTO
+          - button "PEPDTO" [ref=e2166] [cursor=pointer]:
+            - generic [ref=e2168]: PEPDTO
+          - button "CodigoDescricaoDTO" [ref=e2172] [cursor=pointer]:
+            - generic [ref=e2174]: CodigoDescricaoDTO
+          - button "NovoBolsaFamiliaPagoDTO" [ref=e2178] [cursor=pointer]:
+            - generic [ref=e2180]: NovoBolsaFamiliaPagoDTO
+          - button "NotaFiscalDTO" [ref=e2184] [cursor=pointer]:
+            - generic [ref=e2186]: NotaFiscalDTO
+          - button "DetalheNotaFiscalDTO" [ref=e2190] [cursor=pointer]:
+            - generic [ref=e2192]: DetalheNotaFiscalDTO
+          - button "EventoNotaFiscalDTO" [ref=e2196] [cursor=pointer]:
+            - generic [ref=e2198]: EventoNotaFiscalDTO
+          - button "ItemNotaFiscalDTO" [ref=e2202] [cursor=pointer]:
+            - generic [ref=e2204]: ItemNotaFiscalDTO
+          - button "CompraDTO" [ref=e2208] [cursor=pointer]:
+            - generic [ref=e2210]: CompraDTO
+          - button "LicitacaoDTO" [ref=e2214] [cursor=pointer]:
+            - generic [ref=e2216]: LicitacaoDTO
+          - button "ParticipanteLicitacaoDTO" [ref=e2220] [cursor=pointer]:
+            - generic [ref=e2222]: ParticipanteLicitacaoDTO
+          - button "ItemLicitacaoDTO" [ref=e2226] [cursor=pointer]:
+            - generic [ref=e2228]: ItemLicitacaoDTO
+          - button "EmpenhoComprasDTO" [ref=e2232] [cursor=pointer]:
+            - generic [ref=e2234]: EmpenhoComprasDTO
+          - button "ContratoDTO" [ref=e2238] [cursor=pointer]:
+            - generic [ref=e2240]: ContratoDTO
+          - button "IdDescricaoDTO" [ref=e2244] [cursor=pointer]:
+            - generic [ref=e2246]: IdDescricaoDTO
+          - button "ImovelFuncionalDTO" [ref=e2250] [cursor=pointer]:
+            - generic [ref=e2252]: ImovelFuncionalDTO
+          - button "ConsultaEmendasDTO" [ref=e2256] [cursor=pointer]:
+            - generic [ref=e2258]: ConsultaEmendasDTO
+          - button "DocumentoRelacionadoEmendaDTO" [ref=e2262] [cursor=pointer]:
+            - generic [ref=e2264]: DocumentoRelacionadoEmendaDTO
+          - button "PessoaRecursosRecebidosUGMesDesnormalizadaDTO" [ref=e2268] [cursor=pointer]:
+            - generic [ref=e2270]: PessoaRecursosRecebidosUGMesDesnormalizadaDTO
+          - button "DespesaAnualPorOrgaoDTO" [ref=e2274] [cursor=pointer]:
+            - generic [ref=e2276]: DespesaAnualPorOrgaoDTO
+          - button "DespesaAnualPorFuncaoESubfuncaoDTO" [ref=e2280] [cursor=pointer]:
+            - generic [ref=e2282]: DespesaAnualPorFuncaoESubfuncaoDTO
+          - button "DespesaLiquidaAnualPorFuncaoESubfuncaoDTO" [ref=e2286] [cursor=pointer]:
+            - generic [ref=e2288]: DespesaLiquidaAnualPorFuncaoESubfuncaoDTO
+          - button "DespesasPorPlanoOrcamentarioDTO" [ref=e2292] [cursor=pointer]:
+            - generic [ref=e2294]: DespesasPorPlanoOrcamentarioDTO
+          - button "DetalhamentoDoGastoDTO" [ref=e2298] [cursor=pointer]:
+            - generic [ref=e2300]: DetalhamentoDoGastoDTO
+          - button "HistoricoSubItemEmpenhoDTO" [ref=e2304] [cursor=pointer]:
+            - generic [ref=e2306]: HistoricoSubItemEmpenhoDTO
+          - button "DimFuncionalProgramaticaDTO" [ref=e2310] [cursor=pointer]:
+            - generic [ref=e2312]: DimFuncionalProgramaticaDTO
+          - button "FuncionalProgramaticaDTO" [ref=e2316] [cursor=pointer]:
+            - generic [ref=e2318]: FuncionalProgramaticaDTO
+          - button "ConsultaFavorecidosFinaisPorDocumentoDTO" [ref=e2322] [cursor=pointer]:
+            - generic [ref=e2324]: ConsultaFavorecidosFinaisPorDocumentoDTO
+          - button "EmpenhoImpactadoBasicoDTO" [ref=e2328] [cursor=pointer]:
+            - generic [ref=e2330]: EmpenhoImpactadoBasicoDTO
+          - button "DespesasPorDocumentoDTO" [ref=e2334] [cursor=pointer]:
+            - generic [ref=e2336]: DespesasPorDocumentoDTO
+          - button "DocumentoRelacionadoDTO" [ref=e2340] [cursor=pointer]:
+            - generic [ref=e2342]: DocumentoRelacionadoDTO
+          - button "TransferenciaCoronavirusDTO" [ref=e2346] [cursor=pointer]:
+            - generic [ref=e2348]: TransferenciaCoronavirusDTO
+          - button "MovimentacaoLiquidaCovidDTO" [ref=e2352] [cursor=pointer]:
+            - generic [ref=e2354]: MovimentacaoLiquidaCovidDTO
+          - button "ConvenioDTO" [ref=e2358] [cursor=pointer]:
+            - generic [ref=e2360]: ConvenioDTO
+          - button "DimConvenioDTO" [ref=e2364] [cursor=pointer]:
+            - generic [ref=e2366]: DimConvenioDTO
+          - button "FuncaoDTO" [ref=e2370] [cursor=pointer]:
+            - generic [ref=e2372]: FuncaoDTO
+          - button "SubfuncaoDTO" [ref=e2376] [cursor=pointer]:
+            - generic [ref=e2378]: SubfuncaoDTO
+          - button "TipoInstrumentoDTO" [ref=e2382] [cursor=pointer]:
+            - generic [ref=e2384]: TipoInstrumentoDTO
+          - button "TermoAditivoDTO" [ref=e2388] [cursor=pointer]:
+            - generic [ref=e2390]: TermoAditivoDTO
+          - button "ItemContratadoDTO" [ref=e2394] [cursor=pointer]:
+            - generic [ref=e2396]: ItemContratadoDTO
+          - button "ApostilamentoDTO" [ref=e2400] [cursor=pointer]:
+            - generic [ref=e2402]: ApostilamentoDTO
+          - button "CnepDTO" [ref=e2406] [cursor=pointer]:
+            - generic [ref=e2408]: CnepDTO
+          - button "FonteSancaoDTO" [ref=e2412] [cursor=pointer]:
+            - generic [ref=e2414]: FonteSancaoDTO
+          - button "OrgaoSancionadorDTO" [ref=e2418] [cursor=pointer]:
+            - generic [ref=e2420]: OrgaoSancionadorDTO
+          - button "SancionadoDTO" [ref=e2424] [cursor=pointer]:
+            - generic [ref=e2426]: SancionadoDTO
+          - button "TipoSancaoDTO" [ref=e2430] [cursor=pointer]:
+            - generic [ref=e2432]: TipoSancaoDTO
+          - button "CepimDTO" [ref=e2436] [cursor=pointer]:
+            - generic [ref=e2438]: CepimDTO
+          - button "CeisDTO" [ref=e2442] [cursor=pointer]:
+            - generic [ref=e2444]: CeisDTO
+          - button "CeafDTO" [ref=e2448] [cursor=pointer]:
+            - generic [ref=e2450]: CeafDTO
+          - button "OrgaoCeafDTO" [ref=e2454] [cursor=pointer]:
+            - generic [ref=e2456]: OrgaoCeafDTO
+          - button "PunicaoDTO" [ref=e2460] [cursor=pointer]:
+            - generic [ref=e2462]: PunicaoDTO
+          - button "TipoPunicaoDTO" [ref=e2466] [cursor=pointer]:
+            - generic [ref=e2468]: TipoPunicaoDTO
+          - button "UFLotacaoDTO" [ref=e2472] [cursor=pointer]:
+            - generic [ref=e2474]: UFLotacaoDTO
+          - button "CartoesDTO" [ref=e2478] [cursor=pointer]:
+            - generic [ref=e2480]: CartoesDTO
+          - button "IdCodigoDescricaoDTO" [ref=e2484] [cursor=pointer]:
+            - generic [ref=e2486]: IdCodigoDescricaoDTO
+          - button "BPCDTO" [ref=e2490] [cursor=pointer]:
+            - generic [ref=e2492]: BPCDTO
+          - button "BeneficiarioBPCDTO" [ref=e2496] [cursor=pointer]:
+            - generic [ref=e2498]: BeneficiarioBPCDTO
+          - button "BolsaFamiliaPagoDTO" [ref=e2502] [cursor=pointer]:
+            - generic [ref=e2504]: BolsaFamiliaPagoDTO
+          - button "BolsaFamiliaDTO" [ref=e2508] [cursor=pointer]:
+            - generic [ref=e2510]: BolsaFamiliaDTO
+          - button "AuxilioEmergencialDTO" [ref=e2514] [cursor=pointer]:
+            - generic [ref=e2516]: AuxilioEmergencialDTO
+          - button "AuxilioBrasilPagoDTO" [ref=e2520] [cursor=pointer]:
+            - generic [ref=e2522]: AuxilioBrasilPagoDTO
+          - button "AcordosLenienciaDTO" [ref=e2526] [cursor=pointer]:
+            - generic [ref=e2528]: AcordosLenienciaDTO
+          - button "EmpresaSancionadaDTO" [ref=e2532] [cursor=pointer]:
+            - generic [ref=e2534]: EmpresaSancionadaDTO
