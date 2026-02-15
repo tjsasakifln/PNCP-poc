@@ -49,17 +49,18 @@ Esta story e o prerequisito absoluto de toda a resolucao de debito tecnico. Abra
 - [ ] Resultado documentado em comentario na story
 
 ### Backend Code Fixes (Dia 1 tarde)
-- [ ] `quota.py` linha ~791: `_ensure_profile_exists()` usa `plan_type = 'free_trial'` (nao `'free'`)
-- [ ] `quota.py` linha ~522: fallback `get("plan_type", "free_trial")` (nao `'free'`)
-- [ ] `admin.py` linha ~246: `CreateUserRequest` default `'free_trial'` (nao `'free'`)
+- [x] `quota.py` linha ~790: `_ensure_profile_exists()` usa `plan_type = 'free_trial'` (nao `'free'`) ✓
+- [x] `quota.py` linha ~522: fallback `get("plan_type", "free_trial")` (nao `'free'`) ✓
+- [x] `admin.py` linha ~246: `CreateUserRequest` default `'free_trial'` (nao `'free'`) ✓
+- [x] `admin.py` linhas 348/357: comparacoes atualizadas de `"free"` para `"free_trial"` ✓
 - [ ] Backend deployed com fixes antes da migration
-- [ ] `grep -r "plan_type.*free['\"]" backend/` retorna zero matches de `"free"` sem `_trial`
+- [x] `grep -r "plan_type.*free['\"]" backend/` retorna zero matches de `"free"` sem `_trial` ✓
 
 ### Migration 027 (Dia 2 manha)
-- [ ] Column default de `profiles.plan_type` alterado para `'free_trial'::text`
-- [ ] `handle_new_user()` recriado com `plan_type = 'free_trial'`
-- [ ] RLS de `pipeline_items`: policy scoped a `service_role` + policy `user_id = auth.uid()` para authenticated
-- [ ] RLS de `search_results_cache`: policy scoped a `service_role` + policy `user_id = auth.uid()` para authenticated
+- [x] Column default de `profiles.plan_type` alterado para `'free_trial'::text` ✓
+- [x] `handle_new_user()` recriado com `plan_type = 'free_trial'` ✓
+- [x] RLS de `pipeline_items`: policy scoped a `service_role` + policy `user_id = auth.uid()` para authenticated ✓
+- [x] RLS de `search_results_cache`: policy scoped a `service_role` + policy `user_id = auth.uid()` para authenticated ✓
 - [ ] Migration aplicada com sucesso via `npx supabase db push`
 
 ### Validacao Pos-Deploy (Dia 2 tarde)
@@ -117,9 +118,22 @@ CREATE POLICY "Service role full access on pipeline_items"
 **ALERTA:** Rollback de RLS reintroduz vulnerabilidade cross-user. Usar como ultimo recurso.
 
 ## Definition of Done
-- [ ] Codigo implementado e revisado
-- [ ] Testes passando (unitario + integracao)
+- [x] Codigo implementado e revisado
+- [x] Testes passando (unitario + integracao) — 15 novos tests, 67/67 passando, zero regressoes
 - [ ] CI/CD green
 - [ ] Documentacao atualizada (resultado das queries V1-V5 documentado)
 - [ ] Deploy em producao verificado (queries V6-V8)
-- [ ] Zero matches de `plan_type = "free"` (sem `_trial`) no backend
+- [x] Zero matches de `plan_type = "free"` (sem `_trial`) no backend ✓
+
+## File List (Arquivos Modificados)
+
+| Arquivo | Tipo | Descricao |
+|---------|------|-----------|
+| `backend/quota.py` | Modificado | Linhas 522, 790: `"free"` → `"free_trial"` |
+| `backend/admin.py` | Modificado | Linha 246: default `"free"` → `"free_trial"`, linhas 348/357: comparacoes atualizadas |
+| `supabase/migrations/027_fix_plan_type_default_and_rls.sql` | Novo | Column default, handle_new_user() trigger, RLS hardening |
+| `backend/tests/test_td001_plan_type_fixes.py` | Novo | 7 testes: REG-T02, DB-16 fallback, DB-15 admin default |
+| `backend/tests/test_td001_rls_security.py` | Novo | 8 testes: SEC-T01, SEC-T02, SEC-T03, idempotency |
+| `backend/tests/test_secure_id_validation.py` | Modificado | Linha 471: test updated para `"free_trial"` |
+| `backend/tests/snapshots/openapi_schema.json` | Modificado | Snapshot atualizado com novo default |
+| `backend/tests/snapshots/openapi_schema.diff.json` | Modificado | Diff snapshot atualizado |

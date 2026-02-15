@@ -519,7 +519,7 @@ def get_plan_from_profile(user_id: str, sb=None) -> Optional[str]:
         if not result.data:
             return None
 
-        plan_type = result.data.get("plan_type", "free")
+        plan_type = result.data.get("plan_type", "free_trial")
 
         # Map legacy profile values to current plan IDs
         PLAN_TYPE_MAP = {
@@ -787,7 +787,7 @@ def _ensure_profile_exists(user_id: str, sb) -> bool:
         sb.table("profiles").insert({
             "id": user_id,
             "email": email,
-            "plan_type": "free",
+            "plan_type": "free_trial",
         }).execute()
         logger.info(f"Created missing profile for user {mask_user_id(user_id)}")
         return True

@@ -243,7 +243,7 @@ class CreateUserRequest(BaseModel):
     email: str = Field(..., description="User email")
     password: str = Field(..., min_length=8, description="User password (min 8 chars, 1 uppercase, 1 digit)")
     full_name: Optional[str] = None
-    plan_id: Optional[str] = Field(default="free", description="Initial plan")
+    plan_id: Optional[str] = Field(default="free_trial", description="Initial plan")
     company: Optional[str] = None
 
 
@@ -345,7 +345,7 @@ async def create_user(
     user_id = str(user_response.user.id)
 
     # Update profile with extra fields
-    if req.company or req.plan_id != "free":
+    if req.company or req.plan_id != "free_trial":
         updates = {}
         if req.company:
             updates["company"] = req.company
@@ -353,8 +353,8 @@ async def create_user(
             updates["plan_type"] = req.plan_id
         sb.table("profiles").update(updates).eq("id", user_id).execute()
 
-    # Assign plan if not free
-    if req.plan_id and req.plan_id != "free":
+    # Assign plan if not free_trial
+    if req.plan_id and req.plan_id != "free_trial":
         _assign_plan(sb, user_id, req.plan_id)
 
     # SECURITY: Sanitize PII before logging (Issue #168)

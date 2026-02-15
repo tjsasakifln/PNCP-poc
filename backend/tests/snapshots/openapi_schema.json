@@ -5294,7 +5294,7 @@
             ],
             "title": "Plan Id",
             "description": "Initial plan",
-            "default": "free"
+            "default": "free_trial"
           },
           "company": {
             "anyOf": [
