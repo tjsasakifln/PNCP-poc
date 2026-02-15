@@ -79,23 +79,23 @@ O token do Supabase expira e **não é renovado proativamente**. O frontend cont
 
 ### Track 1: Proactive Token Refresh (2h)
 
-- [ ] **AC1:** `AuthProvider` implementa refresh proativo: `setInterval` que chama `supabase.auth.refreshSession()` a cada 10 minutos (Supabase tokens têm TTL de 1h por default).
-- [ ] **AC2:** Timer de refresh é limpo no cleanup do `useEffect` (evita memory leak).
-- [ ] **AC3:** Se `refreshSession()` falha (ex: refresh token expirado), setar estado `sessionExpired=true` e mostrar modal/banner pedindo re-login.
-- [ ] **AC4:** Log no console (dev mode): `"Token refreshed successfully"` ou `"Token refresh failed — session expired"`.
+- [x] **AC1:** `AuthProvider` implementa refresh proativo: `setInterval` que chama `supabase.auth.refreshSession()` a cada 10 minutos (Supabase tokens têm TTL de 1h por default).
+- [x] **AC2:** Timer de refresh é limpo no cleanup do `useEffect` (evita memory leak).
+- [x] **AC3:** Se `refreshSession()` falha (ex: refresh token expirado), setar estado `sessionExpired=true` e mostrar modal/banner pedindo re-login.
+- [x] **AC4:** Log no console (dev mode): `"Token refreshed successfully"` ou `"Token refresh failed — session expired"`.
 
 ### Track 2: 401 Interceptor (2h)
 
-- [ ] **AC5:** Criar utility `fetchWithAuth(url, options)` que wrapa `fetch` com lógica: se resposta é 401, tenta `refreshSession()` uma vez e retenta o request original com novo token.
-- [ ] **AC6:** `useUnreadCount` usa `fetchWithAuth` em vez de `fetch` direto.
-- [ ] **AC7:** API proxy routes (`/api/buscar`, `/api/me`, `/api/sessions`, `/api/messages/*`) usam `fetchWithAuth` ou equivalente server-side.
-- [ ] **AC8:** Se retry após refresh também retorna 401, redirecionar para `/login?reason=session_expired`.
+- [x] **AC5:** Criar utility `fetchWithAuth(url, options)` que wrapa `fetch` com lógica: se resposta é 401, tenta `refreshSession()` uma vez e retenta o request original com novo token.
+- [x] **AC6:** `useUnreadCount` usa `fetchWithAuth` em vez de `fetch` direto.
+- [x] **AC7:** API proxy routes (`/api/buscar`, `/api/me`, `/api/sessions`, `/api/messages/*`) usam `fetchWithAuth` ou equivalente server-side.
+- [x] **AC8:** Se retry após refresh também retorna 401, redirecionar para `/login?reason=session_expired`.
 
 ### Track 3: UX de Sessão Expirada (1h)
 
-- [ ] **AC9:** Quando `sessionExpired=true`, mostrar toast/banner: "Sua sessão expirou. Faça login novamente para continuar."
-- [ ] **AC10:** Botão "Fazer Login" no banner redireciona para `/login` preservando a URL atual como `?redirect=`.
-- [ ] **AC11:** Após re-login, usuário é redirecionado de volta para a página onde estava.
+- [x] **AC9:** Quando `sessionExpired=true`, mostrar toast/banner: "Sua sessão expirou. Faça login novamente para continuar."
+- [x] **AC10:** Botão "Fazer Login" no banner redireciona para `/login` preservando a URL atual como `?redirect=`.
+- [x] **AC11:** Após re-login, usuário é redirecionado de volta para a página onde estava.
 
 ---
 
@@ -114,12 +114,12 @@ O token do Supabase expira e **não é renovado proativamente**. O frontend cont
 
 ## Definition of Done
 
-- [ ] Sessão não expira silenciosamente — refresh proativo a cada 10 min
-- [ ] 401 → retry automático com token novo (1 tentativa)
-- [ ] Se sessão realmente expirou, banner claro com redirect para login
-- [ ] Zero 401 repetidos em loop nos logs de produção
-- [ ] Testes unitários para `fetchWithAuth` (mock de 401 → refresh → retry)
-- [ ] Zero regressão em testes existentes
+- [x] Sessão não expira silenciosamente — refresh proativo a cada 10 min
+- [x] 401 → retry automático com token novo (1 tentativa)
+- [x] Se sessão realmente expirou, banner claro com redirect para login
+- [x] Zero 401 repetidos em loop nos logs de produção
+- [x] Testes unitários para `fetchWithAuth` (mock de 401 → refresh → retry)
+- [x] Zero regressão em testes existentes
 
 ## Out of Scope
 

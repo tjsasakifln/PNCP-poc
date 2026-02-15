@@ -3,11 +3,16 @@ import { randomUUID } from "crypto";
 import { writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
+import { getRefreshedToken } from "../../../lib/serverAuth";
 
 export async function POST(request: NextRequest) {
   try {
-    // Require authentication - return 401 if no auth header
-    const authHeader = request.headers.get("authorization");
+    // STORY-253 AC7: Prefer server-side refreshed token, fall back to header
+    const refreshedToken = await getRefreshedToken();
+    const authHeader = refreshedToken
+      ? `Bearer ${refreshedToken}`
+      : request.headers.get("authorization");
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return NextResponse.json(
         { message: "Autenticacao necessaria. Faca login para continuar." },

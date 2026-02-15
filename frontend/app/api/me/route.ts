@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRefreshedToken } from "../../../lib/serverAuth";
 
 export async function GET(request: NextRequest) {
   const backendUrl = process.env.BACKEND_URL;
@@ -10,8 +11,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Forward auth header to backend
-  const authHeader = request.headers.get("authorization");
+  // STORY-253 AC7: Prefer server-side refreshed token, fall back to header
+  const refreshedToken = await getRefreshedToken();
+  const authHeader = refreshedToken
+    ? `Bearer ${refreshedToken}`
+    : request.headers.get("authorization");
+
   if (!authHeader) {
     return NextResponse.json(
       { message: "Autenticacao necessaria" },

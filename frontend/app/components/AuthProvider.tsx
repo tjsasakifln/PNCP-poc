@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  sessionExpired: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, fullName?: string, company?: string, sector?: string, phoneWhatsApp?: string, whatsappConsent?: boolean) => Promise<void>;
   signInWithMagicLink: (email: string) => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   // Fetch admin status when session changes
   const fetchAdminStatus = useCallback(async (accessToken: string) => {
@@ -162,8 +164,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // STORY-253 AC1: Proactive token refresh every 10 minutes
+    const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!currentSession) return; // No session to refresh
+
+        const { data: { session: refreshed }, error } =
+          await supabase.auth.refreshSession();
+
+        if (error || !refreshed) {
+          // AC3: Refresh failed — mark session as expired
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[AuthProvider] Proactive refresh failed:", error?.message);
+          }
+          setSessionExpired(true);
+        } else {
+          // AC4: Log success in dev mode
+          if (process.env.NODE_ENV === "development") {
+            console.info("[AuthProvider] Proactive token refresh successful");
+          }
+          setSessionExpired(false);
+        }
+      } catch (err) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("[AuthProvider] Proactive refresh error:", err);
+        }
+        setSessionExpired(true);
+      }
+    }, REFRESH_INTERVAL_MS);
+
+    // AC2: Timer cleanup to prevent memory leaks
     return () => {
       clearTimeout(authTimeout);
+      clearInterval(refreshInterval);
       subscription.unsubscribe();
     };
   }, [fetchAdminStatus]);
@@ -253,6 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         loading,
         isAdmin,
+        sessionExpired,
         signInWithEmail,
         signUpWithEmail,
         signInWithMagicLink,
