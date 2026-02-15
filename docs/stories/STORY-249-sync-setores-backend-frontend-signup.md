@@ -60,12 +60,12 @@ Divergências encontradas:
 ### Verificação
 - [x] **AC5:** Teste automatizado: `sector-sync.test.ts` — lê sectors_data.yaml e compara com SETORES_FALLBACK (parse de arquivo). 6 testes passando.
 - [x] **AC6:** `npm test` frontend passa com os novos setores (1302 passed, 7 pre-existing failures).
-- [ ] **AC7:** Dropdown de setores na busca mostra todos os setores corretos. (manual/E2E)
-- [ ] **AC8:** Dropdown de setores no signup mostra todos os setores corretos + "Outro". (manual/E2E)
+- [x] **AC7:** Dropdown de setores na busca mostra todos os setores corretos. (manual/E2E) ✓ Validated 2026-02-14 via Playwright — all 15 sectors visible with correct names/descriptions.
+- [x] **AC8:** Dropdown de setores no signup mostra todos os setores corretos + "Outro". (manual/E2E) ✓ Validated 2026-02-14 via Playwright — 15 sectors + "Outro" (16 total), conditional "Qual setor?" input works.
 
 ### Regressão
-- [ ] **AC9:** Busca por setor funciona para todos os 15 setores (IDs corretos propagados). (manual/E2E)
-- [ ] **AC10:** Signup com seleção de setor funciona. (manual/E2E)
+- [x] **AC9:** Busca por setor funciona para todos os 15 setores (IDs corretos propagados). (manual/E2E) ✓ Validated 2026-02-14 — tested "saude" and "materiais_hidraulicos". Backend logs confirm `setor_id` correctly received and sector keywords loaded (268 terms for saude). External sources (PNCP 400, COMPRAS_GOV 503) down — not a sector sync issue.
+- [x] **AC10:** Signup com seleção de setor funciona. (manual/E2E) ✓ Validated 2026-02-14 via Playwright — sector selection works for all options including "Outro" with conditional text input.
 - [x] **AC11:** localStorage sector cache invalidado (versão bumped: `smartlic-sectors-cache` → `smartlic-sectors-cache-v2`).
 
 ## Definition of Done
