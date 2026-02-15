@@ -58,27 +58,27 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
 
 **Nova filosofia:** Degraded mode = "ser mais paciente e cauteloso", NÃO "desistir".
 
-- [ ] **AC1: Degraded mode tenta com concorrência reduzida**
+- [x] **AC1: Degraded mode tenta com concorrência reduzida**
   - `pncp_client.py:buscar_todas_ufs_paralelo()`: quando `is_degraded=True`, reduzir `max_concurrent` de 10 para 3
   - Priorizar UFs por população (SP, RJ, MG, BA, PR, RS, PE, CE, SC, GO primeiro)
   - Aumentar `timeout_per_uf` de 30s para 45s em degraded mode
   - Log: `"PNCP degraded — trying with reduced concurrency (3 UFs, 45s timeout)"`
   - **Critério:** Busca com circuit breaker degraded DEVE tentar o PNCP (não pular)
 
-- [ ] **AC2: Threshold e cooldown ajustados**
+- [x] **AC2: Threshold e cooldown ajustados**
   - `PNCP_CIRCUIT_BREAKER_THRESHOLD`: 5 → 8 (mais tolerante antes de trip)
   - `PNCP_CIRCUIT_BREAKER_COOLDOWN`: 300s → 120s (recupera mais rápido)
   - Manter configurável via env var (não hardcode)
   - **Critério:** Pelo menos 8 timeouts consecutivos antes de entrar em degraded
 
-- [ ] **AC3: Health canary distingue 4xx de 5xx**
+- [x] **AC3: Health canary distingue 4xx de 5xx**
   - `pncp_client.py` health canary: HTTP 4xx (400, 404, 422) = client error → NÃO trip breaker
   - HTTP 4xx: logar `WARN canary_client_error status={code} body={body[:200]}` e **prosseguir com busca normal**
   - HTTP 5xx (500, 502, 503) e timeout = server error → `record_failure()` normalmente
   - Revisar params do canary (data range, modalidade) para garantir que são válidos no PNCP
   - **Critério:** HTTP 400 no canary não ativa degraded mode
 
-- [ ] **AC4: Race condition fix + separar check de mutação**
+- [x] **AC4: Race condition fix + separar check de mutação**
   - `pncp_client.py:86-96`: separar `is_degraded` (read-only property) de `try_recover()` (muta estado)
   - `is_degraded` apenas checa `time.time() < degraded_until` — sem side effects
   - `try_recover()` adquire `asyncio.Lock`, checa expiração, reseta se expirado
@@ -90,7 +90,7 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
 
 **Problema:** Se 20/27 UFs retornam dados e 7 falham, o sistema retorna os 20 mas não informa que 7 faltaram. O usuário não sabe se está vendo o quadro completo.
 
-- [ ] **AC5: Response inclui `failed_ufs` e `succeeded_ufs`**
+- [x] **AC5: Response inclui `failed_ufs` e `succeeded_ufs`**
   - Adicionar ao response JSON de `/buscar`:
     ```json
     {
@@ -104,7 +104,7 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
   - `search_pipeline.py`: propagar `failed_ufs` no contexto e incluir no response
   - **Critério:** Frontend recebe lista exata de UFs que falharam
 
-- [ ] **AC6: Progresso SSE per-UF com status detalhado**
+- [x] **AC6: Progresso SSE per-UF com status detalhado**
   - `progress.py`: novo tipo de evento `uf_status` com campos:
     ```json
     {"stage": "uf_status", "uf": "SP", "status": "success", "count": 47}
@@ -114,7 +114,7 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
   - Emitir evento quando cada UF: inicia, retenta, finaliza (sucesso ou falha)
   - **Critério:** Frontend recebe status individual por UF via SSE
 
-- [ ] **AC7: Auto-retry de UFs falhas**
+- [x] **AC7: Auto-retry de UFs falhas**
   - Após o fetch principal, se `failed_ufs` não está vazio e `succeeded_ufs` não está vazio:
     - Esperar 5s e retentar UFs falhas com timeout estendido (45s)
     - Máximo 1 round de retry automático
@@ -126,7 +126,7 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
 
 **Problema:** Quando todas as fontes caem, o usuário vê zero resultados, mesmo que a busca idêntica tenha funcionado horas atrás.
 
-- [ ] **AC8: Cache write-through em busca bem-sucedida**
+- [x] **AC8: Cache write-through em busca bem-sucedida**
   - Usar `InMemoryCache` existente (`redis_pool.py`)
   - Cache key: `search_cache:{sha256(json.dumps(sorted_params))}` onde params = `{setor_id, ufs, status, modalidades, modo_busca}`
     - **Excluir datas do cache key** — queremos servir resultados recentes mesmo se datas mudaram ligeiramente
@@ -135,7 +135,7 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
   - Apenas cachear quando `total > 0` (nunca cachear resultados vazios)
   - **Critério:** Busca com resultados grava no cache automaticamente
 
-- [ ] **AC9: Cache hit quando AllSourcesFailedError**
+- [x] **AC9: Cache hit quando AllSourcesFailedError**
   - Em `search_pipeline.py`, no catch de `AllSourcesFailedError`:
     1. Tentar cache hit com mesmos params
     2. Se hit: retornar resultados com `cached: true`, `cached_at: "2026-02-14T22:00:00Z"`
@@ -143,13 +143,13 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
   - Response com cache inclui flag `cached: true` para frontend exibir banner
   - **Critério:** Busca que falha mas tem cache retorna dados em <1s (não 16s de timeout)
 
-- [ ] **AC10: `force_fresh` param para bypass de cache**
+- [x] **AC10: `force_fresh` param para bypass de cache**
   - Adicionar campo opcional `force_fresh: bool = False` no `BuscaRequest` schema
   - Quando `force_fresh=True`: ignorar cache no read (mas ainda fazer write-through)
   - Usar quando usuário clica "Atualizar dados" no frontend
   - **Critério:** Request com `force_fresh=true` sempre tenta fontes primárias
 
-- [ ] **AC11: Persistência de última busca por usuário (Supabase)**
+- [x] **AC11: Persistência de última busca por usuário (Supabase)**
   - Tabela `search_results_cache`:
     ```sql
     CREATE TABLE search_results_cache (
@@ -171,22 +171,22 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
 
 ### Track 4: Fixes Técnicos Consolidados (1h)
 
-- [ ] **AC12: Fix resource leak no fallback adapter**
+- [x] **AC12: Fix resource leak no fallback adapter**
   - `consolidation.py`: método `close()` deve fechar `self._fallback_adapter` se existir
   - Usar `async with` ou try/finally para garantir cleanup
   - **Critério:** Nenhum HTTP client leak após busca
 
-- [ ] **AC13: `is_available()` retorna False sem credentials**
+- [x] **AC13: `is_available()` retorna False sem credentials**
   - `sources.py:236`: checar se API key está configurada quando source requer autenticação
   - Health endpoint: reportar `pending_credentials` para fontes enabled sem key
   - `search_pipeline.py`: não passar fontes com `is_available()=False` ao ConsolidationService
   - **Critério:** Fontes sem credenciais não são tentadas (evita timeout fantasma)
 
-- [ ] **AC14: Log non-dict results do gather**
+- [x] **AC14: Log non-dict results do gather**
   - `consolidation.py:182`: quando `asyncio.gather` retorna resultado non-dict, logar `WARN unexpected_result type={type} value={str(val)[:200]}`
   - **Critério:** Nenhum resultado silenciosamente descartado sem log
 
-- [ ] **AC15: Observabilidade por busca**
+- [x] **AC15: Observabilidade por busca**
   - Log estruturado JSON no final de cada busca:
     ```json
     {
@@ -212,16 +212,19 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
 
 ### Backend (10 testes)
 
-- [ ] **T1:** Circuit breaker degraded: busca TENTA com concorrência reduzida (não pula)
-- [ ] **T2:** Circuit breaker threshold: 7 falhas consecutivas → ainda healthy. 8ª falha → degraded
-- [ ] **T3:** Circuit breaker cooldown: após 120s, estado volta para healthy
-- [ ] **T4:** Health canary 400: NÃO ativa circuit breaker, busca prossegue normalmente
-- [ ] **T5:** Health canary 503: ATIVA circuit breaker via `record_failure()`
-- [ ] **T6:** Race condition: `record_failure()` e `try_recover()` usam Lock (testar com concurrent tasks)
-- [ ] **T7:** Cache write-through: busca com resultados grava no cache
-- [ ] **T8:** Cache hit no AllSourcesFailedError: retorna dados com `cached=true`
-- [ ] **T9:** `is_available()` retorna False para fonte enabled sem API key
-- [ ] **T10:** Response inclui `failed_ufs` quando UFs falham por timeout
+- [x] **T1:** Circuit breaker degraded: busca TENTA com concorrência reduzida (não pula)
+- [x] **T2:** Circuit breaker threshold: 7 falhas consecutivas → ainda healthy. 8ª falha → degraded
+- [x] **T3:** Circuit breaker cooldown: após 120s, estado volta para healthy
+- [x] **T4:** Health canary 400: NÃO ativa circuit breaker, busca prossegue normalmente
+- [x] **T5:** Health canary 503: ATIVA circuit breaker via `record_failure()`
+- [x] **T6:** Race condition: `record_failure()` e `try_recover()` usam Lock (testar com concurrent tasks)
+- [x] **T7:** Cache write-through: busca com resultados grava no cache
+- [x] **T8:** Cache hit no AllSourcesFailedError: retorna dados com `cached=true`
+- [x] **T9:** `is_available()` retorna False para fonte enabled sem API key
+- [x] **T10:** Response inclui `failed_ufs` quando UFs falham por timeout
+- [x] **T11:** Per-UF status callback invocation (fetching → success)
+- [x] **T12:** Auto-retry of failed UFs (retry → recovered)
+- [x] **T13:** Structured log fields verification
 
 ---
 
@@ -253,12 +256,12 @@ O PNCP é a única fonte relevante hoje. As demais (ComprasGov, Portal, Licitar)
 
 ## Definition of Done
 
-- [ ] Todos os ACs checked
-- [ ] `pytest` sem regressões (baseline: 21 pre-existing)
-- [ ] Busca com circuit breaker degraded TENTA o PNCP (não pula)
-- [ ] HTTP 400 no canary não causa blackout
-- [ ] Busca idêntica que funcionou 2h atrás serve cache quando fontes caem
-- [ ] Response inclui `failed_ufs` para transparência ao frontend
-- [ ] Race conditions eliminadas (Lock em todas as mutações)
-- [ ] Nenhum nome técnico de fonte exposto ao usuário (PNCP, ComprasGov → "nossas fontes")
-- [ ] Log estruturado JSON em cada busca para observabilidade
+- [x] Todos os ACs checked
+- [x] `pytest` sem regressões (baseline: 21 pre-existing)
+- [x] Busca com circuit breaker degraded TENTA o PNCP (não pula)
+- [x] HTTP 400 no canary não causa blackout
+- [x] Busca idêntica que funcionou 2h atrás serve cache quando fontes caem
+- [x] Response inclui `failed_ufs` para transparência ao frontend
+- [x] Race conditions eliminadas (Lock em todas as mutações)
+- [x] Nenhum nome técnico de fonte exposto ao usuário (PNCP, ComprasGov → "nossas fontes")
+- [x] Log estruturado JSON em cada busca para observabilidade

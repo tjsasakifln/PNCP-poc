@@ -23,6 +23,7 @@ import time
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
 
 import pytest
+from pncp_client import ParallelFetchResult
 
 
 # ============================================================================
@@ -129,6 +130,7 @@ class TestCircuitBreaker:
         # Wait for cooldown
         await asyncio.sleep(1.1)
         assert not cb.is_degraded, "Should reset after cooldown"
+        await cb.try_recover()
         assert cb.consecutive_failures == 0
 
 
@@ -147,7 +149,7 @@ class TestHealthCanary:
             with patch.object(client, "health_canary", return_value=False):
                 # Manually set circuit breaker to degraded (canary does this)
                 _circuit_breaker.degraded_until = time.time() + 300
-                _circuit_breaker.consecutive_failures = 5
+                _circuit_breaker.consecutive_failures = 8
 
                 results = await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
@@ -155,7 +157,7 @@ class TestHealthCanary:
                     data_final="2026-01-15",
                 )
 
-            assert results == []
+            assert isinstance(results, ParallelFetchResult)
 
         _circuit_breaker.reset()
 
@@ -186,7 +188,7 @@ class TestHealthCanary:
                     data_final="2026-01-15",
                 )
 
-        assert len(results) >= 1
+        assert len(results.items) >= 1
         _circuit_breaker.reset()
 
 

@@ -16,6 +16,8 @@ AC8: No deferred imports — all imports at module level.
 """
 
 import asyncio
+import hashlib
+import json
 import logging
 import os
 import time as sync_time_module
@@ -26,7 +28,7 @@ import quota  # Module-level import; accessed via quota.func() for mock compatib
 
 from search_context import SearchContext
 from schemas import BuscaResponse, FilterStats, ResumoLicitacoes, ResumoEstrategico, LicitacaoItem, DataSourceStatus
-from pncp_client import get_circuit_breaker, PNCPDegradedError
+from pncp_client import get_circuit_breaker, PNCPDegradedError, ParallelFetchResult
 from consolidation import AllSourcesFailedError
 from term_parser import parse_search_terms
 from relevance import calculate_min_matches, score_relevance, count_phrase_matches
@@ -37,6 +39,7 @@ from storage import upload_excel
 from llm import gerar_resumo, gerar_resumo_fallback
 from authorization import get_admin_ids, get_master_quota_info
 from log_sanitizer import mask_user_id
+from redis_pool import get_fallback_cache
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -194,6 +197,47 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
             logger.warning(f"Failed to convert bid to LicitacaoItem: {e}")
             continue
     return items
+
+
+# ============================================================================
+# STORY-257A: Search results cache helpers
+# ============================================================================
+
+SEARCH_CACHE_TTL = 4 * 3600  # 4 hours
+
+
+def _compute_cache_key(request) -> str:
+    """Compute deterministic cache key from search params (excluding dates)."""
+    params = {
+        "setor_id": request.setor_id,
+        "ufs": sorted(request.ufs),
+        "status": request.status.value if request.status else None,
+        "modalidades": sorted(request.modalidades) if request.modalidades else None,
+        "modo_busca": request.modo_busca,
+    }
+    params_json = json.dumps(params, sort_keys=True)
+    return f"search_cache:{hashlib.sha256(params_json.encode()).hexdigest()}"
+
+
+def _read_cache(cache_key: str):
+    """Read from InMemoryCache. Returns parsed dict or None."""
+    cache = get_fallback_cache()
+    raw = cache.get(cache_key)
+    if raw is None:
+        return None
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def _write_cache(cache_key: str, data: dict) -> None:
+    """Write search results to InMemoryCache with TTL."""
+    cache = get_fallback_cache()
+    try:
+        cache.setex(cache_key, SEARCH_CACHE_TTL, json.dumps(data, default=str))
+    except Exception as e:
+        logger.warning(f"Failed to write search cache: {e}")
 
 
 # ============================================================================
@@ -438,6 +482,20 @@ class SearchPipeline:
         deps = self.deps
         request = ctx.request
 
+        # STORY-257A AC8-10: Search results cache
+        cache_key = _compute_cache_key(request)
+
+        # AC10: Respect force_fresh flag
+        if not request.force_fresh:
+            cached = _read_cache(cache_key)
+            if cached:
+                logger.info(f"Cache HIT for search (cached_at={cached.get('cached_at', 'unknown')})")
+                ctx.licitacoes_raw = cached.get("licitacoes", [])
+                ctx.cached = True
+                ctx.cached_at = cached.get("cached_at")
+                # Skip the actual fetch — go straight to filtering
+                return
+
         enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "false").lower() == "true"
         ctx.source_stats_data = None
 
@@ -452,11 +510,16 @@ class SearchPipeline:
                 msg += " (multi-fonte ativo)"
             await ctx.tracker.emit("fetching", 10, msg)
 
-        # Build per-UF progress callback for SSE
+        # Build per-UF progress callbacks for SSE
         uf_progress_callback = None
+        uf_status_callback = None
         if ctx.tracker:
             async def uf_progress_callback(uf: str, items_count: int):
                 await ctx.tracker.emit_uf_complete(uf, items_count)
+
+            # STORY-257A AC6: Per-UF status callback for detailed tracking grid
+            async def uf_status_callback(uf: str, status: str, **detail):
+                await ctx.tracker.emit_uf_status(uf, status, **detail)
 
         FETCH_TIMEOUT = 4 * 60  # 4 minutes
 
@@ -464,11 +527,13 @@ class SearchPipeline:
             await self._execute_multi_source(
                 ctx, request, deps, modalidades_to_fetch, status_value,
                 uf_progress_callback, FETCH_TIMEOUT,
+                uf_status_callback=uf_status_callback,
             )
         else:
             await self._execute_pncp_only(
                 ctx, request, deps, use_parallel, modalidades_to_fetch,
                 status_value, uf_progress_callback, FETCH_TIMEOUT,
+                uf_status_callback=uf_status_callback,
             )
 
         fetch_elapsed = sync_time_module.time() - ctx.start_time
@@ -487,9 +552,24 @@ class SearchPipeline:
         enriquecer_com_status_inferido(ctx.licitacoes_raw)
         logger.info(f"Status inference complete for {len(ctx.licitacoes_raw)} bids")
 
+        # STORY-257A AC8: Cache write-through on successful fetch
+        if ctx.licitacoes_raw and len(ctx.licitacoes_raw) > 0:
+            cache_data = {
+                "licitacoes": ctx.licitacoes_raw,
+                "total": len(ctx.licitacoes_raw),
+                "cached_at": datetime.now().isoformat() + "Z",
+                "search_params": {
+                    "setor_id": request.setor_id,
+                    "ufs": request.ufs,
+                    "status": request.status.value if request.status else None,
+                },
+            }
+            _write_cache(cache_key, cache_data)
+            logger.info(f"Cache WRITE: {len(ctx.licitacoes_raw)} results cached (TTL={SEARCH_CACHE_TTL}s)")
+
     async def _execute_multi_source(
         self, ctx, request, deps, modalidades_to_fetch, status_value,
-        uf_progress_callback, fetch_timeout,
+        uf_progress_callback, fetch_timeout, uf_status_callback=None,
     ):
         """Multi-source consolidation path (STORY-177)."""
         logger.info("Multi-source fetch enabled, using ConsolidationService")
@@ -500,6 +580,14 @@ class SearchPipeline:
         from pncp_client import PNCPLegacyAdapter
 
         source_config = get_source_config()
+
+        # STORY-257A AC13: Only include sources that are actually available
+        available_sources = source_config.get_available_sources()
+        logger.info(f"Available sources: {[s.code.value for s in available_sources]}")
+        pending_creds = source_config.get_pending_credentials()
+        if pending_creds:
+            logger.warning(f"Sources with pending credentials: {pending_creds}")
+
         adapters = {}
 
         if source_config.pncp.enabled:
@@ -508,6 +596,7 @@ class SearchPipeline:
                 modalidades=modalidades_to_fetch,
                 status=status_value,
                 on_uf_complete=uf_progress_callback,
+                on_uf_status=uf_status_callback,
             )
 
         if source_config.compras_gov.enabled:
@@ -625,35 +714,20 @@ class SearchPipeline:
     async def _execute_pncp_only(
         self, ctx, request, deps, use_parallel, modalidades_to_fetch,
         status_value, uf_progress_callback, fetch_timeout,
+        uf_status_callback=None,
     ):
         """PNCP-only fetch path (default)."""
         logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
 
-        # STORY-252 T8: Check circuit breaker before attempting PNCP fetch.
-        # If PNCP is known to be degraded, skip the fetch entirely to avoid
-        # wasting time on requests that will almost certainly timeout.
+        # STORY-257A AC1: Circuit breaker try_recover only (degraded mode tries with reduced concurrency)
         cb = get_circuit_breaker()
-        if cb.is_degraded:
-            logger.warning(
-                "PNCP circuit breaker is DEGRADED — skipping PNCP fetch. "
-                f"Degraded until {cb.degraded_until}, cooldown={cb.cooldown_seconds}s"
-            )
-            ctx.licitacoes_raw = []
-            ctx.is_partial = True
-            ctx.degradation_reason = (
-                "PNCP esta temporariamente indisponivel (circuit breaker ativo). "
-                "Tente novamente em alguns minutos."
-            )
-            ctx.data_sources = [
-                DataSourceStatus(source="PNCP", status="skipped", records=0)
-            ]
-            return
+        await cb.try_recover()
 
         async def _do_fetch() -> list:
             if use_parallel:
                 logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
                 try:
-                    return await deps.buscar_todas_ufs_paralelo(
+                    fetch_result = await deps.buscar_todas_ufs_paralelo(
                         ufs=request.ufs,
                         data_inicial=request.data_inicial,
                         data_final=request.data_final,
@@ -661,7 +735,14 @@ class SearchPipeline:
                         status=status_value,
                         max_concurrent=10,
                         on_uf_complete=uf_progress_callback,
+                        on_uf_status=uf_status_callback,
                     )
+                    # Handle both ParallelFetchResult and plain list (backward compat)
+                    if isinstance(fetch_result, ParallelFetchResult):
+                        ctx.succeeded_ufs = fetch_result.succeeded_ufs
+                        ctx.failed_ufs = fetch_result.failed_ufs
+                        return fetch_result.items
+                    return fetch_result
                 except PNCPDegradedError:
                     raise  # Re-raise to be handled by outer try/except
                 except Exception as e:
@@ -688,14 +769,24 @@ class SearchPipeline:
 
         try:
             ctx.licitacoes_raw = await asyncio.wait_for(_do_fetch(), timeout=fetch_timeout)
+            # STORY-257A AC5: Track UF metadata
+            if ctx.failed_ufs is None:
+                ctx.failed_ufs = []
+            if ctx.succeeded_ufs is None:
+                ctx.succeeded_ufs = list(request.ufs)
+
             # STORY-252 T8: Successful PNCP fetch — populate data source status
             ctx.data_sources = [
                 DataSourceStatus(
                     source="PNCP",
-                    status="ok",
+                    status="ok" if not ctx.failed_ufs else "partial",
                     records=len(ctx.licitacoes_raw),
                 )
             ]
+
+            # STORY-257A AC5: Mark as partial if UFs failed
+            if ctx.failed_ufs:
+                ctx.is_partial = True
         except PNCPDegradedError as e:
             # STORY-252 T8: PNCP circuit breaker tripped during fetch.
             # Return empty results with degradation info rather than crashing.
@@ -923,6 +1014,11 @@ class SearchPipeline:
                 is_partial=ctx.is_partial,
                 data_sources=ctx.data_sources,
                 degradation_reason=ctx.degradation_reason,
+                failed_ufs=ctx.failed_ufs,
+                succeeded_ufs=ctx.succeeded_ufs,
+                total_ufs_requested=len(ctx.request.ufs),
+                cached=getattr(ctx, 'cached', False),
+                cached_at=getattr(ctx, 'cached_at', None),
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1029,6 +1125,11 @@ class SearchPipeline:
             is_partial=ctx.is_partial,
             data_sources=ctx.data_sources,
             degradation_reason=ctx.degradation_reason,
+            failed_ufs=ctx.failed_ufs,
+            succeeded_ufs=ctx.succeeded_ufs,
+            total_ufs_requested=len(ctx.request.ufs),
+            cached=getattr(ctx, 'cached', False),
+            cached_at=getattr(ctx, 'cached_at', None),
         )
 
         logger.info(
@@ -1147,20 +1248,23 @@ class SearchPipeline:
 
         is_partial = len(sources_failed_with_reason) > 0 and len(sources_succeeded) > 0
 
-        logger.info(
-            "search_completed",
-            extra={
-                "search_id": ctx.request.search_id or "no_id",
-                "ufs_requested": ctx.request.ufs,
-                "sources_attempted": sources_attempted,
-                "sources_succeeded": sources_succeeded,
-                "sources_failed": sources_failed_with_reason,
-                "total_raw": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
-                "total_filtered": len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0,
-                "is_partial": is_partial,
-                "elapsed_ms": elapsed_ms,
-            }
-        )
+        logger.info(json.dumps({
+            "event": "search_complete",
+            "search_id": ctx.request.search_id or "no_id",
+            "sources_attempted": sources_attempted,
+            "sources_succeeded": sources_succeeded,
+            "sources_failed": [s["source"] for s in sources_failed_with_reason],
+            "cache_hit": getattr(ctx, 'cached', False),
+            "circuit_breaker_state": "degraded" if get_circuit_breaker().is_degraded else "healthy",
+            "total_results": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
+            "total_filtered": len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0,
+            "ufs_requested": len(ctx.request.ufs),
+            "ufs_succeeded": len(ctx.succeeded_ufs) if ctx.succeeded_ufs else 0,
+            "ufs_failed": len(ctx.failed_ufs) if ctx.failed_ufs else 0,
+            "failed_ufs": ctx.failed_ufs or [],
+            "is_partial": ctx.is_partial,
+            "latency_ms": elapsed_ms,
+        }))
 
         # If response was already built (e.g., empty results early return in stage_generate)
         if ctx.response is not None and not ctx.licitacoes_filtradas:

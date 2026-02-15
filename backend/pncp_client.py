@@ -6,6 +6,7 @@ import logging
 import os
 import random
 import time
+from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, Callable, Dict, Generator, List, Optional
 
@@ -36,10 +37,10 @@ class PNCPDegradedError(PNCPAPIError):
 
 # Configurable via environment variables
 PNCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "5")
+    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "8")  # Changed from "5" to "8"
 )
 PNCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
-    os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "300")
+    os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "120")  # Changed from "300" to "120"
 )
 
 # Per-modality timeout (STORY-252 AC6) — configurable
@@ -51,6 +52,19 @@ PNCP_TIMEOUT_PER_MODALITY: float = float(
 PNCP_MODALITY_RETRY_BACKOFF: float = float(
     os.environ.get("PNCP_MODALITY_RETRY_BACKOFF", "3.0")
 )
+
+# UFs ordered by population for degraded priority (STORY-257A AC1)
+UFS_BY_POPULATION = ["SP", "RJ", "MG", "BA", "PR", "RS", "PE", "CE", "SC", "GO",
+                      "PA", "MA", "AM", "ES", "PB", "RN", "MT", "AL", "PI", "DF",
+                      "MS", "SE", "RO", "TO", "AC", "AP", "RR"]
+
+
+@dataclass
+class ParallelFetchResult:
+    """Structured return from buscar_todas_ufs_paralelo with per-UF metadata."""
+    items: List[Dict[str, Any]]
+    succeeded_ufs: List[str]
+    failed_ufs: List[str]
 
 
 class PNCPCircuitBreaker:
@@ -84,15 +98,14 @@ class PNCPCircuitBreaker:
 
     @property
     def is_degraded(self) -> bool:
-        """Return ``True`` if the circuit breaker is currently in degraded state."""
+        """Return True if the circuit breaker is currently in degraded state.
+
+        Read-only check — no side effects. Use try_recover() to actually reset.
+        """
         if self.degraded_until is None:
             return False
         if time.time() >= self.degraded_until:
-            # Cooldown expired — auto-reset
-            self.degraded_until = None
-            self.consecutive_failures = 0
-            logger.info("PNCP circuit breaker cooldown expired — resetting to healthy")
-            return False
+            return False  # Cooldown expired, but don't mutate here
         return True
 
     async def record_failure(self) -> None:
@@ -119,6 +132,33 @@ class PNCPCircuitBreaker:
                     f"failures — resetting counter"
                 )
             self.consecutive_failures = 0
+
+    async def try_recover(self) -> bool:
+        """Check if cooldown has expired and reset if so. Must be called with await.
+
+        Returns True if the breaker was reset (recovered), False if still degraded.
+        """
+        if self.degraded_until is None:
+            return True  # Already healthy
+
+        if time.time() < self.degraded_until:
+            return False  # Still in cooldown
+
+        try:
+            await asyncio.wait_for(self._lock.acquire(), timeout=1.0)
+            try:
+                # Double-check under lock
+                if self.degraded_until is not None and time.time() >= self.degraded_until:
+                    self.degraded_until = None
+                    self.consecutive_failures = 0
+                    logger.info("PNCP circuit breaker cooldown expired — resetting to healthy")
+                    return True
+            finally:
+                self._lock.release()
+        except asyncio.TimeoutError:
+            logger.warning("Circuit breaker lock timeout in try_recover — proceeding with current state")
+
+        return not self.is_degraded
 
     def reset(self) -> None:
         """Manually reset the circuit breaker (for testing or admin use)."""
@@ -779,8 +819,17 @@ class AsyncPNCPClient:
                 await _circuit_breaker.record_success()
                 return True
 
+            # NEW: Distinguish 4xx from 5xx
+            if 400 <= response.status_code < 500:
+                # Client error — NOT a server issue, don't trip breaker
+                logger.warning(
+                    f"PNCP health canary: client error {response.status_code} "
+                    f"body={response.text[:200]} — NOT tripping circuit breaker"
+                )
+                return True  # Proceed with normal search
+
             logger.warning(
-                f"PNCP health canary: unexpected status {response.status_code}"
+                f"PNCP health canary: server error {response.status_code}"
             )
         except (asyncio.TimeoutError, httpx.TimeoutException):
             logger.warning(
@@ -793,12 +842,10 @@ class AsyncPNCPClient:
                 "— skipping PNCP for this search, using alternative sources"
             )
 
-        # Canary failed — trip circuit breaker immediately
-        _circuit_breaker.degraded_until = time.time() + _circuit_breaker.cooldown_seconds
-        _circuit_breaker.consecutive_failures = _circuit_breaker.threshold
+        # Canary failed — trip circuit breaker
+        await _circuit_breaker.record_failure()
         logger.warning(
-            f"PNCP circuit breaker set to degraded for {_circuit_breaker.cooldown_seconds}s "
-            "due to health canary failure"
+            "PNCP circuit breaker failure recorded due to health canary failure"
         )
         return False
 
@@ -1156,13 +1203,6 @@ class AsyncPNCPClient:
             Deduplicated list of procurement records for the UF.
         """
         async with self._semaphore:
-            # Check circuit breaker before starting
-            if _circuit_breaker.is_degraded:
-                logger.warning(
-                    f"PNCP circuit breaker is degraded — skipping UF={uf}"
-                )
-                return []
-
             # Launch all modalities in parallel with individual timeouts (AC6)
             modality_tasks = [
                 self._fetch_modality_with_timeout(
@@ -1210,6 +1250,7 @@ class AsyncPNCPClient:
         status: str | None = None,
         max_pages_per_uf: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
         on_uf_complete: Callable[[str, int], Any] | None = None,
+        on_uf_status: Callable[..., Any] | None = None,
     ) -> List[Dict[str, Any]]:
         """
         Busca licitações em múltiplas UFs em paralelo com limite de concorrência.
@@ -1254,26 +1295,50 @@ class AsyncPNCPClient:
             f"(max_concurrent={self.max_concurrent}, status={status})"
         )
 
-        # STORY-252 AC10: Health canary — lightweight probe before full search
+        # Try to recover before checking degraded state (STORY-257A AC4)
+        await _circuit_breaker.try_recover()
+
+        # STORY-257A AC1: Degraded mode tries with reduced concurrency
         if _circuit_breaker.is_degraded:
             logger.warning(
-                "PNCP circuit breaker already degraded — skipping PNCP entirely"
+                "PNCP circuit breaker degraded — trying with reduced concurrency "
+                f"(3 UFs, 45s timeout)"
             )
-            return []
+            # Reorder UFs by population priority
+            ufs_ordered = sorted(ufs, key=lambda u: UFS_BY_POPULATION.index(u) if u in UFS_BY_POPULATION else 99)
+            # Reduce concurrency
+            self._semaphore = asyncio.Semaphore(3)
+            PER_UF_TIMEOUT = 45  # Extended timeout in degraded mode
+        else:
+            # STORY-252 AC10: Health canary — lightweight probe before full search
+            canary_ok = await self.health_canary()
+            if not canary_ok:
+                logger.warning(
+                    "PNCP health canary failed — returning empty results"
+                )
+                return ParallelFetchResult(items=[], succeeded_ufs=[], failed_ufs=list(ufs))
 
-        canary_ok = await self.health_canary()
-        if not canary_ok:
-            logger.warning(
-                "PNCP health canary failed — returning empty results"
-            )
-            return []
+            # Normal mode
+            ufs_ordered = ufs
+            # STORY-252 AC7: Reduced per-UF timeout from 90s to 30s
+            # With 4 modalities at 15s each running in parallel, 30s is sufficient
+            PER_UF_TIMEOUT = 30  # seconds
 
-        # STORY-252 AC7: Reduced per-UF timeout from 90s to 30s
-        # With 4 modalities at 15s each running in parallel, 30s is sufficient
-        PER_UF_TIMEOUT = 30  # seconds
+        # Helper to safely call async/sync callbacks
+        async def _safe_callback(cb, *args, **kwargs):
+            if cb is None:
+                return
+            try:
+                maybe_coro = cb(*args, **kwargs)
+                if asyncio.iscoroutine(maybe_coro):
+                    await maybe_coro
+            except Exception as cb_err:
+                logger.warning(f"Callback error: {cb_err}")
 
         # Create tasks for each UF with optional progress callback
         async def _fetch_with_callback(uf: str) -> List[Dict[str, Any]]:
+            # STORY-257A AC6: Emit "fetching" status when UF starts
+            await _safe_callback(on_uf_status, uf, "fetching")
             try:
                 result = await asyncio.wait_for(
                     self._fetch_uf_all_pages(
@@ -1289,17 +1354,17 @@ class AsyncPNCPClient:
             except asyncio.TimeoutError:
                 await _circuit_breaker.record_failure()
                 logger.warning(f"UF={uf} timed out after {PER_UF_TIMEOUT}s — skipping")
+                # AC6: Emit "failed" status
+                await _safe_callback(on_uf_status, uf, "failed", reason="timeout")
                 result = []
+            else:
+                # AC6: Emit "success" status with count
+                await _safe_callback(on_uf_status, uf, "success", count=len(result))
             if on_uf_complete:
-                try:
-                    maybe_coro = on_uf_complete(uf, len(result))
-                    if asyncio.iscoroutine(maybe_coro):
-                        await maybe_coro
-                except Exception as cb_err:
-                    logger.warning(f"on_uf_complete callback error for UF={uf}: {cb_err}")
+                await _safe_callback(on_uf_complete, uf, len(result))
             return result
 
-        tasks = [_fetch_with_callback(uf) for uf in ufs]
+        tasks = [_fetch_with_callback(uf) for uf in ufs_ordered]
 
         # Execute all tasks concurrently (semaphore limits actual concurrency)
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -1307,13 +1372,69 @@ class AsyncPNCPClient:
         # Flatten results and handle errors
         all_items: List[Dict[str, Any]] = []
         errors = 0
+        succeeded_ufs = []
+        failed_ufs = []
 
-        for uf, result in zip(ufs, results):
+        for uf, result in zip(ufs_ordered, results):
             if isinstance(result, Exception):
                 logger.error(f"Error fetching UF={uf}: {result}")
                 errors += 1
+                failed_ufs.append(uf)
+            elif isinstance(result, list) and len(result) == 0:
+                # Empty result could be timeout fallback or genuinely no data
+                succeeded_ufs.append(uf)  # Count as succeeded (no data ≠ failure)
             else:
                 all_items.extend(result)
+                succeeded_ufs.append(uf)
+
+        # STORY-257A AC7: Auto-retry failed UFs (1 round, 5s delay, 45s timeout)
+        if failed_ufs and succeeded_ufs:
+            logger.info(
+                f"AC7: {len(failed_ufs)} UFs failed, {len(succeeded_ufs)} succeeded — "
+                f"retrying failed UFs in 5s with 45s timeout"
+            )
+            await asyncio.sleep(5)
+
+            RETRY_TIMEOUT = 45
+
+            async def _retry_uf(uf: str) -> List[Dict[str, Any]]:
+                await _safe_callback(on_uf_status, uf, "retrying", attempt=2, max=2)
+                try:
+                    result = await asyncio.wait_for(
+                        self._fetch_uf_all_pages(
+                            uf=uf,
+                            data_inicial=data_inicial,
+                            data_final=data_final,
+                            modalidades=modalidades,
+                            status=pncp_status,
+                            max_pages=max_pages_per_uf,
+                        ),
+                        timeout=RETRY_TIMEOUT,
+                    )
+                    return result
+                except (asyncio.TimeoutError, Exception) as e:
+                    logger.warning(f"AC7: Retry for UF={uf} failed: {e}")
+                    return []
+
+            retry_tasks = [_retry_uf(uf) for uf in failed_ufs]
+            retry_results = await asyncio.gather(*retry_tasks, return_exceptions=True)
+
+            recovered_ufs = []
+            for uf, result in zip(failed_ufs, retry_results):
+                if isinstance(result, Exception) or not result:
+                    await _safe_callback(on_uf_status, uf, "failed", reason="retry_failed")
+                else:
+                    all_items.extend(result)
+                    recovered_ufs.append(uf)
+                    await _safe_callback(on_uf_status, uf, "recovered", count=len(result))
+                    logger.info(f"AC7: UF={uf} recovered with {len(result)} items")
+
+            if recovered_ufs:
+                # Move recovered UFs from failed to succeeded
+                for uf in recovered_ufs:
+                    failed_ufs.remove(uf)
+                    succeeded_ufs.append(uf)
+                logger.info(f"AC7: Recovered {len(recovered_ufs)} UFs: {recovered_ufs}")
 
         elapsed = sync_time.time() - start_time
         logger.info(
@@ -1321,7 +1442,11 @@ class AsyncPNCPClient:
             f"in {elapsed:.2f}s ({errors} errors)"
         )
 
-        return all_items
+        return ParallelFetchResult(
+            items=all_items,
+            succeeded_ufs=succeeded_ufs,
+            failed_ufs=failed_ufs,
+        )
 
 
 # ============================================================================
@@ -1345,11 +1470,13 @@ class PNCPLegacyAdapter:
         modalidades: List[int] | None = None,
         status: str | None = None,
         on_uf_complete: Callable | None = None,
+        on_uf_status: Callable | None = None,
     ):
         self._ufs = ufs
         self._modalidades = modalidades
         self._status = status
         self._on_uf_complete = on_uf_complete
+        self._on_uf_status = on_uf_status
 
     @property
     def metadata(self):
@@ -1371,11 +1498,13 @@ class PNCPLegacyAdapter:
         from clients.base import UnifiedProcurement
         _ufs = list(ufs) if ufs else self._ufs
         if len(_ufs) > 1:
-            results = await buscar_todas_ufs_paralelo(
+            fetch_result = await buscar_todas_ufs_paralelo(
                 ufs=_ufs, data_inicial=data_inicial, data_final=data_final,
                 modalidades=self._modalidades, status=self._status,
                 max_concurrent=10, on_uf_complete=self._on_uf_complete,
+                on_uf_status=self._on_uf_status,
             )
+            results = fetch_result.items if isinstance(fetch_result, ParallelFetchResult) else fetch_result
         else:
             client = PNCPClient()
             results = list(client.fetch_all(
@@ -1415,6 +1544,7 @@ async def buscar_todas_ufs_paralelo(
     status: str | None = None,
     max_concurrent: int = 10,
     on_uf_complete: Callable[[str, int], Any] | None = None,
+    on_uf_status: Callable[..., Any] | None = None,
 ) -> List[Dict[str, Any]]:
     """
     Convenience function for parallel UF search.
@@ -1430,6 +1560,7 @@ async def buscar_todas_ufs_paralelo(
         status: Optional status filter
         max_concurrent: Maximum concurrent requests (default 10)
         on_uf_complete: Optional async callback(uf, items_count) called per UF
+        on_uf_status: Optional async callback(uf, status, **detail) for per-UF status events
 
     Returns:
         List of procurement records
@@ -1449,4 +1580,5 @@ async def buscar_todas_ufs_paralelo(
             modalidades=modalidades,
             status=status,
             on_uf_complete=on_uf_complete,
+            on_uf_status=on_uf_status,
         )

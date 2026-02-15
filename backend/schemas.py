@@ -440,6 +440,15 @@ class BuscaRequest(BaseModel):
     )
 
     # -------------------------------------------------------------------------
+    # STORY-257A AC10: Cache bypass
+    # -------------------------------------------------------------------------
+    force_fresh: bool = Field(
+        default=False,
+        description="When true, bypass result cache and always query primary sources. "
+                    "Cache write-through still happens on successful results.",
+    )
+
+    # -------------------------------------------------------------------------
     # Validators
     # -------------------------------------------------------------------------
     @model_validator(mode="after")
@@ -880,6 +889,27 @@ class BuscaResponse(BaseModel):
     degradation_reason: Optional[str] = Field(
         default=None,
         description="Human-readable explanation of partial results (e.g., 'PNCP indisponível, resultados de fontes alternativas')"
+    )
+    # STORY-257A AC5: Partial results transparency
+    failed_ufs: Optional[List[str]] = Field(
+        default=None,
+        description="List of UF codes that failed during fetch (timeout or error)"
+    )
+    succeeded_ufs: Optional[List[str]] = Field(
+        default=None,
+        description="List of UF codes that returned data successfully"
+    )
+    total_ufs_requested: Optional[int] = Field(
+        default=None,
+        description="Total number of UFs in the original request"
+    )
+    cached: bool = Field(
+        default=False,
+        description="True when results are served from cache (STORY-257A AC9)"
+    )
+    cached_at: Optional[str] = Field(
+        default=None,
+        description="ISO timestamp of when cached results were generated"
     )
     hidden_by_min_match: Optional[int] = Field(
         default=None,

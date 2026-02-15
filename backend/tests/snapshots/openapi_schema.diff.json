@@ -294,6 +294,12 @@
               "description": "Custom exclusion terms. Overrides sector exclusions when provided.",
               "title": "Exclusion Terms"
             },
+            "force_fresh": {
+              "default": false,
+              "description": "When true, bypass result cache and always query primary sources. Cache write-through still happens on successful results.",
+              "title": "Force Fresh",
+              "type": "boolean"
+            },
             "itens_por_pagina": {
               "default": 20,
               "description": "Quantidade de itens por p\u00e1gina. Valores permitidos: 10, 20, 50, 100. Padr\u00e3o: 20.",
@@ -551,6 +557,24 @@
             "ultima_atualizacao": "2026-02-10T14:30:00Z"
           },
           "properties": {
+            "cached": {
+              "default": false,
+              "description": "True when results are served from cache (STORY-257A AC9)",
+              "title": "Cached",
+              "type": "boolean"
+            },
+            "cached_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO timestamp of when cached results were generated",
+              "title": "Cached At"
+            },
             "data_sources": {
               "anyOf": [
                 {
@@ -606,6 +630,21 @@
               ],
               "description": "Excel file encoded as base64 string (None if plan doesn't allow or storage used)",
               "title": "Excel Base64"
+            },
+            "failed_ufs": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of UF codes that failed during fetch (timeout or error)",
+              "title": "Failed Ufs"
             },
             "filter_relaxed": {
               "anyOf": [
@@ -703,6 +742,21 @@
               "description": "Stopwords stripped from user input (for transparency)",
               "title": "Stopwords Removidas"
             },
+            "succeeded_ufs": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of UF codes that returned data successfully",
+              "title": "Succeeded Ufs"
+            },
             "termos_utilizados": {
               "anyOf": [
                 {
@@ -729,6 +783,18 @@
               "minimum": 0.0,
               "title": "Total Raw",
               "type": "integer"
+            },
+            "total_ufs_requested": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Total number of UFs in the original request",
+              "title": "Total Ufs Requested"
             },
             "ultima_atualizacao": {
               "anyOf": [
@@ -10628,6 +10694,7 @@
       }
     },
     "info": {
+      "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es de uniformes no PNCP. Permite filtrar oportunidades por estado, valor e keywords, gerando relat\u00f3rios Excel e resumos executivos via IA.",
       "title": "BidIQ Uniformes API",
       "version": "0.2.0"
     },

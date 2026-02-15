@@ -18,6 +18,7 @@ import pytest
 
 from pncp_client import (
     AsyncPNCPClient,
+    ParallelFetchResult,
     PNCPCircuitBreaker,
     PNCPDegradedError,
     _circuit_breaker,
@@ -134,6 +135,9 @@ class TestPNCPCircuitBreaker:
 
         # Simulate cooldown expiry by setting degraded_until to the past
         self.cb.degraded_until = time.time() - 1
+
+        # After STORY-257A, is_degraded is read-only — must call try_recover()
+        await self.cb.try_recover()
 
         assert self.cb.is_degraded is False
         assert self.cb.consecutive_failures == 0
@@ -499,7 +503,8 @@ class TestHealthCanary:
         result = await client.health_canary()
 
         assert result is False
-        assert _circuit_breaker.is_degraded is True
+        # After STORY-257A threshold=8, 1 failure doesn't trip
+        assert _circuit_breaker.consecutive_failures > 0
 
     @pytest.mark.asyncio
     async def test_health_canary_failure_http_error_sets_degraded(self):
@@ -515,7 +520,8 @@ class TestHealthCanary:
         result = await client.health_canary()
 
         assert result is False
-        assert _circuit_breaker.is_degraded is True
+        # After STORY-257A threshold=8, 1 failure doesn't trip
+        assert _circuit_breaker.consecutive_failures > 0
 
     @pytest.mark.asyncio
     async def test_health_canary_failure_500_sets_degraded(self):
@@ -532,7 +538,8 @@ class TestHealthCanary:
         result = await client.health_canary()
 
         assert result is False
-        assert _circuit_breaker.is_degraded is True
+        # After STORY-257A threshold=8, 1 failure doesn't trip
+        assert _circuit_breaker.consecutive_failures > 0
 
     @pytest.mark.asyncio
     async def test_health_canary_failure_logs_warning(self, caplog):
@@ -587,7 +594,9 @@ class TestBuscarComHealthCanary:
                     data_final="2026-01-31",
                 )
 
-        assert result == []
+        # After STORY-257A, returns ParallelFetchResult
+        assert isinstance(result, ParallelFetchResult)
+        assert result.items == []
 
     @pytest.mark.asyncio
     async def test_canary_success_proceeds_with_search(self):
@@ -604,13 +613,14 @@ class TestBuscarComHealthCanary:
                     data_final="2026-01-31",
                 )
 
-        assert len(result) == 1
+        # After STORY-257A, returns ParallelFetchResult
+        assert len(result.items) == 1
 
     @pytest.mark.asyncio
     async def test_circuit_breaker_already_degraded_skips(self):
         """When circuit breaker already degraded, skips without canary check."""
         _circuit_breaker.degraded_until = time.time() + 300
-        _circuit_breaker.consecutive_failures = 5
+        _circuit_breaker.consecutive_failures = 8  # Updated threshold
 
         async with AsyncPNCPClient(max_concurrent=10) as client:
             # health_canary should NOT be called
@@ -624,7 +634,8 @@ class TestBuscarComHealthCanary:
 
             canary_mock.assert_not_called()
 
-        assert result == []
+        # After STORY-257A, returns ParallelFetchResult when degraded (tries with reduced concurrency)
+        assert isinstance(result, ParallelFetchResult)
 
 
 # ---------------------------------------------------------------------------
@@ -753,11 +764,11 @@ class TestEnvironmentConfiguration:
         assert PNCP_MODALITY_RETRY_BACKOFF == 3.0
 
     def test_circuit_breaker_default_threshold(self):
-        """Default circuit breaker threshold is 5."""
+        """Default circuit breaker threshold is 8."""
         cb = PNCPCircuitBreaker()
-        assert cb.threshold == 5
+        assert cb.threshold == 8
 
     def test_circuit_breaker_default_cooldown(self):
-        """Default circuit breaker cooldown is 300s (5 minutes)."""
+        """Default circuit breaker cooldown is 120s (2 minutes)."""
         cb = PNCPCircuitBreaker()
-        assert cb.cooldown_seconds == 300
+        assert cb.cooldown_seconds == 120

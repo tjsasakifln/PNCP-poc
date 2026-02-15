@@ -229,17 +229,23 @@ class SingleSourceConfig:
     credentials: SourceCredentials = field(default_factory=SourceCredentials)
 
     def is_available(self) -> bool:
-        """Check if source is enabled and has required credentials."""
+        """Check if source is enabled and has required credentials.
+
+        STORY-257A AC13: Sources without required credentials return False
+        to prevent phantom timeout attempts.
+        """
         if not self.enabled:
             return False
         # PNCP, ComprasGov, and Querido Diário don't require credentials (open data)
         if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV, SourceCode.QUERIDO_DIARIO):
             return True
-        # Portal Transparência requires API key
-        if self.code == SourceCode.PORTAL_TRANSPARENCIA:
-            return self.credentials.has_api_key()
-        # Other sources may require API keys
-        return True  # For now, allow even without credentials
+        # All other sources require an API key to function
+        if not self.credentials.has_api_key():
+            logger.debug(
+                f"Source {self.code.value} enabled but unavailable: missing API key"
+            )
+            return False
+        return True
 
     def get_timeout(self) -> int:
         """Get effective timeout for this source."""
@@ -477,6 +483,17 @@ class SourceConfig:
             if source.enabled:
                 configs.append(source)
         return sorted(configs, key=lambda s: s.priority)
+
+    def get_pending_credentials(self) -> List[str]:
+        """Get list of enabled sources that are missing required credentials.
+
+        STORY-257A AC13: For health endpoint reporting.
+        """
+        pending = []
+        for source in [self.portal, self.licitar, self.portal_transparencia, self.bll, self.bnc]:
+            if source.enabled and not source.is_available():
+                pending.append(source.code.value)
+        return pending
 
     def validate(self) -> List[str]:
         """

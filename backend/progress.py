@@ -99,6 +99,25 @@ class ProgressTracker:
             items_found=items_count,
         )
 
+    async def emit_uf_status(self, uf: str, status: str, **detail: Any) -> None:
+        """Emit per-UF status event for real-time tracking grid.
+
+        STORY-257A AC6: Individual UF status updates.
+
+        Args:
+            uf: State code (e.g., "SP")
+            status: One of "pending", "fetching", "retrying", "success", "failed", "recovered"
+            **detail: Additional details (count, attempt, max, reason)
+        """
+        await self.emit(
+            stage="uf_status",
+            progress=-1,  # UF status events don't map to overall progress
+            message=f"UF {uf}: {status}",
+            uf=uf,
+            uf_status=status,
+            **detail,
+        )
+
     async def emit_complete(self) -> None:
         """Signal search completion."""
         self._is_complete = True

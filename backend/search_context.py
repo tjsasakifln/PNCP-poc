@@ -47,6 +47,9 @@ class SearchContext:
     is_partial: bool = False
     data_sources: Optional[list] = None  # List[schemas.DataSourceStatus]
     degradation_reason: Optional[str] = None
+    # STORY-257A: Partial results tracking
+    failed_ufs: Optional[list] = None  # List of UF codes that failed
+    succeeded_ufs: Optional[list] = None  # List of UF codes that succeeded
 
     # === Stage 4: FilterResults outputs ===
     licitacoes_filtradas: list = field(default_factory=list)

@@ -182,6 +182,12 @@ class ConsolidationService:
                 if isinstance(result, dict):
                     code = result["code"]
                     source_results_map[code] = result
+                else:
+                    # AC14: Log unexpected non-dict results from gather
+                    logger.warning(
+                        f"[CONSOLIDATION] Unexpected non-dict result from gather: "
+                        f"type={type(result).__name__} value={str(result)[:200]}"
+                    )
         except asyncio.TimeoutError:
             logger.warning(
                 f"[CONSOLIDATION] Global timeout ({effective_global_timeout}s) reached"
@@ -479,9 +485,15 @@ class ConsolidationService:
         return results
 
     async def close(self) -> None:
-        """Close all adapters."""
+        """Close all adapters including fallback (STORY-257A AC12)."""
         for adapter in self._adapters.values():
             try:
                 await adapter.close()
+            except Exception:
+                pass
+        # AC12: Close fallback adapter to prevent HTTP client leak
+        if self._fallback_adapter is not None:
+            try:
+                await self._fallback_adapter.close()
             except Exception:
                 pass

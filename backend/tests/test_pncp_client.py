@@ -885,8 +885,8 @@ class TestBuscarTodasUfsParalelo:
             data_final="2026-01-15",
         )
 
-        assert len(results) == 2
-        assert all(r["uf"] == "SP" for r in results)
+        assert len(results.items) == 2
+        assert all(r["uf"] == "SP" for r in results.items)
 
     @pytest.mark.asyncio
     @patch("pncp_client.httpx.AsyncClient.get")
@@ -923,8 +923,8 @@ class TestBuscarTodasUfsParalelo:
         )
 
         # Should have results from all 3 UFs
-        assert len(results) == 3
-        ufs_in_results = {r["uf"] for r in results}
+        assert len(results.items) == 3
+        ufs_in_results = {r["uf"] for r in results.items}
         assert ufs_in_results == {"SP", "RJ", "MG"}
 
     @pytest.mark.asyncio
@@ -969,7 +969,7 @@ class TestBuscarTodasUfsParalelo:
         )
 
         # Should have results from SP and MG (RJ failed)
-        ufs_in_results = {r["uf"] for r in results}
+        ufs_in_results = {r["uf"] for r in results.items}
         assert "SP" in ufs_in_results
         assert "MG" in ufs_in_results
         # RJ may or may not be present depending on retry logic
@@ -1025,8 +1025,8 @@ class TestBuscarTodasUfsParalelo:
         )
 
         # Should have 3 unique items (001, 002, 003) - duplicate 001 removed
-        assert len(results) == 3
-        codigo_compras = {r["codigoCompra"] for r in results}
+        assert len(results.items) == 3
+        codigo_compras = {r["codigoCompra"] for r in results.items}
         assert codigo_compras == {"SP-001", "SP-002", "SP-003"}
 
     @pytest.mark.asyncio
@@ -1431,7 +1431,7 @@ class TestExcludedModalidadesNeverFetched:
         )
 
         # Should have results from modalidade 6 only
-        assert len(results) == 1
+        assert len(results.items) == 1
         # Check that API was only called for modalidade 6, not 9 or 14
         for call in mock_get.call_args_list:
             params = call[1].get("params", call[0][1] if len(call[0]) > 1 else {})
