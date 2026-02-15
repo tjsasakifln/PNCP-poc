@@ -17,6 +17,8 @@ from typing import Optional, List
 from datetime import date, datetime
 from decimal import Decimal
 
+from clients.sanctions import SanctionsResult
+
 
 class ContractData(BaseModel):
     """Single contract from PNCP API."""
@@ -124,6 +126,14 @@ class LeadProfile(BaseModel):
 
     # Company data
     company_data: CompanyData
+
+    # Sanctions check (STORY-256 AC7)
+    sanctions_check: Optional[SanctionsResult] = Field(
+        None, description="CEIS+CNEP sanctions result (None if skipped)"
+    )
+    is_sanctioned: bool = Field(
+        False, description="True if any active sanction found"
+    )
 
     # Procurement profile
     contracts: List[ContractData]

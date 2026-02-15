@@ -1001,6 +1001,10 @@ class SearchPipeline:
         # Convert to LicitacaoItems
         ctx.licitacao_items = _convert_to_licitacao_items(ctx.licitacoes_filtradas)
 
+        # STORY-256 AC13: Sanctions enrichment (opt-in)
+        if ctx.request.check_sanctions and ctx.licitacao_items:
+            await self._enrich_with_sanctions(ctx)
+
         new_quota_used = ctx.quota_info.quota_used if ctx.quota_info else 0
         quota_remaining = ctx.quota_info.quota_remaining if ctx.quota_info else 0
 
@@ -1035,6 +1039,75 @@ class SearchPipeline:
                 "valor_total": ctx.resumo.valor_total,
             },
         )
+
+    # ------------------------------------------------------------------
+    # STORY-256 AC13: Sanctions enrichment helper
+    # ------------------------------------------------------------------
+    async def _enrich_with_sanctions(self, ctx: SearchContext) -> None:
+        """Enrich LicitacaoItems with sanctions data when check_sanctions=true.
+
+        Extracts unique CNPJs from filtered results (cnpjOrgao field),
+        batch-checks them against CEIS+CNEP via SanctionsService,
+        and populates supplier_sanctions on each LicitacaoItem.
+
+        Graceful degradation: if sanctions check fails, items are
+        left without sanctions data (supplier_sanctions=None).
+        """
+        from services.sanctions_service import SanctionsService, SanctionsSummary
+        from schemas import SanctionsSummarySchema
+
+        try:
+            # Extract unique CNPJs from raw results
+            cnpj_map: dict[str, list[int]] = {}  # cnpj -> [item indices]
+            for idx, lic in enumerate(ctx.licitacoes_filtradas):
+                cnpj = lic.get("cnpjOrgao", "")
+                if cnpj:
+                    cleaned = cnpj.replace(".", "").replace("/", "").replace("-", "")
+                    if len(cleaned) == 14 and cleaned.isdigit():
+                        cnpj_map.setdefault(cleaned, []).append(idx)
+
+            if not cnpj_map:
+                logger.info("[SANCTIONS] No valid CNPJs found in results, skipping")
+                return
+
+            unique_cnpjs = list(cnpj_map.keys())
+            logger.info(f"[SANCTIONS] Checking {len(unique_cnpjs)} unique CNPJs from {len(ctx.licitacao_items)} results")
+
+            # Batch check
+            service = SanctionsService()
+            try:
+                reports = await service.check_companies(unique_cnpjs)
+            finally:
+                await service.close()
+
+            # Map results back to LicitacaoItems
+            enriched = 0
+            for cnpj, indices in cnpj_map.items():
+                report = reports.get(cnpj)
+                if not report or report.status == "unavailable":
+                    continue
+
+                summary = SanctionsService.build_summary(report)
+                schema = SanctionsSummarySchema(
+                    is_clean=summary.is_clean,
+                    active_sanctions_count=summary.active_sanctions_count,
+                    sanction_types=summary.sanction_types,
+                    checked_at=summary.checked_at.isoformat() if summary.checked_at else None,
+                )
+
+                for idx in indices:
+                    if idx < len(ctx.licitacao_items):
+                        ctx.licitacao_items[idx].supplier_sanctions = schema
+                        enriched += 1
+
+            logger.info(
+                f"[SANCTIONS] Enrichment complete: {enriched} items enriched, "
+                f"{sum(1 for r in reports.values() if r.is_sanctioned)} CNPJs sanctioned"
+            )
+
+        except Exception as exc:
+            # AC5: Graceful degradation — sanctions failure should never block search
+            logger.warning(f"[SANCTIONS] Enrichment failed (graceful degradation): {exc}")
 
     # ------------------------------------------------------------------
     # Stage 7: Persist

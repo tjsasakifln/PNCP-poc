@@ -30,6 +30,7 @@ from lead_deduplicator import LeadDeduplicator
 from contact_searcher import ContactSearcher
 from message_generator import MessageGenerator
 from report_generator import ReportGenerator
+from services.sanctions_service import SanctionsService
 
 from schemas_lead_prospecting import (
     ContractData,
@@ -44,6 +45,7 @@ def execute_acha_leads(
     sectors: Optional[List[str]] = None,
     months: int = 12,
     min_score: float = 7.0,
+    skip_sanctions: bool = False,
 ) -> str:
     """
     Execute complete *acha-leads workflow.
@@ -52,6 +54,7 @@ def execute_acha_leads(
         sectors: List of target sectors (e.g., ['uniformes', 'facilities'])
         months: Time window in months (default 12)
         min_score: Minimum qualification score (default 7.0)
+        skip_sanctions: Skip sanctions check (AC10, useful for dev/debug)
 
     Returns:
         Path to generated markdown report
@@ -120,9 +123,58 @@ def execute_acha_leads(
     )
     logger.info(f"Enriched {sum(1 for v in company_data_map.values() if v)} companies")
 
-    # Step 5-9: Process each company
-    logger.info("Step 5-9: Processing companies (scoring, contact search, messages)...")
+    # Step 5: Check sanctions (STORY-256 AC6)
+    sanctions_map: Dict[str, "SanctionsResult"] = {}
+    sanctioned_cnpjs: List[str] = []
+
+    if not skip_sanctions:
+        logger.info("Step 5: Checking sanctions (CEIS + CNEP)...")
+        import asyncio
+        from clients.sanctions import SanctionsResult as _SR
+
+        sanctions_service = SanctionsService()
+        try:
+            loop = asyncio.new_event_loop()
+            reports_map = loop.run_until_complete(
+                sanctions_service.check_companies(new_cnpjs)
+            )
+            loop.run_until_complete(sanctions_service.close())
+            loop.close()
+
+            for cnpj_key, report in reports_map.items():
+                if report.status == "unavailable":
+                    logger.warning(f"Sanctions check unavailable for {cnpj_key}")
+                    continue
+                # Convert CompanySanctionsReport back to SanctionsResult for schema
+                from clients.sanctions import SanctionsResult
+                sr = SanctionsResult(
+                    cnpj=report.cnpj,
+                    is_sanctioned=report.is_sanctioned,
+                    sanctions=report.ceis_records + report.cnep_records,
+                    checked_at=report.checked_at,
+                    ceis_count=len(report.ceis_records),
+                    cnep_count=len(report.cnep_records),
+                    cache_hit=False,
+                )
+                sanctions_map[cnpj_key] = sr
+                if report.is_sanctioned:
+                    sanctioned_cnpjs.append(cnpj_key)
+                    logger.info(
+                        f"SANCTIONED: {cnpj_key} ({report.total_active_sanctions} active sanctions)"
+                    )
+        except Exception as exc:
+            logger.warning(f"Sanctions check failed (graceful degradation): {exc}")
+
+        logger.info(
+            f"Sanctions check complete: {len(sanctioned_cnpjs)} sanctioned out of {len(new_cnpjs)}"
+        )
+    else:
+        logger.info("Step 5: Sanctions check SKIPPED (--skip-sanctions)")
+
+    # Step 6-10: Process each company
+    logger.info("Step 6-10: Processing companies (scoring, contact search, messages)...")
     qualified_leads = []
+    disqualified_sanctions = []
 
     for cnpj in new_cnpjs:
         company_data = company_data_map.get(cnpj)
@@ -130,9 +182,22 @@ def execute_acha_leads(
             logger.warning(f"Skipping CNPJ {cnpj} - no company data")
             continue
 
+        # AC8: Disqualify sanctioned companies (score × 0)
+        sanctions_result = sanctions_map.get(cnpj)
+        if sanctions_result and sanctions_result.is_sanctioned:
+            disqualified_sanctions.append({
+                "cnpj": cnpj,
+                "company_name": company_data.razao_social,
+                "ceis_count": sanctions_result.ceis_count,
+                "cnep_count": sanctions_result.cnep_count,
+                "reason": "Active sanctions (CEIS/CNEP)",
+            })
+            logger.info(f"Disqualified {cnpj} ({company_data.razao_social}) - active sanctions")
+            continue
+
         company_contracts = contracts_by_cnpj[cnpj]
 
-        # Step 5: Calculate dependency score
+        # Step 6: Calculate dependency score
         dependency_score = scorer.calculate_dependency_score(
             contracts=company_contracts,
             company_data=company_data,
@@ -190,6 +255,8 @@ def execute_acha_leads(
             company_name=company_data.razao_social,
             nome_fantasia=company_data.nome_fantasia,
             company_data=company_data,
+            sanctions_check=sanctions_map.get(cnpj),
+            is_sanctioned=False,  # If we got here, it's not sanctioned
             contracts=company_contracts,
             dependency_score=dependency_score,
             contact_data=contact_data,
@@ -222,6 +289,7 @@ def execute_acha_leads(
         total_candidates=len(all_cnpjs),
         in_history=len(all_cnpjs) - len(new_cnpjs),
         new_processed=len(new_cnpjs),
+        disqualified_sanctions=disqualified_sanctions,
     )
 
     logger.info(f"Workflow complete! Report: {report_path}")

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { LicitacaoItem } from "../types";
+import type { LicitacaoItem, SanctionsSummary } from "../types";
 import { StatusBadge, parseStatus, type LicitacaoStatus } from "./StatusBadge";
 import { CountdownStatic, daysUntil } from "./Countdown";
 import { differenceInDays, differenceInHours, isPast, parseISO, format } from "date-fns";
@@ -190,6 +190,110 @@ function ClockIconSmall({ className }: { className?: string }) {
   );
 }
 
+// Shield icon for sanctions badge (STORY-256 AC14)
+function ShieldCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      role="img"
+      aria-label="Empresa limpa"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+      />
+    </svg>
+  );
+}
+
+function ShieldAlertIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      role="img"
+      aria-label="Empresa sancionada"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 9v2m0 4h.01"
+      />
+    </svg>
+  );
+}
+
+/**
+ * SanctionsBadge — Shows sanctions status on search results (STORY-256 AC14/AC15)
+ */
+function SanctionsBadge({ sanctions }: { sanctions: SanctionsSummary }) {
+  if (sanctions.is_clean) {
+    return (
+      <InfoTooltip
+        content={
+          <div>
+            <p className="font-semibold mb-1">Empresa Limpa</p>
+            <p className="text-xs">
+              Verificado nos cadastros CEIS e CNEP do Portal da Transparência.
+              Nenhuma sanção ativa encontrada.
+            </p>
+          </div>
+        }
+      >
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+          <ShieldCheckIcon className="w-3.5 h-3.5" />
+          Empresa Limpa
+        </span>
+      </InfoTooltip>
+    );
+  }
+
+  return (
+    <InfoTooltip
+      content={
+        <div>
+          <p className="font-semibold mb-1 text-red-700">
+            Empresa Sancionada ({sanctions.active_sanctions_count} sanção{sanctions.active_sanctions_count !== 1 ? "ões" : ""})
+          </p>
+          {sanctions.sanction_types && sanctions.sanction_types.length > 0 && (
+            <ul className="text-xs space-y-1 mt-1">
+              {sanctions.sanction_types.map((type, i) => (
+                <li key={i} className="flex items-center gap-1">
+                  <span className="text-red-500">&#x2022;</span>
+                  {type}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-xs text-ink-muted mt-2">
+            Fonte: Portal da Transparência (CEIS/CNEP)
+          </p>
+        </div>
+      }
+    >
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-xs font-medium">
+        <ShieldAlertIcon className="w-3.5 h-3.5" />
+        Sancionada ({sanctions.active_sanctions_count})
+      </span>
+    </InfoTooltip>
+  );
+}
+
 // Simple inline tooltip component
 function InfoTooltip({ content, children }: { content: string | React.ReactNode; children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -350,10 +454,14 @@ export function LicitacaoCard({
       onMouseLeave={() => setIsHovered(false)}
       aria-labelledby={`licitacao-title-${licitacao.pncp_id}`}
     >
-      {/* Header: Status + Modalidade + Countdown */}
+      {/* Header: Status + Sanctions Badge + Modalidade + Countdown */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-4 pb-3 border-b border-strong">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={status} size="sm" />
+          {/* STORY-256 AC14: Sanctions badge */}
+          {licitacao.supplier_sanctions && (
+            <SanctionsBadge sanctions={licitacao.supplier_sanctions} />
+          )}
           {licitacao.modalidade && (
             <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-2 text-ink-secondary text-xs font-medium">
               {licitacao.modalidade}

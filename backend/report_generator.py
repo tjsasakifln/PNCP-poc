@@ -43,6 +43,7 @@ class ReportGenerator:
         total_candidates: int,
         in_history: int,
         new_processed: int,
+        disqualified_sanctions: Optional[List[dict]] = None,
     ) -> str:
         """
         Generate complete markdown report.
@@ -85,6 +86,22 @@ class ReportGenerator:
                 f.write(
                     "Try lowering min_score or increasing time window (months).\n\n"
                 )
+
+            # Sanctions section (STORY-256 AC9)
+            if disqualified_sanctions:
+                f.write("## Empresas Sancionadas Encontradas\n\n")
+                f.write(
+                    f"**{len(disqualified_sanctions)} empresa(s) desqualificada(s)** por sanções ativas:\n\n"
+                )
+                f.write("| CNPJ | Razão Social | CEIS | CNEP | Motivo |\n")
+                f.write("|------|-------------|------|------|--------|\n")
+                for entry in disqualified_sanctions:
+                    f.write(
+                        f"| {entry['cnpj']} | {entry['company_name']} "
+                        f"| {entry['ceis_count']} | {entry['cnep_count']} "
+                        f"| {entry['reason']} |\n"
+                    )
+                f.write("\n")
 
             f.write("---\n\n")
 
@@ -156,7 +173,17 @@ class ReportGenerator:
         f.write(f"- **Sector:** {', '.join(lead.sectors) if lead.sectors else 'N/A'}\n")
         f.write(f"- **Size:** {lead.company_data.porte}\n")
         f.write(f"- **Founded:** {lead.company_data.data_abertura}\n")
-        f.write(f"- **Primary Activity:** {lead.company_data.cnae_principal}\n\n")
+        f.write(f"- **Primary Activity:** {lead.company_data.cnae_principal}\n")
+
+        # Sanctions status (STORY-256)
+        if lead.sanctions_check is not None:
+            if lead.is_sanctioned:
+                f.write(f"- **Sanctions:** SANCTIONED (CEIS: {lead.sanctions_check.ceis_count}, CNEP: {lead.sanctions_check.cnep_count})\n")
+            else:
+                f.write("- **Sanctions:** Clean (verified CEIS + CNEP)\n")
+        else:
+            f.write("- **Sanctions:** Not checked\n")
+        f.write("\n")
 
         # Procurement Profile
         f.write("### Procurement Profile\n")

@@ -431,6 +431,15 @@ class BuscaRequest(BaseModel):
     )
 
     # -------------------------------------------------------------------------
+    # Sanctions Check (STORY-256 AC12)
+    # -------------------------------------------------------------------------
+    check_sanctions: bool = Field(
+        default=False,
+        description="When true, verify supplier CNPJs against CEIS/CNEP sanctions databases. "
+                    "Adds supplier_sanctions field to each result. Performance impact: ~1s per unique CNPJ.",
+    )
+
+    # -------------------------------------------------------------------------
     # Validators
     # -------------------------------------------------------------------------
     @model_validator(mode="after")
@@ -715,6 +724,21 @@ class FilterStats(BaseModel):
     rejeitadas_outros: int = Field(default=0, description="Rejected by other reasons")
 
 
+class SanctionsSummarySchema(BaseModel):
+    """
+    Lightweight sanctions summary for search result enrichment (STORY-256 AC11).
+
+    Shown as a badge on each search result when check_sanctions=true.
+    """
+    is_clean: bool = Field(..., description="True if no active sanctions found")
+    active_sanctions_count: int = Field(default=0, description="Number of active sanctions")
+    sanction_types: List[str] = Field(
+        default_factory=list,
+        description="e.g. ['CEIS: Impedimento', 'CNEP: Multa']"
+    )
+    checked_at: Optional[str] = Field(default=None, description="ISO timestamp of check")
+
+
 class LicitacaoItem(BaseModel):
     """
     Individual bid item for display in search results.
@@ -738,6 +762,10 @@ class LicitacaoItem(BaseModel):
     source: Optional[str] = Field(default=None, alias="_source", description="Source that provided this record")
     relevance_score: Optional[float] = Field(default=None, description="Relevance score 0.0-1.0 (only when custom terms active)")
     matched_terms: Optional[List[str]] = Field(default=None, description="List of search terms that matched this bid")
+    supplier_sanctions: Optional[SanctionsSummarySchema] = Field(
+        default=None,
+        description="Sanctions check result (only when check_sanctions=true in request)"
+    )
 
     class Config:
         populate_by_name = True

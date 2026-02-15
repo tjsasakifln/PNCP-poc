@@ -233,6 +233,12 @@
           "valor_minimo": 50000
         },
         "properties": {
+          "check_sanctions": {
+            "default": false,
+            "description": "When true, verify supplier CNPJs against CEIS/CNEP sanctions databases. Adds supplier_sanctions field to each result. Performance impact: ~1s per unique CNPJ.",
+            "title": "Check Sanctions",
+            "type": "boolean"
+          },
           "data_final": {
             "description": "End date in YYYY-MM-DD format",
             "examples": [
@@ -1666,6 +1672,17 @@
             "description": "Relevance score 0.0-1.0 (only when custom terms active)",
             "title": "Relevance Score"
           },
+          "supplier_sanctions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SanctionsSummarySchema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sanctions check result (only when check_sanctions=true in request)"
+          },
           "uf": {
             "description": "State code (e.g., 'SP')",
             "title": "Uf",
@@ -2527,6 +2544,47 @@
           "status"
         ],
         "title": "RootResponse",
+        "type": "object"
+      },
+      "SanctionsSummarySchema": {
+        "description": "Lightweight sanctions summary for search result enrichment (STORY-256 AC11).\n\nShown as a badge on each search result when check_sanctions=true.",
+        "properties": {
+          "active_sanctions_count": {
+            "default": 0,
+            "description": "Number of active sanctions",
+            "title": "Active Sanctions Count",
+            "type": "integer"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ISO timestamp of check",
+            "title": "Checked At"
+          },
+          "is_clean": {
+            "description": "True if no active sanctions found",
+            "title": "Is Clean",
+            "type": "boolean"
+          },
+          "sanction_types": {
+            "description": "e.g. ['CEIS: Impedimento', 'CNEP: Multa']",
+            "items": {
+              "type": "string"
+            },
+            "title": "Sanction Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "is_clean"
+        ],
+        "title": "SanctionsSummarySchema",
         "type": "object"
       },
       "SearchesOverTimeResponse": {

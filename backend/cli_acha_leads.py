@@ -59,6 +59,13 @@ def main():
         help='Minimum qualification score 0-10 (default: 7.0)'
     )
 
+    parser.add_argument(
+        '--skip-sanctions',
+        action='store_true',
+        default=False,
+        help='Skip CEIS/CNEP sanctions check (useful for dev/debug)'
+    )
+
     args = parser.parse_args()
 
     # Parse sectors
@@ -71,6 +78,7 @@ def main():
     print(f"Sectors: {sectors or 'ALL'}")
     print(f"Time Window: {args.months} months")
     print(f"Min Score: {args.min_score}/10")
+    print(f"Sanctions Check: {'SKIPPED' if args.skip_sanctions else 'ENABLED'}")
     print("=" * 80)
     print()
 
@@ -79,7 +87,8 @@ def main():
         report_path = execute_acha_leads(
             sectors=sectors,
             months=args.months,
-            min_score=args.min_score
+            min_score=args.min_score,
+            skip_sanctions=args.skip_sanctions,
         )
 
         if report_path:

@@ -50,6 +50,7 @@ def make_request(**overrides):
         "ordenacao": "relevancia",
         "search_id": "test-search-123",
         "modo_busca": None,
+        "check_sanctions": False,  # STORY-256
     }
     defaults.update(overrides)
     return SimpleNamespace(**defaults)

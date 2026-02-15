@@ -81,6 +81,7 @@ def make_request(**overrides):
         "ordenacao": "relevancia",
         "search_id": "test-search-123",
         "modo_busca": None,  # STORY-240: "publicacao" or "abertas"
+        "check_sanctions": False,  # STORY-256
     }
     defaults.update(overrides)
     return SimpleNamespace(**defaults)

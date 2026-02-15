@@ -234,6 +234,12 @@
             "valor_minimo": 50000
           },
           "properties": {
+            "check_sanctions": {
+              "default": false,
+              "description": "When true, verify supplier CNPJs against CEIS/CNEP sanctions databases. Adds supplier_sanctions field to each result. Performance impact: ~1s per unique CNPJ.",
+              "title": "Check Sanctions",
+              "type": "boolean"
+            },
             "data_final": {
               "description": "End date in YYYY-MM-DD format",
               "examples": [
@@ -1667,6 +1673,17 @@
               "description": "Relevance score 0.0-1.0 (only when custom terms active)",
               "title": "Relevance Score"
             },
+            "supplier_sanctions": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SanctionsSummarySchema"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sanctions check result (only when check_sanctions=true in request)"
+            },
             "uf": {
               "description": "State code (e.g., 'SP')",
               "title": "Uf",
@@ -2528,6 +2545,47 @@
             "status"
           ],
           "title": "RootResponse",
+          "type": "object"
+        },
+        "SanctionsSummarySchema": {
+          "description": "Lightweight sanctions summary for search result enrichment (STORY-256 AC11).\n\nShown as a badge on each search result when check_sanctions=true.",
+          "properties": {
+            "active_sanctions_count": {
+              "default": 0,
+              "description": "Number of active sanctions",
+              "title": "Active Sanctions Count",
+              "type": "integer"
+            },
+            "checked_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO timestamp of check",
+              "title": "Checked At"
+            },
+            "is_clean": {
+              "description": "True if no active sanctions found",
+              "title": "Is Clean",
+              "type": "boolean"
+            },
+            "sanction_types": {
+              "description": "e.g. ['CEIS: Impedimento', 'CNEP: Multa']",
+              "items": {
+                "type": "string"
+              },
+              "title": "Sanction Types",
+              "type": "array"
+            }
+          },
+          "required": [
+            "is_clean"
+          ],
+          "title": "SanctionsSummarySchema",
           "type": "object"
         },
         "SearchesOverTimeResponse": {
@@ -7591,6 +7649,12 @@
             "valor_minimo": 50000
           },
           "properties": {
+            "check_sanctions": {
+              "default": false,
+              "description": "When true, verify supplier CNPJs against CEIS/CNEP sanctions databases. Adds supplier_sanctions field to each result. Performance impact: ~1s per unique CNPJ.",
+              "title": "Check Sanctions",
+              "type": "boolean"
+            },
             "data_final": {
               "description": "End date in YYYY-MM-DD format",
               "examples": [
@@ -7902,6 +7966,33 @@
             "ultima_atualizacao": "2026-02-10T14:30:00Z"
           },
           "properties": {
+            "data_sources": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/DataSourceStatus"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Detailed status breakdown of each data source (None for backward compatibility)",
+              "title": "Data Sources"
+            },
+            "degradation_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Human-readable explanation of partial results (e.g., 'PNCP indispon\u00edvel, resultados de fontes alternativas')",
+              "title": "Degradation Reason"
+            },
             "download_url": {
               "anyOf": [
                 {
@@ -7965,6 +8056,12 @@
               ],
               "description": "Number of bids that matched at least 1 term but were below the minimum match floor",
               "title": "Hidden By Min Match"
+            },
+            "is_partial": {
+              "default": false,
+              "description": "True when not all configured data sources responded successfully (some timed out/failed)",
+              "title": "Is Partial",
+              "type": "boolean"
             },
             "licitacoes": {
               "description": "List of individual bids for display. FREE tier shows 5-10 fully, rest blurred.",
@@ -8365,6 +8462,34 @@
             "password"
           ],
           "title": "CreateUserRequest",
+          "type": "object"
+        },
+        "DataSourceStatus": {
+          "description": "Status information for a single data source in multi-source fetching.\n\nUsed to provide transparency about which sources contributed to results\nand which failed/timed out during the search operation.",
+          "properties": {
+            "records": {
+              "default": 0,
+              "description": "Number of records successfully returned by this source",
+              "minimum": 0.0,
+              "title": "Records",
+              "type": "integer"
+            },
+            "source": {
+              "description": "Data source identifier (e.g., 'pncp', 'compras_gov', 'portal')",
+              "title": "Source",
+              "type": "string"
+            },
+            "status": {
+              "description": "Source status: 'ok' (success), 'timeout' (timed out), 'error' (failed), 'skipped' (not attempted)",
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "status"
+          ],
+          "title": "DataSourceStatus",
           "type": "object"
         },
         "DebugPNCPResponse": {
@@ -8781,6 +8906,20 @@
             "dependencies": {
               "$ref": "#/components/schemas/HealthDependencies"
             },
+            "sources": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sources"
+            },
             "status": {
               "title": "Status",
               "type": "string"
@@ -8948,6 +9087,17 @@
               ],
               "description": "Relevance score 0.0-1.0 (only when custom terms active)",
               "title": "Relevance Score"
+            },
+            "supplier_sanctions": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SanctionsSummarySchema"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sanctions check result (only when check_sanctions=true in request)"
             },
             "uf": {
               "description": "State code (e.g., 'SP')",
@@ -9149,6 +9299,317 @@
             }
           },
           "title": "PerfilContextoResponse",
+          "type": "object"
+        },
+        "PipelineAlertsResponse": {
+          "description": "Pipeline items with approaching deadlines.",
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/PipelineItemResponse"
+              },
+              "title": "Items",
+              "type": "array"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "items",
+            "total"
+          ],
+          "title": "PipelineAlertsResponse",
+          "type": "object"
+        },
+        "PipelineItemCreate": {
+          "description": "Request to add an item to the pipeline.",
+          "properties": {
+            "data_encerramento": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Deadline ISO timestamp",
+              "title": "Data Encerramento"
+            },
+            "link_pncp": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Direct PNCP link",
+              "title": "Link Pncp"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "maxLength": 5000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "User notes",
+              "title": "Notes"
+            },
+            "objeto": {
+              "description": "Procurement object description",
+              "maxLength": 2000,
+              "minLength": 1,
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Government agency name",
+              "title": "Orgao"
+            },
+            "pncp_id": {
+              "description": "PNCP unique identifier",
+              "maxLength": 100,
+              "minLength": 1,
+              "title": "Pncp Id",
+              "type": "string"
+            },
+            "stage": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "descoberta",
+              "description": "Initial pipeline stage",
+              "title": "Stage"
+            },
+            "uf": {
+              "anyOf": [
+                {
+                  "maxLength": 2,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "State code",
+              "title": "Uf"
+            },
+            "valor_estimado": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Estimated value in BRL",
+              "title": "Valor Estimado"
+            }
+          },
+          "required": [
+            "pncp_id",
+            "objeto"
+          ],
+          "title": "PipelineItemCreate",
+          "type": "object"
+        },
+        "PipelineItemResponse": {
+          "description": "Single pipeline item response.",
+          "properties": {
+            "created_at": {
+              "title": "Created At",
+              "type": "string"
+            },
+            "data_encerramento": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Data Encerramento"
+            },
+            "id": {
+              "title": "Id",
+              "type": "string"
+            },
+            "link_pncp": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Link Pncp"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Notes"
+            },
+            "objeto": {
+              "title": "Objeto",
+              "type": "string"
+            },
+            "orgao": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Orgao"
+            },
+            "pncp_id": {
+              "title": "Pncp Id",
+              "type": "string"
+            },
+            "stage": {
+              "title": "Stage",
+              "type": "string"
+            },
+            "uf": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Uf"
+            },
+            "updated_at": {
+              "title": "Updated At",
+              "type": "string"
+            },
+            "user_id": {
+              "title": "User Id",
+              "type": "string"
+            },
+            "valor_estimado": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor Estimado"
+            }
+          },
+          "required": [
+            "id",
+            "user_id",
+            "pncp_id",
+            "objeto",
+            "stage",
+            "created_at",
+            "updated_at"
+          ],
+          "title": "PipelineItemResponse",
+          "type": "object"
+        },
+        "PipelineItemUpdate": {
+          "description": "Request to update a pipeline item (stage and/or notes).",
+          "properties": {
+            "notes": {
+              "anyOf": [
+                {
+                  "maxLength": 5000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Updated notes",
+              "title": "Notes"
+            },
+            "stage": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "New pipeline stage",
+              "title": "Stage"
+            }
+          },
+          "title": "PipelineItemUpdate",
+          "type": "object"
+        },
+        "PipelineListResponse": {
+          "description": "Paginated list of pipeline items.",
+          "properties": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/PipelineItemResponse"
+              },
+              "title": "Items",
+              "type": "array"
+            },
+            "limit": {
+              "title": "Limit",
+              "type": "integer"
+            },
+            "offset": {
+              "title": "Offset",
+              "type": "integer"
+            },
+            "total": {
+              "title": "Total",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "items",
+            "total",
+            "limit",
+            "offset"
+          ],
+          "title": "PipelineListResponse",
           "type": "object"
         },
         "PlanDetails": {
@@ -9499,6 +9960,47 @@
             "status"
           ],
           "title": "RootResponse",
+          "type": "object"
+        },
+        "SanctionsSummarySchema": {
+          "description": "Lightweight sanctions summary for search result enrichment (STORY-256 AC11).\n\nShown as a badge on each search result when check_sanctions=true.",
+          "properties": {
+            "active_sanctions_count": {
+              "default": 0,
+              "description": "Number of active sanctions",
+              "title": "Active Sanctions Count",
+              "type": "integer"
+            },
+            "checked_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO timestamp of check",
+              "title": "Checked At"
+            },
+            "is_clean": {
+              "description": "True if no active sanctions found",
+              "title": "Is Clean",
+              "type": "boolean"
+            },
+            "sanction_types": {
+              "description": "e.g. ['CEIS: Impedimento', 'CNEP: Multa']",
+              "items": {
+                "type": "string"
+              },
+              "title": "Sanction Types",
+              "type": "array"
+            }
+          },
+          "required": [
+            "is_clean"
+          ],
+          "title": "SanctionsSummarySchema",
           "type": "object"
         },
         "SearchesOverTimeResponse": {
@@ -10126,7 +10628,6 @@
       }
     },
     "info": {
-      "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es de uniformes no PNCP. Permite filtrar oportunidades por estado, valor e keywords, gerando relat\u00f3rios Excel e resumos executivos via IA.",
       "title": "BidIQ Uniformes API",
       "version": "0.2.0"
     },
@@ -11804,6 +12305,260 @@
           ]
         }
       },
+      "/pipeline": {
+        "get": {
+          "description": "List pipeline items for the authenticated user (AC3).\n\nSupports filtering by stage and pagination via limit/offset.",
+          "operationId": "list_pipeline_items_pipeline_get",
+          "parameters": [
+            {
+              "description": "Filter by stage",
+              "in": "query",
+              "name": "stage",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Filter by stage",
+                "title": "Stage"
+              }
+            },
+            {
+              "description": "Items per page",
+              "in": "query",
+              "name": "limit",
+              "required": false,
+              "schema": {
+                "default": 50,
+                "description": "Items per page",
+                "maximum": 200,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Offset for pagination",
+              "in": "query",
+              "name": "offset",
+              "required": false,
+              "schema": {
+                "default": 0,
+                "description": "Offset for pagination",
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PipelineListResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "List Pipeline Items",
+          "tags": [
+            "pipeline"
+          ]
+        },
+        "post": {
+          "description": "Add a procurement opportunity to the user's pipeline (AC2).\n\nReturns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).",
+          "operationId": "create_pipeline_item_pipeline_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineItemCreate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "201": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Create Pipeline Item",
+          "tags": [
+            "pipeline"
+          ]
+        }
+      },
+      "/pipeline/alerts": {
+        "get": {
+          "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
+          "operationId": "get_pipeline_alerts_pipeline_alerts_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PipelineAlertsResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Pipeline Alerts",
+          "tags": [
+            "pipeline"
+          ]
+        }
+      },
+      "/pipeline/{item_id}": {
+        "delete": {
+          "description": "Remove an item from the pipeline (AC5).\n\nReturns 404 if item doesn't exist or doesn't belong to user.",
+          "operationId": "delete_pipeline_item_pipeline__item_id__delete",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "item_id",
+              "required": true,
+              "schema": {
+                "title": "Item Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Delete Pipeline Item",
+          "tags": [
+            "pipeline"
+          ]
+        },
+        "patch": {
+          "description": "Update stage and/or notes of a pipeline item (AC4).\n\nValidates that stage is a valid enum value.\nReturns 404 if item doesn't exist or doesn't belong to user.",
+          "operationId": "update_pipeline_item_pipeline__item_id__patch",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "item_id",
+              "required": true,
+              "schema": {
+                "title": "Item Id",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineItemUpdate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Update Pipeline Item",
+          "tags": [
+            "pipeline"
+          ]
+        }
+      },
       "/plans": {
         "get": {
           "description": "Get available subscription plans.",
@@ -11962,7 +12717,7 @@
       },
       "/setores": {
         "get": {
-          "description": "Return available procurement sectors for frontend dropdown.",
+          "description": "Return available procurement sectors for frontend dropdown.\n\nSTORY-252 Track 5 (AC24): Mounted at both /setores (legacy) and /v1/setores (versioned).",
           "operationId": "listar_setores_setores_get",
           "responses": {
             "200": {
@@ -13608,6 +14363,260 @@
           ]
         }
       },
+      "/v1/pipeline": {
+        "get": {
+          "description": "List pipeline items for the authenticated user (AC3).\n\nSupports filtering by stage and pagination via limit/offset.",
+          "operationId": "list_pipeline_items_v1_pipeline_get",
+          "parameters": [
+            {
+              "description": "Filter by stage",
+              "in": "query",
+              "name": "stage",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Filter by stage",
+                "title": "Stage"
+              }
+            },
+            {
+              "description": "Items per page",
+              "in": "query",
+              "name": "limit",
+              "required": false,
+              "schema": {
+                "default": 50,
+                "description": "Items per page",
+                "maximum": 200,
+                "minimum": 1,
+                "title": "Limit",
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Offset for pagination",
+              "in": "query",
+              "name": "offset",
+              "required": false,
+              "schema": {
+                "default": 0,
+                "description": "Offset for pagination",
+                "minimum": 0,
+                "title": "Offset",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PipelineListResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "List Pipeline Items",
+          "tags": [
+            "pipeline"
+          ]
+        },
+        "post": {
+          "description": "Add a procurement opportunity to the user's pipeline (AC2).\n\nReturns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).",
+          "operationId": "create_pipeline_item_v1_pipeline_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineItemCreate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "201": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Create Pipeline Item",
+          "tags": [
+            "pipeline"
+          ]
+        }
+      },
+      "/v1/pipeline/alerts": {
+        "get": {
+          "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
+          "operationId": "get_pipeline_alerts_v1_pipeline_alerts_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PipelineAlertsResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Pipeline Alerts",
+          "tags": [
+            "pipeline"
+          ]
+        }
+      },
+      "/v1/pipeline/{item_id}": {
+        "delete": {
+          "description": "Remove an item from the pipeline (AC5).\n\nReturns 404 if item doesn't exist or doesn't belong to user.",
+          "operationId": "delete_pipeline_item_v1_pipeline__item_id__delete",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "item_id",
+              "required": true,
+              "schema": {
+                "title": "Item Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Delete Pipeline Item",
+          "tags": [
+            "pipeline"
+          ]
+        },
+        "patch": {
+          "description": "Update stage and/or notes of a pipeline item (AC4).\n\nValidates that stage is a valid enum value.\nReturns 404 if item doesn't exist or doesn't belong to user.",
+          "operationId": "update_pipeline_item_v1_pipeline__item_id__patch",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "item_id",
+              "required": true,
+              "schema": {
+                "title": "Item Id",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineItemUpdate"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Update Pipeline Item",
+          "tags": [
+            "pipeline"
+          ]
+        }
+      },
       "/v1/plans": {
         "get": {
           "description": "Get available subscription plans.",
@@ -13762,6 +14771,25 @@
           "tags": [
             "sessions"
           ]
+        }
+      },
+      "/v1/setores": {
+        "get": {
+          "description": "Return available procurement sectors for frontend dropdown.\n\nSTORY-252 Track 5 (AC24): Mounted at both /setores (legacy) and /v1/setores (versioned).",
+          "operationId": "listar_setores_v1_setores_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SetoresResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Listar Setores"
         }
       },
       "/v1/webhooks/stripe": {

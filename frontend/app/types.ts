@@ -23,8 +23,19 @@ export type Recomendacao = components["schemas"]["Recomendacao"];
 /** Breakdown of filter rejection reasons */
 export type FilterStats = components["schemas"]["FilterStats"];
 
+/** Lightweight sanctions summary for search result badges (STORY-256 AC11) */
+export interface SanctionsSummary {
+  is_clean: boolean;
+  active_sanctions_count: number;
+  sanction_types?: string[];
+  checked_at?: string;
+}
+
 /** Individual bid item for display in search results */
-export type LicitacaoItem = components["schemas"]["LicitacaoItem"];
+export type LicitacaoItem = components["schemas"]["LicitacaoItem"] & {
+  /** Sanctions check result (only when check_sanctions=true in request) — STORY-256 AC11 */
+  supplier_sanctions?: SanctionsSummary | null;
+};
 
 /** InMail message response */
 export type MessageResponse = components["schemas"]["MessageResponse"];

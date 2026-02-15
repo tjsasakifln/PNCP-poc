@@ -47,42 +47,42 @@ Contato → Inteligência → Mensagem → Qualificação → Histórico → Rep
 
 Construir sobre o client do Portal da Transparência (STORY-254 AC8-AC11).
 
-- [ ] **AC1:** Novo arquivo `backend/services/sanctions_service.py` com classe `SanctionsService` que agrega verificações CEIS + CNEP + TCU.
-- [ ] **AC2:** Método `check_company(cnpj: str) -> CompanySanctionsReport` que consulta CEIS, CNEP e opcionalmente TCU certidões em paralelo.
-- [ ] **AC3:** Cache in-memory por CNPJ com TTL de 24h (sanções mudam raramente). Usar `cachetools.TTLCache`.
-- [ ] **AC4:** Batch check: `check_companies(cnpjs: list[str]) -> dict[str, CompanySanctionsReport]` com rate limiting respeitando 90 req/min do Portal da Transparência.
-- [ ] **AC5:** Graceful degradation: se Portal da Transparência está indisponível, retornar `status="unavailable"` (não bloquear o pipeline).
+- [x] **AC1:** Novo arquivo `backend/services/sanctions_service.py` com classe `SanctionsService` que agrega verificações CEIS + CNEP + TCU.
+- [x] **AC2:** Método `check_company(cnpj: str) -> CompanySanctionsReport` que consulta CEIS, CNEP e opcionalmente TCU certidões em paralelo.
+- [x] **AC3:** Cache in-memory por CNPJ com TTL de 24h (sanções mudam raramente). Usar `cachetools.TTLCache`.
+- [x] **AC4:** Batch check: `check_companies(cnpjs: list[str]) -> dict[str, CompanySanctionsReport]` com rate limiting respeitando 90 req/min do Portal da Transparência.
+- [x] **AC5:** Graceful degradation: se Portal da Transparência está indisponível, retornar `status="unavailable"` (não bloquear o pipeline).
 
 ### Track 2: Lead Pipeline Integration (2h)
 
 Inserir verificação de sanções como Step 5.5 no pipeline existente.
 
-- [ ] **AC6:** `lead_prospecting.py` chama `SanctionsService.check_company()` após enriquecimento Receita Federal (Step 4) e antes do scoring (Step 5).
-- [ ] **AC7:** `LeadProfile` schema atualizado com campos:
+- [x] **AC6:** `lead_prospecting.py` chama `SanctionsService.check_company()` após enriquecimento Receita Federal (Step 4) e antes do scoring (Step 5).
+- [x] **AC7:** `LeadProfile` schema atualizado com campos:
   ```python
   sanctions_check: Optional[CompanySanctionsReport]
   is_sanctioned: bool  # True se qualquer sanção ativa encontrada
   ```
-- [ ] **AC8:** Scoring penaliza empresas sancionadas: `qualification_score` multiplicado por 0 se `is_sanctioned=True` (lead desqualificado automaticamente).
-- [ ] **AC9:** Report de leads inclui seção "Empresas Sancionadas Encontradas" listando as que foram desqualificadas e motivo.
-- [ ] **AC10:** Flag `--skip-sanctions` no CLI (`cli_acha_leads.py`) para pular verificação (útil em dev/debug).
+- [x] **AC8:** Scoring penaliza empresas sancionadas: `qualification_score` multiplicado por 0 se `is_sanctioned=True` (lead desqualificado automaticamente).
+- [x] **AC9:** Report de leads inclui seção "Empresas Sancionadas Encontradas" listando as que foram desqualificadas e motivo.
+- [x] **AC10:** Flag `--skip-sanctions` no CLI (`cli_acha_leads.py`) para pular verificação (útil em dev/debug).
 
 ### Track 3: Search Results Enrichment (2h)
 
 Além do pipeline de leads, oferecer verificação de sanções nos resultados de busca regular.
 
-- [ ] **AC11:** Novo campo em `BidItem` (resultado de busca): `supplier_sanctions: Optional[SanctionsSummary]` com `is_clean: bool`, `active_sanctions_count: int`.
-- [ ] **AC12:** Verificação opt-in via parâmetro `check_sanctions=true` no request de busca (default false — impacto em performance).
-- [ ] **AC13:** Quando `check_sanctions=true`, extrair CNPJs dos resultados (campo `cnpj` ou similar) e verificar em batch.
-- [ ] **AC14:** Frontend mostra badge nos resultados: shield verde "Empresa Limpa" ou shield vermelho "Sancionada (CEIS)" ao lado do nome do fornecedor.
-- [ ] **AC15:** Tooltip no badge vermelho mostra: tipo de sanção, órgão sancionador, data de início, base legal.
+- [x] **AC11:** Novo campo em `BidItem` (resultado de busca): `supplier_sanctions: Optional[SanctionsSummary]` com `is_clean: bool`, `active_sanctions_count: int`.
+- [x] **AC12:** Verificação opt-in via parâmetro `check_sanctions=true` no request de busca (default false — impacto em performance).
+- [x] **AC13:** Quando `check_sanctions=true`, extrair CNPJs dos resultados (campo `cnpj` ou similar) e verificar em batch.
+- [x] **AC14:** Frontend mostra badge nos resultados: shield verde "Empresa Limpa" ou shield vermelho "Sancionada (CEIS)" ao lado do nome do fornecedor.
+- [x] **AC15:** Tooltip no badge vermelho mostra: tipo de sanção, órgão sancionador, data de início, base legal.
 
 ### Track 4: Tests (1h)
 
-- [ ] **AC16:** Testes unitários para `SanctionsService`: CNPJ limpo, CNPJ sancionado (CEIS), CNPJ sancionado (CNEP), cache hit, API indisponível.
-- [ ] **AC17:** Testes unitários para pipeline integration: lead com sanção → score zerado, lead sem sanção → score normal.
-- [ ] **AC18:** Testes unitários para search enrichment: badge rendering com dados mock.
-- [ ] **AC19:** Integration test: verificar CNPJ conhecido como sancionado no CEIS (ex: consultar `/ceis?pagina=1` e usar primeiro resultado como fixture).
+- [x] **AC16:** Testes unitários para `SanctionsService`: CNPJ limpo, CNPJ sancionado (CEIS), CNPJ sancionado (CNEP), cache hit, API indisponível.
+- [x] **AC17:** Testes unitários para pipeline integration: lead com sanção → score zerado, lead sem sanção → score normal.
+- [x] **AC18:** Testes unitários para search enrichment: badge rendering com dados mock.
+- [x] **AC19:** Integration test: verificar CNPJ conhecido como sancionado no CEIS (ex: consultar `/ceis?pagina=1` e usar primeiro resultado como fixture).
 
 ---
 
@@ -146,14 +146,14 @@ Step 12: Generate report (com seção sanções)   → ReportGenerator
 
 ## Definition of Done
 
-- [ ] `SanctionsService.check_company(cnpj)` retorna report completo CEIS+CNEP
-- [ ] Pipeline de leads desqualifica automaticamente empresas sancionadas
-- [ ] Report de leads lista empresas sancionadas com motivo
-- [ ] Busca com `check_sanctions=true` enriquece resultados com badges
-- [ ] Cache 24h para evitar requests repetidos
-- [ ] Graceful degradation se Portal da Transparência indisponível
-- [ ] Testes passando
-- [ ] Zero regressão
+- [x] `SanctionsService.check_company(cnpj)` retorna report completo CEIS+CNEP
+- [x] Pipeline de leads desqualifica automaticamente empresas sancionadas
+- [x] Report de leads lista empresas sancionadas com motivo
+- [x] Busca com `check_sanctions=true` enriquece resultados com badges
+- [x] Cache 24h para evitar requests repetidos
+- [x] Graceful degradation se Portal da Transparência indisponível
+- [x] Testes passando
+- [x] Zero regressão
 
 ## Referências
 
