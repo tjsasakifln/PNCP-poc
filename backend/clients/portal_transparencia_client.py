@@ -146,11 +146,11 @@ class PortalTransparenciaAdapter(SourceAdapter):
 
     async def _rate_limit(self) -> None:
         """Enforce rate limiting between requests (90 req/min = 667ms gap)."""
-        now = asyncio.get_event_loop().time()
+        now = asyncio.get_running_loop().time()
         elapsed = now - self._last_request_time
         if elapsed < self.RATE_LIMIT_DELAY:
             await asyncio.sleep(self.RATE_LIMIT_DELAY - elapsed)
-        self._last_request_time = asyncio.get_event_loop().time()
+        self._last_request_time = asyncio.get_running_loop().time()
         self._request_count += 1
 
     async def _request_with_retry(
@@ -486,7 +486,7 @@ class PortalTransparenciaAdapter(SourceAdapter):
 
         try:
             client = await self._get_client()
-            start = asyncio.get_event_loop().time()
+            start = asyncio.get_running_loop().time()
 
             response = await client.get(
                 "/licitacoes",
@@ -494,7 +494,7 @@ class PortalTransparenciaAdapter(SourceAdapter):
                 timeout=5.0,
             )
 
-            elapsed_ms = (asyncio.get_event_loop().time() - start) * 1000
+            elapsed_ms = (asyncio.get_running_loop().time() - start) * 1000
 
             if response.status_code in (401, 403):
                 logger.warning(

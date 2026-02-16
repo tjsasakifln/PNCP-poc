@@ -122,11 +122,11 @@ class PortalComprasAdapter(SourceAdapter):
 
     async def _rate_limit(self) -> None:
         """Enforce rate limiting between requests."""
-        elapsed = asyncio.get_event_loop().time() - self._last_request_time
+        elapsed = asyncio.get_running_loop().time() - self._last_request_time
         if elapsed < self.RATE_LIMIT_DELAY:
             sleep_time = self.RATE_LIMIT_DELAY - elapsed
             await asyncio.sleep(sleep_time)
-        self._last_request_time = asyncio.get_event_loop().time()
+        self._last_request_time = asyncio.get_running_loop().time()
         self._request_count += 1
 
     async def _request_with_retry(
@@ -251,7 +251,7 @@ class PortalComprasAdapter(SourceAdapter):
 
         try:
             client = await self._get_client()
-            start = asyncio.get_event_loop().time()
+            start = asyncio.get_running_loop().time()
 
             # TODO: Verify actual health check endpoint from API docs
             # Using a minimal query as health check
@@ -261,7 +261,7 @@ class PortalComprasAdapter(SourceAdapter):
                 timeout=5.0,
             )
 
-            elapsed_ms = (asyncio.get_event_loop().time() - start) * 1000
+            elapsed_ms = (asyncio.get_running_loop().time() - start) * 1000
 
             if response.status_code in (401, 403):
                 logger.warning("[PORTAL_COMPRAS] Authentication failed in health check")

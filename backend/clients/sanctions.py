@@ -154,11 +154,11 @@ class SanctionsChecker:
 
     async def _rate_limit(self) -> None:
         """Enforce minimum interval between requests."""
-        now = asyncio.get_event_loop().time()
+        now = asyncio.get_running_loop().time()
         elapsed = now - self._last_request_time
         if elapsed < self.RATE_LIMIT_DELAY:
             await asyncio.sleep(self.RATE_LIMIT_DELAY - elapsed)
-        self._last_request_time = asyncio.get_event_loop().time()
+        self._last_request_time = asyncio.get_running_loop().time()
         self._request_count += 1
 
     def _calculate_backoff(self, attempt: int) -> float:

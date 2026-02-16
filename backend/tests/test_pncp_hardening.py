@@ -702,7 +702,7 @@ class TestModalityParallelism:
 
         async def mock_fetch_single(uf, data_inicial, data_final, modalidade,
                                      status=None, max_pages=500):
-            start_times[modalidade] = asyncio.get_event_loop().time()
+            start_times[modalidade] = asyncio.get_running_loop().time()
             await asyncio.sleep(0.05)  # simulate small work
             return [_make_item(f"MOD-{modalidade}-1")]
 

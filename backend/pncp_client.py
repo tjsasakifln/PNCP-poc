@@ -234,7 +234,7 @@ class PNCPClient:
         """
         self.config = config or RetryConfig()
         self.session = self._create_session()
-        self._request_count = 0
+        self._request_count = 0  # Per-session counter; reset not needed as each client instance is short-lived
         self._last_request_time = 0.0
 
     def _create_session(self) -> requests.Session:
@@ -759,7 +759,7 @@ class AsyncPNCPClient:
         self.max_concurrent = max_concurrent
         self._semaphore: asyncio.Semaphore | None = None
         self._client: httpx.AsyncClient | None = None
-        self._request_count = 0
+        self._request_count = 0  # Per-session counter; reset not needed as each client instance is short-lived
         self._last_request_time = 0.0
 
     async def __aenter__(self) -> "AsyncPNCPClient":
@@ -858,12 +858,12 @@ class AsyncPNCPClient:
         """
         MIN_INTERVAL = 0.1  # 100ms
 
-        current_time = asyncio.get_event_loop().time()
+        current_time = asyncio.get_running_loop().time()
         elapsed = current_time - self._last_request_time
         if elapsed < MIN_INTERVAL:
             await asyncio.sleep(MIN_INTERVAL - elapsed)
 
-        self._last_request_time = asyncio.get_event_loop().time()
+        self._last_request_time = asyncio.get_running_loop().time()
         self._request_count += 1
 
     async def _fetch_page_async(
