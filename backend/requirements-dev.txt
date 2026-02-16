@@ -17,7 +17,7 @@ faker==37.1.0
 locust==2.43.2
 
 # Legacy ORM (kept for test backward compat, deprecated in STORY-201)
-sqlalchemy==2.0.36
+sqlalchemy==2.0.46
 psycopg2-binary==2.9.10
 
 # Code quality
