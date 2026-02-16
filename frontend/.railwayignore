@@ -34,6 +34,5 @@ e2e-tests/
 logs/
 npm-debug.log*
 
-# Docker (Railway builds its own)
-Dockerfile
+# Docker compose (not needed for Railway)
 docker-compose*.yml
