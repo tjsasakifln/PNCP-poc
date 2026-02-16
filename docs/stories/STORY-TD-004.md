@@ -33,19 +33,19 @@ Esta story fecha os gaps de seguranca de banco de dados restantes apos o Sprint 
 ## Criterios de Aceite
 
 ### Webhook Security (Migration 028)
-- [ ] INSERT em `stripe_webhook_events` com authenticated key FALHA (somente service_role pode inserir)
-- [ ] SELECT policy para authenticated permanece funcional (se existente)
-- [ ] Stripe webhooks continuam processando normalmente apos correcao
+- [x] INSERT em `stripe_webhook_events` com authenticated key FALHA (somente service_role pode inserir)
+- [x] SELECT policy para authenticated permanece funcional (se existente)
+- [ ] Stripe webhooks continuam processando normalmente apos correcao *(requires production deploy)*
 
 ### Admin Default
-- [ ] `admin.py` `CreateUserRequest` tem `plan_id` default como `"free_trial"` (nao `"free"`)
-- [ ] Admin cria usuario sem plan_id explicito -> profile com `plan_type = 'free_trial'`
+- [x] `admin.py` `CreateUserRequest` tem `plan_id` default como `"free_trial"` (nao `"free"`)
+- [x] Admin cria usuario sem plan_id explicito -> profile com `plan_type = 'free_trial'`
 
 ### Trigger Documentacao
-- [ ] Resultado de V1 (coluna `status`) documentado
-- [ ] Se `status` ausente: trigger `sync_profile_plan_type()` marcado como dead code com justificativa
-- [ ] Se `status` presente: fluxo documentado e consistencia verificada
-- [ ] Evolucao do trigger `handle_new_user()` documentada (4 versoes: 001, 007, 016, 024, 027)
+- [x] Resultado de V1 (coluna `status`) documentado — **COLUNA NAO EXISTE** (dead code confirmado)
+- [x] Se `status` ausente: trigger `sync_profile_plan_type()` marcado como dead code com justificativa
+- [ ] ~~Se `status` presente: fluxo documentado e consistencia verificada~~ N/A (status ausente)
+- [x] Evolucao do trigger `handle_new_user()` documentada (5 versoes: 001, 007, 016, 024, 027)
 
 ## Testes Requeridos
 
@@ -68,9 +68,16 @@ Esta story fecha os gaps de seguranca de banco de dados restantes apos o Sprint 
 - Se webhook processing falhar, restaurar policy original rapidamente
 
 ## Definition of Done
-- [ ] Codigo implementado e revisado
-- [ ] Testes passando (unitario + integracao SQL)
-- [ ] CI/CD green
-- [ ] Documentacao atualizada (triggers, evolucao, decisoes)
-- [ ] Deploy em staging verificado
-- [ ] Webhook Stripe testado em producao apos deploy
+- [x] Codigo implementado e revisado
+- [x] Testes passando (unitario + integracao SQL) — 36/36 passing (29 SEC + 7 REG)
+- [ ] CI/CD green *(pending push)*
+- [x] Documentacao atualizada (triggers, evolucao, decisoes) — 3 docs created
+- [ ] Deploy em staging verificado *(requires migration 027 first — TD-001 dependency)*
+- [ ] Webhook Stripe testado em producao apos deploy *(requires production deploy)*
+
+## Artifacts Produced
+- `backend/tests/test_webhook_rls_security.py` — 29 tests (SEC-T04, SEC-T05)
+- `backend/tests/test_admin_default.py` — 7 tests (REG-T03)
+- `docs/architecture/td004-trigger-evolution.md` — Trigger archaeology (DB-01, DB-11)
+- `docs/architecture/ADR-TD004-webhook-rls-security.md` — ADR for webhook RLS
+- `docs/architecture/ADR-TD004-trigger-consolidation.md` — ADR for trigger strategy
