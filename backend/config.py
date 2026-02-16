@@ -257,10 +257,8 @@ LLM_ARBITER_TEMPERATURE: float = float(os.getenv("LLM_ARBITER_TEMPERATURE", "0")
 #   compensates adequately. Adding 15 x 3 = 45 per-sector threshold
 #   parameters would increase maintenance burden without clear benefit.
 #
-# NOTE (out of scope): The conservative prompt in llm_arbiter.py (lines
-#   115-137) has a hardcoded sector description for "Vestuario e Uniformes"
-#   that is incorrectly applied to all 15 sectors. This should be addressed
-#   in a separate story to use each sector's actual description.
+# NOTE: Resolved by STORY-251 — conservative prompt now uses dynamic sector
+#   lookup via get_sector(setor_id) in llm_arbiter.py:45-109.
 # ============================================
 #
 # Decision flow:

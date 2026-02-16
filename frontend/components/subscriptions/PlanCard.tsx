@@ -9,7 +9,7 @@ import { BillingPeriod } from "./PlanToggle";
  * STORY-171 AC2: Cálculo de Preços Dinâmico (20% Discount)
  *
  * Features:
- * - Dynamic price calculation: annual = monthly × 9.6
+ * - Dynamic price calculation: annual = monthly × 12 × 0.8 (20% discount)
  * - Badge "💰 Economize 20%" when annual
  * - Tooltip showing annual savings
  * - Formatted prices in BRL
@@ -36,13 +36,13 @@ export function PlanCard({
   onSelect,
   className = "",
 }: PlanCardProps) {
-  // Calculate display price based on billing period
+  // Calculate display price based on billing period (20% annual discount = 2 months free)
   const displayPrice = billingPeriod === 'annual'
-    ? monthlyPrice * 9.6
+    ? monthlyPrice * 12 * 0.8
     : monthlyPrice;
 
-  // Calculate savings for annual plan
-  const annualSavings = monthlyPrice * 12 - (monthlyPrice * 9.6);
+  // Calculate savings for annual plan (20% of yearly total)
+  const annualSavings = monthlyPrice * 12 * 0.2;
   const monthlyEquivalent = billingPeriod === 'annual'
     ? displayPrice / 12
     : monthlyPrice;

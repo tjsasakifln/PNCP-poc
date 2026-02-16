@@ -136,7 +136,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Existe desconto para pagamento anual?",
         answer:
-          "Sim! Ao optar pelo pagamento anual, você recebe um desconto de 20% em relação ao valor mensal. Você paga o equivalente a 9,6 meses em vez de 12.",
+          "Sim! Ao optar pelo pagamento anual, você ganha 2 meses grátis (desconto de 20%). Por exemplo, no plano Consultor Ágil você economiza R$ 712,80 por ano.",
       },
     ],
   },

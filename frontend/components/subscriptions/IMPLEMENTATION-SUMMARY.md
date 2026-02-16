@@ -31,7 +31,7 @@
 **Location:** `frontend/components/subscriptions/PlanCard.tsx`
 
 **Features Implemented:**
-- ✅ Dynamic price calculation (annual = monthly × 9.6)
+- ✅ Dynamic price calculation (annual = monthly × 12 × 0.8, i.e. 20% discount)
 - ✅ "💰 Economize 20%" badge for annual plans
 - ✅ Tooltip with detailed savings breakdown
 - ✅ BRL currency formatting (R$ 2.851,20)
@@ -264,7 +264,7 @@ afterEach(() => {
 - [x] Responsive design
 
 ### AC2: Dynamic Pricing ✅
-- [x] Annual price = monthly × 9.6 (20% discount)
+- [x] Annual price = monthly × 12 × 0.8 (20% discount, 2 meses grátis)
 - [x] "💰 Economize 20%" badge visible when annual
 - [x] BRL formatting (R$ 2.851,00)
 - [x] Tooltip with savings breakdown

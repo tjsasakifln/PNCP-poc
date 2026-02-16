@@ -54,7 +54,7 @@ function PricingPage() {
 - `className?: string` - Additional CSS classes
 
 **Features:**
-- ✅ Dynamic price calculation (annual = monthly × 9.6)
+- ✅ Dynamic price calculation (annual = monthly × 12 × 0.8, i.e. 20% discount)
 - ✅ Shows 20% savings badge when annual
 - ✅ Tooltip with detailed savings breakdown
 - ✅ BRL currency formatting (R$ 2.851,20)
@@ -62,8 +62,8 @@ function PricingPage() {
 
 **Pricing Formula:**
 - **Monthly:** Display monthly price as-is
-- **Annual:** `displayPrice = monthlyPrice × 9.6`
-- **Savings:** `monthlyPrice × 12 - (monthlyPrice × 9.6)`
+- **Annual:** `displayPrice = monthlyPrice × 12 × 0.8`
+- **Savings:** `monthlyPrice × 12 × 0.2` (2 meses grátis)
 
 **Usage:**
 ```tsx

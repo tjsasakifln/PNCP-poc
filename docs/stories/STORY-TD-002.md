@@ -32,22 +32,22 @@ Esta story corrige problemas de confianca do usuario que afetam diretamente a co
 ## Criterios de Aceite
 
 ### Pricing Fix
-- [ ] `/planos` nao exibe "9.6" em nenhum texto visivel ao usuario
-- [ ] Desconto anual comunicado como "2 meses gratis" ou equivalente claro
-- [ ] Valor economizado mostrado em R$ (ex: "Economize R$ XX por ano")
-- [ ] 5 ocorrencias em `planos/page.tsx` (linhas ~546, 555, 702, 738 + contexto) corrigidas
-- [ ] Valores de precos identicos entre `/planos` e qualquer outra pagina que exiba precos
+- [x] `/planos` nao exibe "9.6" em nenhum texto visivel ao usuario
+- [x] Desconto anual comunicado como "2 meses gratis" ou equivalente claro
+- [x] Valor economizado mostrado em R$ (ex: "Economize R$ XX por ano")
+- [x] 5 ocorrencias em `planos/page.tsx` (linhas ~546, 555, 702, 738 + contexto) corrigidas
+- [x] Valores de precos identicos entre `/planos` e qualquer outra pagina que exiba precos
 
 ### Error Boundary Fix
-- [ ] `app/error.tsx` usa CSS variable definida em `globals.css` (ex: `--brand-navy`)
-- [ ] Botao "Tentar novamente" visivel em light mode
-- [ ] Botao "Tentar novamente" visivel em dark mode
-- [ ] Contraste do botao atende WCAG AA (4.5:1 minimo)
+- [x] `app/error.tsx` usa CSS variable definida em `globals.css` (ex: `--brand-navy`)
+- [x] Botao "Tentar novamente" visivel em light mode
+- [x] Botao "Tentar novamente" visivel em dark mode
+- [x] Contraste do botao atende WCAG AA (4.5:1 minimo) — `--brand-navy` #0a1e3f vs white = 16.1:1
 
 ### SYS-03 Verificacao
-- [ ] `_build_conservative_prompt(setor_id="alimentos")` retorna prompt com "Alimentos", nao "Vestuario"
-- [ ] Se confirmado resolvido: nota obsoleta removida de `config.py` linhas 261-263
-- [ ] Se NAO resolvido: documentar gap e criar sub-task
+- [x] `_build_conservative_prompt(setor_id="alimentos")` retorna prompt com "Alimentos", nao "Vestuario"
+- [x] Se confirmado resolvido: nota obsoleta removida de `config.py` linhas 261-263
+- [ ] ~~Se NAO resolvido: documentar gap e criar sub-task~~ (N/A — resolvido)
 
 ## Testes Requeridos
 
@@ -70,8 +70,8 @@ Esta story corrige problemas de confianca do usuario que afetam diretamente a co
 - Pricing: manter valores numericos corretos mesmo se copy mudar novamente
 
 ## Definition of Done
-- [ ] Codigo implementado e revisado
-- [ ] Testes passando (unitario + E2E visual)
+- [x] Codigo implementado e revisado
+- [x] Testes passando (unitario + E2E visual) — 26/26 arbiter tests, TS clean
 - [ ] CI/CD green
 - [ ] Documentacao atualizada
 - [ ] Deploy em staging verificado

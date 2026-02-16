@@ -64,7 +64,7 @@ export default function Error({
 
         <button
           onClick={reset}
-          className="w-full bg-[var(--brand-green)] hover:opacity-90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-green)] focus:ring-offset-2"
+          className="w-full bg-[var(--brand-navy)] hover:bg-[var(--brand-blue)] text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-navy)] focus:ring-offset-2"
         >
           Tentar novamente
         </button>

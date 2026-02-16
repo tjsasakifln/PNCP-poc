@@ -43,10 +43,10 @@ describe('PlanCard Component', () => {
   });
 
   describe('Annual Pricing (20% Discount)', () => {
-    it('should calculate annual price correctly (9.6x monthly)', () => {
+    it('should calculate annual price correctly (20% discount)', () => {
       render(<PlanCard {...defaultProps} billingPeriod="annual" />);
 
-      // 297 * 9.6 = 2,851.20 (may appear multiple times in the card)
+      // 297 * 12 * 0.8 = 2,851.20 (may appear multiple times in the card)
       expect(screen.getAllByText(/R\$\s*2\.851,20/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('/ano')).toBeInTheDocument();
     });
@@ -88,7 +88,7 @@ describe('PlanCard Component', () => {
         />
       );
 
-      // 597 * 9.6 = 5,731.20 (may appear multiple times)
+      // 597 * 12 * 0.8 = 5,731.20 (may appear multiple times)
       expect(screen.getAllByText(/R\$\s*5\.731,20/).length).toBeGreaterThanOrEqual(1);
     });
 
@@ -103,7 +103,7 @@ describe('PlanCard Component', () => {
         />
       );
 
-      // 1497 * 9.6 = 14,371.20 (may appear multiple times)
+      // 1497 * 12 * 0.8 = 14,371.20 (may appear multiple times)
       expect(screen.getAllByText(/R\$\s*14\.371,20/).length).toBeGreaterThanOrEqual(1);
     });
   });
@@ -194,7 +194,7 @@ describe('PlanCard Component', () => {
     it('should use dot as thousands separator', () => {
       render(<PlanCard {...defaultProps} monthlyPrice={1497} billingPeriod="annual" />);
 
-      // 1497 * 9.6 = 14,371.20 (may appear multiple times)
+      // 1497 * 12 * 0.8 = 14,371.20 (may appear multiple times)
       expect(screen.getAllByText(/14\.371,20/).length).toBeGreaterThanOrEqual(1);
     });
   });

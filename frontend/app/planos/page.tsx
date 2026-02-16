@@ -189,7 +189,7 @@ export default function PlanosPage() {
   // Get selected plan object and price
   const selectedPlan = plans.find((p) => p.id === selectedPlanId) || plans.find((p) => p.id === 'maquina') || plans[0];
   const selectedPlanPrice = billingPeriod === 'annual'
-    ? selectedPlan?.price_brl * 9.6
+    ? selectedPlan?.price_brl * 12 * 0.8
     : selectedPlan?.price_brl || 297;
 
   const [roiResult, setRoiResult] = useState(
@@ -543,7 +543,7 @@ export default function PlanosPage() {
                   <div className="mb-6">
                     <span className="text-3xl font-data font-bold text-[var(--ink)]">
                       {billingPeriod === "annual"
-                        ? formatPrice(plan.price_brl * 9.6)
+                        ? formatPrice(plan.price_brl * 12 * 0.8)
                         : formatPrice(plan.price_brl)}
                     </span>
                     <span className="text-sm text-[var(--ink-muted)]">
@@ -552,7 +552,10 @@ export default function PlanosPage() {
                     {billingPeriod === "annual" && (
                       <div className="mt-1">
                         <span className="text-sm text-[var(--ink-secondary)]">
-                          Equivalente a {formatPrice((plan.price_brl * 9.6) / 12)}/mês
+                          Equivalente a {formatPrice(plan.price_brl * 0.8)}/mês — 2 meses grátis
+                        </span>
+                        <span className="block text-xs text-[var(--success)] font-semibold mt-0.5">
+                          Economize {formatPrice(plan.price_brl * 12 * 0.2)}/ano
                         </span>
                       </div>
                     )}
@@ -699,7 +702,7 @@ export default function PlanosPage() {
                     const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES.consultor_agil;
                     const isSelected = selectedPlanId === plan.id;
                     const planPrice = billingPeriod === 'annual'
-                      ? plan.price_brl * 9.6
+                      ? plan.price_brl * 12 * 0.8
                       : plan.price_brl;
 
                     return (
@@ -735,7 +738,7 @@ export default function PlanosPage() {
               </div>
               {billingPeriod === 'annual' && (
                 <p className="text-xs text-[var(--ink-muted)] text-center mt-2">
-                  Preços com 20% de desconto (12 meses pelo preço de 9.6)
+                  Plano anual com 20% de desconto — 2 meses grátis!
                 </p>
               )}
             </div>
