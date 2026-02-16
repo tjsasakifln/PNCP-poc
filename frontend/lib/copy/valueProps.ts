@@ -365,40 +365,20 @@ export const email = {
 };
 
 // ============================================================================
-// SOCIAL PROOF / TESTIMONIALS — Use Case Themes (NOT fictional personas)
+// ANALYSIS EXAMPLES — Real Social Proof (GTM-005)
 // ============================================================================
 
-export const testimonials = {
-  visibility: {
-    theme: "Visibilidade de Mercado",
-    quote:
-      "Antes a gente perdia oportunidades porque simplesmente não sabia que existiam. Agora temos visão completa do mercado.",
-    useCase: "Empresa de Uniformes — Região Sudeste",
-    impact: "Visibilidade completa das oportunidades do setor",
-  },
-
-  decision: {
-    theme: "Decisão Informada",
-    quote:
-      "A avaliação objetiva de cada oportunidade mudou a forma como decidimos em quais licitações investir.",
-    useCase: "Empresa de TI — Atuação Nacional",
-    impact: "Decisões baseadas em dados, não em intuição",
-  },
-
-  competitive: {
-    theme: "Vantagem Competitiva",
-    quote:
-      "Chegamos antes. Enquanto outros ainda estão buscando, a gente já está se preparando.",
-    useCase: "Empresa de Facilities — Região Sul",
-    impact: "Posicionamento antes da concorrência",
-  },
-
-  focus: {
-    theme: "Foco no que Importa",
-    quote:
-      "Parei de perder tempo com oportunidades que não se encaixam no nosso perfil. Agora invisto energia onde vale.",
-    useCase: "Construtora — Múltiplos Estados",
-    impact: "Foco nas oportunidades certas",
+export const analysisExamples = {
+  sectionTitle: "SmartLic em Acao",
+  sectionSubtitle:
+    "Veja como analisamos oportunidades reais e sugerimos decisoes objetivas",
+  flow: ["Licitacao Real", "Analise SmartLic", "Decisao Sugerida"],
+  labels: {
+    timeline: "Prazo",
+    requirements: "Requisitos",
+    competitiveness: "Concorrencia",
+    score: "Compatibilidade",
+    decision: "Decisao Sugerida",
   },
 };
 
@@ -520,7 +500,7 @@ export default {
   onboarding,
   footer,
   email,
-  testimonials,
+  analysisExamples,
   BANNED_PHRASES,
   PREFERRED_PHRASES,
   // Utility functions
