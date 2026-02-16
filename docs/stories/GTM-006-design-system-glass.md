@@ -169,8 +169,8 @@ export function GlassCard({ variant = 'default', gemAccent, children }: GlassCar
 ### Responsividade e Mobile
 
 - [x] **AC6:** Viewport meta tag explícita em `layout.tsx`: `width=device-width, initial-scale=1`
-- [ ] **AC10:** Mobile: sem diferença de zoom/tamanho entre landing e área logada
-- [ ] **AC10.1:** Glass effects funcionam em viewports 375px, 768px, 1024px (teste em DevTools)
+- [x] **AC10:** Mobile: sem diferença de zoom/tamanho entre landing e área logada
+- [x] **AC10.1:** Glass effects funcionam em viewports 375px, 768px, 1024px (teste em DevTools)
 
 ### Dark Mode
 
