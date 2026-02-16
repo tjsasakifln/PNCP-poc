@@ -221,7 +221,7 @@ export default function ComparisonTable() {
             glow={true}
             onClick={() => window.location.href = '/signup?source=comparison-table'}
           >
-            Começar Teste Grátis de 7 Dias
+            Experimentar o Produto Completo
             <svg
               role="img"
               aria-label="Ícone"

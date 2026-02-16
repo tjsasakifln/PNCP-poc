@@ -62,7 +62,7 @@ export const hero = {
   cta: {
     discovery: "Descobrir Minhas Oportunidades",
     competitive: "Ver Oportunidades do Meu Mercado",
-    trial: "Começar Avaliação Gratuita",
+    trial: "Experimentar Sem Compromisso",
     default: "Descobrir Minhas Oportunidades",
   },
 };
@@ -230,7 +230,7 @@ export const pricing = {
     },
     guarantee: {
       traditional: "Raro",
-      smartlic: "Período de avaliação gratuita",
+      smartlic: "7 dias do produto completo",
     },
   },
 
@@ -238,7 +238,7 @@ export const pricing = {
   guarantee: {
     headline: "Avalie Sem Compromisso",
     description:
-      "Consultas gratuitas para você conhecer o poder da inteligência de decisão. Sem cartão, sem compromisso.",
+      "Produto completo por 7 dias para você conhecer o poder da inteligência de decisão. Sem cartão, sem compromisso.",
   },
 
   // Transparency statement

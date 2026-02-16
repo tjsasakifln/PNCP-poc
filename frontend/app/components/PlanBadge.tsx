@@ -57,7 +57,7 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
 
   // Plan icon - use text icons instead of emojis for better cross-platform support
   const icon = useMemo(() => {
-    if (planId === "free_trial") return "G";  // Gratuito
+    if (planId === "free_trial") return "A";  // Avaliação
     if (planId === "consultor_agil") return "C";  // Consultor
     if (planId === "maquina") return "M";  // Maquina
     if (planId === "sala_guerra") return "S";  // Sala de Guerra

@@ -40,15 +40,17 @@ class TestPlanCapabilities:
         assert all(plan in PLAN_CAPABILITIES for plan in expected_plans)
 
     def test_free_trial_capabilities(self):
-        """FREE Trial should have restricted capabilities."""
+        """GTM-003: FREE Trial should have full product capabilities."""
         from quota import PLAN_CAPABILITIES
 
         caps = PLAN_CAPABILITIES["free_trial"]
-        assert caps["max_history_days"] == 7
-        assert caps["allow_excel"] is False
+        assert caps["max_history_days"] == 365  # GTM-003: 1 year
+        assert caps["allow_excel"] is True  # GTM-003: Full product
+        assert caps["allow_pipeline"] is True  # GTM-003: Full product
+        assert caps["max_requests_per_month"] == 3  # Keep limited
         assert caps["max_requests_per_min"] == 2
-        assert caps["max_summary_tokens"] == 200
-        assert caps["priority"] == "low"
+        assert caps["max_summary_tokens"] == 10000  # GTM-003: Full AI
+        assert caps["priority"] == "normal"  # GTM-003: Normal speed
 
     def test_consultor_agil_capabilities(self):
         """Consultor Ágil should have 30-day history, no Excel."""
@@ -206,7 +208,7 @@ class TestCheckQuotaFreeTrial:
         assert result.quota_remaining == PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"]
 
     def test_free_trial_capabilities_applied(self):
-        """Free trial should have restricted capabilities (7-day history, no Excel)."""
+        """GTM-003: Free trial should have full product capabilities."""
         from quota import check_quota
 
         mock_supabase = Mock()
@@ -226,9 +228,9 @@ class TestCheckQuotaFreeTrial:
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
             result = check_quota("user-123")
 
-        assert result.capabilities["max_history_days"] == 7
-        assert result.capabilities["allow_excel"] is False
-        assert result.capabilities["max_summary_tokens"] == 200
+        assert result.capabilities["max_history_days"] == 365
+        assert result.capabilities["allow_excel"] is True
+        assert result.capabilities["max_summary_tokens"] == 10000
 
 
 class TestCheckQuotaPaidPlans:

@@ -61,13 +61,13 @@ class PlanCapabilities(TypedDict):
 # Hardcoded plan definitions (secure, version-controlled)
 PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
     "free_trial": {
-        "max_history_days": 7,
-        "allow_excel": False,
-        "allow_pipeline": False,  # STORY-250
-        "max_requests_per_month": 3,  # Free trial: 3 searches only
+        "max_history_days": 365,  # GTM-003: 1 year (same as smartlic_pro)
+        "allow_excel": True,  # GTM-003: Full product during trial
+        "allow_pipeline": True,  # GTM-003: Full product during trial
+        "max_requests_per_month": 3,  # Keep: 3 complete analyses
         "max_requests_per_min": 2,
-        "max_summary_tokens": 200,
-        "priority": PlanPriority.LOW.value,
+        "max_summary_tokens": 10000,  # GTM-003: Full AI analysis (same as smartlic_pro)
+        "priority": PlanPriority.NORMAL.value,  # GTM-003: Normal speed (same as smartlic_pro)
     },
     "consultor_agil": {
         "max_history_days": 30,

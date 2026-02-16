@@ -31,7 +31,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   free_trial: {
     id: "free_trial",
     displayName: "FREE Trial",
-    displayNamePt: "Gratuito",
+    displayNamePt: "Avaliação",
     price: null,
     badge: {
       bg: "bg-gray-500",
@@ -139,12 +139,12 @@ export function getPlanDisplayName(planId: string | null | undefined, backendNam
   if (backendName) {
     // Clean up common backend names
     if (backendName.toLowerCase() === "free trial" || backendName === "FREE Trial") {
-      return "Gratuito";
+      return "Avaliação";
     }
     return backendName;
   }
 
-  return "Gratuito";
+  return "Avaliação";
 }
 
 /**

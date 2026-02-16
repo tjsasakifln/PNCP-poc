@@ -78,14 +78,14 @@ const FAQ_DATA: FAQCategory[] = [
     ),
     items: [
       {
-        question: "Qual a diferença entre o plano gratuito e os planos pagos?",
+        question: "Qual a diferença entre o período de avaliação e o SmartLic Pro?",
         answer:
-          "O plano gratuito (teste) permite até 3 buscas e 7 dias de histórico, sem download de Excel. Os planos pagos oferecem mais buscas mensais, histórico estendido (até 5 anos), download de Excel, resumos de IA mais detalhados e processamento prioritário.",
+          "Durante os 7 dias de avaliação, você usa o produto completo: Excel, Pipeline, IA completa e histórico de 1 ano. A única diferença é o limite de 3 análises. O SmartLic Pro oferece até 1.000 análises por mês e histórico de 5 anos.",
       },
       {
         question: "Posso testar antes de assinar?",
         answer:
-          "Sim! Ao criar sua conta, você recebe automaticamente 3 buscas gratuitas para experimentar a plataforma. Não é necessário informar dados de pagamento para o teste.",
+          "Sim! Ao criar sua conta, você experimenta o produto completo por 7 dias com 3 análises incluídas. Não é necessário informar dados de pagamento.",
       },
       {
         question: "Como faço upgrade do meu plano?",
@@ -136,7 +136,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Existe desconto para pagamento anual?",
         answer:
-          "Sim! Ao optar pelo pagamento anual, você ganha 2 meses grátis (desconto de 20%). Por exemplo, no plano Consultor Ágil você economiza R$ 712,80 por ano.",
+          "Sim! O acesso anual tem economia de 20% em relação ao mensal — R$ 1.599/mês em vez de R$ 1.999/mês.",
       },
     ],
   },

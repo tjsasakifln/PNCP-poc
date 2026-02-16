@@ -26,7 +26,7 @@ const INFO_REASONS = new Set(["login_required"]);
 // Translate Supabase error messages to Portuguese
 function translateSupabaseError(message: string): string {
   const translations: Record<string, string> = {
-    "Error sending magic link email": "Este email ainda não está cadastrado. Crie sua conta gratuitamente para começar.",
+    "Error sending magic link email": "Este email ainda não está cadastrado. Crie sua conta para começar.",
     "For security purposes, you can only request this after": "Por segurança, aguarde alguns segundos antes de tentar novamente.",
     "Email not confirmed": "Email não confirmado. Verifique sua caixa de entrada.",
     "Invalid login credentials": "Email ou senha incorretos.",

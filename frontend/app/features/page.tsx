@@ -41,7 +41,7 @@ export default function FeaturesPage() {
               href="/signup?source=features-hero"
               className="inline-flex items-center gap-2 bg-white text-brand-blue px-8 py-4 rounded-lg font-semibold hover:bg-white/90 transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-blue"
             >
-              <span>Começar Teste Grátis</span>
+              <span>Experimentar Sem Compromisso</span>
               <svg
               role="img"
               aria-label="Ícone"
@@ -195,7 +195,7 @@ export default function FeaturesPage() {
             Pronto para Ganhar Mais Licitações?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Consultas gratuitas. Sem cartão de crédito. Cancele quando quiser.
+            7 dias do produto completo. Sem versão limitada. Sem cartão de crédito.
           </p>
           <a
             href="/signup?source=features-bottom-cta"

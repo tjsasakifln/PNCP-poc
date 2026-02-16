@@ -871,7 +871,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const link = screen.getByRole('link', { name: /Continuar com avaliação gratuita/i });
+        const link = screen.getByRole('link', { name: /Continuar com período de avaliação/i });
         expect(link).toBeInTheDocument();
         expect(link).toHaveAttribute('href', '/buscar');
       });

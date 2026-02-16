@@ -15,7 +15,7 @@ test.describe('Landing Page', () => {
     await expect(page.getByText(/500 mil oportunidades mensais/i)).toBeVisible();
 
     // Check primary CTA
-    const primaryCTA = page.getByRole('link', { name: /começar busca gratuita/i });
+    const primaryCTA = page.getByRole('link', { name: /Descobrir Minhas Oportunidades/i });
     await expect(primaryCTA).toBeVisible();
     await expect(primaryCTA).toHaveAttribute('href', '/signup');
 
@@ -136,7 +136,7 @@ test.describe('Landing Page', () => {
     ).toBeVisible();
 
     // Check CTAs are visible
-    await expect(page.getByRole('link', { name: /começar busca gratuita/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Descobrir Minhas Oportunidades/i })).toBeVisible();
 
     // Check grid layouts collapse to single column (verify no horizontal scroll)
     const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -165,7 +165,7 @@ test.describe('Landing Page', () => {
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab'); // Should focus on "Começar busca gratuita"
+    await page.keyboard.press('Tab'); // Should focus on primary CTA
 
     // Check focus is on primary CTA (visual indicator)
     const focusedElement = await page.evaluate(() => document.activeElement?.textContent);

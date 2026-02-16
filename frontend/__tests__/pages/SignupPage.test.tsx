@@ -104,7 +104,7 @@ describe('SignupPage Component', () => {
     it('should show subtitle about free searches', () => {
       render(<SignupPage />);
 
-      expect(screen.getByText(/Comece com 3 buscas gratuitas/i)).toBeInTheDocument();
+      expect(screen.getByText(/Experimente o SmartLic completo por 7 dias/i)).toBeInTheDocument();
     });
 
     it('should render all form fields including WhatsApp, Company, and Sector', () => {

@@ -211,9 +211,18 @@ export default function SignupPage() {
           <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
             Criar conta
           </h1>
-          <p className="text-center text-[var(--ink-secondary)] mb-6">
-            Comece com 3 buscas gratuitas
+          <p className="text-center text-[var(--ink-secondary)] mb-4">
+            Experimente o SmartLic completo por 7 dias
           </p>
+          <div className="mb-6 p-3 bg-[var(--surface-1)] rounded-input text-xs text-[var(--ink-secondary)] space-y-1">
+            <p className="font-medium text-[var(--ink)]">Incluído nas suas 3 análises:</p>
+            <ul className="space-y-0.5">
+              <li>&#10003; Excel exportável</li>
+              <li>&#10003; Pipeline de acompanhamento</li>
+              <li>&#10003; Inteligência de decisão completa</li>
+              <li>&#10003; Histórico de 1 ano</li>
+            </ul>
+          </div>
 
         {error && (
           <div className="mb-4 p-3 bg-[var(--error-subtle)] text-[var(--error)] rounded-input text-sm">

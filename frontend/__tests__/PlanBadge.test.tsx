@@ -12,13 +12,13 @@ describe('PlanBadge', () => {
       render(
         <PlanBadge
           planId="free_trial"
-          planName="Gratuito"
+          planName="Avaliação"
           onClick={jest.fn()}
         />
       );
 
-      // getPlanDisplayName returns "Gratuito" for free_trial
-      const badge = screen.getByText('Gratuito');
+      // getPlanDisplayName returns "Avaliação" for free_trial
+      const badge = screen.getByText('Avaliação');
       expect(badge).toBeInTheDocument();
       // The button element has the styling class
       const button = screen.getByRole('button');
@@ -81,7 +81,7 @@ describe('PlanBadge', () => {
       render(
         <PlanBadge
           planId="free_trial"
-          planName="Gratuito"
+          planName="Avaliação"
           trialExpiresAt={futureDate.toISOString()}
           onClick={jest.fn()}
         />
@@ -97,7 +97,7 @@ describe('PlanBadge', () => {
       render(
         <PlanBadge
           planId="free_trial"
-          planName="Gratuito"
+          planName="Avaliação"
           trialExpiresAt={futureDate.toISOString()}
           onClick={jest.fn()}
         />
@@ -113,7 +113,7 @@ describe('PlanBadge', () => {
       render(
         <PlanBadge
           planId="free_trial"
-          planName="Gratuito"
+          planName="Avaliação"
           trialExpiresAt={futureDate.toISOString()}
           onClick={jest.fn()}
         />
@@ -142,7 +142,7 @@ describe('PlanBadge', () => {
       render(
         <PlanBadge
           planId="free_trial"
-          planName="Gratuito"
+          planName="Avaliação"
           trialExpiresAt={pastDate.toISOString()}
           onClick={jest.fn()}
         />
@@ -190,13 +190,13 @@ describe('PlanBadge', () => {
       const { container } = render(
         <PlanBadge
           planId="free_trial"
-          planName="Gratuito"
+          planName="Avaliação"
           onClick={jest.fn()}
         />
       );
 
-      // Component uses letter icons: G for Gratuito
-      expect(container.textContent).toContain('G');
+      // Component uses letter icons: A for Avaliação
+      expect(container.textContent).toContain('A');
     });
 
     it('shows C letter icon for Consultor Ágil', () => {

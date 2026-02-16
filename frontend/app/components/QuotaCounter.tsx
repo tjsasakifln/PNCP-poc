@@ -74,12 +74,12 @@ export function QuotaCounter({
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-ink">
           {isFreeTier
-            ? `${Math.max(0, quotaLimit - quotaUsed)} ${quotaLimit - quotaUsed === 1 ? 'busca gratuita restante' : 'buscas gratuitas restantes'}`
-            : `${Math.max(0, quotaLimit - quotaUsed)} ${quotaLimit - quotaUsed === 1 ? 'busca restante' : 'buscas restantes'} neste mês`
+            ? `${Math.max(0, quotaLimit - quotaUsed)} ${quotaLimit - quotaUsed === 1 ? 'análise completa restante' : 'análises completas restantes'}`
+            : `${Math.max(0, quotaLimit - quotaUsed)} ${quotaLimit - quotaUsed === 1 ? 'análise restante' : 'análises restantes'} neste mês`
           }
         </span>
         <span className="text-xs text-ink-muted">
-          {isFreeTier ? "Plano gratuito" : `Renovação: ${formattedResetDate}`}
+          {isFreeTier ? "Período de avaliação" : `Renovação: ${formattedResetDate}`}
         </span>
       </div>
 
@@ -96,15 +96,15 @@ export function QuotaCounter({
       {isExhausted && onUpgradeClick && (
         <div className="mt-3 pt-3 border-t border-border">
           <p className="text-sm text-error mb-2 flex items-center gap-1">
-            <span aria-hidden="true">❌</span>
-            Suas buscas acabaram ({quotaUsed}/{quotaLimit})
+            <span aria-hidden="true">&#x1F4CA;</span>
+            Suas {quotaLimit} análises foram usadas. Uma única licitação ganha pode pagar o investimento do ano inteiro.
           </p>
           <button
             onClick={onUpgradeClick}
             className="w-full px-4 py-2 bg-brand-navy text-white rounded-button
                        font-medium hover:bg-brand-blue-hover transition-colors"
           >
-            Fazer Upgrade →
+            Continuar com SmartLic Pro — R$ 1.999/mês
           </button>
         </div>
       )}

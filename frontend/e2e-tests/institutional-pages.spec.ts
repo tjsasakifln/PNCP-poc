@@ -67,7 +67,7 @@ test.describe('Signup Page - Institutional Sidebar', () => {
     await page.goto('/signup');
 
     // Verify all 5 benefits are visible
-    await expect(page.getByText('Comece grátis com 3 buscas completas')).toBeVisible();
+    await expect(page.getByText('7 dias do produto completo — 3 análises incluídas')).toBeVisible();
     await expect(page.getByText('Sem necessidade de cartão de crédito')).toBeVisible();
     await expect(page.getByText('Configuração em menos de 2 minutos')).toBeVisible();
     await expect(page.getByText('Suporte dedicado via plataforma')).toBeVisible();

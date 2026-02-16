@@ -76,14 +76,14 @@ export function QuotaBadge() {
         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
                    bg-error-subtle text-error rounded-full border border-error/20
                    hover:bg-error/10 transition-colors"
-        title="Suas buscas acabaram. Clique para ver planos."
+        title="Suas análises acabaram. Clique para ver opções."
       >
         <svg
               aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        0 buscas
+        0 análises
       </Link>
     );
   }
@@ -96,14 +96,14 @@ export function QuotaBadge() {
                     ? "bg-warning-subtle text-warning border-warning/20"
                     : "bg-surface-1 text-ink-secondary border-border"
                   }`}
-      title={`${quota.creditsRemaining} busca${quota.creditsRemaining === 1 ? "" : "s"} restante${quota.creditsRemaining === 1 ? "" : "s"}`}
+      title={`${quota.creditsRemaining} análise${quota.creditsRemaining === 1 ? "" : "s"} restante${quota.creditsRemaining === 1 ? "" : "s"}`}
     >
       <svg
               aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      {quota.creditsRemaining} {quota.isFreeUser ? "grátis" : "buscas"}
+      {quota.creditsRemaining} {quota.isFreeUser ? "análises" : "análises"}
     </span>
   );
 }

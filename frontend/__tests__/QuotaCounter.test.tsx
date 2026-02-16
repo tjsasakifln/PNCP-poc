@@ -78,7 +78,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/27 buscas restantes neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/27 análises restantes neste mês/i)).toBeInTheDocument();
     });
 
     it('formats reset date correctly (pt-BR)', () => {
@@ -123,7 +123,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/Suas buscas acabaram/i)).toBeInTheDocument();
+      expect(screen.getByText(/análises foram usadas/i)).toBeInTheDocument();
     });
 
     it('shows upgrade button when exhausted and onUpgradeClick provided', () => {
@@ -139,7 +139,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      const upgradeButton = screen.getByRole('button', { name: /Fazer Upgrade/i });
+      const upgradeButton = screen.getByRole('button', { name: /Continuar com SmartLic Pro/i });
       expect(upgradeButton).toBeInTheDocument();
 
       fireEvent.click(upgradeButton);
@@ -156,7 +156,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.queryByRole('button', { name: /Fazer Upgrade/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Continuar com SmartLic Pro/i })).not.toBeInTheDocument();
     });
   });
 
@@ -200,7 +200,7 @@ describe('QuotaCounter', () => {
 
       // Should show exhausted message instead
       expect(screen.queryByText(/próximo do limite/i)).not.toBeInTheDocument();
-      expect(screen.getByText(/Suas buscas acabaram/i)).toBeInTheDocument();
+      expect(screen.getByText(/análises foram usadas/i)).toBeInTheDocument();
     });
   });
 
@@ -290,7 +290,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/0 buscas gratuitas restantes/i)).toBeInTheDocument();
+      expect(screen.getByText(/0 análises completas restantes/i)).toBeInTheDocument();
     });
 
     it('handles quota used exceeding limit', () => {
@@ -305,7 +305,7 @@ describe('QuotaCounter', () => {
       );
 
       // Should show exhausted state
-      expect(screen.getByText(/Suas buscas acabaram/i)).toBeInTheDocument();
+      expect(screen.getByText(/análises foram usadas/i)).toBeInTheDocument();
     });
 
     it('caps percentage at 100% when usage exceeds limit', () => {
@@ -335,7 +335,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/750 buscas restantes neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/750 análises restantes neste mês/i)).toBeInTheDocument();
     });
 
     it('shows remaining searches clearly', () => {
@@ -349,7 +349,7 @@ describe('QuotaCounter', () => {
       );
 
       // 50 - 30 = 20 remaining
-      expect(screen.getByText(/20 buscas restantes neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/20 análises restantes neste mês/i)).toBeInTheDocument();
     });
 
     it('handles single search remaining', () => {
@@ -363,12 +363,12 @@ describe('QuotaCounter', () => {
       );
 
       // 1 search remaining should trigger warning
-      expect(screen.getByText(/1 busca restante neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 análise restante neste mês/i)).toBeInTheDocument();
     });
   });
 
   describe('Free tier displays', () => {
-    it('shows "Buscas gratuitas" for free tier (planId="free")', () => {
+    it('shows "análises completas" for free tier (planId="free")', () => {
       render(
         <QuotaCounter
           quotaUsed={1}
@@ -378,12 +378,12 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/2 buscas gratuitas restantes/i)).toBeInTheDocument();
-      expect(screen.getByText(/Plano gratuito/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 análises completas restantes/i)).toBeInTheDocument();
+      expect(screen.getByText(/Período de avaliação/i)).toBeInTheDocument();
       expect(screen.queryByText(/Renovação:/i)).not.toBeInTheDocument();
     });
 
-    it('shows "Buscas gratuitas" for free tier (quotaLimit <= 5)', () => {
+    it('shows "análises completas" for free tier (quotaLimit <= 5)', () => {
       render(
         <QuotaCounter
           quotaUsed={2}
@@ -393,8 +393,8 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/3 buscas gratuitas restantes/i)).toBeInTheDocument();
-      expect(screen.getByText(/Plano gratuito/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 análises completas restantes/i)).toBeInTheDocument();
+      expect(screen.getByText(/Período de avaliação/i)).toBeInTheDocument();
       expect(screen.queryByText(/Renovação:/i)).not.toBeInTheDocument();
     });
   });
@@ -410,7 +410,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/40 buscas restantes neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/40 análises restantes neste mês/i)).toBeInTheDocument();
       expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
 
@@ -424,7 +424,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/200 buscas restantes neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/200 análises restantes neste mês/i)).toBeInTheDocument();
       expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
 
@@ -438,7 +438,7 @@ describe('QuotaCounter', () => {
         />
       );
 
-      expect(screen.getByText(/500 buscas restantes neste mês/i)).toBeInTheDocument();
+      expect(screen.getByText(/500 análises restantes neste mês/i)).toBeInTheDocument();
       expect(screen.getByText(/Renovação:/i)).toBeInTheDocument();
     });
   });

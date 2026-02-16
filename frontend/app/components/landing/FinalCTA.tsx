@@ -40,7 +40,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             href="/signup?source=landing-cta"
             className="w-full sm:w-auto bg-white text-brand-navy hover:bg-surface-1 font-bold px-8 py-4 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] text-center text-lg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
           >
-            Descobrir minhas oportunidades — grátis
+            Descobrir minhas oportunidades
           </a>
         </div>
 
@@ -49,7 +49,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             isInView ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          Consultas gratuitas. Sem cartão. Sem compromisso.
+          Produto completo por 7 dias. Sem cartão. Sem compromisso.
         </p>
       </div>
     </section>

@@ -210,48 +210,48 @@ trial: {
 
 ### Backend
 
-- [ ] **AC1: Usuário trial tem acesso a Excel, Pipeline, IA completa**
+- [x] **AC1: Usuário trial tem acesso a Excel, Pipeline, IA completa**
   - `PLAN_CAPABILITIES["free_trial"]["allow_excel"] == True`
   - `PLAN_CAPABILITIES["free_trial"]["allow_pipeline"] == True`
   - `PLAN_CAPABILITIES["free_trial"]["max_summary_tokens"] == 10000`
   - **Critério de validação:** Login com usuário trial → clicar "Baixar Excel" funciona, botão não está disabled
 
-- [ ] **AC2: Limite de 3 análises mantido (quota enforcement)**
+- [x] **AC2: Limite de 3 análises mantido (quota enforcement)**
   - `PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"] == 3`
   - Após 3 buscas: quota esgotada, mensagem de upgrade
   - **Critério de validação:** Fazer 3 buscas com trial → 4ª busca retorna 429 com mensagem apropriada
 
-- [ ] **AC3: Histórico de 1 ano habilitado**
+- [x] **AC3: Histórico de 1 ano habilitado**
   - `PLAN_CAPABILITIES["free_trial"]["max_history_days"] == 365`
   - Busca com trial pode retornar licitações publicadas até 1 ano atrás
   - **Critério de validação:** Buscar licitações com `data_inicial` = hoje - 300 dias → retorna resultados
 
-- [ ] **AC4: Priority normal (não low)**
+- [x] **AC4: Priority normal (não low)**
   - `PLAN_CAPABILITIES["free_trial"]["priority"] == "normal"`
   - Busca não é throttled ou colocada em fila de baixa prioridade
   - **Critério de validação:** Busca com trial tem mesmo tempo de resposta (~10-15s) que smartlic_pro
 
 ### Frontend — Copy
 
-- [ ] **AC5: Copy de signup diz "produto completo" não "buscas gratuitas"**
+- [x] **AC5: Copy de signup diz "produto completo" não "buscas gratuitas"**
   - Headline: "Experimente o SmartLic Completo por 7 Dias" (ou similar)
   - Sub: Menciona "produto completo", "sem versão limitada"
   - Zero menções a "grátis", "teste", "trial limitado"
   - **Critério de validação:** Grep de "grátis", "limitado", "versão básica" em `signup/page.tsx` retorna zero
 
-- [ ] **AC6: Features do trial listadas explicitamente**
+- [x] **AC6: Features do trial listadas explicitamente**
   - Lista inclui: Excel, Pipeline, IA completa, histórico 1 ano, 3 análises
   - Cada feature com ✅ (não "disponível no plano pago")
   - **Critério de validação:** Signup page exibe lista de features do trial
 
-- [ ] **AC7: ValueProps.ts atualizado**
+- [x] **AC7: ValueProps.ts atualizado**
   - `trial.cta` NÃO contém "grátis" ou "teste"
   - Preferred: "Experimente sem compromisso", "Ver como funciona", "Começar agora"
   - **Critério de validação:** `valueProps.ts` seção trial usa copy de experimentação (não de gratuidade)
 
 ### Frontend — Quota Messaging
 
-- [ ] **AC8: Ao esgotar 3 análises, mensagem focada em valor gerado**
+- [x] **AC8: Ao esgotar 3 análises, mensagem focada em valor gerado**
   - Mensagem atual: "Trial expirado. Faça upgrade."
   - Mensagem nova: "Suas 3 análises do trial foram usadas. Uma única licitação ganha pode pagar o sistema. Continue por R$ 1.999/mês."
   - Tom: confiante, não desesperado
@@ -262,7 +262,7 @@ trial: {
   - Zero menção a "trial acabou", "sem acesso", "bloqueado"
   - **Critério de validação:** Trial expirado (por tempo) → mensagem positiva focada em continuar
 
-- [ ] **AC10: Nenhuma feature é "gated" durante o trial — produto 100% funcional**
+- [x] **AC10: Nenhuma feature é "gated" durante o trial — produto 100% funcional**
   - Botão "Baixar Excel": enabled (não disabled com tooltip "upgrade para desbloquear")
   - Botão "Adicionar ao Pipeline": enabled
   - Resumo IA: completo (não truncado com "... [upgrade para ver mais]")
@@ -270,7 +270,7 @@ trial: {
 
 ### Frontend — Features Page
 
-- [ ] **AC11: Features page atualizada**
+- [x] **AC11: Features page atualizada**
   - Seção trial: "7 dias do produto completo. Sem versão limitada."
   - Comparação trial vs pago removida (não há diferença de features, só de quota/tempo)
   - **Critério de validação:** `features/page.tsx` não compara "trial vs pago" em termos de capabilities
@@ -278,8 +278,8 @@ trial: {
 ## Definition of Done
 
 - [ ] Todos os 11 Acceptance Criteria passam
-- [ ] Backend: `quota.py` atualizado e deployed
-- [ ] Frontend: signup, features, valueProps atualizados e deployed
+- [x] Backend: `quota.py` atualizado e deployed
+- [x] Frontend: signup, features, valueProps atualizados e deployed
 - [ ] Teste end-to-end:
   - Criar novo trial account
   - Fazer 3 buscas completas
@@ -295,14 +295,34 @@ trial: {
 ## File List
 
 ### Backend Modified
-- `backend/quota.py` (L62-75, seção `free_trial`)
+- `backend/quota.py` (L63-71, seção `free_trial` — full capabilities)
+- `backend/tests/test_quota.py` (updated assertions for new capabilities)
 
 ### Frontend Modified
-- `frontend/app/signup/page.tsx`
-- `frontend/lib/copy/valueProps.ts`
-- `frontend/app/features/page.tsx`
-- `frontend/app/components/QuotaDisplay.tsx` (ou similar — component que mostra quota status)
-- `frontend/app/buscar/page.tsx` (se houver mensagens de quota esgotada inline)
+- `frontend/app/signup/page.tsx` (copy + trial features list)
+- `frontend/lib/copy/valueProps.ts` (trial CTA, guarantee, comparison copy)
+- `frontend/lib/plans.ts` (displayNamePt: "Gratuito" → "Avaliação")
+- `frontend/app/features/page.tsx` (hero CTA + final CTA copy)
+- `frontend/app/components/QuotaCounter.tsx` (análises copy, ROI messaging)
+- `frontend/app/components/QuotaBadge.tsx` (análises copy, title attrs)
+- `frontend/app/components/PlanBadge.tsx` (icon "G" → "A")
+- `frontend/app/components/InstitutionalSidebar.tsx` (signup benefit copy)
+- `frontend/app/components/ComparisonTable.tsx` (CTA copy)
+- `frontend/app/components/landing/FinalCTA.tsx` (CTA + subtitle copy)
+- `frontend/app/ajuda/page.tsx` (FAQ answers rewritten)
+- `frontend/app/planos/page.tsx` (cancel FAQ, bottom CTA)
+- `frontend/app/login/page.tsx` (error message copy)
+
+### Tests Updated
+- `frontend/__tests__/QuotaCounter.test.tsx` (all "buscas" → "análises")
+- `frontend/__tests__/components/QuotaBadge.test.tsx` (all "buscas" → "análises")
+- `frontend/__tests__/components/InstitutionalSidebar.test.tsx` (benefit copy)
+- `frontend/__tests__/pages/SignupPage.test.tsx` (subtitle copy)
+- `frontend/__tests__/pages/PlanosPage.test.tsx` (bottom CTA copy)
+- `frontend/__tests__/PlanBadge.test.tsx` (icon "G" → "A", planName)
+- `frontend/__tests__/free-user-balance-deduction.test.tsx` (0 análises)
+- `frontend/e2e-tests/institutional-pages.spec.ts` (signup benefit)
+- `frontend/e2e-tests/landing-page.spec.ts` (CTA name)
 
 ### No Migration Needed
 - Capabilities são código Python, não database schema

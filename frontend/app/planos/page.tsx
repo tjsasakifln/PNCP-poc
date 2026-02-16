@@ -45,7 +45,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "O que acontece se eu cancelar?",
-    answer: "Você mantém acesso completo até o fim do período atual. Depois, sua conta volta ao modo de avaliação gratuita com 3 análises.",
+    answer: "Você mantém acesso completo até o fim do período atual. Depois, sua conta volta ao modo de avaliação com 3 análises.",
   },
   {
     question: "Como funciona a cobrança semestral e anual?",
@@ -370,7 +370,7 @@ export default function PlanosPage() {
             href="/buscar"
             className="text-sm text-[var(--ink-muted)] hover:underline"
           >
-            Continuar com avaliação gratuita
+            Continuar com período de avaliação
           </Link>
         </div>
       </div>

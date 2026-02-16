@@ -252,7 +252,7 @@ describe('Balance Deduction Verification', () => {
       render(<QuotaBadge />);
 
       await waitFor(() => {
-        // QuotaBadge renders "{count} grátis" for free users
+        // QuotaBadge renders "{count} análises" for free users
         expect(screen.getByText(/3/)).toBeInTheDocument();
       });
     });
@@ -301,8 +301,8 @@ describe('Balance Deduction Verification', () => {
       render(<QuotaBadge />);
 
       await waitFor(() => {
-        // When empty, QuotaBadge renders "0 buscas" as a link to /planos
-        expect(screen.getByText(/0 buscas/)).toBeInTheDocument();
+        // When empty, QuotaBadge renders "0 análises" as a link to /planos
+        expect(screen.getByText(/0 análises/)).toBeInTheDocument();
       });
     });
   });

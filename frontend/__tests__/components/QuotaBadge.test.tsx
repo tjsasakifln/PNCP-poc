@@ -154,7 +154,7 @@ describe('QuotaBadge Component', () => {
   });
 
   describe('Credit-based users - credits remaining', () => {
-    it('should show credits count with "buscas" suffix', () => {
+    it('should show credits count with "análises" suffix', () => {
       mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
       mockUseQuota.mockReturnValue({
         quota: {
@@ -168,10 +168,10 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      expect(screen.getByText(/5 buscas/)).toBeInTheDocument();
+      expect(screen.getByText(/5 análises/)).toBeInTheDocument();
     });
 
-    it('should show "grátis" suffix for free users', () => {
+    it('should show "análises" suffix for free users', () => {
       mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
       mockUseQuota.mockReturnValue({
         quota: {
@@ -185,10 +185,10 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      expect(screen.getByText(/3 grátis/)).toBeInTheDocument();
+      expect(screen.getByText(/3 análises/)).toBeInTheDocument();
     });
 
-    it('should use singular "busca" in title when 1 credit remaining', () => {
+    it('should use singular "análise" in title when 1 credit remaining', () => {
       mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
       mockUseQuota.mockReturnValue({
         quota: {
@@ -202,11 +202,11 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      const badge = screen.getByTitle('1 busca restante');
+      const badge = screen.getByTitle('1 análise restante');
       expect(badge).toBeInTheDocument();
     });
 
-    it('should use plural "buscas" in title when multiple credits remaining', () => {
+    it('should use plural "análises" in title when multiple credits remaining', () => {
       mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
       mockUseQuota.mockReturnValue({
         quota: {
@@ -220,7 +220,7 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      const badge = screen.getByTitle('10 buscas restantes');
+      const badge = screen.getByTitle('10 análises restantes');
       expect(badge).toBeInTheDocument();
     });
   });
@@ -240,7 +240,7 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      const badge = screen.getByText(/1 buscas/);
+      const badge = screen.getByText(/1 análises/);
       const badgeContainer = badge.closest('span');
       expect(badgeContainer?.className).toContain('warning');
     });
@@ -259,7 +259,7 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      const badge = screen.getByText(/5 buscas/);
+      const badge = screen.getByText(/5 análises/);
       const badgeContainer = badge.closest('span');
       expect(badgeContainer?.className).toContain('surface');
       expect(badgeContainer?.className).not.toContain('warning');
@@ -267,7 +267,7 @@ describe('QuotaBadge Component', () => {
   });
 
   describe('Empty credits state', () => {
-    it('should show "0 buscas" when credits are exhausted', () => {
+    it('should show "0 análises" when credits are exhausted', () => {
       mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
       mockUseQuota.mockReturnValue({
         quota: {
@@ -281,7 +281,7 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      expect(screen.getByText('0 buscas')).toBeInTheDocument();
+      expect(screen.getByText('0 análises')).toBeInTheDocument();
     });
 
     it('should link to plans page when credits are exhausted', () => {
@@ -316,7 +316,7 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      const link = screen.getByTitle('Suas buscas acabaram. Clique para ver planos.');
+      const link = screen.getByTitle('Suas análises acabaram. Clique para ver opções.');
       expect(link).toBeInTheDocument();
     });
 
@@ -334,7 +334,7 @@ describe('QuotaBadge Component', () => {
 
       render(<QuotaBadge />);
 
-      const badge = screen.getByText('0 buscas');
+      const badge = screen.getByText('0 análises');
       const badgeContainer = badge.closest('a');
       expect(badgeContainer?.className).toContain('error');
     });
@@ -356,7 +356,7 @@ describe('QuotaBadge Component', () => {
       render(<QuotaBadge />);
 
       // Should show empty state (0 credits)
-      expect(screen.getByText('0 buscas')).toBeInTheDocument();
+      expect(screen.getByText('0 análises')).toBeInTheDocument();
     });
 
     it('should handle null creditsRemaining as 0', () => {
@@ -374,7 +374,7 @@ describe('QuotaBadge Component', () => {
       render(<QuotaBadge />);
 
       // Should show empty state (0 credits)
-      expect(screen.getByText('0 buscas')).toBeInTheDocument();
+      expect(screen.getByText('0 análises')).toBeInTheDocument();
     });
   });
 });
