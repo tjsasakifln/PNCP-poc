@@ -9,7 +9,7 @@
 | **Type** | GTM (Go-to-Market) |
 | **Dependencies** | GTM-002 (plano único definido), GTM-003 (trial configurado) |
 | **Blocks** | — |
-| **Status** | Pending |
+| **Status** | In Progress |
 | **Created** | 2026-02-15 |
 | **Squad** | Full-Stack (Backend + Frontend + UX) |
 
@@ -86,7 +86,7 @@ Trial expira (dia 7) → Tela de conversão customizada com valor gerado
 
 ### Backend: Analytics e Mensagens
 
-- [ ] **AC1:** Endpoint `GET /api/trial-value` retorna valor total analisado durante trial
+- [x] **AC1:** Endpoint `GET /api/trial-value` retorna valor total analisado durante trial
   - Response schema:
     ```json
     {
@@ -103,12 +103,12 @@ Trial expira (dia 7) → Tela de conversão customizada com valor gerado
   - Cálculo: soma dos `valor_estimado` de todas as licitações retornadas nas buscas do usuário durante trial
   - Cache: 1 hora (analytics não precisam ser real-time)
 
-- [ ] **AC2:** Mensagem de trial expirado em `quota.py` atualizada
+- [x] **AC2:** Mensagem de trial expirado em `quota.py` atualizada
   - **Antes:** `"Trial expirado. Faça upgrade."`
   - **Depois:** `"Seu trial expirou. Veja o valor que você analisou e continue tendo vantagem."`
   - Backend retorna HTTP 403 com `detail` contendo mensagem
 
-- [ ] **AC3:** Endpoint `GET /api/user/trial-status` retorna status detalhado
+- [x] **AC3:** Endpoint `GET /api/user/trial-status` retorna status detalhado
   - Response schema:
     ```json
     {
@@ -123,7 +123,7 @@ Trial expira (dia 7) → Tela de conversão customizada com valor gerado
 
 ### Frontend: Tela de Conversão
 
-- [ ] **AC4:** Componente `TrialConversionScreen` criado
+- [x] **AC4:** Componente `TrialConversionScreen` criado
   - Renderização full-screen (não modal — tela inteira)
   - Estrutura:
     1. Hero: "Veja o que você descobriu em 7 dias"
@@ -133,51 +133,51 @@ Trial expira (dia 7) → Tela de conversão customizada com valor gerado
     5. CTA primário: "Continuar com SmartLic Pro - Mensal"
     6. Link secundário: "Ver outras opções de compromisso"
 
-- [ ] **AC5:** Tela de conversão mostra **valor gerado durante trial** (via `/api/trial-value`)
+- [x] **AC5:** Tela de conversão mostra **valor gerado durante trial** (via `/api/trial-value`)
   - Exemplo: "Você analisou 47 oportunidades totalizando **R$ 12.450.000** em contratos públicos"
   - Destaque visual (número grande, cor esmeralda/verde sucesso)
 
-- [ ] **AC6:** Tom confiante, não desesperado
+- [x] **AC6:** Tom confiante, não desesperado
   - ✅ "Continue tendo vantagem competitiva"
   - ✅ "Seu concorrente pode estar usando SmartLic agora"
   - ❌ "Não perca!", "Última chance!", "Oferta limitada!"
 
 ### Frontend: Integração na Buscar Page
 
-- [ ] **AC7:** `buscar/page.tsx` detecta trial expirado e exibe `TrialConversionScreen`
+- [x] **AC7:** `buscar/page.tsx` detecta trial expirado e exibe `TrialConversionScreen`
   - Condição: `user.plan === 'free_trial' && isExpired`
   - Substituir toast genérico de "trial expirado" por tela de conversão
   - Usuário não consegue executar nova busca até converter ou fazer logout
 
-- [ ] **AC8:** Se usuário fechar tela de conversão (via "X" ou ESC), redirecionar para `/planos`
+- [x] **AC8:** Se usuário fechar tela de conversão (via "X" ou ESC), redirecionar para `/planos`
   - Não permitir voltar para `/buscar` — fluxo força decisão
 
 ### Notificação Proativa
 
-- [ ] **AC9:** Notificação no **dia 6 do trial** (1 dia antes de expirar)
+- [x] **AC9:** Notificação no **dia 6 do trial** (1 dia antes de expirar)
   - Mensagem: "Seu acesso ao SmartLic expira amanhã. Continue tendo vantagem competitiva a partir de R$ 1.599/mês."
   - Implementação: sistema de mensagens in-app (banner persistente no topo) ou email
   - Link para `/planos` ou tela de conversão
 
-- [ ] **AC10:** Badge de contagem regressiva durante trial ativo
+- [x] **AC10:** Badge de contagem regressiva durante trial ativo
   - Exibir em header ou sidebar: "X dias restantes no trial"
   - Cores: verde (5-7 dias), amarelo (3-4 dias), vermelho (1-2 dias)
   - Link para `/planos` no hover
 
 ### 3 Níveis de Compromisso
 
-- [ ] **AC11:** Tela de conversão apresenta 3 billing periods (não 3 planos diferentes)
+- [x] **AC11:** Tela de conversão apresenta 3 billing periods (não 3 planos diferentes)
   - **Mensal:** R$ 1.999/mês — "Avaliação constante de oportunidades"
   - **Semestral:** R$ 1.799/mês (-10%) — "Consistência competitiva"
   - **Anual:** R$ 1.599/mês (-20%) — "Domínio do mercado"
 
-- [ ] **AC12:** Copy NUNCA usa "plano", "assinatura", "tier"
+- [x] **AC12:** Copy NUNCA usa "plano", "assinatura", "tier"
   - Usa: "nível de compromisso", "período de faturamento"
   - Alinha com GTM-002 (modelo de assinatura único)
 
 ### Acesso Pós-Expiração
 
-- [ ] **AC13:** Se usuário não converter, acesso a buscas novas bloqueado
+- [x] **AC13:** Se usuário não converter, acesso a buscas novas bloqueado
   - Mensagem: "Seu trial expirou. Para continuar analisando oportunidades, escolha seu nível de compromisso."
   - Buscas antigas (salvas) permanecem acessíveis em modo leitura (sem executar novas)
 

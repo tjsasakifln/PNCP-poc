@@ -243,3 +243,96 @@ async def get_top_dimensions(
     except Exception as e:
         logger.error(f"Error fetching top dimensions for {mask_user_id(user_id)}: {e}")
         raise
+
+
+# ============================================================================
+# GTM-010: Trial Conversion Analytics
+# ============================================================================
+
+class TopOpportunity(BaseModel):
+    title: str
+    value: float
+
+class TrialValueResponse(BaseModel):
+    total_opportunities: int
+    total_value: float
+    searches_executed: int
+    avg_opportunity_value: float
+    top_opportunity: TopOpportunity | None = None
+
+
+@router.get("/trial-value", response_model=TrialValueResponse)
+async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)):
+    """Get value generated during trial period (GTM-010 AC1).
+
+    Returns aggregated statistics of opportunities analyzed during the user's trial.
+    Used by TrialConversionScreen to show personalized conversion messaging.
+    """
+    user_id = user["id"]
+
+    try:
+        # Get user's trial period dates from profile
+        profile_result = db.table("profiles").select("created_at, trial_expires_at").eq("id", user_id).single().execute()
+        profile = profile_result.data if profile_result.data else {}
+        trial_start = profile.get("created_at")
+        trial_end = profile.get("trial_expires_at")
+
+        # Query search sessions within trial period
+        query = db.table("search_sessions").select(
+            "total_filtered, valor_total, objeto_resumo, created_at"
+        ).eq("user_id", user_id)
+
+        if trial_start:
+            query = query.gte("created_at", trial_start)
+        if trial_end:
+            query = query.lte("created_at", trial_end)
+
+        sessions_result = query.order("valor_total", desc=True).execute()
+        sessions = sessions_result.data or []
+
+        if not sessions:
+            return TrialValueResponse(
+                total_opportunities=0,
+                total_value=0.0,
+                searches_executed=0,
+                avg_opportunity_value=0.0,
+                top_opportunity=None,
+            )
+
+        total_opportunities = sum(s.get("total_filtered") or 0 for s in sessions)
+        total_value = sum(float(Decimal(str(s.get("valor_total") or 0))) for s in sessions)
+        searches_executed = len(sessions)
+        avg_opportunity_value = total_value / total_opportunities if total_opportunities > 0 else 0.0
+
+        # Top opportunity = session with highest valor_total
+        top_session = sessions[0] if sessions else None
+        top_opportunity = None
+        if top_session and float(Decimal(str(top_session.get("valor_total") or 0))) > 0:
+            top_opportunity = TopOpportunity(
+                title=top_session.get("objeto_resumo") or "Oportunidade identificada",
+                value=float(Decimal(str(top_session.get("valor_total") or 0))),
+            )
+
+        logger.info(
+            f"Trial value for {mask_user_id(user_id)}: "
+            f"{searches_executed} searches, {total_opportunities} opportunities, R${total_value:,.2f}"
+        )
+
+        return TrialValueResponse(
+            total_opportunities=total_opportunities,
+            total_value=total_value,
+            searches_executed=searches_executed,
+            avg_opportunity_value=round(avg_opportunity_value, 2),
+            top_opportunity=top_opportunity,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching trial value for {mask_user_id(user_id)}: {e}")
+        # Return zeros on error (not 500) — conversion screen should still render
+        return TrialValueResponse(
+            total_opportunities=0,
+            total_value=0.0,
+            searches_executed=0,
+            avg_opportunity_value=0.0,
+            top_opportunity=None,
+        )

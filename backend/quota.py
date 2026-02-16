@@ -673,7 +673,7 @@ def check_quota(user_id: str) -> QuotaInfo:
                 quota_remaining=0,
                 quota_reset_date=get_quota_reset_date(),
                 trial_expires_at=expires_at_dt,
-                error_message="Trial expirado. Faça upgrade para continuar usando o SmartLic.",
+                error_message="Seu trial expirou. Veja o valor que você analisou e continue tendo vantagem.",
             )
         else:
             # Paid plan expired: allow grace period before blocking

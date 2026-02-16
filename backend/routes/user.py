@@ -9,7 +9,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import Response
@@ -22,10 +22,24 @@ from schemas import (
     PerfilContexto, PerfilContextoResponse, validate_password,
 )
 from log_sanitizer import mask_user_id, log_user_action
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["user"])
+
+
+# ============================================================================
+# GTM-010: Trial Status Response Model
+# ============================================================================
+
+class TrialStatusResponse(BaseModel):
+    plan: str
+    days_remaining: int
+    searches_used: int
+    searches_limit: int
+    expires_at: str | None = None
+    is_expired: bool
 
 # STORY-210 AC12: Per-user rate limiting for /change-password
 # 5 attempts per 15 minutes (900 seconds)
@@ -137,6 +151,57 @@ async def get_profile(user: dict = Depends(require_auth), db=Depends(get_db)):
         trial_expires_at=quota_info.trial_expires_at.isoformat() if quota_info.trial_expires_at else None,
         subscription_status=subscription_status,
         is_admin=is_admin_flag,
+    )
+
+
+@router.get("/trial-status", response_model=TrialStatusResponse)
+async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db)):
+    """Get detailed trial status for conversion flow (GTM-010 AC3).
+
+    Returns days remaining, usage stats, and expiration info.
+    """
+    from quota import check_quota, PLAN_CAPABILITIES
+
+    user_id = user["id"]
+
+    try:
+        quota_info = check_quota(user_id)
+    except Exception as e:
+        logger.error(f"Failed to check quota for trial status: {e}")
+        return TrialStatusResponse(
+            plan="free_trial",
+            days_remaining=0,
+            searches_used=0,
+            searches_limit=3,
+            expires_at=None,
+            is_expired=True,
+        )
+
+    plan_id = quota_info.plan_id
+    caps = PLAN_CAPABILITIES.get(plan_id, PLAN_CAPABILITIES["free_trial"])
+
+    days_remaining = 0
+    is_expired = True
+    expires_at_str = None
+
+    if quota_info.trial_expires_at:
+        expires_at_str = quota_info.trial_expires_at.isoformat()
+        now = datetime.now(timezone.utc)
+        diff = quota_info.trial_expires_at - now
+        days_remaining = max(0, diff.days + (1 if diff.seconds > 0 else 0))
+        is_expired = now > quota_info.trial_expires_at
+    elif plan_id != "free_trial":
+        # Paid plan — not expired, not a trial
+        is_expired = False
+        days_remaining = 999  # Sentinel for "not applicable"
+
+    return TrialStatusResponse(
+        plan=plan_id,
+        days_remaining=days_remaining,
+        searches_used=quota_info.quota_used,
+        searches_limit=caps.get("max_requests_per_month", 3),
+        expires_at=expires_at_str,
+        is_expired=is_expired,
     )
 
 

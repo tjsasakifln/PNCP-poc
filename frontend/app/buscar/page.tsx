@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useOnboarding } from "../../hooks/useOnboarding";
@@ -16,6 +16,9 @@ import { QuotaBadge } from "../components/QuotaBadge";
 import { PlanBadge } from "../components/PlanBadge";
 import { MessageBadge } from "../components/MessageBadge";
 import { UpgradeModal } from "../components/UpgradeModal";
+import { TrialConversionScreen } from "../components/TrialConversionScreen";
+import { TrialExpiringBanner } from "../components/TrialExpiringBanner";
+import { TrialCountdown } from "../components/TrialCountdown";
 import { Dialog } from "../components/Dialog";
 import { useSearchFilters } from "./hooks/useSearchFilters";
 import { useSearch } from "./hooks/useSearch";
@@ -106,10 +109,65 @@ function OnboardingEmptyState({ onAdjustFilters }: { onAdjustFilters: () => void
   );
 }
 
+// Trial value type matching backend TrialValueResponse
+interface TrialValue {
+  total_opportunities: number;
+  total_value: number;
+  searches_executed: number;
+  avg_opportunity_value: number;
+  top_opportunity: { title: string; value: number } | null;
+}
+
 function HomePageContent() {
   const { session, loading: authLoading } = useAuth();
   const { planInfo } = usePlan();
   const { trackEvent } = useAnalytics();
+  const router = useRouter();
+
+  // GTM-010: Trial conversion state
+  const [showTrialConversion, setShowTrialConversion] = useState(false);
+  const [trialValue, setTrialValue] = useState<TrialValue | null>(null);
+  const [trialValueLoading, setTrialValueLoading] = useState(false);
+
+  // GTM-010: Calculate days remaining for trial
+  const trialDaysRemaining = useMemo(() => {
+    if (!planInfo?.trial_expires_at) return null;
+    const expiryDate = new Date(planInfo.trial_expires_at);
+    const now = new Date();
+    const diffTime = expiryDate.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  }, [planInfo?.trial_expires_at]);
+
+  const isTrialExpired = useMemo(() => {
+    return planInfo?.plan_id === "free_trial" && planInfo?.subscription_status === "expired";
+  }, [planInfo?.plan_id, planInfo?.subscription_status]);
+
+  // GTM-010: Fetch trial value when trial is expired (for conversion screen)
+  const fetchTrialValue = useCallback(async () => {
+    if (!session?.access_token) return;
+    setTrialValueLoading(true);
+    try {
+      const res = await fetch("/api/analytics?endpoint=trial-value", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTrialValue(data);
+      }
+    } catch (err) {
+      console.error("[GTM-010] Failed to fetch trial value:", err);
+    } finally {
+      setTrialValueLoading(false);
+    }
+  }, [session?.access_token]);
+
+  // GTM-010: Auto-show conversion screen when trial expired
+  useEffect(() => {
+    if (isTrialExpired) {
+      setShowTrialConversion(true);
+      fetchTrialValue();
+    }
+  }, [isTrialExpired, fetchTrialValue]);
 
   // GTM-004: Auto-search from onboarding
   const searchParamsRaw = useSearchParams();
@@ -255,6 +313,10 @@ function HomePageContent() {
                       onClick={() => handleShowUpgradeModal(undefined, "plan_badge")}
                     />
                   )}
+                  {/* GTM-010 AC10: Trial countdown badge */}
+                  {trialDaysRemaining !== null && trialDaysRemaining > 0 && (
+                    <TrialCountdown daysRemaining={trialDaysRemaining} />
+                  )}
                 </>
               }
             />
@@ -275,6 +337,17 @@ function HomePageContent() {
           className="pull-to-refresh-wrapper"
         >
           <div>
+            {/* GTM-010 AC9: Trial expiring banner (day 6) */}
+            {trialDaysRemaining !== null && trialDaysRemaining <= 1 && !isTrialExpired && (
+              <TrialExpiringBanner
+                daysRemaining={trialDaysRemaining}
+                onConvert={() => {
+                  setShowTrialConversion(true);
+                  fetchTrialValue();
+                }}
+              />
+            )}
+
             {/* Page Title */}
             <div className="mb-8 animate-fade-in-up">
               <h1 className="text-2xl sm:text-3xl font-bold font-display text-ink">Busca de Licitações</h1>
@@ -496,6 +569,19 @@ function HomePageContent() {
         onClose={() => setShowUpgradeModal(false)}
         source={upgradeSource}
       />
+
+      {/* GTM-010 AC4/AC7: Trial conversion screen (full-screen overlay) */}
+      {showTrialConversion && (
+        <TrialConversionScreen
+          trialValue={trialValue}
+          onClose={() => {
+            // AC8: Close → redirect to /planos
+            setShowTrialConversion(false);
+            router.push("/planos");
+          }}
+          loading={trialValueLoading}
+        />
+      )}
     </div>
   );
 }
