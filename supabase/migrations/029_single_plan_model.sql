@@ -74,12 +74,20 @@ CREATE POLICY "plan_billing_periods_service_all" ON public.plan_billing_periods
 -- Monthly: R$ 1,999.00 (no discount)
 -- Semiannual: R$ 1,799.00 per month (10% off)
 -- Annual: R$ 1,599.00 per month (20% off)
-INSERT INTO public.plan_billing_periods (plan_id, billing_period, price_cents, discount_percent)
+INSERT INTO public.plan_billing_periods (plan_id, billing_period, price_cents, discount_percent, stripe_price_id)
 VALUES
-  ('smartlic_pro', 'monthly', 199900, 0),
-  ('smartlic_pro', 'semiannual', 179900, 10),
-  ('smartlic_pro', 'annual', 159900, 20)
-ON CONFLICT (plan_id, billing_period) DO NOTHING;
+  ('smartlic_pro', 'monthly', 199900, 0, 'price_1T1ILH9FhmvPslGY4mNcGfso'),
+  ('smartlic_pro', 'semiannual', 179900, 10, 'price_1T1ILK9FhmvPslGYtJdkkBlB'),
+  ('smartlic_pro', 'annual', 159900, 20, 'price_1T1ILN9FhmvPslGYGQjfYdXA')
+ON CONFLICT (plan_id, billing_period) DO UPDATE SET
+  stripe_price_id = EXCLUDED.stripe_price_id;
+
+-- 5b. Update plans table with Stripe Price IDs for direct lookup
+UPDATE public.plans SET
+  stripe_price_id_monthly = 'price_1T1ILH9FhmvPslGY4mNcGfso',
+  stripe_price_id_semiannual = 'price_1T1ILK9FhmvPslGYtJdkkBlB',
+  stripe_price_id_annual = 'price_1T1ILN9FhmvPslGYGQjfYdXA'
+WHERE id = 'smartlic_pro';
 
 -- 6. Add plan_features for smartlic_pro
 -- Note: plan_features has a unique constraint on (plan_id, feature_key)
