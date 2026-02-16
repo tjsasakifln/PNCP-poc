@@ -9,7 +9,7 @@
 # Testing
 pytest==8.4.2
 pytest-asyncio==0.25.0
-pytest-cov==6.0.0
+pytest-cov==6.3.0
 pytest-benchmark==5.2.3
 faker==37.1.0
 
