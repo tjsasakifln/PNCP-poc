@@ -37,20 +37,20 @@ Esta story inicia a consolidacao dos dois HTTP clients duplicados para comunicac
 ## Criterios de Aceite
 
 ### Auditoria
-- [ ] Documento de auditoria: lista todos os callers de `PNCPLegacyAdapter.fetch()`
-- [ ] Documento de auditoria: lista todos os callers de metodos sync do PNCP client
-- [ ] Classificacao de cada caller: ativo em producao / dead code / test only
-- [ ] Decisao documentada: remover sync client ou migrar callers para async
+- [x] Documento de auditoria: lista todos os callers de `PNCPLegacyAdapter.fetch()`
+- [x] Documento de auditoria: lista todos os callers de metodos sync do PNCP client
+- [x] Classificacao de cada caller: ativo em producao / dead code / test only
+- [x] Decisao documentada: remover sync client ou migrar callers para async
 
 ### Quick Wins
-- [ ] `_request_count` corrigido: resetado periodicamente ou removido
-- [ ] `asyncio.get_event_loop().time()` substituido por `asyncio.get_running_loop().time()`
-- [ ] Testes existentes continuam passando
+- [x] `_request_count` corrigido: resetado periodicamente ou removido
+- [x] `asyncio.get_event_loop().time()` substituido por `asyncio.get_running_loop().time()`
+- [x] Testes existentes continuam passando
 
 ### Preparacao
-- [ ] Se sync client sera removido: lista de testes que precisam atualizar
-- [ ] Se sync callers serao migrados: PRs de migracao planejados
-- [ ] Estimativa refinada para TD-009 (conclusao) baseada na investigacao
+- [x] Se sync client sera removido: lista de testes que precisam atualizar
+- [x] Se sync callers serao migrados: PRs de migracao planejados
+- [x] Estimativa refinada para TD-009 (conclusao) baseada na investigacao
 
 ## Testes Requeridos
 
@@ -70,8 +70,8 @@ Esta story inicia a consolidacao dos dois HTTP clients duplicados para comunicac
 - A investigacao em si nao muda codigo de producao.
 
 ## Definition of Done
-- [ ] Auditoria documentada
-- [ ] Quick wins implementados e revisados
-- [ ] Testes passando
+- [x] Auditoria documentada
+- [x] Quick wins implementados e revisados
+- [x] Testes passando
 - [ ] CI/CD green
-- [ ] Estimativa refinada para TD-009
+- [x] Estimativa refinada para TD-009
