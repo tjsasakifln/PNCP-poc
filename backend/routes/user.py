@@ -7,7 +7,6 @@ STORY-213: Added DELETE /me (account deletion) and GET /me/export (data portabil
 import hashlib
 import json
 import logging
-import os
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -90,7 +89,7 @@ async def get_profile(user: dict = Depends(require_auth), db=Depends(get_db)):
     """
     Get current user profile with plan capabilities and quota status.
     """
-    from quota import check_quota, QuotaInfo, create_fallback_quota_info, create_legacy_quota_info
+    from quota import check_quota, create_fallback_quota_info, create_legacy_quota_info
 
     is_admin_flag, is_master = await check_user_roles(user["id"])
     if user["id"].lower() in get_admin_ids():

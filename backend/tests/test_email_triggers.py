@@ -9,11 +9,9 @@ AC22: Email failure doesn't crash operations
 AC23: Unsubscribe updates preference
 """
 
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone
 
-import pytest
-from fastapi.testclient import TestClient
 
 
 # ============================================================================
@@ -41,7 +39,6 @@ class TestWelcomeEmailEndpoint:
 
         with patch("routes.emails.require_auth", return_value={"id": "user-123"}):
             with patch("email_service.send_email_async") as mock_send:
-                from routes.emails import send_welcome_email
                 # Test the function logic
                 assert mock_send is not None
 

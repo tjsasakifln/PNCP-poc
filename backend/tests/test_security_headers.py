@@ -105,7 +105,7 @@ class TestSecurityHeadersMiddleware:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             try:
-                response = await client.get("/error")
+                await client.get("/error")
             except Exception:
                 # Exception is expected - we're testing headers were set
                 pass

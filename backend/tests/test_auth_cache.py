@@ -10,7 +10,7 @@ Validates the JWT-based local auth cache introduced in STORY-210/203:
 import hashlib
 import os
 import time
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import Mock, patch
 
 import jwt as pyjwt
 import pytest

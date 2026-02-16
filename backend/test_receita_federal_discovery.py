@@ -30,8 +30,8 @@ def test_receita_federal_api():
     print("=" * 80)
     print("RECEITA FEDERAL API DISCOVERY")
     print("=" * 80)
-    print(f"\nAPI: ReceitaWS (https://www.receitaws.com.br/)")
-    print(f"Rate Limit: 3 requests/minute (free tier)")
+    print("\nAPI: ReceitaWS (https://www.receitaws.com.br/)")
+    print("Rate Limit: 3 requests/minute (free tier)")
     print(f"Testing {len(test_cnpjs)} CNPJs...\n")
 
     base_url = "https://www.receitaws.com.br/v1/cnpj"
@@ -66,7 +66,7 @@ def test_receita_federal_api():
                     })
                     continue
 
-                print(f"\n[OK] Success! Data retrieved:")
+                print("\n[OK] Success! Data retrieved:")
 
                 # Extract relevant fields for lead prospecting
                 company_data = {
@@ -92,7 +92,7 @@ def test_receita_federal_api():
                 results.append(company_data)
 
                 # Print formatted summary
-                print(f"\n📋 Company Profile:")
+                print("\n📋 Company Profile:")
                 print(f"  - Razão Social: {company_data['razao_social']}")
                 print(f"  - Nome Fantasia: {company_data['nome_fantasia']}")
                 print(f"  - Situação: {company_data['situacao']}")
@@ -102,27 +102,27 @@ def test_receita_federal_api():
                 print(f"  - CNAE Código: {company_data['cnae_codigo']}")
                 print(f"  - Município/UF: {company_data['municipio']}/{company_data['uf']}")
 
-                print(f"\n📞 Contact Data (if available):")
+                print("\n📞 Contact Data (if available):")
                 print(f"  - Email: {company_data['email'] or 'N/A'}")
                 print(f"  - Telefone: {company_data['telefone'] or 'N/A'}")
 
-                print(f"\n📊 Relevant for Dependency Score:")
+                print("\n📊 Relevant for Dependency Score:")
                 print(f"  - Porte: {company_data['porte']} → Revenue estimation possible")
                 print(f"  - CNAE: {company_data['cnae_codigo']} → Industry average revenue")
 
                 # Show full JSON for analysis
-                print(f"\n🔍 Full Response (first 1500 chars):")
+                print("\n🔍 Full Response (first 1500 chars):")
                 print(json.dumps(data, indent=2, ensure_ascii=False)[:1500])
 
             elif response.status_code == 429:
-                print(f"\n[WARN] Rate Limit Exceeded (429)")
-                print(f"ReceitaWS free tier: 3 requests/minute")
-                print(f"Waiting 60 seconds before next request...")
+                print("\n[WARN] Rate Limit Exceeded (429)")
+                print("ReceitaWS free tier: 3 requests/minute")
+                print("Waiting 60 seconds before next request...")
                 time.sleep(60)
                 continue
 
             else:
-                print(f"\n[ERROR] Error Response:")
+                print("\n[ERROR] Error Response:")
                 print(response.text[:500])
 
         except Exception as e:
@@ -135,7 +135,7 @@ def test_receita_federal_api():
 
         # Rate limiting: Wait 21 seconds between requests (safe margin for 3/min)
         if i < len(test_cnpjs):
-            print(f"\n[WAIT] Waiting 21 seconds for rate limit compliance...")
+            print("\n[WAIT] Waiting 21 seconds for rate limit compliance...")
             time.sleep(21)
 
     # Summary
@@ -149,26 +149,26 @@ def test_receita_federal_api():
     print(f"Failed Queries: {len(results) - len(successful)}")
 
     if successful:
-        print(f"\n[OK] Key Findings:")
-        print(f"  - API is FUNCTIONAL and FREE")
-        print(f"  - Data quality is EXCELLENT")
-        print(f"  - Fields available: razao_social, porte, CNAE, capital_social")
-        print(f"  - Contact data: Email and telefone SOMETIMES present")
-        print(f"  - Rate limit: 3 requests/minute (manageable)")
+        print("\n[OK] Key Findings:")
+        print("  - API is FUNCTIONAL and FREE")
+        print("  - Data quality is EXCELLENT")
+        print("  - Fields available: razao_social, porte, CNAE, capital_social")
+        print("  - Contact data: Email and telefone SOMETIMES present")
+        print("  - Rate limit: 3 requests/minute (manageable)")
 
-        print(f"\n📊 Data Availability:")
+        print("\n📊 Data Availability:")
         with_email = [r for r in successful if r.get("email")]
         with_phone = [r for r in successful if r.get("telefone")]
         print(f"  - With Email: {len(with_email)}/{len(successful)} ({len(with_email)/len(successful)*100:.0f}%)")
         print(f"  - With Phone: {len(with_phone)}/{len(successful)} ({len(with_phone)/len(successful)*100:.0f}%)")
 
-    print(f"\n🎯 Recommendation:")
-    print(f"  - USE ReceitaWS for CNPJ enrichment")
-    print(f"  - Cache results (company data is static)")
-    print(f"  - Respect rate limit: 3 req/min → ~180 companies/hour")
-    print(f"  - Use 'porte' field for revenue estimation")
-    print(f"  - Use 'cnae_codigo' for industry classification")
-    print(f"  - Email/phone NOT reliable → need web search fallback")
+    print("\n🎯 Recommendation:")
+    print("  - USE ReceitaWS for CNPJ enrichment")
+    print("  - Cache results (company data is static)")
+    print("  - Respect rate limit: 3 req/min → ~180 companies/hour")
+    print("  - Use 'porte' field for revenue estimation")
+    print("  - Use 'cnae_codigo' for industry classification")
+    print("  - Email/phone NOT reliable → need web search fallback")
 
     print(f"\n{'=' * 80}")
     print("RECEITA FEDERAL API DISCOVERY COMPLETE")

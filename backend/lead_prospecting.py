@@ -20,7 +20,6 @@ STORY-184: Lead Prospecting Workflow
 import logging
 from typing import List, Dict, Optional
 from datetime import datetime
-from pathlib import Path
 from collections import defaultdict
 
 from pncp_homologados_client import PNCPHomologadosClient
@@ -33,8 +32,6 @@ from report_generator import ReportGenerator
 from services.sanctions_service import SanctionsService
 
 from schemas_lead_prospecting import (
-    ContractData,
-    CompanyData,
     LeadProfile,
 )
 
@@ -130,7 +127,6 @@ def execute_acha_leads(
     if not skip_sanctions:
         logger.info("Step 5: Checking sanctions (CEIS + CNEP)...")
         import asyncio
-        from clients.sanctions import SanctionsResult as _SR
 
         sanctions_service = SanctionsService()
         try:

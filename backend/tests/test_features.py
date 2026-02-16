@@ -3,10 +3,9 @@
 Tests AC6-AC11: Align /api/features/me with multi-layer plan fallback strategy.
 """
 
-import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
-from routes.features import fetch_features_from_db, UserFeaturesResponse
+from routes.features import fetch_features_from_db
 
 
 class TestFeaturesFallbackAC6AC7:

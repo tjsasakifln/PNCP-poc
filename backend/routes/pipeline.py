@@ -33,7 +33,7 @@ def _check_pipeline_access(user: dict) -> None:
     Pipeline is available for maquina and sala_guerra plans.
     Free trial and consultor_agil get upgrade prompt (AC13).
     """
-    from quota import check_quota, PLAN_CAPABILITIES, get_plan_capabilities
+    from quota import check_quota
     from authorization import has_master_access
     import asyncio
 

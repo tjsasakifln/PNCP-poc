@@ -20,7 +20,7 @@ Track 4 — Schema:
 
 import asyncio
 import time
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pncp_client import ParallelFetchResult
@@ -45,7 +45,6 @@ class TestPerModalityTimeout:
             call_count = {"total": 0}
 
             # Patch _fetch_single_modality to simulate timeout on mod 4 only
-            original = client._fetch_single_modality
 
             async def mock_fetch_single(uf, data_inicial, data_final, modalidade, **kw):
                 call_count["total"] += 1

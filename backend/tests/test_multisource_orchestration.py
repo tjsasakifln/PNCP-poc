@@ -10,7 +10,6 @@ from consolidation import (
     AllSourcesFailedError,
     ConsolidationResult,
     ConsolidationService,
-    SourceResult,
 )
 from clients.base import (
     SourceAdapter,
@@ -20,7 +19,6 @@ from clients.base import (
 )
 from source_config.sources import (
     SourceHealthRegistry,
-    SourceHealthStatus,
     source_health_registry,
 )
 

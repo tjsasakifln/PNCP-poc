@@ -7,16 +7,14 @@ Covers:
     - AC19: Integration test structure (with mock fixture)
 """
 
-import asyncio
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from clients.sanctions import (
     SanctionRecord,
-    SanctionsChecker,
     SanctionsResult,
     SanctionsAPIError,
 )
@@ -267,7 +265,7 @@ class TestSanctionsServiceCache:
             service._checker, "check_sanctions", new_callable=AsyncMock,
             return_value=clean_result,
         ) as mock_check:
-            report1 = await service.check_company("12345678000190")
+            await service.check_company("12345678000190")
             # The cache is in the checker, so we need to simulate it
             # For service-level, we verify the checker is called
             assert mock_check.call_count == 1

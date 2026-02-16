@@ -3,7 +3,6 @@
 STORY-224 Track 4 (AC27): Plans route coverage (public endpoint, no auth).
 """
 
-import pytest
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from fastapi import FastAPI

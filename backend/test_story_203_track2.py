@@ -14,7 +14,6 @@ Usage:
 
 import sys
 import hashlib
-from typing import Dict, Any
 
 # Windows console encoding fix
 if sys.platform == 'win32':
@@ -138,7 +137,7 @@ def test_cross_m01_plans_endpoint():
     print("\n=== CROSS-M01: /api/plans Endpoint ===")
 
     try:
-        from routes.plans import router, PlansResponse, PlanDetails
+        from routes.plans import router, PlansResponse, PlanDetails  # noqa: F401
         print("✅ Plans router imported successfully")
     except ImportError as e:
         print(f"❌ FAIL: Cannot import plans router: {e}")
@@ -165,7 +164,7 @@ def test_cross_m01_plans_endpoint():
 
     # Verify Pydantic models
     try:
-        test_plan = PlanDetails(
+        PlanDetails(
             id="test_plan",
             name="Test Plan",
             description="Test Description",

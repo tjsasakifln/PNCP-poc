@@ -117,3 +117,10 @@ exclude = [
     "venv/",
     ".venv/",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# E402: Module import not at top of file - legitimate patterns
+"main.py" = ["E402"]
+"cli_acha_leads.py" = ["E402"]
+"tests/test_redis_pool.py" = ["E402"]
+"tests/test_search_pipeline.py" = ["E402"]

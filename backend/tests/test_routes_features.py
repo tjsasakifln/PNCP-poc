@@ -4,9 +4,7 @@ STORY-224 Track 4 (AC26): Feature flags route coverage with Redis caching.
 """
 
 import json
-import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from datetime import datetime, timezone, timedelta
 
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
@@ -110,7 +108,7 @@ class TestGetMyFeatures:
         mock_redis.get = AsyncMock(side_effect=Exception("Redis connection refused"))
         mock_redis.setex = AsyncMock()
 
-        from routes.features import UserFeaturesResponse, FeatureInfo
+        from routes.features import UserFeaturesResponse
         mock_fetch_db.return_value = UserFeaturesResponse(
             features=[],
             plan_id="free_trial",

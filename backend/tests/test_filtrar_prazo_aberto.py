@@ -4,7 +4,6 @@ STORY-240 AC6, AC11, AC12: Unit tests for filtrar_por_prazo_aberto() and modo_bu
 Tests the new "abertas" search mode that filters out bids whose proposal deadline has passed.
 """
 
-import pytest
 from datetime import datetime, timezone, timedelta
 from filter import filtrar_por_prazo_aberto, aplicar_todos_filtros
 

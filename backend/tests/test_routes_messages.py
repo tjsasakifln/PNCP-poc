@@ -3,8 +3,7 @@
 STORY-224 Track 4 (AC24): Message/conversation route coverage.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 

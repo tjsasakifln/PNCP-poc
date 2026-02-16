@@ -881,7 +881,6 @@ async def save_search_session(
     Supabase client handles connection pooling internally. Safe for interleaving
     — no asyncio.Lock needed.
     """
-    import asyncio
     from supabase_client import get_supabase
 
     sb = get_supabase()

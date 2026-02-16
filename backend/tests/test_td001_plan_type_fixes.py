@@ -7,8 +7,7 @@ Tests:
 - Verify PLAN_TYPE_MAP still maps legacy 'free' → 'free_trial'
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 
 class TestEnsureProfileExistsPlanType:
@@ -136,7 +135,7 @@ class TestGetPlanFromProfileFallback:
             "consultor_agil": {"max_searches": 25},
         }
 
-        result = get_plan_from_profile("user-123", sb=mock_sb)
+        get_plan_from_profile("user-123", sb=mock_sb)
 
         # When plan_type is None, .get() returns None (not the default since key exists),
         # PLAN_TYPE_MAP.get(None, None) = None, and None is not in plan_caps.

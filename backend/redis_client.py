@@ -7,6 +7,8 @@ All functions redirect to the unified redis_pool module.
 This shim exists only for backward compatibility during migration.
 """
 
+from __future__ import annotations
+
 import warnings
 import logging
 from typing import Optional
@@ -14,7 +16,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def get_redis() -> Optional["redis.asyncio.Redis"]:
+def get_redis() -> Optional["redis.asyncio.Redis"]:  # noqa: F821
     """Get Redis client instance (DEPRECATED).
 
     Use ``from redis_pool import get_redis_pool`` instead.

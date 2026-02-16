@@ -28,7 +28,6 @@ Architecture:
 """
 
 import os
-import logging
 from datetime import datetime, timezone, timedelta
 
 import stripe
@@ -346,7 +345,7 @@ def _send_payment_confirmation_email(sb, user_id: str, plan_id: str, invoice_dat
     try:
         from email_service import send_email_async
         from templates.emails.billing import render_payment_confirmation_email
-        from quota import PLAN_NAMES, PLAN_PRICES
+        from quota import PLAN_NAMES
 
         profile = sb.table("profiles").select("email, full_name").eq("id", user_id).single().execute()
         if not profile.data or not profile.data.get("email"):

@@ -17,7 +17,7 @@ The match_keywords function:
 """
 
 import pytest
-from filter import match_keywords, normalize_text
+from filter import match_keywords
 from sectors import get_sector, SECTORS
 
 

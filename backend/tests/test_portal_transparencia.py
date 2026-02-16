@@ -817,7 +817,7 @@ class TestFetch:
         )
 
         with pytest.raises(SourceAuthError):
-            results = [r async for r in adapter.fetch("2026-01-01", "2026-01-31")]
+            [r async for r in adapter.fetch("2026-01-01", "2026-01-31")]
 
     @pytest.mark.asyncio
     async def test_fetch_4xx_skips_org(self, adapter, small_org_list, sample_raw_record):

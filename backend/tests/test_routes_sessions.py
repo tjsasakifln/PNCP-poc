@@ -3,7 +3,6 @@
 STORY-224 Track 4 (AC22): Search session history route coverage.
 """
 
-import pytest
 from unittest.mock import Mock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI

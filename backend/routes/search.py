@@ -9,8 +9,6 @@ STORY-216: buscar_licitacoes() decomposed into SearchPipeline (search_pipeline.p
 This module is now a thin wrapper that delegates to the pipeline.
 """
 
-import asyncio
-import logging
 import time as sync_time
 
 from types import SimpleNamespace
@@ -27,7 +25,6 @@ from pncp_client import PNCPClient, buscar_todas_ufs_paralelo
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import (
     aplicar_todos_filtros,
-    filtrar_por_prazo_aberto,
     match_keywords,
     KEYWORDS_UNIFORMES,
     KEYWORDS_EXCLUSAO,
@@ -38,7 +35,7 @@ from auth import require_auth
 from authorization import check_user_roles
 from rate_limiter import rate_limiter
 from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_events
-from log_sanitizer import mask_user_id, get_sanitized_logger
+from log_sanitizer import get_sanitized_logger
 from search_pipeline import SearchPipeline
 from search_context import SearchContext
 
@@ -49,7 +46,7 @@ router = APIRouter(tags=["search"])
 
 # Helper functions moved to search_pipeline.py (STORY-216 AC6)
 # Re-exported for any external callers (backward compat)
-from search_pipeline import _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes, _convert_to_licitacao_items
+from search_pipeline import _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes, _convert_to_licitacao_items  # noqa: F401, E402
 
 
 @router.get("/buscar-progress/{search_id}")

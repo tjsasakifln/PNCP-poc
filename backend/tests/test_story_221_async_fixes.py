@@ -222,7 +222,7 @@ def test_no_asyncio_run_in_production_code():
                 violations.append(f"{py_file.name}:{i}: {line.strip()}")
 
     assert not violations, (
-        f"Found asyncio.run() in production code:\n" + "\n".join(violations)
+        "Found asyncio.run() in production code:\n" + "\n".join(violations)
     )
 
 

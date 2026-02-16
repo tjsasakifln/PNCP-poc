@@ -29,7 +29,6 @@ Usage:
 
 import hashlib
 import logging
-from datetime import datetime, timezone
 from typing import Any, Optional, Set
 
 from middleware import request_id_var

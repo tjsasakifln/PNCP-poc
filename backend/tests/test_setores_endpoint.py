@@ -5,7 +5,6 @@ Verifies that the sectors endpoint returns valid data for frontend consumption.
 Both legacy (/setores) and versioned (/v1/setores) endpoints are tested.
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from main import app
 

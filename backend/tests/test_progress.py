@@ -13,7 +13,7 @@ Test coverage for STORY-224 Track 1:
 import asyncio
 import json
 import time
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -334,7 +334,7 @@ class TestTrackerManagement:
     @pytest.mark.asyncio
     async def test_remove_tracker_from_memory(self, mock_redis):
         """AC4: Test remove_tracker() cleans up in-memory registry."""
-        tracker = await create_tracker(search_id="search-003", uf_count=1)
+        await create_tracker(search_id="search-003", uf_count=1)
         assert "search-003" in _active_trackers
 
         await remove_tracker("search-003")
@@ -354,7 +354,7 @@ class TestTrackerManagement:
             mock_pool.return_value = mock_redis_client
             mock_available.return_value = True
 
-            tracker = await create_tracker(search_id="search-redis-003", uf_count=2)
+            await create_tracker(search_id="search-redis-003", uf_count=2)
             await remove_tracker("search-redis-003")
 
             # Check Redis delete was called
@@ -371,7 +371,7 @@ class TestTrackerManagement:
         with patch("progress.get_redis_pool", new_callable=AsyncMock) as mock_pool:
             mock_pool.return_value = mock_redis_client
 
-            tracker = await create_tracker(search_id="search-004", uf_count=1)
+            await create_tracker(search_id="search-004", uf_count=1)
 
             # Should not raise exception
             await remove_tracker("search-004")
@@ -527,7 +527,7 @@ class TestSSEReconnection:
     async def test_reconnect_after_cleanup(self, mock_redis):
         """AC7: Test reconnecting to cleaned-up tracker returns None."""
         # Create and remove tracker
-        tracker = await create_tracker("search-removed", uf_count=2)
+        await create_tracker("search-removed", uf_count=2)
         await remove_tracker("search-removed")
 
         # Try to reconnect

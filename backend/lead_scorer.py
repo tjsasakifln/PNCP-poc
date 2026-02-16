@@ -9,8 +9,8 @@ STORY-184: Lead Prospecting Workflow
 """
 
 import logging
-from typing import List, Dict
-from datetime import datetime, date, timedelta
+from typing import List
+from datetime import date
 from decimal import Decimal
 
 from schemas_lead_prospecting import (

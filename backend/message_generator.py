@@ -11,16 +11,13 @@ STORY-184: Lead Prospecting Workflow
 """
 
 import logging
-from typing import Optional, List
+from typing import Optional
 import os
 
-import openai
 from openai import OpenAI
 
 from schemas_lead_prospecting import (
-    LeadProfile,
     ContractData,
-    CompanyData,
     StrategicIntelligence,
 )
 

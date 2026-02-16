@@ -6,7 +6,6 @@ from httpx import AsyncClient, ASGITransport
 
 from main import app
 from auth import require_auth
-from schemas import FirstAnalysisRequest
 
 
 def override_require_auth(user_id: str = "test-user-123"):

@@ -8,7 +8,6 @@ Comprehensive test suite covering:
 """
 
 import asyncio
-from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -256,7 +255,7 @@ class TestHealthCheck:
         call_count = 0
 
         # Simulate time progression: first call returns start, second returns start+5s
-        original_time = asyncio.get_event_loop().time
+        asyncio.get_event_loop().time
 
         async def slow_get(*args, **kwargs):
             nonlocal call_count
@@ -1295,7 +1294,7 @@ class TestBatchExtraction:
         import os
         saved = os.environ.pop("OPENAI_API_KEY", None)
         try:
-            results = await batch_extract_from_gazettes(gazettes, mock_fetch)
+            await batch_extract_from_gazettes(gazettes, mock_fetch)
         finally:
             if saved is not None:
                 os.environ["OPENAI_API_KEY"] = saved
