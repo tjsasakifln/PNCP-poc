@@ -59,7 +59,7 @@ const STAGES = [
   },
   {
     id: 'summarizing' as SearchStage,
-    label: "Gerando resumo IA",
+    label: "Avaliando oportunidades",
     icon: "🤖",
     progressStart: 75,
     progressEnd: 90,

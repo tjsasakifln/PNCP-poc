@@ -629,7 +629,7 @@ export function LicitacaoCard({
 
       {/* Actions Footer */}
       <div className="flex items-center justify-between gap-2 p-4 pt-3 border-t border-white/15 dark:border-white/10 bg-white/20 dark:bg-white/5">
-        {/* Primary Action: View on PNCP */}
+        {/* Primary Action: View source */}
         <a
           href={licitacao.link}
           target="_blank"

@@ -152,12 +152,12 @@ describe('EnhancedLoadingProgress Component', () => {
         expect(screen.getByText('Filtrando resultados')).toBeInTheDocument();
       });
 
-      // Fast-forward to Stage 4: Gerando resumo (70-90%)
+      // Fast-forward to Stage 4: Avaliando oportunidades (70-90%)
       act(() => {
         jest.advanceTimersByTime(10000); // 20% more
       });
       await waitFor(() => {
-        expect(screen.getByText('Gerando resumo IA')).toBeInTheDocument();
+        expect(screen.getByText('Avaliando oportunidades')).toBeInTheDocument();
       });
 
       // Fast-forward to Stage 5: Preparando Excel (90-100%)

@@ -74,7 +74,7 @@ describe('AnnualBenefits Component', () => {
       render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
 
       expect(screen.getByText('Análise IA de Editais')).toBeInTheDocument();
-      expect(screen.getByText(/GPT-4 analisa editais/)).toBeInTheDocument();
+      expect(screen.getByText(/IA avalia oportunidades/)).toBeInTheDocument();
     });
 
     it('should display Dashboard Executivo benefit for Sala de Guerra', () => {

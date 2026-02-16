@@ -17,7 +17,7 @@ describe('PlanCard Component', () => {
     features: [
       'Busca ilimitada',
       'Exportar Excel',
-      'Resumo IA',
+      'Avaliação IA',
     ],
   };
 
@@ -114,7 +114,7 @@ describe('PlanCard Component', () => {
 
       expect(screen.getByText('Busca ilimitada')).toBeInTheDocument();
       expect(screen.getByText('Exportar Excel')).toBeInTheDocument();
-      expect(screen.getByText('Resumo IA')).toBeInTheDocument();
+      expect(screen.getByText('Avaliação IA')).toBeInTheDocument();
     });
 
     it('should show checkmark icon for each feature', () => {

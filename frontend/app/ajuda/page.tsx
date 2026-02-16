@@ -62,9 +62,9 @@ const FAQ_DATA: FAQCategory[] = [
           "Após a busca ser concluída, clique no botão \"Download Excel\" que aparece junto aos resultados. O arquivo será gerado e baixado automaticamente com todas as oportunidades encontradas. Este recurso está disponível em planos pagos.",
       },
       {
-        question: "O que é o Resumo Executivo com IA?",
+        question: "Como funciona a avaliação por IA?",
         answer:
-          "Após cada busca, nosso sistema gera automaticamente um resumo inteligente usando IA, destacando as oportunidades mais relevantes, valores totais estimados e tendências. Planos mais avançados possuem resumos mais detalhados.",
+          "Após cada busca, nosso sistema avalia automaticamente cada oportunidade usando IA, indicando adequação ao seu perfil, critérios de elegibilidade, competitividade e pontos de atenção. Você decide em segundos se vale a pena investir tempo.",
       },
     ],
   },

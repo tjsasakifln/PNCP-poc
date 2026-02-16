@@ -29,7 +29,7 @@ describe('InstitutionalSidebar', () => {
 
       expect(screen.getByText('Monitoramento em tempo real de licitações')).toBeInTheDocument();
       expect(screen.getByText('Filtros por estado, valor e setor')).toBeInTheDocument();
-      expect(screen.getByText('Resumo executivo gerado por IA')).toBeInTheDocument();
+      expect(screen.getByText('Avaliação estratégica por IA')).toBeInTheDocument();
       expect(screen.getByText('Exportação de relatórios em Excel')).toBeInTheDocument();
       expect(screen.getByText('Histórico completo de buscas')).toBeInTheDocument();
     });

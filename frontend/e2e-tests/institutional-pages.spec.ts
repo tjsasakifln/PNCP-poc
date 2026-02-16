@@ -14,7 +14,7 @@ test.describe('Login Page - Institutional Sidebar', () => {
     // Verify all 5 benefits are visible
     await expect(page.getByText('Monitoramento em tempo real de licitações')).toBeVisible();
     await expect(page.getByText('Filtros por estado, valor e setor')).toBeVisible();
-    await expect(page.getByText('Resumo executivo gerado por IA')).toBeVisible();
+    await expect(page.getByText('Avaliação estratégica por IA')).toBeVisible();
     await expect(page.getByText('Exportação de relatórios em Excel')).toBeVisible();
     await expect(page.getByText('Histórico completo de buscas')).toBeVisible();
   });

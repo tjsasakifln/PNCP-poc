@@ -49,7 +49,7 @@ const ALL_BENEFITS: Benefit[] = [
   {
     key: 'ai_edital_analysis',
     title: 'Análise IA de Editais',
-    description: 'GPT-4 analisa editais e gera relatórios executivos',
+    description: 'IA avalia oportunidades e gera análise estratégica',
     status: 'coming_soon',
     launchDate: 'Abril 2026',
     planExclusive: 'sala_guerra',

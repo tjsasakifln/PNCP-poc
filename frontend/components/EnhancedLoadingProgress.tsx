@@ -42,9 +42,9 @@ interface Stage {
 const STAGES: Stage[] = [
   {
     id: 1,
-    label: 'Conectando ao PNCP',
+    label: 'Consultando fontes oficiais',
     progressTarget: 10,
-    description: 'Estabelecendo conexão com o Portal Nacional de Contratações Públicas',
+    description: 'Conectando a fontes oficiais de contratações públicas',
   },
   {
     id: 2,
@@ -60,9 +60,9 @@ const STAGES: Stage[] = [
   },
   {
     id: 4,
-    label: 'Gerando resumo IA',
+    label: 'Avaliando oportunidades',
     progressTarget: 90,
-    description: 'Criando análise executiva com GPT-4',
+    description: 'Gerando avaliação estratégica por IA',
   },
   {
     id: 5,

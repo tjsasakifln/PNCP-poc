@@ -419,6 +419,15 @@ export const BANNED_PHRASES = [
   "Maria Santos",
   "Carlos Oliveira",
   "Ana Costa",
+  // AI as commodity / summary language (GTM-008)
+  "resumo",
+  "resumo executivo",
+  "resumos",
+  "resumir",
+  "sintetizar",
+  "GPT-4",
+  "3 linhas",
+  "reduzir texto",
 ];
 
 // ============================================================================
@@ -434,6 +443,17 @@ export const PREFERRED_PHRASES = {
   uncertainty: ["redução de incerteza", "critérios objetivos", "confiança na decisão"],
   cost: ["custo de não ter visibilidade", "licitação perdida", "oportunidade que vai para outro"],
   trust: "Cancele em 1 clique, sem burocracia",
+  // GTM-008: IA as decision evaluator, not summary generator
+  aiEvaluation: [
+    "avaliação de oportunidade",
+    "orientação de decisão",
+    "análise de adequação",
+    "redução de incerteza",
+    "inteligência de decisão",
+    "avaliação objetiva",
+    "critérios de elegibilidade",
+    "análise automatizada",
+  ],
 };
 
 // ============================================================================

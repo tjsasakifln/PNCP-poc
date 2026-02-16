@@ -35,9 +35,9 @@ def render_welcome_email(
       Sua conta foi criada com sucesso no plano <strong>{plan_name}</strong>.
     </p>
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-      O SmartLic monitora automaticamente o Portal Nacional de Contratações Públicas (PNCP)
-      para encontrar oportunidades de licitação relevantes ao seu setor.
-      Economize horas de pesquisa manual com filtros inteligentes e resumos executivos por IA.
+      O SmartLic monitora dezenas de fontes oficiais automaticamente
+      para identificar oportunidades de licitação relevantes ao seu setor.
+      Avaliação objetiva por IA indica onde focar para ganhar mais.
     </p>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -63,7 +63,7 @@ def render_welcome_email(
                 <span style="color: {SMARTLIC_GREEN}; font-size: 18px;">&#10003;</span>
               </td>
               <td style="color: #555; font-size: 15px; line-height: 1.5;">
-                <strong>Resumo executivo por IA</strong> — Análise automatizada das melhores oportunidades
+                <strong>Avaliação estratégica por IA</strong> — Cada oportunidade avaliada com critérios objetivos
               </td>
             </tr>
           </table>

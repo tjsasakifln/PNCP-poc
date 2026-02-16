@@ -9,7 +9,7 @@
 | **Type** | GTM (Go-to-Market) |
 | **Dependencies** | GTM-001 (alinhamento de narrativa) |
 | **Blocks** | GTM-009 (Features Page depende do novo posicionamento de IA) |
-| **Status** | Pending |
+| **Status** | Completed |
 | **Created** | 2026-02-15 |
 | **Squad** | Content + Dev (Frontend) |
 
@@ -67,44 +67,44 @@ A IA não resume editais. A IA:
 
 ### Eliminação de "Resumos"
 
-- [ ] **AC1:** ZERO menções a "resumo", "resumo executivo", "resumos" em copy user-facing
+- [x] **AC1:** ZERO menções a "resumo", "resumo executivo", "resumos" em copy user-facing
   - Verificar `lib/copy/valueProps.ts`, `comparisons.ts`, `app/features/page.tsx`, `app/planos/page.tsx`
   - Exceção: documentação técnica interna pode manter termo "summary" (campo `ai_summary` no JSON response é OK — não visível ao usuário)
 
 ### Novo Posicionamento de IA
 
-- [ ] **AC2:** IA posicionada como "avaliação de oportunidade" e "orientação de decisão"
+- [x] **AC2:** IA posicionada como "avaliação de oportunidade" e "orientação de decisão"
   - Hero: "IA avalia cada oportunidade"
   - Features: "Avaliação objetiva", "Análise de adequação", "Inteligência de decisão"
 
-- [ ] **AC3:** Feature de IA descrita como "redução de incerteza", não "redução de texto"
+- [x] **AC3:** Feature de IA descrita como "redução de incerteza", não "redução de texto"
   - **Antes:** "Resumos de 3 linhas economizam 20 minutos por edital"
   - **Depois:** "Avaliação objetiva elimina necessidade de ler editais completos para decidir se vale a pena"
 
-- [ ] **AC4:** Benefício tangível comunicado: "Você decide em segundos se uma oportunidade é adequada ao seu perfil"
+- [x] **AC4:** Benefício tangível comunicado: "Você decide em segundos se uma oportunidade é adequada ao seu perfil"
 
 ### Eliminação de Diferenciação de Planos por IA
 
-- [ ] **AC5:** Planos **não diferenciam "nível de IA"** (após GTM-002: plano único, IA completa)
+- [x] **AC5:** Planos **não diferenciam "nível de IA"** (após GTM-002: plano único, IA completa)
   - **Antes:** "Consultor Ágil: IA Básico (200 tokens)", "Sala de Guerra: IA Prioritário (10k tokens)"
   - **Depois:** "SmartLic Pro: Análise Estratégica (10k tokens)" — único nível
 
-- [ ] **AC6:** Trial tem IA completa (10k tokens) — já definido em GTM-003
+- [x] **AC6:** Trial tem IA completa (10k tokens) — já definido em GTM-003
   - Copy de trial: "Experimente o SmartLic completo por 7 dias" (não "IA básica")
 
 ### Email Templates
 
-- [ ] **AC7:** Email templates atualizados com nova linguagem (se arquivos de email existirem)
+- [x] **AC7:** Email templates atualizados com nova linguagem (se arquivos de email existirem)
   - **Antes:** "Filtramos 47 licitações para você hoje"
   - **Depois:** "Identificamos 47 oportunidades com alta adequação ao seu perfil hoje"
 
-- [ ] **AC8:** Email de resultados foca em valor, não em tarefa
+- [x] **AC8:** Email de resultados foca em valor, não em tarefa
   - ❌ "Processamos X licitações"
   - ✅ "Encontramos X oportunidades priorizadas para você"
 
 ### Banned Phrases Update
 
-- [ ] **AC9:** Atualizar banned phrases em `valueProps.ts`:
+- [x] **AC9:** Atualizar banned phrases em `valueProps.ts`:
   ```typescript
   const BANNED_PHRASES = [
     // ... existing (160x, 95%, 3 minutos, PNCP)
@@ -120,7 +120,7 @@ A IA não resume editais. A IA:
   ];
   ```
 
-- [ ] **AC10:** Adicionar preferred phrases:
+- [x] **AC10:** Adicionar preferred phrases:
   ```typescript
   const PREFERRED_PHRASES = [
     // ... existing
@@ -140,12 +140,12 @@ A IA não resume editais. A IA:
 
 ## Definition of Done
 
-- [ ] Todos os Acceptance Criteria marcados como concluídos
-- [ ] ZERO menções a "resumo" em copy user-facing (grep validation)
-- [ ] IA posicionada como "avaliação/orientação" em todas as páginas (landing, features, planos)
-- [ ] Email templates atualizados (se existirem)
-- [ ] Banned/Preferred phrases atualizados em `valueProps.ts`
-- [ ] Build passa (TypeScript clean, lint clean)
+- [x] Todos os Acceptance Criteria marcados como concluídos
+- [x] ZERO menções a "resumo" em copy user-facing (grep validation)
+- [x] IA posicionada como "avaliação/orientação" em todas as páginas (landing, features, planos)
+- [x] Email templates atualizados (se existirem)
+- [x] Banned/Preferred phrases atualizados em `valueProps.ts`
+- [x] Build passa (TypeScript clean, lint clean)
 - [ ] PR aberto, revisado e merged
 - [ ] Deploy em staging verificado (audit manual de copy em todas as páginas)
 

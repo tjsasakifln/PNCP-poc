@@ -139,7 +139,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
     benefits: [
       { icon: "clock", text: "Monitoramento em tempo real de licitações" },
       { icon: "filter", text: "Filtros por estado, valor e setor" },
-      { icon: "brain", text: "Resumo executivo gerado por IA" },
+      { icon: "brain", text: "Avaliação estratégica por IA" },
       { icon: "download", text: "Exportação de relatórios em Excel" },
       { icon: "history", text: "Histórico completo de buscas" },
     ],

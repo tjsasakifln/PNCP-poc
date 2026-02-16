@@ -37,16 +37,16 @@ export default function TermosPage() {
                 A SmartLic é uma plataforma SaaS que oferece:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
-                <li>Busca automatizada de oportunidades de licitações públicas no Portal Nacional de Contratações Públicas (PNCP)</li>
+                <li>Busca automatizada de oportunidades de licitações públicas em fontes oficiais de contratações</li>
                 <li>Filtragem por setor, estado, município, modalidade e faixa de valor</li>
                 <li>Geração de relatórios em Excel com dados estruturados</li>
-                <li>Resumos executivos gerados por inteligência artificial</li>
+                <li>Avaliação estratégica de oportunidades por inteligência artificial</li>
                 <li>Notificações por e-mail sobre novas oportunidades relevantes</li>
                 <li>Histórico de buscas e análises personalizadas</li>
               </ul>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
                 <strong>IMPORTANTE:</strong> A SmartLic é uma ferramenta de descoberta e análise de informações públicas.
-                Não somos responsáveis pela exatidão, integridade ou atualização dos dados fornecidos pela PNCP.
+                Não somos responsáveis pela exatidão, integridade ou atualização dos dados fornecidos pelas fontes oficiais.
               </p>
             </section>
 

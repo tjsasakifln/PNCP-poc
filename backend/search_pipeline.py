@@ -1024,7 +1024,7 @@ class SearchPipeline:
 
         # SSE: Starting LLM
         if ctx.tracker:
-            await ctx.tracker.emit("llm", 75, "Gerando resumo executivo com IA...")
+            await ctx.tracker.emit("llm", 75, "Avaliando oportunidades com IA...")
 
         # LLM summary (with fallback)
         logger.info("Generating executive summary")

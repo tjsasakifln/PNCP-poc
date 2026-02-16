@@ -203,9 +203,9 @@ async def lifespan(app_instance: FastAPI):
 app = FastAPI(
     title="BidIQ Uniformes API",
     description=(
-        "API para busca e análise de licitações de uniformes no PNCP. "
-        "Permite filtrar oportunidades por estado, valor e keywords, "
-        "gerando relatórios Excel e resumos executivos via IA."
+        "API para busca e análise de licitações em fontes oficiais. "
+        "Permite filtrar oportunidades por estado, valor e setor, "
+        "gerando relatórios Excel e avaliação estratégica via IA."
     ),
     version=APP_VERSION,
     docs_url=None if _is_production else "/docs",

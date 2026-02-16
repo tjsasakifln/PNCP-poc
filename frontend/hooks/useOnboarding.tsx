@@ -92,7 +92,7 @@ export function useOnboarding(options: OnboardingOptions = {}) {
         </p>
         <ul class="list-disc list-inside space-y-1 text-sm">
           <li>🔍 Busca em 27 estados simultaneamente</li>
-          <li>🤖 Resumo executivo gerado por IA</li>
+          <li>🤖 Avaliação estratégica por IA</li>
           <li>📊 Relatórios Excel prontos para análise</li>
         </ul>
       `,
