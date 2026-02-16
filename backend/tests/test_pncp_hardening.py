@@ -762,9 +762,9 @@ class TestEnvironmentConfiguration:
         assert PNCP_MODALITY_RETRY_BACKOFF == 3.0
 
     def test_circuit_breaker_default_threshold(self):
-        """Default circuit breaker threshold is 8."""
+        """Default circuit breaker threshold is 20 (raised for 27 UFs × 4 modalidades)."""
         cb = PNCPCircuitBreaker()
-        assert cb.threshold == 8
+        assert cb.threshold == 20
 
     def test_circuit_breaker_default_cooldown(self):
         """Default circuit breaker cooldown is 120s (2 minutes)."""

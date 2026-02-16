@@ -264,9 +264,9 @@ class TestAutomaticFailover:
         original_wrap = svc._wrap_source
         captured_timeouts = {}
 
-        async def capturing_wrap(code, coro, timeout=None):
+        async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None):
             captured_timeouts[code] = timeout
-            return await original_wrap(code, coro, timeout=timeout)
+            return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout)
 
         svc._wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
@@ -295,9 +295,9 @@ class TestAutomaticFailover:
         original_wrap = svc._wrap_source
         captured_timeouts = {}
 
-        async def capturing_wrap(code, coro, timeout=None):
+        async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None):
             captured_timeouts[code] = timeout
-            return await original_wrap(code, coro, timeout=timeout)
+            return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout)
 
         svc._wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")
@@ -502,11 +502,11 @@ class TestComprasGovFallback:
         original_wrap = svc._wrap_source
         fallback_timeout_used = None
 
-        async def capturing_wrap(code, coro, timeout=None):
+        async def capturing_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None):
             nonlocal fallback_timeout_used
             if code == "ComprasGov":
                 fallback_timeout_used = timeout
-            return await original_wrap(code, coro, timeout=timeout)
+            return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout)
 
         svc._wrap_source = capturing_wrap
         await svc.fetch_all("2026-01-01", "2026-01-31")

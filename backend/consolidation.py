@@ -152,13 +152,9 @@ class ConsolidationService:
                 f"global timeout increased to {effective_global_timeout}s"
             )
 
-        # Build per-source fetch tasks with health-aware timeouts (AC13)
-        tasks = {}
+        # Build per-source timeouts with health-aware adjustments (AC13)
         source_timeouts: Dict[str, int] = {}
-        for code, adapter in self._adapters.items():
-            tasks[code] = self._fetch_source(
-                adapter, data_inicial, data_final, ufs
-            )
+        for code in self._adapters:
             if pncp_is_degraded and code != "PNCP":
                 # AC13: Give alternative sources more time when PNCP is degraded
                 source_timeouts[code] = self.FAILOVER_TIMEOUT_PER_SOURCE
@@ -171,8 +167,14 @@ class ConsolidationService:
             results = await asyncio.wait_for(
                 asyncio.gather(
                     *[
-                        self._wrap_source(code, task, timeout=source_timeouts[code])
-                        for code, task in tasks.items()
+                        self._wrap_source(
+                            code, adapter,
+                            data_inicial=data_inicial,
+                            data_final=data_final,
+                            ufs=ufs,
+                            timeout=source_timeouts[code],
+                        )
+                        for code, adapter in self._adapters.items()
                     ],
                     return_exceptions=True,
                 ),
@@ -201,15 +203,25 @@ class ConsolidationService:
 
         for code in self._adapters:
             result = source_results_map.get(code)
-            if result and result.get("status") == "success":
+            result_status = result.get("status") if result else None
+            has_records = result_status in ("success", "partial")
+
+            if result and has_records:
                 records = result["records"]
                 all_records.extend(records)
-                source_health_registry.record_success(code)
+                if result_status == "success":
+                    source_health_registry.record_success(code)
+                else:
+                    # "partial" — some data but source didn't complete
+                    source_health_registry.record_failure(code)
+                    failed_sources.append(code)
+                    source_errors[code] = result.get("error", "Partial timeout")
                 sr = SourceResult(
                     source_code=code,
                     record_count=len(records),
                     duration_ms=result["duration_ms"],
-                    status="success",
+                    error=result.get("error"),
+                    status=result_status,
                 )
                 source_results.append(sr)
                 if on_source_complete:
@@ -253,9 +265,10 @@ class ConsolidationService:
                 )
                 fallback_result = await self._wrap_source(
                     fallback_code,
-                    self._fetch_source(
-                        self._fallback_adapter, data_inicial, data_final, ufs
-                    ),
+                    self._fallback_adapter,
+                    data_inicial=data_inicial,
+                    data_final=data_final,
+                    ufs=ufs,
                     timeout=self.FALLBACK_TIMEOUT,
                 )
                 if fallback_result.get("status") == "success":
@@ -351,51 +364,109 @@ class ConsolidationService:
         data_inicial: str,
         data_final: str,
         ufs: Optional[Set[str]],
+        partial_collector: Optional[List] = None,
     ) -> List[UnifiedProcurement]:
-        """Fetch all records from a single source."""
-        records = []
+        """Fetch all records from a single source.
+
+        Args:
+            adapter: Source adapter to fetch from.
+            data_inicial: Start date.
+            data_final: End date.
+            ufs: Optional UF filter.
+            partial_collector: If provided, records are appended here as they
+                arrive so that ``_wrap_source`` can salvage them on timeout.
+        """
+        records = [] if partial_collector is None else partial_collector
         async for record in adapter.fetch(data_inicial, data_final, ufs):
             records.append(record)
         return records
 
     async def _wrap_source(
-        self, code: str, coro, timeout: Optional[int] = None
+        self, code: str, adapter: SourceAdapter,
+        data_inicial: str, data_final: str,
+        ufs: Optional[Set[str]] = None,
+        timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Wrap a source fetch with timeout and error handling.
 
+        Preserves partial results on timeout: records that were already
+        yielded by the adapter before the timeout fires are returned
+        with status ``"partial"`` instead of being discarded.
+
         Args:
-            code: Source identifier for logging/tracking
-            coro: Coroutine to execute (the actual fetch)
+            code: Source identifier for logging/tracking.
+            adapter: The source adapter to fetch from.
+            data_inicial: Start date.
+            data_final: End date.
+            ufs: Optional UF filter set.
             timeout: Per-source timeout in seconds. Defaults to
                 self._timeout_per_source if not provided.
         """
         effective_timeout = timeout if timeout is not None else self._timeout_per_source
         start = time.time()
+        # Shared list: records accumulate here as the generator yields them.
+        # On timeout we can still read whatever was collected.
+        partial_records: List[UnifiedProcurement] = []
         try:
-            records = await asyncio.wait_for(coro, timeout=effective_timeout)
+            await asyncio.wait_for(
+                self._fetch_source(
+                    adapter, data_inicial, data_final, ufs,
+                    partial_collector=partial_records,
+                ),
+                timeout=effective_timeout,
+            )
             duration = int((time.time() - start) * 1000)
             logger.info(
-                f"[CONSOLIDATION] {code}: {len(records)} records in {duration}ms"
+                f"[CONSOLIDATION] {code}: {len(partial_records)} records in {duration}ms"
             )
             return {
                 "code": code,
                 "status": "success",
-                "records": records,
+                "records": partial_records,
                 "duration_ms": duration,
             }
         except asyncio.TimeoutError:
             duration = int((time.time() - start) * 1000)
-            logger.warning(f"[CONSOLIDATION] {code}: timeout after {duration}ms")
-            return {
-                "code": code,
-                "status": "timeout",
-                "records": [],
-                "duration_ms": duration,
-                "error": f"Timeout after {effective_timeout}s",
-            }
+            salvaged = len(partial_records)
+            if salvaged > 0:
+                logger.warning(
+                    f"[CONSOLIDATION] {code}: timeout after {duration}ms — "
+                    f"salvaged {salvaged} partial records"
+                )
+                return {
+                    "code": code,
+                    "status": "partial",
+                    "records": partial_records,
+                    "duration_ms": duration,
+                    "error": f"Timeout after {effective_timeout}s (salvaged {salvaged} records)",
+                }
+            else:
+                logger.warning(
+                    f"[CONSOLIDATION] {code}: timeout after {duration}ms — no records"
+                )
+                return {
+                    "code": code,
+                    "status": "timeout",
+                    "records": [],
+                    "duration_ms": duration,
+                    "error": f"Timeout after {effective_timeout}s",
+                }
         except Exception as e:
             duration = int((time.time() - start) * 1000)
+            salvaged = len(partial_records)
+            if salvaged > 0:
+                logger.warning(
+                    f"[CONSOLIDATION] {code}: error after {duration}ms - {e} — "
+                    f"salvaged {salvaged} partial records"
+                )
+                return {
+                    "code": code,
+                    "status": "partial",
+                    "records": partial_records,
+                    "duration_ms": duration,
+                    "error": f"{e} (salvaged {salvaged} records)",
+                }
             logger.error(f"[CONSOLIDATION] {code}: error after {duration}ms - {e}")
             return {
                 "code": code,

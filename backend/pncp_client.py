@@ -37,7 +37,7 @@ class PNCPDegradedError(PNCPAPIError):
 
 # Configurable via environment variables
 PNCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "8")  # Changed from "5" to "8"
+    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "20")  # Raised: 27 UFs × 4 mods = 108 reqs
 )
 PNCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
     os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "120")  # Changed from "300" to "120"

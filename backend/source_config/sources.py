@@ -256,8 +256,8 @@ class SingleSourceConfig:
 class ConsolidationConfig:
     """Configuration for multi-source consolidation service."""
 
-    timeout_global: int = 60
-    timeout_per_source: int = 25
+    timeout_global: int = 120
+    timeout_per_source: int = 50
     fail_on_all_errors: bool = True
     dedup_strategy: str = "first_seen"
     max_concurrent_sources: int = 5
@@ -266,8 +266,8 @@ class ConsolidationConfig:
     def from_env(cls) -> "ConsolidationConfig":
         """Load consolidation config from environment."""
         return cls(
-            timeout_global=int(os.getenv("CONSOLIDATION_TIMEOUT_GLOBAL", "60")),
-            timeout_per_source=int(os.getenv("CONSOLIDATION_TIMEOUT_PER_SOURCE", "25")),
+            timeout_global=int(os.getenv("CONSOLIDATION_TIMEOUT_GLOBAL", "120")),
+            timeout_per_source=int(os.getenv("CONSOLIDATION_TIMEOUT_PER_SOURCE", "50")),
             fail_on_all_errors=os.getenv("CONSOLIDATION_FAIL_ON_ALL", "true").lower()
             == "true",
             dedup_strategy=os.getenv("CONSOLIDATION_DEDUP_STRATEGY", "first_seen"),

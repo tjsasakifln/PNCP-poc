@@ -333,9 +333,9 @@ class TestFailoverTimeoutIncrease:
         original_wrap = svc._wrap_source
         captured_timeouts = {}
 
-        async def patched_wrap(code, coro, timeout=None):
+        async def patched_wrap(code, adapter, data_inicial=None, data_final=None, ufs=None, timeout=None):
             captured_timeouts[code] = timeout
-            return await original_wrap(code, coro, timeout)
+            return await original_wrap(code, adapter, data_inicial=data_inicial, data_final=data_final, ufs=ufs, timeout=timeout)
 
         with patch.object(svc, "_wrap_source", side_effect=patched_wrap):
             await svc.fetch_all("2026-01-01", "2026-01-15")
