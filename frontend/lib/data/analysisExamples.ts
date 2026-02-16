@@ -140,7 +140,7 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     decision: {
       recommendation: 'Participar',
       justification:
-        'Alta adequacao ao perfil. Valor expressivo, concorrencia moderada e prazo confortavel. Priorize a preparacao das amostras.',
+        'Alta adequação ao perfil. Valor expressivo, concorrência moderada e prazo confortável. Priorize a preparação das amostras.',
       type: 'go',
     },
   },
@@ -160,7 +160,7 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     decision: {
       recommendation: 'Avaliar com cautela',
       justification:
-        'Valor atrativo mas concorrencia intensa. Exige investimento significativo em equipe. So participar se ja possuir atestados compativeis.',
+        'Valor atrativo mas concorrência intensa. Exige investimento significativo em equipe. Só participar se já possuir atestados compatíveis.',
       type: 'evaluate',
     },
   },
@@ -218,7 +218,7 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     decision: {
       recommendation: 'Participar com prioridade',
       justification:
-        'Excelente adequacao. Nicho especializado com menor concorrencia. Diferencial tecnico em tecido antimicrobiano pode ser decisivo.',
+        'Excelente adequação. Nicho especializado com menor concorrência. Diferencial técnico em tecido antimicrobiano pode ser decisivo.',
       type: 'go',
     },
   },
@@ -229,10 +229,10 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
 // ============================================================================
 
 export const SECTION_COPY = {
-  title: 'SmartLic em Acao',
+  title: 'SmartLic em Ação',
   subtitle:
-    'Veja como analisamos oportunidades reais e sugerimos decisoes objetivas',
-  flow: ['Licitacao Real', 'Analise SmartLic', 'Decisao Sugerida'],
+    'Veja como analisamos oportunidades reais e sugerimos decisões objetivas',
+  flow: ['Licitação Real', 'Análise SmartLic', 'Decisão Sugerida'],
 };
 
 // ============================================================================

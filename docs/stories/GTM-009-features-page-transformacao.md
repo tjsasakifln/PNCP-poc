@@ -9,7 +9,7 @@
 | **Type** | GTM (Go-to-Market) |
 | **Dependencies** | GTM-008 (IA reposicionada) |
 | **Blocks** | — |
-| **Status** | Pending |
+| **Status** | In Progress |
 | **Created** | 2026-02-15 |
 | **Squad** | Content + Dev (Frontend) |
 
@@ -180,65 +180,65 @@ Comparação deve ser: **"perder licitações por falta de visibilidade"** vs **
 
 ### Narrativa de Transformação
 
-- [ ] **AC1:** Cada feature (1-5) narra transformação com estrutura "Sem SmartLic" → "Com SmartLic"
+- [x] **AC1:** Cada feature (1-5) narra transformação com estrutura "Sem SmartLic" → "Com SmartLic"
   - Estrutura clara: **Título (benefício)** → **Cenário ruim** → **Cenário bom**
   - Mínimo 2 parágrafos por feature (cenário ruim + cenário bom)
 
-- [ ] **AC2:** Features focam em resultado (ganhar vs perder licitações), não em tarefa (buscar vs não buscar)
+- [x] **AC2:** Features focam em resultado (ganhar vs perder licitações), não em tarefa (buscar vs não buscar)
   - ❌ "Encontre licitações 160x mais rápido"
   - ✅ "Você investe tempo onde tem chance real de ganhar"
 
 ### Eliminação de Métricas de Eficiência
 
-- [ ] **AC3:** ZERO métricas de eficiência (tempo, velocidade, percentuais) em headlines
+- [x] **AC3:** ZERO métricas de eficiência (tempo, velocidade, percentuais) em headlines
   - Eliminar: "160x", "95%", "3 minutos", "8 horas", "30 segundos"
   - Exceção: Métricas podem aparecer em suporte (não como headline)
 
-- [ ] **AC4:** Nenhuma feature usa "mais rápido", "economiza tempo", "em X minutos" como benefício principal
+- [x] **AC4:** Nenhuma feature usa "mais rápido", "economiza tempo", "em X minutos" como benefício principal
 
 ### Custo de Não Usar
 
-- [ ] **AC5:** Custo de não usar presente em **pelo menos 2 features** (idealmente todas)
+- [x] **AC5:** Custo de não usar presente em **pelo menos 2 features** (idealmente todas)
   - Exemplos: "Oportunidades passam despercebidas", "Você entra atrasado", "Tempo perdido lendo editais incompatíveis"
 
 ### Contexto Competitivo
 
-- [ ] **AC6:** Competição/concorrente mencionado em **pelo menos 1 feature** (idealmente 2)
+- [x] **AC6:** Competição/concorrente mencionado em **pelo menos 1 feature** (idealmente 2)
   - Exemplos: "Seu concorrente descobre antes", "Concorrentes já estão preparando propostas"
   - Cria urgência real (não artificial tipo "oferta limitada")
 
 ### Hero e CTA
 
-- [ ] **AC7:** Hero da features page usa headline focada em resultado
+- [x] **AC7:** Hero da features page usa headline focada em resultado
   - **Atual:** "Funcionalidades do SmartLic"
   - **Novo:** "O Que Muda no Seu Resultado"
 
-- [ ] **AC8:** CTA final usa verbo de resultado (não de eficiência)
+- [x] **AC8:** CTA final usa verbo de resultado (não de eficiência)
   - ❌ "Economizar Tempo"
   - ✅ "Começar a Ganhar Mais Licitações"
 
 ### Alinhamento com Outras Stories GTM
 
-- [ ] **AC9:** Features não mencionam "PNCP" explicitamente (alinha com GTM-007)
+- [x] **AC9:** Features não mencionam "PNCP" explicitamente (alinha com GTM-007)
   - Usa "fontes oficiais", "cobertura nacional", "dezenas de fontes"
 
-- [ ] **AC10:** IA descrita como "avaliação" e "orientação de decisão" (alinha com GTM-008)
+- [x] **AC10:** IA descrita como "avaliação" e "orientação de decisão" (alinha com GTM-008)
   - Não usa "resumo", "resumo executivo"
 
-- [ ] **AC11:** Trial descrito como "produto completo por 7 dias" (alinha com GTM-003)
+- [x] **AC11:** Trial descrito como "produto completo por 7 dias" (alinha com GTM-003)
   - CTA final menciona "Experimente SmartLic Pro" (plano único, alinha com GTM-002)
 
 ---
 
 ## Definition of Done
 
-- [ ] Todos os Acceptance Criteria marcados como concluídos
-- [ ] 5 features reescritas com estrutura de transformação
-- [ ] Hero e CTA final atualizados
-- [ ] ZERO métricas de eficiência em headlines (grep validation)
-- [ ] Custo de não usar presente em ≥2 features
-- [ ] Contexto competitivo presente em ≥1 feature
-- [ ] Build passa (TypeScript clean, lint clean)
+- [x] Todos os Acceptance Criteria marcados como concluídos
+- [x] 5 features reescritas com estrutura de transformação
+- [x] Hero e CTA final atualizados
+- [x] ZERO métricas de eficiência em headlines (grep validation)
+- [x] Custo de não usar presente em ≥2 features (5/5)
+- [x] Contexto competitivo presente em ≥1 feature (2/5: features 3 e 5)
+- [x] Build passa (TypeScript clean, lint clean)
 - [ ] Mobile responsive testado (375px, 768px, 1024px)
 - [ ] PR aberto, revisado e merged
 - [ ] Deploy em staging verificado (audit manual de copy e estrutura)
@@ -360,12 +360,13 @@ echo "\n✅ Validation complete"
 
 ## File List
 
-### Frontend (Must Update)
-- `frontend/app/features/page.tsx` (reescrita completa: hero, 5 features, CTA final)
+### Frontend (Updated)
+- `frontend/app/features/page.tsx` (reescrita completa: hero, CTA final — server component)
+- `frontend/app/features/FeaturesContent.tsx` (NEW: client component com 5 GlassCards de transformação)
+- `frontend/lib/copy/valueProps.ts` (features object reescrito com campos without/withSmartLic/gemAccent)
 
-### Frontend (Reference for Copy Alignment)
-- `frontend/lib/copy/valueProps.ts` (garantir consistência de linguagem)
-- `frontend/app/components/landing/HowItWorks.tsx` (consistência de narrativa)
+### Frontend (Quick Fix — cedilha/acentos)
+- `frontend/lib/data/analysisExamples.ts` (Ação, decisões, Licitação, Análise, adequação, concorrência)
 
 ---
 

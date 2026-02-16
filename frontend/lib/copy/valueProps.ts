@@ -118,75 +118,50 @@ export const valueProps = {
 // ============================================================================
 
 export const features = {
-  sectorSearch: {
-    title: "Busca por Setor, Não por Termos",
-    painPoint:
-      "Outras plataformas exigem que você adivinhe dezenas de palavras-chave",
-    solution:
-      "No SmartLic, você seleciona seu setor e nosso algoritmo encontra todas as variações",
-    details:
-      "Selecione seu setor de atuação e receba oportunidades específicas do seu mercado. Sem adivinhação de termos, sem resultados fora de contexto.",
-    benefits: [
-      "Seleção intuitiva por setor de atuação",
-      "Nunca perca oportunidades por terminologia",
-      "Cobertura abrangente do seu mercado",
-    ],
+  // GTM-009: Transformation narratives — "Sem SmartLic" → "Com SmartLic"
+  prioritization: {
+    title: "Foco no Que Realmente Importa",
+    without:
+      "Você gasta tempo lendo editais incompatíveis com seu perfil, perde oportunidades boas por não saber que existem.",
+    withSmartLic:
+      "O sistema avalia cada oportunidade com base no seu perfil (porte, região, ticket médio) e indica quais merecem sua atenção. Você para de desperdiçar tempo com licitações ruins e foca nas que pode ganhar.",
+    gemAccent: "sapphire" as const,
   },
 
-  intelligentFiltering: {
-    title: "Filtragem Inteligente com Precisão",
-    painPoint:
-      "Outras plataformas entregam milhares de resultados irrelevantes",
-    solution:
-      "No SmartLic, algoritmos proprietários garantem que você analise apenas o que realmente importa",
-    details:
-      "Algoritmos proprietários aplicam múltiplas camadas de filtragem: setor, valor, status, exclusão de falsos positivos. Apenas oportunidades relevantes para o seu perfil.",
-    benefits: [
-      "Foco total no que é relevante",
-      "Alta confiança nos resultados",
-      "Decisões mais rápidas e assertivas",
-    ],
+  adequacy: {
+    title: "Você Decide Sem Ler 100 Páginas de Edital",
+    without:
+      "Você baixa edital de 120 páginas, lê por 40 minutos, descobre que requisitos são incompatíveis. Tempo perdido.",
+    withSmartLic:
+      "Não precisa ler editais para decidir se vale a pena. O SmartLic avalia requisitos, prazos e valores contra seu perfil e diz: \"Vale a pena\" ou \"Pule esta\". Você decide em segundos com base em critérios objetivos.",
+    gemAccent: "emerald" as const,
   },
 
-  multiSourceConsolidation: {
-    title: "Consolidação Automática de Fontes Oficiais",
-    painPoint:
-      "Outras plataformas exigem que você busque em dezenas de portais separadamente",
-    solution:
-      "No SmartLic, consolidamos dezenas de fontes oficiais em uma única busca automática",
-    details:
-      "Monitoramento automático de fontes federais, estaduais e municipais. Cobertura nacional completa sem precisar acessar múltiplos portais.",
-    benefits: [
-      "Nunca perca oportunidades em outros portais",
-      "Visibilidade completa do mercado",
-      "Monitoramento contínuo de todas as fontes",
-    ],
+  nationalCoverage: {
+    title: "Você Nunca Perde uma Oportunidade Por Não Saber Que Ela Existe",
+    without:
+      "Você consulta 3-4 fontes manualmente. Oportunidades em portais estaduais passam despercebidas. Seu concorrente descobre antes.",
+    withSmartLic:
+      "Consulta em tempo real dezenas de fontes oficiais, federais e estaduais. Cobertura nacional completa. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
+    gemAccent: "emerald" as const,
   },
 
   decisionIntelligence: {
-    title: "Inteligência de Decisão por IA",
-    painPoint: "Outras plataformas exigem leitura manual de editais extensos",
-    solution: "No SmartLic, IA avalia cada oportunidade e indica se vale a pena",
-    details:
-      "IA analisa oportunidades e extrai informações críticas: valor estimado, prazo, requisitos de elegibilidade, pontos de atenção. Avaliação objetiva para decisão informada.",
-    benefits: [
-      "Avaliação objetiva de cada oportunidade",
-      "Decisões go/no-go informadas",
-      "Nunca perca detalhes críticos",
-    ],
+    title: "Decisões Melhores, Não Apenas Mais Rápidas",
+    without:
+      "Você encontra licitações, mas não sabe quais priorizar. Entra em todas e se dispersa. Taxa de sucesso baixa.",
+    withSmartLic:
+      "Avalie uma oportunidade em segundos com base em critérios objetivos (adequação, competitividade, requisitos). Não é sobre ser rápido — é sobre decidir melhor. Você investe tempo onde tem chance real de ganhar.",
+    gemAccent: "sapphire" as const,
   },
 
   competitiveAdvantage: {
-    title: "Vantagem Competitiva Real",
-    painPoint: "Sem visibilidade, você perde oportunidades para concorrentes",
-    solution: "No SmartLic, posicione-se antes da concorrência com visibilidade completa",
-    details:
-      "Quem tem visibilidade completa do mercado se posiciona primeiro. Receba oportunidades priorizadas assim que são publicadas. Sua vantagem é saber antes.",
-    benefits: [
-      "Posicione-se antes da concorrência",
-      "Oportunidades assim que são publicadas",
-      "Vantagem competitiva sustentável",
-    ],
+    title: "Seu Concorrente Ainda Está Procurando. Você Já Está Se Posicionando.",
+    without:
+      "Você descobre oportunidades dias depois da publicação. Concorrentes já estão preparando propostas. Você entra atrasado.",
+    withSmartLic:
+      "Notificações em tempo real de novas oportunidades compatíveis com seu perfil. Você descobre antes, se posiciona antes, compete melhor. Quem encontra primeiro tem vantagem.",
+    gemAccent: "ruby" as const,
   },
 };
 
@@ -369,16 +344,16 @@ export const email = {
 // ============================================================================
 
 export const analysisExamples = {
-  sectionTitle: "SmartLic em Acao",
+  sectionTitle: "SmartLic em Ação",
   sectionSubtitle:
-    "Veja como analisamos oportunidades reais e sugerimos decisoes objetivas",
-  flow: ["Licitacao Real", "Analise SmartLic", "Decisao Sugerida"],
+    "Veja como analisamos oportunidades reais e sugerimos decisões objetivas",
+  flow: ["Licitação Real", "Análise SmartLic", "Decisão Sugerida"],
   labels: {
     timeline: "Prazo",
     requirements: "Requisitos",
-    competitiveness: "Concorrencia",
+    competitiveness: "Concorrência",
     score: "Compatibilidade",
-    decision: "Decisao Sugerida",
+    decision: "Decisão Sugerida",
   },
 };
 
