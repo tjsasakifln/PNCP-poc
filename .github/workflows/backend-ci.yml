@@ -38,6 +38,7 @@ jobs:
       - name: Run security vulnerability scan
         run: |
           cd backend
+          pip install "safety>=3,<4" --quiet || true
           safety check --json || echo "⚠️ Vulnerabilities found - review required"
 
       - name: Run mypy type checking

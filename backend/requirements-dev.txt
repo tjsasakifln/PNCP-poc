@@ -23,6 +23,3 @@ psycopg2-binary==2.9.10
 # Code quality
 ruff==0.9.6
 mypy==1.15.0
-
-# Security scanning
-safety==3.3.1
