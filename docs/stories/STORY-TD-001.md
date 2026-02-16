@@ -120,9 +120,9 @@ CREATE POLICY "Service role full access on pipeline_items"
 ## Definition of Done
 - [x] Codigo implementado e revisado
 - [x] Testes passando (unitario + integracao) — 15 novos tests, 67/67 passando, zero regressoes
-- [ ] CI/CD green
-- [ ] Documentacao atualizada (resultado das queries V1-V5 documentado)
-- [ ] Deploy em producao verificado (queries V6-V8)
+- [ ] CI/CD green — pendente verificação
+- [ ] Documentacao atualizada (resultado das queries V1-V5 documentado) — pendente execução em prod
+- [ ] Deploy em producao verificado (queries V6-V8) — pendente deploy + verificação
 - [x] Zero matches de `plan_type = "free"` (sem `_trial`) no backend ✓
 
 ## File List (Arquivos Modificados)

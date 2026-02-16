@@ -211,7 +211,7 @@ async def buscar_licitacoes(
         raise HTTPException(
             status_code=503,
             detail=(
-                f"O PNCP está limitando requisições. "
+                f"As fontes de dados estão temporariamente limitando consultas. "
                 f"Aguarde {retry_after} segundos e tente novamente."
             ),
             headers={"Retry-After": str(retry_after)},
@@ -225,9 +225,9 @@ async def buscar_licitacoes(
         raise HTTPException(
             status_code=502,
             detail=(
-                "O Portal Nacional de Contratações (PNCP) está temporariamente "
-                "indisponível ou retornou um erro. Tente novamente em alguns "
-                "instantes ou reduza o número de estados selecionados."
+                "Nossas fontes de dados estão temporariamente indisponíveis. "
+                "Tente novamente em alguns instantes ou reduza o número "
+                "de estados selecionados."
             ),
         )
 

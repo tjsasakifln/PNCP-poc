@@ -73,6 +73,6 @@ Esta story resolve problemas de higiene do repositorio que afetam a experiencia 
 ## Definition of Done
 - [x] Codigo implementado e revisado
 - [x] Testes passando (unitario + integracao)
-- [ ] CI/CD green
+- [ ] CI/CD green — pendente verificação
 - [x] `git status` limpo (sem .png untracked)
-- [ ] Deploy em staging verificado
+- [ ] Deploy em staging verificado — pendente deploy

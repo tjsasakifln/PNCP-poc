@@ -123,7 +123,7 @@ function HomePageContent() {
               SmartLic<span className="text-brand-blue">.tech</span>
             </Link>
             <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-3">
-              Busca inteligente de licitações
+              Inteligência de decisão em licitações
             </span>
           </div>
           <div className="flex items-center gap-3">
