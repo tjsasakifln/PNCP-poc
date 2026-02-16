@@ -7,7 +7,7 @@ STORY-180: Google Sheets Export - OAuth Routes Tests
 """
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from datetime import datetime, timezone, timedelta
@@ -17,7 +17,6 @@ import base64
 @pytest.fixture
 def app():
     """Create test FastAPI app with OAuth routes."""
-    from fastapi import FastAPI
     from routes.auth_oauth import router
 
     test_app = FastAPI()
@@ -81,7 +80,7 @@ class TestGoogleOAuthInitiate:
 
             mock_get_url.side_effect = capture_state
 
-            response = client.get("/api/auth/google?redirect=/buscar", follow_redirects=False)
+            client.get("/api/auth/google?redirect=/buscar", follow_redirects=False)
 
             # Decode state and verify it contains user_id
             assert captured_state is not None
@@ -114,7 +113,7 @@ class TestGoogleOAuthCallback:
             mock_exchange.return_value = mock_token_response
 
             with patch("routes.auth_oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
-                response = client.get(f"/api/auth/google/callback?code=auth_code_123&state={state}")
+                client.get(f"/api/auth/google/callback?code=auth_code_123&state={state}")
 
                 # Should have called exchange_code_for_tokens
                 mock_exchange.assert_called_once()
@@ -133,7 +132,7 @@ class TestGoogleOAuthCallback:
             mock_exchange.return_value = mock_token_response
 
             with patch("routes.auth_oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
-                response = client.get(f"/api/auth/google/callback?code=auth_code_123&state={state}")
+                client.get(f"/api/auth/google/callback?code=auth_code_123&state={state}")
 
                 # Verify save_user_tokens was called with correct params
                 call_args = mock_save.call_args

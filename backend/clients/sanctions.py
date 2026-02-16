@@ -26,7 +26,7 @@ import os
 import re
 import time
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Tuple

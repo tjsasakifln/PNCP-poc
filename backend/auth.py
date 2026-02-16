@@ -25,7 +25,6 @@ STORY-227 Track 1: ES256+JWKS support
 - Key detection order: JWKS endpoint > PEM key > HS256 symmetric secret
 """
 
-import logging
 import time
 import os
 import hashlib

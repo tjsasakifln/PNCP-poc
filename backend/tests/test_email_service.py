@@ -8,10 +8,8 @@ AC22: Email send failure is logged but does not crash the triggering operation
 AC23: Unsubscribe updates preference
 """
 
-import threading
 import time
 from unittest.mock import patch, MagicMock
-import pytest
 
 import email_service
 

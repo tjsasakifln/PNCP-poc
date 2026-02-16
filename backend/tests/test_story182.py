@@ -7,7 +7,6 @@ Tests for:
 - AC5: Pluralization (backend helper)
 """
 
-import pytest
 from datetime import date, timedelta
 
 

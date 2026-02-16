@@ -5,10 +5,8 @@ Tests cover:
 - GET /me/export - Data export endpoint (AC27)
 """
 
-import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch
-import pytest
 from fastapi.testclient import TestClient
 from main import app
 from auth import require_auth

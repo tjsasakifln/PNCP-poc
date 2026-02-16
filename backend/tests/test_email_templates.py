@@ -4,7 +4,6 @@ Tests for email templates — STORY-225
 Validates all email templates render correctly with proper content.
 """
 
-import pytest
 
 from templates.emails.welcome import render_welcome_email
 from templates.emails.quota import render_quota_warning_email, render_quota_exhausted_email

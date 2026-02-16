@@ -1302,7 +1302,7 @@ class AsyncPNCPClient:
         if _circuit_breaker.is_degraded:
             logger.warning(
                 "PNCP circuit breaker degraded — trying with reduced concurrency "
-                f"(3 UFs, 45s timeout)"
+                "(3 UFs, 45s timeout)"
             )
             # Reorder UFs by population priority
             ufs_ordered = sorted(ufs, key=lambda u: UFS_BY_POPULATION.index(u) if u in UFS_BY_POPULATION else 99)

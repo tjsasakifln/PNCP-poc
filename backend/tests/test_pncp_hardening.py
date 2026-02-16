@@ -26,7 +26,6 @@ from pncp_client import (
     PNCP_TIMEOUT_PER_MODALITY,
     PNCP_MODALITY_RETRY_BACKOFF,
 )
-from config import RetryConfig
 from exceptions import PNCPAPIError
 
 
@@ -230,7 +229,6 @@ class TestPerModalityTimeout:
         ):
             # Use the real _fetch_modality_with_timeout but patch the timeout
             # to be very short for the test
-            original_method = AsyncPNCPClient._fetch_modality_with_timeout
 
             async def fast_timeout_method(self_inner, uf, data_inicial, data_final,
                                            modalidade, status=None, max_pages=500):

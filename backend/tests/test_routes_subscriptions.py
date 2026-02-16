@@ -3,9 +3,7 @@
 STORY-224 Track 4 (AC25): Subscription billing period update route coverage.
 """
 
-import pytest
 from unittest.mock import Mock, patch, AsyncMock
-from decimal import Decimal
 from datetime import datetime, timezone, timedelta
 
 from fastapi.testclient import TestClient

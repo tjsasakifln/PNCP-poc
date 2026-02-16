@@ -4,7 +4,7 @@ Provides common mocks for authentication, Supabase, and external APIs.
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock
+from unittest.mock import Mock, AsyncMock
 from datetime import datetime, timezone, timedelta
 
 
@@ -93,13 +93,11 @@ def mock_google_sheets_service():
 @pytest.fixture
 def override_require_auth(mock_user):
     """Override require_auth dependency for route tests."""
-    from auth import require_auth
 
     def mock_auth():
         return mock_user
 
     # Store original for restoration
-    original_auth = require_auth
 
     yield mock_auth
 

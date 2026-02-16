@@ -16,7 +16,6 @@ from datetime import datetime, timezone
 @pytest.fixture
 def app():
     """Create test FastAPI app with export routes."""
-    from fastapi import FastAPI
     from routes.export_sheets import router
 
     test_app = FastAPI()
@@ -170,7 +169,7 @@ class TestExportToGoogleSheets:
                 mock_exporter_class.return_value = mock_exporter
 
                 with patch("routes.export_sheets._save_export_history", new_callable=AsyncMock) as mock_save:
-                    response = client.post(
+                    client.post(
                         "/api/export/google-sheets",
                         json={
                             "licitacoes": mock_licitacoes,

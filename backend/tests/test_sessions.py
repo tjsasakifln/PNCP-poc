@@ -8,10 +8,8 @@ Tests cover:
 - AC16: Retry (max 1) for transient DB errors on history save (uses asyncio.sleep)
 """
 
-import asyncio
 import logging
-from unittest.mock import Mock, patch, call, AsyncMock
-import pytest
+from unittest.mock import Mock, patch, AsyncMock
 
 from quota import save_search_session
 

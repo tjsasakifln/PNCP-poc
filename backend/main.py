@@ -38,8 +38,7 @@ from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feat
 from pncp_client import PNCPClient
 from sectors import list_sectors
 from schemas import (
-    RootResponse, HealthResponse, HealthDependencies,
-    SourcesHealthResponse, SourceInfo, SetoresResponse, DebugPNCPResponse,
+    RootResponse, HealthResponse, SourcesHealthResponse, SetoresResponse, DebugPNCPResponse,
 )
 from middleware import CorrelationIDMiddleware, SecurityHeadersMiddleware, DeprecationMiddleware  # STORY-202 SYS-M01, STORY-210 AC10, STORY-226 AC14
 from redis_pool import startup_redis, shutdown_redis  # STORY-217: Redis pool lifecycle

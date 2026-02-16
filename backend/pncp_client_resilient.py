@@ -16,7 +16,7 @@ import time
 from typing import Any, Callable, Dict, List
 
 from config import DEFAULT_MODALIDADES, RetryConfig
-from pncp_client import AsyncPNCPClient, PNCPClient, STATUS_PNCP_MAP, PNCPAPIError
+from pncp_client import AsyncPNCPClient, STATUS_PNCP_MAP, PNCPAPIError
 from pncp_resilience import (
     get_timeout_manager,
     get_circuit_breaker,

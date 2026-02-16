@@ -11,10 +11,9 @@ Related Files:
 - backend/authorization.py: _get_admin_ids, _check_user_roles, _is_admin, _has_master_access, _get_master_quota_info
 """
 
-import os
 import time
 import pytest
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import Mock, patch
 from fastapi import HTTPException
 
 
@@ -189,7 +188,7 @@ class TestCheckUserRoles:
         mock_execute_fallback = Mock(return_value=mock_response_fallback)
         mock_single_fallback = Mock(return_value=Mock(execute=mock_execute_fallback))
         mock_eq_fallback = Mock(return_value=Mock(single=mock_single_fallback))
-        mock_select_fallback = Mock(return_value=Mock(eq=mock_eq_fallback))
+        Mock(return_value=Mock(eq=mock_eq_fallback))
 
         # First select() with is_admin raises
         # Second select() without is_admin succeeds

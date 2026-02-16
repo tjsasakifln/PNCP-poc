@@ -5,19 +5,17 @@ Baseline: 21 pre-existing backend test failures.
 """
 
 import asyncio
-import json
 import time
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pncp_client import (
     PNCPCircuitBreaker,
     AsyncPNCPClient,
     ParallelFetchResult,
     get_circuit_breaker,
-    UFS_BY_POPULATION,
 )
-from search_pipeline import _compute_cache_key, _read_cache, _write_cache, SEARCH_CACHE_TTL
+from search_pipeline import _compute_cache_key, _read_cache, _write_cache
 from source_config.sources import SingleSourceConfig, SourceCode, SourceCredentials
 from schemas import BuscaRequest
 
@@ -213,7 +211,7 @@ async def test_t6_circuit_breaker_uses_lock():
 
     # Verify record_failure acquires lock
     with patch.object(breaker._lock, 'acquire', new_callable=AsyncMock) as mock_acquire:
-        with patch.object(breaker._lock, 'release') as mock_release:
+        with patch.object(breaker._lock, 'release'):
             # Simulate lock acquisition
             mock_acquire.return_value = None
             breaker._lock._locked = False  # Ensure lock can be acquired
@@ -296,7 +294,6 @@ def test_t8_cache_returns_data_structure(mock_busca_request):
 
 def test_t9_source_unavailable_without_credentials():
     """T9: is_available() retorna False para fonte enabled sem API key."""
-    from dataclasses import dataclass
 
     # Create source config with enabled=True but no credentials
     # SingleSourceConfig is a dataclass that requires name and base_url
@@ -406,7 +403,7 @@ async def test_t11_per_uf_status_callback_invoked():
 
             # Patch health_canary to succeed
             with patch.object(client, 'health_canary', new_callable=AsyncMock, return_value=True):
-                result = await client.buscar_todas_ufs_paralelo(
+                await client.buscar_todas_ufs_paralelo(
                     ufs=["SP", "RJ"],
                     data_inicial="2026-01-01",
                     data_final="2026-01-31",
@@ -443,7 +440,7 @@ async def test_t12_auto_retry_failed_ufs():
     call_count = {}
 
     async def mock_fetch_page(data_inicial, data_final, modalidade, uf=None, pagina=1, tamanho=20, status=None):
-        key = f"{uf}-{call_count.get(uf, 0)}"
+        f"{uf}-{call_count.get(uf, 0)}"
         call_count[uf] = call_count.get(uf, 0) + 1
 
         if uf == "MG" and call_count[uf] == 1:
@@ -472,9 +469,9 @@ async def test_t12_auto_retry_failed_ufs():
     assert "SP" in result.succeeded_ufs
 
     # Check that retry-related status events were emitted
-    retrying_events = [e for e in status_events if e["status"] == "retrying"]
-    recovered_events = [e for e in status_events if e["status"] == "recovered"]
-    failed_events = [e for e in status_events if e["status"] == "failed"]
+    [e for e in status_events if e["status"] == "retrying"]
+    [e for e in status_events if e["status"] == "recovered"]
+    [e for e in status_events if e["status"] == "failed"]
 
     # MG either recovered or stayed failed (depends on timing)
     # But at least fetching and one of retrying/failed should fire

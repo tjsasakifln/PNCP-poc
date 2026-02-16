@@ -7,7 +7,6 @@ Tests cover:
 - Cross-industry scenarios
 """
 
-import pytest
 from term_parser import parse_search_terms
 
 

@@ -1,7 +1,6 @@
 """Unit tests for SearchPipeline Stages 4-5 (FilterResults + EnrichResults)."""
 
 import pytest
-import asyncio
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock, AsyncMock
 from search_context import SearchContext

@@ -9,7 +9,7 @@ STORY-184: Lead Prospecting Workflow
 """
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 import re
 
 from schemas_lead_prospecting import ContactData, StrategicIntelligence

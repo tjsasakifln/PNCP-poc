@@ -1,7 +1,6 @@
 """Unit tests for SearchPipeline Stages 6-7 + helper functions."""
 
 import pytest
-import asyncio
 from io import BytesIO
 from datetime import date, timedelta
 from types import SimpleNamespace
@@ -15,7 +14,7 @@ from search_pipeline import (
     _calcular_dias_restantes,
     _convert_to_licitacao_items,
 )
-from schemas import LicitacaoItem, ResumoLicitacoes, ResumoEstrategico, BuscaResponse
+from schemas import LicitacaoItem, ResumoEstrategico, BuscaResponse
 
 
 # ============================================================================

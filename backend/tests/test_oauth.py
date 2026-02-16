@@ -7,7 +7,7 @@ STORY-180: Google Sheets Export - OAuth Infrastructure Tests
 """
 
 import pytest
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime, timezone, timedelta
 import os
 
@@ -52,7 +52,6 @@ class TestTokenEncryption:
     def test_decrypt_invalid_ciphertext_raises_error(self):
         """Should raise error when decrypting invalid ciphertext."""
         from oauth import decrypt_aes256
-        from cryptography.fernet import InvalidToken
 
         invalid_ciphertext = "invalid_base64_not_encrypted"
 
@@ -348,7 +347,7 @@ class TestGetUserGoogleToken:
 
                 with patch("oauth.refresh_google_token", new_callable=AsyncMock, return_value=mock_refresh_response):
                     with patch("oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
-                        result = await get_user_google_token(user_id="user-123")
+                        await get_user_google_token(user_id="user-123")
 
                         # Should have called save_user_tokens with new token
                         mock_save.assert_called_once()

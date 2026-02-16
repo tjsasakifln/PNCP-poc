@@ -44,7 +44,7 @@ def test_pncp_contratos_endpoint():
 
         if response.status_code == 200:
             data = response.json()
-            print(f"\nResponse Structure:")
+            print("\nResponse Structure:")
             print(f"- Keys: {list(data.keys())}")
 
             if "data" in data:
@@ -52,12 +52,12 @@ def test_pncp_contratos_endpoint():
                 print(f"- Total contracts returned: {len(contracts)}")
 
                 if contracts:
-                    print(f"\nSample Contract (First Result):")
+                    print("\nSample Contract (First Result):")
                     sample = contracts[0]
                     print(json.dumps(sample, indent=2, ensure_ascii=False)[:2000])
 
                     # Check for fields indicating homologation status
-                    print(f"\nRelevant Fields:")
+                    print("\nRelevant Fields:")
                     print(f"- situacaoContrato: {sample.get('situacaoContrato', 'N/A')}")
                     print(f"- niFornecedor (CNPJ): {sample.get('niFornecedor', 'N/A')}")
                     print(f"- valorInicial: {sample.get('valorInicial', 'N/A')}")
@@ -66,12 +66,12 @@ def test_pncp_contratos_endpoint():
 
             # Check pagination info
             if "totalPaginas" in data:
-                print(f"\nPagination Info:")
+                print("\nPagination Info:")
                 print(f"- Total Pages: {data['totalPaginas']}")
                 print(f"- Current Page: {data.get('paginaAtual', 'N/A')}")
                 print(f"- Total Records: {data.get('totalRegistros', 'N/A')}")
         else:
-            print(f"\nError Response:")
+            print("\nError Response:")
             print(response.text[:500])
 
     except Exception as e:
@@ -96,7 +96,7 @@ def test_pncp_contratos_endpoint():
             data = response.json()
             print(f"Total contracts with 'situacao=homologado': {len(data.get('data', []))}")
         else:
-            print(f"Failed - Status parameter may not be supported")
+            print("Failed - Status parameter may not be supported")
             print(f"Response: {response.text[:200]}")
 
     except Exception as e:
@@ -123,7 +123,7 @@ def test_pncp_contratos_endpoint():
 
         if response.status_code == 200:
             data = response.json()
-            print(f"\nResponse Structure:")
+            print("\nResponse Structure:")
             print(f"- Keys: {list(data.keys())}")
 
             if "data" in data:
@@ -132,7 +132,7 @@ def test_pncp_contratos_endpoint():
 
                 if licitacoes:
                     sample = licitacoes[0]
-                    print(f"\nSample Licitação Fields:")
+                    print("\nSample Licitação Fields:")
                     print(f"- Keys: {list(sample.keys())}")
 
                     # Look for status/situacao fields

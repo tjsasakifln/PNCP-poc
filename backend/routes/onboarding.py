@@ -6,15 +6,14 @@ immediate value (time-to-first-value < 5 minutes).
 """
 
 import asyncio
-import logging
 import time as sync_time
 import uuid
 from datetime import date, timedelta
 from types import SimpleNamespace
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 
-from schemas import BuscaRequest, BuscaResponse, FirstAnalysisRequest, FirstAnalysisResponse
+from schemas import BuscaRequest, FirstAnalysisRequest, FirstAnalysisResponse
 from auth import require_auth
 from config import ENABLE_NEW_PRICING
 from pncp_client import PNCPClient, buscar_todas_ufs_paralelo

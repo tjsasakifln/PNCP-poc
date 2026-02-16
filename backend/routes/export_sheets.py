@@ -10,10 +10,8 @@ STORY-180: Google Sheets Export
 
 import logging
 from datetime import datetime, timezone
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from auth import require_auth
 from oauth import get_user_google_token

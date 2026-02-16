@@ -7,7 +7,7 @@ STORY-180: Google Sheets Export - Exporter Class Tests
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock, call
+from unittest.mock import Mock, patch
 from fastapi import HTTPException
 
 
@@ -385,7 +385,6 @@ class TestApplyFormatting:
         """Should log but not fail if formatting fails."""
         from google_sheets import GoogleSheetsExporter
         from googleapiclient.errors import HttpError
-        from fastapi import HTTPException
 
         mock_service = Mock()
         mock_spreadsheets = Mock()

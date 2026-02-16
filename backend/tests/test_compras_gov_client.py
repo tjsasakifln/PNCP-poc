@@ -1,8 +1,7 @@
 """Tests for ComprasGovAdapter (STORY-177 AC2)."""
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
 
 from clients.compras_gov_client import ComprasGovAdapter
 from clients.base import SourceStatus, UnifiedProcurement

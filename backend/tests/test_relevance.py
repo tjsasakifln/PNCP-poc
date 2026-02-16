@@ -293,7 +293,7 @@ class TestEdgeCasesRelevance:
     def test_negative_matches_guard(self):
         """Negative matched_count should be guarded (if validation allows)."""
         # This should ideally not happen, but formula handles gracefully
-        score = score_relevance(matched_count=-1, total_terms=5, phrase_match_count=0)
+        score_relevance(matched_count=-1, total_terms=5, phrase_match_count=0)
         # -1/5 = -0.2, but min(1.0, max(0.0, ...)) ensures >= 0
         # Wait, the formula doesn't have max(0, ...). Let me check the implementation.
         # Assuming formula is: min(1.0, matched/total + 0.15*phrase)

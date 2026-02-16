@@ -19,7 +19,6 @@ class TestHTMLErrorResponse:
     async def test_handles_html_redirect_on_expired_token(self):
         """Should handle HTML redirect when token is expired."""
         from google_sheets import GoogleSheetsExporter
-        from googleapiclient.errors import HttpError
 
         mock_service = Mock()
         mock_spreadsheets = Mock()
@@ -50,7 +49,6 @@ class TestHTMLErrorResponse:
     async def test_handles_html_500_error_page(self):
         """Should handle HTML 500 error page from Google."""
         from google_sheets import GoogleSheetsExporter
-        from googleapiclient.errors import HttpError
 
         mock_service = Mock()
         mock_spreadsheets = Mock()
@@ -82,7 +80,6 @@ class TestHTMLErrorResponse:
     async def test_handles_html_429_rate_limit(self):
         """Should handle HTML 429 rate limit response."""
         from google_sheets import GoogleSheetsExporter
-        from googleapiclient.errors import HttpError
 
         mock_service = Mock()
         mock_spreadsheets = Mock()
@@ -182,7 +179,7 @@ class TestExportEndpointHTMLError:
                 from googleapiclient.errors import HttpError
                 mock_error_response = Mock()
                 mock_error_response.status = 500
-                html_error = HttpError(
+                HttpError(
                     resp=mock_error_response,
                     content=b'<!DOCTYPE html><html>Error</html>'
                 )

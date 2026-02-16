@@ -21,13 +21,13 @@ import json
 import logging
 import os
 import time as sync_time_module
-from datetime import datetime, timezone
+from datetime import datetime
 from types import SimpleNamespace
 
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
-from schemas import BuscaResponse, FilterStats, ResumoLicitacoes, ResumoEstrategico, LicitacaoItem, DataSourceStatus
+from schemas import BuscaResponse, FilterStats, ResumoEstrategico, LicitacaoItem, DataSourceStatus
 from pncp_client import get_circuit_breaker, PNCPDegradedError, ParallelFetchResult
 from consolidation import AllSourcesFailedError
 from term_parser import parse_search_terms
@@ -1154,7 +1154,7 @@ class SearchPipeline:
         Graceful degradation: if sanctions check fails, items are
         left without sanctions data (supplier_sanctions=None).
         """
-        from services.sanctions_service import SanctionsService, SanctionsSummary
+        from services.sanctions_service import SanctionsService
         from schemas import SanctionsSummarySchema
 
         try:
@@ -1245,8 +1245,6 @@ class SearchPipeline:
                 sources_succeeded = ["PNCP"]
             else:
                 sources_failed_with_reason = [{"source": "PNCP", "reason": "unknown"}]
-
-        is_partial = len(sources_failed_with_reason) > 0 and len(sources_succeeded) > 0
 
         logger.info(json.dumps({
             "event": "search_complete",

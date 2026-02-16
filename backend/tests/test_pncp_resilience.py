@@ -6,8 +6,6 @@ Task #3: Test timeout prevention, circuit breaker, and caching
 
 import asyncio
 import pytest
-from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 from pncp_resilience import (
     AdaptiveTimeoutManager,
@@ -15,7 +13,6 @@ from pncp_resilience import (
     CircuitState,
     CircuitBreakerConfig,
     PNCPCache,
-    UFPerformanceMetrics,
 )
 
 

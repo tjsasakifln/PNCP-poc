@@ -17,7 +17,7 @@ import asyncio
 import logging
 import os
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, Optional, Set
 
 import httpx

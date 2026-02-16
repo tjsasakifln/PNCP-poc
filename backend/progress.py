@@ -7,6 +7,8 @@ Supports two modes:
 The mode is determined by REDIS_URL environment variable and connection health.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -244,7 +246,7 @@ async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
         logger.warning(f"Failed to store tracker metadata in Redis: {e}")
 
 
-async def subscribe_to_events(search_id: str) -> Optional["redis.asyncio.client.PubSub"]:
+async def subscribe_to_events(search_id: str) -> Optional["redis.asyncio.client.PubSub"]:  # noqa: F821
     """Subscribe to Redis pub/sub channel for progress events.
 
     Returns:

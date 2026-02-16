@@ -13,9 +13,8 @@ STORY-224: OAuth test suite completion
 """
 
 import pytest
-import os
 import secrets
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from datetime import datetime, timezone, timedelta
@@ -24,7 +23,6 @@ from datetime import datetime, timezone, timedelta
 @pytest.fixture
 def app():
     """Create test FastAPI app with OAuth routes."""
-    from fastapi import FastAPI
     from routes.auth_oauth import router
 
     test_app = FastAPI()
@@ -169,7 +167,7 @@ class TestAC9OAuthStateNonce:
             return f"https://oauth.google.com?state={state}"
 
         with patch("routes.auth_oauth.get_authorization_url", side_effect=capture_auth_url):
-            response = client.get("/api/auth/google?redirect=/buscar", follow_redirects=False)
+            client.get("/api/auth/google?redirect=/buscar", follow_redirects=False)
 
             # Verify nonce was stored
             assert captured_state in _oauth_nonce_store

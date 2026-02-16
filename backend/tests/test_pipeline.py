@@ -3,10 +3,9 @@
 STORY-250: Backend pipeline CRUD routes with access control.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 
 from auth import require_auth
 from routes.pipeline import router

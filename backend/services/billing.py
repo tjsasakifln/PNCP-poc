@@ -6,7 +6,7 @@ GTM-002: Removed pro-rata calculations — Stripe handles proration automaticall
 
 import os
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, Literal
 
 logger = logging.getLogger(__name__)

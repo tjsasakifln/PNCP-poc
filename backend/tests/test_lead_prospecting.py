@@ -4,9 +4,8 @@ STORY-224 Track 5: Lead Prospecting Tests (AC28-AC30)
 Tests for lead scoring and deduplication modules.
 """
 
-import pytest
 from decimal import Decimal
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from pathlib import Path
 from typing import List
 
@@ -19,8 +18,6 @@ from schemas_lead_prospecting import (
     DependencyScore,
     QualificationScore,
     LeadProfile,
-    LeadHistory,
-    LeadHistoryFile,
     StrategicIntelligence,
 )
 
@@ -539,7 +536,7 @@ class TestLeadDeduplicator:
 
         # Verify update
         history = deduplicator.load_history()
-        updated_lead = next(l for l in history.leads if l.cnpj == "12345678000190")
+        updated_lead = next(lead for lead in history.leads if lead.cnpj == "12345678000190")
 
         assert updated_lead.contact_made is True
         assert updated_lead.converted is False
@@ -572,14 +569,14 @@ class TestLeadDeduplicator:
         assert len(history.leads) == 2
 
         # Verify first lead
-        lead1 = next(l for l in history.leads if l.cnpj == "12345678000190")
+        lead1 = next(lead for lead in history.leads if lead.cnpj == "12345678000190")
         assert lead1.company_name == "Company A"
         assert lead1.contact_made is True
         assert lead1.converted is False
         assert lead1.notes == "Initial contact made"
 
         # Verify second lead
-        lead2 = next(l for l in history.leads if l.cnpj == "98765432000100")
+        lead2 = next(lead for lead in history.leads if lead.cnpj == "98765432000100")
         assert lead2.company_name == "Company B"
         assert lead2.contact_made is False
         assert lead2.converted is False

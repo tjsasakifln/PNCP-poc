@@ -15,7 +15,6 @@ Run from backend/:
 """
 
 import asyncio
-import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -466,7 +465,7 @@ class TestNoAsyncioRunInProduction:
                     violations.append(f"{relative}:{line_num}: {stripped}")
 
         assert violations == [], (
-            f"Found asyncio.run() in production code (AC15 violation):\n"
+            "Found asyncio.run() in production code (AC15 violation):\n"
             + "\n".join(f"  - {v}" for v in violations)
         )
 

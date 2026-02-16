@@ -5,7 +5,6 @@ Tests the critical bug fix that prevents terms from appearing in BOTH
 "valid" and "ignored" lists simultaneously.
 """
 
-import pytest
 from filter import validate_terms
 
 

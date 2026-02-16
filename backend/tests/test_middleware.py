@@ -18,14 +18,10 @@ Related Files:
 import logging
 import sys
 import io
-from unittest.mock import patch, MagicMock
-from contextvars import ContextVar
 
 import pytest
 from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from middleware import RequestIDFilter, CorrelationIDMiddleware, request_id_var
 from config import setup_logging, log_feature_flags
@@ -415,7 +411,7 @@ class TestCorrelationIDMiddlewareAC5:
         with caplog.at_level(logging.INFO, logger="middleware"):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/test-logging")
+                await client.get("/test-logging")
 
         # Assert one INFO log was emitted by the middleware
         middleware_logs = [r for r in caplog.records if r.name == "middleware"]
@@ -444,7 +440,7 @@ class TestCorrelationIDMiddlewareAC5:
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 try:
-                    response = await client.get("/test-error")
+                    await client.get("/test-error")
                 except Exception:
                     # Exception is expected to bubble up
                     pass

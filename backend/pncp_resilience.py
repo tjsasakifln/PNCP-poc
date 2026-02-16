@@ -10,12 +10,10 @@ This module provides resilience patterns for the PNCP API client to handle:
 Task #3: Prevent PNCP API timeouts and improve reliability
 """
 
-import asyncio
 import logging
 import time
-from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, Optional, Tuple, Any
 
@@ -258,7 +256,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             self._on_failure()
             raise
 
@@ -279,7 +277,7 @@ class CircuitBreaker:
             result = await func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             self._on_failure()
             raise
 

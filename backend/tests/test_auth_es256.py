@@ -987,7 +987,7 @@ class TestES256Integration:
         }
 
         with patch.dict(os.environ, env, clear=False):
-            result = await get_current_user(credentials=creds)
+            await get_current_user(credentials=creds)
 
         token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
         assert token_hash in _token_cache

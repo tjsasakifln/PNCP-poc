@@ -12,7 +12,7 @@ import os
 import time
 import pytest
 import jwt as pyjwt
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 

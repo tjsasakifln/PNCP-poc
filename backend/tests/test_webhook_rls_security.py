@@ -53,7 +53,6 @@ VALUES ('evt_valid_123', 'test.event', NOW());
 ```
 """
 
-import os
 import re
 import pytest
 from pathlib import Path
@@ -359,7 +358,7 @@ class TestMigrationSQLSyntax:
         """Basic SQL syntax checks for migration 010."""
         # All SQL statements should end with semicolon
         # (Ignore comments)
-        non_comment_lines = [
+        [
             line.strip()
             for line in migration_010_sql.split("\n")
             if line.strip() and not line.strip().startswith("--")

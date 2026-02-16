@@ -1,7 +1,6 @@
 """Keyword matching engine for uniform/apparel procurement filtering."""
 
 import logging
-import os
 import random
 import re
 import unicodedata
@@ -2191,7 +2190,6 @@ def aplicar_todos_filtros(
         TERM_DENSITY_HIGH_THRESHOLD,
         TERM_DENSITY_MEDIUM_THRESHOLD,
         TERM_DENSITY_LOW_THRESHOLD,
-        FILTER_DEBUG_MODE,
         QA_AUDIT_SAMPLE_RATE,
     )
 

@@ -20,7 +20,6 @@ from clients.sanctions import (
     SanctionsChecker,
     SanctionsResult,
     SanctionsAPIError,
-    SanctionsRateLimitError,
 )
 
 

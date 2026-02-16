@@ -9,7 +9,6 @@ Coverage targets:
 - Multiple sectors
 """
 
-import pytest
 from synonyms import (
     find_synonym_matches,
     count_synonym_matches,
@@ -235,11 +234,6 @@ class TestSectorSynonymDictionaries:
 
     def test_all_sectors_have_synonyms(self):
         """Test that all 12 sectors have synonym dictionaries."""
-        expected_sectors = {
-            "vestuario", "alimentos", "informatica", "facilities",
-            "mobiliario", "papelaria", "engenharia", "software",
-            "saude", "vigilancia", "transporte", "manutencao_predial",
-        }
 
         # Not all sectors may have synonyms initially (incremental expansion)
         # Just verify dict structure is valid

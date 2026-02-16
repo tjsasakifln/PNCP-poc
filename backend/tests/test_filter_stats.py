@@ -3,9 +3,7 @@
 Tests the FilterStatsTracker class and the /admin/filter-stats endpoint.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 from filter_stats import (
     FilterStatsTracker,

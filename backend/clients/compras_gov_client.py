@@ -96,7 +96,6 @@ class ComprasGovAdapter(SourceAdapter):
         "Dispensa": "Dispensa de Licitacao",
         "DISPENSA": "Dispensa de Licitacao",
         "INEXIGIBILIDADE": "Inexigibilidade",
-        "Inexigibilidade": "Inexigibilidade",
         "inexigibilidade": "Inexigibilidade",
         "Inexigível": "Inexigibilidade",
         "INEXIGIVEL": "Inexigibilidade",

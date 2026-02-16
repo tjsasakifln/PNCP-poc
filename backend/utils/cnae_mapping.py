@@ -5,7 +5,6 @@ Maps Brazilian CNAE (Classificação Nacional de Atividades Econômicas)
 codes to SmartLic sector IDs used by the search pipeline.
 """
 
-from typing import Optional
 
 # Top 10 CNAE→sector mappings (AC6)
 # Format: CNAE 4-digit prefix → sector_id

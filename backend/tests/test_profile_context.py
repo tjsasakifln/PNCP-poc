@@ -1,7 +1,7 @@
 """Tests for profile context endpoints (STORY-247 AC5)."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 

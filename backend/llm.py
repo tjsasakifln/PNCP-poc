@@ -21,11 +21,10 @@ from datetime import datetime, timezone
 from typing import Any
 import json
 import os
-import logging
 
 from openai import OpenAI
 
-from schemas import ResumoLicitacoes, ResumoEstrategico, Recomendacao
+from schemas import ResumoEstrategico, Recomendacao
 from excel import parse_datetime
 from middleware import request_id_var
 

@@ -2,15 +2,12 @@
 
 import asyncio
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from datetime import datetime
 
-from consolidation import ConsolidationService, ConsolidationResult, SourceResult, AllSourcesFailedError
+from consolidation import ConsolidationService, AllSourcesFailedError
 from clients.base import (
     SourceAdapter,
     SourceMetadata,
     SourceStatus,
-    SourceCapability,
     UnifiedProcurement,
 )
 
