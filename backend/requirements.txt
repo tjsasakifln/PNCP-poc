@@ -22,7 +22,7 @@ openai==1.109.1
 supabase==2.13.0
 PyJWT==2.9.0  # Local JWT validation + ES256/JWKS support (STORY-227)
 stripe==11.4.1
-redis==5.2.1  # Feature flag caching (STORY-171)
+redis==5.3.1  # Feature flag caching (STORY-171)
 # sqlalchemy and psycopg2-binary moved to requirements-dev.txt (STORY-201)
 # Kept in database.py for test backward compat only
 
