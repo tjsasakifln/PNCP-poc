@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
+import { getUserFriendlyError } from "../../lib/error-messages";
 import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
@@ -173,8 +174,7 @@ export default function SignupPage() {
       // AC9: identifyUser skipped here — user must confirm email first.
       // Identity will be linked on first login (AC7).
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao criar conta";
-      setError(message);
+      setError(getUserFriendlyError(err));
     } finally {
       setLoading(false);
     }

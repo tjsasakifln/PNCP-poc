@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { getUserFriendlyError } from "../../lib/error-messages";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type {
@@ -103,7 +104,7 @@ export default function MensagensPage() {
       const data = await res.json();
       setConversations(data.conversations || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setError(getUserFriendlyError(err));
     } finally {
       setLoading(false);
     }

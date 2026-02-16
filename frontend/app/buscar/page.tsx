@@ -20,6 +20,7 @@ import { Dialog } from "../components/Dialog";
 import { useSearchFilters } from "./hooks/useSearchFilters";
 import { useSearch } from "./hooks/useSearch";
 import { useUfProgress } from "./hooks/useUfProgress";
+import { useNavigationGuard } from "../../hooks/useNavigationGuard";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
 
@@ -146,6 +147,26 @@ function HomePageContent() {
   const filters = useSearchFilters(() => clearResultRef.current());
   const search = useSearch(filters);
   clearResultRef.current = () => search.setResult(null);
+
+  // TD-006 AC9-15: Navigation guard — warn before leaving with active results
+  const [hasDownloaded, setHasDownloaded] = useState(false);
+  // Reset download flag when a new search starts
+  useEffect(() => {
+    if (search.loading) setHasDownloaded(false);
+  }, [search.loading]);
+  const originalHandleDownload = search.handleDownload;
+  const handleDownloadWithGuard = async () => {
+    await originalHandleDownload();
+    // After successful download, suppress navigation guard (AC15)
+    if (!search.downloadError) {
+      setHasDownloaded(true);
+    }
+  };
+
+  useNavigationGuard({
+    hasResults: !!search.result && (search.result.total_filtrado ?? 0) > 0,
+    hasDownloaded,
+  });
 
   // STORY-257B: UF progress tracking via SSE (AC1-4)
   const ufProgress = useUfProgress({
@@ -322,7 +343,7 @@ function HomePageContent() {
               onOrdenacaoChange={filters.setOrdenacao}
               downloadLoading={search.downloadLoading}
               downloadError={search.downloadError}
-              onDownload={search.handleDownload}
+              onDownload={handleDownloadWithGuard}
               onSearch={search.buscar}
               planInfo={planInfo}
               session={session}

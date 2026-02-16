@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { getUserFriendlyError } from "../../lib/error-messages";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -108,7 +109,7 @@ export default function ContaPage() {
         await signOut();
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setError(getUserFriendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -138,7 +139,7 @@ export default function ContaPage() {
         await signOut();
       }, 3000);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Erro desconhecido");
+      setDeleteError(getUserFriendlyError(err));
     } finally {
       setDeleting(false);
     }
@@ -175,7 +176,7 @@ export default function ContaPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao exportar dados");
+      toast.error(getUserFriendlyError(err));
     } finally {
       setExporting(false);
     }

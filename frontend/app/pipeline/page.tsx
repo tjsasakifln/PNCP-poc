@@ -20,6 +20,8 @@ import { PipelineColumn } from "./PipelineColumn";
 import { PipelineCard } from "./PipelineCard";
 import { AppHeader } from "../components/AppHeader";
 import { useAuth } from "../components/AuthProvider";
+import { getUserFriendlyError } from "../../lib/error-messages";
+import { toast } from "sonner";
 
 export default function PipelinePage() {
   const { session } = useAuth();
@@ -89,9 +91,9 @@ export default function PipelinePage() {
     if (item.stage !== originalItem.stage) {
       try {
         await updateItem(activeId, { stage: item.stage });
-      } catch {
-        // Revert on failure
+      } catch (err) {
         setOptimisticItems(items);
+        toast.error(getUserFriendlyError(err));
       }
     }
   };

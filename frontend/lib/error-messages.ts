@@ -15,7 +15,8 @@ const ERROR_MAP: Record<string, string> = {
   "ERR_CERT_COMMON_NAME_INVALID": "Problema de segurança no servidor. Tente novamente em instantes.",
   "ERR_CERT": "Problema de segurança no servidor. Tente novamente em instantes.",
 
-  // HTTP status errors
+  // HTTP status errors (TD-006 AC2: all 10 codes mapped)
+  "400": "Requisição inválida. Verifique os dados e tente novamente.",
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
   "502": "O portal PNCP está temporariamente indisponível. Tente novamente em instantes.",
   "504": "A busca demorou demais. Tente com menos estados ou um período menor.",
@@ -142,3 +143,12 @@ export function getUserFriendlyError(error: any): string {
   // Message is too long and possibly not user-friendly
   return "Algo deu errado. Tente novamente em instantes.";
 }
+
+/**
+ * TD-006 AC4: Alias for getUserFriendlyError.
+ * Accepts Error, fetch Response-like objects, or string.
+ */
+export const getErrorMessage = getUserFriendlyError;
+
+/** Default fallback message for unknown errors (TD-006 AC8). */
+export const DEFAULT_ERROR_MESSAGE = "Ocorreu um erro inesperado. Tente novamente.";

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePipeline } from "../../hooks/usePipeline";
+import { getUserFriendlyError } from "../../lib/error-messages";
 import type { LicitacaoItem } from "../types";
 
 interface AddToPipelineButtonProps {
@@ -35,15 +36,15 @@ export function AddToPipelineButton({ licitacao, className = "" }: AddToPipeline
       setStatus("saved");
       setTimeout(() => setStatus("idle"), 3000);
     } catch (err: any) {
-      const msg = err.message || "Erro";
-      if (msg.includes("já está no")) {
+      const raw = err.message || "";
+      if (raw.includes("já está no")) {
         setStatus("saved");
-      } else if (msg.includes("plano") || msg.includes("disponível")) {
+      } else if (raw.includes("plano") || raw.includes("disponível")) {
         setStatus("upgrade");
-        setErrorMsg(msg);
+        setErrorMsg(getUserFriendlyError(err));
       } else {
         setStatus("error");
-        setErrorMsg(msg);
+        setErrorMsg(getUserFriendlyError(err));
       }
       setTimeout(() => setStatus("idle"), 4000);
     }

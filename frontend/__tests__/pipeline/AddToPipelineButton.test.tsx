@@ -348,9 +348,9 @@ describe('AddToPipelineButton', () => {
       });
     });
 
-    it('shows error message in title when error status', async () => {
-      const errorMsg = 'Network error';
-      mockAddItem.mockRejectedValue(new Error(errorMsg));
+    it('shows translated error message in title when error status', async () => {
+      // TD-006: errors are now translated via getUserFriendlyError
+      mockAddItem.mockRejectedValue(new Error('Network error'));
 
       render(<AddToPipelineButton licitacao={mockLicitacao} />);
 
@@ -358,7 +358,7 @@ describe('AddToPipelineButton', () => {
       fireEvent.click(button);
 
       await waitFor(() => {
-        expect(button).toHaveAttribute('title', errorMsg);
+        expect(button).toHaveAttribute('title', 'Erro de conexão. Verifique sua internet.');
       });
     });
   });

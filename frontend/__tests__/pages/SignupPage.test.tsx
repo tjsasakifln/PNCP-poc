@@ -480,7 +480,9 @@ describe('SignupPage Component', () => {
       });
     });
 
-    it('should show generic error for non-Error exceptions', async () => {
+    it('should show translated error for non-Error exceptions', async () => {
+      // TD-006: errors now go through getUserFriendlyError which passes
+      // through non-technical strings under 200 chars as-is
       mockSignUpWithEmail.mockRejectedValue('Unknown error');
 
       render(<SignupPage />);
@@ -494,7 +496,7 @@ describe('SignupPage Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Erro ao criar conta')).toBeInTheDocument();
+        expect(screen.getByText('Unknown error')).toBeInTheDocument();
       });
     });
 

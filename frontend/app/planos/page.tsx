@@ -5,6 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 import LandingNavbar from "../components/landing/LandingNavbar";
 import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { getUserFriendlyError } from "../../lib/error-messages";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
 import { formatCurrency } from '@/lib/copy/roi';
 import { toast } from "sonner";
@@ -178,7 +179,7 @@ export default function PlanosPage() {
         billing_period: billingPeriod,
         error: err instanceof Error ? err.message : "unknown",
       });
-      toast.error(err instanceof Error ? err.message : "Erro ao iniciar processo");
+      toast.error(getUserFriendlyError(err));
       setCheckoutLoading(false);
       setStripeRedirecting(false);
     }

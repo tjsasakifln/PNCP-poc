@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "../app/components/AuthProvider";
 import type { PipelineItem, PipelineStage } from "../app/pipeline/types";
+import { getUserFriendlyError } from "../lib/error-messages";
 
 export function usePipeline() {
   const { session } = useAuth();
@@ -39,7 +40,7 @@ export function usePipeline() {
       setTotal(data.total || 0);
       return data.items as PipelineItem[];
     } catch (err: any) {
-      setError(err.message);
+      setError(getUserFriendlyError(err));
       return [];
     } finally {
       setLoading(false);
