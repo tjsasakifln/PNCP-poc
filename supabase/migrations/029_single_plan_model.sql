@@ -63,10 +63,12 @@ CREATE TABLE IF NOT EXISTS public.plan_billing_periods (
 ALTER TABLE public.plan_billing_periods ENABLE ROW LEVEL SECURITY;
 
 -- Public read access (plan pricing is public info)
+DROP POLICY IF EXISTS "plan_billing_periods_public_read" ON public.plan_billing_periods;
 CREATE POLICY "plan_billing_periods_public_read" ON public.plan_billing_periods
   FOR SELECT TO authenticated, anon USING (true);
 
 -- Service role full access
+DROP POLICY IF EXISTS "plan_billing_periods_service_all" ON public.plan_billing_periods;
 CREATE POLICY "plan_billing_periods_service_all" ON public.plan_billing_periods
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -76,31 +78,41 @@ CREATE POLICY "plan_billing_periods_service_all" ON public.plan_billing_periods
 -- Annual: R$ 1,599.00 per month (20% off)
 INSERT INTO public.plan_billing_periods (plan_id, billing_period, price_cents, discount_percent, stripe_price_id)
 VALUES
-  ('smartlic_pro', 'monthly', 199900, 0, 'price_1T1ILH9FhmvPslGY4mNcGfso'),
-  ('smartlic_pro', 'semiannual', 179900, 10, 'price_1T1ILK9FhmvPslGYtJdkkBlB'),
-  ('smartlic_pro', 'annual', 159900, 20, 'price_1T1ILN9FhmvPslGYGQjfYdXA')
+  ('smartlic_pro', 'monthly', 199900, 0, 'price_1T1ISP9FhmvPslGYkwv7PFZO'),
+  ('smartlic_pro', 'semiannual', 179900, 10, 'price_1T1ISS9FhmvPslGYkCQMTYVo'),
+  ('smartlic_pro', 'annual', 159900, 20, 'price_1T1ISV9FhmvPslGY9SejQs1T')
 ON CONFLICT (plan_id, billing_period) DO UPDATE SET
   stripe_price_id = EXCLUDED.stripe_price_id;
 
 -- 5b. Update plans table with Stripe Price IDs for direct lookup
 UPDATE public.plans SET
-  stripe_price_id_monthly = 'price_1T1ILH9FhmvPslGY4mNcGfso',
-  stripe_price_id_semiannual = 'price_1T1ILK9FhmvPslGYtJdkkBlB',
-  stripe_price_id_annual = 'price_1T1ILN9FhmvPslGYGQjfYdXA'
+  stripe_price_id_monthly = 'price_1T1ISP9FhmvPslGYkwv7PFZO',
+  stripe_price_id_semiannual = 'price_1T1ISS9FhmvPslGYkCQMTYVo',
+  stripe_price_id_annual = 'price_1T1ISV9FhmvPslGY9SejQs1T'
 WHERE id = 'smartlic_pro';
 
+-- 5c. Update plan_features billing_period constraint to include 'semiannual'
+ALTER TABLE public.plan_features DROP CONSTRAINT IF EXISTS plan_features_billing_period_check;
+ALTER TABLE public.plan_features ADD CONSTRAINT plan_features_billing_period_check
+  CHECK (billing_period IN ('monthly', 'semiannual', 'annual'));
+
 -- 6. Add plan_features for smartlic_pro
--- Note: plan_features has a unique constraint on (plan_id, feature_key)
-INSERT INTO public.plan_features (plan_id, feature_key, feature_value)
+-- Schema: (plan_id, billing_period, feature_key, enabled, metadata)
+-- Unique constraint: (plan_id, billing_period, feature_key)
+-- Insert features for all billing periods (monthly, semiannual, annual)
+INSERT INTO public.plan_features (plan_id, billing_period, feature_key, enabled, metadata)
 VALUES
-  ('smartlic_pro', 'max_requests_per_month', '1000'),
-  ('smartlic_pro', 'allow_excel', 'true'),
-  ('smartlic_pro', 'allow_pipeline', 'true'),
-  ('smartlic_pro', 'max_summary_tokens', '10000'),
-  ('smartlic_pro', 'max_history_days', '1825'),
-  ('smartlic_pro', 'priority', 'normal')
-ON CONFLICT (plan_id, feature_key) DO UPDATE SET
-  feature_value = EXCLUDED.feature_value;
+  ('smartlic_pro', 'monthly', 'full_access', true, '{"description": "Acesso completo ao produto"}'::jsonb),
+  ('smartlic_pro', 'monthly', 'early_access', true, '{"description": "Acesso antecipado a novos recursos"}'::jsonb),
+  ('smartlic_pro', 'monthly', 'proactive_search', true, '{"description": "Alertas automáticos de novas licitações"}'::jsonb),
+  ('smartlic_pro', 'semiannual', 'full_access', true, '{"description": "Acesso completo ao produto"}'::jsonb),
+  ('smartlic_pro', 'semiannual', 'early_access', true, '{"description": "Acesso antecipado a novos recursos"}'::jsonb),
+  ('smartlic_pro', 'semiannual', 'proactive_search', true, '{"description": "Alertas automáticos de novas licitações"}'::jsonb),
+  ('smartlic_pro', 'annual', 'full_access', true, '{"description": "Acesso completo ao produto"}'::jsonb),
+  ('smartlic_pro', 'annual', 'early_access', true, '{"description": "Acesso antecipado a novos recursos"}'::jsonb),
+  ('smartlic_pro', 'annual', 'proactive_search', true, '{"description": "Alertas automáticos de novas licitações"}'::jsonb),
+  ('smartlic_pro', 'annual', 'ai_analysis', true, '{"description": "Análise estratégica com IA avançada"}'::jsonb)
+ON CONFLICT (plan_id, billing_period, feature_key) DO NOTHING;
 
 -- 7. Deactivate legacy plans
 -- Keep them in DB for historical records and existing subscriptions
@@ -114,48 +126,3 @@ ALTER TABLE public.profiles ADD CONSTRAINT profiles_plan_type_check
   CHECK (plan_type IN ('free_trial', 'consultor_agil', 'maquina', 'sala_guerra', 'master', 'smartlic_pro'));
 
 COMMIT;
-
--- Verification Queries
--- Run these after migration to verify correct state
-
--- Check smartlic_pro plan exists and is active
-SELECT id, name, price_brl, max_searches, is_active
-FROM public.plans
-WHERE id = 'smartlic_pro';
-
--- Check legacy plans are deactivated
-SELECT id, name, is_active
-FROM public.plans
-WHERE id IN ('consultor_agil', 'maquina', 'sala_guerra');
-
--- Check billing periods for smartlic_pro
-SELECT plan_id, billing_period, price_cents, discount_percent, stripe_price_id
-FROM public.plan_billing_periods
-WHERE plan_id = 'smartlic_pro'
-ORDER BY billing_period;
-
--- Check plan_features for smartlic_pro
-SELECT plan_id, feature_key, feature_value
-FROM public.plan_features
-WHERE plan_id = 'smartlic_pro'
-ORDER BY feature_key;
-
--- Check user_subscriptions constraint allows semiannual
-SELECT conname, pg_get_constraintdef(oid)
-FROM pg_constraint
-WHERE conrelid = 'public.user_subscriptions'::regclass
-  AND conname = 'user_subscriptions_billing_period_check';
-
--- Check profiles constraint includes smartlic_pro
-SELECT conname, pg_get_constraintdef(oid)
-FROM pg_constraint
-WHERE conrelid = 'public.profiles'::regclass
-  AND conname = 'profiles_plan_type_check';
-
--- Check plan_billing_periods table structure
-\d public.plan_billing_periods;
-
--- Check RLS policies on plan_billing_periods
-SELECT schemaname, tablename, policyname, roles, cmd, qual, with_check
-FROM pg_policies
-WHERE tablename = 'plan_billing_periods';
