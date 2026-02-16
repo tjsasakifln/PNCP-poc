@@ -25,12 +25,12 @@ export function AppHeader({ extraControls, statusSlot }: AppHeaderProps) {
   const defaultStatusSlot = <QuotaBadge />;
 
   return (
-    <header className="sticky top-0 z-50 bg-[var(--surface-0)] backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95 border-b border-[var(--border)] shadow-sm">
+    <header className="sticky top-0 z-50 bg-[var(--surface-0)]/95 backdrop-blur-md border-b border-[var(--border)] shadow-glass">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/buscar"
-            className="text-xl font-bold text-brand-navy hover:text-brand-blue transition-colors"
+            className="text-xl sm:text-2xl font-bold text-brand-navy hover:text-brand-blue transition-colors"
           >
             SmartLic<span className="text-brand-blue">.tech</span>
           </Link>

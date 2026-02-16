@@ -9,7 +9,7 @@
 | **Type** | GTM (Go-to-Market) |
 | **Dependencies** | GTM-001 (copy pronta para design) |
 | **Blocks** | — |
-| **Status** | Pending |
+| **Status** | In Progress |
 | **Created** | 2026-02-15 |
 | **Squad** | Frontend (UX Design Expert + Dev) |
 
@@ -144,50 +144,50 @@ export function GlassCard({ variant = 'default', gemAccent, children }: GlassCar
 
 ### Glass Effects Consistentes
 
-- [ ] **AC1:** Glass effect (`backdrop-blur`) aplicado consistentemente em: header, cards de resultado, cards de plano, modals, sidebar
-- [ ] **AC2:** Todos os cards interativos (resultados, planos, pipeline) usam variantes de GlassCard (não implementações custom)
-- [ ] **AC7:** Cards de resultado de busca usam `<GlassCard variant="result">` (não solid)
-- [ ] **AC8:** Sidebar institucional (login/signup) tem glass effects aplicados
+- [x] **AC1:** Glass effect (`backdrop-blur`) aplicado consistentemente em: header, cards de resultado, cards de plano, modals, sidebar
+- [x] **AC2:** Todos os cards interativos (resultados, planos, pipeline) usam variantes de GlassCard (não implementações custom)
+- [x] **AC7:** Cards de resultado de busca usam `<GlassCard variant="result">` (não solid)
+- [x] **AC8:** Sidebar institucional (login/signup) tem glass effects aplicados
 
 ### Design Tokens e Palette
 
-- [ ] **AC3:** Palette "pedras preciosas" definida em `globals.css` com CSS custom properties:
+- [x] **AC3:** Palette "pedras preciosas" definida em `globals.css` com CSS custom properties:
   - `--gem-sapphire`: azul translúcido (opacidade 15-20%)
   - `--gem-emerald`: verde translúcido (opacidade 12-18%)
   - `--gem-amethyst`: roxo translúcido (opacidade 15-20%)
   - `--gem-ruby`: vermelho translúcido (opacidade 15-20%)
-- [ ] **AC3.1:** Tokens mapeados em `tailwind.config.ts` como classes utilitárias (`bg-gem-sapphire`, `shadow-gem-emerald`, etc.)
-- [ ] **AC3.2:** Dark mode com opacidades ajustadas para legibilidade (cores mais claras, opacidade maior)
+- [x] **AC3.1:** Tokens mapeados em `tailwind.config.ts` como classes utilitárias (`bg-gem-sapphire`, `shadow-gem-emerald`, etc.)
+- [x] **AC3.2:** Dark mode com opacidades ajustadas para legibilidade (cores mais claras, opacidade maior)
 
 ### Headers e Navegação
 
-- [ ] **AC4:** Header idêntico em landing e área logada (mesma base, conteúdo diferente)
-- [ ] **AC5:** Logo size consistente (`text-xl sm:text-2xl` em ambos)
-- [ ] **AC5.1:** Header landing: transparente → glass on scroll (behavior mantido)
-- [ ] **AC5.2:** Header área logada: glass consistente (alinhado com landing)
+- [x] **AC4:** Header idêntico em landing e área logada (mesma base, conteúdo diferente)
+- [x] **AC5:** Logo size consistente (`text-xl sm:text-2xl` em ambos)
+- [x] **AC5.1:** Header landing: transparente → glass on scroll (behavior mantido)
+- [x] **AC5.2:** Header área logada: glass consistente (alinhado com landing)
 
 ### Responsividade e Mobile
 
-- [ ] **AC6:** Viewport meta tag explícita em `layout.tsx`: `width=device-width, initial-scale=1`
+- [x] **AC6:** Viewport meta tag explícita em `layout.tsx`: `width=device-width, initial-scale=1`
 - [ ] **AC10:** Mobile: sem diferença de zoom/tamanho entre landing e área logada
 - [ ] **AC10.1:** Glass effects funcionam em viewports 375px, 768px, 1024px (teste em DevTools)
 
 ### Dark Mode
 
-- [ ] **AC9:** Dark mode consistente em todas as áreas (landing, login, busca, planos, pipeline)
-- [ ] **AC9.1:** Pedras preciosas legíveis em dark mode (opacidades ajustadas, cores mais claras)
-- [ ] **AC9.2:** Glass effects visíveis em dark mode (contraste suficiente)
+- [x] **AC9:** Dark mode consistente em todas as áreas (landing, login, busca, planos, pipeline)
+- [x] **AC9.1:** Pedras preciosas legíveis em dark mode (opacidades ajustadas, cores mais claras)
+- [x] **AC9.2:** Glass effects visíveis em dark mode (contraste suficiente)
 
 ### Qualidade Visual
 
-- [ ] **AC11:** Nenhum "salto" visual ao navegar de landing → login → busca (transição suave)
-- [ ] **AC12:** Hover effects consistentes (scale 1.02, transição 200ms) em todos os cards
-- [ ] **AC13:** Sombras aplicadas via pedras preciosas (`shadow-gem-*`) em contextos apropriados
+- [x] **AC11:** Nenhum "salto" visual ao navegar de landing → login → busca (transição suave)
+- [x] **AC12:** Hover effects consistentes (scale 1.02, transição 200ms) em todos os cards
+- [x] **AC13:** Sombras aplicadas via pedras preciosas (`shadow-gem-*`) em contextos apropriados
 
 ### TypeScript e Build
 
-- [ ] **AC14:** TypeScript clean (`npx tsc --noEmit --pretty` passa sem erros)
-- [ ] **AC15:** Build de produção passa sem warnings relacionados ao design system
+- [x] **AC14:** TypeScript clean (`npx tsc --noEmit --pretty` passa sem erros)
+- [x] **AC15:** Build de produção passa sem warnings relacionados ao design system
 - [ ] **AC16:** Lighthouse Accessibility score ≥ 90 (contraste de cores adequado)
 
 ---

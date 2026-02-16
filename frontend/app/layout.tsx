@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fahkwang, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -31,6 +31,12 @@ const dmMono = DM_Mono({
 
 // Force rebuild to pick up NEXT_PUBLIC_APP_NAME from Railway (SmartLic.tech)
 const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
+
+/* GTM-006 AC6: Explicit viewport configuration */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://bidiq-frontend-production.up.railway.app"),

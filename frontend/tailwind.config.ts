@@ -29,6 +29,11 @@ const config: Config = {
         "error-subtle": "var(--error-subtle)",
         warning: "var(--warning)",
         "warning-subtle": "var(--warning-subtle)",
+        /* GTM-006: Gem palette */
+        "gem-sapphire": "var(--gem-sapphire)",
+        "gem-emerald": "var(--gem-emerald)",
+        "gem-amethyst": "var(--gem-amethyst)",
+        "gem-ruby": "var(--gem-ruby)",
       },
       borderColor: {
         DEFAULT: "var(--border)",
@@ -71,6 +76,11 @@ const config: Config = {
         'glow': 'var(--shadow-glow)',
         'glow-lg': 'var(--shadow-glow-lg)',
         'glass': 'var(--glass-shadow)',
+        /* GTM-006: Gem shadows */
+        'gem-sapphire': 'var(--gem-sapphire-shadow)',
+        'gem-emerald': 'var(--gem-emerald-shadow)',
+        'gem-amethyst': 'var(--gem-amethyst-shadow)',
+        'gem-ruby': 'var(--gem-ruby-shadow)',
       },
       /* STORY-174: Premium animations */
       keyframes: {

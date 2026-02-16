@@ -3,42 +3,49 @@
 import { ReactNode } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
+type GlassVariant = 'default' | 'subtle' | 'strong' | 'result' | 'pricing' | 'feature';
+type GemAccent = 'sapphire' | 'emerald' | 'amethyst' | 'ruby';
+
 interface GlassCardProps {
   children: ReactNode;
   className?: string;
   hoverable?: boolean;
-  variant?: 'default' | 'subtle' | 'strong';
+  variant?: GlassVariant;
+  gemAccent?: GemAccent;
 }
 
+const variantStyles: Record<GlassVariant, string> = {
+  default: 'backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border-white/20 dark:border-gray-700/30',
+  subtle: 'backdrop-blur-md bg-white/50 dark:bg-gray-800/50 border-white/10 dark:border-gray-700/20',
+  strong: 'backdrop-blur-md bg-white/90 dark:bg-gray-800/90 border-white/30 dark:border-gray-700/40',
+  result: 'backdrop-blur-lg bg-white/60 dark:bg-gray-900/50 border-white/20 dark:border-white/10',
+  pricing: 'backdrop-blur-xl bg-white/50 dark:bg-gray-900/40 border-white/25 dark:border-white/15',
+  feature: 'backdrop-blur-md bg-gradient-to-br from-white/60 to-white/30 dark:from-gray-800/60 dark:to-gray-900/30 border-white/20 dark:border-gray-700/30',
+};
+
+const gemShadowClass: Record<GemAccent, string> = {
+  sapphire: 'shadow-gem-sapphire',
+  emerald: 'shadow-gem-emerald',
+  amethyst: 'shadow-gem-amethyst',
+  ruby: 'shadow-gem-ruby',
+};
+
 /**
- * STORY-174: Premium glassmorphism card component
+ * GTM-006: Premium glassmorphism card component with gem accents
  *
- * Features:
- * - Backdrop blur effect (glassmorphism)
- * - Gradient borders
- * - Hover lift animation (optional)
- * - Layered shadows for depth
- * - Variants for different intensities
+ * Variants (by glass intensity):
+ *   subtle < default < result < pricing < feature (gradient)
  *
- * @example
- * <GlassCard hoverable={true} variant="default">
- *   <h3>Card Title</h3>
- *   <p>Card content</p>
- * </GlassCard>
+ * Gem accents apply colored shadows for contextual meaning:
+ *   sapphire = action/CTA, emerald = success, amethyst = premium, ruby = urgency
  */
 export function GlassCard({
   children,
   className = '',
   hoverable = true,
-  variant = 'default'
+  variant = 'default',
+  gemAccent,
 }: GlassCardProps) {
-  // Variant-specific styles
-  const variantStyles = {
-    default: 'bg-white/70 dark:bg-gray-800/70 border-white/20 dark:border-gray-700/30',
-    subtle: 'bg-white/50 dark:bg-gray-800/50 border-white/10 dark:border-gray-700/20',
-    strong: 'bg-white/90 dark:bg-gray-800/90 border-white/30 dark:border-gray-700/40',
-  };
-
   const hoverAnimation: HTMLMotionProps<'div'>['whileHover'] = hoverable ? {
     y: -8,
     scale: 1.02,
@@ -48,7 +55,6 @@ export function GlassCard({
   return (
     <motion.div
       className={`
-        backdrop-blur-md
         ${variantStyles[variant]}
         border
         rounded-3xl
@@ -56,13 +62,14 @@ export function GlassCard({
         shadow-glass
         transition-shadow
         duration-300
+        ${gemAccent ? gemShadowClass[gemAccent] : ''}
         ${hoverable ? 'cursor-pointer' : ''}
         ${className}
       `}
       whileHover={hoverAnimation}
       transition={{
         duration: 0.3,
-        ease: [0.4, 0, 0.2, 1], // cubic-bezier(0.4, 0, 0.2, 1)
+        ease: [0.4, 0, 0.2, 1],
       }}
     >
       {children}

@@ -122,7 +122,7 @@ export default function PlanosPage() {
     return (
       <div className="min-h-screen bg-[var(--canvas)] py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-card p-8 text-center">
+          <div className="backdrop-blur-md bg-white/60 dark:bg-gray-900/50 border border-white/20 dark:border-white/10 rounded-card p-8 text-center shadow-glass">
             <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--brand-blue)]/10 flex items-center justify-center">
               <svg role="img" aria-label="Ícone" className="w-8 h-8 text-[var(--brand-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -192,7 +192,7 @@ export default function PlanosPage() {
       {/* Stripe redirect overlay */}
       {stripeRedirecting && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--canvas)]/80 backdrop-blur-sm">
-          <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-card p-8 text-center shadow-xl max-w-sm mx-4">
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/60 border border-white/20 dark:border-white/10 rounded-card p-8 text-center shadow-glass max-w-sm mx-4">
             <div className="w-12 h-12 mx-auto mb-4 border-4 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin" />
             <h2 className="text-lg font-semibold text-[var(--ink)] mb-2">
               Redirecionando para o checkout
@@ -216,14 +216,14 @@ export default function PlanosPage() {
         </div>
 
         {statusMsg && (
-          <div className="mb-8 p-4 bg-[var(--success-subtle)] text-[var(--success)] rounded-card text-center">
+          <div className="mb-8 p-4 bg-[var(--success-subtle)] backdrop-blur-sm text-[var(--success)] rounded-card text-center">
             {statusMsg}
           </div>
         )}
 
         {/* Already Pro Banner */}
         {isAlreadyPro && (
-          <div className="mb-8 p-4 bg-[var(--brand-blue)]/10 border border-[var(--brand-blue)]/30 rounded-card text-center">
+          <div className="mb-8 p-4 bg-[var(--brand-blue)]/10 backdrop-blur-sm border border-[var(--brand-blue)]/30 rounded-card text-center">
             <p className="font-semibold text-[var(--ink)]">Você já possui o SmartLic Pro ativo.</p>
             <Link href="/conta" className="text-sm text-[var(--brand-blue)] hover:underline">
               Gerenciar acesso
@@ -238,7 +238,7 @@ export default function PlanosPage() {
 
         {/* Single Plan Card — Centered */}
         <div className="max-w-lg mx-auto">
-          <div className="bg-[var(--surface-0)] border-2 border-[var(--brand-blue)] rounded-card p-8 shadow-xl">
+          <div className="backdrop-blur-xl bg-white/50 dark:bg-gray-900/40 border-2 border-[var(--brand-blue)] rounded-card p-8 shadow-gem-amethyst">
             {/* Plan Name */}
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-[var(--ink)] mb-1">SmartLic Pro</h2>
@@ -309,7 +309,7 @@ export default function PlanosPage() {
 
         {/* ROI Anchor Message */}
         <div className="mt-12 max-w-lg mx-auto">
-          <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-card p-6 text-center">
+          <div className="backdrop-blur-md bg-white/60 dark:bg-gray-900/50 border border-white/20 dark:border-white/10 rounded-card p-6 text-center shadow-glass">
             <p className="text-lg font-semibold text-[var(--ink)] mb-2">
               Uma única licitação ganha pode pagar um ano inteiro
             </p>
@@ -339,7 +339,7 @@ export default function PlanosPage() {
             {FAQ_ITEMS.map((item, index) => (
               <div
                 key={index}
-                className="bg-[var(--surface-0)] border border-[var(--border)] rounded-card overflow-hidden"
+                className="backdrop-blur-md bg-white/60 dark:bg-gray-900/50 border border-white/20 dark:border-white/10 rounded-card overflow-hidden"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}

@@ -445,9 +445,11 @@ export function LicitacaoCard({
   return (
     <article
       className={`
-        bg-surface-0 border border-strong rounded-card
+        backdrop-blur-lg bg-white/60 dark:bg-gray-900/50
+        border border-white/20 dark:border-white/10
+        rounded-card shadow-glass
         transition-all duration-200
-        ${isHovered ? "border-brand-blue shadow-md" : ""}
+        ${isHovered ? "border-brand-blue shadow-md scale-[1.02]" : ""}
         ${className}
       `}
       onMouseEnter={() => setIsHovered(true)}
@@ -455,7 +457,7 @@ export function LicitacaoCard({
       aria-labelledby={`licitacao-title-${licitacao.pncp_id}`}
     >
       {/* Header: Status + Sanctions Badge + Modalidade + Countdown */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-4 pb-3 border-b border-strong">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-4 pb-3 border-b border-white/15 dark:border-white/10">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={status} size="sm" />
           {/* STORY-256 AC14: Sanctions badge */}
@@ -513,7 +515,7 @@ export function LicitacaoCard({
         </div>
 
         {/* Clear Deadline Information */}
-        <div className="space-y-2 p-3 border border-strong rounded-lg bg-surface-1/30">
+        <div className="space-y-2 p-3 border border-white/15 dark:border-white/10 rounded-lg bg-white/30 dark:bg-white/5 backdrop-blur-sm">
           {/* Data de início */}
           {licitacao.data_abertura && (
             <div className="flex items-start gap-2">
@@ -589,7 +591,7 @@ export function LicitacaoCard({
 
           {/* Tempo restante */}
           {licitacao.data_encerramento && (
-            <div className="flex items-center gap-2 pt-1 border-t border-strong">
+            <div className="flex items-center gap-2 pt-1 border-t border-white/15 dark:border-white/10">
               <ClockIconSmall className="h-4 w-4 text-muted-foreground" />
               <span className="text-xs text-ink-secondary font-medium">
                 {calculateTimeRemaining(licitacao.data_encerramento)}
@@ -626,7 +628,7 @@ export function LicitacaoCard({
       </div>
 
       {/* Actions Footer */}
-      <div className="flex items-center justify-between gap-2 p-4 pt-3 border-t border-strong bg-surface-1/50">
+      <div className="flex items-center justify-between gap-2 p-4 pt-3 border-t border-white/15 dark:border-white/10 bg-white/20 dark:bg-white/5">
         {/* Primary Action: View on PNCP */}
         <a
           href={licitacao.link}

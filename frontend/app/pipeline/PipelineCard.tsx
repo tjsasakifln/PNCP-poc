@@ -53,7 +53,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-[var(--surface-0)] rounded-lg border border-[var(--border)] border-l-4 ${urgencyClass} p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow ${
+      className={`backdrop-blur-lg bg-white/60 dark:bg-gray-900/50 rounded-lg border border-white/20 dark:border-white/10 border-l-4 ${urgencyClass} p-3 cursor-grab active:cursor-grabbing shadow-glass hover:shadow-md transition-all hover:scale-[1.02] ${
         isDragging || isSortableDragging ? "opacity-50 shadow-lg ring-2 ring-brand-blue" : ""
       }`}
     >
@@ -139,7 +139,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
       ) : null}
 
       {/* Actions */}
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--border)]">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/15 dark:border-white/10">
         <div className="flex gap-1.5">
           {item.link_pncp && (
             <a
