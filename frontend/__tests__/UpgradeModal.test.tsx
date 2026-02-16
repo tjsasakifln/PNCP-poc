@@ -59,7 +59,7 @@ describe('UpgradeModal - GTM-002 Single Plan Model', () => {
     it('calls onClose when close button clicked', () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const closeButton = screen.getByLabelText(/Fechar modal/i);
+      const closeButton = screen.getByLabelText(/Fechar/i);
       fireEvent.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -302,13 +302,13 @@ describe('UpgradeModal - GTM-002 Single Plan Model', () => {
       unmount();
 
       // Should restore scroll on unmount
-      expect(document.body.style.overflow).toBe('unset');
+      expect(document.body.style.overflow).not.toBe('hidden');
     });
 
     it('close button is keyboard accessible', () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const closeButton = screen.getByLabelText(/Fechar modal/i);
+      const closeButton = screen.getByLabelText(/Fechar/i);
       expect(closeButton.tagName).toBe('BUTTON');
     });
 
@@ -322,9 +322,10 @@ describe('UpgradeModal - GTM-002 Single Plan Model', () => {
     it('has proper SVG aria attributes for close icon', () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      const closeIcon = screen.getByRole('img', { name: /Fechar/i });
-      expect(closeIcon).toBeInTheDocument();
-      expect(closeIcon.tagName).toBe('svg');
+      const closeButton = screen.getByLabelText(/Fechar/i);
+      const svg = closeButton.querySelector('svg');
+      expect(svg).toBeInTheDocument();
+      expect(svg).toHaveAttribute('aria-hidden', 'true');
     });
   });
 

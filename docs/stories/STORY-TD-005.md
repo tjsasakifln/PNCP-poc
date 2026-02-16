@@ -30,34 +30,34 @@ Esta story cria uma infraestrutura de dialogo acessivel reutilizavel e corrige a
 ## Criterios de Aceite
 
 ### Dialog Component
-- [ ] Componente `<Dialog>` criado (ex: `frontend/app/components/Dialog.tsx`)
-- [ ] Props: `isOpen`, `onClose`, `title`, `children`, `className` (minimo)
-- [ ] Inclui `role="dialog"` no elemento raiz
-- [ ] Inclui `aria-modal="true"`
-- [ ] Inclui `aria-labelledby` apontando para titulo
-- [ ] Focus trap implementado: Tab/Shift+Tab cicla DENTRO do modal
-- [ ] Escape fecha o modal (capture-phase event listener, como UpgradeModal linha 45)
-- [ ] Focus retorna ao elemento que abriu o modal ao fechar
-- [ ] Background overlay bloqueia interacao (click outside fecha ou nao, configuravel)
+- [x] Componente `<Dialog>` criado (ex: `frontend/app/components/Dialog.tsx`)
+- [x] Props: `isOpen`, `onClose`, `title`, `children`, `className` (minimo)
+- [x] Inclui `role="dialog"` no elemento raiz
+- [x] Inclui `aria-modal="true"`
+- [x] Inclui `aria-labelledby` apontando para titulo
+- [x] Focus trap implementado: Tab/Shift+Tab cicla DENTRO do modal
+- [x] Escape fecha o modal (capture-phase event listener, como UpgradeModal linha 45)
+- [x] Focus retorna ao elemento que abriu o modal ao fechar
+- [x] Background overlay bloqueia interacao (click outside fecha ou nao, configuravel)
 
 ### Refatoracao de Modais
-- [ ] Save search dialog (`/buscar` linhas ~238-274) usa `<Dialog>`
-- [ ] Keyboard help modal (`/buscar` linhas ~277-350) usa `<Dialog>`
-- [ ] `UpgradeModal.tsx` opcionalmente migrado para usar `<Dialog>` (ou mantido como referencia)
-- [ ] Funcionalidade existente preservada em todos os modais
+- [x] Save search dialog (`/buscar` linhas ~238-274) usa `<Dialog>`
+- [x] Keyboard help modal (`/buscar` linhas ~277-350) usa `<Dialog>`
+- [x] `UpgradeModal.tsx` opcionalmente migrado para usar `<Dialog>` (ou mantido como referencia)
+- [x] Funcionalidade existente preservada em todos os modais
 
 ### Acessibilidade
-- [ ] Tab nao escapa do modal em nenhuma direcao
-- [ ] Shift+Tab nao escapa do modal
-- [ ] Screen reader anuncia "dialog" ao abrir
-- [ ] Escape fecha APENAS o modal (nao dispara `limparSelecao()`)
+- [x] Tab nao escapa do modal em nenhuma direcao
+- [x] Shift+Tab nao escapa do modal
+- [x] Screen reader anuncia "dialog" ao abrir
+- [x] Escape fecha APENAS o modal (nao dispara `limparSelecao()`)
 
 ## Testes Requeridos
 
-| ID | Teste | Tipo | Prioridade |
-|----|-------|------|-----------|
-| REG-T10 | Modais mantem focus trap (Tab nao escapa) | E2E accessibility | P1 |
-| REG-T11 | Escape fecha modal, UF selection permanece | E2E interaction | P1 |
+| ID | Teste | Tipo | Prioridade | Status |
+|----|-------|------|-----------|--------|
+| REG-T10 | Modais mantem focus trap (Tab nao escapa) | E2E accessibility | P1 | Done |
+| REG-T11 | Escape fecha modal, UF selection permanece | E2E interaction | P1 | Done |
 
 ## Dependencias
 - **Blocks:** STORY-TD-019 (backlog item UX-NEW-03 -- admin confirm dialog -- usara o `<Dialog>` criado aqui)
@@ -72,9 +72,17 @@ Esta story cria uma infraestrutura de dialogo acessivel reutilizavel e corrige a
 - Reverter para `<div>` original como ultimo recurso.
 
 ## Definition of Done
-- [ ] Codigo implementado e revisado
-- [ ] Testes passando (unitario + E2E acessibilidade)
-- [ ] CI/CD green
-- [ ] Documentacao do componente `<Dialog>` (props, uso)
+- [x] Codigo implementado e revisado
+- [x] Testes passando (unitario + E2E acessibilidade)
+- [x] CI/CD green
+- [x] Documentacao do componente `<Dialog>` (props, uso)
 - [ ] Deploy em staging verificado
 - [ ] Verificacao manual com Tab/Shift+Tab/Escape em todos os modais
+
+## Arquivos Modificados
+- `frontend/app/components/Dialog.tsx` — NEW: Reusable accessible dialog component
+- `frontend/app/components/UpgradeModal.tsx` — Migrated to use `<Dialog>`
+- `frontend/app/buscar/page.tsx` — Save search + keyboard help modals refactored
+- `frontend/__tests__/Dialog.test.tsx` — NEW: 19 unit tests for Dialog component
+- `frontend/__tests__/UpgradeModal.test.tsx` — Updated for new Dialog-based structure
+- `frontend/e2e-tests/dialog-accessibility.spec.ts` — NEW: REG-T10 + REG-T11 E2E tests

@@ -16,6 +16,7 @@ import { QuotaBadge } from "../components/QuotaBadge";
 import { PlanBadge } from "../components/PlanBadge";
 import { MessageBadge } from "../components/MessageBadge";
 import { UpgradeModal } from "../components/UpgradeModal";
+import { Dialog } from "../components/Dialog";
 import { useSearchFilters } from "./hooks/useSearchFilters";
 import { useSearch } from "./hooks/useSearch";
 import { useUfProgress } from "./hooks/useUfProgress";
@@ -347,88 +348,85 @@ function HomePageContent() {
       </main>
 
       {/* Save Search Dialog */}
-      {search.showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
-          <div className="bg-surface-0 rounded-card shadow-xl max-w-md w-full p-6 animate-fade-in-up">
-            <h3 className="text-lg font-semibold text-ink mb-4">Salvar Busca</h3>
-            <div className="mb-4">
-              <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">Nome da busca:</label>
-              <input
-                id="save-search-name"
-                type="text"
-                value={search.saveSearchName}
-                onChange={(e) => search.setSaveSearchName(e.target.value)}
-                placeholder="Ex: Uniformes Sul do Brasil"
-                className="w-full border border-strong rounded-input px-4 py-2.5 text-base bg-surface-0 text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-colors"
-                maxLength={50}
-                autoFocus
-              />
-              <p className="text-xs text-ink-muted mt-1">{search.saveSearchName.length}/50 caracteres</p>
-            </div>
-            {search.saveError && (
-              <div className="mb-4 p-3 bg-error-subtle border border-error/20 rounded text-sm text-error" role="alert">{search.saveError}</div>
-            )}
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => { search.setShowSaveDialog(false); search.setSaveSearchName(""); }}
-                type="button"
-                className="px-4 py-2 text-sm font-medium text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button transition-colors"
-              >Cancelar</button>
-              <button
-                onClick={search.confirmSaveSearch}
-                disabled={!search.saveSearchName.trim()}
-                type="button"
-                className="px-4 py-2 text-sm font-medium text-white bg-brand-navy hover:bg-brand-blue-hover rounded-button transition-colors disabled:bg-ink-faint disabled:cursor-not-allowed"
-              >Salvar</button>
-            </div>
-          </div>
+      <Dialog
+        isOpen={search.showSaveDialog}
+        onClose={() => { search.setShowSaveDialog(false); search.setSaveSearchName(""); }}
+        title="Salvar Busca"
+        className="max-w-md"
+        id="save-search"
+      >
+        <div className="mb-4">
+          <label htmlFor="save-search-name" className="block text-sm font-medium text-ink-secondary mb-2">Nome da busca:</label>
+          <input
+            id="save-search-name"
+            type="text"
+            value={search.saveSearchName}
+            onChange={(e) => search.setSaveSearchName(e.target.value)}
+            placeholder="Ex: Uniformes Sul do Brasil"
+            className="w-full border border-strong rounded-input px-4 py-2.5 text-base bg-surface-0 text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-colors"
+            maxLength={50}
+            autoFocus
+          />
+          <p className="text-xs text-ink-muted mt-1">{search.saveSearchName.length}/50 caracteres</p>
         </div>
-      )}
+        {search.saveError && (
+          <div className="mb-4 p-3 bg-error-subtle border border-error/20 rounded text-sm text-error" role="alert">{search.saveError}</div>
+        )}
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={() => { search.setShowSaveDialog(false); search.setSaveSearchName(""); }}
+            type="button"
+            className="px-4 py-2 text-sm font-medium text-ink-secondary hover:text-ink hover:bg-surface-1 rounded-button transition-colors"
+          >Cancelar</button>
+          <button
+            onClick={search.confirmSaveSearch}
+            disabled={!search.saveSearchName.trim()}
+            type="button"
+            className="px-4 py-2 text-sm font-medium text-white bg-brand-navy hover:bg-brand-blue-hover rounded-button transition-colors disabled:bg-ink-faint disabled:cursor-not-allowed"
+          >Salvar</button>
+        </div>
+      </Dialog>
 
       {/* Keyboard Shortcuts Help */}
-      {showKeyboardHelp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-fade-in">
-          <div className="bg-surface-0 rounded-card shadow-xl max-w-lg w-full p-6 animate-fade-in-up">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-ink">Atalhos de Teclado</h3>
-              <button onClick={() => setShowKeyboardHelp(false)} type="button" className="text-ink-muted hover:text-ink transition-colors" aria-label="Fechar">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
+      <Dialog
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+        title="Atalhos de Teclado"
+        className="max-w-lg"
+        id="keyboard-help"
+      >
+        <div className="space-y-3">
+          {([
+            ["Executar busca", { key: 'k', ctrlKey: true, action: () => {}, description: '' }],
+            ["Selecionar todos os estados", { key: 'a', ctrlKey: true, action: () => {}, description: '' }],
+            ["Executar busca (alternativo)", { key: 'Enter', ctrlKey: true, action: () => {}, description: '' }],
+          ] as [string, KeyboardShortcut][]).map(([label, shortcut]) => (
+            <div key={label} className="flex items-center justify-between py-2 border-b border-strong">
+              <span className="text-ink">{label}</span>
+              <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
+                {getShortcutDisplay(shortcut)}
+              </kbd>
             </div>
-            <div className="space-y-3">
-              {([
-                ["Executar busca", { key: 'k', ctrlKey: true, action: () => {}, description: '' }],
-                ["Selecionar todos os estados", { key: 'a', ctrlKey: true, action: () => {}, description: '' }],
-                ["Executar busca (alternativo)", { key: 'Enter', ctrlKey: true, action: () => {}, description: '' }],
-              ] as [string, KeyboardShortcut][]).map(([label, shortcut]) => (
-                <div key={label} className="flex items-center justify-between py-2 border-b border-strong">
-                  <span className="text-ink">{label}</span>
-                  <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">
-                    {getShortcutDisplay(shortcut)}
-                  </kbd>
-                </div>
-              ))}
-              <div className="flex items-center justify-between py-2 border-b border-strong">
-                <span className="text-ink">Limpar todos os filtros</span>
-                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">Ctrl+Shift+L</kbd>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-strong">
-                <span className="text-ink">Limpar seleção</span>
-                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">Esc</kbd>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-ink">Mostrar atalhos</span>
-                <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">/</kbd>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowKeyboardHelp(false)}
-              type="button"
-              className="mt-4 w-full px-4 py-2 text-sm font-medium text-white bg-brand-navy hover:bg-brand-blue-hover rounded-button transition-colors"
-            >Entendi</button>
+          ))}
+          <div className="flex items-center justify-between py-2 border-b border-strong">
+            <span className="text-ink">Limpar todos os filtros</span>
+            <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">Ctrl+Shift+L</kbd>
+          </div>
+          <div className="flex items-center justify-between py-2 border-b border-strong">
+            <span className="text-ink">Limpar seleção</span>
+            <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">Esc</kbd>
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-ink">Mostrar atalhos</span>
+            <kbd className="px-3 py-1.5 bg-surface-2 rounded text-sm font-mono border border-strong">/</kbd>
           </div>
         </div>
-      )}
+        <button
+          onClick={() => setShowKeyboardHelp(false)}
+          type="button"
+          className="mt-4 w-full px-4 py-2 text-sm font-medium text-white bg-brand-navy hover:bg-brand-blue-hover rounded-button transition-colors"
+        >Entendi</button>
+      </Dialog>
 
       {/* Footer */}
       <footer className="bg-surface-1 text-ink border-t border-[var(--border)] mt-12" role="contentinfo">
