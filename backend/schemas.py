@@ -1120,6 +1120,22 @@ class PerfilContexto(BaseModel):
         max_length=20,
         description="Business-specific keywords for relevance boosting",
     )
+    # GTM-004: Strategic onboarding fields
+    cnae: Optional[str] = Field(
+        default=None,
+        max_length=20,
+        description="CNAE code or business segment (e.g., '4781-4/00')",
+    )
+    objetivo_principal: Optional[str] = Field(
+        default=None,
+        max_length=200,
+        description="User's primary objective in free text",
+    )
+    ticket_medio_desejado: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Desired average ticket in BRL cents",
+    )
 
     @model_validator(mode="after")
     def validate_value_range(self) -> "PerfilContexto":
@@ -1167,6 +1183,69 @@ class PerfilContextoResponse(BaseModel):
     completed: bool = Field(
         default=False,
         description="Whether onboarding wizard has been completed",
+    )
+
+
+class FirstAnalysisRequest(BaseModel):
+    """Request for automatic first analysis after onboarding (GTM-004 AC1)."""
+    cnae: str = Field(
+        ...,
+        max_length=20,
+        description="CNAE code or business segment text",
+    )
+    objetivo_principal: str = Field(
+        default="",
+        max_length=200,
+        description="User's primary objective",
+    )
+    ufs: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=27,
+        description="States of operation",
+    )
+    faixa_valor_min: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Min contract value in BRL (not cents)",
+    )
+    faixa_valor_max: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Max contract value in BRL (not cents)",
+    )
+
+    @field_validator('ufs')
+    @classmethod
+    def validate_ufs(cls, v: List[str]) -> List[str]:
+        valid_ufs = {
+            "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO",
+            "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR",
+            "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+        }
+        invalid = [uf for uf in v if uf.upper() not in valid_ufs]
+        if invalid:
+            raise ValueError(f"UFs inválidas: {invalid}")
+        return [uf.upper() for uf in v]
+
+
+class FirstAnalysisResponse(BaseModel):
+    """Response from first analysis endpoint (GTM-004 AC3)."""
+    search_id: str = Field(
+        ...,
+        description="UUID for tracking search progress via SSE",
+    )
+    status: str = Field(
+        default="in_progress",
+        description="Search status",
+    )
+    message: str = Field(
+        default="",
+        description="User-facing status message",
+    )
+    setor_id: str = Field(
+        default="vestuario",
+        description="Resolved sector ID from CNAE mapping",
     )
 
 

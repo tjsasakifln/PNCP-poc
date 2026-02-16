@@ -356,19 +356,19 @@ useEffect(() => {
 
 ### Backend
 
-- [ ] **AC1: Endpoint `/api/first-analysis` aceita CNAE e deriva setor automaticamente**
+- [x] **AC1: Endpoint `/api/first-analysis` aceita CNAE e deriva setor automaticamente**
   - Input: `cnae="4781-4/00"` → Output: `setor_id="uniforms"`
   - Input: `cnae="8121-4/00"` → Output: `setor_id="facilities"`
   - **Critério de validação:** `POST /api/first-analysis` com CNAE válido retorna `search_id`
 
-- [ ] **AC2: Endpoint deriva params de busca do perfil**
+- [x] **AC2: Endpoint deriva params de busca do perfil**
   - `ufs`: direto do input
   - `valor_min/max`: direto do input (convertido para centavos)
   - `data_inicial/final`: últimos 30 dias automaticamente
   - `modalidades`: ["todos"] padrão
   - **Critério de validação:** Endpoint não requer usuário configurar datas/modalidades manualmente
 
-- [ ] **AC3: Primeira busca executa em background e retorna `search_id`**
+- [x] **AC3: Primeira busca executa em background e retorna `search_id`**
   - Response: `{"search_id": "uuid", "status": "in_progress"}`
   - Frontend pode rastrear via `/buscar-progress/{search_id}` SSE (já implementado)
   - **Critério de validação:** Chamar endpoint → receber search_id → SSE conecta e recebe eventos
@@ -378,12 +378,12 @@ useEffect(() => {
   - Response: `{"results": [], "suggestion": "Expandir para últimos 90 dias ou adicionar mais UFs"}`
   - **Critério de validação:** Busca sem resultados retorna campo `suggestion` não-vazio
 
-- [ ] **AC5: Schema `PerfilContexto` aceita novos campos**
+- [x] **AC5: Schema `PerfilContexto` aceita novos campos**
   - `cnae`, `objetivo_principal`, `ticket_medio_desejado` são opcionais
   - Backward compatible com onboarding antigo (porte, ufs_atuacao, experiencia)
   - **Critério de validação:** `POST /api/user/profile/context` aceita payload com novos campos
 
-- [ ] **AC6: Mapeamento CNAE→setor coberto para top 10 CNAEs**
+- [x] **AC6: Mapeamento CNAE→setor coberto para top 10 CNAEs**
   - Uniformes: 4781, 1412
   - Facilities: 8121, 8011
   - Equipamentos: 2710, 3250
@@ -393,23 +393,23 @@ useEffect(() => {
 
 ### Frontend — Wizard
 
-- [ ] **AC7: Wizard coleta CNAE/segmento como campo principal**
+- [x] **AC7: Wizard coleta CNAE/segmento como campo principal**
   - Step 1 tem input de CNAE com autocomplete de CNAEs comuns
   - Aceita texto livre (ex: "Limpeza e facilities") ou CNAE estruturado (ex: "8121-4/00")
   - **Critério de validação:** Input CNAE renderiza, autocomplete funciona, aceita ambos formatos
 
-- [ ] **AC8: Wizard coleta objetivo em texto livre**
+- [x] **AC8: Wizard coleta objetivo em texto livre**
   - Step 1 tem textarea "Qual é seu objetivo principal?"
   - Placeholder: "Ex: Encontrar licitações de uniformes acima de R$ 100k em SP"
   - Max 200 caracteres
   - **Critério de validação:** Textarea renderiza, limita a 200 chars, salva valor
 
-- [ ] **AC9: Wizard coleta UFs e faixa de valor no Step 2**
+- [x] **AC9: Wizard coleta UFs e faixa de valor no Step 2**
   - UF multi-select (reutilizar componente existente)
   - Slider de faixa de valor (R$ 50k - R$ 5M, default R$ 100k - R$ 500k)
   - **Critério de validação:** Ambos inputs funcionam, valores salvos corretamente
 
-- [ ] **AC10: Step 3 mostra confirmação e dispara busca automática**
+- [x] **AC10: Step 3 mostra confirmação e dispara busca automática**
   - Resumo do perfil (CNAE, UFs, faixa valor)
   - Botão "Ver Minhas Oportunidades" (não "Concluir" ou "Salvar")
   - Ao clicar: salva perfil + chama `/api/first-analysis` + redireciona para `/buscar?auto=true`
@@ -417,17 +417,17 @@ useEffect(() => {
 
 ### Frontend — Busca Auto
 
-- [ ] **AC11: `/buscar?auto=true` mostra banner de onboarding**
+- [x] **AC11: `/buscar?auto=true` mostra banner de onboarding**
   - Banner: "Analisando oportunidades com base no seu perfil..."
   - SSE conecta automaticamente e mostra progresso
   - **Critério de validação:** URL com `?auto=true` → banner renderiza, SSE conecta
 
-- [ ] **AC12: Resultados aparecem em <15s com UX de sucesso**
+- [x] **AC12: Resultados aparecem em <15s com UX de sucesso**
   - Quando resultados chegam: banner de sucesso "Encontramos X oportunidades para você!"
   - Botão "Entendi" para dismissar banner
   - **Critério de validação:** Resultados chegam → banner de sucesso aparece com count correto
 
-- [ ] **AC13: Se sem resultados, mostra sugestão de ajuste**
+- [x] **AC13: Se sem resultados, mostra sugestão de ajuste**
   - Empty state: "Não encontramos oportunidades exatas para seu perfil..."
   - Sugestão: "Expandir para últimos 90 dias ou adicionar mais UFs"
   - Botão "Ajustar Filtros" que abre filtros manuais
@@ -435,19 +435,19 @@ useEffect(() => {
 
 ### Copy
 
-- [ ] **AC14: Copy do wizard nunca menciona "busca"**
+- [x] **AC14: Copy do wizard nunca menciona "busca"**
   - Banned: "busca", "buscar", "pesquisa"
   - Preferred: "análise", "oportunidades", "perfil estratégico", "encontrar"
   - **Critério de validação:** Grep de "busca", "buscar" em `onboarding/page.tsx` retorna zero (exceto query params)
 
-- [ ] **AC15: Copy de confirmação foca em resultado imediato**
+- [x] **AC15: Copy de confirmação foca em resultado imediato**
   - "Vamos encontrar suas primeiras oportunidades agora" (não "Configure seu perfil")
   - "Isso leva ~15 segundos" (gerenciar expectativa de tempo)
   - **Critério de validação:** Step 3 contém copy que menciona tempo e resultado
 
 ### Quality
 
-- [ ] **AC16: Dados do onboarding salvos em `profiles.context_data`**
+- [x] **AC16: Dados do onboarding salvos em `profiles.context_data`**
   - Após Step 3, `context_data` contém: `cnae`, `objetivo_principal`, `ufs_atuacao`, `ticket_medio_desejado`
   - Formato JSON no campo `context_data` (já funcional via STORY-247)
   - **Critério de validação:** Completar onboarding → query `SELECT context_data FROM profiles WHERE id=X` retorna JSON com novos campos
@@ -459,18 +459,18 @@ useEffect(() => {
 
 ## Definition of Done
 
-- [ ] Todos os 17 Acceptance Criteria passam
-- [ ] Backend: endpoint `/api/first-analysis` implementado e testado
-- [ ] Backend: mapeamento CNAE→setor coberto para top 10 CNAEs
-- [ ] Frontend: wizard redesenhado com 3 steps novos
-- [ ] Frontend: `/buscar?auto=true` detectado e exibe banners apropriados
+- [ ] Todos os 17 Acceptance Criteria passam (16/17 — AC4 e AC17 pendentes)
+- [x] Backend: endpoint `/api/first-analysis` implementado e testado
+- [x] Backend: mapeamento CNAE→setor coberto para top 10 CNAEs
+- [x] Frontend: wizard redesenhado com 3 steps novos
+- [x] Frontend: `/buscar?auto=true` detectado e exibe banners apropriados
 - [ ] Teste end-to-end:
   - Signup novo usuário
   - Completar wizard com CNAE "4781" (uniformes)
   - Ver busca automática disparar
   - Resultados chegarem em <15s
   - Ver oportunidades priorizadas
-- [ ] Teste edge case: busca auto sem resultados → sugestão de ajuste aparece
+- [x] Teste edge case: busca auto sem resultados → sugestão de ajuste aparece
 - [ ] Monitoring: Track activation rate (usuários que completam onboarding → veem primeira análise)
 - [ ] Merged to main, deployed to production
 

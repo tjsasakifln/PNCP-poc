@@ -1342,6 +1342,99 @@
           "title": "FilterStats",
           "type": "object"
         },
+        "FirstAnalysisRequest": {
+          "description": "Request for automatic first analysis after onboarding (GTM-004 AC1).",
+          "properties": {
+            "cnae": {
+              "description": "CNAE code or business segment text",
+              "maxLength": 20,
+              "title": "Cnae",
+              "type": "string"
+            },
+            "faixa_valor_max": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Max contract value in BRL (not cents)",
+              "title": "Faixa Valor Max"
+            },
+            "faixa_valor_min": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Min contract value in BRL (not cents)",
+              "title": "Faixa Valor Min"
+            },
+            "objetivo_principal": {
+              "default": "",
+              "description": "User's primary objective",
+              "maxLength": 200,
+              "title": "Objetivo Principal",
+              "type": "string"
+            },
+            "ufs": {
+              "description": "States of operation",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 27,
+              "minItems": 1,
+              "title": "Ufs",
+              "type": "array"
+            }
+          },
+          "required": [
+            "cnae",
+            "ufs"
+          ],
+          "title": "FirstAnalysisRequest",
+          "type": "object"
+        },
+        "FirstAnalysisResponse": {
+          "description": "Response from first analysis endpoint (GTM-004 AC3).",
+          "properties": {
+            "message": {
+              "default": "",
+              "description": "User-facing status message",
+              "title": "Message",
+              "type": "string"
+            },
+            "search_id": {
+              "description": "UUID for tracking search progress via SSE",
+              "title": "Search Id",
+              "type": "string"
+            },
+            "setor_id": {
+              "default": "vestuario",
+              "description": "Resolved sector ID from CNAE mapping",
+              "title": "Setor Id",
+              "type": "string"
+            },
+            "status": {
+              "default": "in_progress",
+              "description": "Search status",
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          "required": [
+            "search_id"
+          ],
+          "title": "FirstAnalysisResponse",
+          "type": "object"
+        },
         "GoogleSheetsExportHistory": {
           "description": "Schema for individual export history entry.",
           "properties": {
@@ -1843,6 +1936,19 @@
         "PerfilContexto": {
           "description": "Business context profile collected during onboarding wizard.\n\nUsed to personalize search defaults and LLM recommendations.\nStored as JSONB in profiles.context_data.",
           "properties": {
+            "cnae": {
+              "anyOf": [
+                {
+                  "maxLength": 20,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "CNAE code or business segment (e.g., '4781-4/00')",
+              "title": "Cnae"
+            },
             "experiencia_licitacoes": {
               "$ref": "#/components/schemas/ExperienciaLicitacoes",
               "description": "Procurement experience level"
@@ -1888,6 +1994,19 @@
               "description": "Preferred procurement modality codes (PNCP API codes)",
               "title": "Modalidades Interesse"
             },
+            "objetivo_principal": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "User's primary objective in free text",
+              "title": "Objetivo Principal"
+            },
             "palavras_chave": {
               "anyOf": [
                 {
@@ -1907,6 +2026,19 @@
             "porte_empresa": {
               "$ref": "#/components/schemas/PorteEmpresa",
               "description": "Company size: ME, EPP, MEDIO, GRANDE"
+            },
+            "ticket_medio_desejado": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Desired average ticket in BRL cents",
+              "title": "Ticket Medio Desejado"
             },
             "ufs_atuacao": {
               "description": "States where the company operates (e.g., ['SP', 'RJ', 'MG'])",
@@ -4846,6 +4978,53 @@
           ]
         }
       },
+      "/first-analysis": {
+        "post": {
+          "description": "Execute first automatic analysis based on onboarding profile.\n\nGTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,\nexecutes search in background, and returns search_id for SSE tracking.",
+          "operationId": "first_analysis_first_analysis_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirstAnalysisRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FirstAnalysisResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "First Analysis",
+          "tags": [
+            "onboarding"
+          ]
+        }
+      },
       "/health": {
         "get": {
           "description": "Health check endpoint for monitoring and load balancers.\n\nProvides lightweight service health verification including dependency\nchecks for Supabase, OpenAI, and Redis connectivity.",
@@ -6920,6 +7099,53 @@
           "summary": "Unsubscribe Email",
           "tags": [
             "emails"
+          ]
+        }
+      },
+      "/v1/first-analysis": {
+        "post": {
+          "description": "Execute first automatic analysis based on onboarding profile.\n\nGTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,\nexecutes search in background, and returns search_id for SSE tracking.",
+          "operationId": "first_analysis_v1_first_analysis_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FirstAnalysisRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FirstAnalysisResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "First Analysis",
+          "tags": [
+            "onboarding"
           ]
         }
       },

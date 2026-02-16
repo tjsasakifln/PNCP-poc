@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useOnboarding } from "../../hooks/useOnboarding";
@@ -26,10 +27,94 @@ import { dateDiffInDays } from "../../lib/utils/dateDiffInDays";
 // White label branding configuration
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
+// ============================================================================
+// GTM-004: Onboarding Auto-Search Banners (AC11-13)
+// ============================================================================
+
+function OnboardingBanner({ message }: { message?: string }) {
+  return (
+    <div className="mb-4 p-4 rounded-lg bg-[var(--brand-blue)]/5 border border-[var(--brand-blue)]/20 flex items-center gap-3">
+      <div className="w-5 h-5 border-2 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+      <div>
+        <p className="text-sm font-medium text-[var(--brand-blue)]">
+          {message || "Analisando oportunidades com base no seu perfil..."}
+        </p>
+        <p className="text-xs text-[var(--ink-secondary)] mt-0.5">
+          Isso leva ~15 segundos. Aguarde enquanto analisamos as fontes de dados.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingSuccessBanner({
+  count,
+  onDismiss,
+}: {
+  count: number;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="mb-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <svg className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+          Encontramos {count} {count === 1 ? "oportunidade" : "oportunidades"} para você! Explore abaixo.
+        </p>
+      </div>
+      <button
+        onClick={onDismiss}
+        className="px-3 py-1 text-xs font-medium rounded bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-700 transition-colors whitespace-nowrap"
+      >
+        Entendi
+      </button>
+    </div>
+  );
+}
+
+function OnboardingEmptyState({ onAdjustFilters }: { onAdjustFilters: () => void }) {
+  return (
+    <div className="mb-4 p-6 rounded-lg bg-[var(--surface-1)] border border-[var(--border)] text-center">
+      <svg className="w-12 h-12 mx-auto mb-3 text-[var(--ink-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <h3 className="text-lg font-semibold text-[var(--ink)] mb-2">
+        Nenhuma oportunidade encontrada para seu perfil
+      </h3>
+      <p className="text-sm text-[var(--ink-secondary)] mb-4 max-w-md mx-auto">
+        Não encontramos oportunidades exatas nos últimos 30 dias. Isso é normal para perfis muito específicos.
+      </p>
+      <div className="space-y-2 text-sm text-[var(--ink-secondary)] mb-4">
+        <p>Sugestões para ampliar resultados:</p>
+        <ul className="list-disc list-inside text-left max-w-sm mx-auto space-y-1">
+          <li>Adicionar mais estados</li>
+          <li>Ampliar a faixa de valor</li>
+          <li>Expandir o período de análise</li>
+        </ul>
+      </div>
+      <button
+        onClick={onAdjustFilters}
+        className="px-4 py-2 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium hover:bg-[var(--brand-blue-hover)] transition-colors"
+      >
+        Ajustar Filtros
+      </button>
+    </div>
+  );
+}
+
 function HomePageContent() {
   const { session, loading: authLoading } = useAuth();
   const { planInfo } = usePlan();
   const { trackEvent } = useAnalytics();
+
+  // GTM-004: Auto-search from onboarding
+  const searchParamsRaw = useSearchParams();
+  const isAutoSearch = searchParamsRaw?.get('auto') === 'true';
+  const autoSearchId = searchParamsRaw?.get('search_id') || null;
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(isAutoSearch);
+  const [autoSearchDismissed, setAutoSearchDismissed] = useState(false);
 
   // Upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -85,6 +170,13 @@ function HomePageContent() {
 
   // Restore search state on mount
   useEffect(() => { search.restoreSearchStateOnMount(); }, []);
+
+  // GTM-004: Auto-search from onboarding
+  useEffect(() => {
+    if (isAutoSearch && autoSearchId && !autoSearchDismissed) {
+      setShowOnboardingBanner(true);
+    }
+  }, [isAutoSearch, autoSearchId, autoSearchDismissed]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({ shortcuts: [
@@ -183,6 +275,28 @@ function HomePageContent() {
               customizeOpen={customizeOpen}
               setCustomizeOpen={setCustomizeOpen}
             />
+
+            {/* GTM-004: Auto-search banners */}
+            {showOnboardingBanner && !autoSearchDismissed && search.loading && (
+              <OnboardingBanner />
+            )}
+            {showOnboardingBanner && !autoSearchDismissed && !search.loading && search.result && search.result.resumo.total_oportunidades > 0 && (
+              <OnboardingSuccessBanner
+                count={search.result.resumo.total_oportunidades}
+                onDismiss={() => {
+                  setAutoSearchDismissed(true);
+                  setShowOnboardingBanner(false);
+                }}
+              />
+            )}
+            {showOnboardingBanner && !autoSearchDismissed && !search.loading && search.result && search.result.resumo.total_oportunidades === 0 && (
+              <OnboardingEmptyState
+                onAdjustFilters={() => {
+                  setAutoSearchDismissed(true);
+                  setShowOnboardingBanner(false);
+                }}
+              />
+            )}
 
             <SearchResults
               loading={search.loading}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import { UF_NAMES, UFS } from "../../lib/constants/uf-names";
@@ -10,19 +10,6 @@ import { toast } from "sonner";
 // Constants
 // ============================================================================
 
-const PORTE_OPTIONS = [
-  { value: "ME", label: "Microempresa (ME)", desc: "Faturamento até R$ 360 mil/ano" },
-  { value: "EPP", label: "Empresa de Pequeno Porte (EPP)", desc: "Faturamento até R$ 4,8 mi/ano" },
-  { value: "MEDIO", label: "Médio Porte", desc: "Faturamento acima de R$ 4,8 mi/ano" },
-  { value: "GRANDE", label: "Grande Porte", desc: "Grandes corporações" },
-] as const;
-
-const EXPERIENCIA_OPTIONS = [
-  { value: "PRIMEIRA_VEZ", label: "Primeira vez", desc: "Nunca participei de licitações" },
-  { value: "INICIANTE", label: "Iniciante", desc: "Participei de 1-5 licitações" },
-  { value: "EXPERIENTE", label: "Experiente", desc: "Participo regularmente" },
-] as const;
-
 const REGIONS: Record<string, string[]> = {
   Norte: ["AC", "AM", "AP", "PA", "RO", "RR", "TO"],
   Nordeste: ["AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"],
@@ -31,17 +18,44 @@ const REGIONS: Record<string, string[]> = {
   Sul: ["PR", "RS", "SC"],
 };
 
+// CNAE suggestions for autocomplete (AC7)
+const CNAE_SUGGESTIONS = [
+  { code: "4781-4/00", label: "Comércio varejista de artigos de vestuário e acessórios" },
+  { code: "1412-6/01", label: "Confecção de peças de vestuário profissional" },
+  { code: "8121-4/00", label: "Limpeza em prédios e em domicílios" },
+  { code: "8011-1/01", label: "Atividades de vigilância e segurança privada" },
+  { code: "2710-4/01", label: "Fabricação de equipamentos elétricos" },
+  { code: "3250-7/01", label: "Fabricação de instrumentos e materiais para uso médico" },
+  { code: "1011-2/01", label: "Abate de reses" },
+  { code: "1091-1/01", label: "Fabricação de produtos de panificação" },
+  { code: "6201-5/01", label: "Desenvolvimento de software sob encomenda" },
+  { code: "6202-3/00", label: "Desenvolvimento e licenciamento de software" },
+] as const;
+
+// Value presets in BRL
+const VALUE_PRESETS = [
+  { value: 50_000, label: "R$ 50 mil" },
+  { value: 100_000, label: "R$ 100 mil" },
+  { value: 250_000, label: "R$ 250 mil" },
+  { value: 500_000, label: "R$ 500 mil" },
+  { value: 1_000_000, label: "R$ 1 milhão" },
+  { value: 2_000_000, label: "R$ 2 milhões" },
+  { value: 5_000_000, label: "R$ 5 milhões" },
+];
+
 // ============================================================================
 // Types
 // ============================================================================
 
 interface OnboardingData {
-  porte_empresa: string;
+  cnae: string;
+  objetivo_principal: string;
   ufs_atuacao: string[];
+  faixa_valor_min: number;
+  faixa_valor_max: number;
+  // Keep legacy fields for backward compat with PerfilContexto
+  porte_empresa: string;
   experiencia_licitacoes: string;
-  faixa_valor_min: number | null;
-  faixa_valor_max: number | null;
-  palavras_chave: string[];
 }
 
 // ============================================================================
@@ -72,10 +86,197 @@ function ProgressBar({ currentStep, totalSteps }: { currentStep: number; totalSt
 }
 
 // ============================================================================
-// Step 1: Sua Empresa
+// CNAE Input with Autocomplete (AC7)
+// ============================================================================
+
+function CNAEInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState(CNAE_SUGGESTIONS.slice());
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const query = value.toLowerCase().trim();
+    if (!query) {
+      setFilteredSuggestions(CNAE_SUGGESTIONS.slice());
+      return;
+    }
+    setFilteredSuggestions(
+      CNAE_SUGGESTIONS.filter(
+        (s) => s.code.toLowerCase().includes(query) || s.label.toLowerCase().includes(query)
+      )
+    );
+  }, [value]);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <label className="block text-sm font-medium text-[var(--ink)] mb-1">
+        Segmento / CNAE *
+      </label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setShowSuggestions(true)}
+        placeholder="Ex: Comércio de uniformes, 4781, Limpeza..."
+        className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-secondary)] focus:ring-2 focus:ring-[var(--brand-blue)]/30 focus:border-[var(--brand-blue)] transition-all"
+        autoComplete="off"
+      />
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <div className="absolute z-10 mt-1 w-full bg-[var(--surface-0)] border border-[var(--border)] rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {filteredSuggestions.map((s) => (
+            <button
+              key={s.code}
+              onClick={() => {
+                onChange(`${s.code} — ${s.label}`);
+                setShowSuggestions(false);
+              }}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--surface-1)] transition-colors"
+            >
+              <span className="font-mono text-[var(--brand-blue)]">{s.code}</span>
+              <span className="text-[var(--ink-secondary)] ml-2">{s.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-[var(--ink-secondary)] mt-1">
+        Aceita CNAE (ex: 4781-4/00) ou texto livre (ex: "Uniformes escolares")
+      </p>
+    </div>
+  );
+}
+
+// ============================================================================
+// Value Range Selector (AC9)
+// ============================================================================
+
+function ValueRangeSelector({
+  valorMin,
+  valorMax,
+  onChangeMin,
+  onChangeMax,
+}: {
+  valorMin: number;
+  valorMax: number;
+  onChangeMin: (v: number) => void;
+  onChangeMax: (v: number) => void;
+}) {
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val);
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-[var(--ink)] mb-2">
+        Faixa de valor ideal dos contratos
+      </label>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-[var(--ink-secondary)] mb-1">Valor mínimo</label>
+          <select
+            value={valorMin}
+            onChange={(e) => onChangeMin(parseInt(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
+          >
+            <option value={0}>Sem limite</option>
+            {VALUE_PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-[var(--ink-secondary)] mb-1">Valor máximo</label>
+          <select
+            value={valorMax}
+            onChange={(e) => onChangeMax(parseInt(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
+          >
+            <option value={0}>Sem limite</option>
+            {VALUE_PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {valorMin > 0 && valorMax > 0 && valorMax < valorMin && (
+        <p className="text-xs text-[var(--error)] mt-1">
+          Valor máximo deve ser maior que o mínimo
+        </p>
+      )}
+      <div className="text-xs text-[var(--ink-secondary)] mt-2">
+        {valorMin > 0 || valorMax > 0
+          ? `Faixa: ${valorMin > 0 ? formatCurrency(valorMin) : "Sem mínimo"} — ${valorMax > 0 ? formatCurrency(valorMax) : "Sem máximo"}`
+          : "Todas as faixas de valor"}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Step 1: Qual é o seu negócio? (AC7, AC8)
 // ============================================================================
 
 function StepOne({
+  data,
+  onChange,
+}: {
+  data: OnboardingData;
+  onChange: (partial: Partial<OnboardingData>) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold text-[var(--ink)] mb-1">Qual é o seu negócio?</h2>
+        <p className="text-sm text-[var(--ink-secondary)]">
+          Informe seu segmento para encontrarmos oportunidades relevantes
+        </p>
+      </div>
+
+      <CNAEInput
+        value={data.cnae}
+        onChange={(cnae) => onChange({ cnae })}
+      />
+
+      <div>
+        <label className="block text-sm font-medium text-[var(--ink)] mb-1">
+          Qual é seu objetivo principal? *
+        </label>
+        <textarea
+          value={data.objetivo_principal}
+          onChange={(e) => onChange({ objetivo_principal: e.target.value.slice(0, 200) })}
+          placeholder="Ex: Encontrar oportunidades de uniformes escolares acima de R$ 100.000 em São Paulo"
+          rows={3}
+          className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-secondary)] focus:ring-2 focus:ring-[var(--brand-blue)]/30 focus:border-[var(--brand-blue)] transition-all resize-none"
+          maxLength={200}
+        />
+        <p className="text-xs text-[var(--ink-secondary)] mt-1 text-right">
+          {data.objetivo_principal.length}/200
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Step 2: Onde você atua? (AC9)
+// ============================================================================
+
+function StepTwo({
   data,
   onChange,
 }: {
@@ -103,42 +304,21 @@ function StepOne({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-[var(--ink)] mb-1">Sua Empresa</h2>
+        <h2 className="text-xl font-semibold text-[var(--ink)] mb-1">Onde você atua e qual valor ideal?</h2>
         <p className="text-sm text-[var(--ink-secondary)]">
-          Nos conte sobre sua empresa para personalizar seus resultados
+          Selecione estados e faixa de valor para encontrar oportunidades compatíveis
         </p>
-      </div>
-
-      {/* Porte */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--ink)] mb-2">Porte da empresa *</label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {PORTE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onChange({ porte_empresa: opt.value })}
-              className={`p-3 rounded-lg border text-left transition-all ${
-                data.porte_empresa === opt.value
-                  ? "border-[var(--brand-blue)] bg-[var(--brand-blue)]/5 ring-1 ring-[var(--brand-blue)]"
-                  : "border-[var(--border)] hover:border-[var(--ink-secondary)]"
-              }`}
-            >
-              <div className="text-sm font-medium text-[var(--ink)]">{opt.label}</div>
-              <div className="text-xs text-[var(--ink-secondary)]">{opt.desc}</div>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* UFs de atuação */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="block text-sm font-medium text-[var(--ink)]">
-            UFs de atuação * <span className="font-normal text-[var(--ink-secondary)]">({data.ufs_atuacao.length} selecionadas)</span>
+            Estados de atuação * <span className="font-normal text-[var(--ink-secondary)]">({data.ufs_atuacao.length} selecionados)</span>
           </label>
           <div className="flex gap-2">
             <button onClick={selectAll} className="text-xs text-[var(--brand-blue)] hover:underline">
-              Todas
+              Todos
             </button>
             <button onClick={clearAll} className="text-xs text-[var(--ink-secondary)] hover:underline">
               Limpar
@@ -185,212 +365,63 @@ function StepOne({
         </div>
       </div>
 
-      {/* Experiência */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--ink)] mb-2">Experiência com licitações *</label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {EXPERIENCIA_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onChange({ experiencia_licitacoes: opt.value })}
-              className={`p-3 rounded-lg border text-left transition-all ${
-                data.experiencia_licitacoes === opt.value
-                  ? "border-[var(--brand-blue)] bg-[var(--brand-blue)]/5 ring-1 ring-[var(--brand-blue)]"
-                  : "border-[var(--border)] hover:border-[var(--ink-secondary)]"
-              }`}
-            >
-              <div className="text-sm font-medium text-[var(--ink)]">{opt.label}</div>
-              <div className="text-xs text-[var(--ink-secondary)]">{opt.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Value Range */}
+      <ValueRangeSelector
+        valorMin={data.faixa_valor_min}
+        valorMax={data.faixa_valor_max}
+        onChangeMin={(v) => onChange({ faixa_valor_min: v })}
+        onChangeMax={(v) => onChange({ faixa_valor_max: v })}
+      />
     </div>
   );
 }
 
 // ============================================================================
-// Step 2: Seu Interesse
-// ============================================================================
-
-function StepTwo({
-  data,
-  onChange,
-  userSector,
-}: {
-  data: OnboardingData;
-  onChange: (partial: Partial<OnboardingData>) => void;
-  userSector?: string;
-}) {
-  const [keywordInput, setKeywordInput] = useState("");
-
-  const addKeyword = () => {
-    const kw = keywordInput.trim();
-    if (kw && !data.palavras_chave.includes(kw)) {
-      onChange({ palavras_chave: [...data.palavras_chave, kw] });
-    }
-    setKeywordInput("");
-  };
-
-  const removeKeyword = (kw: string) => {
-    onChange({ palavras_chave: data.palavras_chave.filter((k) => k !== kw) });
-  };
-
-  const formatCurrency = (val: number | null) => {
-    if (val === null) return "";
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val);
-  };
-
-  // Slider range presets
-  const VALUE_PRESETS = [0, 50_000, 100_000, 500_000, 1_000_000, 5_000_000, 10_000_000, 50_000_000];
-
-  const findClosestPreset = (val: number | null): number => {
-    if (val === null) return 0;
-    return VALUE_PRESETS.reduce((prev, curr) =>
-      Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-[var(--ink)] mb-1">Seu Interesse</h2>
-        <p className="text-sm text-[var(--ink-secondary)]">
-          Configure suas preferências de busca para resultados mais relevantes
-        </p>
-      </div>
-
-      {/* Setor (display only, from signup) */}
-      {userSector && (
-        <div>
-          <label className="block text-sm font-medium text-[var(--ink)] mb-1">Setor principal</label>
-          <div className="px-3 py-2 rounded-lg bg-[var(--surface-1)] border border-[var(--border)] text-sm text-[var(--ink)]">
-            {userSector}
-          </div>
-          <p className="text-xs text-[var(--ink-secondary)] mt-1">Definido no cadastro</p>
-        </div>
-      )}
-
-      {/* Value range */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--ink)] mb-2">Faixa de valor dos contratos</label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-[var(--ink-secondary)] mb-1">Valor mínimo</label>
-            <select
-              value={findClosestPreset(data.faixa_valor_min)}
-              onChange={(e) => {
-                const v = parseInt(e.target.value);
-                onChange({ faixa_valor_min: v === 0 ? null : v });
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
-            >
-              <option value={0}>Sem limite</option>
-              {VALUE_PRESETS.slice(1).map((v) => (
-                <option key={v} value={v}>{formatCurrency(v)}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-[var(--ink-secondary)] mb-1">Valor máximo</label>
-            <select
-              value={findClosestPreset(data.faixa_valor_max)}
-              onChange={(e) => {
-                const v = parseInt(e.target.value);
-                onChange({ faixa_valor_max: v === 0 ? null : v });
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
-            >
-              <option value={0}>Sem limite</option>
-              {VALUE_PRESETS.slice(1).map((v) => (
-                <option key={v} value={v}>{formatCurrency(v)}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Keywords */}
-      <div>
-        <label className="block text-sm font-medium text-[var(--ink)] mb-2">
-          Palavras-chave do seu nicho <span className="font-normal text-[var(--ink-secondary)]">(opcional, máx. 20)</span>
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={keywordInput}
-            onChange={(e) => setKeywordInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addKeyword(); } }}
-            placeholder="Ex: jaleco, fardamento, EPI..."
-            className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-secondary)]"
-            maxLength={50}
-          />
-          <button
-            onClick={addKeyword}
-            disabled={!keywordInput.trim() || data.palavras_chave.length >= 20}
-            className="px-4 py-2 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium disabled:opacity-40 hover:bg-[var(--brand-blue-hover)] transition-colors"
-          >
-            Adicionar
-          </button>
-        </div>
-        {data.palavras_chave.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {data.palavras_chave.map((kw) => (
-              <span
-                key={kw}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--brand-blue)]/10 text-[var(--brand-blue)] text-xs"
-              >
-                {kw}
-                <button onClick={() => removeKeyword(kw)} className="hover:text-[var(--error)]" aria-label={`Remover ${kw}`}>
-                  &times;
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Step 3: Resumo + CTA
+// Step 3: Confirmação + Primeira Análise (AC10, AC15)
 // ============================================================================
 
 function StepThree({
   data,
-  saving,
+  isAnalyzing,
 }: {
   data: OnboardingData;
-  saving: boolean;
+  isAnalyzing: boolean;
 }) {
-  const porteLabel = PORTE_OPTIONS.find((o) => o.value === data.porte_empresa)?.label || data.porte_empresa;
-  const expLabel = EXPERIENCIA_OPTIONS.find((o) => o.value === data.experiencia_licitacoes)?.label || data.experiencia_licitacoes;
-
-  const formatCurrency = (val: number | null) => {
-    if (val === null) return "Sem limite";
+  const formatCurrency = (val: number) => {
+    if (val === 0) return "Sem limite";
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val);
   };
+
+  // Extract display name from CNAE string
+  const cnaeDisplay = data.cnae.includes("—")
+    ? data.cnae.split("—")[1]?.trim() || data.cnae
+    : data.cnae;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-[var(--ink)] mb-1">Tudo pronto!</h2>
+        <h2 className="text-xl font-semibold text-[var(--ink)] mb-1">Pronto para começar</h2>
         <p className="text-sm text-[var(--ink-secondary)]">
-          Confira seu perfil de licitações. Você pode alterar a qualquer momento.
+          Vamos encontrar suas primeiras oportunidades agora. Isso leva ~15 segundos.
         </p>
       </div>
 
       <div className="space-y-4 p-4 rounded-lg bg-[var(--surface-1)] border border-[var(--border)]">
         <div>
-          <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Porte</div>
-          <div className="text-sm font-medium text-[var(--ink)]">{porteLabel}</div>
+          <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Segmento</div>
+          <div className="text-sm font-medium text-[var(--ink)]">{cnaeDisplay}</div>
         </div>
+        {data.objetivo_principal && (
+          <div>
+            <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Objetivo</div>
+            <div className="text-sm text-[var(--ink)]">{data.objetivo_principal}</div>
+          </div>
+        )}
         <div>
-          <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">UFs de atuação</div>
+          <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Estados de atuação</div>
           <div className="flex flex-wrap gap-1 mt-1">
             {data.ufs_atuacao.length === 27 ? (
-              <span className="text-sm text-[var(--ink)]">Todas as UFs</span>
+              <span className="text-sm text-[var(--ink)]">Todos os estados</span>
             ) : (
               data.ufs_atuacao.map((uf) => (
                 <span key={uf} className="px-1.5 py-0.5 text-xs rounded bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]">
@@ -401,33 +432,20 @@ function StepThree({
           </div>
         </div>
         <div>
-          <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Experiência</div>
-          <div className="text-sm font-medium text-[var(--ink)]">{expLabel}</div>
-        </div>
-        <div>
           <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Faixa de valor</div>
           <div className="text-sm text-[var(--ink)]">
             {formatCurrency(data.faixa_valor_min)} — {formatCurrency(data.faixa_valor_max)}
           </div>
         </div>
-        {data.palavras_chave.length > 0 && (
-          <div>
-            <div className="text-xs text-[var(--ink-secondary)] uppercase tracking-wide">Palavras-chave</div>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {data.palavras_chave.map((kw) => (
-                <span key={kw} className="px-2 py-0.5 text-xs rounded-full bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]">
-                  {kw}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {saving && (
-        <div className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]">
-          <div className="w-4 h-4 border-2 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin" />
-          Salvando seu perfil...
+      {isAnalyzing && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--brand-blue)]/5 border border-[var(--brand-blue)]/20">
+          <div className="w-5 h-5 border-2 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-[var(--brand-blue)]">Analisando oportunidades...</p>
+            <p className="text-xs text-[var(--ink-secondary)]">Configurando seu perfil e iniciando análise automática</p>
+          </div>
         </div>
       )}
     </div>
@@ -442,16 +460,17 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { user, session, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
-  const [saving, setSaving] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [existingContext, setExistingContext] = useState<Record<string, unknown> | null>(null);
 
   const [data, setData] = useState<OnboardingData>({
-    porte_empresa: "",
+    cnae: "",
+    objetivo_principal: "",
     ufs_atuacao: [],
-    experiencia_licitacoes: "",
-    faixa_valor_min: null,
-    faixa_valor_max: null,
-    palavras_chave: [],
+    faixa_valor_min: 100_000,   // Default R$ 100k
+    faixa_valor_max: 500_000,   // Default R$ 500k
+    porte_empresa: "EPP",       // Default for backward compat
+    experiencia_licitacoes: "INICIANTE",
   });
 
   const updateData = useCallback((partial: Partial<OnboardingData>) => {
@@ -469,14 +488,17 @@ export default function OnboardingPage() {
       .then((res) => {
         if (res.context_data && Object.keys(res.context_data).length > 0) {
           setExistingContext(res.context_data);
-          setData({
-            porte_empresa: res.context_data.porte_empresa || "",
-            ufs_atuacao: res.context_data.ufs_atuacao || [],
-            experiencia_licitacoes: res.context_data.experiencia_licitacoes || "",
-            faixa_valor_min: res.context_data.faixa_valor_min ?? null,
-            faixa_valor_max: res.context_data.faixa_valor_max ?? null,
-            palavras_chave: res.context_data.palavras_chave || [],
-          });
+          const ctx = res.context_data;
+          setData((prev) => ({
+            ...prev,
+            cnae: ctx.cnae || "",
+            objetivo_principal: ctx.objetivo_principal || "",
+            ufs_atuacao: ctx.ufs_atuacao || [],
+            faixa_valor_min: ctx.faixa_valor_min ?? 100_000,
+            faixa_valor_max: ctx.faixa_valor_max ?? 500_000,
+            porte_empresa: ctx.porte_empresa || "EPP",
+            experiencia_licitacoes: ctx.experiencia_licitacoes || "INICIANTE",
+          }));
         }
       })
       .catch(() => {});
@@ -485,56 +507,79 @@ export default function OnboardingPage() {
   // Validation per step
   const canProceed = (): boolean => {
     if (currentStep === 0) {
-      return !!data.porte_empresa && data.ufs_atuacao.length > 0 && !!data.experiencia_licitacoes;
+      return data.cnae.trim().length > 0 && data.objetivo_principal.trim().length > 0;
     }
     if (currentStep === 1) {
-      // Value range validation
-      if (data.faixa_valor_min !== null && data.faixa_valor_max !== null) {
-        return data.faixa_valor_max >= data.faixa_valor_min;
-      }
-      return true; // Step 2 fields are all optional
+      if (data.ufs_atuacao.length === 0) return false;
+      if (data.faixa_valor_min > 0 && data.faixa_valor_max > 0 && data.faixa_valor_max < data.faixa_valor_min) return false;
+      return true;
     }
     return true;
   };
 
-  const handleSave = async () => {
+  const submitAndAnalyze = async () => {
     if (!session?.access_token) return;
-    setSaving(true);
+    setIsAnalyzing(true);
 
     try {
-      const payload: Record<string, unknown> = {
+      // 1. Save profile context (backward compatible)
+      const profilePayload: Record<string, unknown> = {
         ufs_atuacao: data.ufs_atuacao,
         porte_empresa: data.porte_empresa,
         experiencia_licitacoes: data.experiencia_licitacoes,
+        cnae: data.cnae,
+        objetivo_principal: data.objetivo_principal,
+        ticket_medio_desejado: data.faixa_valor_max || null,
       };
-      if (data.faixa_valor_min !== null) payload.faixa_valor_min = data.faixa_valor_min;
-      if (data.faixa_valor_max !== null) payload.faixa_valor_max = data.faixa_valor_max;
-      if (data.palavras_chave.length > 0) payload.palavras_chave = data.palavras_chave;
+      if (data.faixa_valor_min > 0) profilePayload.faixa_valor_min = data.faixa_valor_min;
+      if (data.faixa_valor_max > 0) profilePayload.faixa_valor_max = data.faixa_valor_max;
 
-      const res = await fetch("/api/profile-context", {
+      const profileRes = await fetch("/api/profile-context", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(profilePayload),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!profileRes.ok) throw new Error("Erro ao salvar perfil");
 
-      // Cache context locally for useSearchFilters (STORY-247 AC12)
-      localStorage.setItem("smartlic-profile-context", JSON.stringify(payload));
-      // Mark onboarding as completed so redirect doesn't trigger again (AC11)
+      // Cache locally
+      localStorage.setItem("smartlic-profile-context", JSON.stringify(profilePayload));
       localStorage.setItem("smartlic-onboarding-completed", "true");
 
-      toast.success("Perfil salvo com sucesso!");
-      // Build search URL with profile defaults
-      const searchParams = new URLSearchParams();
-      searchParams.set("ufs", data.ufs_atuacao.join(","));
-      router.push(`/buscar?${searchParams.toString()}`);
+      // 2. Start first analysis
+      const analysisRes = await fetch("/api/first-analysis", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cnae: data.cnae,
+          objetivo_principal: data.objetivo_principal,
+          ufs: data.ufs_atuacao,
+          faixa_valor_min: data.faixa_valor_min > 0 ? data.faixa_valor_min : null,
+          faixa_valor_max: data.faixa_valor_max > 0 ? data.faixa_valor_max : null,
+        }),
+      });
+
+      if (!analysisRes.ok) {
+        // If first analysis fails, still redirect (graceful degradation)
+        toast.success("Perfil salvo! Redirecionando...");
+        router.push(`/buscar?ufs=${data.ufs_atuacao.join(",")}`);
+        return;
+      }
+
+      const { search_id } = await analysisRes.json();
+
+      // 3. Redirect to search with auto flag
+      toast.success("Perfil salvo! Analisando suas oportunidades...");
+      router.push(`/buscar?auto=true&search_id=${search_id}`);
     } catch {
-      toast.error("Erro ao salvar perfil. Tente novamente.");
-      setSaving(false);
+      toast.error("Erro ao configurar perfil. Tente novamente.");
+      setIsAnalyzing(false);
     }
   };
 
@@ -544,7 +589,7 @@ export default function OnboardingPage() {
 
   const nextStep = () => {
     if (currentStep < 2) setCurrentStep(currentStep + 1);
-    else handleSave();
+    else submitAndAnalyze();
   };
 
   const prevStep = () => {
@@ -565,18 +610,16 @@ export default function OnboardingPage() {
     return null;
   }
 
-  const userSector = user.user_metadata?.sector;
-
   return (
     <div className="min-h-screen bg-[var(--surface-0)] flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-[var(--ink)]">
-            {existingContext ? "Atualizar Perfil de Licitações" : "Configure seu Perfil de Licitações"}
+            {existingContext ? "Atualizar Perfil Estratégico" : "Configure seu Perfil Estratégico"}
           </h1>
           <p className="text-sm text-[var(--ink-secondary)] mt-1">
-            Personalize sua experiência em menos de 2 minutos
+            Em 3 passos vamos encontrar suas primeiras oportunidades
           </p>
         </div>
 
@@ -586,8 +629,8 @@ export default function OnboardingPage() {
 
           {/* Steps */}
           {currentStep === 0 && <StepOne data={data} onChange={updateData} />}
-          {currentStep === 1 && <StepTwo data={data} onChange={updateData} userSector={userSector} />}
-          {currentStep === 2 && <StepThree data={data} saving={saving} />}
+          {currentStep === 1 && <StepTwo data={data} onChange={updateData} />}
+          {currentStep === 2 && <StepThree data={data} isAnalyzing={isAnalyzing} />}
 
           {/* Navigation */}
           <div className="flex items-center justify-between mt-8 pt-4 border-t border-[var(--border)]">
@@ -595,7 +638,8 @@ export default function OnboardingPage() {
               {currentStep > 0 ? (
                 <button
                   onClick={prevStep}
-                  className="px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+                  disabled={isAnalyzing}
+                  className="px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors disabled:opacity-40"
                 >
                   Voltar
                 </button>
@@ -619,11 +663,15 @@ export default function OnboardingPage() {
               )}
               <button
                 onClick={nextStep}
-                disabled={!canProceed() || saving}
+                disabled={!canProceed() || isAnalyzing}
                 className="px-6 py-2.5 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium
                            disabled:opacity-40 hover:bg-[var(--brand-blue-hover)] transition-colors"
               >
-                {currentStep === 2 ? (saving ? "Salvando..." : "Ver minhas oportunidades") : "Próximo"}
+                {currentStep === 2
+                  ? isAnalyzing
+                    ? "Analisando..."
+                    : "Ver Minhas Oportunidades"
+                  : "Continuar"}
               </button>
             </div>
           </div>
