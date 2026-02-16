@@ -74,11 +74,11 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           variants={fadeInUp}
         >
           <span className="text-ink">
-            Seu Analista de Licitações
+            Saiba Onde Investir
           </span>
           <br />
           <span className="text-gradient">
-            Movido por Inteligência Artificial
+            para Ganhar Mais Licitações
           </span>
         </motion.h1>
 
@@ -95,9 +95,9 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           "
           variants={fadeInUp}
         >
-          IA analisa milhares de editais e entrega apenas as oportunidades
+          Inteligência que avalia oportunidades, prioriza o que importa
           <br className="hidden sm:block" />
-          certas para o perfil do seu negócio. Curadoria inteligente, não busca genérica.
+          e guia suas decisões. Avaliação objetiva, não busca genérica.
         </motion.p>
 
         {/* CTA Buttons */}
@@ -112,7 +112,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             glow={true}
             onClick={() => window.location.href = '/signup?source=landing-cta'}
           >
-            Encontrar minhas oportunidades
+            Descobrir minhas oportunidades
           </GradientButton>
 
           {/* Secondary CTA with border fill animation */}
@@ -132,9 +132,9 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           className="mt-12 flex flex-wrap items-center justify-center gap-4"
           variants={fadeInUp}
         >
-          <StatsBadge icon={Target} value="R$ 2.3" label="bi mapeados" delay={0} />
-          <StatsBadge icon={Zap} value="500k+" label="editais/mês" delay={0.1} />
-          <StatsBadge icon={Globe} value="27" label="estados cobertos" delay={0.2} />
+          <StatsBadge icon={Target} value="R$ 2.3" label="bi em oportunidades" delay={0} />
+          <StatsBadge icon={Zap} value="12" label="setores cobertos" delay={0.1} />
+          <StatsBadge icon={Globe} value="27" label="estados monitorados" delay={0.2} />
         </motion.div>
       </motion.div>
     </section>
@@ -188,7 +188,7 @@ function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
     : value.includes('x')
     ? `${count}x`
     : value.includes('+')
-    ? value // Keep "PNCP + 27" as is
+    ? value // Keep original value as is
     : `${count}`;
 
   // Determine if icon is a component or string emoji (backward compatibility)

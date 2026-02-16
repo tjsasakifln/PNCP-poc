@@ -35,13 +35,13 @@ const appName = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://bidiq-frontend-production.up.railway.app"),
   title: `${appName} - Busca Inteligente de Licitações`,
-  description: "Ferramenta de busca avançada no PNCP com filtros por setor, região e período",
+  description: "Inteligência de decisão em licitações com avaliação objetiva por setor, região e período",
   icons: {
     icon: "/favicon.ico",
   },
   openGraph: {
     title: appName,
-    description: "Busca inteligente de licitações no PNCP",
+    description: "Inteligência de decisão para oportunidades de licitação",
     siteName: appName,
     type: "website",
     locale: "pt_BR",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: appName,
-    description: "Busca inteligente de licitações no PNCP",
+    description: "Inteligência de decisão para oportunidades de licitação",
     images: ["/og-image.png"],
   },
 };

@@ -474,7 +474,7 @@ export default function DashboardPage() {
               icon="⏱️"
               label="Horas economizadas"
               value={`${formatNumber(summary.estimated_hours_saved)}h`}
-              subtitle="vs busca manual no PNCP"
+              subtitle="vs busca manual em portais"
             />
             <StatCard
               icon="✅"

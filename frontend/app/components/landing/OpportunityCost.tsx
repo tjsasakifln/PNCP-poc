@@ -35,24 +35,24 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
 
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-              Cada edital que passa é um contrato que vai para o concorrente.
+              Enquanto você busca, seu concorrente já está se posicionando.
             </h2>
 
-            {/* Bullet Points — Curtos e diretos */}
+            {/* Bullet Points — Custo de oportunidade financeiro */}
             <ul className="mt-6 space-y-3 text-lg text-ink-secondary">
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
                 <span>
-                  <strong className="text-ink tabular-nums">R$ 2,3 bilhões</strong> em oportunidades mapeadas mensalmente
+                  Uma única licitação perdida por falta de visibilidade pode custar <strong className="text-ink tabular-nums">R$ 50.000, R$ 200.000 ou mais</strong>
                 </span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
-                <span>Editais relevantes vencem enquanto você ainda procura</span>
+                <span>Cada dia sem visibilidade completa é uma oportunidade que pode ir para outro</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
-                <span>Quem encontra primeiro, licita primeiro</span>
+                <span>O custo de não usar SmartLic não é tempo — <strong className="text-ink">é dinheiro</strong></span>
               </li>
             </ul>
           </div>

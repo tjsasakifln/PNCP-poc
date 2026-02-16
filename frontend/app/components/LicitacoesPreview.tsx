@@ -72,7 +72,7 @@ export function LicitacoesPreview({
   const getSourceBadge = (source?: string) => {
     if (!source) return null;
     const sourceConfig: Record<string, { label: string; bg: string; text: string }> = {
-      PNCP: { label: "PNCP", bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300" },
+      PNCP: { label: "Fonte Oficial", bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-300" },
       COMPRAS_GOV: { label: "ComprasGov", bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-300" },
       PORTAL_COMPRAS: { label: "Portal", bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-700 dark:text-purple-300" },
     };

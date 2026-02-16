@@ -5,34 +5,34 @@ describe('StatsSection', () => {
   it('renders section title', () => {
     render(<StatsSection />);
 
-    expect(screen.getByText(/Números que falam por si/i)).toBeInTheDocument();
+    expect(screen.getByText(/Impacto real no mercado de licitações/i)).toBeInTheDocument();
   });
 
   it('renders hero stat 6M+', () => {
     render(<StatsSection />);
 
-    expect(screen.getByText('6M+')).toBeInTheDocument();
-    expect(screen.getByText(/licitações\/ano/i)).toBeInTheDocument();
+    expect(screen.getByText('R$ 2.3bi')).toBeInTheDocument();
+    expect(screen.getByText(/em oportunidades\/mês/i)).toBeInTheDocument();
   });
 
   it('renders 3 supporting stats', () => {
     render(<StatsSection />);
 
-    expect(screen.getByText('500k')).toBeInTheDocument();
-    expect(screen.getByText(/\/mês processadas/i)).toBeInTheDocument();
-
     expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText(/setores atendidos/i)).toBeInTheDocument();
+    expect(screen.getByText(/setores especializados/i)).toBeInTheDocument();
 
-    expect(screen.getByText('Servidores')).toBeInTheDocument();
-    expect(screen.getByText(/públicos criadores/i)).toBeInTheDocument();
+    expect(screen.getByText('27')).toBeInTheDocument();
+    expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
+
+    expect(screen.getByText('Diário')).toBeInTheDocument();
+    expect(screen.getByText(/monitoramento contínuo/i)).toBeInTheDocument();
   });
 
   it('uses hero number layout', () => {
     const { container } = render(<StatsSection />);
 
-    // Hero number should be much larger
-    const heroNumber = container.querySelector('.text-6xl, .text-7xl, .text-8xl, .lg\\:text-8xl');
+    // Hero number should be much larger (text-5xl sm:text-6xl lg:text-7xl)
+    const heroNumber = container.querySelector('.text-5xl, .text-6xl, .text-7xl, .lg\\:text-7xl');
     expect(heroNumber).toBeInTheDocument();
   });
 

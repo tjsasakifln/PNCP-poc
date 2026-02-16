@@ -20,7 +20,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          Cobertura total, precisão absoluta
+          Cobertura nacional, precisão absoluta
         </h2>
 
         <p
@@ -28,10 +28,10 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          100% das licitações federais, direto da fonte oficial do governo.
+          Monitoramos dezenas de fontes oficiais em tempo real para garantir que nenhuma oportunidade passe despercebida.
         </p>
 
-        {/* Fonte Primária: PNCP */}
+        {/* Fonte Primária: Inteligência de Fontes */}
         <div
           className={`bg-brand-navy text-white p-8 rounded-card mb-6 transition-all duration-500 delay-150 ${
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
@@ -40,7 +40,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
           <div className="flex items-center justify-center gap-3 mb-3">
             <svg
               role="img"
-              aria-label="Ícone"
+              aria-label="Cobertura"
               className="w-7 h-7"
               fill="currentColor"
               viewBox="0 0 20 20"
@@ -52,35 +52,10 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
                 clipRule="evenodd"
               />
             </svg>
-            <h3 className="text-xl font-bold">Portal Nacional de Contratações Públicas</h3>
+            <h3 className="text-xl font-bold">Inteligência de Fontes Oficiais</h3>
           </div>
-          <p className="text-2xl font-bold mb-1">PNCP — 100% das licitações federais</p>
-          <p className="text-white/80 text-sm mb-4">Fonte oficial do Governo Federal • 27 estados • Atualização contínua</p>
-          <a
-            href="https://pncp.gov.br"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white text-brand-navy px-5 py-2 rounded-button font-semibold hover:bg-surface-1 transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/50"
-            aria-label="Acessar PNCP - abre em nova aba"
-          >
-            Conhecer o PNCP
-            <svg
-              role="img"
-              aria-label="Ícone"
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
-          </a>
+          <p className="text-2xl font-bold mb-1">Dezenas de fontes consolidadas em tempo real</p>
+          <p className="text-white/80 text-sm mb-4">Governo Federal + 27 estados + Diários oficiais + Bases complementares</p>
         </div>
 
         {/* Fontes Complementares */}
@@ -90,10 +65,10 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
           }`}
         >
           <h4 className="text-sm font-bold text-ink uppercase tracking-wide mb-4">
-            Fontes Complementares em Expansão
+            Cobertura em Constante Expansão
           </h4>
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-ink-secondary">
-            {['BLL', 'Portal Compras Públicas', 'BNC', 'Licitar Digital', 'Portais estaduais'].map((source) => (
+            {['Fontes federais', 'Portais estaduais', 'Diários oficiais', 'Bases complementares', 'Fontes municipais'].map((source) => (
               <span
                 key={source}
                 className="bg-surface-0 border border-[var(--border)] px-3 py-1.5 rounded-full"

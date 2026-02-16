@@ -69,8 +69,9 @@ describe('LoadingProgress Component', () => {
     it('should start at "connecting" stage', () => {
       render(<LoadingProgress />);
 
-      // Text appears in multiple places (stage label + status message + mobile detail)
-      expect(screen.getAllByText(/Conectando ao PNCP/i)[0]).toBeInTheDocument();
+      // Stage label has been updated to "Conectando às fontes oficiais"
+      expect(screen.getAllByText(/Conectando às fontes oficiais/i)[0]).toBeInTheDocument();
+      // Status message still uses "Portal Nacional" (not yet updated in component)
       expect(screen.getAllByText(/Estabelecendo conexão com Portal Nacional/i)[0]).toBeInTheDocument();
     });
 

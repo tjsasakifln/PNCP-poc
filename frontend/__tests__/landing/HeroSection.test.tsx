@@ -6,30 +6,30 @@ describe('HeroSection', () => {
   it('renders headline with intelligence/curation positioning (AC1)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/Seu Analista de Licitações/i)).toBeInTheDocument();
-    expect(screen.getByText(/Movido por Inteligência Artificial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Saiba Onde Investir/i)).toBeInTheDocument();
+    expect(screen.getByText(/para Ganhar Mais Licitações/i)).toBeInTheDocument();
   });
 
   it('renders subheadline mentioning AI as differentiator (AC2)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/IA analisa milhares de editais/i)).toBeInTheDocument();
-    expect(screen.getByText(/Curadoria inteligente/i)).toBeInTheDocument();
+    expect(screen.getByText(/Inteligência que avalia oportunidades/i)).toBeInTheDocument();
+    expect(screen.getByText(/prioriza o que importa/i)).toBeInTheDocument();
   });
 
   it('renders primary CTA with results verb (AC3)', () => {
     render(<HeroSection />);
 
-    const primaryCTA = screen.getByRole('button', { name: /Encontrar minhas oportunidades/i });
+    const primaryCTA = screen.getByRole('button', { name: /Descobrir minhas oportunidades/i });
     expect(primaryCTA).toBeInTheDocument();
   });
 
   it('renders stats badges with trust signals (AC4)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/bi mapeados/i)).toBeInTheDocument();
-    expect(screen.getByText(/editais\/mês/i)).toBeInTheDocument();
-    expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
+    expect(screen.getByText(/bi em oportunidades/i)).toBeInTheDocument();
+    expect(screen.getByText(/setores cobertos/i)).toBeInTheDocument();
+    expect(screen.getByText(/estados monitorados/i)).toBeInTheDocument();
   });
 
   it('renders secondary CTA button with scroll functionality', () => {

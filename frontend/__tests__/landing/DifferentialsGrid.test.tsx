@@ -5,42 +5,46 @@ describe('DifferentialsGrid', () => {
   it('renders section title with value positioning', () => {
     render(<DifferentialsGrid />);
 
-    expect(screen.getByText(/Inteligência que gera resultado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Por que empresas que vencem licitações usam SmartLic/i)).toBeInTheDocument();
   });
 
   it('renders subtitle focused on winning bids', () => {
     render(<DifferentialsGrid />);
 
-    expect(screen.getByText(/ganhar licitações, não apenas encontrá-las/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cada funcionalidade foi projetada para você vencer, não apenas encontrar/i)).toBeInTheDocument();
   });
 
   it('renders 4 value differentials with correct titles (AC6)', () => {
     render(<DifferentialsGrid />);
 
-    expect(screen.getByText('FILTRO SETORIAL INTELIGENTE')).toBeInTheDocument();
-    expect(screen.getByText('SÓ OPORTUNIDADES ABERTAS')).toBeInTheDocument();
-    expect(screen.getByText('RESUMO EXECUTIVO POR IA')).toBeInTheDocument();
-    expect(screen.getByText('ZERO RUÍDO')).toBeInTheDocument();
+    expect(screen.getByText('PRIORIZAÇÃO INTELIGENTE')).toBeInTheDocument();
+    expect(screen.getByText('ANÁLISE AUTOMATIZADA')).toBeInTheDocument();
+    expect(screen.getByText('REDUÇÃO DE INCERTEZA')).toBeInTheDocument();
+    expect(screen.getByText('COBERTURA NACIONAL')).toBeInTheDocument();
   });
 
   it('renders bullet points for each differential (AC6)', () => {
     render(<DifferentialsGrid />);
 
-    // FILTRO SETORIAL INTELIGENTE
-    expect(screen.getByText(/9 setores especializados/i)).toBeInTheDocument();
-    expect(screen.getByText(/Só oportunidades do seu mercado/i)).toBeInTheDocument();
+    // PRIORIZAÇÃO INTELIGENTE
+    expect(screen.getByText(/Análise de adequação ao seu perfil/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ranqueamento por relevância/i)).toBeInTheDocument();
+    expect(screen.getByText(/Foco no que gera resultado/i)).toBeInTheDocument();
 
-    // SÓ OPORTUNIDADES ABERTAS
-    expect(screen.getByText(/Editais com prazo vigente/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ação imediata garantida/i)).toBeInTheDocument();
-
-    // RESUMO EXECUTIVO POR IA
-    expect(screen.getByText(/Análise automática de cada edital/i)).toBeInTheDocument();
+    // ANÁLISE AUTOMATIZADA
+    expect(screen.getByText(/Avaliação automática de cada edital/i)).toBeInTheDocument();
+    expect(screen.getByText(/Destaques de critérios decisivos/i)).toBeInTheDocument();
     expect(screen.getByText(/Decisão em segundos, não horas/i)).toBeInTheDocument();
 
-    // ZERO RUÍDO
-    expect(screen.getByText(/Sem editais irrelevantes/i)).toBeInTheDocument();
-    expect(screen.getByText(/Curadoria, não listagem/i)).toBeInTheDocument();
+    // REDUÇÃO DE INCERTEZA
+    expect(screen.getByText(/Critérios objetivos de avaliação/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dados consolidados de múltiplas fontes/i)).toBeInTheDocument();
+    expect(screen.getByText(/Confiança em cada decisão/i)).toBeInTheDocument();
+
+    // COBERTURA NACIONAL
+    expect(screen.getByText(/Todas as fontes oficiais monitoradas/i)).toBeInTheDocument();
+    expect(screen.getByText(/27 estados cobertos diariamente/i)).toBeInTheDocument();
+    expect(screen.getByText(/Atualização contínua em tempo real/i)).toBeInTheDocument();
   });
 
   it('uses 1+3 asymmetric layout', () => {

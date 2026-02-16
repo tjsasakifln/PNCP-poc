@@ -1,17 +1,14 @@
 /**
  * SmartLic vs. Traditional Platforms - Competitive Comparison Data
  *
- * Structured data for comparison tables and defensive positioning messaging
- * Based on validated market pain points (STORY-173)
+ * GTM-001: Rewritten for decision intelligence positioning
+ * GTM-007: PNCP sanitization — Zero user-visible PNCP mentions
  *
- * @agent @ux-design-expert (Uma)
- * @date 2026-02-08
- * @updated 2026-02-09 - Migrated from Unicode emojis to Lucide icons (@dev Felix)
+ * @date 2026-02-15
  */
 
 import {
   Search,
-  Zap,
   Target,
   Globe,
   Bot,
@@ -20,6 +17,7 @@ import {
   LifeBuoy,
   Sparkles,
   ShieldCheck,
+  TrendingUp,
 } from '@/lib/icons';
 
 // ============================================================================
@@ -31,77 +29,77 @@ export interface ComparisonRow {
   traditional: string;
   smartlic: string;
   advantage: string;
-  icon?: React.ComponentType<any>; // Lucide icon component
+  icon?: React.ComponentType<any>;
 }
 
 export const comparisonTable: ComparisonRow[] = [
   {
     feature: "Tipo de Busca",
     traditional: "Por termos específicos (precisa adivinhar)",
-    smartlic: "Por ramo de atividade (1 clique)",
-    advantage: "10x mais fácil",
+    smartlic: "Por setor de atuação (1 clique)",
+    advantage: "Cobertura completa do mercado",
     icon: Search,
   },
   {
-    feature: "Tempo Médio",
-    traditional: "8+ horas (busca manual)",
-    smartlic: "3 minutos (160x mais rápido)",
-    advantage: "160x mais rápido",
-    icon: Zap,
+    feature: "Inteligência",
+    traditional: "Lista de resultados sem avaliação",
+    smartlic: "Avaliação objetiva de cada oportunidade",
+    advantage: "Decisão informada",
+    icon: Bot,
   },
   {
-    feature: "Precisão",
-    traditional: "~20% (muito ruído)",
-    smartlic: "95% (filtros inteligentes)",
-    advantage: "5x mais preciso",
+    feature: "Priorização",
+    traditional: "Você filtra manualmente",
+    smartlic: "IA prioriza por adequação ao seu perfil",
+    advantage: "Foco no que gera resultado",
     icon: Target,
   },
   {
     feature: "Fontes Consultadas",
-    traditional: "Apenas PNCP",
-    smartlic: "PNCP + 27 portais estaduais/municipais",
-    advantage: "27x mais cobertura",
+    traditional: "Fonte única ou busca manual em múltiplos portais",
+    smartlic: "Dezenas de fontes oficiais consolidadas automaticamente",
+    advantage: "Visibilidade completa",
     icon: Globe,
   },
   {
-    feature: "Resumos IA",
-    traditional: "Não (leitura manual)",
-    smartlic: "Sim (resumos executivos de 3 linhas)",
-    advantage: "Insights instantâneos",
-    icon: Bot,
+    feature: "Vantagem Competitiva",
+    traditional: "Sem diferencial (mesma informação que todos)",
+    smartlic: "Posicione-se antes da concorrência",
+    advantage: "Quem vê primeiro, vence mais",
+    icon: TrendingUp,
   },
   {
     feature: "Preço",
-    traditional: "Taxas ocultas ou por consulta",
-    smartlic: "Fixo mensal (50-1000 buscas/mês conforme plano)",
+    traditional: "Taxas ocultas ou cobranças por consulta",
+    smartlic: "Investimento fixo mensal (tudo incluso)",
     advantage: "Transparente",
     icon: CircleDollarSign,
   },
   {
     feature: "Cancelamento",
-    traditional: "Difícil (burocrático)",
+    traditional: "Burocrático (ligações, retenção)",
     smartlic: "1 clique (sem burocracia)",
-    advantage: "Trust-first",
+    advantage: "Confiança total",
     icon: CheckCircle2,
   },
   {
     feature: "Suporte",
-    traditional: "2-7 dias (resposta lenta)",
-    smartlic: "4 horas (resposta garantida)",
-    advantage: "40x mais rápido",
+    traditional: "Lento (dias para responder)",
+    smartlic: "Resposta garantida no mesmo dia",
+    advantage: "Problemas resolvidos rapidamente",
     icon: LifeBuoy,
   },
   {
     feature: "Interface",
-    traditional: "Confusa (curva de aprendizado)",
-    smartlic: "Intuitiva (onboarding de 30 seg)",
+    traditional: "Confusa (curva de aprendizado longa)",
+    smartlic: "Intuitiva (produtivo desde o primeiro uso)",
     advantage: "Produtividade imediata",
     icon: Sparkles,
   },
   {
-    feature: "Estabilidade",
+    feature: "Confiabilidade",
     traditional: "Sistemas lentos ou instáveis",
-    smartlic: "99.9% uptime (infraestrutura moderna)",
+    smartlic: "Infraestrutura moderna, disponível quando você precisa",
     advantage: "Confiável 24/7",
     icon: ShieldCheck,
   },
@@ -122,28 +120,28 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
   cost: {
     painPoint: "Custo alto + cobranças ocultas",
     traditionalProblem:
-      "Outras plataformas cobram por consulta ou têm taxas ocultas",
+      "Outras plataformas cobram por consulta ou têm taxas ocultas que inflam o custo real",
     smartlicSolution:
-      "No SmartLic, você paga um valor fixo mensal para cota de buscas (50-1000 conforme plano)",
-    quantifiedBenefit: "Orçamento previsível, sem surpresas",
+      "No SmartLic, investimento fixo mensal com tudo incluso. Sem surpresas",
+    quantifiedBenefit: "Uma licitação ganha paga o investimento do ano inteiro",
   },
 
   cancellation: {
     painPoint: "Cancelamento difícil + renovação forçada",
     traditionalProblem:
       "Outras plataformas dificultam o cancelamento com burocracia e ligações",
-    smartlicSolution: "No SmartLic, você cancela em 1 clique, sem perguntas",
+    smartlicSolution: "No SmartLic, cancele em 1 clique, sem perguntas",
     quantifiedBenefit:
       "Liberdade total. Acreditamos que você vai querer ficar pela qualidade",
   },
 
-  speed: {
-    painPoint: "Buscas manuais lentas (8+ horas)",
+  visibility: {
+    painPoint: "Falta de visibilidade do mercado",
     traditionalProblem:
-      "Buscas manuais em portais governamentais levam 8+ horas por semana",
-    smartlicSolution: "No SmartLic, você tem o resultado em 3 minutos",
+      "Sem visibilidade completa, você perde oportunidades para concorrentes que encontram antes",
+    smartlicSolution: "No SmartLic, visibilidade total com dezenas de fontes oficiais consolidadas",
     quantifiedBenefit:
-      "Economize 10 horas por semana para preparar propostas vencedoras",
+      "Cada licitação perdida por falta de visibilidade pode custar R$ 50.000 ou mais",
   },
 
   searchMethod: {
@@ -151,48 +149,48 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
     traditionalProblem:
       "Outras plataformas exigem que você adivinhe dezenas de palavras-chave",
     smartlicSolution:
-      "No SmartLic, você seleciona seu setor e nosso algoritmo encontra tudo",
+      "No SmartLic, selecione seu setor e receba oportunidades do seu mercado",
     quantifiedBenefit:
-      "1 clique vs. 20+ buscas. Cobertura completa sem guesswork",
+      "Cobertura completa do seu mercado sem adivinhação de termos",
   },
 
-  precision: {
-    painPoint: "Muito ruído (20% precisão)",
+  decision: {
+    painPoint: "Falta de inteligência para decidir",
     traditionalProblem:
-      "Outras plataformas entregam milhares de resultados irrelevantes",
+      "Outras plataformas entregam listas sem avaliação — você precisa analisar tudo manualmente",
     smartlicSolution:
-      "No SmartLic, 95% de precisão significa que você analisa apenas o que realmente importa",
+      "No SmartLic, IA avalia cada oportunidade e indica se vale a pena investir",
     quantifiedBenefit:
-      "Economize horas de filtragem manual. Apenas o ouro, zero ruído",
+      "Decisões baseadas em critérios objetivos, não em intuição",
   },
 
   sources: {
-    painPoint: "Fonte única (apenas PNCP)",
+    painPoint: "Fonte única ou busca manual em múltiplos portais",
     traditionalProblem:
-      "Outras plataformas consultam apenas o PNCP ou exigem que você busque em dezenas de portais separadamente",
+      "Outras plataformas consultam uma única fonte ou exigem busca manual em dezenas de portais",
     smartlicSolution:
-      "No SmartLic, consolidamos PNCP + 27 portais estaduais e municipais em uma única busca automática",
+      "No SmartLic, consolidamos dezenas de fontes oficiais automaticamente",
     quantifiedBenefit:
-      "Nunca perca uma oportunidade. Cobertura nacional completa",
+      "Nunca perca uma oportunidade. Visibilidade completa do mercado",
   },
 
   ai: {
-    painPoint: "Sem IA/automação (leitura manual)",
+    painPoint: "Sem inteligência artificial (análise manual)",
     traditionalProblem:
-      "Outras plataformas exigem que você leia editais de 50 páginas",
+      "Outras plataformas exigem análise manual de cada oportunidade",
     smartlicSolution:
-      "No SmartLic, a IA gera um resumo executivo de 3 linhas",
+      "No SmartLic, IA avalia cada oportunidade: vale a pena ou não, e por quê",
     quantifiedBenefit:
-      "Decida em 30 segundos, não em 20 minutos. IA que trabalha para você",
+      "Avaliação objetiva. Invista seu tempo onde o retorno é maior",
   },
 
   support: {
-    painPoint: "Suporte lento (2-7 dias)",
+    painPoint: "Suporte lento e ineficiente",
     traditionalProblem:
-      "Outras plataformas demoram dias para responder (2-7 dias em média)",
-    smartlicSolution: "No SmartLic, garantimos resposta em até 4 horas",
+      "Outras plataformas demoram dias para responder",
+    smartlicSolution: "No SmartLic, suporte com resposta garantida no mesmo dia",
     quantifiedBenefit:
-      "Problemas resolvidos no mesmo dia. Seu tempo vale ouro",
+      "Problemas resolvidos rapidamente. Seu tempo vale ouro",
   },
 
   interface: {
@@ -200,9 +198,9 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
     traditionalProblem:
       "Outras plataformas têm interfaces complexas que exigem treinamento",
     smartlicSolution:
-      "No SmartLic, interface intuitiva com onboarding de 30 segundos",
+      "No SmartLic, interface intuitiva — produtivo desde o primeiro uso",
     quantifiedBenefit:
-      "Encontre sua primeira oportunidade em menos de 1 minuto. Sem manual",
+      "Descubra oportunidades logo na primeira sessão",
   },
 
   stability: {
@@ -210,14 +208,14 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
     traditionalProblem:
       "Outras plataformas sofrem com lentidão e instabilidade frequente",
     smartlicSolution:
-      "No SmartLic, infraestrutura moderna com 99.9% uptime garantido",
+      "No SmartLic, infraestrutura moderna com alta disponibilidade",
     quantifiedBenefit:
-      "Sempre disponível quando você precisa. 3 minutos do clique ao relatório",
+      "Sempre disponível quando você precisa tomar decisões",
   },
 };
 
 // ============================================================================
-// PAIN POINTS SUMMARY (10 Market Pain Points)
+// PAIN POINTS SUMMARY (10 Market Pain Points — Decision Intelligence Focus)
 // ============================================================================
 
 export interface PainPoint {
@@ -232,15 +230,40 @@ export interface PainPoint {
 export const painPoints: PainPoint[] = [
   {
     id: 1,
-    title: "Custo Alto + Cobranças Ocultas",
-    userComplaint: "Mensalidades baixas mas cobram valores extras por visita",
-    impact: "Empresas pequenas não conseguem prever custo total",
+    title: "Falta de Visibilidade do Mercado",
+    userComplaint: "Não sei quantas oportunidades existem para o meu setor",
+    impact: "Empresas perdem contratos para concorrentes com mais informação",
     smartlicDifferentiator:
-      "Preço transparente sem surpresas (plano único all-inclusive)",
-    metric: "R$ 297/mês fixo",
+      "Visibilidade completa: dezenas de fontes oficiais monitoradas diariamente",
+    metric: "27 estados cobertos",
   },
   {
     id: 2,
+    title: "Decisões Baseadas em Intuição",
+    userComplaint: "Não sei se vale a pena investir tempo nesta licitação",
+    impact: "Empresas investem em oportunidades erradas e perdem as certas",
+    smartlicDifferentiator:
+      "Avaliação objetiva por IA: vale a pena ou não, e por quê",
+    metric: "Critérios objetivos",
+  },
+  {
+    id: 3,
+    title: "Concorrência Posiciona Antes",
+    userComplaint: "Quando encontro a licitação, o prazo já está curto",
+    impact: "Propostas apressadas com menor chance de vitória",
+    smartlicDifferentiator: "Oportunidades identificadas assim que publicadas",
+    metric: "Monitoramento contínuo",
+  },
+  {
+    id: 4,
+    title: "Custo Alto + Cobranças Ocultas",
+    userComplaint: "Mensalidades baixas mas cobram extras por tudo",
+    impact: "Empresas não conseguem prever custo total",
+    smartlicDifferentiator:
+      "Investimento fixo mensal, tudo incluso, sem surpresas",
+  },
+  {
+    id: 5,
     title: "Renovação Automática e Cancelamento Difícil",
     userComplaint: "Pedidos de cancelamento repetidamente adiados",
     impact: "Usuários se sentem presos, perdem confiança",
@@ -248,76 +271,49 @@ export const painPoints: PainPoint[] = [
       "Cancelamento em 1 clique (sem burocracia, sem ligações)",
   },
   {
-    id: 3,
-    title: "Burocracia Excessiva (Processo Manual)",
-    userComplaint: "Processos lentos, excessivamente burocráticos",
-    impact: "Empresas gastam 8+ horas/semana em buscas manuais",
-    smartlicDifferentiator: "Busca por setor em vez de termos (1 clique)",
-    metric: "160x mais rápido",
-  },
-  {
-    id: 4,
-    title: "Interface Confusa e Pouco Intuitiva",
-    userComplaint: "Não sei onde encontrar as melhores oportunidades",
-    impact: "Curva de aprendizado longa, frustração",
-    smartlicDifferentiator: "Interface clean, moderna, intuitiva",
-    metric: "30 segundos onboarding",
-  },
-  {
-    id: 5,
-    title: "Falta de Filtros Inteligentes (Muito Ruído)",
-    userComplaint: "Muito ruído, resultados irrelevantes",
-    impact: "Empresas gastam horas filtrando manualmente",
-    smartlicDifferentiator: "Precisão de 95% (algoritmos proprietários)",
-    metric: "5x mais preciso",
-  },
-  {
     id: 6,
-    title: "Busca Apenas por Termos Específicos (Não por Setor)",
-    userComplaint: "Busca manual no PNCP exige adivinhar palavras-chave",
-    impact: "Empresas perdem oportunidades porque não sabem quais termos usar",
+    title: "Busca por Termos (Adivinhação)",
+    userComplaint: "Preciso adivinhar palavras-chave para encontrar oportunidades",
+    impact: "Empresas perdem oportunidades por não saber os termos certos",
     smartlicDifferentiator:
-      "Busca por ramo de atividade (ex: Uniformes, TI)",
-    metric: "50+ sinônimos automáticos",
+      "Busca por setor de atuação com cobertura automática de termos",
+    metric: "12 setores especializados",
   },
   {
     id: 7,
     title: "Busca Manual em Múltiplos Portais",
-    userComplaint: "Preciso buscar em dezenas de sites diferentes",
-    impact: "Empresas perdem oportunidades porque não conseguem monitorar",
+    userComplaint: "Preciso acessar dezenas de sites diferentes",
+    impact: "Empresas perdem oportunidades por não conseguir monitorar tudo",
     smartlicDifferentiator:
-      "Consolidação automática (PNCP + portais estaduais + municipais)",
-    metric: "27+ fontes consolidadas",
+      "Consolidação automática de dezenas de fontes oficiais",
+    metric: "Cobertura nacional",
   },
   {
     id: 8,
-    title: "Velocidade Lenta e Sistemas Instáveis",
-    userComplaint: "Sistema lento, não carrega",
-    impact: "Perda de tempo, frustração, perda de prazos",
-    smartlicDifferentiator: "Resultado em 3 minutos, 99.9% uptime",
-    metric: "3 minutos total",
+    title: "Interface Confusa e Pouco Intuitiva",
+    userComplaint: "Não sei onde encontrar as melhores oportunidades",
+    impact: "Curva de aprendizado longa, frustração",
+    smartlicDifferentiator: "Interface intuitiva, produtivo desde o primeiro uso",
   },
   {
     id: 9,
-    title: "Falta de Inteligência Artificial e Automação",
-    userComplaint: "Preciso ler centenas de editais manualmente",
-    impact: "Gestores gastam tempo lendo documentos extensos",
+    title: "Sem Inteligência Artificial",
+    userComplaint: "Preciso analisar cada oportunidade manualmente",
+    impact: "Gestores gastam tempo em análise manual de documentos extensos",
     smartlicDifferentiator:
-      "Resumos executivos gerados por IA (IA analisa editais)",
-    metric: "3 linhas vs 50 páginas",
+      "IA avalia oportunidades e entrega análise objetiva",
   },
   {
     id: 10,
-    title: "Atendimento Lento e Falta de Suporte",
-    userComplaint: "Tempo médio de resposta: 7 dias",
+    title: "Atendimento Lento",
+    userComplaint: "Demora dias para receber suporte",
     impact: "Problemas não resolvidos a tempo",
-    smartlicDifferentiator: "Suporte humano em até 4 horas (email + chat)",
-    metric: "40x mais rápido",
+    smartlicDifferentiator: "Suporte com resposta garantida no mesmo dia",
   },
 ];
 
 // ============================================================================
-// PROOF POINTS (Data to Back Claims)
+// PROOF POINTS (Data to Back Claims — Decision Intelligence)
 // ============================================================================
 
 export interface ProofPoint {
@@ -327,133 +323,137 @@ export interface ProofPoint {
 }
 
 export const proofPoints: Record<string, ProofPoint> = {
-  speed160x: {
-    claim: "160x mais rápido (3 min vs 8+ horas)",
-    proofSource: "Internal timing + user research",
-    disclaimerIfNeeded:
-      "Comparação: busca manual média (8.5h) vs. SmartLic automatizado (3 min)",
+  coverage: {
+    claim: "Dezenas de fontes oficiais consolidadas em todos os 27 estados",
+    proofSource: "Technical architecture — multi-source integration",
   },
 
-  precision95: {
-    claim: "95% de precisão",
-    proofSource: "Internal testing",
-    disclaimerIfNeeded:
-      "*Baseado em testes internos com 10.000+ buscas. Metodologia disponível sob solicitação.",
+  sectors: {
+    claim: "12 setores especializados com cobertura completa de termos",
+    proofSource: "System capability — sector-specific keyword databases",
   },
 
-  multiSource: {
-    claim: "PNCP + 27 portais estaduais e municipais",
-    proofSource: "Technical architecture",
+  opportunities: {
+    claim: "R$ 2.3 bilhões em oportunidades mapeadas mensalmente",
+    proofSource: "Platform data — aggregate monthly opportunity volume",
   },
 
-  timeSaved: {
-    claim: "Economize 10h/semana",
-    proofSource: "User research (avg 2h/day on manual searches = 10h/week)",
+  monitoring: {
+    claim: "Monitoramento contínuo diário de todas as fontes",
+    proofSource: "System uptime and crawl frequency metrics",
   },
 
   supportSLA: {
-    claim: "Resposta em 4h",
+    claim: "Suporte com resposta no mesmo dia",
     proofSource: "Customer support policy SLA commitment",
   },
 
   nationalCoverage: {
-    claim: "27 UFs + 5.570 municípios",
-    proofSource: "System capability (IBGE data)",
+    claim: "27 UFs cobertas com fontes federais, estaduais e municipais",
+    proofSource: "System capability (IBGE data + multi-source integration)",
   },
 };
 
 // ============================================================================
-// BEFORE/AFTER COMPARISON (Visual Contrast)
+// BEFORE/AFTER COMPARISON (Visual Contrast — Decision Focus)
 // ============================================================================
 
 export interface BeforeAfterItem {
   aspect: string;
   before: string;
   after: string;
-  icon: React.ComponentType<any>; // Lucide icon component
+  icon: React.ComponentType<any>;
 }
 
 export const beforeAfter: BeforeAfterItem[] = [
   {
-    aspect: "Tempo de Busca",
-    before: "8+ horas por semana em buscas por termos",
-    after: "3 minutos por busca (160x mais rápido)",
-    icon: Zap,
-  },
-  {
-    aspect: "Precisão dos Resultados",
-    before: "~20% de precisão (muito ruído)",
-    after: "95% de precisão (apenas oportunidades relevantes)",
-    icon: Target,
-  },
-  {
-    aspect: "Fontes Consultadas",
-    before: "Apenas PNCP (busca manual em outros portais)",
-    after: "PNCP + 27 portais em 1 busca automática",
+    aspect: "Visibilidade de Mercado",
+    before: "Visão parcial — perda de oportunidades por falta de cobertura",
+    after: "Visão completa — dezenas de fontes oficiais monitoradas diariamente",
     icon: Globe,
   },
   {
-    aspect: "Análise de Documentos",
-    before: "Leitura manual de editais de 50 páginas",
-    after: "Resumos IA de 3 linhas",
+    aspect: "Tomada de Decisão",
+    before: "Decisões por intuição — sem dados para avaliar oportunidades",
+    after: "Avaliação objetiva por IA — vale a pena ou não, e por quê",
     icon: Bot,
   },
   {
-    aspect: "Custo Mensal",
-    before: "Taxas ocultas e cobranças por consulta",
-    after: "Fixo mensal (R$ 297-1.497)",
+    aspect: "Posicionamento Competitivo",
+    before: "Chega tarde — concorrentes encontram e se posicionam antes",
+    after: "Posicione-se primeiro — oportunidades assim que publicadas",
+    icon: TrendingUp,
+  },
+  {
+    aspect: "Priorização",
+    before: "Análise manual de cada oportunidade — tempo investido em tudo",
+    after: "Priorização inteligente — foco no que se adequa ao seu perfil",
+    icon: Target,
+  },
+  {
+    aspect: "Custo",
+    before: "Taxas ocultas e cobranças imprevisíveis",
+    after: "Investimento fixo mensal, tudo incluso",
     icon: CircleDollarSign,
   },
   {
     aspect: "Cancelamento",
-    before: "Difícil (ligações, burocracia)",
+    before: "Burocrático (ligações, retenção)",
     after: "1 clique (sem retenção)",
     icon: CheckCircle2,
   },
 ];
 
 // ============================================================================
-// COMPETITIVE ADVANTAGE SCORING (Internal Use)
+// COMPETITIVE ADVANTAGE SCORING (Internal Use — Decision Intelligence)
 // ============================================================================
 
 export interface AdvantageScore {
   advantage: string;
-  strength: number; // 1-10
-  defensibility: number; // 1-10 (hard to replicate)
-  userImpact: number; // 1-10
+  strength: number;
+  defensibility: number;
+  userImpact: number;
   totalScore: number;
   priority: "high" | "medium" | "low";
 }
 
 export const advantageScores: AdvantageScore[] = [
   {
-    advantage: "Speed (160x)",
+    advantage: "Decision Intelligence (AI Evaluation)",
     strength: 10,
-    defensibility: 8,
+    defensibility: 9,
     userImpact: 10,
-    totalScore: 28,
+    totalScore: 29,
     priority: "high",
   },
   {
-    advantage: "Precision (95%)",
+    advantage: "Market Visibility (Multi-Source)",
     strength: 9,
-    defensibility: 9,
-    userImpact: 9,
+    defensibility: 8,
+    userImpact: 10,
     totalScore: 27,
     priority: "high",
   },
   {
-    advantage: "Consolidation (27 sources)",
-    strength: 8,
+    advantage: "Competitive Positioning (Speed to Market)",
+    strength: 9,
     defensibility: 7,
-    userImpact: 8,
-    totalScore: 23,
+    userImpact: 9,
+    totalScore: 25,
     priority: "high",
   },
   {
-    advantage: "AI Summaries",
+    advantage: "Intelligent Prioritization",
     strength: 9,
-    defensibility: 6,
+    defensibility: 8,
+    userImpact: 8,
+    totalScore: 25,
+    priority: "high",
+  },
+  {
+    advantage: "Sector Specialization (12 sectors)",
+    strength: 8,
+    defensibility: 7,
     userImpact: 8,
     totalScore: 23,
     priority: "medium",
@@ -473,14 +473,6 @@ export const advantageScores: AdvantageScore[] = [
     userImpact: 7,
     totalScore: 17,
     priority: "low",
-  },
-  {
-    advantage: "4h Support SLA",
-    strength: 7,
-    defensibility: 6,
-    userImpact: 6,
-    totalScore: 19,
-    priority: "medium",
   },
   {
     advantage: "Intuitive UX",
@@ -504,7 +496,7 @@ export function getDefensiveMessage(key: keyof typeof defensiveMessaging) {
 }
 
 /**
- * Format defensive message as "Outras plataformas... SmartLic..." template
+ * Format defensive message as template
  */
 export function formatDefensiveMessage(key: keyof typeof defensiveMessaging): string {
   const msg = defensiveMessaging[key];

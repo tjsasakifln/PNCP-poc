@@ -24,6 +24,7 @@ export {
   LifeBuoy,      // 🛟 Support
   Sparkles,      // ✨ Interface/UX
   ShieldCheck,   // 🛡️ Security/Stability
+  TrendingUp,    // 📈 Growth/Competitive advantage
 } from 'lucide-react';
 
 // ============================================================================

@@ -5,27 +5,27 @@ describe('BeforeAfter', () => {
   it('renders section title focused on decision quality (AC5)', () => {
     render(<BeforeAfter />);
 
-    expect(screen.getByText(/Da incerteza à decisão precisa/i)).toBeInTheDocument();
+    expect(screen.getByText(/Da busca manual à decisão estratégica/i)).toBeInTheDocument();
   });
 
   it('renders "Sem Curadoria" card with quality-focused negatives (AC5)', () => {
     render(<BeforeAfter />);
 
-    expect(screen.getByText(/Sem Curadoria/i)).toBeInTheDocument();
-    expect(screen.getByText(/informação incompleta/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sem Inteligência de Mercado/i)).toBeInTheDocument();
+    expect(screen.getByText(/falta de visibilidade/i)).toBeInTheDocument();
     expect(screen.getByText(/Oportunidades certas passam despercebidas/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ruído demais, relevância de menos/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sem visão consolidada do mercado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Concorrentes se posicionam antes de você/i)).toBeInTheDocument();
+    expect(screen.getByText(/Decisões baseadas em intuição, não em dados/i)).toBeInTheDocument();
   });
 
   it('renders "Com SmartLic" card with intelligence-focused positives (AC5)', () => {
     render(<BeforeAfter />);
 
     expect(screen.getByText(/Com SmartLic/i)).toBeInTheDocument();
-    expect(screen.getByText(/Curadoria inteligente/i)).toBeInTheDocument();
-    expect(screen.getByText(/Resumo executivo por IA/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cobertura nacional com precisão setorial/i)).toBeInTheDocument();
-    expect(screen.getByText(/Decisões com confiança, não com achismo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Visão completa do mercado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Avaliação objetiva: vale a pena ou não, e por quê/i)).toBeInTheDocument();
+    expect(screen.getByText(/Posicione-se antes da concorrência/i)).toBeInTheDocument();
+    expect(screen.getByText(/Decisões com confiança baseadas em inteligência/i)).toBeInTheDocument();
   });
 
   it('uses asymmetric 40/60 layout', () => {

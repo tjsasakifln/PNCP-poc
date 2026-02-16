@@ -1,15 +1,15 @@
 /**
  * SmartLic Value Proposition Copy Library
  *
- * Centralized messaging for brand positioning (STORY-173)
- * Emphasizes intelligence, speed, precision over "PNCP data aggregation"
+ * GTM-001: Complete rewrite — Decision Intelligence positioning
+ * GTM-007: PNCP sanitization — Zero user-visible PNCP mentions
  *
- * @agent @ux-design-expert (Uma)
- * @date 2026-02-08
- * @updated 2026-02-09 - Migrated from Unicode emojis to Lucide icons (@dev Felix)
+ * Guiding principle: "We sell decision intelligence, not search speed"
+ *
+ * @date 2026-02-15
  */
 
-import { Zap, Target, Globe, Bot, Search } from '@/lib/icons';
+import { Target, Globe, Bot, Search, ShieldCheck } from '@/lib/icons';
 
 // ============================================================================
 // HERO SECTION (Landing Page)
@@ -18,98 +18,98 @@ import { Zap, Target, Globe, Bot, Search } from '@/lib/icons';
 export const hero = {
   // Primary headline variants (A/B test candidates)
   headlines: {
-    speedFocus: "Encontre Oportunidades Relevantes em 3 Minutos, Não em 8 Horas",
-    precisionFocus: "95% de Precisão: Apenas Oportunidades Relevantes, Zero Ruído",
-    intelligenceFocus: "Inteligência Sobre Licitações: Algoritmos que Entregam Apenas o Ouro",
-    roiFocus: "Economize 10 Horas por Semana em Buscas de Licitações",
+    decisionFocus: "Saiba Onde Investir para Ganhar Mais Licitações",
+    competitiveFocus: "Seus Concorrentes Já Estão Se Posicionando. E Você?",
+    intelligenceFocus: "Inteligência de Decisão para Quem Compete em Licitações",
+    visibilityFocus: "Visibilidade Total do Mercado de Licitações",
     // Recommended for initial launch
-    default: "Encontre Oportunidades Relevantes em 3 Minutos, Não em 8 Horas",
+    default: "Saiba Onde Investir para Ganhar Mais Licitações",
   },
 
   // Supporting subheadlines
   subheadlines: {
-    algorithmic: "Algoritmos inteligentes filtram milhares de licitações de múltiplas fontes para entregar apenas o que importa para o seu negócio",
-    competitive: "Enquanto outras plataformas exigem 8+ horas de busca manual por termos, o SmartLic entrega oportunidades relevantes em 3 minutos com 95% de precisão",
-    multiSource: "Consolidamos PNCP + 27 portais estaduais e municipais em uma única busca automática de 3 minutos",
-    default: "Algoritmos inteligentes filtram milhares de licitações de múltiplas fontes para entregar apenas o que importa para o seu negócio",
+    decisionGuide: "Inteligência que avalia oportunidades, prioriza o que importa e guia suas decisões",
+    competitive: "Enquanto outros buscam, você já sabe onde investir. Avaliação objetiva de cada oportunidade do mercado",
+    visibility: "Visibilidade completa do mercado com avaliação inteligente. Saiba o que merece sua atenção",
+    default: "Inteligência que avalia oportunidades, prioriza o que importa e guia suas decisões",
   },
 
   // Trust badges (displayed below hero)
   trustBadges: [
     {
-      icon: Zap,
-      text: "160x Mais Rápido",
-      detail: "3 minutos vs. 8+ horas",
+      icon: Target,
+      text: "R$ 2.3 bi em oportunidades",
+      detail: "Mapeadas mensalmente",
     },
     {
-      icon: Target,
-      text: "Precisão de 95%",
-      detail: "Apenas oportunidades relevantes",
+      icon: Search,
+      text: "12 setores cobertos",
+      detail: "Especialização por mercado",
     },
     {
       icon: Globe,
-      text: "Múltiplas Fontes",
-      detail: "PNCP + 27 portais consolidados",
+      text: "27 estados monitorados",
+      detail: "Cobertura nacional completa",
     },
     {
       icon: Bot,
-      text: "IA Inteligente",
-      detail: "Resumos executivos automáticos",
+      text: "Avaliação por IA",
+      detail: "Análise objetiva de cada oportunidade",
     },
   ],
 
   // Call-to-action button text
   cta: {
-    benefitOriented: "Economize 10h/Semana Agora",
-    speedOriented: "Encontre Oportunidades em 3 Min",
-    trialOriented: "Começar Teste Grátis de 7 Dias",
-    default: "Economize 10h/Semana Agora",
+    discovery: "Descobrir Minhas Oportunidades",
+    competitive: "Ver Oportunidades do Meu Mercado",
+    trial: "Começar Avaliação Gratuita",
+    default: "Descobrir Minhas Oportunidades",
   },
 };
 
 // ============================================================================
-// VALUE PROPOSITIONS (4 Key Differentiators)
+// VALUE PROPOSITIONS (4 Key Differentiators — Decision Intelligence)
 // ============================================================================
 
 export const valueProps = {
-  speed: {
-    title: "160x Mais Rápido",
-    shortDescription: "3 minutos vs. 8+ horas em busca manual",
+  prioritization: {
+    title: "Priorização Inteligente",
+    shortDescription: "Saiba onde focar. O sistema avalia e indica o que merece sua atenção",
     longDescription:
-      "Enquanto outras plataformas exigem 8+ horas de busca manual e análise, o SmartLic entrega resultado completo em 3 minutos. Economize 10 horas por semana e use esse tempo para preparar propostas vencedoras.",
-    icon: Zap,
-    metric: "160x",
-    proof: "Baseado em comparação: busca manual (8.5h) vs. SmartLic (3 min)",
-  },
-
-  precision: {
-    title: "95% de Precisão",
-    shortDescription: "Apenas oportunidades relevantes, zero falsos positivos",
-    longDescription:
-      "Outras plataformas entregam milhares de resultados irrelevantes (~20% precisão). No SmartLic, algoritmos proprietários garantem 95% de precisão. Você analisa apenas o que realmente importa. Apenas o ouro, zero ruído.",
+      "Não perca tempo analisando oportunidades que não se encaixam no seu perfil. O SmartLic avalia cada oportunidade e prioriza as que mais se adequam ao seu negócio. Invista energia onde o retorno é maior.",
     icon: Target,
-    metric: "95%",
-    proof: "*Baseado em testes internos com 10.000+ buscas",
+    metric: "Foco",
+    proof: "Análise de adequação por setor, região e perfil de atuação",
   },
 
-  consolidation: {
-    title: "Cobertura Completa",
-    shortDescription: "PNCP + 27 portais estaduais e municipais",
+  analysis: {
+    title: "Análise Automatizada",
+    shortDescription: "Não leia editais para decidir. IA avalia requisitos, prazos e contexto",
     longDescription:
-      "Enquanto outras plataformas consultam apenas o PNCP ou exigem que você busque em dezenas de portais separadamente, o SmartLic consolida automaticamente PNCP + 27 portais estaduais e municipais. Nunca perca uma oportunidade.",
-    icon: Globe,
-    metric: "27+",
-    proof: "Cobertura nacional: 27 UFs + 5.570 municípios",
-  },
-
-  intelligence: {
-    title: "IA que Trabalha para Você",
-    shortDescription: "Resumos executivos em vez de editais de 50 páginas",
-    longDescription:
-      "Enquanto outras plataformas exigem que você leia editais de 50 páginas, o SmartLic usa IA para gerar resumos executivos de 3 linhas com destaque de valor, prazo e requisitos críticos. Decida em 30 segundos, não em 20 minutos.",
+      "IA avalia cada oportunidade e extrai os critérios decisivos: valor, prazo, requisitos de elegibilidade, competitividade. Você recebe uma avaliação objetiva — vale a pena ou não, e por quê.",
     icon: Bot,
-    metric: "3 linhas",
-    proof: "Powered by GPT-4 for executive summaries",
+    metric: "Objetiva",
+    proof: "Avaliação automatizada com critérios objetivos por IA",
+  },
+
+  uncertainty: {
+    title: "Redução de Incerteza",
+    shortDescription: "Entre preparado. Decisões baseadas em critérios objetivos, não intuição",
+    longDescription:
+      "Elimine o achismo. Cada oportunidade vem com dados consolidados de múltiplas fontes oficiais, avaliação de adequação e critérios objetivos. Decida com confiança em vez de apostar no escuro.",
+    icon: ShieldCheck,
+    metric: "Confiança",
+    proof: "Dados consolidados de dezenas de fontes oficiais",
+  },
+
+  coverage: {
+    title: "Cobertura Nacional",
+    shortDescription: "Nunca perca uma oportunidade por falta de visibilidade",
+    longDescription:
+      "Monitoramos dezenas de fontes oficiais em todos os 27 estados, todos os dias. Cada oportunidade relevante para o seu setor é identificada, avaliada e entregue. Visibilidade completa do mercado.",
+    icon: Globe,
+    metric: "27 UFs",
+    proof: "Monitoramento contínuo de fontes federais, estaduais e municipais",
   },
 };
 
@@ -123,71 +123,69 @@ export const features = {
     painPoint:
       "Outras plataformas exigem que você adivinhe dezenas de palavras-chave",
     solution:
-      "No SmartLic, você seleciona seu setor (ex: Uniformes) e nosso algoritmo encontra todas as variações",
+      "No SmartLic, você seleciona seu setor e nosso algoritmo encontra todas as variações",
     details:
-      "Esqueça palavras-chave. Selecione 'Uniformes' e encontramos tudo: fardamento, jaleco, EPI, vestuário corporativo, e mais 50 variações automaticamente.",
+      "Selecione seu setor de atuação e receba oportunidades específicas do seu mercado. Sem adivinhação de termos, sem resultados fora de contexto.",
     benefits: [
-      "1 clique vs. 20+ buscas manuais",
+      "Seleção intuitiva por setor de atuação",
       "Nunca perca oportunidades por terminologia",
-      "Cobertura abrangente sem adivinhação",
+      "Cobertura abrangente do seu mercado",
     ],
   },
 
   intelligentFiltering: {
-    title: "Filtragem Inteligente com 95% de Precisão",
+    title: "Filtragem Inteligente com Precisão",
     painPoint:
-      "Outras plataformas entregam milhares de resultados irrelevantes (~20% precisão)",
+      "Outras plataformas entregam milhares de resultados irrelevantes",
     solution:
-      "No SmartLic, 95% de precisão significa analisar apenas o que realmente importa",
+      "No SmartLic, algoritmos proprietários garantem que você analise apenas o que realmente importa",
     details:
-      "Algoritmos proprietários aplicam 5 camadas de filtragem: setor, valor, status, exclusão de falsos positivos, normalização Unicode. Apenas o ouro, zero ruído.",
+      "Algoritmos proprietários aplicam múltiplas camadas de filtragem: setor, valor, status, exclusão de falsos positivos. Apenas oportunidades relevantes para o seu perfil.",
     benefits: [
-      "Economize horas de filtragem manual",
+      "Foco total no que é relevante",
       "Alta confiança nos resultados",
-      "Decisões mais rápidas e precisas",
+      "Decisões mais rápidas e assertivas",
     ],
   },
 
   multiSourceConsolidation: {
-    title: "Consolidação Automática de Múltiplas Fontes",
+    title: "Consolidação Automática de Fontes Oficiais",
     painPoint:
       "Outras plataformas exigem que você busque em dezenas de portais separadamente",
     solution:
-      "No SmartLic, consolidamos PNCP + 27 portais estaduais e municipais em uma única busca automática",
+      "No SmartLic, consolidamos dezenas de fontes oficiais em uma única busca automática",
     details:
-      "Monitore automaticamente PNCP federal + todos os portais estaduais (PNCP-SP, PNCP-RJ, etc.) + portais municipais das principais cidades. Cobertura nacional completa.",
+      "Monitoramento automático de fontes federais, estaduais e municipais. Cobertura nacional completa sem precisar acessar múltiplos portais.",
     benefits: [
       "Nunca perca oportunidades em outros portais",
-      "Economize 2-4 horas/semana de busca multi-portal",
-      "Monitoramento em tempo real 24/7",
+      "Visibilidade completa do mercado",
+      "Monitoramento contínuo de todas as fontes",
     ],
   },
 
-  speedAndEfficiency: {
-    title: "Resultado em 3 Minutos (160x Mais Rápido)",
-    painPoint: "Outras plataformas exigem 8+ horas de busca manual e análise",
-    solution: "No SmartLic, resultado completo em 3 minutos",
+  decisionIntelligence: {
+    title: "Inteligência de Decisão por IA",
+    painPoint: "Outras plataformas exigem leitura manual de editais extensos",
+    solution: "No SmartLic, IA avalia cada oportunidade e indica se vale a pena",
     details:
-      "Automatize o fluxo completo: busca paralela em 27+ fontes → filtragem inteligente → resumos IA → relatório Excel. Do clique ao download em 3 minutos.",
+      "IA analisa oportunidades e extrai informações críticas: valor estimado, prazo, requisitos de elegibilidade, pontos de atenção. Avaliação objetiva para decisão informada.",
     benefits: [
-      "Economize 10 horas por semana",
-      "Mais tempo para preparar propostas vencedoras",
-      "Responda a oportunidades enquanto estão frescas",
+      "Avaliação objetiva de cada oportunidade",
+      "Decisões go/no-go informadas",
+      "Nunca perca detalhes críticos",
     ],
   },
 
-  aiSummaries: {
-    title: "Resumos Executivos Gerados por IA",
-    painPoint:
-      "Outras plataformas exigem leitura manual de editais de 50 páginas",
-    solution:
-      "No SmartLic, a IA gera resumo executivo de 3 linhas com destaque de valor, prazo e requisitos críticos",
+  competitiveAdvantage: {
+    title: "Vantagem Competitiva Real",
+    painPoint: "Sem visibilidade, você perde oportunidades para concorrentes",
+    solution: "No SmartLic, posicione-se antes da concorrência com visibilidade completa",
     details:
-      "GPT-4 analisa editais completos e extrai informações críticas: valor estimado, deadline, requisitos de elegibilidade, termos importantes. Decida em 30 segundos, não em 20 minutos.",
+      "Quem tem visibilidade completa do mercado se posiciona primeiro. Receba oportunidades priorizadas assim que são publicadas. Sua vantagem é saber antes.",
     benefits: [
-      "Economize 6-10 horas/semana em leitura de documentos",
-      "Decisões go/no-go em segundos",
-      "Nunca perca detalhes críticos escondidos em PDFs",
+      "Posicione-se antes da concorrência",
+      "Oportunidades assim que são publicadas",
+      "Vantagem competitiva sustentável",
     ],
   },
 };
@@ -197,59 +195,58 @@ export const features = {
 // ============================================================================
 
 export const pricing = {
-  headline: "Preço Justo, Transparente, Sem Surpresas",
+  headline: "Invista em Visibilidade, Colha em Contratos",
   subheadline:
-    "Enquanto outras plataformas cobram por consulta ou têm taxas ocultas, no SmartLic você paga um valor fixo mensal. Simples assim.",
+    "O custo de perder uma licitação por falta de visibilidade é muito maior que o investimento em inteligência de mercado.",
 
   // ROI messaging
   roi: {
-    headline: "Quanto Você Economiza com o SmartLic?",
+    headline: "Quanto Custa Não Ter Visibilidade?",
     calculator: {
-      defaultHoursPerWeek: 10,
-      defaultCostPerHour: 100,
+      defaultContractValue: 200_000,
+      defaultWinRate: 0.05,
       exampleCalculation: {
-        manualSearchCostPerMonth: 4000, // 10h/week × 4 weeks × R$ 100/h
-        smartLicPlanCost: 297, // Starter plan
-        monthlySavings: 3703,
-        roi: 12.5, // 3703 / 297
+        missedOpportunityCost: 200_000,
+        smartLicInvestment: 1_999,
+        potentialReturn: "100x",
       },
     },
-    tagline: "O SmartLic se paga na primeira licitação ganha.",
+    tagline: "Uma única licitação ganha paga o investimento do ano inteiro.",
   },
 
   // Pricing comparison table
   comparison: {
     pricingModel: {
-      traditional: "Por consulta ou mensalidade + extras",
-      smartlic: "Fixo mensal (50-1000 buscas/mês conforme plano)",
+      traditional: "Por consulta ou mensalidade + extras ocultos",
+      smartlic: "Investimento fixo mensal, sem surpresas",
     },
     hiddenFees: {
-      traditional: "❌ Comuns (visitas, suporte premium)",
-      smartlic: "✅ Nenhuma (all-inclusive)",
+      traditional: "Comuns (visitas, suporte premium, extras)",
+      smartlic: "Nenhuma (tudo incluso)",
     },
     cancellation: {
-      traditional: "🔴 Difícil (ligações, burocracia)",
-      smartlic: "✅ 1 clique (sem retenção)",
+      traditional: "Burocrático (ligações, retenção)",
+      smartlic: "1 clique (sem retenção)",
     },
     guarantee: {
-      traditional: "❓ Raro",
-      smartlic: "✅ 7 dias ou reembolso total",
+      traditional: "Raro",
+      smartlic: "Período de avaliação gratuita",
     },
   },
 
   // Guarantee messaging
   guarantee: {
-    headline: "Garantia de Satisfação",
+    headline: "Avalie Sem Compromisso",
     description:
-      "Economize pelo menos 5 horas na primeira semana ou reembolso total. Sem risco.",
+      "Consultas gratuitas para você conhecer o poder da inteligência de decisão. Sem cartão, sem compromisso.",
   },
 
   // Transparency statement
   transparency:
-    "Preço Honesto: A partir de R$ 297/mês para até 50 buscas mensais. Precisa de mais? Planos de 300 ou 1.000 buscas/mês disponíveis. Sem pegadinhas.",
+    "Investimento transparente. Sem pegadinhas, sem letras pequenas. Cancele quando quiser em 1 clique.",
 
   // CTA
-  cta: "Começar Teste Grátis de 7 Dias",
+  cta: "Descobrir Minhas Oportunidades",
 };
 
 // ============================================================================
@@ -262,13 +259,13 @@ export const searchPage = {
 
   // Loading state messages
   loadingStates: {
-    initial: "Consultando múltiplas fontes e aplicando filtros inteligentes...",
+    initial: "Consultando fontes oficiais e aplicando inteligência de decisão...",
     progress: [
-      "✓ PNCP consultado",
-      "✓ Portais estaduais consultados",
-      "✓ Filtros de precisão aplicados",
-      "✓ Resumos IA gerados",
-      "✓ Resultados prontos!",
+      "Consultando fontes oficiais...",
+      "Aplicando filtros inteligentes...",
+      "Avaliando oportunidades...",
+      "Priorizando resultados...",
+      "Resultados prontos!",
     ],
   },
 
@@ -276,19 +273,19 @@ export const searchPage = {
   emptyState: {
     title: "Nenhuma Oportunidade Relevante Encontrada",
     description:
-      "Nossos filtros eliminaram {count} resultados irrelevantes para entregar apenas o que importa. Tente ajustar os filtros ou escolher outro setor.",
+      "Nossos filtros avaliaram {count} resultados e nenhum se adequa ao seu perfil atual. Tente ajustar os filtros ou escolher outro setor.",
     suggestion: "Dica: Amplie o intervalo de datas ou selecione mais UFs.",
   },
 
   // Tooltip on filter icon
   filterTooltip:
-    "Filtramos por valor mínimo (R$ 50k) para evitar oportunidades muito pequenas e maximizar seu ROI.",
+    "Filtramos por valor mínimo (R$ 50k) para focar em oportunidades com retorno significativo.",
 
   // Success state (results found)
   successState: {
     title: "{count} Oportunidades Relevantes Encontradas",
     subtitle:
-      "Filtradas de {total} licitações com 95% de precisão. Apenas o que importa.",
+      "Avaliadas e priorizadas de {total} licitações. Apenas o que merece sua atenção.",
   },
 };
 
@@ -299,32 +296,32 @@ export const searchPage = {
 export const onboarding = {
   steps: [
     {
-      title: "Esqueça Palavras-Chave",
+      title: "Defina Seu Mercado",
       description:
-        "Selecione seu setor (ex: Uniformes, TI) e nosso algoritmo encontra todas as variações automaticamente. Sem adivinhação.",
+        "Selecione seu setor de atuação e região. O sistema entende seu perfil e encontra oportunidades específicas para você.",
       icon: Search,
     },
     {
-      title: "Apenas o Ouro, Zero Ruído",
+      title: "Receba Oportunidades Priorizadas",
       description:
-        "Nossos filtros inteligentes eliminam milhares de resultados irrelevantes. Você vê apenas oportunidades com 95% de precisão.",
+        "Inteligência avalia cada oportunidade e indica o que merece sua atenção. Foco no que gera resultado.",
       icon: Target,
     },
     {
-      title: "IA Trabalha para Você",
+      title: "Avaliação Objetiva por IA",
       description:
-        "Leia resumos de 3 linhas em vez de editais de 50 páginas. Decida em 30 segundos se vale a pena.",
+        "Cada oportunidade vem com avaliação objetiva: vale a pena ou não, e por quê. Decisão informada.",
       icon: Bot,
     },
     {
-      title: "Economize 10h/Semana",
+      title: "Posicione-se Antes",
       description:
-        "3 minutos do clique ao relatório. Mais tempo para preparar propostas vencedoras.",
-      icon: Zap,
+        "Visibilidade completa do mercado. Quem vê primeiro, se posiciona primeiro e vence mais.",
+      icon: Globe,
     },
   ],
 
-  finalCta: "Fazer Minha Primeira Busca Agora",
+  finalCta: "Descobrir Minhas Oportunidades",
 };
 
 // ============================================================================
@@ -332,10 +329,10 @@ export const onboarding = {
 // ============================================================================
 
 export const footer = {
-  dataSource: "Dados consolidados de PNCP e outras fontes públicas",
+  dataSource: "Dados consolidados de fontes oficiais de contratações públicas",
   disclaimer:
-    "SmartLic não é afiliado ao governo. Somos uma ferramenta de inteligência privada.",
-  trustBadge: "Algoritmos proprietários de filtragem e precisão",
+    "SmartLic não é afiliado ao governo. Somos uma plataforma de inteligência de decisão para licitações.",
+  trustBadge: "Inteligência proprietária de avaliação e priorização",
 };
 
 // ============================================================================
@@ -344,95 +341,118 @@ export const footer = {
 
 export const email = {
   opportunityAlert: {
-    subjectLine: "{count} novas oportunidades relevantes para {sector}",
-    preheader: "Filtradas com 95% de precisão. Apenas o que importa.",
+    subjectLine: "{count} novas oportunidades avaliadas para {sector}",
+    preheader: "Priorizadas por relevância para o seu perfil.",
     body: {
       greeting: "Olá {userName},",
       intro:
-        "Filtramos {total} licitações para entregar estas {count} oportunidades relevantes para {sector}:",
-      cta: "Ver Oportunidades Filtradas",
+        "Avaliamos {total} licitações e identificamos {count} oportunidades relevantes para {sector}:",
+      cta: "Ver Oportunidades Priorizadas",
       footer:
         "Você está recebendo este email porque ativou alertas para {sector}. Ajuste suas preferências a qualquer momento.",
     },
   },
 
   weeklyDigest: {
-    subjectLine: "Economize 10h esta semana com SmartLic",
-    preheader: "{count} novas oportunidades + insights semanais",
+    subjectLine: "Suas oportunidades da semana — {count} priorizadas",
+    preheader: "{count} oportunidades avaliadas + insights semanais",
     body: {
       intro:
-        "Esta semana, filtramos {total} licitações para entregar {count} oportunidades relevantes. Você economizou aproximadamente {hours} horas vs. busca manual.",
+        "Esta semana, avaliamos {total} licitações e priorizamos {count} oportunidades relevantes para o seu perfil.",
       cta: "Ver Oportunidades da Semana",
     },
   },
 };
 
 // ============================================================================
-// SOCIAL PROOF / TESTIMONIALS (Themed Copy)
+// SOCIAL PROOF / TESTIMONIALS — Use Case Themes (NOT fictional personas)
 // ============================================================================
 
 export const testimonials = {
-  timeSaved: {
+  visibility: {
+    theme: "Visibilidade de Mercado",
     quote:
-      "Antes eu gastava 2 dias por semana buscando licitações. Agora gasto 30 minutos.",
-    author: "João Silva",
-    role: "Diretor Comercial, Empresa de Uniformes",
-    metric: "Economiza 15h/semana",
+      "Antes a gente perdia oportunidades porque simplesmente não sabia que existiam. Agora temos visão completa do mercado.",
+    useCase: "Empresa de Uniformes — Região Sudeste",
+    impact: "Visibilidade completa das oportunidades do setor",
   },
 
-  roi: {
+  decision: {
+    theme: "Decisão Informada",
     quote:
-      "O sistema se paga só com a primeira licitação que ganhei graças aos alertas rápidos.",
-    author: "Maria Santos",
-    role: "Gestora de Licitações, PME de TI",
-    metric: "ROI de 10x no primeiro mês",
+      "A avaliação objetiva de cada oportunidade mudou a forma como decidimos em quais licitações investir.",
+    useCase: "Empresa de TI — Atuação Nacional",
+    impact: "Decisões baseadas em dados, não em intuição",
   },
 
-  precision: {
+  competitive: {
+    theme: "Vantagem Competitiva",
     quote:
-      "Finalmente recebo apenas oportunidades relevantes. Acabou o ruído.",
-    author: "Carlos Oliveira",
-    role: "CEO, Empresa de Facilities",
-    metric: "95% das oportunidades são relevantes",
+      "Chegamos antes. Enquanto outros ainda estão buscando, a gente já está se preparando.",
+    useCase: "Empresa de Facilities — Região Sul",
+    impact: "Posicionamento antes da concorrência",
   },
 
-  easeOfUse: {
+  focus: {
+    theme: "Foco no que Importa",
     quote:
-      "Minha equipe aprendeu a usar em 5 minutos. Interface super intuitiva.",
-    author: "Ana Costa",
-    role: "Gerente de Operações, Construtora",
-    metric: "Onboarding em 5 minutos",
+      "Parei de perder tempo com oportunidades que não se encaixam no nosso perfil. Agora invisto energia onde vale.",
+    useCase: "Construtora — Múltiplos Estados",
+    impact: "Foco nas oportunidades certas",
   },
 };
 
 // ============================================================================
-// BANNED PHRASES (DO NOT USE)
+// BANNED PHRASES (DO NOT USE — GTM-001 AC9-AC11)
 // ============================================================================
 
 export const BANNED_PHRASES = [
+  // Speed/efficiency metrics (commodity positioning)
+  "160x",
+  "160x mais rápido",
+  "95%",
+  "95% de precisão",
+  "3 minutos",
+  "em 3 minutos",
+  "8 horas",
+  "8+ horas",
+  "economize tempo",
+  "save time",
+  "economize 10h",
+  "10h/semana",
+  "10 horas por semana",
+  // PNCP references (GTM-007)
+  "PNCP",
+  "Portal Nacional de Contratações",
   "Dados do PNCP",
-  "Consulta ao Portal Nacional",
-  "Acesse licitações públicas",
-  "Busque por termos",
   "Resultados do PNCP",
   "Simplificamos o PNCP",
+  "Consulta ao Portal Nacional",
+  "PNCP + 27",
+  // Generic/commodity positioning
   "Agregador de dados",
   "Portal governamental",
+  "Busque por termos",
+  "Acesse licitações públicas",
+  // Fictional personas
+  "João Silva",
+  "Maria Santos",
+  "Carlos Oliveira",
+  "Ana Costa",
 ];
 
 // ============================================================================
-// PREFERRED PHRASES (ALWAYS USE)
+// PREFERRED PHRASES (ALWAYS USE — GTM-001 AC12-AC13)
 // ============================================================================
 
 export const PREFERRED_PHRASES = {
-  primaryValue: "Inteligência sobre oportunidades",
-  speed: ["3 minutos, não 8+ horas", "160x mais rápido"],
-  precision: ["95% de precisão", "Apenas o ouro, zero ruído"],
-  searchMethod: ["Busque por setor", "Esqueça palavras-chave"],
-  consolidation: ["Múltiplas fontes consolidadas", "PNCP + 27 portais"],
-  ai: ["IA que trabalha para você", "Resumos executivos"],
-  timeSavings: "Economize 10h/semana",
-  pricing: "Preço transparente, sem surpresas",
+  primaryValue: "Inteligência de decisão em licitações",
+  decision: ["avaliação objetiva", "decisão informada", "vale a pena ou não"],
+  competitive: ["vantagem competitiva", "posicione-se antes", "visibilidade de mercado"],
+  intelligence: ["priorização inteligente", "análise automatizada", "inteligência de fontes"],
+  coverage: ["fontes oficiais", "cobertura nacional", "dezenas de fontes consolidadas"],
+  uncertainty: ["redução de incerteza", "critérios objetivos", "confiança na decisão"],
+  cost: ["custo de não ter visibilidade", "licitação perdida", "oportunidade que vai para outro"],
   trust: "Cancele em 1 clique, sem burocracia",
 };
 
@@ -481,7 +501,7 @@ export function validateCopy(text: string): { isValid: boolean; violations: stri
 }
 
 /**
- * Format number with metric suffix (e.g., "160x", "95%")
+ * Format number with metric suffix
  */
 export function formatMetric(value: number, suffix: string): string {
   return `${value}${suffix}`;

@@ -20,7 +20,7 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
           isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}
       >
-        Da incerteza à decisão precisa
+        Da busca manual à decisão estratégica
       </h2>
 
       {/* Layout Assimétrico 40/60 */}
@@ -42,13 +42,13 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
             <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-600" aria-label="Sem Curadoria" />
             </div>
-            <h3 className="text-lg font-bold text-red-900 dark:text-red-100 uppercase tracking-wide">Sem Curadoria</h3>
+            <h3 className="text-lg font-bold text-red-900 dark:text-red-100 uppercase tracking-wide">Sem Inteligência de Mercado</h3>
           </div>
 
           <ul className="space-y-3 text-red-800 dark:text-red-200 text-sm">
             <li className="flex items-start gap-2">
               <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
-              <span>Decisões baseadas em <strong className="text-red-900 dark:text-red-100">informação incompleta</strong></span>
+              <span>Perde contratos por <strong className="text-red-900 dark:text-red-100">falta de visibilidade</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
@@ -56,11 +56,11 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
             </li>
             <li className="flex items-start gap-2">
               <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
-              <span>Ruído demais, relevância de menos</span>
+              <span>Concorrentes se posicionam antes de você</span>
             </li>
             <li className="flex items-start gap-2">
               <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
-              <span>Sem visão consolidada do mercado</span>
+              <span>Decisões baseadas em intuição, não em dados</span>
             </li>
           </ul>
         </div>
@@ -88,19 +88,19 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
           <ul className="space-y-3 text-blue-800 dark:text-blue-200">
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Curadoria inteligente: <strong className="text-blue-900 dark:text-blue-100">só o que é relevante</strong> para você</span>
+              <span>Visão completa do mercado <strong className="text-blue-900 dark:text-blue-100">em tempo real</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Resumo executivo por IA em cada oportunidade</span>
+              <span>Avaliação objetiva: vale a pena ou não, e por quê</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Cobertura nacional com precisão setorial</span>
+              <span>Posicione-se antes da concorrência</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Decisões com confiança, não com achismo</span>
+              <span>Decisões com confiança baseadas em inteligência</span>
             </li>
           </ul>
         </div>

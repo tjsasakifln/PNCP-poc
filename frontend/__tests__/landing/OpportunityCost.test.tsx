@@ -6,17 +6,18 @@ describe('OpportunityCost', () => {
     render(<OpportunityCost />);
 
     expect(
-      screen.getByText(/Cada edital que passa é um contrato que vai para o concorrente/i)
+      screen.getByText(/Enquanto você busca, seu concorrente já está se posicionando/i)
     ).toBeInTheDocument();
   });
 
   it('renders 3 bullet points quantifying missed opportunities (AC8)', () => {
     render(<OpportunityCost />);
 
-    expect(screen.getByText(/R\$ 2,3 bilhões/i)).toBeInTheDocument();
-    expect(screen.getByText(/oportunidades mapeadas mensalmente/i)).toBeInTheDocument();
-    expect(screen.getByText(/Editais relevantes vencem enquanto você ainda procura/i)).toBeInTheDocument();
-    expect(screen.getByText(/Quem encontra primeiro, licita primeiro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Uma única licitação perdida por falta de visibilidade pode custar/i)).toBeInTheDocument();
+    expect(screen.getByText(/R\$ 50\.000, R\$ 200\.000 ou mais/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cada dia sem visibilidade completa é uma oportunidade que pode ir para outro/i)).toBeInTheDocument();
+    expect(screen.getByText(/O custo de não usar SmartLic não é tempo/i)).toBeInTheDocument();
+    expect(screen.getByText(/é dinheiro/i)).toBeInTheDocument();
   });
 
   it('does NOT use forbidden terms (AC11)', () => {

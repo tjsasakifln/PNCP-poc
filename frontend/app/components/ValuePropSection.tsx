@@ -21,10 +21,10 @@ export default function ValuePropSection() {
   const { ref, isVisible } = useScrollAnimation(0.1);
 
   const props = [
-    { ...valueProps.speed, size: 'large' as const },        // 2x2
-    { ...valueProps.precision, size: 'medium' as const },   // 2x1
-    { ...valueProps.intelligence, size: 'medium' as const }, // 2x1
-    { ...valueProps.consolidation, size: 'wide' as const },  // 3x1 (full width)
+    { ...valueProps.prioritization, size: 'large' as const },  // 2x2
+    { ...valueProps.analysis, size: 'medium' as const },       // 2x1
+    { ...valueProps.uncertainty, size: 'medium' as const },    // 2x1
+    { ...valueProps.coverage, size: 'wide' as const },         // 3x1 (full width)
   ];
 
   return (
@@ -112,7 +112,7 @@ export default function ValuePropSection() {
             glow={true}
             onClick={() => window.location.href = '/signup?source=value-props'}
           >
-            Economize 10h/Semana Agora
+            Descobrir Minhas Oportunidades
             <svg
               role="img"
               aria-label="Ícone"

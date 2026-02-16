@@ -39,7 +39,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Como faço uma busca por oportunidades de licitação?",
         answer:
-          "Acesse a página de Busca, selecione os estados (UFs) de interesse, defina o período desejado e clique em \"Buscar\". O sistema consultará automaticamente o Portal Nacional de Contratações Públicas (PNCP) e retornará as oportunidades filtradas para o seu setor.",
+          "Acesse a página de Busca, selecione os estados (UFs) de interesse, defina o período desejado e clique em \"Buscar\". O sistema consultará automaticamente as fontes oficiais de contratações públicas e retornará as oportunidades filtradas para o seu setor.",
       },
       {
         question: "Posso buscar em mais de um estado ao mesmo tempo?",
@@ -152,22 +152,22 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "De onde vêm os dados das licitações?",
         answer:
-          "Todos os dados são obtidos diretamente do Portal Nacional de Contratações Públicas (PNCP), a fonte oficial do Governo Federal para publicação de contratações públicas. Os dados são públicos e abertos.",
+          "Todos os dados são obtidos diretamente de fontes oficiais do Governo Federal para publicação de contratações públicas. Os dados são públicos e abertos.",
       },
       {
         question: "Com que frequência os dados são atualizados?",
         answer:
-          "Os dados são consultados em tempo real a cada busca. Quando você realiza uma busca, o sistema consulta a API do PNCP naquele momento, garantindo que os resultados estejam sempre atualizados.",
+          "Os dados são consultados em tempo real a cada busca. Quando você realiza uma busca, o sistema consulta as fontes oficiais naquele momento, garantindo que os resultados estejam sempre atualizados.",
       },
       {
         question: "O SmartLic cobre todas as licitações do Brasil?",
         answer:
-          "O SmartLic consulta todas as licitações publicadas no PNCP. Órgãos municipais, estaduais e federais que publicam no portal são cobertos. Órgãos que utilizam exclusivamente outros sistemas (como ComprasNet antigo) podem não aparecer.",
+          "O SmartLic consulta todas as licitações publicadas nas fontes oficiais de contratações públicas. Órgãos municipais, estaduais e federais que publicam nos portais oficiais são cobertos. Órgãos que utilizam exclusivamente sistemas legados podem não aparecer.",
       },
       {
         question: "Os valores apresentados são exatos?",
         answer:
-          "Os valores exibidos são os valores estimados publicados pelos órgãos no PNCP. Valores finais de contratação podem diferir após o processo licitatório.",
+          "Os valores exibidos são os valores estimados publicados pelos órgãos nas fontes oficiais. Valores finais de contratação podem diferir após o processo licitatório.",
       },
     ],
   },

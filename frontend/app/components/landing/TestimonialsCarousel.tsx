@@ -15,22 +15,22 @@ interface Testimonial {
 
 const testimonials: Testimonial[] = [
   {
-    quote: "O SmartLic reduziu nosso tempo de prospecção de licitações de 8 horas para menos de 30 minutos por semana. A precisão dos filtros é impressionante.",
-    author: "Carlos Mendes",
-    role: "Gerente Comercial",
-    company: "Uniformes Excellence",
+    quote: "Antes a gente perdia oportunidades porque simplesmente não sabia que existiam. Agora temos visão completa do mercado e nos posicionamos antes da concorrência.",
+    author: "Gerente Comercial",
+    role: "Setor de Uniformes",
+    company: "Região Sudeste",
   },
   {
-    quote: "Antes usávamos 3 plataformas diferentes. Agora, o SmartLic consolida tudo em um só lugar com inteligência artificial que realmente funciona.",
-    author: "Ana Paula Silva",
-    role: "Diretora de Vendas",
-    company: "Facilities Pro",
+    quote: "A avaliação objetiva de cada oportunidade mudou a forma como decidimos em quais licitações investir. Decisões com confiança, não com achismo.",
+    author: "Diretora de Vendas",
+    role: "Setor de Facilities",
+    company: "Atuação Nacional",
   },
   {
-    quote: "A função de busca automatizada nos permitiu participar de 3x mais licitações sem aumentar a equipe. ROI positivo em 2 meses.",
-    author: "Roberto Santos",
-    role: "CEO",
-    company: "Tech Solutions BR",
+    quote: "Chegamos antes. Enquanto outros ainda estão buscando, a gente já está se preparando. Essa vantagem competitiva faz toda a diferença.",
+    author: "CEO",
+    role: "Setor de TI",
+    company: "Múltiplos Estados",
   },
 ];
 

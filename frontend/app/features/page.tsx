@@ -13,7 +13,7 @@ import Footer from '../components/Footer';
 
 export const metadata = {
   title: 'Funcionalidades | SmartLic',
-  description: 'Descubra como o SmartLic entrega inteligência sobre oportunidades de licitação em 3 minutos com 95% de precisão.',
+  description: 'Descubra como o SmartLic entrega inteligência de decisão para oportunidades de licitação com avaliação objetiva por IA.',
 };
 
 export default function FeaturesPage() {
@@ -21,8 +21,8 @@ export default function FeaturesPage() {
     features.sectorSearch,
     features.intelligentFiltering,
     features.multiSourceConsolidation,
-    features.speedAndEfficiency,
-    features.aiSummaries,
+    features.decisionIntelligence,
+    features.competitiveAdvantage,
   ];
 
   return (
@@ -32,7 +32,7 @@ export default function FeaturesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <h1 className="text-4xl sm:text-5xl font-bold mb-6">
-              Funcionalidades que Economizam 10h/Semana
+              Funcionalidades que Geram Vantagem Competitiva
             </h1>
             <p className="text-xl text-white/90 mb-8">
               Enquanto outras plataformas exigem trabalho manual, o SmartLic entrega inteligência automatizada.
@@ -108,7 +108,7 @@ export default function FeaturesPage() {
                   <div className="space-y-3">
                     <p className="font-semibold text-ink">Benefícios:</p>
                     <ul className="space-y-2">
-                      {feature.benefits.map((benefit, idx) => (
+                      {feature.benefits.map((benefit: string, idx: number) => (
                         <li key={idx} className="flex items-start gap-2">
                           <svg
               role="img"
@@ -192,10 +192,10 @@ export default function FeaturesPage() {
       <section className="py-20 bg-gradient-to-br from-brand-blue to-brand-blue/80 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Pronto para Economizar 10h/Semana?
+            Pronto para Ganhar Mais Licitações?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Teste grátis por 7 dias. Sem cartão de crédito. Cancele quando quiser.
+            Consultas gratuitas. Sem cartão de crédito. Cancele quando quiser.
           </p>
           <a
             href="/signup?source=features-bottom-cta"
