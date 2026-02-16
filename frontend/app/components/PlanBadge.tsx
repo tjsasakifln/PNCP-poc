@@ -45,6 +45,8 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
         return "bg-green-500 text-white border-green-600";
       case "sala_guerra":
         return "bg-yellow-500 text-gray-900 border-yellow-600";
+      case "smartlic_pro":
+        return "bg-brand-navy text-white border-brand-blue";
       default:
         return "bg-gray-500 text-white border-gray-600";
     }
@@ -59,6 +61,7 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
     if (planId === "consultor_agil") return "C";  // Consultor
     if (planId === "maquina") return "M";  // Maquina
     if (planId === "sala_guerra") return "S";  // Sala de Guerra
+    if (planId === "smartlic_pro") return "P";  // Pro
     return "?";
   }, [planId]);
 

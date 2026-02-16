@@ -21,10 +21,11 @@ class TestPlanCapabilities:
     """Test PLAN_CAPABILITIES constants."""
 
     def test_all_plans_have_required_fields(self):
-        """All 4 plans must have all required capability fields."""
+        """All 5 plans must have all required capability fields (including allow_pipeline)."""
         required_fields = {
             "max_history_days",
             "allow_excel",
+            "allow_pipeline",  # STORY-250
             "max_requests_per_month",
             "max_requests_per_min",
             "max_summary_tokens",
@@ -35,18 +36,20 @@ class TestPlanCapabilities:
             assert set(caps.keys()) == required_fields, f"{plan_id} missing fields"
 
     def test_max_history_days_progression(self):
-        """History days should progress: FREE < Consultor < Máquina < Sala."""
+        """History days should progress: FREE < Consultor < Máquina/Sala/SmartLic."""
         assert PLAN_CAPABILITIES["free_trial"]["max_history_days"] == 7
         assert PLAN_CAPABILITIES["consultor_agil"]["max_history_days"] == 30
         assert PLAN_CAPABILITIES["maquina"]["max_history_days"] == 365
         assert PLAN_CAPABILITIES["sala_guerra"]["max_history_days"] == 1825
+        assert PLAN_CAPABILITIES["smartlic_pro"]["max_history_days"] == 1825
 
     def test_excel_only_allowed_for_premium_plans(self):
-        """Excel export only available for Máquina and Sala de Guerra."""
+        """Excel export only available for Máquina, Sala de Guerra, and SmartLic Pro."""
         assert PLAN_CAPABILITIES["free_trial"]["allow_excel"] is False
         assert PLAN_CAPABILITIES["consultor_agil"]["allow_excel"] is False
         assert PLAN_CAPABILITIES["maquina"]["allow_excel"] is True
         assert PLAN_CAPABILITIES["sala_guerra"]["allow_excel"] is True
+        assert PLAN_CAPABILITIES["smartlic_pro"]["allow_excel"] is True
 
     def test_quota_limits_make_sense(self):
         """Monthly quotas should be reasonable and progressive."""
@@ -57,11 +60,13 @@ class TestPlanCapabilities:
         consultor = PLAN_CAPABILITIES["consultor_agil"]["max_requests_per_month"]
         maquina = PLAN_CAPABILITIES["maquina"]["max_requests_per_month"]
         sala = PLAN_CAPABILITIES["sala_guerra"]["max_requests_per_month"]
+        smartlic = PLAN_CAPABILITIES["smartlic_pro"]["max_requests_per_month"]
 
         assert consultor < maquina < sala
         assert consultor == 50
         assert maquina == 300
         assert sala == 1000
+        assert smartlic == 1000  # Same as sala_guerra
 
     def test_rate_limits_progressive(self):
         """Rate limits should increase with plan tier."""
@@ -69,12 +74,14 @@ class TestPlanCapabilities:
         consultor = PLAN_CAPABILITIES["consultor_agil"]["max_requests_per_min"]
         maquina = PLAN_CAPABILITIES["maquina"]["max_requests_per_min"]
         sala = PLAN_CAPABILITIES["sala_guerra"]["max_requests_per_min"]
+        smartlic = PLAN_CAPABILITIES["smartlic_pro"]["max_requests_per_min"]
 
         assert free < consultor < maquina < sala
         assert free == 2
         assert consultor == 10
         assert maquina == 30
         assert sala == 60
+        assert smartlic == 60  # Same as sala_guerra
 
     def test_priority_levels_valid(self):
         """All priorities should be valid PlanPriority enum values."""
@@ -89,7 +96,7 @@ class TestPlanCapabilities:
 
     def test_plan_prices_exist_for_paid_plans(self):
         """PLAN_PRICES should have prices for all paid plans."""
-        paid_plans = {"consultor_agil", "maquina", "sala_guerra"}
+        paid_plans = {"consultor_agil", "maquina", "sala_guerra", "smartlic_pro"}
         assert set(PLAN_PRICES.keys()) == paid_plans
 
     def test_upgrade_suggestions_valid(self):
@@ -439,16 +446,20 @@ class TestPlanNameMapping:
         assert PLAN_NAMES["free_trial"] == "FREE Trial"
 
     def test_consultor_agil_display_name(self):
-        """Consultor Agil should display with accent."""
-        assert PLAN_NAMES["consultor_agil"] == "Consultor Ágil"
+        """Consultor Agil should display with accent and legacy suffix."""
+        assert PLAN_NAMES["consultor_agil"] == "Consultor Ágil (legacy)"
 
     def test_maquina_display_name(self):
-        """Maquina should display as 'Máquina'."""
-        assert PLAN_NAMES["maquina"] == "Máquina"
+        """Maquina should display as 'Máquina (legacy)'."""
+        assert PLAN_NAMES["maquina"] == "Máquina (legacy)"
 
     def test_sala_guerra_display_name(self):
-        """Sala de Guerra should display correctly."""
-        assert PLAN_NAMES["sala_guerra"] == "Sala de Guerra"
+        """Sala de Guerra should display correctly with legacy suffix."""
+        assert PLAN_NAMES["sala_guerra"] == "Sala de Guerra (legacy)"
+
+    def test_smartlic_pro_display_name(self):
+        """SmartLic Pro should display correctly without legacy suffix."""
+        assert PLAN_NAMES["smartlic_pro"] == "SmartLic Pro"
 
     def test_plan_names_matches_capabilities_keys(self):
         """All capability plan IDs must have a display name."""
@@ -478,13 +489,17 @@ class TestPlanPricing:
         """Sala de Guerra should have correct price."""
         assert PLAN_PRICES["sala_guerra"] == "R$ 1.497/mês"
 
+    def test_smartlic_pro_price(self):
+        """SmartLic Pro should have correct price."""
+        assert PLAN_PRICES["smartlic_pro"] == "R$ 1.999/mês"
+
     def test_free_trial_has_no_price(self):
         """FREE trial should not be in pricing (it's free)."""
         assert "free_trial" not in PLAN_PRICES
 
     def test_all_paid_plans_have_prices(self):
         """All paid plans must have prices."""
-        paid_plans = {"consultor_agil", "maquina", "sala_guerra"}
+        paid_plans = {"consultor_agil", "maquina", "sala_guerra", "smartlic_pro"}
         assert set(PLAN_PRICES.keys()) == paid_plans
 
     def test_prices_contain_currency_symbol(self):
@@ -504,7 +519,7 @@ class TestQuotaInfoPlanName:
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_quota_info_returns_correct_plan_name(self, mock_get_used, mock_get_supabase):
-        """check_quota should return correctly formatted plan_name."""
+        """check_quota should return correctly formatted plan_name with legacy suffix."""
         mock_get_used.return_value = 10
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
@@ -520,12 +535,12 @@ class TestQuotaInfoPlanName:
         result = check_quota("user-123")
 
         assert result.plan_id == "consultor_agil"
-        assert result.plan_name == "Consultor Ágil"
+        assert result.plan_name == "Consultor Ágil (legacy)"
 
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
     def test_quota_info_maquina_plan_name(self, mock_get_used, mock_get_supabase):
-        """check_quota should return 'Máquina' for maquina plan."""
+        """check_quota should return 'Máquina (legacy)' for maquina plan."""
         mock_get_used.return_value = 50
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
@@ -541,7 +556,7 @@ class TestQuotaInfoPlanName:
         result = check_quota("user-123")
 
         assert result.plan_id == "maquina"
-        assert result.plan_name == "Máquina"
+        assert result.plan_name == "Máquina (legacy)"
 
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")

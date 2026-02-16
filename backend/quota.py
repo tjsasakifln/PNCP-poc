@@ -96,14 +96,24 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
         "max_summary_tokens": 10000,
         "priority": PlanPriority.CRITICAL.value,
     },
+    "smartlic_pro": {
+        "max_history_days": 1825,  # 5 years
+        "allow_excel": True,
+        "allow_pipeline": True,
+        "max_requests_per_month": 1000,
+        "max_requests_per_min": 60,
+        "max_summary_tokens": 10000,
+        "priority": PlanPriority.NORMAL.value,
+    },
 }
 
 # Display names for UI
 PLAN_NAMES: dict[str, str] = {
     "free_trial": "FREE Trial",
-    "consultor_agil": "Consultor Ágil",
-    "maquina": "Máquina",
-    "sala_guerra": "Sala de Guerra",
+    "consultor_agil": "Consultor Ágil (legacy)",
+    "maquina": "Máquina (legacy)",
+    "sala_guerra": "Sala de Guerra (legacy)",
+    "smartlic_pro": "SmartLic Pro",
 }
 
 # Pricing for error messages
@@ -111,26 +121,28 @@ PLAN_PRICES: dict[str, str] = {
     "consultor_agil": "R$ 297/mês",
     "maquina": "R$ 597/mês",
     "sala_guerra": "R$ 1.497/mês",
+    "smartlic_pro": "R$ 1.999/mês",
 }
 
 # Upgrade path suggestions (for error messages)
 UPGRADE_SUGGESTIONS: dict[str, dict[str, str]] = {
     "max_history_days": {
-        "free_trial": "consultor_agil",
-        "consultor_agil": "maquina",
-        "maquina": "sala_guerra",
+        "free_trial": "smartlic_pro",
+        "consultor_agil": "smartlic_pro",
+        "maquina": "smartlic_pro",
     },
     "allow_excel": {
-        "free_trial": "maquina",
-        "consultor_agil": "maquina",
+        "free_trial": "smartlic_pro",
+        "consultor_agil": "smartlic_pro",
     },
     "allow_pipeline": {
-        "free_trial": "maquina",
-        "consultor_agil": "maquina",
+        "free_trial": "smartlic_pro",
+        "consultor_agil": "smartlic_pro",
     },
     "max_requests_per_month": {
-        "consultor_agil": "maquina",
-        "maquina": "sala_guerra",
+        "free_trial": "smartlic_pro",
+        "consultor_agil": "smartlic_pro",
+        "maquina": "smartlic_pro",
     },
 }
 

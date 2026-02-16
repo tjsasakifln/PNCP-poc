@@ -2974,15 +2974,10 @@
               "description": "Target billing period",
               "enum": [
                 "monthly",
+                "semiannual",
                 "annual"
               ],
               "title": "New Billing Period",
-              "type": "string"
-            },
-            "user_timezone": {
-              "default": "America/Sao_Paulo",
-              "description": "User's timezone for accurate pro-rata calculations",
-              "title": "User Timezone",
               "type": "string"
             }
           },
@@ -2995,10 +2990,6 @@
         "UpdateBillingPeriodResponse": {
           "description": "Response for billing period update.",
           "properties": {
-            "deferred": {
-              "title": "Deferred",
-              "type": "boolean"
-            },
             "message": {
               "title": "Message",
               "type": "string"
@@ -3011,10 +3002,6 @@
               "title": "Next Billing Date",
               "type": "string"
             },
-            "prorated_credit": {
-              "title": "Prorated Credit",
-              "type": "string"
-            },
             "success": {
               "title": "Success",
               "type": "boolean"
@@ -3024,8 +3011,6 @@
             "success",
             "new_billing_period",
             "next_billing_date",
-            "prorated_credit",
-            "deferred",
             "message"
           ],
           "title": "UpdateBillingPeriodResponse",
@@ -4531,7 +4516,7 @@
       },
       "/api/subscriptions/update-billing-period": {
         "post": {
-          "description": "Update subscription billing period (monthly \u2194 annual).\n\nCRITICAL FLOW:\n1. Fetch current subscription from Supabase\n2. Calculate pro-rata credit (with defer logic if < 7 days to renewal)\n3. Update Stripe subscription\n4. Update Supabase (billing_period, updated_at)\n5. Invalidate Redis feature cache\n6. Return next billing date and credit info\n\nEDGE CASES:\n- Defer if < 7 days to renewal (avoid complex pro-rata + Stripe edge cases)\n- Prevent downgrade (annual \u2192 monthly) via UX validation\n- Handle timezone-aware date calculations\n\nArgs:\n    request: UpdateBillingPeriodRequest with new billing period\n    user: Authenticated user from require_auth dependency\n\nReturns:\n    UpdateBillingPeriodResponse with billing details\n\nRaises:\n    HTTPException 404: No active subscription found\n    HTTPException 400: Invalid billing period or downgrade attempt\n    HTTPException 500: Database or Stripe API error",
+          "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow \u2014 Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
           "operationId": "update_billing_period_api_subscriptions_update_billing_period_post",
           "requestBody": {
             "content": {
@@ -6632,7 +6617,7 @@
       },
       "/v1/api/subscriptions/update-billing-period": {
         "post": {
-          "description": "Update subscription billing period (monthly \u2194 annual).\n\nCRITICAL FLOW:\n1. Fetch current subscription from Supabase\n2. Calculate pro-rata credit (with defer logic if < 7 days to renewal)\n3. Update Stripe subscription\n4. Update Supabase (billing_period, updated_at)\n5. Invalidate Redis feature cache\n6. Return next billing date and credit info\n\nEDGE CASES:\n- Defer if < 7 days to renewal (avoid complex pro-rata + Stripe edge cases)\n- Prevent downgrade (annual \u2192 monthly) via UX validation\n- Handle timezone-aware date calculations\n\nArgs:\n    request: UpdateBillingPeriodRequest with new billing period\n    user: Authenticated user from require_auth dependency\n\nReturns:\n    UpdateBillingPeriodResponse with billing details\n\nRaises:\n    HTTPException 404: No active subscription found\n    HTTPException 400: Invalid billing period or downgrade attempt\n    HTTPException 500: Database or Stripe API error",
+          "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow \u2014 Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
           "operationId": "update_billing_period_v1_api_subscriptions_update_billing_period_post",
           "requestBody": {
             "content": {

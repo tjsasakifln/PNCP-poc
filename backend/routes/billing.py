@@ -40,8 +40,8 @@ async def create_checkout(
     """Create Stripe Checkout session for a plan purchase."""
     import stripe as stripe_lib
 
-    if billing_period not in ("monthly", "annual"):
-        raise HTTPException(status_code=400, detail="billing_period deve ser 'monthly' ou 'annual'")
+    if billing_period not in ("monthly", "semiannual", "annual"):
+        raise HTTPException(status_code=400, detail="billing_period deve ser 'monthly', 'semiannual' ou 'annual'")
 
     stripe_key = os.getenv("STRIPE_SECRET_KEY")
     if not stripe_key:

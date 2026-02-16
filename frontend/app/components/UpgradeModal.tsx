@@ -2,36 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
-
-interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  max_searches: number | null;
-  price_brl: number;
-  duration_days: number | null;
-}
+import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  preSelectedPlan?: string;
-  source?: string; // Analytics: 'excel_button', 'date_range', 'quota_counter'
+  source?: string;
 }
 
 /**
- * Upgrade modal with plan comparison
- * Now fetches plans dynamically from backend to ensure consistency with /planos page
- * Updated 2026-02-05: Removed hardcoded plans, synced with backend API
+ * Upgrade modal — GTM-002 Single Plan Model
+ * Shows SmartLic Pro with 3 billing period options.
+ * Copy rules: No "plano", "assinatura", "tier", "busca" words.
  */
-export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: UpgradeModalProps) {
+export function UpgradeModal({ isOpen, onClose, source }: UpgradeModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const { trackEvent } = useAnalytics();
 
-  // Close on Escape key - prevent propagation to global handlers
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -42,8 +30,7 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
     };
 
     if (isOpen) {
-      document.addEventListener("keydown", handleEscape, true); // capture phase
-      // Lock body scroll
+      document.addEventListener("keydown", handleEscape, true);
       document.body.style.overflow = "hidden";
     }
 
@@ -53,63 +40,28 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
     };
   }, [isOpen, onClose]);
 
-  // Fetch plans from backend when modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const fetchPlans = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "/api";
-        const res = await fetch(`${backendUrl}/v1/plans`);
-        if (!res.ok) throw new Error("Erro ao carregar planos");
-        const data = await res.json();
-        // Hide free and master from public listing
-        setPlans(data.plans.filter((p: Plan) => p.id !== "free" && p.id !== "master"));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar planos");
-        setPlans([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlans();
-  }, [isOpen]);
-
-  // Track analytics when modal opens
   useEffect(() => {
     if (isOpen && typeof window !== "undefined") {
-      trackEvent("upgrade_modal_opened", { source, pre_selected_plan: preSelectedPlan });
+      trackEvent("upgrade_modal_opened", { source });
     }
-  }, [isOpen, source, preSelectedPlan]);
+  }, [isOpen, source]);
 
   if (!isOpen) return null;
 
-  const handlePlanClick = (planId: string) => {
-    trackEvent("upgrade_modal_plan_clicked", { plan_id: planId, source });
-    window.location.href = `/planos?plan=${planId}`;
+  const prices: Record<BillingPeriod, { monthly: number; total: number; label: string }> = {
+    monthly: { monthly: 1999, total: 1999, label: "/mês" },
+    semiannual: { monthly: 1799, total: 10794, label: "/mês" },
+    annual: { monthly: 1599, total: 19188, label: "/mês" },
   };
+
+  const currentPrice = prices[billingPeriod];
 
   const formatPrice = (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
-  const getPlanLabel = (plan: Plan) => {
-    if (plan.duration_days === 30) return "/mês";
-    if (plan.duration_days === 365) return "/ano";
-    return "";
-  };
-
-  const isPopular = (id: string) => id === "monthly" || id === "maquina";
-
-  const getButtonClasses = (popular: boolean, isPreSelected: boolean) => {
-    const baseClasses = "w-full px-6 py-3 rounded-button font-semibold transition-all";
-
-    if (popular || isPreSelected) {
-      return `${baseClasses} bg-brand-navy text-white hover:bg-brand-blue-hover hover:-translate-y-0.5 hover:shadow-lg`;
-    }
-    return `${baseClasses} border-2 border-brand-navy text-brand-navy bg-transparent hover:bg-brand-blue-subtle`;
+  const handleCTA = () => {
+    trackEvent("upgrade_modal_cta_clicked", { billing_period: billingPeriod, source });
+    window.location.href = `/planos?billing=${billingPeriod}`;
   };
 
   return (
@@ -122,128 +74,74 @@ export function UpgradeModal({ isOpen, onClose, preSelectedPlan, source }: Upgra
     >
       <div
         ref={modalRef}
-        className="relative bg-surface-0 rounded-card shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+        className="relative bg-surface-0 rounded-card shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-surface-0 border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <h2 id="upgrade-modal-title" className="text-2xl font-bold text-ink">
-            Escolha seu plano
+            SmartLic Pro
           </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-surface-1 rounded-full transition-colors"
             aria-label="Fechar modal"
           >
-            <svg
-              role="img"
-              aria-label="Fechar"
-              className="w-6 h-6 text-ink-secondary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg role="img" aria-label="Fechar" className="w-6 h-6 text-ink-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Plan cards grid */}
         <div className="p-6">
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-72 bg-surface-1 rounded-card animate-pulse" />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-error mb-4">{error}</p>
-              <button
-                onClick={() => window.location.href = "/planos"}
-                className="text-brand-blue hover:underline"
-              >
-                Ver planos na página completa
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {plans.map((plan) => {
-                const popular = isPopular(plan.id);
-                const isPreSelected = preSelectedPlan === plan.id;
-
-                return (
-                  <div
-                    key={plan.id}
-                    className={`
-                      relative p-6 rounded-card border-2 transition-all
-                      ${popular ? "scale-105 shadow-xl border-brand-blue" : "border-border"}
-                      ${isPreSelected ? "ring-4 ring-brand-blue/30" : ""}
-                    `}
-                  >
-                    {/* Popular badge */}
-                    {popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-blue text-white text-xs font-semibold rounded-full whitespace-nowrap">
-                        Mais Popular
-                      </div>
-                    )}
-
-                    {/* Plan name and price */}
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
-                      <p className="text-3xl font-bold text-brand-navy">
-                        {formatPrice(plan.price_brl)}
-                        <span className="text-sm font-normal text-ink-muted">{getPlanLabel(plan)}</span>
-                      </p>
-                    </div>
-
-                    {/* Features list */}
-                    <ul className="space-y-3 mb-6">
-                      <li className="flex items-start gap-2 text-sm">
-                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
-                        <span className="text-ink">
-                          {plan.max_searches ? `${plan.max_searches} buscas/mês` : "Buscas ilimitadas"}
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2 text-sm">
-                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
-                        <span className="text-ink">Todos os setores</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-sm">
-                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
-                        <span className="text-ink">Exportar Excel</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-sm">
-                        <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
-                        <span className="text-ink">Resumo executivo IA</span>
-                      </li>
-                      {!plan.max_searches && (
-                        <li className="flex items-start gap-2 text-sm font-semibold">
-                          <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">✓</span>
-                          <span className="text-ink">Histórico completo</span>
-                        </li>
-                      )}
-                    </ul>
-
-                    {/* CTA button */}
-                    <button
-                      onClick={() => handlePlanClick(plan.id)}
-                      className={getButtonClasses(popular, isPreSelected)}
-                    >
-                      Assinar {plan.name}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Footer tip */}
-          <div className="mt-8 p-4 bg-brand-blue-subtle border border-brand-blue/20 rounded-card text-center">
-            <p className="text-sm text-ink-secondary">
-              Upgrade a qualquer momento sem perder dados
-            </p>
+          {/* Billing Period Toggle */}
+          <div className="mb-6">
+            <PlanToggle value={billingPeriod} onChange={setBillingPeriod} />
           </div>
+
+          {/* Price Display */}
+          <div className="text-center mb-6">
+            <p className="text-4xl font-bold text-brand-navy">
+              {formatPrice(currentPrice.monthly)}
+              <span className="text-sm font-normal text-ink-muted">{currentPrice.label}</span>
+            </p>
+            {billingPeriod !== "monthly" && (
+              <p className="text-sm text-ink-secondary mt-1">
+                Total: {formatPrice(currentPrice.total)}
+                {billingPeriod === "semiannual" ? " por semestre" : " por ano"}
+              </p>
+            )}
+          </div>
+
+          {/* Features */}
+          <ul className="space-y-3 mb-6">
+            {[
+              "1.000 análises por mês",
+              "Exportação Excel completa",
+              "Pipeline de acompanhamento",
+              "Inteligência de decisão completa",
+              "5 anos de histórico",
+              "Cobertura nacional — 27 estados",
+            ].map((feature) => (
+              <li key={feature} className="flex items-start gap-2 text-sm">
+                <span className="flex-shrink-0 mt-0.5 text-green-500" aria-hidden="true">&#10003;</span>
+                <span className="text-ink">{feature}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* CTA */}
+          <button
+            onClick={handleCTA}
+            className="w-full px-6 py-3 rounded-button font-semibold bg-brand-navy text-white hover:bg-brand-blue-hover hover:-translate-y-0.5 hover:shadow-lg transition-all"
+          >
+            Começar Agora
+          </button>
+
+          {/* Footer */}
+          <p className="mt-4 text-center text-xs text-ink-muted">
+            Cancele quando quiser. Sem contrato de fidelidade.
+          </p>
         </div>
       </div>
     </div>

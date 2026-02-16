@@ -1,13 +1,13 @@
-"""Tests for billing period update functionality (STORY-171).
+"""Tests for billing period update functionality (GTM-002).
 
-Tests successful billing period updates (monthly → annual) with pro-rata
-credit calculations, Stripe integration mocking, and database updates.
+Tests successful billing period updates (monthly → annual/semiannual)
+with Stripe integration mocking and database updates.
+No pro-rata calculations — Stripe handles proration automatically.
 """
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timezone, timedelta
-from decimal import Decimal
 
 
 class TestBillingPeriodUpdateSuccess:
@@ -25,17 +25,14 @@ class TestBillingPeriodUpdateSuccess:
         """Test monthly → annual with 15 days until renewal."""
         from routes.subscriptions import update_billing_period, UpdateBillingPeriodRequest
 
-        # Mock user
         user = {"id": "test-user-123", "email": "test@example.com"}
 
-        # Mock Supabase responses
         sb_mock = MagicMock()
         mock_supabase.return_value = sb_mock
 
-        # Mock subscription fetch
         subscription_data = {
             "id": "sub-123",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "monthly",
             "stripe_subscription_id": "sub_stripe123",
             "expires_at": (datetime.now(timezone.utc) + timedelta(days=15)).isoformat(),
@@ -44,48 +41,39 @@ class TestBillingPeriodUpdateSuccess:
             data=[subscription_data]
         )
 
-        # Mock plan pricing fetch
         plan_data = {
-            "price_brl": 297.00,
-            "stripe_price_id": "price_monthly123",
+            "price_brl": 1999.00,
+            "stripe_price_id_annual": "price_annual123",
         }
         sb_mock.table().select().eq().single().execute.return_value = Mock(data=plan_data)
 
-        # Mock next billing date
         next_billing = datetime.now(timezone.utc) + timedelta(days=15)
         mock_get_next_billing.return_value = next_billing
 
-        # Mock Stripe update
         mock_update_stripe.return_value = {"id": "sub_stripe123", "status": "active"}
 
-        # Mock database update
         sb_mock.table().update().eq().execute.return_value = Mock(data=[{"success": True}])
 
-        # Execute request
-        request = UpdateBillingPeriodRequest(
-            new_billing_period="annual",
-            user_timezone="America/Sao_Paulo"
-        )
+        request = UpdateBillingPeriodRequest(new_billing_period="annual")
 
         with patch("routes.subscriptions.require_auth", return_value=user):
-            # Import the function that uses the dependency
             import asyncio
             response = asyncio.run(update_billing_period(request, user))
 
-        # Assertions
         assert response.success is True
         assert response.new_billing_period == "annual"
-        assert response.deferred is False
-        assert Decimal(response.prorated_credit) > 0  # Should have credit for 15 days
+        assert response.next_billing_date is not None
 
     @patch("supabase_client.get_supabase")
+    @patch("routes.subscriptions.update_stripe_subscription_billing_period")
     @patch("routes.subscriptions.get_next_billing_date")
-    def test_update_deferred_when_less_than_7_days(
+    def test_update_monthly_to_semiannual(
         self,
         mock_get_next_billing,
+        mock_update_stripe,
         mock_supabase
     ):
-        """Test that update is deferred when < 7 days until renewal."""
+        """Test monthly → semiannual billing period update."""
         from routes.subscriptions import update_billing_period, UpdateBillingPeriodRequest
 
         user = {"id": "test-user-123", "email": "test@example.com"}
@@ -93,10 +81,9 @@ class TestBillingPeriodUpdateSuccess:
         sb_mock = MagicMock()
         mock_supabase.return_value = sb_mock
 
-        # Mock subscription with 5 days until renewal
         subscription_data = {
             "id": "sub-123",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "monthly",
             "stripe_subscription_id": "sub_stripe123",
             "expires_at": (datetime.now(timezone.utc) + timedelta(days=5)).isoformat(),
@@ -105,27 +92,23 @@ class TestBillingPeriodUpdateSuccess:
             data=[subscription_data]
         )
 
-        # Mock plan pricing
-        plan_data = {"price_brl": 297.00, "stripe_price_id": "price_monthly123"}
+        plan_data = {"price_brl": 1999.00, "stripe_price_id_semiannual": "price_semi123"}
         sb_mock.table().select().eq().single().execute.return_value = Mock(data=plan_data)
 
-        # Mock next billing date (5 days from now)
         next_billing = datetime.now(timezone.utc) + timedelta(days=5)
         mock_get_next_billing.return_value = next_billing
 
-        request = UpdateBillingPeriodRequest(
-            new_billing_period="annual",
-            user_timezone="America/Sao_Paulo"
-        )
+        mock_update_stripe.return_value = {"id": "sub_stripe123", "status": "active"}
+
+        sb_mock.table().update().eq().execute.return_value = Mock(data=[{"success": True}])
+
+        request = UpdateBillingPeriodRequest(new_billing_period="semiannual")
 
         import asyncio
         response = asyncio.run(update_billing_period(request, user))
 
-        # Should be deferred
         assert response.success is True
-        assert response.deferred is True
-        assert response.prorated_credit == "0.00"
-        assert "próximo ciclo" in response.message.lower()
+        assert response.new_billing_period == "semiannual"
 
     @patch("supabase_client.get_supabase")
     def test_error_when_no_active_subscription(self, mock_supabase):

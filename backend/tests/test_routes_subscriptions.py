@@ -48,11 +48,10 @@ class TestUpdateBillingPeriod:
 
     @patch("cache.redis_cache")
     @patch("routes.subscriptions.update_stripe_subscription_billing_period")
-    @patch("routes.subscriptions.calculate_prorata_credit")
     @patch("routes.subscriptions.get_next_billing_date")
     @patch("supabase_client.get_supabase")
     def test_successful_update_monthly_to_annual(
-        self, mock_get_sb, mock_next_billing, mock_prorata, mock_stripe_update, mock_redis
+        self, mock_get_sb, mock_next_billing, mock_stripe_update, mock_redis
     ):
         sb = _mock_sb()
         next_billing = datetime.now(timezone.utc) + timedelta(days=20)
@@ -60,16 +59,15 @@ class TestUpdateBillingPeriod:
         # Step 1: fetch subscription
         sub_data = {
             "id": "sub-1",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "monthly",
             "stripe_subscription_id": "sub_stripe_123",
             "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
         }
         # Step 2: fetch plan pricing
         plan_data = {
-            "price_brl": 297.0,
-            "stripe_price_id": "price_main",
             "stripe_price_id_monthly": "price_monthly",
+            "stripe_price_id_semiannual": "price_semiannual",
             "stripe_price_id_annual": "price_annual",
         }
 
@@ -85,17 +83,6 @@ class TestUpdateBillingPeriod:
         mock_get_sb.return_value = sb
 
         mock_next_billing.return_value = next_billing
-
-        # ProRata result: not deferred
-        from services.billing import ProRataResult
-        mock_prorata.return_value = ProRataResult(
-            prorated_credit=Decimal("45.00"),
-            days_until_renewal=20,
-            deferred=False,
-            next_billing_date=next_billing,
-            reason=None,
-        )
-
         mock_redis.delete = AsyncMock()
 
         client = _create_client()
@@ -107,8 +94,8 @@ class TestUpdateBillingPeriod:
         body = resp.json()
         assert body["success"] is True
         assert body["new_billing_period"] == "annual"
-        assert body["deferred"] is False
-        assert body["prorated_credit"] == "45.00"
+        assert body["next_billing_date"] == next_billing.isoformat()
+        assert "message" in body
         mock_stripe_update.assert_called_once()
 
     @patch("supabase_client.get_supabase")
@@ -130,7 +117,7 @@ class TestUpdateBillingPeriod:
         sb = _mock_sb()
         sub_data = {
             "id": "sub-1",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "annual",  # Already annual
             "stripe_subscription_id": "sub_stripe_123",
             "expires_at": None,
@@ -151,7 +138,7 @@ class TestUpdateBillingPeriod:
         sb = _mock_sb()
         sub_data = {
             "id": "sub-1",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "monthly",
             "stripe_subscription_id": None,  # No Stripe ID
             "expires_at": None,
@@ -169,78 +156,67 @@ class TestUpdateBillingPeriod:
 
     @patch("cache.redis_cache")
     @patch("routes.subscriptions.update_stripe_subscription_billing_period")
-    @patch("routes.subscriptions.calculate_prorata_credit")
     @patch("routes.subscriptions.get_next_billing_date")
     @patch("supabase_client.get_supabase")
-    def test_deferred_update_returns_early(
-        self, mock_get_sb, mock_next_billing, mock_prorata, mock_stripe_update, mock_redis
+    def test_successful_update_monthly_to_semiannual(
+        self, mock_get_sb, mock_next_billing, mock_stripe_update, mock_redis
     ):
+        """Test updating to semiannual billing period."""
         sb = _mock_sb()
-        next_billing = datetime.now(timezone.utc) + timedelta(days=5)  # < 7 days
+        next_billing = datetime.now(timezone.utc) + timedelta(days=20)
 
         sub_data = {
             "id": "sub-1",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "monthly",
             "stripe_subscription_id": "sub_stripe_123",
             "expires_at": None,
         }
         plan_data = {
-            "price_brl": 297.0,
-            "stripe_price_id": "price_main",
             "stripe_price_id_monthly": "price_monthly",
+            "stripe_price_id_semiannual": "price_semiannual",
             "stripe_price_id_annual": "price_annual",
         }
         sb.execute.side_effect = [
             Mock(data=[sub_data]),
             Mock(data=plan_data),
+            Mock(data=[]),
         ]
         mock_get_sb.return_value = sb
 
         mock_next_billing.return_value = next_billing
-
-        from services.billing import ProRataResult
-        mock_prorata.return_value = ProRataResult(
-            prorated_credit=Decimal("0.00"),
-            days_until_renewal=5,
-            deferred=True,
-            next_billing_date=next_billing,
-            reason="Less than 7 days to renewal",
-        )
+        mock_redis.delete = AsyncMock()
 
         client = _create_client()
         resp = client.post("/api/subscriptions/update-billing-period", json={
-            "new_billing_period": "annual",
+            "new_billing_period": "semiannual",
         })
 
         assert resp.status_code == 200
         body = resp.json()
-        assert body["deferred"] is True
-        assert body["prorated_credit"] == "0.00"
-        # Stripe should NOT be called when deferred
-        mock_stripe_update.assert_not_called()
+        assert body["success"] is True
+        assert body["new_billing_period"] == "semiannual"
+        mock_stripe_update.assert_called_once()
 
     @patch("routes.subscriptions.update_stripe_subscription_billing_period")
-    @patch("routes.subscriptions.calculate_prorata_credit")
     @patch("routes.subscriptions.get_next_billing_date")
     @patch("supabase_client.get_supabase")
     def test_stripe_failure_500(
-        self, mock_get_sb, mock_next_billing, mock_prorata, mock_stripe_update
+        self, mock_get_sb, mock_next_billing, mock_stripe_update
     ):
         sb = _mock_sb()
         next_billing = datetime.now(timezone.utc) + timedelta(days=20)
 
         sub_data = {
             "id": "sub-1",
-            "plan_id": "consultor_agil",
+            "plan_id": "smartlic_pro",
             "billing_period": "monthly",
             "stripe_subscription_id": "sub_stripe_123",
             "expires_at": None,
         }
         plan_data = {
-            "price_brl": 297.0,
-            "stripe_price_id": "price_main",
             "stripe_price_id_monthly": "price_monthly",
+            "stripe_price_id_semiannual": "price_semiannual",
             "stripe_price_id_annual": "price_annual",
         }
         sb.execute.side_effect = [
@@ -250,15 +226,6 @@ class TestUpdateBillingPeriod:
         mock_get_sb.return_value = sb
 
         mock_next_billing.return_value = next_billing
-
-        from services.billing import ProRataResult
-        mock_prorata.return_value = ProRataResult(
-            prorated_credit=Decimal("45.00"),
-            days_until_renewal=20,
-            deferred=False,
-            next_billing_date=next_billing,
-        )
-
         mock_stripe_update.side_effect = Exception("Stripe API error")
 
         client = _create_client()
@@ -269,41 +236,44 @@ class TestUpdateBillingPeriod:
         assert resp.status_code == 500
         assert "stripe" in resp.json()["detail"].lower()
 
-    @patch("routes.subscriptions.get_next_billing_date")
     @patch("supabase_client.get_supabase")
-    def test_no_next_billing_date_400(self, mock_get_sb, mock_next_billing):
+    def test_plan_not_found_404(self, mock_get_sb):
+        """Test when plan is not found in database."""
         sb = _mock_sb()
         sub_data = {
             "id": "sub-1",
-            "plan_id": "consultor_agil",
+            "plan_id": "nonexistent_plan",
             "billing_period": "monthly",
             "stripe_subscription_id": "sub_stripe_123",
             "expires_at": None,
         }
-        plan_data = {
-            "price_brl": 297.0,
-            "stripe_price_id": "price_main",
-            "stripe_price_id_monthly": None,
-            "stripe_price_id_annual": None,
-        }
         sb.execute.side_effect = [
-            Mock(data=[sub_data]),
-            Mock(data=plan_data),
+            Mock(data=[sub_data]),  # subscription fetch
+            Mock(data=None),        # plan not found
         ]
         mock_get_sb.return_value = sb
-        mock_next_billing.return_value = None  # Cannot determine billing date
 
         client = _create_client()
         resp = client.post("/api/subscriptions/update-billing-period", json={
             "new_billing_period": "annual",
         })
 
-        assert resp.status_code == 400
-        assert "data de cobran" in resp.json()["detail"].lower()
+        assert resp.status_code == 404
+        assert "plano" in resp.json()["detail"].lower()
 
     def test_invalid_billing_period_422(self):
+        """Test that invalid billing period is rejected by Pydantic validation."""
         client = _create_client()
         resp = client.post("/api/subscriptions/update-billing-period", json={
-            "new_billing_period": "quarterly",
+            "new_billing_period": "quarterly",  # Invalid - only monthly/semiannual/annual allowed
         })
         assert resp.status_code == 422
+
+    def test_semiannual_billing_period_accepted(self):
+        """Test that semiannual is a valid billing period option."""
+        # Just test the request model validation
+        from routes.subscriptions import UpdateBillingPeriodRequest
+
+        # Should not raise validation error
+        req = UpdateBillingPeriodRequest(new_billing_period="semiannual")
+        assert req.new_billing_period == "semiannual"

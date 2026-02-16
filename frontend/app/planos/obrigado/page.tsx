@@ -8,20 +8,26 @@ import { Rocket, Zap, Trophy, CheckCircle } from "lucide-react";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 
 const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; message: string }> = {
+  smartlic_pro: {
+    name: "SmartLic Pro",
+    icon: <Trophy className="w-5 h-5 inline-block" />,
+    message: "Você agora tem 1.000 análises/mês, exportação Excel completa e histórico de 5 anos.",
+  },
+  // Legacy plans (existing subscribers)
   consultor_agil: {
     name: "Consultor Ágil",
     icon: <Rocket className="w-5 h-5 inline-block" />,
-    message: "Você agora tem 50 buscas/mês e histórico de 30 dias.",
+    message: "Você agora tem 50 análises/mês e histórico de 30 dias.",
   },
   maquina: {
     name: "Máquina",
     icon: <Zap className="w-5 h-5 inline-block" />,
-    message: "Você agora tem 300 buscas/mês, download Excel e histórico de 1 ano.",
+    message: "Você agora tem 300 análises/mês, exportação Excel e histórico de 1 ano.",
   },
   sala_guerra: {
     name: "Sala de Guerra",
     icon: <Trophy className="w-5 h-5 inline-block" />,
-    message: "Você agora tem 1.000 buscas/mês, processamento prioritário e histórico de 5 anos.",
+    message: "Você agora tem 1.000 análises/mês, processamento prioritário e histórico de 5 anos.",
   },
 };
 

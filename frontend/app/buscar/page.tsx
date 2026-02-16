@@ -33,7 +33,6 @@ function HomePageContent() {
 
   // Upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [preSelectedPlan, setPreSelectedPlan] = useState<"consultor_agil" | "maquina" | "sala_guerra" | undefined>();
   const [upgradeSource, setUpgradeSource] = useState<string | undefined>();
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
@@ -96,8 +95,7 @@ function HomePageContent() {
     { key: 'Escape', action: filters.limparSelecao, description: 'Clear' },
   ] });
 
-  const handleShowUpgradeModal = (plan?: string, source?: string) => {
-    setPreSelectedPlan(plan as typeof preSelectedPlan);
+  const handleShowUpgradeModal = (_plan?: string, source?: string) => {
     setUpgradeSource(source);
     setShowUpgradeModal(true);
   };
@@ -363,7 +361,6 @@ function HomePageContent() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        preSelectedPlan={preSelectedPlan}
         source={upgradeSource}
       />
     </div>

@@ -3,21 +3,13 @@
 import { useState } from "react";
 
 /**
- * PlanToggle Component
+ * PlanToggle Component — GTM-002
  *
- * Toggle component for switching between monthly and annual billing periods
- * STORY-171 AC1: Toggle UI - Seleção Mensal/Anual
- *
- * Features:
- * - Estados: "Mensal" (default) e "Anual"
- * - Badge "💰 Economize 20%" quando anual
- * - Animação suave (transition CSS 300ms)
- * - Acessível via teclado (Space/Enter)
- * - ARIA compliant
- * - Responsive (mobile + desktop)
+ * Toggle for 3 "níveis de compromisso": Mensal, Semestral, Anual
+ * NOT plan tiers — billing periods only.
  */
 
-export type BillingPeriod = 'monthly' | 'annual';
+export type BillingPeriod = 'monthly' | 'semiannual' | 'annual';
 
 export interface PlanToggleProps {
   value: BillingPeriod;
@@ -26,97 +18,62 @@ export interface PlanToggleProps {
   disabled?: boolean;
 }
 
+const BILLING_OPTIONS: { value: BillingPeriod; label: string; discount?: string }[] = [
+  { value: 'monthly', label: 'Mensal' },
+  { value: 'semiannual', label: 'Semestral', discount: 'Economize 10%' },
+  { value: 'annual', label: 'Anual', discount: 'Economize 20%' },
+];
+
 export function PlanToggle({
   value,
   onChange,
   className = "",
   disabled = false,
 }: PlanToggleProps) {
-  const [focused, setFocused] = useState(false);
-
-  const handleToggle = () => {
-    if (disabled) return;
-    const newValue = value === 'monthly' ? 'annual' : 'monthly';
-    onChange(newValue);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (disabled) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleToggle();
-    }
-  };
+  const selectedOption = BILLING_OPTIONS.find(o => o.value === value);
 
   return (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
-      {/* Toggle Switch */}
+      {/* Toggle Buttons */}
       <div
         role="radiogroup"
-        aria-label="Alternar entre plano mensal e anual"
+        aria-label="Escolha seu nível de compromisso"
         className="relative inline-flex items-center bg-surface-1 rounded-full p-1 border border-strong"
       >
-        {/* Monthly Option */}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={value === 'monthly'}
-          aria-label="Plano Mensal"
-          disabled={disabled}
-          onClick={() => !disabled && onChange('monthly')}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          className={`
-            relative z-10 px-6 py-2 rounded-full text-sm font-semibold
-            transition-all duration-300 ease-in-out
-            focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2
-            disabled:cursor-not-allowed disabled:opacity-50
-            ${value === 'monthly'
-              ? 'text-white bg-brand-navy shadow-md'
-              : 'text-ink-secondary hover:text-ink'
-            }
-          `}
-        >
-          Mensal
-        </button>
-
-        {/* Annual Option */}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={value === 'annual'}
-          aria-label="Plano Anual"
-          disabled={disabled}
-          onClick={() => !disabled && onChange('annual')}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          className={`
-            relative z-10 px-6 py-2 rounded-full text-sm font-semibold
-            transition-all duration-300 ease-in-out
-            focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2
-            disabled:cursor-not-allowed disabled:opacity-50
-            ${value === 'annual'
-              ? 'text-white bg-brand-navy shadow-md'
-              : 'text-ink-secondary hover:text-ink'
-            }
-          `}
-        >
-          Anual
-        </button>
+        {BILLING_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={value === option.value}
+            aria-label={`${option.label}${option.discount ? ` — ${option.discount}` : ''}`}
+            disabled={disabled}
+            onClick={() => !disabled && onChange(option.value)}
+            className={`
+              relative z-10 px-5 py-2 rounded-full text-sm font-semibold
+              transition-all duration-300 ease-in-out
+              focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2
+              disabled:cursor-not-allowed disabled:opacity-50
+              ${value === option.value
+                ? 'text-white bg-brand-navy shadow-md'
+                : 'text-ink-secondary hover:text-ink'
+              }
+            `}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
-      {/* Savings Badge (only shown when annual selected) */}
-      {value === 'annual' && (
+      {/* Savings Badge */}
+      {selectedOption?.discount && (
         <div
           className="flex items-center gap-2 px-3 py-1.5 bg-success-subtle border border-success rounded-full animate-fade-in"
           role="status"
           aria-live="polite"
         >
-          <span className="text-lg" aria-hidden="true">💰</span>
           <span className="text-sm font-semibold text-success">
-            Economize 20% pagando anual
+            {selectedOption.discount}
           </span>
         </div>
       )}

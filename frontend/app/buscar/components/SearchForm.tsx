@@ -534,8 +534,7 @@ export default function SearchForm({
                           </p>
                           <button
                             onClick={() => {
-                              const suggestedPlan = maxDays < 30 ? "consultor_agil" : maxDays < 365 ? "maquina" : "sala_guerra";
-                              onShowUpgradeModal(suggestedPlan, "date_range");
+                              onShowUpgradeModal("smartlic_pro", "date_range");
                             }}
                             className="mt-2 text-sm font-medium text-brand-blue hover:underline"
                           >

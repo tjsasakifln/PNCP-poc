@@ -168,9 +168,9 @@ export function formatHours(value: number): string {
 // ============================================================================
 
 /**
- * Calculate monthly savings for default scenario (10h/week @ R$100/h, R$149/month plan)
+ * Calculate monthly savings for default scenario (10h/week @ R$100/h, R$1999/month plan)
  */
-export function getDefaultROI(planPrice: number = 149): ROIOutputs {
+export function getDefaultROI(planPrice: number = 1999): ROIOutputs {
   return calculateROI({
     hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
     costPerHour: DEFAULT_VALUES.costPerHour,
@@ -190,16 +190,8 @@ export function hasPositiveROI(inputs: ROIInputs): boolean {
  * Get recommended plan ID based on hours per week
  */
 export function getRecommendedPlanId(hoursPerWeek: number): string {
-  // Rough estimate: 1h/week = ~4 searches/month
-  const estimatedSearchesPerMonth = hoursPerWeek * 4;
-
-  if (estimatedSearchesPerMonth <= 50) {
-    return "consultor_agil"; // up to 50 searches
-  } else if (estimatedSearchesPerMonth <= 300) {
-    return "maquina"; // up to 300 searches
-  } else {
-    return "sala_guerra"; // up to 1000 searches
-  }
+  // GTM-002: Single plan model — always recommend SmartLic Pro
+  return "smartlic_pro";
 }
 
 // ============================================================================
@@ -282,7 +274,7 @@ export const PRESET_SCENARIOS = {
     name: "Freelancer / Consultor",
     hoursPerWeek: 5,
     costPerHour: 150,
-    planId: "consultor_agil" as const,
+    planId: "smartlic_pro" as const,
     description: "Busca ocasional para projetos específicos",
   },
 
@@ -290,7 +282,7 @@ export const PRESET_SCENARIOS = {
     name: "Pequena/Média Empresa",
     hoursPerWeek: 10,
     costPerHour: 100,
-    planId: "maquina" as const,
+    planId: "smartlic_pro" as const,
     description: "Busca regular semanal por oportunidades",
   },
 
@@ -298,7 +290,7 @@ export const PRESET_SCENARIOS = {
     name: "Grande Empresa / Departamento Licitações",
     hoursPerWeek: 20,
     costPerHour: 80,
-    planId: "sala_guerra" as const,
+    planId: "smartlic_pro" as const,
     description: "Busca diária por múltiplos setores",
   },
 };
@@ -391,9 +383,9 @@ export const COMPETITOR_COSTS: CompetitorCost[] = [
   },
   {
     name: "SmartLic (All-Inclusive)",
-    baseFee: 149,
+    baseFee: 1999,
     perSearchFee: 0,
-    estimatedTotalCost: 149, // R$ 149/month for up to 50 searches (consultor_agil)
+    estimatedTotalCost: 1999, // R$ 1.999/month — SmartLic Pro
   },
 ];
 

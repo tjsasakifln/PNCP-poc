@@ -72,6 +72,17 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     },
     tier: 3,
   },
+  smartlic_pro: {
+    id: "smartlic_pro",
+    displayName: "SmartLic Pro",
+    displayNamePt: "SmartLic Pro",
+    price: "R$ 1.999/mês",
+    badge: {
+      bg: "bg-brand-navy",
+      icon: "star",
+    },
+    tier: 4,
+  },
 };
 
 /**
@@ -163,11 +174,13 @@ export function getUpgradeSuggestion(currentPlanId: string): string | null {
 
   switch (config.id) {
     case "free_trial":
-      return "consultor_agil";
+      return "smartlic_pro";
     case "consultor_agil":
-      return "maquina";
+      return "smartlic_pro";
     case "maquina":
-      return "sala_guerra";
+      return "smartlic_pro";
+    case "sala_guerra":
+      return "smartlic_pro";
     default:
       return null;
   }

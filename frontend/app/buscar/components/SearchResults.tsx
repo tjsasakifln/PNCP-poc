@@ -579,7 +579,7 @@ export default function SearchResults({
               excelAvailable={planInfo?.capabilities.allow_excel ?? false}
               searchTerms={searchMode === "termos" ? termosArray : (result.termos_utilizados || [])}
               onUpgradeClick={() => {
-                onShowUpgradeModal("maquina", "licitacoes_preview");
+                onShowUpgradeModal("smartlic_pro", "licitacoes_preview");
               }}
             />
           )}

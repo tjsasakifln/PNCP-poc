@@ -161,7 +161,18 @@ async def _handle_subscription_updated(sb, event: stripe.Event):
         subscription_data.get("plan", {}).get("interval")
         or subscription_data.get("items", {}).get("data", [{}])[0].get("plan", {}).get("interval")
     )
-    billing_period = "annual" if stripe_interval == "year" else "monthly"
+    # GTM-002: Support monthly, semiannual, annual billing periods
+    # Stripe uses "month" for both monthly and semiannual (6-month is month with interval_count=6)
+    stripe_interval_count = (
+        subscription_data.get("plan", {}).get("interval_count", 1)
+        or subscription_data.get("items", {}).get("data", [{}])[0].get("plan", {}).get("interval_count", 1)
+    )
+    if stripe_interval == "year":
+        billing_period = "annual"
+    elif stripe_interval == "month" and stripe_interval_count == 6:
+        billing_period = "semiannual"
+    else:
+        billing_period = "monthly"
 
     logger.info(
         f"Subscription updated: subscription_id={stripe_sub_id}, "
@@ -354,7 +365,13 @@ def _send_payment_confirmation_email(sb, user_id: str, plan_id: str, invoice_dat
         lines = invoice_data.get("lines", {}).get("data", [])
         if lines:
             interval = lines[0].get("plan", {}).get("interval", "month")
-            billing_period = "anual" if interval == "year" else "mensal"
+            interval_count = lines[0].get("plan", {}).get("interval_count", 1)
+            if interval == "year":
+                billing_period = "anual"
+            elif interval == "month" and interval_count == 6:
+                billing_period = "semestral"
+            else:
+                billing_period = "mensal"
 
         # Format renewal date
         try:

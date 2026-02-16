@@ -91,9 +91,10 @@ class TestPlanCapabilities:
         from quota import PLAN_NAMES
 
         assert PLAN_NAMES["free_trial"] == "FREE Trial"
-        assert PLAN_NAMES["consultor_agil"] == "Consultor Ágil"
-        assert PLAN_NAMES["maquina"] == "Máquina"
-        assert PLAN_NAMES["sala_guerra"] == "Sala de Guerra"
+        assert PLAN_NAMES["consultor_agil"] == "Consultor Ágil (legacy)"
+        assert PLAN_NAMES["maquina"] == "Máquina (legacy)"
+        assert PLAN_NAMES["sala_guerra"] == "Sala de Guerra (legacy)"
+        assert PLAN_NAMES["smartlic_pro"] == "SmartLic Pro"
 
     def test_upgrade_suggestions_are_valid(self):
         """Upgrade suggestions should point to valid plans."""
@@ -263,7 +264,7 @@ class TestCheckQuotaPaidPlans:
 
         assert result.allowed is True
         assert result.plan_id == "consultor_agil"
-        assert result.plan_name == "Consultor Ágil"
+        assert result.plan_name == "Consultor Ágil (legacy)"
         assert result.quota_used == 23
         assert result.quota_remaining == 27
         assert result.capabilities["max_history_days"] == 30
