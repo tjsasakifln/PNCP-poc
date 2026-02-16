@@ -107,17 +107,17 @@ Seu `.env` deve ficar assim:
 
 ```bash
 # Existing Supabase credentials
-SUPABASE_URL=https://fqqyovlzdzimiwfofdjk.supabase.co
-SUPABASE_ANON_KEY=sb_publishable_WDmEorjMJNUajLYSStEtbw_quEJ963R
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
-NEXT_PUBLIC_SUPABASE_URL=https://fqqyovlzdzimiwfofdjk.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_WDmEorjMJNUajLYSStEtbw_quEJ963R
-ADMIN_USER_IDS=a18e0a77-c596-4225-b6ff-c0e13359e32a
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+ADMIN_USER_IDS=your-admin-user-uuid
 OPENAI_API_KEY=
-SUPABASE_ACCESS_TOKEN=sbp_624364fbe954332c66aa3ceebb8991ad721160e5
+SUPABASE_ACCESS_TOKEN=your-supabase-access-token
 
 # Resend SMTP for Supabase Auth emails
-RESEND_API_KEY=re_bUyHkGFW_K7s4GN9JZeCQJYvof1idDSVu
+RESEND_API_KEY=your-resend-api-key
 
 # ============================================
 # Google Sheets OAuth (STORY-180)

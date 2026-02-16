@@ -582,7 +582,7 @@ class SearchPipeline:
         source_config = get_source_config()
 
         # STORY-257A AC13: Only include sources that are actually available
-        available_sources = source_config.get_available_sources()
+        available_sources = source_config.get_enabled_source_configs()
         logger.info(f"Available sources: {[s.code.value for s in available_sources]}")
         pending_creds = source_config.get_pending_credentials()
         if pending_creds:
