@@ -17,7 +17,7 @@ Usage:
     print(resumo.resumo_executivo)
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 import json
 import os
@@ -94,7 +94,9 @@ def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes
         )
 
     # Prepare data for LLM (limit to 50 bids to avoid token overflow)
-    hoje = datetime.now()
+    # Use UTC for correct timestamp; strip tzinfo for comparison with naive
+    # datetimes from parse_datetime() (which strips tz for Excel compatibility)
+    hoje = datetime.now(timezone.utc).replace(tzinfo=None)
     dados_resumidos = []
     for lic in licitacoes[:50]:
         # Calculate days remaining for urgency classification
@@ -229,77 +231,6 @@ Data atual: {hoje.strftime("%d/%m/%Y")}
     return resumo
 
 
-def format_resumo_html(resumo: ResumoLicitacoes) -> str:
-    """
-    Format executive summary as HTML for frontend display.
-
-    Converts the structured ResumoLicitacoes object into styled HTML with:
-    - Executive summary paragraph
-    - Statistics cards (count and total value)
-    - Urgency alert (if present)
-    - Highlights list
-
-    Args:
-        resumo: Structured summary from gerar_resumo()
-
-    Returns:
-        str: HTML string ready for frontend rendering
-
-    Examples:
-        >>> resumo = ResumoLicitacoes(
-        ...     resumo_executivo="Encontradas 15 licitações.",
-        ...     total_oportunidades=15,
-        ...     valor_total=2300000.00,
-        ...     destaques=["3 urgentes"],
-        ...     alerta_urgencia="⚠️ 5 encerram em 24h"
-        ... )
-        >>> html = format_resumo_html(resumo)
-        >>> "resumo-container" in html
-        True
-    """
-    # Build urgency alert HTML if present
-    alerta_html = ""
-    if resumo.alerta_urgencia:
-        alerta_html = f'<div class="alerta-urgencia">⚠️ {resumo.alerta_urgencia}</div>'
-
-    # Build highlights list HTML
-    destaques_html = ""
-    if resumo.destaques:
-        destaques_items = "".join(f"<li>{d}</li>" for d in resumo.destaques)
-        destaques_html = f"""
-        <div class="destaques">
-            <h4>Destaques:</h4>
-            <ul>
-                {destaques_items}
-            </ul>
-        </div>
-        """
-
-    # Assemble complete HTML
-    html = f"""
-    <div class="resumo-container">
-        <p class="resumo-executivo">{resumo.resumo_executivo}</p>
-
-        <div class="resumo-stats">
-            <div class="stat">
-                <span class="stat-value">{resumo.total_oportunidades}</span>
-                <span class="stat-label">Licitações</span>
-            </div>
-            <div class="stat">
-                <span class="stat-value">R$ {resumo.valor_total:,.2f}</span>
-                <span class="stat-label">Valor Total</span>
-            </div>
-        </div>
-
-        {alerta_html}
-
-        {destaques_html}
-    </div>
-    """
-
-    return html
-
-
 def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes") -> ResumoEstrategico:
     """
     Generate strategic summary without using LLM (fallback for OpenAI failures).
@@ -363,7 +294,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "
     ]
 
     # Build recommendations and urgency alerts from heuristics
-    hoje = datetime.now()
+    hoje = datetime.now(timezone.utc).replace(tzinfo=None)
     recomendacoes: list[Recomendacao] = []
     alertas_urgencia: list[str] = []
     alerta_legacy = None  # backward compat single alert

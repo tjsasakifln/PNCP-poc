@@ -18,7 +18,7 @@ Exemplo de uso:
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 
 from openpyxl import Workbook
@@ -224,7 +224,7 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
     # === METADATA (aba separada) ===
     ws_meta = wb.create_sheet("Metadata")
     ws_meta["A1"] = "Gerado em:"
-    ws_meta["B1"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    ws_meta["B1"] = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M:%S")
     ws_meta["A2"] = "Total de licitações:"
     ws_meta["B2"] = len(licitacoes)
     ws_meta["A3"] = "Valor total estimado:"

@@ -34,24 +34,24 @@ Esta story resolve problemas de higiene do repositorio que afetam a experiencia 
 ## Criterios de Aceite
 
 ### Gitignore
-- [ ] `.gitignore` inclui pattern para `*.png` no root (ou patterns especificos para screenshots)
-- [ ] `.gitignore` inclui `.playwright-mcp/` se nao incluido
-- [ ] `git status` nao mostra .png files untracked
+- [x] `.gitignore` inclui pattern para `*.png` no root (ou patterns especificos para screenshots)
+- [x] `.gitignore` inclui `.playwright-mcp/` se nao incluido
+- [x] `git status` nao mostra .png files untracked
 
 ### Migration Cleanup
-- [ ] `006b_DEPRECATED_...DUPLICATE.sql` movido para `supabase/archive/`
-- [ ] `supabase/archive/README.md` criado (ou atualizado) explicando o conteudo
-- [ ] Nenhuma migration ativa referencia o arquivo movido
+- [x] `006b_DEPRECATED_...DUPLICATE.sql` movido para `supabase/archive/`
+- [x] `supabase/archive/README.md` criado (ou atualizado) explicando o conteudo
+- [x] Nenhuma migration ativa referencia o arquivo movido
 
 ### Dead Code
-- [ ] `format_resumo_html` removida de `backend/llm.py`
-- [ ] Nenhuma referencia a `format_resumo_html` em nenhum arquivo do projeto
-- [ ] Testes existentes continuam passando
+- [x] `format_resumo_html` removida de `backend/llm.py`
+- [x] Nenhuma referencia a `format_resumo_html` em nenhum arquivo do projeto
+- [x] Testes existentes continuam passando
 
 ### Timezone Fix
-- [ ] `backend/excel.py` usa `datetime.now(timezone.utc)` ou `datetime.now(tz=timezone.utc)`
-- [ ] `backend/llm.py` usa `datetime.now(timezone.utc)` ou `datetime.now(tz=timezone.utc)`
-- [ ] Import de `timezone` adicionado onde necessario
+- [x] `backend/excel.py` usa `datetime.now(timezone.utc)` ou `datetime.now(tz=timezone.utc)`
+- [x] `backend/llm.py` usa `datetime.now(timezone.utc)` ou `datetime.now(tz=timezone.utc)`
+- [x] Import de `timezone` adicionado onde necessario
 
 ## Testes Requeridos
 
@@ -71,8 +71,8 @@ Esta story resolve problemas de higiene do repositorio que afetam a experiencia 
 - Nao aplicavel -- mudancas sao triviais e reversiveis via git revert.
 
 ## Definition of Done
-- [ ] Codigo implementado e revisado
-- [ ] Testes passando (unitario + integracao)
+- [x] Codigo implementado e revisado
+- [x] Testes passando (unitario + integracao)
 - [ ] CI/CD green
-- [ ] `git status` limpo (sem .png untracked)
+- [x] `git status` limpo (sem .png untracked)
 - [ ] Deploy em staging verificado

@@ -6,7 +6,7 @@ without OpenAI API access. It ensures the system remains functional during
 network issues, rate limits, or missing API keys.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from schemas import ResumoLicitacoes, ResumoEstrategico
 from llm import gerar_resumo_fallback
 
@@ -90,8 +90,8 @@ class TestGerarResumoFallback:
 
     def test_urgency_alert_for_deadline_within_7_days(self):
         """Should trigger urgency alert when deadline is < 7 days."""
-        # Bid closing in 5 days (urgent)
-        data_urgente = (datetime.now() + timedelta(days=5)).isoformat()
+        # Bid closing in 5 days (urgent) — use UTC to match gerar_resumo_fallback
+        data_urgente = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
 
         licitacoes = [
             {

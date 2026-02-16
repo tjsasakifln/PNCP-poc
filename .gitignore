@@ -344,6 +344,14 @@ CLAUDE.md
 .pr-*-review-*.md
 
 # =============================================================================
+# Screenshots & Playwright MCP artifacts
+# =============================================================================
+# Root-level screenshots from manual testing sessions
+/*.png
+# Playwright MCP browser automation artifacts
+.playwright-mcp/
+
+# =============================================================================
 # Project Specific
 # =============================================================================
 # Backend outputs
