@@ -6,7 +6,7 @@
 
 # CACHE BUST - forces Railway rebuild (change to invalidate cache)
 # GTM-FIX-002: Add missing NEXT_PUBLIC_* build ARGs for Sentry/Mixpanel/Stripe
-ARG CACHEBUST=20260216-gtm-fix-002-observability
+ARG CACHEBUST=20260216-gtm-fix-002-v2-force-rebuild
 
 # Stage 1: Dependencies
 # Using node:20.11-alpine3.19 instead of node:20-alpine to force layer rebuild
