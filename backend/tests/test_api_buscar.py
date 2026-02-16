@@ -32,7 +32,7 @@ class TestBuscarFeatureFlagEnabled:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_enforces_quota_when_feature_flag_enabled(
         self,
@@ -77,7 +77,7 @@ class TestBuscarFeatureFlagEnabled:
     @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_allows_request_when_quota_available(
         self,
@@ -133,7 +133,7 @@ class TestBuscarFeatureFlagDisabled:
 
     @patch("routes.search.ENABLE_NEW_PRICING", False)
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_no_quota_enforcement_when_disabled(
         self,
@@ -175,7 +175,7 @@ class TestBuscarDateRangeValidation:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_accepts_date_range_within_plan_limit(
         self,
@@ -366,7 +366,7 @@ class TestBuscarDateRangeValidation:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_accepts_full_range_for_sala_guerra(
         self,
@@ -465,7 +465,7 @@ class TestBuscarDateRangeValidation:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_accepts_exact_limit_boundary(
         self,
@@ -562,7 +562,7 @@ class TestBuscarDateRangeValidation:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_accepts_single_day_range(
         self,
@@ -618,7 +618,7 @@ class TestBuscarExcelGating:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     @patch("routes.search.aplicar_todos_filtros")
     @patch("routes.search.create_excel")
@@ -700,7 +700,7 @@ class TestBuscarExcelGating:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_blocks_excel_for_consultor_plan(
         self,
@@ -857,7 +857,7 @@ class TestBuscarUserRateLimiting:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_allows_request_within_rate_limit(
         self,
@@ -953,7 +953,7 @@ class TestBuscarUserRateLimiting:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_admin_bypasses_rate_limit(
         self,
@@ -996,7 +996,7 @@ class TestBuscarUserRateLimiting:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_master_bypasses_rate_limit(
         self,
@@ -1038,7 +1038,7 @@ class TestBuscarUserRateLimiting:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_rate_limit_fallback_on_quota_check_failure(
         self,
@@ -1214,7 +1214,7 @@ class TestBuscarErrorHandling:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_continues_on_quota_increment_failure(
         self,
@@ -1272,7 +1272,7 @@ class TestBuscarQuotaIncrementScenarios:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_increments_quota_on_successful_search(
         self,
@@ -1325,7 +1325,7 @@ class TestBuscarQuotaIncrementScenarios:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_increments_quota_even_with_no_results(
         self,
@@ -1430,7 +1430,7 @@ class TestBuscarCustomSearchTerms:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_uses_custom_terms_instead_of_sector_keywords(
         self,
@@ -1486,7 +1486,7 @@ class TestBuscarCustomSearchTerms:
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_removes_stopwords_from_custom_terms(
         self,
@@ -1544,7 +1544,7 @@ class TestBuscarCustomSearchTerms:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_fallback_to_sector_keywords_when_all_stopwords(
         self,

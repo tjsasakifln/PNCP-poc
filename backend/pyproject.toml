@@ -103,3 +103,17 @@ directory = "htmlcov"
 [tool.coverage.xml]
 # XML report output file (for CI/CD)
 output = "coverage.xml"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+exclude = [
+    "tests/",
+    "scripts/",
+    "venv/",
+    ".venv/",
+]

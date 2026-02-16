@@ -348,7 +348,7 @@ class TestSessionExpiration:
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
-    @patch("quota.save_search_session")
+    @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
     def test_session_valid_throughout_search(
         self,

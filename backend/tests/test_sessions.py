@@ -1,15 +1,16 @@
-"""Test suite for search session history (STORY-223 Track 3).
+"""Test suite for search session history (STORY-223 Track 3, updated TD-007).
 
 Tests cover:
 - AC12: save_search_session() succeeds with valid data
 - AC13: save_search_session() when profile doesn't exist (triggers _ensure_profile_exists)
 - AC14: save_search_session() DB failure → error logged, search result still returned
 - AC15: History saved for zero-result searches
-- AC16: Retry (max 1) for transient DB errors on history save
+- AC16: Retry (max 1) for transient DB errors on history save (uses asyncio.sleep)
 """
 
+import asyncio
 import logging
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch, call, AsyncMock
 import pytest
 
 from quota import save_search_session
@@ -18,7 +19,7 @@ from quota import save_search_session
 class TestSaveSearchSessionSuccess:
     """AC12: Test successful session save."""
 
-    def test_save_session_returns_id_with_valid_data(self):
+    async def test_save_session_returns_id_with_valid_data(self):
         """save_search_session() succeeds with valid data and returns session ID."""
         mock_supabase = Mock()
 
@@ -42,7 +43,7 @@ class TestSaveSearchSessionSuccess:
         mock_supabase.table.side_effect = table_side_effect
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = save_search_session(
+            result = await save_search_session(
                 user_id="user-123",
                 sectors=["uniformes", "alimentacao"],
                 ufs=["SP", "RJ"],
@@ -58,7 +59,7 @@ class TestSaveSearchSessionSuccess:
 
         assert result == "session-uuid-abc123"
 
-    def test_save_session_with_none_optional_fields(self):
+    async def test_save_session_with_none_optional_fields(self):
         """save_search_session() succeeds with None for optional fields."""
         mock_supabase = Mock()
 
@@ -81,7 +82,7 @@ class TestSaveSearchSessionSuccess:
         mock_supabase.table.side_effect = table_side_effect
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = save_search_session(
+            result = await save_search_session(
                 user_id="user-456",
                 sectors=["uniformes"],
                 ufs=["MG"],
@@ -97,7 +98,7 @@ class TestSaveSearchSessionSuccess:
 
         assert result == "session-minimal"
 
-    def test_save_session_stores_all_fields_correctly(self):
+    async def test_save_session_stores_all_fields_correctly(self):
         """save_search_session() saves all session fields to database."""
         mock_supabase = Mock()
 
@@ -122,7 +123,7 @@ class TestSaveSearchSessionSuccess:
         mock_supabase.table.side_effect = table_side_effect
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            save_search_session(
+            await save_search_session(
                 user_id="user-789",
                 sectors=["vestuario"],
                 ufs=["BA", "CE"],
@@ -155,7 +156,7 @@ class TestSaveSearchSessionProfileCreation:
     """AC13: Test session save when profile doesn't exist."""
 
     @patch("quota._ensure_profile_exists")
-    def test_save_session_creates_profile_when_missing(self, mock_ensure_profile):
+    async def test_save_session_creates_profile_when_missing(self, mock_ensure_profile):
         """save_search_session() triggers _ensure_profile_exists when profile missing."""
         mock_supabase = Mock()
 
@@ -171,7 +172,7 @@ class TestSaveSearchSessionProfileCreation:
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = save_search_session(
+            result = await save_search_session(
                 user_id="new-user-999",
                 sectors=["alimentacao"],
                 ufs=["RS"],
@@ -190,7 +191,7 @@ class TestSaveSearchSessionProfileCreation:
         assert result == "session-after-profile"
 
     @patch("quota._ensure_profile_exists")
-    def test_save_session_fails_gracefully_when_profile_creation_fails(self, mock_ensure_profile):
+    async def test_save_session_fails_gracefully_when_profile_creation_fails(self, mock_ensure_profile):
         """save_search_session() returns None when _ensure_profile_exists fails."""
         mock_supabase = Mock()
 
@@ -198,7 +199,7 @@ class TestSaveSearchSessionProfileCreation:
         mock_ensure_profile.return_value = False
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = save_search_session(
+            result = await save_search_session(
                 user_id="missing-user",
                 sectors=["uniformes"],
                 ufs=["SP"],
@@ -221,7 +222,7 @@ class TestSaveSearchSessionDBFailure:
     """AC14: Test graceful failure on DB errors."""
 
     @patch("quota._ensure_profile_exists")
-    def test_save_session_returns_none_on_db_failure(self, mock_ensure_profile, caplog):
+    async def test_save_session_returns_none_on_db_failure(self, mock_ensure_profile, caplog):
         """DB failure is logged but doesn't raise exception — returns None."""
         mock_supabase = Mock()
 
@@ -235,7 +236,7 @@ class TestSaveSearchSessionDBFailure:
 
         with caplog.at_level(logging.WARNING):
             with patch("supabase_client.get_supabase", return_value=mock_supabase):
-                result = save_search_session(
+                result = await save_search_session(
                     user_id="user-db-fail",
                     sectors=["uniformes"],
                     ufs=["MG"],
@@ -257,7 +258,7 @@ class TestSaveSearchSessionDBFailure:
         assert any("Failed to save search session after retry" in record.message for record in caplog.records)
 
     @patch("quota._ensure_profile_exists")
-    def test_save_session_empty_result_returns_none(self, mock_ensure_profile, caplog):
+    async def test_save_session_empty_result_returns_none(self, mock_ensure_profile, caplog):
         """Insert returning empty result is handled gracefully — returns None."""
         mock_supabase = Mock()
 
@@ -274,7 +275,7 @@ class TestSaveSearchSessionDBFailure:
 
         with caplog.at_level(logging.ERROR):
             with patch("supabase_client.get_supabase", return_value=mock_supabase):
-                result = save_search_session(
+                result = await save_search_session(
                     user_id="user-empty-result",
                     sectors=["alimentacao"],
                     ufs=["PR"],
@@ -298,7 +299,7 @@ class TestSaveSearchSessionDBFailure:
 class TestSaveSearchSessionZeroResults:
     """AC15: Test history saved for searches with zero results."""
 
-    def test_save_session_with_zero_results(self):
+    async def test_save_session_with_zero_results(self):
         """History saved even for searches with zero results."""
         mock_supabase = Mock()
 
@@ -321,7 +322,7 @@ class TestSaveSearchSessionZeroResults:
         mock_supabase.table.side_effect = table_side_effect
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = save_search_session(
+            result = await save_search_session(
                 user_id="user-zero",
                 sectors=["vestuario"],
                 ufs=["AC"],
@@ -339,11 +340,11 @@ class TestSaveSearchSessionZeroResults:
 
 
 class TestSaveSearchSessionRetryLogic:
-    """AC16: Test retry logic for transient DB errors."""
+    """AC16: Test retry logic for transient DB errors (uses asyncio.sleep)."""
 
     @patch("quota._ensure_profile_exists")
-    @patch("time.sleep")  # Mock sleep to speed up test
-    def test_save_session_succeeds_on_retry(self, mock_sleep, mock_ensure_profile, caplog):
+    @patch("asyncio.sleep", new_callable=AsyncMock)
+    async def test_save_session_succeeds_on_retry(self, mock_sleep, mock_ensure_profile, caplog):
         """Transient error on first attempt, success on retry."""
         mock_supabase = Mock()
 
@@ -363,7 +364,7 @@ class TestSaveSearchSessionRetryLogic:
 
         with caplog.at_level(logging.WARNING):
             with patch("supabase_client.get_supabase", return_value=mock_supabase):
-                result = save_search_session(
+                result = await save_search_session(
                     user_id="user-retry",
                     sectors=["uniformes"],
                     ufs=["GO"],
@@ -383,12 +384,12 @@ class TestSaveSearchSessionRetryLogic:
         # Should log warning about transient error
         assert any("Transient error saving session" in record.message for record in caplog.records)
 
-        # Should have called sleep once (0.3s delay)
-        mock_sleep.assert_called_once_with(0.3)
+        # Should have called asyncio.sleep once (0.3s delay)
+        mock_sleep.assert_awaited_once_with(0.3)
 
     @patch("quota._ensure_profile_exists")
-    @patch("time.sleep")
-    def test_save_session_fails_after_max_retries(self, mock_sleep, mock_ensure_profile, caplog):
+    @patch("asyncio.sleep", new_callable=AsyncMock)
+    async def test_save_session_fails_after_max_retries(self, mock_sleep, mock_ensure_profile, caplog):
         """Both attempts fail → returns None."""
         mock_supabase = Mock()
 
@@ -402,7 +403,7 @@ class TestSaveSearchSessionRetryLogic:
 
         with caplog.at_level(logging.WARNING):
             with patch("supabase_client.get_supabase", return_value=mock_supabase):
-                result = save_search_session(
+                result = await save_search_session(
                     user_id="user-max-retry",
                     sectors=["alimentacao"],
                     ufs=["SC"],
@@ -424,11 +425,11 @@ class TestSaveSearchSessionRetryLogic:
         assert any("Failed to save search session after retry" in record.message for record in caplog.records)
 
         # Should have attempted retry once (0.3s delay)
-        mock_sleep.assert_called_once_with(0.3)
+        mock_sleep.assert_awaited_once_with(0.3)
 
     @patch("quota._ensure_profile_exists")
-    @patch("time.sleep")
-    def test_save_session_retry_delay_is_300ms(self, mock_sleep, mock_ensure_profile):
+    @patch("asyncio.sleep", new_callable=AsyncMock)
+    async def test_save_session_retry_delay_is_300ms(self, mock_sleep, mock_ensure_profile):
         """Retry delay is exactly 0.3 seconds (300ms)."""
         mock_supabase = Mock()
 
@@ -441,7 +442,7 @@ class TestSaveSearchSessionRetryLogic:
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            save_search_session(
+            await save_search_session(
                 user_id="user-delay",
                 sectors=["uniformes"],
                 ufs=["MT"],
@@ -456,4 +457,4 @@ class TestSaveSearchSessionRetryLogic:
             )
 
         # Verify exact delay
-        mock_sleep.assert_called_once_with(0.3)
+        mock_sleep.assert_awaited_once_with(0.3)

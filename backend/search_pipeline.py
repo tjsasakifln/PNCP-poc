@@ -1271,7 +1271,7 @@ class SearchPipeline:
             # Save session even for zero results
             if ctx.user:
                 try:
-                    ctx.session_id = quota.save_search_session(
+                    ctx.session_id = await quota.save_search_session(
                         user_id=ctx.user["id"],
                         sectors=[ctx.request.setor_id],
                         ufs=ctx.request.ufs,
@@ -1295,7 +1295,7 @@ class SearchPipeline:
         # Save session for non-empty results
         if ctx.user:
             try:
-                ctx.session_id = quota.save_search_session(
+                ctx.session_id = await quota.save_search_session(
                     user_id=ctx.user["id"],
                     sectors=[ctx.request.setor_id],
                     ufs=ctx.request.ufs,

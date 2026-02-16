@@ -858,7 +858,7 @@ def create_legacy_quota_info() -> "QuotaInfo":
     )
 
 
-def save_search_session(
+async def save_search_session(
     user_id: str,
     sectors: list[str],
     ufs: list[str],
@@ -875,6 +875,11 @@ def save_search_session(
 
     AC16: Implements retry (max 1) for transient DB errors. Failure to save
     session does NOT break the search request — always returns None on error.
+
+    Race condition analysis (TD-007/CR-09): Each call performs a single INSERT
+    with unique user_id + session data. No shared mutable state between calls.
+    Supabase client handles connection pooling internally. Safe for interleaving
+    — no asyncio.Lock needed.
     """
     import asyncio
     from supabase_client import get_supabase
@@ -917,9 +922,7 @@ def save_search_session(
         except Exception as e:
             if attempt == 0:
                 logger.warning(f"Transient error saving session for user {mask_user_id(user_id)}, retrying: {e}")
-                # Use sync sleep since save_search_session is synchronous
-                import time
-                time.sleep(0.3)
+                await asyncio.sleep(0.3)
                 continue
             logger.error(f"Failed to save search session after retry for user {mask_user_id(user_id)}: {e}")
             return None  # silent fail - don't break search results

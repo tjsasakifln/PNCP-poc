@@ -443,7 +443,7 @@ class TestStagePersist:
         )
 
         with patch("search_pipeline.quota") as mock_quota:
-            mock_quota.save_search_session.return_value = "session-uuid-1234"
+            mock_quota.save_search_session = AsyncMock(return_value="session-uuid-1234")
             result = await pipeline.stage_persist(ctx)
 
         mock_quota.save_search_session.assert_called_once_with(
@@ -480,7 +480,7 @@ class TestStagePersist:
         )
 
         with patch("search_pipeline.quota") as mock_quota:
-            mock_quota.save_search_session.side_effect = Exception("DB connection failed")
+            mock_quota.save_search_session = AsyncMock(side_effect=Exception("DB connection failed"))
             result = await pipeline.stage_persist(ctx)
 
         # Response is still returned despite save failure
@@ -503,7 +503,7 @@ class TestStagePersist:
         )
 
         with patch("search_pipeline.quota") as mock_quota:
-            mock_quota.save_search_session.return_value = "session-empty-uuid"
+            mock_quota.save_search_session = AsyncMock(return_value="session-empty-uuid")
             result = await pipeline.stage_persist(ctx)
 
         # Session is still saved even for 0 results

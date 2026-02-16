@@ -780,21 +780,21 @@ class TestSaveSearchSession:
         mock_supabase.table.return_value = mock_table
         return mock_supabase
 
-    def test_saves_session_and_returns_id(self, valid_session_data, mock_supabase_with_profile):
+    async def test_saves_session_and_returns_id(self, valid_session_data, mock_supabase_with_profile):
         """Should save session and return the generated ID."""
         from quota import save_search_session
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
-            result = save_search_session(**valid_session_data)
+            result = await save_search_session(**valid_session_data)
 
         assert result == "session-uuid-123"
 
-    def test_saves_all_fields_correctly(self, valid_session_data, mock_supabase_with_profile):
+    async def test_saves_all_fields_correctly(self, valid_session_data, mock_supabase_with_profile):
         """Should save all session fields to database."""
         from quota import save_search_session
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
-            save_search_session(**valid_session_data)
+            await save_search_session(**valid_session_data)
 
         # Verify all fields were passed to insert
         mock_table = mock_supabase_with_profile.table.return_value
@@ -811,7 +811,7 @@ class TestSaveSearchSession:
         assert call_args["resumo_executivo"] == "Encontradas 25 oportunidades relevantes."
         assert call_args["destaques"] == ["SP: R$ 500k", "RJ: R$ 1M"]
 
-    def test_saves_session_without_optional_fields(self):
+    async def test_saves_session_without_optional_fields(self):
         """Should save session with None for optional fields."""
         from quota import save_search_session
 
@@ -831,7 +831,7 @@ class TestSaveSearchSession:
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            result = save_search_session(
+            result = await save_search_session(
                 user_id="user-456",
                 sectors=["uniformes"],
                 ufs=["SP"],
@@ -852,7 +852,7 @@ class TestSaveSearchSession:
         assert call_args["resumo_executivo"] is None
         assert call_args["destaques"] is None
 
-    def test_converts_valor_total_to_float(self):
+    async def test_converts_valor_total_to_float(self):
         """Should convert valor_total to float."""
         from quota import save_search_session
         from decimal import Decimal
@@ -873,7 +873,7 @@ class TestSaveSearchSession:
         mock_supabase.table.return_value = mock_table
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase):
-            save_search_session(
+            await save_search_session(
                 user_id="user-123",
                 sectors=["uniformes"],
                 ufs=["SP"],
@@ -891,7 +891,7 @@ class TestSaveSearchSession:
         assert isinstance(call_args["valor_total"], float)
         assert call_args["valor_total"] == 123456.78
 
-    def test_logs_saved_session_info(self, valid_session_data, mock_supabase_with_profile, caplog):
+    async def test_logs_saved_session_info(self, valid_session_data, mock_supabase_with_profile, caplog):
         """Should log info message when session is saved."""
         from quota import save_search_session
         import logging
@@ -902,7 +902,7 @@ class TestSaveSearchSession:
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
             with caplog.at_level(logging.INFO):
-                save_search_session(**valid_session_data)
+                await save_search_session(**valid_session_data)
 
         # SECURITY (Issue #168): Log format changed to sanitize user IDs and session IDs
         # Format: "Saved search session session-***" for user user***"
@@ -912,12 +912,12 @@ class TestSaveSearchSession:
         # User ID is masked via mask_user_id() function
         assert any("user***" in record.message for record in caplog.records)
 
-    def test_inserts_into_search_sessions_table(self, valid_session_data, mock_supabase_with_profile):
+    async def test_inserts_into_search_sessions_table(self, valid_session_data, mock_supabase_with_profile):
         """Should insert into the search_sessions table."""
         from quota import save_search_session
 
         with patch("supabase_client.get_supabase", return_value=mock_supabase_with_profile):
-            save_search_session(**valid_session_data)
+            await save_search_session(**valid_session_data)
 
         # The table should be called with "profiles" first (to check) and then "search_sessions" (to insert)
         calls = mock_supabase_with_profile.table.call_args_list
