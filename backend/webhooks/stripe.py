@@ -126,6 +126,8 @@ async def stripe_webhook(request: Request):
             await _handle_subscription_deleted(sb, event)
         elif event.type == "invoice.payment_succeeded":
             await _handle_invoice_payment_succeeded(sb, event)
+        elif event.type == "invoice.payment_failed":
+            await _handle_invoice_payment_failed(sb, event)
         else:
             logger.info(f"Unhandled event type: {event.type}")
 
@@ -419,6 +421,96 @@ async def _handle_invoice_payment_succeeded(sb, event: stripe.Event):
     _send_payment_confirmation_email(sb, user_id, plan_id, invoice_data, new_expires)
 
 
+async def _handle_invoice_payment_failed(sb, event: stripe.Event):
+    """
+    Handle invoice.payment_failed event (GTM-FIX-007 Track 1 AC2-AC5, AC15).
+
+    Updates subscription status to past_due, logs to Sentry, sends email notification.
+
+    Args:
+        sb: Supabase client
+        event: Stripe event object
+    """
+    invoice_data = event.data.object
+    stripe_customer_id = invoice_data.get("customer")
+    stripe_subscription_id = invoice_data.get("subscription")
+
+    if not stripe_subscription_id:
+        logger.debug("Invoice payment failed has no subscription_id, skipping")
+        return
+
+    logger.warning(
+        f"Payment failed: subscription_id={stripe_subscription_id}, "
+        f"customer={stripe_customer_id[:8] if stripe_customer_id else 'unknown'}***"
+    )
+
+    # Find subscription to get user_id and plan
+    sub_result = (
+        sb.table("user_subscriptions")
+        .select("id, user_id, plan_id")
+        .eq("stripe_subscription_id", stripe_subscription_id)
+        .limit(1)
+        .execute()
+    )
+
+    if not sub_result.data:
+        logger.warning(f"No local subscription for failed payment stripe_sub {stripe_subscription_id[:8]}***")
+        return
+
+    local_sub = sub_result.data[0]
+    user_id = local_sub["user_id"]
+    plan_id = local_sub["plan_id"]
+
+    # Update subscription status to past_due (AC3)
+    sb.table("user_subscriptions").update({
+        "subscription_status": "past_due",
+    }).eq("id", local_sub["id"]).execute()
+
+    # Also update profiles.subscription_status (AC3)
+    sb.table("profiles").update({
+        "subscription_status": "past_due",
+    }).eq("id", user_id).execute()
+
+    # Extract attempt count for logging
+    attempt_count = invoice_data.get("attempt_count", 1)
+    amount = invoice_data.get("amount_due", 0)
+
+    # Log to Sentry with customer context (AC4)
+    try:
+        import sentry_sdk
+        sentry_sdk.capture_message(
+            f"Payment failed: user_id={user_id}, plan={plan_id}, attempt={attempt_count}",
+            level="warning",
+            extras={
+                "user_id": user_id,
+                "plan_id": plan_id,
+                "stripe_customer_id": stripe_customer_id,
+                "stripe_subscription_id": stripe_subscription_id,
+                "attempt_count": attempt_count,
+                "amount_due": amount,
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send Sentry event: {e}")
+
+    # AC15: Track payment failed event (using structured logging since Mixpanel is frontend-only)
+    logger.info(
+        "payment_failed_event",
+        extra={
+            "event": "payment_failed",
+            "user_id": user_id,
+            "plan": plan_id,
+            "amount": amount / 100,  # Convert cents to BRL
+            "attempt_count": attempt_count,
+        }
+    )
+
+    # Send payment failed email (AC5)
+    _send_payment_failed_email(sb, user_id, plan_id, invoice_data)
+
+    logger.info(f"Payment failed handling complete: user_id={user_id}, status=past_due")
+
+
 # ============================================================================
 # STORY-225: Email notification helpers (fire-and-forget)
 # ============================================================================
@@ -520,3 +612,57 @@ def _send_cancellation_email(sb, user_id: str, subscription_data: dict) -> None:
         logger.info(f"Cancellation email queued for user_id={user_id}")
     except Exception as e:
         logger.warning(f"Failed to send cancellation email: {e}")
+
+
+def _send_payment_failed_email(sb, user_id: str, plan_id: str, invoice_data: dict) -> None:
+    """Send payment failed email (GTM-FIX-007 AC5-AC6). Never raises."""
+    try:
+        from email_service import send_email_async
+        from templates.emails.billing import render_payment_failed_email
+        from quota import PLAN_NAMES
+
+        profile = sb.table("profiles").select("email, full_name").eq("id", user_id).single().execute()
+        if not profile.data or not profile.data.get("email"):
+            return
+
+        email = profile.data["email"]
+        name = profile.data.get("full_name") or email.split("@")[0]
+        plan_name = PLAN_NAMES.get(plan_id, plan_id)
+
+        # Format amount from Stripe (cents → BRL)
+        amount_cents = invoice_data.get("amount_due", 0)
+        amount = f"R$ {amount_cents / 100:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        # Extract failure reason
+        failure_reason = "Não foi possível processar o pagamento"
+        if invoice_data.get("charge"):
+            charge = invoice_data.get("charge")
+            if isinstance(charge, str):
+                # Would need to fetch charge details from Stripe API, keep generic
+                pass
+            elif isinstance(charge, dict):
+                failure_message = charge.get("failure_message", "")
+                if failure_message:
+                    failure_reason = failure_message
+
+        # Extract next attempt info
+        attempt_count = invoice_data.get("attempt_count", 1)
+        # Stripe retries up to 4 times over 2 weeks (default)
+        days_until_cancellation = max(0, 14 - (attempt_count * 3))
+
+        html = render_payment_failed_email(
+            user_name=name,
+            plan_name=plan_name,
+            amount=amount,
+            failure_reason=failure_reason,
+            days_until_cancellation=days_until_cancellation,
+        )
+        send_email_async(
+            to=email,
+            subject="⚠️ Falha no pagamento — SmartLic",
+            html=html,
+            tags=[{"name": "category", "value": "payment_failed"}],
+        )
+        logger.info(f"Payment failed email queued for user_id={user_id}")
+    except Exception as e:
+        logger.warning(f"Failed to send payment failed email: {e}")

@@ -8,6 +8,7 @@ import { NProgressProvider } from "./components/NProgressProvider";
 import { Toaster } from "sonner";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { SessionExpiredBanner } from "./components/SessionExpiredBanner";
+import { PaymentFailedBanner } from "../components/billing/PaymentFailedBanner";
 import { StructuredData } from "./components/StructuredData";
 import { GoogleAnalytics } from "./components/GoogleAnalytics";
 
@@ -154,6 +155,7 @@ export default function RootLayout({
             <ThemeProvider>
               <NProgressProvider>
                 <SessionExpiredBanner />
+                <PaymentFailedBanner />
                 {children}
                 <Toaster position="top-right" richColors closeButton />
                 <CookieConsentBanner />

@@ -172,3 +172,82 @@ def render_cancellation_email(
         body_html=body,
         is_transactional=True,  # AC17: Cancellation emails are transactional
     )
+
+
+def render_payment_failed_email(
+    user_name: str,
+    plan_name: str,
+    amount: str,
+    failure_reason: str,
+    days_until_cancellation: int,
+) -> str:
+    """
+    Render payment failed notification email.
+
+    GTM-FIX-007 AC5-AC6: Show user name, plan, amount, failure reason, CTA to billing portal.
+
+    Args:
+        user_name: User's display name.
+        plan_name: Current plan name.
+        amount: Formatted amount (e.g. "R$ 1.999,00").
+        failure_reason: Stripe failure message.
+        days_until_cancellation: Days remaining before subscription cancels.
+    """
+    urgency_color = "#d32f2f"
+    days_text = f"{days_until_cancellation} dias" if days_until_cancellation > 1 else "1 dia"
+
+    body = f"""
+    <h1 style="color: {urgency_color}; font-size: 22px; margin: 0 0 16px;">
+      ⚠️ Falha no pagamento
+    </h1>
+    <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+      Olá, {user_name}! Não conseguimos processar o pagamento da sua assinatura
+      <strong>{plan_name}</strong>.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background-color: #fef8f8; border-radius: 8px; border: 1px solid #ffebee; margin: 0 0 24px;">
+      <tr>
+        <td style="padding: 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Plano</td>
+              <td align="right" style="color: #333; font-size: 15px; font-weight: 600; padding: 6px 0;">{plan_name}</td>
+            </tr>
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Valor</td>
+              <td align="right" style="color: #333; font-size: 15px; font-weight: 600; padding: 6px 0;">{amount}</td>
+            </tr>
+            <tr>
+              <td style="color: #888; font-size: 13px; padding: 6px 0;">Motivo</td>
+              <td align="right" style="color: #d32f2f; font-size: 14px; padding: 6px 0;">{failure_reason}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+      <strong style="color: {urgency_color};">Ação necessária:</strong>
+      Atualize sua forma de pagamento nos próximos <strong>{days_text}</strong>
+      para evitar o cancelamento automático.
+    </p>
+
+    <p style="text-align: center; margin: 24px 0 16px;">
+      <a href="{FRONTEND_URL}/api/billing-portal"
+         class="btn"
+         style="display: inline-block; padding: 14px 32px; background-color: {urgency_color}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Atualizar Forma de Pagamento
+      </a>
+    </p>
+
+    <p style="color: #888; font-size: 14px; line-height: 1.6; margin: 24px 0 0;">
+      Se você acredita que isso é um erro, entre em contato conosco.
+    </p>
+    """
+
+    return email_base(
+        title="⚠️ Falha no pagamento — SmartLic",
+        body_html=body,
+        is_transactional=True,  # Payment failure emails are transactional
+    )

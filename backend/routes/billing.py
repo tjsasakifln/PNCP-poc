@@ -110,3 +110,59 @@ def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):
     sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
 
     log_user_action(logger, "plan-activated", user_id, details={"plan_id": plan_id})
+
+
+@router.post("/billing-portal")
+async def create_billing_portal_session(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """
+    Create Stripe Billing Portal session (GTM-FIX-007 AC6-AC7).
+
+    Allows users to update payment methods, view invoices, and manage subscriptions.
+
+    Returns:
+        dict: {"url": "https://billing.stripe.com/..."}
+    """
+    import stripe as stripe_lib
+
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+    if not stripe_key:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+    # Get user's stripe_customer_id from active subscription
+    sub_result = (
+        db.table("user_subscriptions")
+        .select("stripe_customer_id")
+        .eq("user_id", user["id"])
+        .eq("is_active", True)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    if not sub_result.data or not sub_result.data[0].get("stripe_customer_id"):
+        raise HTTPException(
+            status_code=404,
+            detail="Nenhuma assinatura ativa encontrada. Assine um plano primeiro."
+        )
+
+    stripe_customer_id = sub_result.data[0]["stripe_customer_id"]
+
+    try:
+        # Create Stripe Billing Portal session
+        portal_session = stripe_lib.billing_portal.Session.create(
+            customer=stripe_customer_id,
+            return_url=f"{frontend_url}/conta",
+            api_key=stripe_key,
+        )
+
+        logger.info(f"Billing portal session created for user_id={user['id']}")
+        return {"url": portal_session.url}
+
+    except stripe_lib.error.StripeError as e:
+        logger.error(f"Stripe billing portal error: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao criar sessão do portal de cobrança")
