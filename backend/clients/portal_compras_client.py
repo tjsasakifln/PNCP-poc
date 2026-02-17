@@ -1,22 +1,22 @@
-"""Portal de Compras Publicas API client adapter.
+"""Portal de Compras Publicas API client adapter (v2 Public API).
 
 This module implements the SourceAdapter interface for the Portal de Compras
-Publicas API (https://apipcp.portaldecompraspublicas.com.br/).
+Publicas v2 public API (https://compras.api.portaldecompraspublicas.com.br/).
 
-API Characteristics:
+API Characteristics (v2):
 - REST API with JSON responses
-- Auth via publicKey query parameter (NOT header)
-- Date format: DD/MM/AAAA
-- Pagination via quantidadeTotal + page calculation
-- Value: sum of VL_UNITARIO_ESTIMADO * QT_ITENS per item across lots
+- No authentication required (fully public)
+- Date format: YYYY-MM-DD (ISO)
+- Pagination: fixed 10 per page, use `pagina` param
+- UF filtering: client-side only (API returns all UFs)
+- Value: NOT included in listing endpoint
 
-GTM-FIX-011: Completed with real PCP API endpoints.
+GTM-FIX-011: Original PCP integration.
+GTM-FIX-012b: Migrated to v2 public API after old endpoint removal.
 """
 
 import asyncio
 import logging
-import math
-import os
 import random
 from datetime import datetime, timezone
 from typing import Any, AsyncGenerator, Dict, List, Optional, Set
@@ -35,7 +35,6 @@ from clients.base import (
     SourceParseError,
     UnifiedProcurement,
 )
-from utils.date_parser import iso_to_br
 
 logger = logging.getLogger(__name__)
 
@@ -95,31 +94,33 @@ def calculate_total_value(lotes: List[Dict[str, Any]]) -> float:
 
 
 class PortalComprasAdapter(SourceAdapter):
-    """Adapter for Portal de Compras Publicas API.
+    """Adapter for Portal de Compras Publicas v2 public API.
 
-    Uses real PCP API endpoints with publicKey authentication.
+    Uses the v2 public API which requires NO authentication.
     Fetches open procurement processes and normalizes to UnifiedProcurement.
 
-    Environment Variables:
-        PCP_PUBLIC_KEY: API key (preferred)
-        PORTAL_COMPRAS_API_KEY: API key (legacy fallback)
+    The v2 API does NOT support server-side UF filtering — filtering is done
+    client-side after fetching all results.
+
+    The v2 listing endpoint does NOT include value data (valor_estimado will
+    be 0.0 for PCP records).
     """
 
-    BASE_URL = "https://apipcp.portaldecompraspublicas.com.br"
+    BASE_URL = "https://compras.api.portaldecompraspublicas.com.br"
+    PORTAL_URL = "https://www.portaldecompraspublicas.com.br"
     DEFAULT_TIMEOUT = 30
     MAX_RETRIES = 3
-    RATE_LIMIT_DELAY = 0.2  # 200ms = 5 req/s (AC5: conservative start)
-    PAGE_SIZE = 50
+    RATE_LIMIT_DELAY = 0.2  # 200ms = 5 req/s
+    PAGE_SIZE = 10  # v2 API fixed at 10 per page
 
     _metadata = SourceMetadata(
         name="Portal de Compras Publicas",
         code="PORTAL_COMPRAS",
-        base_url="https://apipcp.portaldecompraspublicas.com.br",
-        documentation_url="https://apipcp.portaldecompraspublicas.com.br/comprador/apidoc/",
+        base_url="https://compras.api.portaldecompraspublicas.com.br",
+        documentation_url="https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos",
         capabilities={
             SourceCapability.PAGINATION,
             SourceCapability.DATE_RANGE,
-            SourceCapability.FILTER_BY_UF,
         },
         rate_limit_rps=5.0,
         typical_response_ms=2500,
@@ -130,14 +131,11 @@ class PortalComprasAdapter(SourceAdapter):
         """Initialize Portal de Compras adapter.
 
         Args:
-            api_key: API key. Falls back to PCP_PUBLIC_KEY or PORTAL_COMPRAS_API_KEY env vars.
+            api_key: Ignored for v2 API (kept for backward compatibility).
             timeout: Request timeout in seconds.
         """
-        self._api_key = (
-            api_key
-            or os.environ.get("PCP_PUBLIC_KEY", "")
-            or os.environ.get("PORTAL_COMPRAS_API_KEY", "")
-        )
+        # api_key kept for backward compat but unused by v2 API
+        self._api_key = api_key or ""
         self._timeout = timeout or self.DEFAULT_TIMEOUT
         self._client: Optional[httpx.AsyncClient] = None
         self._last_request_time = 0.0
@@ -150,7 +148,7 @@ class PortalComprasAdapter(SourceAdapter):
         return self._metadata
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create HTTP client. Auth is via URL params, not headers."""
+        """Get or create HTTP client."""
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 base_url=self.BASE_URL,
@@ -179,15 +177,13 @@ class PortalComprasAdapter(SourceAdapter):
     ) -> Any:
         """Make HTTP request with retry logic and rate limiting.
 
-        AC4: Auth via publicKey param — NEVER hardcoded.
+        v2 API is public — no auth injection needed.
         """
         await self._rate_limit()
         client = await self._get_client()
 
-        # AC4: Inject publicKey into every request
         if params is None:
             params = {}
-        params["publicKey"] = self._api_key
 
         for attempt in range(self.MAX_RETRIES + 1):
             try:
@@ -208,7 +204,7 @@ class PortalComprasAdapter(SourceAdapter):
                 if response.status_code in (401, 403):
                     raise SourceAuthError(
                         self.code,
-                        f"Authentication failed (key may be expired): {response.status_code}"
+                        f"Authentication failed: {response.status_code}"
                     )
 
                 if response.status_code == 200:
@@ -253,35 +249,28 @@ class PortalComprasAdapter(SourceAdapter):
         return delay * random.uniform(0.5, 1.5)
 
     async def health_check(self) -> SourceStatus:
-        """Check PCP API availability.
+        """Check PCP v2 API availability.
 
-        AC6: Returns UNAVAILABLE on 401 (key expired).
-        Uses minimal query (page 1, 1 UF) as health probe.
+        Uses a minimal query (1 page, today's date) as health probe.
+        No auth needed for v2.
         """
-        if not self._api_key:
-            logger.warning("[PCP] No API key configured")
-            return SourceStatus.UNAVAILABLE
-
         try:
             client = await self._get_client()
             start = asyncio.get_running_loop().time()
 
-            # Use processos abertos endpoint with minimal params
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             response = await client.get(
-                "/publico/obterprocessosabertos",
+                "/v2/licitacao/processos",
                 params={
-                    "publicKey": self._api_key,
-                    "uf": "SP",
                     "pagina": 1,
+                    "dataInicial": today,
+                    "dataFinal": today,
+                    "tipoData": 1,
                 },
                 timeout=5.0,
             )
 
             elapsed_ms = (asyncio.get_running_loop().time() - start) * 1000
-
-            if response.status_code in (401, 403):
-                logger.warning("[PCP] Auth failed in health check — key may be expired")
-                return SourceStatus.UNAVAILABLE
 
             if response.status_code == 200:
                 if elapsed_ms > 3000:
@@ -306,193 +295,185 @@ class PortalComprasAdapter(SourceAdapter):
         ufs: Optional[Set[str]] = None,
         **kwargs: Any,
     ) -> AsyncGenerator[UnifiedProcurement, None]:
-        """Fetch open procurement processes from PCP.
+        """Fetch open procurement processes from PCP v2 API.
 
-        AC1: Uses /publico/obterprocessosabertos endpoint.
-        AC2: Pagination via quantidadeTotal field.
+        v2 API uses ISO dates directly and does NOT support server-side UF
+        filtering. UF filtering is done client-side.
 
         Args:
-            data_inicial: Start date YYYY-MM-DD (converted to DD/MM/AAAA for PCP).
+            data_inicial: Start date YYYY-MM-DD.
             data_final: End date YYYY-MM-DD.
-            ufs: Optional set of UF codes. PCP supports single UF per request.
+            ufs: Optional set of UF codes for client-side filtering.
         """
-        if not self._api_key:
-            logger.warning("[PCP] No API key configured — skipping fetch")
-            return
-
-        # Convert dates from ISO to BR format for PCP API
-        data_inicio_br = iso_to_br(data_inicial)
-        data_fim_br = iso_to_br(data_final)
-
-        if not data_inicio_br or not data_fim_br:
-            logger.error(f"[PCP] Invalid date range: {data_inicial} to {data_final}")
-            return
-
-        # PCP API supports single UF filter. If multiple UFs, iterate per-UF.
-        uf_list = sorted(ufs) if ufs else [None]
+        # v2 API uses ISO dates directly — no conversion needed
+        params: Dict[str, Any] = {
+            "dataInicial": data_inicial,
+            "dataFinal": data_final,
+            "tipoData": 1,
+            "pagina": 1,
+        }
 
         seen_ids: Set[str] = set()
         total_fetched = 0
+        pagina = 1
 
-        for uf in uf_list:
-            params: Dict[str, Any] = {
-                "dataInicio": data_inicio_br,
-                "dataFim": data_fim_br,
-                "pagina": 1,
-            }
-            if uf:
-                params["uf"] = uf
+        while True:
+            params["pagina"] = pagina
 
-            pagina = 1
-            total_pages: Optional[int] = None
+            try:
+                response = await self._request_with_retry(
+                    "GET", "/v2/licitacao/processos", params
+                )
+            except SourceAuthError:
+                raise
+            except Exception as e:
+                logger.error(f"[PCP] Error fetching page {pagina}: {e}")
+                if total_fetched > 0:
+                    logger.warning(f"[PCP] Returning {total_fetched} partial results")
+                    return
+                raise
 
-            while True:
-                params["pagina"] = pagina
+            # v2 response: { result: [...], total, pageCount, nextPage, ... }
+            if isinstance(response, dict):
+                data = response.get("result", [])
+                total_count = response.get("total", 0)
+                page_count = response.get("pageCount", 0)
+                next_page = response.get("nextPage")
+            elif isinstance(response, list):
+                data = response
+                total_count = len(data)
+                page_count = 1
+                next_page = None
+            else:
+                data = []
+                total_count = 0
+                page_count = 0
+                next_page = None
 
+            if pagina == 1 and total_count > 0:
+                logger.info(
+                    f"[PCP] {total_count} total records across {page_count} pages"
+                )
+
+            if not data:
+                break
+
+            for raw_record in data:
                 try:
-                    response = await self._request_with_retry(
-                        "GET", "/publico/obterprocessosabertos", params
-                    )
-                except SourceAuthError:
-                    raise
+                    record = self.normalize(raw_record)
                 except Exception as e:
-                    logger.error(f"[PCP] Error fetching page {pagina} UF={uf}: {e}")
-                    if total_fetched > 0:
-                        logger.warning(f"[PCP] Returning {total_fetched} partial results")
-                        return
-                    raise
+                    logger.warning(f"[PCP] Failed to normalize record: {e}")
+                    continue
 
-                # PCP returns a list or object with quantidadeTotal
-                if isinstance(response, list):
-                    data = response
-                    quantity_total = len(data)
-                elif isinstance(response, dict):
-                    data = response.get("processos", response.get("data", []))
-                    if isinstance(data, list):
-                        pass
-                    else:
-                        data = []
-                    quantity_total = response.get("quantidadeTotal", len(data))
-                else:
-                    data = []
-                    quantity_total = 0
+                # Client-side UF filtering (v2 API has no server-side UF filter)
+                if ufs and record.uf and record.uf not in ufs:
+                    continue
 
-                # Calculate total pages on first request
-                if total_pages is None and quantity_total > 0:
-                    total_pages = math.ceil(quantity_total / max(len(data), 1))
-                    logger.info(
-                        f"[PCP] UF={uf}: {quantity_total} total records, "
-                        f"~{total_pages} pages"
-                    )
+                if record.source_id in seen_ids:
+                    continue
+                seen_ids.add(record.source_id)
 
-                if not data:
-                    break
+                total_fetched += 1
+                yield record
 
-                for raw_record in data:
-                    try:
-                        record = self.normalize(raw_record)
-                    except Exception as e:
-                        logger.warning(f"[PCP] Failed to normalize record: {e}")
-                        continue
+            # Check for more pages
+            if next_page is None or pagina >= page_count:
+                break
 
-                    if record.source_id in seen_ids:
-                        continue
-                    seen_ids.add(record.source_id)
+            pagina += 1
 
-                    total_fetched += 1
-                    yield record
-
-                # Check for more pages
-                if total_pages is not None and pagina >= total_pages:
-                    break
-
-                pagina += 1
-
-                if pagina > 100:
-                    # GTM-FIX-004 AC11: Detect truncation when page limit reached
-                    self.was_truncated = True
-                    logger.warning(
-                        f"[PCP] UF={uf}: Reached page limit (100). "
-                        f"quantidadeTotal may exceed fetched records. "
-                        f"Results may be incomplete."
-                    )
-                    break
+            if pagina > 100:
+                # GTM-FIX-004 AC11: Detect truncation when page limit reached
+                self.was_truncated = True
+                logger.warning(
+                    f"[PCP] Reached page limit (100). "
+                    f"Total records ({total_count}) may exceed fetched. "
+                    f"Results may be incomplete."
+                )
+                break
 
         logger.info(f"[PCP] Fetch complete: {total_fetched} records (truncated={self.was_truncated})")
 
     def normalize(self, raw_record: Dict[str, Any]) -> UnifiedProcurement:
-        """Convert PCP record to UnifiedProcurement.
+        """Convert PCP v2 record to UnifiedProcurement.
 
-        AC3: Proper field mapping from PCP API structure.
-        AC8: Value calculated from lotes/itens.
-        AC9: objeto = DS_OBJETO + all DS_ITEM concatenated.
-        AC10: source_id prefixed with pcp_.
-        AC11: link to Portal de Compras Publicas.
-        AC12: source = PORTAL_COMPRAS (SourceCode.PORTAL).
+        v2 field mapping:
+        - codigoLicitacao → source_id (prefixed with pcp_)
+        - resumo → objeto
+        - razaoSocial / nomeUnidade → orgao
+        - unidadeCompradora.uf → uf
+        - unidadeCompradora.cidade → municipio
+        - tipoLicitacao.modalidadeLicitacao → modalidade
+        - statusProcessoPublico.descricao → situacao
+        - urlReferencia → link_portal
+        - dataHoraPublicacao → data_publicacao
+        - dataHoraInicioPropostas → data_abertura
+        - dataHoraFinalPropostas → data_encerramento
+        - numero → numero_edital
+        - Value: NOT available in v2 listing → 0.0
         """
         try:
-            # AC10: Extract and prefix source ID
-            id_licitacao = raw_record.get("idLicitacao") or raw_record.get("id") or ""
-            if not id_licitacao:
-                raise SourceParseError(self.code, "idLicitacao", raw_record)
-            source_id = f"pcp_{id_licitacao}"
+            # Extract and prefix source ID
+            codigo = raw_record.get("codigoLicitacao")
+            if not codigo:
+                raise SourceParseError(self.code, "codigoLicitacao", raw_record)
+            source_id = f"pcp_{codigo}"
 
-            # AC9: Build objeto from DS_OBJETO + all DS_ITEM
-            ds_objeto = raw_record.get("DS_OBJETO") or raw_record.get("objeto") or ""
-            item_descriptions = []
-            lotes = raw_record.get("lotes") or []
-            for lote in lotes:
-                for item in (lote.get("itens") or []):
-                    ds_item = item.get("DS_ITEM") or ""
-                    if ds_item:
-                        item_descriptions.append(ds_item)
-            # Concatenate object + items for keyword matching
-            if item_descriptions:
-                objeto = f"{ds_objeto} | {' | '.join(item_descriptions)}"
-            else:
-                objeto = ds_objeto
+            # Object description from resumo
+            objeto = raw_record.get("resumo") or ""
 
-            # AC8: Calculate value from lots
-            valor = calculate_total_value(lotes)
+            # Value: v2 listing does not include value data
+            valor = 0.0
 
-            # Also try direct value field as fallback
-            if valor == 0.0:
-                valor_direto = raw_record.get("valorEstimado") or raw_record.get("VL_ESTIMADO") or 0
-                try:
-                    valor = float(valor_direto)
-                except (ValueError, TypeError):
-                    valor = 0.0
-
-            # Extract buyer/agency info
+            # Extract buyer/agency info from unidadeCompradora
             unidade = raw_record.get("unidadeCompradora") or {}
             if isinstance(unidade, dict):
-                orgao = unidade.get("nomeComprador") or unidade.get("nome") or ""
+                orgao = (
+                    unidade.get("nomeUnidadeCompradora")
+                    or raw_record.get("razaoSocial")
+                    or raw_record.get("nomeUnidade")
+                    or ""
+                )
                 cnpj = unidade.get("CNPJ") or unidade.get("cnpj") or ""
-                municipio = unidade.get("Cidade") or unidade.get("cidade") or ""
-                uf = unidade.get("UF") or unidade.get("uf") or ""
+                municipio = unidade.get("cidade") or ""
+                uf = unidade.get("uf") or ""
             else:
-                orgao = str(unidade) if unidade else ""
+                orgao = raw_record.get("razaoSocial") or ""
                 cnpj = ""
                 municipio = ""
                 uf = ""
 
-            # Fallback UF from top-level
-            if not uf:
-                uf = raw_record.get("UF") or raw_record.get("uf") or ""
+            # Parse dates (v2 uses ISO format)
+            data_publicacao = self._parse_datetime(raw_record.get("dataHoraPublicacao"))
+            data_abertura = self._parse_datetime(raw_record.get("dataHoraInicioPropostas"))
+            data_encerramento = self._parse_datetime(raw_record.get("dataHoraFinalPropostas"))
 
-            # Parse dates (PCP uses DD/MM/AAAA)
-            data_publicacao = self._parse_datetime(raw_record.get("dataPublicacao"))
-            data_abertura = self._parse_datetime(raw_record.get("dataAbertura"))
-            data_encerramento = self._parse_datetime(raw_record.get("dataEncerramento"))
-
-            # Extract edital number and year for dedup
-            numero_edital = raw_record.get("numeroEdital") or raw_record.get("numero") or ""
-            ano = raw_record.get("ano") or ""
-            if not ano and data_publicacao:
+            # Extract edital number and year
+            numero_edital = raw_record.get("numero") or raw_record.get("identificacao") or ""
+            ano = ""
+            if data_publicacao:
                 ano = str(data_publicacao.year)
 
-            # AC11: Portal link
-            link_portal = f"https://www.portaldecompraspublicas.com.br/processos/{id_licitacao}"
+            # Modality from tipoLicitacao object
+            tipo_lic = raw_record.get("tipoLicitacao") or {}
+            if isinstance(tipo_lic, dict):
+                modalidade = tipo_lic.get("modalidadeLicitacao") or tipo_lic.get("tipoLicitacao") or ""
+            else:
+                modalidade = str(tipo_lic) if tipo_lic else ""
+
+            # Status from statusProcessoPublico
+            status_obj = raw_record.get("statusProcessoPublico") or raw_record.get("status") or {}
+            if isinstance(status_obj, dict):
+                situacao = status_obj.get("descricao") or ""
+            else:
+                situacao = str(status_obj) if status_obj else ""
+
+            # Portal link from urlReferencia
+            url_ref = raw_record.get("urlReferencia") or ""
+            if url_ref:
+                link_portal = f"{self.PORTAL_URL}{url_ref}"
+            else:
+                link_portal = f"{self.PORTAL_URL}/processos/{codigo}"
 
             return UnifiedProcurement(
                 source_id=source_id,
@@ -507,12 +488,12 @@ class PortalComprasAdapter(SourceAdapter):
                 data_abertura=data_abertura,
                 data_encerramento=data_encerramento,
                 numero_edital=numero_edital,
-                ano=str(ano) if ano else "",
-                modalidade=raw_record.get("modalidade") or raw_record.get("tipoLicitacao") or "",
-                situacao=raw_record.get("situacao") or raw_record.get("status") or "",
-                esfera=raw_record.get("esfera") or "",
-                poder=raw_record.get("poder") or "",
-                link_edital=raw_record.get("linkDocumentos") or "",
+                ano=ano,
+                modalidade=modalidade,
+                situacao=situacao,
+                esfera="",
+                poder="",
+                link_edital="",
                 link_portal=link_portal,
                 fetched_at=datetime.now(timezone.utc),
                 raw_data=raw_record,
@@ -525,7 +506,7 @@ class PortalComprasAdapter(SourceAdapter):
             raise SourceParseError(self.code, "record", str(e)) from e
 
     def _parse_datetime(self, value: Any) -> Optional[datetime]:
-        """Parse datetime from PCP formats (DD/MM/AAAA and ISO)."""
+        """Parse datetime from PCP v2 ISO format."""
         if not value:
             return None
 
@@ -540,14 +521,14 @@ class PortalComprasAdapter(SourceAdapter):
 
         if isinstance(value, str):
             formats = [
-                "%d/%m/%Y %H:%M:%S",
-                "%d/%m/%Y",
                 "%Y-%m-%dT%H:%M:%S.%fZ",
                 "%Y-%m-%dT%H:%M:%SZ",
                 "%Y-%m-%dT%H:%M:%S.%f",
                 "%Y-%m-%dT%H:%M:%S",
                 "%Y-%m-%d %H:%M:%S",
                 "%Y-%m-%d",
+                "%d/%m/%Y %H:%M:%S",
+                "%d/%m/%Y",
             ]
 
             cleaned = value.replace("+00:00", "Z").replace("+0000", "Z")
