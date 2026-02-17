@@ -6,7 +6,7 @@ import logging
 import os
 import random
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any, Callable, Dict, Generator, List, Optional
 
@@ -71,6 +71,7 @@ class ParallelFetchResult:
     items: List[Dict[str, Any]]
     succeeded_ufs: List[str]
     failed_ufs: List[str]
+    truncated_ufs: List[str] = field(default_factory=list)  # GTM-FIX-004: UFs that hit max_pages limit
 
 
 class PNCPCircuitBreaker:
@@ -1086,7 +1087,7 @@ class AsyncPNCPClient:
         modalidade: int,
         status: str | None = None,
         max_pages: int = 500,
-    ) -> List[Dict[str, Any]]:
+    ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch all pages for a single UF + single modality.
 
         This is the inner loop extracted from ``_fetch_uf_all_pages`` so that
@@ -1101,11 +1102,13 @@ class AsyncPNCPClient:
             max_pages: Maximum pages per modality.
 
         Returns:
-            List of normalized procurement records for this modality.
+            Tuple of (items, was_truncated). was_truncated is True when
+            max_pages was hit while more pages remained (GTM-FIX-004).
         """
         items: List[Dict[str, Any]] = []
         seen_ids: set[str] = set()
         pagina = 1
+        was_truncated = False
 
         while pagina <= max_pages:
             try:
@@ -1133,8 +1136,9 @@ class AsyncPNCPClient:
                 if paginas_restantes <= 0:
                     break
 
-                # HOTFIX STORY-183: Enhanced warning when approaching max_pages
+                # GTM-FIX-004: Detect truncation when max_pages reached
                 if pagina >= max_pages and paginas_restantes > 0:
+                    was_truncated = True
                     logger.warning(
                         f"MAX_PAGES ({max_pages}) reached for UF={uf}, "
                         f"modalidade={modalidade}. Fetched {len(items)} items. "
@@ -1151,7 +1155,7 @@ class AsyncPNCPClient:
                 )
                 break
 
-        return items
+        return items, was_truncated
 
     async def _fetch_modality_with_timeout(
         self,
@@ -1161,7 +1165,7 @@ class AsyncPNCPClient:
         modalidade: int,
         status: str | None = None,
         max_pages: int = 500,
-    ) -> List[Dict[str, Any]]:
+    ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch a single modality with per-modality timeout and 1 retry (STORY-252 AC6/AC9).
 
         Wraps ``_fetch_single_modality`` with:
@@ -1172,7 +1176,7 @@ class AsyncPNCPClient:
         modalities continue independently.
 
         Returns:
-            List of records, or empty list if the modality timed out.
+            Tuple of (items, was_truncated). Empty list + False if timed out.
         """
         per_modality_timeout = PNCP_TIMEOUT_PER_MODALITY
         retry_backoff = PNCP_MODALITY_RETRY_BACKOFF
@@ -1205,7 +1209,7 @@ class AsyncPNCPClient:
                         f"UF={uf} modalidade={modalidade} timed out after retry "
                         f"— skipping this modality"
                     )
-        return []
+        return [], False
 
     async def _fetch_uf_all_pages(
         self,
@@ -1215,7 +1219,7 @@ class AsyncPNCPClient:
         modalidades: List[int],
         status: str | None = None,
         max_pages: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
-    ) -> List[Dict[str, Any]]:
+    ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch all pages for a single UF across all modalities in parallel.
 
         STORY-252 AC6: Each modality runs with its own timeout so that one
@@ -1230,7 +1234,8 @@ class AsyncPNCPClient:
             max_pages: Maximum pages to fetch per modality.
 
         Returns:
-            Deduplicated list of procurement records for the UF.
+            Tuple of (items, was_truncated). was_truncated is True when any
+            modality hit max_pages (GTM-FIX-004).
         """
         async with self._semaphore:
             # Launch all modalities in parallel with individual timeouts (AC6)
@@ -1253,6 +1258,7 @@ class AsyncPNCPClient:
             # Merge and deduplicate across modalities
             all_items: List[Dict[str, Any]] = []
             seen_ids: set[str] = set()
+            uf_was_truncated = False
 
             for mod, result in zip(modalidades, modality_results):
                 if isinstance(result, Exception):
@@ -1260,7 +1266,11 @@ class AsyncPNCPClient:
                         f"UF={uf} modalidade={mod} failed: {result}"
                     )
                     continue
-                for item in result:
+                # GTM-FIX-004: result is now (items, was_truncated)
+                items, was_truncated = result
+                if was_truncated:
+                    uf_was_truncated = True
+                for item in items:
                     item_id = item.get("codigoCompra", "") or item.get(
                         "numeroControlePNCP", ""
                     )
@@ -1268,8 +1278,8 @@ class AsyncPNCPClient:
                         seen_ids.add(item_id)
                         all_items.append(item)
 
-            logger.info(f"Fetched {len(all_items)} items for UF={uf}")
-            return all_items
+            logger.info(f"Fetched {len(all_items)} items for UF={uf} (truncated={uf_was_truncated})")
+            return all_items, uf_was_truncated
 
     async def buscar_todas_ufs_paralelo(
         self,
@@ -1366,11 +1376,12 @@ class AsyncPNCPClient:
                 logger.warning(f"Callback error: {cb_err}")
 
         # Create tasks for each UF with optional progress callback
-        async def _fetch_with_callback(uf: str) -> List[Dict[str, Any]]:
+        # GTM-FIX-004: returns (items, was_truncated) tuple
+        async def _fetch_with_callback(uf: str) -> tuple[List[Dict[str, Any]], bool]:
             # STORY-257A AC6: Emit "fetching" status when UF starts
             await _safe_callback(on_uf_status, uf, "fetching")
             try:
-                result = await asyncio.wait_for(
+                items, was_truncated = await asyncio.wait_for(
                     self._fetch_uf_all_pages(
                         uf=uf,
                         data_inicial=data_inicial,
@@ -1386,13 +1397,13 @@ class AsyncPNCPClient:
                 logger.warning(f"UF={uf} timed out after {PER_UF_TIMEOUT}s — skipping")
                 # AC6: Emit "failed" status
                 await _safe_callback(on_uf_status, uf, "failed", reason="timeout")
-                result = []
+                items, was_truncated = [], False
             else:
                 # AC6: Emit "success" status with count
-                await _safe_callback(on_uf_status, uf, "success", count=len(result))
+                await _safe_callback(on_uf_status, uf, "success", count=len(items))
             if on_uf_complete:
-                await _safe_callback(on_uf_complete, uf, len(result))
-            return result
+                await _safe_callback(on_uf_complete, uf, len(items))
+            return items, was_truncated
 
         tasks = [_fetch_with_callback(uf) for uf in ufs_ordered]
 
@@ -1404,16 +1415,24 @@ class AsyncPNCPClient:
         errors = 0
         succeeded_ufs = []
         failed_ufs = []
+        truncated_ufs = []  # GTM-FIX-004
 
         for uf, result in zip(ufs_ordered, results):
             if isinstance(result, Exception):
                 logger.error(f"Error fetching UF={uf}: {result}")
                 errors += 1
                 failed_ufs.append(uf)
-            elif isinstance(result, list) and len(result) == 0:
-                # Empty result could be timeout fallback or genuinely no data
-                succeeded_ufs.append(uf)  # Count as succeeded (no data ≠ failure)
+            elif isinstance(result, tuple):
+                items, was_truncated = result
+                if was_truncated:
+                    truncated_ufs.append(uf)
+                if len(items) == 0:
+                    succeeded_ufs.append(uf)  # No data ≠ failure
+                else:
+                    all_items.extend(items)
+                    succeeded_ufs.append(uf)
             else:
+                # Backward compat: plain list (shouldn't happen with new code)
                 all_items.extend(result)
                 succeeded_ufs.append(uf)
 
@@ -1427,10 +1446,10 @@ class AsyncPNCPClient:
 
             RETRY_TIMEOUT = 45
 
-            async def _retry_uf(uf: str) -> List[Dict[str, Any]]:
+            async def _retry_uf(uf: str) -> tuple[List[Dict[str, Any]], bool]:
                 await _safe_callback(on_uf_status, uf, "retrying", attempt=2, max=2)
                 try:
-                    result = await asyncio.wait_for(
+                    items, was_truncated = await asyncio.wait_for(
                         self._fetch_uf_all_pages(
                             uf=uf,
                             data_inicial=data_inicial,
@@ -1441,23 +1460,31 @@ class AsyncPNCPClient:
                         ),
                         timeout=RETRY_TIMEOUT,
                     )
-                    return result
+                    return items, was_truncated
                 except (asyncio.TimeoutError, Exception) as e:
                     logger.warning(f"AC7: Retry for UF={uf} failed: {e}")
-                    return []
+                    return [], False
 
             retry_tasks = [_retry_uf(uf) for uf in failed_ufs]
             retry_results = await asyncio.gather(*retry_tasks, return_exceptions=True)
 
             recovered_ufs = []
             for uf, result in zip(failed_ufs, retry_results):
-                if isinstance(result, Exception) or not result:
+                if isinstance(result, Exception):
                     await _safe_callback(on_uf_status, uf, "failed", reason="retry_failed")
+                elif isinstance(result, tuple):
+                    items, was_truncated = result
+                    if not items:
+                        await _safe_callback(on_uf_status, uf, "failed", reason="retry_failed")
+                    else:
+                        all_items.extend(items)
+                        recovered_ufs.append(uf)
+                        if was_truncated and uf not in truncated_ufs:
+                            truncated_ufs.append(uf)
+                        await _safe_callback(on_uf_status, uf, "recovered", count=len(items))
+                        logger.info(f"AC7: UF={uf} recovered with {len(items)} items")
                 else:
-                    all_items.extend(result)
-                    recovered_ufs.append(uf)
-                    await _safe_callback(on_uf_status, uf, "recovered", count=len(result))
-                    logger.info(f"AC7: UF={uf} recovered with {len(result)} items")
+                    await _safe_callback(on_uf_status, uf, "failed", reason="retry_failed")
 
             if recovered_ufs:
                 # Move recovered UFs from failed to succeeded
@@ -1467,15 +1494,21 @@ class AsyncPNCPClient:
                 logger.info(f"AC7: Recovered {len(recovered_ufs)} UFs: {recovered_ufs}")
 
         elapsed = sync_time.time() - start_time
+        if truncated_ufs:
+            logger.warning(
+                f"GTM-FIX-004: Truncated UFs: {truncated_ufs}. "
+                f"Results may be incomplete for these states."
+            )
         logger.info(
             f"Parallel fetch complete: {len(all_items)} items from {len(ufs)} UFs "
-            f"in {elapsed:.2f}s ({errors} errors)"
+            f"in {elapsed:.2f}s ({errors} errors, {len(truncated_ufs)} truncated)"
         )
 
         return ParallelFetchResult(
             items=all_items,
             succeeded_ufs=succeeded_ufs,
             failed_ufs=failed_ufs,
+            truncated_ufs=truncated_ufs,
         )
 
 

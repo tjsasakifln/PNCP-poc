@@ -98,6 +98,10 @@ export interface BuscaResult {
   cached_at?: string;
   /** STORY-257B AC10: List of UF codes that failed during search */
   failed_ufs?: string[];
+  /** GTM-FIX-004: True when at least one UF hit the max_pages limit */
+  is_truncated?: boolean;
+  /** GTM-FIX-004: UF codes where results were truncated */
+  truncated_ufs?: string[];
 }
 
 // ============================================================================

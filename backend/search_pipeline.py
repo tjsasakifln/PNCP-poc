@@ -741,6 +741,10 @@ class SearchPipeline:
                     if isinstance(fetch_result, ParallelFetchResult):
                         ctx.succeeded_ufs = fetch_result.succeeded_ufs
                         ctx.failed_ufs = fetch_result.failed_ufs
+                        # GTM-FIX-004: Propagate truncation metadata
+                        if fetch_result.truncated_ufs:
+                            ctx.is_truncated = True
+                            ctx.truncated_ufs = fetch_result.truncated_ufs
                         return fetch_result.items
                     return fetch_result
                 except PNCPDegradedError:
@@ -1019,6 +1023,8 @@ class SearchPipeline:
                 total_ufs_requested=len(ctx.request.ufs),
                 cached=getattr(ctx, 'cached', False),
                 cached_at=getattr(ctx, 'cached_at', None),
+                is_truncated=ctx.is_truncated,
+                truncated_ufs=ctx.truncated_ufs,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1130,6 +1136,8 @@ class SearchPipeline:
             total_ufs_requested=len(ctx.request.ufs),
             cached=getattr(ctx, 'cached', False),
             cached_at=getattr(ctx, 'cached_at', None),
+            is_truncated=ctx.is_truncated,
+            truncated_ufs=ctx.truncated_ufs,
         )
 
         logger.info(

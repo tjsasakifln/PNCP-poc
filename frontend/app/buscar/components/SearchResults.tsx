@@ -13,6 +13,7 @@ import type { UfStatus } from "../hooks/useUfProgress";
 import { PartialResultsPrompt, PartialResultsBanner, FailedUfsBanner } from "./PartialResultsPrompt";
 import { CacheBanner } from "./CacheBanner";
 import { SourcesUnavailable } from "./SourcesUnavailable";
+import { TruncationWarningBanner } from "./TruncationWarningBanner";
 import { QuotaCounter } from "../../components/QuotaCounter";
 import { LicitacoesPreview } from "../../components/LicitacoesPreview";
 import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/OrdenacaoSelect";
@@ -324,6 +325,11 @@ export default function SearchResults({
               onRetryFailed={onSearch}
               loading={loading}
             />
+          )}
+
+          {/* GTM-FIX-004: Truncation warning banner */}
+          {result.is_truncated && (
+            <TruncationWarningBanner truncatedUfs={result.truncated_ufs} />
           )}
 
           {/* STORY-257B AC6: Partial results mini-banner */}

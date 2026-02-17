@@ -50,6 +50,9 @@ class SearchContext:
     # STORY-257A: Partial results tracking
     failed_ufs: Optional[list] = None  # List of UF codes that failed
     succeeded_ufs: Optional[list] = None  # List of UF codes that succeeded
+    # GTM-FIX-004: Truncation tracking
+    is_truncated: bool = False  # True when any UF hit max_pages limit
+    truncated_ufs: Optional[list] = None  # UF codes where data was truncated
 
     # === Stage 4: FilterResults outputs ===
     licitacoes_filtradas: list = field(default_factory=list)

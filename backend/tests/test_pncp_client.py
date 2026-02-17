@@ -1268,14 +1268,14 @@ class TestAsyncFetchPageHTMLResponse:
 
         config = RetryConfig(max_retries=2)
         async with AsyncPNCPClient(config=config) as client:
-            results = await client._fetch_uf_all_pages(
+            items, was_truncated = await client._fetch_uf_all_pages(
                 uf="SP",
                 data_inicial="2026-01-01",
                 data_final="2026-01-15",
                 modalidades=[6],
             )
 
-        assert len(results) == 1
+        assert len(items) == 1
         assert call_count == 2
 
     @pytest.mark.asyncio
@@ -1313,14 +1313,14 @@ class TestAsyncFetchPageHTMLResponse:
 
         config = RetryConfig(max_retries=2)
         async with AsyncPNCPClient(config=config) as client:
-            results = await client._fetch_uf_all_pages(
+            items, was_truncated = await client._fetch_uf_all_pages(
                 uf="SP",
                 data_inicial="2026-01-01",
                 data_final="2026-01-15",
                 modalidades=[6],
             )
 
-        assert len(results) == 0
+        assert len(items) == 0
         assert call_count == 2
 
 

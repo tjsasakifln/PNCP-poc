@@ -51,15 +51,15 @@ class TestPerModalityTimeout:
                 if modalidade == 4:
                     # Simulate a very slow fetch that will exceed timeout
                     await asyncio.sleep(100)
-                    return []
+                    return [], False
                 # Other modalities return instantly
-                return [{"codigoCompra": f"{uf}-{modalidade}-001", "uf": uf}]
+                return [{"codigoCompra": f"{uf}-{modalidade}-001", "uf": uf}], False
 
             with patch.object(client, "_fetch_single_modality", side_effect=mock_fetch_single):
                 # Use a short per-modality timeout for testing
                 with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 0.1):
                     with patch("pncp_client.PNCP_MODALITY_RETRY_BACKOFF", 0.01):
-                        results = await client._fetch_uf_all_pages(
+                        items, was_truncated = await client._fetch_uf_all_pages(
                             uf="SP",
                             data_inicial="2026-01-01",
                             data_final="2026-01-15",
@@ -67,8 +67,8 @@ class TestPerModalityTimeout:
                         )
 
             # Modalities 5, 6, 7 should have returned results despite mod 4 timeout
-            assert len(results) == 3
-            mods_in_results = {r["codigoCompra"].split("-")[1] for r in results}
+            assert len(items) == 3
+            mods_in_results = {r["codigoCompra"].split("-")[1] for r in items}
             assert "5" in mods_in_results
             assert "6" in mods_in_results
             assert "7" in mods_in_results
@@ -206,13 +206,13 @@ class TestModalityRetry:
             nonlocal call_count
             call_count += 1
             await asyncio.sleep(100)  # Will be interrupted by timeout
-            return []
+            return [], False
 
         async with AsyncPNCPClient(max_concurrent=10) as client:
             with patch.object(client, "_fetch_single_modality", side_effect=slow_fetch):
                 with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 0.05):
                     with patch("pncp_client.PNCP_MODALITY_RETRY_BACKOFF", 0.01):
-                        result = await client._fetch_modality_with_timeout(
+                        items, was_truncated = await client._fetch_modality_with_timeout(
                             uf="SP",
                             data_inicial="2026-01-01",
                             data_final="2026-01-15",
@@ -221,7 +221,8 @@ class TestModalityRetry:
 
         # Should have been called exactly 2 times (initial + 1 retry)
         assert call_count == 2
-        assert result == []
+        assert items == []
+        assert was_truncated is False
 
         _circuit_breaker.reset()
 

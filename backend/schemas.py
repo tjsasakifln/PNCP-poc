@@ -899,6 +899,15 @@ class BuscaResponse(BaseModel):
         default=None,
         description="List of UF codes that returned data successfully"
     )
+    # GTM-FIX-004: Truncation transparency
+    is_truncated: bool = Field(
+        default=False,
+        description="True when at least one UF hit the max_pages limit (data may be incomplete)"
+    )
+    truncated_ufs: Optional[List[str]] = Field(
+        default=None,
+        description="UF codes where results were truncated due to max_pages limit"
+    )
     total_ufs_requested: Optional[int] = Field(
         default=None,
         description="Total number of UFs in the original request"

@@ -229,14 +229,14 @@ class TestPerModalityTimeout:
             if modalidade == 4:
                 # Simulate a hang that exceeds the per-modality timeout
                 await asyncio.sleep(999)
-                return []  # never reached
+                return [], False  # never reached
             elif modalidade == 5:
-                return items_mod5
+                return items_mod5, False
             elif modalidade == 6:
-                return items_mod6
+                return items_mod6, False
             elif modalidade == 7:
-                return items_mod7
-            return []
+                return items_mod7, False
+            return [], False
 
         with patch.object(
             client, "_fetch_single_modality", side_effect=mock_fetch_single
@@ -269,12 +269,12 @@ class TestPerModalityTimeout:
                         await _circuit_breaker.record_failure()
                         if attempt == 0:
                             await asyncio.sleep(0.01)  # fast backoff for tests
-                return []
+                return [], False
 
             with patch.object(
                 AsyncPNCPClient, "_fetch_modality_with_timeout", fast_timeout_method
             ):
-                result = await client._fetch_uf_all_pages(
+                items, was_truncated = await client._fetch_uf_all_pages(
                     uf="SP",
                     data_inicial="2026-01-01",
                     data_final="2026-01-31",
@@ -285,7 +285,7 @@ class TestPerModalityTimeout:
         # The items are normalized by _normalize_item which adds codigoCompra
         result_ids = {
             item.get("codigoCompra") or item.get("numeroControlePNCP")
-            for item in result
+            for item in items
         }
 
         assert "ID-5-1" in result_ids
@@ -295,7 +295,7 @@ class TestPerModalityTimeout:
         assert "ID-7-2" in result_ids
         assert "ID-7-3" in result_ids
         # Total: 6 items from modalities 5+6+7
-        assert len(result) == 6
+        assert len(items) == 6
 
 
 # ---------------------------------------------------------------------------
@@ -324,16 +324,16 @@ class TestModalityRetry:
             if attempt_count == 1:
                 # First attempt: hang forever (will timeout)
                 await asyncio.sleep(999)
-                return []
+                return [], False
             else:
                 # Second attempt: succeed immediately
-                return [_make_item("RETRY-OK")]
+                return [_make_item("RETRY-OK")], False
 
         with patch.object(client, "_fetch_single_modality", side_effect=mock_fetch_single):
             # Use short timeouts for testing
             with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 0.1), \
                  patch("pncp_client.PNCP_MODALITY_RETRY_BACKOFF", 0.01):
-                result = await client._fetch_modality_with_timeout(
+                items, was_truncated = await client._fetch_modality_with_timeout(
                     uf="SP",
                     data_inicial="2026-01-01",
                     data_final="2026-01-31",
@@ -341,8 +341,9 @@ class TestModalityRetry:
                 )
 
         assert attempt_count == 2
-        assert len(result) == 1
-        assert result[0]["numeroControlePNCP"] == "RETRY-OK"
+        assert len(items) == 1
+        assert items[0]["numeroControlePNCP"] == "RETRY-OK"
+        assert was_truncated is False
 
     @pytest.mark.asyncio
     async def test_both_attempts_timeout_returns_empty(self):
@@ -358,12 +359,12 @@ class TestModalityRetry:
             nonlocal attempt_count
             attempt_count += 1
             await asyncio.sleep(999)  # always hang
-            return []
+            return [], False
 
         with patch.object(client, "_fetch_single_modality", side_effect=mock_fetch_single):
             with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 0.1), \
                  patch("pncp_client.PNCP_MODALITY_RETRY_BACKOFF", 0.01):
-                result = await client._fetch_modality_with_timeout(
+                items, was_truncated = await client._fetch_modality_with_timeout(
                     uf="SP",
                     data_inicial="2026-01-01",
                     data_final="2026-01-31",
@@ -371,7 +372,8 @@ class TestModalityRetry:
                 )
 
         assert attempt_count == 2
-        assert result == []
+        assert items == []
+        assert was_truncated is False
 
     @pytest.mark.asyncio
     async def test_circuit_breaker_records_failures_on_timeout(self):
@@ -383,7 +385,7 @@ class TestModalityRetry:
 
         async def mock_fetch_single(*args, **kwargs):
             await asyncio.sleep(999)
-            return []
+            return [], False
 
         with patch.object(client, "_fetch_single_modality", side_effect=mock_fetch_single):
             with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 0.1), \
@@ -430,14 +432,15 @@ class TestCircuitBreakerActivation:
         client._semaphore = asyncio.Semaphore(10)
         client._client = MagicMock()
 
-        result = await client._fetch_uf_all_pages(
+        items, was_truncated = await client._fetch_uf_all_pages(
             uf="SP",
             data_inicial="2026-01-01",
             data_final="2026-01-31",
             modalidades=[4, 5, 6, 7],
         )
 
-        assert result == []
+        assert items == []
+        assert was_truncated is False
 
     @pytest.mark.asyncio
     async def test_circuit_breaker_resets_on_success(self):
@@ -452,14 +455,15 @@ class TestCircuitBreakerActivation:
             return _make_pncp_response(data=[_make_item("OK-1")], paginas_restantes=0)
 
         with patch.object(client, "_fetch_page_async", side_effect=mock_fetch_page):
-            result = await client._fetch_single_modality(
+            items, was_truncated = await client._fetch_single_modality(
                 uf="SP",
                 data_inicial="2026-01-01",
                 data_final="2026-01-31",
                 modalidade=6,
             )
 
-        assert len(result) == 1
+        assert len(items) == 1
+        assert was_truncated is False
         assert _circuit_breaker.consecutive_failures == 0
 
 
@@ -619,7 +623,7 @@ class TestBuscarComHealthCanary:
         """When health canary succeeds, search proceeds normally."""
         async with AsyncPNCPClient(max_concurrent=10) as client:
             async def mock_fetch_uf(*args, **kwargs):
-                return [_make_item("FOUND-1")]
+                return [_make_item("FOUND-1")], False
 
             with patch.object(client, "health_canary", return_value=True), \
                  patch.object(client, "_fetch_uf_all_pages", side_effect=mock_fetch_uf):
@@ -684,7 +688,7 @@ class TestPerUFTimeout:
             with patch.object(client, "health_canary", return_value=True), \
                  patch.object(
                      client, "_fetch_uf_all_pages",
-                     side_effect=lambda **kw: asyncio.coroutine(lambda: [])(),
+                     side_effect=lambda **kw: asyncio.coroutine(lambda: ([], False))(),
                  ), \
                  patch("pncp_client.asyncio.wait_for", side_effect=capture_timeout):
                 await client.buscar_todas_ufs_paralelo(
@@ -720,12 +724,12 @@ class TestModalityParallelism:
                                      status=None, max_pages=500):
             start_times[modalidade] = asyncio.get_running_loop().time()
             await asyncio.sleep(0.05)  # simulate small work
-            return [_make_item(f"MOD-{modalidade}-1")]
+            return [_make_item(f"MOD-{modalidade}-1")], False
 
         with patch.object(client, "_fetch_single_modality", side_effect=mock_fetch_single):
             with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 5.0), \
                  patch("pncp_client.PNCP_MODALITY_RETRY_BACKOFF", 0.01):
-                result = await client._fetch_uf_all_pages(
+                items, was_truncated = await client._fetch_uf_all_pages(
                     uf="SP",
                     data_inicial="2026-01-01",
                     data_final="2026-01-31",
@@ -733,7 +737,8 @@ class TestModalityParallelism:
                 )
 
         # All 4 modalities should have returned items
-        assert len(result) == 4
+        assert len(items) == 4
+        assert was_truncated is False
 
         # Start times should be within 50ms of each other (parallel, not sequential)
         times = list(start_times.values())
