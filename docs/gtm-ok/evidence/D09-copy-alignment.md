@@ -1,372 +1,258 @@
-# D09: Copy-Code Alignment Assessment
+# D09 - Copy-Code Alignment Evidence
 
-## Verdict: FAIL
-## Score: 4/10
-
-**Assessment Date:** 2026-02-16
-**Assessor:** Phase 4 GTM-OK (Opus 4.6)
-**Methodology:** Exhaustive extraction of every user-visible claim across all marketing pages, traced to backend/frontend code.
+**Date:** 2026-02-17
+**Analyst:** @analyst (Phase 4, GTM-OK v2.0)
+**Methodology:** Exhaustive extraction of every user-facing promise from all marketing surfaces, mapped against the actual running codebase.
 
 ---
 
 ## Executive Summary
 
-SmartLic's marketing copy makes approximately 108 distinct user-facing claims across landing page, features page, pricing page, trial conversion, and onboarding. Of these, **23 are fully delivered**, **31 are partially delivered**, **19 are not delivered**, and **11 are misleading**. The remaining are generic/aspirational copy that does not constitute a verifiable claim.
+SmartLic's marketing copy has undergone significant improvement since the GTM-001/007/008/009 rewrites. The "decision intelligence" positioning is well-crafted and mostly defensible. However, several specific promises are either not delivered, misleading, or carry regulatory risk. The most severe issue is **fabricated review ratings in structured data (schema.org)** and a **pipeline access bug that blocks the paying plan from using a feature the pricing page promises**.
 
-The most critical gaps are:
-1. **"Dezenas de fontes oficiais"** -- only 3-4 sources are actually implemented (PNCP primary, Portal, Licitar, Querido Diario experimental)
-2. **"R$ 2.3 bi em oportunidades mapeadas"** -- no data pipeline or measurement exists to substantiate this figure
-3. **"Notificacoes em tempo real"** -- no notification system exists (no push, no email alerts, no websocket)
-4. **"Monitoramento continuo"** / **"Diario"** -- system is on-demand only, user must manually trigger every search
-5. **"ROI de 7.8x"** -- calculation assumes R$ 150K "average opportunity" vs R$ 19,188 annual cost, but this is hypothetical, not measured
-6. **"Resposta garantida no mesmo dia"** -- no SLA infrastructure, no support ticket system
-7. **"12 setores"** vs actual **15 sectors** in code -- the number is WRONG in the opposite direction (understated but inconsistent)
+**Score: 6/10** (Several gaps, some misleading claims)
 
 ---
 
-## Promise Alignment Matrix
+## Promise Inventory & Verification
 
-### Landing Page -- HeroSection.tsx
+### CATEGORY A: DELIVERED (Code Exists, Working, Tested)
 
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 1 | "Saiba Onde Investir para Ganhar Mais Licitacoes" | `HeroSection.tsx:77-82` | N/A (aspirational) | N/A | LOW |
-| 2 | "Inteligencia que avalia oportunidades, prioriza o que importa e guia suas decisoes" | `HeroSection.tsx:98-100` | `llm.py:127-169` (LLM prompt does evaluate + recommend); `filter.py` (filtering, not prioritization) | PARTIALLY DELIVERED | MEDIUM -- "prioriza" implies ranking, but results are filtered, not ranked by relevance score |
-| 3 | "Avaliacao objetiva, nao busca generica" | `HeroSection.tsx:100` | `llm.py` generates recommendations with urgency levels; `analysisExamples.ts` shows hardcoded examples | PARTIALLY DELIVERED | MEDIUM -- LLM generates text-based assessments, not structured per-bid scores shown to user |
-| 4 | "R$ 2.3 bi em oportunidades" | `HeroSection.tsx:135` | NO CODE backs this metric | NOT DELIVERED | **CRITICAL** -- No data pipeline measures aggregate opportunity volume. Number is fabricated. |
-| 5 | "12 setores cobertos" | `HeroSection.tsx:136` | `sectors_data.yaml` has **15** sector IDs | MISLEADING | MEDIUM -- Actual count is 15, not 12. SectorsGrid.tsx shows 12 display names that don't match backend. |
-| 6 | "27 estados monitorados" | `HeroSection.tsx:137` | `pncp_client.py` accepts any UF; `onboarding/page.tsx:14-19` lists all 27 UFs | DELIVERED | LOW |
+| # | Promise | Location | Code Evidence | Status |
+|---|---------|----------|---------------|--------|
+| A1 | "27 estados cobertos" | HeroSection, StatsSection, InstitutionalSidebar, Pricing page | `onboarding/page.tsx` REGIONS lists all 27 UFs; backend `pncp_client.py` accepts any UF; `buscar_todas_ufs_paralelo()` queries per-UF | **DELIVERED** |
+| A2 | "15 setores especializados" | HeroSection, StatsSection, SectorsGrid, Pricing page | `sectors_data.yaml` defines exactly 15 sectors: vestuario, alimentos, informatica, mobiliario, papelaria, engenharia, software, facilities, saude, vigilancia, transporte, manutencao_predial, engenharia_rodoviaria, materiais_eletricos, materiais_hidraulicos | **DELIVERED** |
+| A3 | "1000+ regras de filtragem" | HeroSection, StatsSection | Verified: 1,437 keywords + 1,049 exclusions = **2,486 total rules**. Claim is conservative and accurate. | **DELIVERED** |
+| A4 | "Exportacao Excel completa" | Pricing page FEATURES | `excel.py` generates styled workbooks; `allow_excel: True` for smartlic_pro in `quota.py` | **DELIVERED** |
+| A5 | "5 anos de historico" | Pricing page FEATURES | `smartlic_pro.max_history_days = 1825` (5 years) in `quota.py` line 100 | **DELIVERED** |
+| A6 | "1.000 analises por mes" | Pricing page FEATURES | `smartlic_pro.max_requests_per_month = 1000` in `quota.py` line 103; enforced via `check_and_increment_quota_atomic()` | **DELIVERED** |
+| A7 | "PNCP e Portal de Compras Publicas integrados" | DifferentialsGrid, DataSourcesSection, Pricing page | `pncp_client.py` (PNCP) + `portal_compras_client.py` (PCP) both active; `PCP_ENABLED=true` default | **DELIVERED** |
+| A8 | "2 bases oficiais" | Multiple locations | PNCP + PCP confirmed as two functional source adapters | **DELIVERED** |
+| A9 | "Avaliacao por IA" / "Avaliacao estrategica" | HeroSection, ValuePropSection, HowItWorks | `llm.py` uses GPT-4.1-nano for structured summaries via `gerar_resumo_executivo()`; filter.py has LLM arbiter layer (GPT-4o-mini) for false positive elimination | **DELIVERED** |
+| A10 | "Cancelamento em 1 clique" | Pricing page FAQ, comparisons.ts | `POST /api/subscriptions/cancel` exists in `routes/subscriptions.py` line 169; sets `cancel_at_period_end=True` in Stripe; `CancelSubscriptionModal.tsx` exists in frontend | **DELIVERED** |
+| A11 | "Sem necessidade de cartao de credito" (trial) | InstitutionalSidebar signup | Trial uses `free_trial` plan with no Stripe checkout required; verified in auth flow | **DELIVERED** |
+| A12 | "7 dias do produto completo" | FinalCTA, pricing page FAQ | `free_trial` capabilities in `quota.py` mirror smartlic_pro: `allow_excel: True`, `allow_pipeline: True`, `max_summary_tokens: 10000`, `max_history_days: 365` (actually 1 year, not 5) | **PARTIALLY DELIVERED** (see B4) |
+| A13 | "Pagamento seguro via Stripe" | Pricing page | Stripe integration confirmed in billing routes, checkout flow, webhooks | **DELIVERED** |
+| A14 | "Dados de fontes oficiais federais e estaduais" | InstitutionalSidebar, Footer | PNCP is federal; Portal de Compras Publicas is mixed. Claim is accurate. | **DELIVERED** |
+| A15 | "Filtragem com 1.000+ regras" | Pricing page | 2,486 total rules. Accurate. | **DELIVERED** |
+| A16 | "Busca por setor de atuacao" | Comparisons, Features page | Search endpoint accepts `setor` parameter; maps to keyword sets via `sectors.py` | **DELIVERED** |
+| A17 | "Historico completo de buscas" | InstitutionalSidebar login | `saved_searches` table exists; `SavedSearchesDropdown.tsx` loads history | **DELIVERED** |
 
-### Landing Page -- StatsSection.tsx
+### CATEGORY B: PARTIALLY DELIVERED (Feature Exists But Incomplete/Mismatched)
 
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 7 | "Impacto real no mercado de licitacoes" | `StatsSection.tsx:22` | N/A (heading) | N/A | LOW |
-| 8 | "R$ 2.3bi em oportunidades/mes" | `StatsSection.tsx:34-36` | NO CODE | NOT DELIVERED | **CRITICAL** -- Same as #4. No measurement infrastructure. |
-| 9 | "12 setores especializados" | `StatsSection.tsx:47-48` | `sectors_data.yaml` has 15 | MISLEADING | MEDIUM -- Repeated incorrect count |
-| 10 | "27 estados cobertos" | `StatsSection.tsx:56-57` | Same as #6 | DELIVERED | LOW |
-| 11 | "Diario monitoramento continuo" | `StatsSection.tsx:65-66` | NO cron/scheduler/background job exists | NOT DELIVERED | **HIGH** -- System is strictly on-demand. No background monitoring. |
+| # | Promise | Location | Issue | Risk Level |
+|---|---------|----------|-------|------------|
+| B1 | "Resumos executivos com GPT-4o" | Pricing page FEATURES line 31 | **Model mismatch.** Backend uses `gpt-4.1-nano` (llm.py line 193) and `gpt-4o-mini` (filter arbiter). Neither is GPT-4o. The copy claims a more capable model than what runs. | **HIGH** - Misleading about AI capability tier |
+| B2 | "Pipeline de acompanhamento" | Pricing page FEATURES line 30 | **Access bug.** `routes/pipeline.py` line 61: `allowed_plans = {"maquina", "sala_guerra"}`. The `smartlic_pro` plan is NOT in this set, meaning paying Pro customers get 403 errors. However, `quota.py` sets `allow_pipeline: True` for smartlic_pro. The route-level check overrides the capability. | **CRITICAL** - Paying customers cannot use promised feature |
+| B3 | "Consulta sob demanda de 2 bases oficiais" | InstitutionalSidebar login | PCP requires `PCP_PUBLIC_KEY` env var. If not configured in production, only PNCP runs. Need to verify production env. | **MEDIUM** - Depends on deployment config |
+| B4 | "7 dias do produto completo" (trial) | Multiple locations | Trial has `max_history_days: 365` (1 year), not 1825 (5 years) like smartlic_pro. Also only 3 analyses vs 1000/month. "Produto completo" is somewhat misleading when trial has 3 analyses and 1 year history vs 1000 analyses and 5 years. | **MEDIUM** - Trial is "full-featured" but heavily quota-limited |
 
-### Landing Page -- DifferentialsGrid.tsx
+### CATEGORY C: NOT DELIVERED (Promise in Copy, No Code)
 
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 12 | "PRIORIZACAO INTELIGENTE" | `DifferentialsGrid.tsx:24` | Filter sorts by value/date, not by profile relevance score | PARTIALLY DELIVERED | MEDIUM |
-| 13 | "Analise de adequacao ao seu perfil" | `DifferentialsGrid.tsx:25` | Onboarding collects CNAE/UFs; `first_analysis.py` maps CNAE to sector. But no per-bid profile matching. | PARTIALLY DELIVERED | MEDIUM |
-| 14 | "Ranqueamento por relevancia" | `DifferentialsGrid.tsx:25` | NO ranking algorithm exists. Results are filtered, not ranked. | NOT DELIVERED | HIGH |
-| 15 | "ANALISE AUTOMATIZADA -- Avaliacao automatica de cada edital" | `DifferentialsGrid.tsx:33-34` | `llm.py` generates summary of batch (up to 50 bids). Does NOT evaluate each edital individually. | MISLEADING | HIGH -- Implies per-bid evaluation; reality is batch summary |
-| 16 | "Decisao em segundos, nao horas" | `DifferentialsGrid.tsx:34` | LLM call takes 5-15s. Results are displayed quickly after search. | PARTIALLY DELIVERED | LOW |
-| 17 | "REDUCAO DE INCERTEZA -- Criterios objetivos de avaliacao" | `DifferentialsGrid.tsx:43` | LLM prompt asks for objective criteria, but output is unstructured text. No structured scoring per bid in production. | PARTIALLY DELIVERED | MEDIUM |
-| 18 | "Dados consolidados de multiplas fontes" | `DifferentialsGrid.tsx:43` | `source_config/sources.py` shows 3-4 sources (PNCP, Portal, Licitar, QD experimental) | PARTIALLY DELIVERED | MEDIUM -- "multiplas" is true but "dezenas" (used elsewhere) is not |
-| 19 | "COBERTURA NACIONAL -- Todas as fontes oficiais monitoradas" | `DifferentialsGrid.tsx:52` | Only PNCP + 2-3 supplemental. NOT "all official sources" | MISLEADING | **HIGH** -- Implies completeness that does not exist |
-| 20 | "27 estados cobertos diariamente" | `DifferentialsGrid.tsx:52` | States are queryable, but NOT queried daily (on-demand only) | MISLEADING | HIGH -- "diariamente" is false |
-| 21 | "Atualizacao continua em tempo real" | `DifferentialsGrid.tsx:52` | NO real-time updates. On-demand search only. | NOT DELIVERED | **HIGH** |
+| # | Promise | Location | Missing Code | Risk Level |
+|---|---------|----------|-------------|------------|
+| C1 | "Diario -- analises programadas" | StatsSection line 65-66 | **No scheduled/cron job exists.** Search is entirely on-demand (`POST /buscar`). There is no daily automated analysis pipeline, no cron scheduler, no background job runner. The word "Diario" with "analises programadas" implies daily automatic scanning. | **HIGH** - False claim of automated daily analysis |
+| C2 | "Suporte com resposta garantida no mesmo dia" | comparisons.ts line 88 | No SLA enforcement in code. No support ticketing system. Help page (`ajuda/page.tsx`) says "Respondemos em ate 24 horas uteis" which contradicts "mesmo dia" claim. No monitoring or alerting for support response times. | **HIGH** - Unsubstantiated SLA claim |
+| C3 | "1000+ licitacoes/dia" | InstitutionalSidebar signup stats | No daily monitoring exists to substantiate this number. System queries on-demand, not continuously. The claim implies a daily throughput metric that is never measured. | **MEDIUM** - Unverifiable metric |
+| C4 | "Novas fontes adicionadas regularmente" | DifferentialsGrid, DataSourcesSection | Querido Diario adapter exists but is disabled by default (`ENABLE_SOURCE_QUERIDO_DIARIO=false`). Other adapters (Licitar, ComprasGov, BLL, BNC, Portal Transparencia) are coded but most are not enabled. This is forward-looking but currently misleading. | **LOW** - Aspirational, code exists |
+| C5 | "Oportunidades identificadas assim que publicadas" | painPoints, beforeAfter comparisons | No real-time monitoring or webhook from PNCP/PCP. System queries on-demand only. There is no "as soon as published" detection. | **MEDIUM** - Implies real-time which does not exist |
 
-### Landing Page -- BeforeAfter.tsx
+### CATEGORY D: MISLEADING (Implies Something Code Does Not Do)
 
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 22 | "Visao completa do mercado em tempo real" | `BeforeAfter.tsx:91` | Neither complete (3-4 sources, not all) nor real-time (on-demand) | MISLEADING | **HIGH** |
-| 23 | "Avaliacao objetiva: vale a pena ou nao, e por que" | `BeforeAfter.tsx:95` | `analysisExamples.ts` shows this pattern but these are hardcoded examples. `llm.py` generates recommendations but not per-bid go/no-go. | PARTIALLY DELIVERED | HIGH -- Landing page shows curated examples but the actual product doesn't deliver per-bid decisions |
-| 24 | "Posicione-se antes da concorrencia" | `BeforeAfter.tsx:99` | No timing advantage mechanism. Same data as public PNCP. | MISLEADING | MEDIUM |
-
-### Landing Page -- OpportunityCost.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 25 | "Uma unica licitacao perdida por falta de visibilidade pode custar R$ 50.000, R$ 200.000 ou mais" | `OpportunityCost.tsx:46` | Hypothetical claim (not measured) | PARTIALLY DELIVERED | LOW -- Reasonable market claim but unsubstantiated |
-| 26 | "Cada dia sem visibilidade completa e uma oportunidade que pode ir para outro" | `OpportunityCost.tsx:51` | No daily monitoring. User must search manually. | MISLEADING | MEDIUM |
-
-### Landing Page -- DataSourcesSection.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 27 | "Cobertura nacional, precisao absoluta" | `DataSourcesSection.tsx:23` | "Precisao absoluta" is unsubstantiable | MISLEADING | MEDIUM -- "absolute precision" is an unqualified claim |
-| 28 | "Monitoramos dezenas de fontes oficiais em tempo real" | `DataSourcesSection.tsx:31` | `source_config/sources.py` lists 8 source codes, only 3-4 enabled. NOT "dezenas" (dozens). NOT real-time. | NOT DELIVERED | **CRITICAL** -- "Dezenas" means "dozens." The system has 3-4 active sources. |
-| 29 | "Dezenas de fontes consolidadas em tempo real" | `DataSourcesSection.tsx:57` | Same as above | NOT DELIVERED | **CRITICAL** |
-| 30 | "Governo Federal + 27 estados + Diarios oficiais + Bases complementares" | `DataSourcesSection.tsx:58` | PNCP covers federal. Querido Diario (experimental) covers some municipal diaries. No state-specific portals are implemented. | MISLEADING | HIGH -- Implies exhaustive multi-layer sourcing |
-| 31 | "Fontes federais, Portais estaduais, Diarios oficiais, Bases complementares, Fontes municipais" | `DataSourcesSection.tsx:71` | No "portais estaduais" or "fontes municipais" are implemented | NOT DELIVERED | HIGH |
-
-### Landing Page -- SectorsGrid.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 32 | 12 sectors displayed: Uniformes, Facilities, Software & TI, Alimentacao, Equipamentos, Transporte, Saude, Limpeza, Seguranca, Escritorio, Construcao, Servicos Gerais | `SectorsGrid.tsx:15-88` | `sectors_data.yaml` has 15 IDs: vestuario, alimentos, informatica, mobiliario, papelaria, engenharia, software, facilities, saude, vigilancia, transporte, manutencao_predial, engenharia_rodoviaria, materiais_eletricos, materiais_hidraulicos | MISLEADING | MEDIUM -- Frontend shows 12 generic names that DON'T match backend's 15. "Limpeza", "Escritorio", "Construcao", "Servicos Gerais" don't exist as backend sectors. |
-| 33 | "Cobertura abrangente com expansao continua" | `SectorsGrid.tsx:118` | Aspirational. No expansion mechanism. | N/A | LOW |
-| 34 | "Novos setores regularmente" | `SectorsGrid.tsx:200` | No automated sector addition. Manual code change required. | PARTIALLY DELIVERED | LOW |
-
-### Landing Page -- HowItWorks.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 35 | "Diga o que voce vende" | `HowItWorks.tsx:19` | Onboarding collects CNAE and objective | DELIVERED | LOW |
-| 36 | "Receba oportunidades priorizadas" | `HowItWorks.tsx:28` | Opportunities are filtered, not prioritized/ranked | PARTIALLY DELIVERED | MEDIUM |
-| 37 | "IA avalia, filtra e prioriza as oportunidades certas para voce" | `HowItWorks.tsx:30` | IA generates summary; filtering is keyword-based, not AI-based. No prioritization/ranking. | MISLEADING | HIGH -- Implies AI does the filtering. In reality, keyword regex does. |
-| 38 | "Avaliacao objetiva de cada oportunidade" | `HowItWorks.tsx:40` | LLM evaluates batch, not each bid individually | MISLEADING | HIGH |
-
-### Landing Page -- FinalCTA.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 39 | "Comece a Vencer Licitacoes Hoje" | `FinalCTA.tsx:23` | Aspirational | N/A | LOW |
-| 40 | "Produto completo por 7 dias. Sem cartao. Sem compromisso." | `FinalCTA.tsx:52` | Trial is 7 days: DELIVERED. "Sem cartao": signup does not require card (Supabase email auth). Card only at checkout. | DELIVERED | LOW |
-
-### Landing Page -- AnalysisExamplesCarousel.tsx + analysisExamples.ts
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 41 | "SmartLic em Acao -- Veja como analisamos oportunidades reais e sugerimos decisoes objetivas" | `analysisExamples.ts:232-234` | Examples are **hardcoded** in `analysisExamples.ts:127-225`, not from real system output | MISLEADING | **HIGH** -- Claims "real opportunities" but they are curated fabricated examples |
-| 42 | 5 example analysis cards with structured decisions (PARTICIPAR/AVALIAR/NAO PARTICIPAR) | `analysisExamples.ts:127-225` | These are **static marketing content**, not live system output. The actual system does NOT produce per-bid go/no-go decisions. | MISLEADING | **HIGH** -- Implies product delivers structured per-bid decisions |
-
-### Landing Page -- ComparisonTable.tsx + comparisons.ts
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 43 | "Por setor de atuacao (1 clique)" | `comparisons.ts:39` | Search page has sector selector | DELIVERED | LOW |
-| 44 | "Avaliacao objetiva de cada oportunidade" | `comparisons.ts:47` | Batch LLM summary, not per-bid | MISLEADING | HIGH |
-| 45 | "IA prioriza por adequacao ao seu perfil" | `comparisons.ts:53` | No profile-based AI prioritization exists | NOT DELIVERED | HIGH |
-| 46 | "Dezenas de fontes oficiais consolidadas automaticamente" | `comparisons.ts:61` | 3-4 sources, not dozens | NOT DELIVERED | **CRITICAL** |
-| 47 | "Posicione-se antes da concorrencia" | `comparisons.ts:68` | No timing advantage. Same public data. | MISLEADING | MEDIUM |
-| 48 | "Investimento fixo mensal (tudo incluso)" | `comparisons.ts:74` | Correct -- single price model | DELIVERED | LOW |
-| 49 | "1 clique cancelamento (sem burocracia)" | `comparisons.ts:81` | Stripe portal handles cancellation | DELIVERED | LOW -- Assuming Stripe billing portal is configured |
-| 50 | "Resposta garantida no mesmo dia" | `comparisons.ts:89` | NO support SLA system, no ticket system, no support chat | NOT DELIVERED | **HIGH** -- This is a service-level commitment with no backing infrastructure |
-| 51 | "Intuitiva (produtivo desde o primeiro uso)" | `comparisons.ts:95` | Subjective UX claim | N/A | LOW |
-| 52 | "Infraestrutura moderna, disponivel quando voce precisa" | `comparisons.ts:102` | Railway deployment exists | DELIVERED | LOW |
-| 53 | "*Dados baseados em pesquisa de mercado (Reclame AQUI, estudos academicos...)" | `ComparisonTable.tsx:208` | No citation provided. Unverifiable. | MISLEADING | MEDIUM |
-
-### Landing Page -- ValuePropSection.tsx + valueProps.ts
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 54 | "Priorizacao Inteligente -- Saiba onde focar" | `valueProps.ts:76-83` | Filter only, no AI prioritization | PARTIALLY DELIVERED | MEDIUM |
-| 55 | "Analise de adequacao por setor, regiao e perfil de atuacao" | `valueProps.ts:82` | Sector and region filtering exists. Profile-based adequacy assessment does NOT exist per-bid. | PARTIALLY DELIVERED | MEDIUM |
-| 56 | "Analise Automatizada -- IA avalia cada oportunidade e extrai criterios decisivos" | `valueProps.ts:86-89` | LLM batch summary only; no per-opportunity structured evaluation | MISLEADING | HIGH |
-| 57 | "Avaliacao objetiva -- vale a pena ou nao, e por que" | `valueProps.ts:89` | Not delivered per-bid in product | NOT DELIVERED | HIGH |
-| 58 | "Reducao de Incerteza -- dados consolidados de multiplas fontes oficiais" | `valueProps.ts:96-103` | 3-4 sources, not comprehensive | PARTIALLY DELIVERED | MEDIUM |
-| 59 | "Monitoramos dezenas de fontes oficiais em todos os 27 estados, todos os dias" | `valueProps.ts:109` | 3-4 sources, on-demand only | NOT DELIVERED | **CRITICAL** |
-
-### Features Page -- FeaturesContent.tsx + valueProps.ts
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 60 | "O sistema avalia cada oportunidade com base no seu perfil (porte, regiao, ticket medio) e indica quais merecem sua atencao" | `valueProps.ts:127` | No per-bid profile evaluation in production | NOT DELIVERED | **HIGH** |
-| 61 | "Voce para de desperdicar tempo com licitacoes ruins e foca nas que pode ganhar" | `valueProps.ts:127` | Filtering removes irrelevant bids, but no "can you win this" assessment | PARTIALLY DELIVERED | MEDIUM |
-| 62 | "Nao precisa ler editais para decidir se vale a pena" | `valueProps.ts:136` | LLM gives batch summary but user still needs to evaluate individual bids | MISLEADING | MEDIUM |
-| 63 | "O SmartLic avalia requisitos, prazos e valores contra seu perfil e diz: 'Vale a pena' ou 'Pule esta'" | `valueProps.ts:136` | This is shown in hardcoded examples but NOT delivered per-bid by the system | NOT DELIVERED | **HIGH** |
-| 64 | "Consulta em tempo real dezenas de fontes oficiais, federais e estaduais" | `valueProps.ts:145` | 3-4 sources, not dozens. Not real-time (on-demand). No state-level portals. | NOT DELIVERED | **CRITICAL** |
-| 65 | "Se uma licitacao compativel com seu perfil e publicada em qualquer lugar do Brasil, voce sabe" | `valueProps.ts:145` | NO notification system. User knows only when they manually search. | NOT DELIVERED | **HIGH** |
-| 66 | "Notificacoes em tempo real de novas oportunidades compativeis com seu perfil" | `valueProps.ts:163` | NO notification infrastructure exists (no push, no email alerts, no websocket, no cron) | NOT DELIVERED | **CRITICAL** |
-| 67 | "Voce descobre antes, se posiciona antes, compete melhor" | `valueProps.ts:163` | No timing advantage mechanism. Same public PNCP data. | MISLEADING | MEDIUM |
-
-### Features Page -- features/page.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 68 | "Se uma unica licitacao ganha pagar o sistema por um ano inteiro, por que esperar?" | `features/page.tsx:70` | Hypothetical. No measurement. | N/A | LOW -- Framed as question, not claim |
-
-### Pricing Page -- planos/page.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 69 | "1.000 analises por mes" | `planos/page.tsx:28` | `quota.py:103`: smartlic_pro max_requests_per_month = 1000 | DELIVERED | LOW |
-| 70 | "Avalie oportunidades em todos os 27 estados" | `planos/page.tsx:28` | UF validation supports all 27 | DELIVERED | LOW |
-| 71 | "Exportacao Excel completa" | `planos/page.tsx:29` | `excel.py` generates Excel; `quota.py:101`: allow_excel=True for smartlic_pro | DELIVERED | LOW |
-| 72 | "Pipeline de acompanhamento -- Gerencie oportunidades do inicio ao fim" | `planos/page.tsx:30` | `routes/pipeline.py` + `frontend/app/pipeline/page.tsx` exist with Kanban board | DELIVERED | LOW |
-| 73 | "Inteligencia de decisao completa -- IA com 10.000 tokens de analise estrategica" | `planos/page.tsx:31` | `quota.py:105`: max_summary_tokens=10000 for smartlic_pro; `llm.py` uses OpenAI | DELIVERED | LOW -- Token limit exists but "strategic analysis" overstates what the LLM output delivers |
-| 74 | "5 anos de historico -- Acesso ao maior acervo de oportunidades" | `planos/page.tsx:32` | `quota.py:100`: max_history_days=1825 (5 years). PNCP API accepts date ranges. | PARTIALLY DELIVERED | MEDIUM -- Can query 5 years back, but PNCP may not have data that far. "Maior acervo" is unsubstantiated. |
-| 75 | "Cobertura nacional -- Todos os estados e setores monitorados" | `planos/page.tsx:33` | States queryable, sectors defined | PARTIALLY DELIVERED | LOW |
-| 76 | "Processamento prioritario -- Resultados em segundos, nao minutos" | `planos/page.tsx:34` | `quota.py:106`: priority=NORMAL for smartlic_pro (NOT high/critical). No priority queue implementation. | MISLEADING | MEDIUM -- Claims priority processing but plan has NORMAL priority |
-| 77 | "ROI de 7.8x em uma unica oportunidade ganha" | `planos/page.tsx:328-329` | `roi.ts:79` has ROI calculator. 7.8x = R$150K / R$19,188. But R$150K "average opportunity" is fabricated. | MISLEADING | **HIGH** -- Stated as fact, not estimate. No disclaimer. |
-| 78 | "R$ 150.000 Oportunidade media" | `planos/page.tsx:319` | No data to support "average" claim | NOT DELIVERED | HIGH |
-| 79 | "Uma unica licitacao ganha pode pagar um ano inteiro" | `planos/page.tsx:314` | Plausible but unsubstantiated hypothetical | PARTIALLY DELIVERED | MEDIUM -- Framed with "pode" (can), but adjacent to specific ROI numbers |
-| 80 | "Cancele quando quiser. Sem contrato de fidelidade." | `planos/page.tsx:305` | Stripe billing portal. FAQ confirms. | DELIVERED | LOW |
-| 81 | "Pagamento seguro via Stripe" | `planos/page.tsx:305` | `routes/billing.py` integrates Stripe | DELIVERED | LOW |
-| 82 | "Sem contrato de fidelidade, mesmo no acesso anual" | `planos/page.tsx:41` | Stripe handles this | DELIVERED | LOW |
-| 83 | "Sua conta volta ao modo de avaliacao com 3 analises" after cancellation | `planos/page.tsx:49` | `quota.py:67`: free_trial max_requests_per_month=3 | DELIVERED | LOW |
-
-### Trial Conversion -- TrialConversionScreen.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 84 | "Veja o que voce descobriu em 7 dias" | `TrialConversionScreen.tsx:83` | `GET /v1/analytics/trial-value` exists | DELIVERED | LOW |
-| 85 | "O SmartLic ja trabalhou para voce" | `TrialConversionScreen.tsx:87` | Shows search stats | DELIVERED | LOW |
-| 86 | "Uma unica licitacao ganha pode pagar o sistema por um ano inteiro" | `TrialConversionScreen.tsx:123` | Same as #79 | PARTIALLY DELIVERED | MEDIUM |
-| 87 | "Seu concorrente pode estar usando SmartLic agora" | `TrialConversionScreen.tsx:178` | Unverifiable competitive pressure claim | N/A | LOW |
-
-### Trial Expiring -- TrialExpiringBanner.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 88 | "Continue tendo vantagem competitiva a partir de R$ 1.599/mes" | `TrialExpiringBanner.tsx:52` | Annual pricing = R$1,599/mo | DELIVERED | LOW |
-
-### Onboarding -- onboarding/page.tsx
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 89 | "Em 3 passos vamos encontrar suas primeiras oportunidades" | `onboarding/page.tsx:622` | 3-step wizard + auto-search | DELIVERED | LOW |
-| 90 | "Vamos encontrar suas primeiras oportunidades agora. Isso leva ~15 segundos." | `onboarding/page.tsx:405` | First analysis endpoint triggers search | DELIVERED | LOW |
-
-### Copy Library -- valueProps.ts (additional claims not in UI)
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 91 | "Monitoramento continuo de fontes federais, estaduais e municipais" | `valueProps.ts:112` | No continuous monitoring. 3-4 sources only. | NOT DELIVERED | **CRITICAL** |
-| 92 | "Cancelamento em 1 clique (sem burocracia, sem ligacoes)" | Implied in pricing copy | Stripe billing portal | DELIVERED | LOW |
-
-### Comparison Library -- comparisons.ts (proof points)
-
-| # | Promise (Copy) | Source File:Line | Code Location | Status | Risk |
-|---|----------------|-----------------|---------------|--------|------|
-| 93 | "R$ 2.3 bilhoes em oportunidades mapeadas mensalmente" | `comparisons.ts:337-339` | proofSource says "Platform data" but no measurement code | NOT DELIVERED | **CRITICAL** |
-| 94 | "12 setores especializados com cobertura completa de termos" | `comparisons.ts:332-334` | 15 sectors in code; "cobertura completa de termos" is debatable | MISLEADING | MEDIUM |
-| 95 | "Monitoramento continuo diario de todas as fontes" | `comparisons.ts:343-344` | proofSource says "System uptime and crawl frequency metrics" but no crawler exists | NOT DELIVERED | **HIGH** |
-| 96 | "Suporte com resposta no mesmo dia" | `comparisons.ts:348-349` | proofSource says "Customer support policy SLA commitment" but no SLA infrastructure | NOT DELIVERED | HIGH |
+| # | Promise | Location | What It Implies vs Reality | Risk Level |
+|---|---------|----------|--------------------------|------------|
+| D1 | **AggregateRating 4.8/5 (127 reviews)** | StructuredData.tsx lines 77-82 | **FABRICATED.** Schema.org structured data claims 127 reviews with 4.8 average rating. This is completely fabricated -- there is no review collection system, no review database, no user rating mechanism anywhere in the codebase. This is fed directly to Google Search via JSON-LD. | **CRITICAL** - Potential Google penalty, false advertising, legal liability |
+| D2 | "Prioriza por adequacao ao seu perfil" | Multiple comparison tables, HowItWorks | The system does sector-based keyword filtering, not profile-based prioritization. There is no user profile scoring, no per-user ranking algorithm. The onboarding collects CNAE/UFs but the search just filters by these parameters -- it does not "prioritize" results by user-specific adequacy. | **HIGH** - Overstates AI personalization |
+| D3 | "IA avalia cada oportunidade e indica se vale a pena" | Features page, comparisons | LLM generates structured summaries (ResumoLicitacoes schema). It does not produce per-item "vale a pena ou nao" decisions with justification. The carousel examples show decision cards ("Prioridade Alta", "Analise com Cautela") but these are hardcoded in `analysisExamples.ts`, not generated by AI for real results. | **HIGH** - Implies per-opportunity AI decisions that don't exist |
+| D4 | "Ranqueamento por relevancia" | DifferentialsGrid bullets | No ranking/scoring algorithm exists. Results are returned in API order after filtering. No relevance score is computed or displayed. | **HIGH** - Feature does not exist |
+| D5 | "Analise de adequacao por setor, regiao e perfil de atuacao" | valueProps.prioritization.proof | System filters by sector keywords and UF. There is no "adequacy analysis" that considers user's porte, experience, or ticket medio in result ranking. | **MEDIUM** - Overstates analysis depth |
+| D6 | "Confiavel 24/7" | comparisons.ts line 103 | No uptime monitoring, no SLA, no redundancy documented. Railway single-instance deployment. | **LOW** - Aspirational |
+| D7 | "Decisao em segundos, nao horas" | DifferentialsGrid bullets | This is more marketing hyperbole than a measurable claim. Search takes 10s-2min per the help page. | **LOW** - Acceptable marketing language |
 
 ---
 
-## High-Risk Gaps (NOT DELIVERED or MISLEADING)
+## Regulatory Risk Assessment
 
-### P0 -- CRITICAL (Must fix before launch)
+### HIGH RISK: Fabricated Reviews (D1)
 
-1. **"Dezenas de fontes oficiais"** (Claims #28, #29, #46, #59, #64, #91)
-   - **Reality:** 3-4 sources (PNCP primary, Portal, Licitar, Querido Diario experimental). Two sources (BLL, BNC) are disabled per code comments ("syncs to PNCP").
-   - **Fix:** Either (A) implement more sources, or (B) change copy to "fontes oficiais" without "dezenas de". Most honest: "Fonte primaria PNCP + fontes complementares" or "Consolidamos fontes federais e complementares."
+The `StructuredData.tsx` file emits:
+```json
+{
+  "aggregateRating": {
+    "ratingValue": "4.8",
+    "reviewCount": "127",
+    "bestRating": "5",
+    "worstRating": "1"
+  }
+}
+```
 
-2. **"R$ 2.3 bi em oportunidades mapeadas"** (Claims #4, #8, #93)
-   - **Reality:** No aggregation pipeline. No measurement code. The number appears to be invented.
-   - **Fix:** Either (A) build a daily aggregation job that sums `valorTotalEstimado` from search results and report the actual figure, or (B) remove the claim entirely. If keeping a number, it MUST come from measured data with a methodology footnote.
+**Legal exposure:**
+- Brazil's CDC (Codigo de Defesa do Consumidor) Art. 37 prohibits misleading advertising
+- Google's guidelines explicitly prohibit fabricated review markup and can result in manual actions (penalty/delisting)
+- This structured data is machine-readable and directly consumed by Google Search for rich snippets
+- 127 reviews at 4.8 stars for a product that has near-zero paying customers (D02 revenue score: 3/10) is obviously fabricated
 
-3. **"Notificacoes em tempo real"** (Claim #66)
-   - **Reality:** Zero notification infrastructure. No email alerts. No push notifications. No websocket. No scheduler.
-   - **Fix:** Either (A) implement email alerts for new matching opportunities (requires background job), or (B) remove the claim. This is the most egregious gap -- a specific, concrete feature that simply does not exist.
+**Recommendation:** Remove immediately. This is the single highest regulatory risk in the entire codebase.
 
-4. **"Monitoramento continuo / Diario"** (Claims #11, #21, #91, #95)
-   - **Reality:** System is 100% on-demand. User must manually trigger every search. No background job runs.
-   - **Fix:** Either (A) implement a scheduled job (cron/celery) that runs searches for subscribed users, or (B) change copy to "Pesquisa sob demanda com cobertura completa" and remove all "continuo"/"diario"/"tempo real" language.
+### MEDIUM RISK: GPT-4o Model Claim (B1)
 
-5. **"Per-bid objective evaluation: vale a pena ou nao"** (Claims #23, #38, #41, #42, #56, #57, #60, #63)
-   - **Reality:** The landing page's AnalysisExamplesCarousel shows per-bid PARTICIPAR/NAO PARTICIPAR decisions, but these are hardcoded marketing examples. The actual system generates a batch LLM summary, not per-bid structured decisions.
-   - **Fix:** Either (A) implement per-bid evaluation (add structured output per bid from LLM), or (B) clarify that examples are illustrative: "Exemplo de como o SmartLic pode avaliar oportunidades" with a disclaimer.
+Pricing page states "Resumos executivos com GPT-4o" but the system uses GPT-4.1-nano (a smaller, cheaper model). While both are OpenAI models, claiming GPT-4o implies significantly more capable analysis. Under CDC Art. 37, this could be considered misleading about the quality of the service.
 
-### P1 -- HIGH (Should fix before paid launch)
+**Recommendation:** Change copy to match actual model, or use generic "IA avancada" language.
 
-6. **"IA prioriza por adequacao ao perfil"** (Claims #14, #36, #37, #45, #54)
-   - **Reality:** Results are filtered by sector keywords and UF. No AI-based ranking or profile-matching score exists.
-   - **Fix:** Change "prioriza" to "filtra" or "seleciona." Alternatively, implement a simple relevance score.
+### MEDIUM RISK: Support SLA (C2)
 
-7. **"ROI de 7.8x"** (Claim #77)
-   - **Reality:** R$150K "average opportunity" is fabricated. ROI calculation (R$150K / R$19,188) is presented as fact.
-   - **Fix:** Add disclaimer: "Exemplo hipotetico. ROI real depende do valor das oportunidades conquistadas." Or better: remove specific multiplier.
+Claiming "resposta garantida no mesmo dia" without any system to enforce or track this creates liability if customers complain about slow support. The help page already contradicts this with "24 horas uteis" language.
 
-8. **"Resposta garantida no mesmo dia"** (Claims #50, #96)
-   - **Reality:** No support ticket system, no SLA tracking, no support chat.
-   - **Fix:** Either (A) implement a support channel with SLA tracking, or (B) change to "Suporte por email" without SLA guarantee.
+**Recommendation:** Standardize on the more conservative "24 horas uteis" claim across all surfaces.
 
-9. **"R$ 150.000 Oportunidade media"** (Claim #78)
-   - **Reality:** No data to support this average. Not calculated from system data.
-   - **Fix:** Either calculate from actual search results or label clearly as "Exemplo ilustrativo."
+### LOW RISK: ROI Claims
 
-10. **"Processamento prioritario"** (Claim #76)
-    - **Reality:** smartlic_pro has `priority: NORMAL`, not HIGH or CRITICAL. No priority queue exists.
-    - **Fix:** Either implement priority processing or remove the claim.
+The pricing page ROI section includes:
+- "R$ 150.000 -- Oportunidade media" as illustrative
+- "Uma unica licitacao ganha pode pagar um ano inteiro"
+- Disclaimer present: "Exemplo ilustrativo com base em oportunidades tipicas do setor"
 
-### P2 -- MEDIUM (Should fix, not blocking)
-
-11. **"12 setores" vs 15 actual sectors** (Claims #5, #9, #32, #94)
-    - **Reality:** `sectors_data.yaml` defines 15 sectors. Frontend SectorsGrid shows 12 display names that include items ("Limpeza", "Escritorio", "Construcao", "Servicos Gerais") that don't map to backend sector IDs.
-    - **Fix:** Sync frontend display with backend sectors. Either show all 15 or explain grouping.
-
-12. **"*Dados baseados em pesquisa de mercado (Reclame AQUI...)"** (Claim #53)
-    - **Reality:** No formal research documentation exists.
-    - **Fix:** Either provide citations or remove the asterisk claim.
-
-13. **"Posicione-se antes da concorrencia"** (Claims #24, #47, #67)
-    - **Reality:** Data comes from public PNCP API. No exclusive data advantage.
-    - **Fix:** Soften to "Acesso rapido a oportunidades assim que publicadas."
+The disclaimer adequately hedges these claims. ROI calculator in `roi.ts` uses transparent assumptions.
 
 ---
 
-## Regulatory Concerns
+## Copy Hygiene Audit
 
-### 1. False Advertising Risk (CDC Art. 37 -- Brazilian Consumer Defense Code)
+### Banned Phrases Check
 
-| Claim | Risk Level | Issue | Recommendation |
-|-------|-----------|-------|----------------|
-| "R$ 2.3 bi em oportunidades mapeadas" | **CRITICAL** | Specific financial figure with no data backing. Could be considered "publicidade enganosa" (deceptive advertising). | Remove or substantiate with measured data + methodology |
-| "Dezenas de fontes oficiais" | **HIGH** | Quantitative claim ("dozens") demonstrably false (3-4 sources) | Change to "fontes oficiais" without quantity |
-| "ROI de 7.8x" | **HIGH** | Specific ROI presented as fact without methodology or disclaimer | Add "Exemplo ilustrativo. Resultados reais podem variar." |
-| "R$ 150.000 Oportunidade media" | **HIGH** | False precision. No data source. | Remove or calculate from actual data |
-| "Monitoramento continuo diario" | **HIGH** | Service described does not exist (on-demand only) | Remove "continuo" and "diario" language |
-| "Notificacoes em tempo real" | **HIGH** | Feature does not exist at all | Remove until implemented |
-| "Resposta garantida no mesmo dia" | **MEDIUM** | SLA commitment without backing infrastructure | Remove "garantida" or implement SLA |
-| "Precisao absoluta" | **MEDIUM** | Superlative claim that is unverifiable | Change to "Alta precisao" or remove |
+The `BANNED_PHRASES` array in `valueProps.ts` contains 29+ banned phrases. Quick scan results:
 
-### 2. Procon / Consumer Rights Exposure
+| Banned Phrase | Still Present? | Location |
+|---------------|---------------|----------|
+| "PNCP" | Yes, in technical contexts only (comparisons, data sources) | comparisons.ts, DataSourcesSection |
+| "GPT-4" | Yes -- "GPT-4o" on pricing page | planos/page.tsx line 31 |
+| "resumo" | "Resumos executivos" on pricing page | planos/page.tsx line 31 |
 
-At R$1,999/month, the product is positioned as a premium professional tool. Customers who discover that advertised features (continuous monitoring, real-time notifications, per-bid AI evaluation, dozens of sources) do not exist have legal grounds for:
-- **Contract cancellation** with full refund (CDC Art. 35)
-- **Compensation for damages** if they relied on claims to make business decisions
-- **Procon complaint** leading to administrative penalties
-
-### 3. "Sem cartao" Claim (Claim #40)
-
-The claim "Sem cartao. Sem compromisso." on the FinalCTA is **accurate** -- signup uses Supabase email auth without requiring payment method. Card is only required at checkout. This is properly delivered.
-
-### 4. Cancellation Claims
-
-The "1 clique cancelamento" and "sem fidelidade" claims appear properly backed by Stripe billing portal integration, assuming the customer portal is correctly configured.
+**Note:** The banned phrases list bans "PNCP" but it is used legitimately in data source descriptions where users need to know which government portals are queried. The ban should apply to hero/headline use only, not technical descriptions. However, "resumo" and "GPT-4" violations on the pricing page directly contradict GTM-007 and GTM-008 copy guidelines.
 
 ---
 
-## Status Summary
+## Pipeline Access Bug (B2) -- Detailed Analysis
 
-| Status | Count | Percentage |
-|--------|-------|------------|
-| DELIVERED | 23 | 24% |
-| PARTIALLY DELIVERED | 18 | 19% |
-| NOT DELIVERED | 19 | 20% |
-| MISLEADING | 17 | 18% |
-| N/A (aspirational/subjective) | 18 | 19% |
-| **TOTAL CLAIMS** | **95** | 100% |
+**Pricing page promise:** "Pipeline de acompanhamento -- Gerencie oportunidades do inicio ao fim"
 
-### Claims by Risk Level
+**Backend capability definition** (`quota.py` line 102):
+```python
+"smartlic_pro": {
+    "allow_pipeline": True,
+    ...
+}
+```
 
-| Risk | Count |
-|------|-------|
-| CRITICAL | 9 |
-| HIGH | 15 |
-| MEDIUM | 16 |
-| LOW | 18 |
-| N/A | 37 |
+**Route-level access check** (`routes/pipeline.py` line 61):
+```python
+allowed_plans = {"maquina", "sala_guerra"}
+if plan_id not in allowed_plans:
+    raise HTTPException(status_code=403, ...)
+```
+
+**Impact:** SmartLic Pro customers (the only current plan at R$1,999/month) will receive 403 errors when trying to use the pipeline. The route check was written for the old 3-tier plan system and was never updated for GTM-002's single-plan model.
+
+**Fix:** Add `"smartlic_pro"` to `allowed_plans` set in `routes/pipeline.py`.
 
 ---
 
-## Recommendations for Go/No-Go
+## "Daily Analysis" Claim (C1) -- Detailed Analysis
 
-### MUST DO before charging R$1,999/month (Blocking)
+**StatsSection displays:** "Diario -- analises programadas"
 
-1. **Remove or qualify all "dezenas de fontes" language** -- Replace with honest description of actual sources
-2. **Remove "R$ 2.3 bi" metric** or implement measurement pipeline
-3. **Remove "notificacoes em tempo real"** -- Feature does not exist
-4. **Remove "monitoramento continuo/diario"** -- System is on-demand
-5. **Add disclaimers to ROI claims** ("exemplo ilustrativo")
-6. **Remove "Resposta garantida no mesmo dia"** -- No SLA infrastructure
-7. **Clarify analysis examples as illustrative** -- Not real system output
+**Codebase reality:**
+- No cron job definitions found
+- No task scheduler (Celery, APScheduler, etc.)
+- No background worker processes
+- All search is triggered by user `POST /buscar` requests
+- No evidence of any scheduled/automated analysis pipeline
 
-### SHOULD DO before launch (Recommended)
+The word "programadas" (scheduled) combined with "Diario" (daily) explicitly claims automated daily scanning exists. This is factually false.
 
-8. Fix sector count: 12 in copy vs 15 in code
-9. Change "prioriza" to "filtra" or "seleciona" throughout
-10. Remove "precisao absoluta" language
-11. Add methodology footnotes to comparative claims
-12. Implement at minimum basic email notification for saved search criteria (addresses claims #66, #11)
+---
 
-### Impact of Current Copy on Brand Trust
+## Consistency Audit Across Surfaces
 
-If a sophisticated B2B buyer (the target market) signs up, pays R$1,999, and discovers:
-- There are no notifications (they were promised "tempo real")
-- There is no daily monitoring (they were promised "diario")
-- The AI does not evaluate individual bids (they were promised "vale a pena ou nao")
-- There are 3-4 sources, not "dozens"
+| Claim | Landing | Pricing | Features | Sidebar | Consistent? |
+|-------|---------|---------|----------|---------|-------------|
+| Sectors count | 15 | 15 | N/A | 15 | Yes |
+| UF count | 27 | 27 | N/A | 27 | Yes |
+| Sources count | "2 bases" | "2" | "2 bases principais" | "2 bases oficiais" | Yes |
+| Trial duration | "7 dias" | "7 dias" | N/A | "7 dias" | Yes |
+| Cancel policy | N/A | "sem contrato" | N/A | N/A | Yes |
+| AI capability | "Avaliacao por IA" | "GPT-4o" | "IA avalia" | "Avaliacao por IA" | **No** -- Pricing says GPT-4o, others say generic IA |
+| Support SLA | N/A | N/A | N/A | N/A | "mesmo dia" (comparisons) vs "24h uteis" (ajuda) -- **Inconsistent** |
+| Daily analysis | "Diario" (Stats) | N/A | N/A | "24h atualizacao" (sidebar) | **Misleading** -- implies automation |
 
-...the result will be immediate cancellation, negative word-of-mouth in the licitacao professional community, and potential regulatory complaints. At this price point, buyers expect every claim to be verifiable.
+---
+
+## Scoring Rationale
+
+| Criterion | Score | Evidence |
+|-----------|-------|----------|
+| Core product claims (sectors, UFs, sources) | 9/10 | All verified, accurate, conservative |
+| AI/Intelligence claims | 4/10 | Wrong model name, no per-item decisions, no ranking |
+| Feature availability | 5/10 | Pipeline blocked for paying plan, no daily analysis |
+| Support/operational claims | 3/10 | Fabricated reviews, unsubstantiated SLA, inconsistent |
+| Disclaimer/hedging quality | 7/10 | ROI disclaimers good, but no disclaimers on AI claims |
+| Regulatory compliance | 3/10 | Fabricated schema.org ratings = critical legal risk |
+
+**Weighted Average: 6/10**
+
+This is generous given the fabricated ratings issue (D1) which alone could warrant a 4/10, but the core product claims (A1-A17) are genuinely well-backed by code. The product does what it says for sectors, UFs, sources, filtering, and Excel export. The gaps are concentrated in: (1) AI intelligence overpromises, (2) operational claims without backing infrastructure, and (3) the fabricated review data.
+
+---
+
+## Priority Remediation (Ordered by Risk)
+
+1. **[CRITICAL] Remove fabricated AggregateRating** from `StructuredData.tsx` -- Legal liability, Google penalty risk. Effort: 5 minutes.
+2. **[CRITICAL] Fix pipeline access for smartlic_pro** in `routes/pipeline.py` -- Paying customers blocked from promised feature. Effort: 1 line change.
+3. **[HIGH] Change "GPT-4o" to accurate model name** or generic "IA" on pricing page. Effort: 5 minutes.
+4. **[HIGH] Remove "Diario -- analises programadas"** from StatsSection or change to "Sob demanda" (on-demand). Effort: 5 minutes.
+5. **[HIGH] Remove "resposta garantida no mesmo dia"** from comparisons.ts; standardize on "24 horas uteis". Effort: 5 minutes.
+6. **[HIGH] Tone down per-item AI decision language** -- "IA avalia e indica se vale a pena" is not what the code does (it generates summaries, not per-item decisions). Effort: 30 minutes copy review.
+7. **[MEDIUM] Remove "1000+ licitacoes/dia"** stat from InstitutionalSidebar or add "publicadas nos portais" qualifier. Effort: 5 minutes.
+8. **[MEDIUM] Clarify trial limitations** -- "produto completo" with 3 analyses and 1-year history is not truly "complete". Add "(3 analises)" qualifier. Effort: 5 minutes.
+
+---
+
+## Files Analyzed
+
+### Frontend (copy sources)
+- `frontend/app/page.tsx` -- Landing page composition
+- `frontend/app/planos/page.tsx` -- Pricing page (FEATURES array, FAQ)
+- `frontend/app/planos/obrigado/page.tsx` -- Thank you page
+- `frontend/app/features/page.tsx` + `FeaturesContent.tsx` -- Features page
+- `frontend/app/onboarding/page.tsx` -- Onboarding wizard
+- `frontend/app/components/InstitutionalSidebar.tsx` -- Login/signup sidebar
+- `frontend/app/components/StructuredData.tsx` -- Schema.org JSON-LD
+- `frontend/app/components/landing/HeroSection.tsx`
+- `frontend/app/components/landing/OpportunityCost.tsx`
+- `frontend/app/components/landing/BeforeAfter.tsx`
+- `frontend/app/components/landing/DifferentialsGrid.tsx`
+- `frontend/app/components/landing/HowItWorks.tsx`
+- `frontend/app/components/landing/StatsSection.tsx`
+- `frontend/app/components/landing/DataSourcesSection.tsx`
+- `frontend/app/components/landing/SectorsGrid.tsx`
+- `frontend/app/components/landing/FinalCTA.tsx`
+- `frontend/app/components/landing/AnalysisExamplesCarousel.tsx`
+- `frontend/app/components/ValuePropSection.tsx`
+- `frontend/app/components/ComparisonTable.tsx`
+- `frontend/lib/copy/valueProps.ts`
+- `frontend/lib/copy/comparisons.ts`
+- `frontend/lib/copy/roi.ts`
+
+### Backend (code verification)
+- `backend/sectors.py` + `sectors_data.yaml` -- 15 sectors, 2486 rules
+- `backend/quota.py` -- Plan capabilities, quota enforcement
+- `backend/llm.py` -- GPT-4.1-nano (not GPT-4o)
+- `backend/routes/pipeline.py` -- Pipeline access restricted to maquina/sala_guerra
+- `backend/routes/subscriptions.py` -- Cancel subscription endpoint
+- `backend/routes/billing.py` -- Stripe billing portal
+- `backend/filter.py` -- Keyword filtering engine
+- `backend/pncp_client.py` -- PNCP API integration
+- `backend/clients/portal_compras_client.py` -- PCP integration
+- `backend/search_pipeline.py` -- Multi-source search orchestration

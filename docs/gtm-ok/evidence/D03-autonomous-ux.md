@@ -1,304 +1,497 @@
-# D03+D07+D08: Autonomous UX Assessment
+# D03+D07+D08: Autonomous UX Assessment (Phase 3 Fresh Audit)
 
-## Verdict: CONDITIONAL
-## Score: D03 (Autonomous UX): 6/10
-## Score: D07 (Value Before Payment): 7/10
-## Score: D08 (Onboarding Friction): 5/10
-
----
-
-## First-Time User Journey Map
-
-| Step | Screen | Est. Time | Friction Points | Dead Ends | Evidence |
-|------|--------|-----------|-----------------|-----------|----------|
-| 1 | Landing Page (`/`) | 0s | None -- clear CTA "Descobrir minhas oportunidades" | None | `page.tsx:18-45` -- 11 sections render sequentially |
-| 2 | Signup (`/signup`) | 30-90s | **HIGH**: 8 mandatory fields, forced consent scroll-to-bottom, password policy (8 chars + uppercase + digit), confirm password | None (has "Ja tem conta? Fazer login" + Google OAuth) | `signup/page.tsx:119-133` -- `isFormValid` requires ALL: fullName, company, sector, email, passwordsMatch, isValidPhone, whatsappConsent |
-| 3 | Email Confirmation | 0-300s (external) | **CRITICAL DEAD END**: User must leave app to confirm email. No in-app guidance on what to do while waiting. Success screen (L183-200) shows checkmark + "Verifique seu email" + link "Ir para login" -- but no auto-redirect, no timer, no "resend" button | YES: user may close browser, forget, or not find confirmation email | `signup/page.tsx:183-200` |
-| 4 | Login (`/login`) | 10-15s | Low -- clean form, Google OAuth, Magic Link option. Translated Supabase errors (L27-58). Already-logged-in detection with auto-redirect. | None | `login/page.tsx:92-476` |
-| 5 | Auth Callback (`/auth/callback`) | 1-30s | Medium -- 30s timeout with retry logic (3 retries, exponential backoff). Error state shows "Tentar novamente" button linking to `/login`. | Potential: if callback times out, user sees error screen with only one escape path | `auth/callback/page.tsx:28-32, 242-257` |
-| 6 | Protected Layout Check | 0.5-2s | **INVISIBLE FRICTION**: `(protected)/layout.tsx:37-67` checks if user has completed onboarding. Makes API call to `/api/profile-context`. If `res.completed === false`, redirects to `/onboarding`. But: a) 10s auth timeout before any check (L57-73 of AuthProvider); b) profile-context API failure silently falls through (L65-67: `catch(() => {})`) | None -- graceful degradation on error | `(protected)/layout.tsx:36-67` |
-| 7 | Onboarding Wizard (`/onboarding`) | 45-120s | **HIGH FRICTION**: 3-step wizard, but Step 1 requires BOTH CNAE and objective text (mandatory). Step 2 requires selecting at least 1 UF and validates value range. Step 3 is confirmation. "Pular por agora" skip option available on all steps. | None -- skip option on every step | `onboarding/page.tsx:508-511, 586-588, 646-660` |
-| 8 | First Search (auto) | 15-30s | **LOW if onboarding completed**: Auto-search fires via `/buscar?auto=true&search_id=xxx` (L578-579). OnboardingBanner shows with spinner. If 0 results, OnboardingEmptyState shows with suggestions. | None | `buscar/page.tsx:174-177, 374-394` |
-| 8b | First Search (skip) | 30-60s | **MEDIUM if skipped**: User lands on `/buscar` with no pre-selected filters. Must pick a sector, then search. UF defaults are empty (all 27 selected via default). Date is auto-set. Search button is prominent. | None -- clear search form | `buscar/page.tsx:359-372` |
-| 9 | Results Display | 0s | **LOW**: Executive summary card, recommendations, licitacoes preview, download button. Clear value delivery. | None | `SearchResults.tsx:467-558` |
-| 10 | Download Excel | 2-5s | Low -- prominent button, loading state, error state. Trial users get Excel access (quota.py:65). | None | `SearchResults.tsx:588-629` |
-
-### Total Estimated Time: Landing to First Value
-
-**Best case (Google OAuth + skip onboarding):** ~45 seconds
-- Landing -> Signup via Google (5s) -> Auto-redirect to /buscar (5s) -> First search (15-20s) -> Results visible
-
-**Typical case (email signup + onboarding):** ~3-5 minutes
-- Landing (10s) -> Signup form (60-90s) -> Email confirmation (60-300s!!) -> Login (15s) -> Onboarding (60-120s) -> First auto-search (15s) -> Results
-
-**Worst case (email signup + slow email + onboarding):** 5-10+ minutes
-
-### VERDICT on "Under 2 Minutes Without Tutorial"
-**FAIL** for email signup path due to email confirmation requirement. Email confirmation is an external dependency that can take 30 seconds to 5+ minutes. Google OAuth path can achieve ~45s.
+**Audit Date:** 2026-02-17
+**Auditor:** @ux-design-expert (GTM-OK v2.0 Phase 3)
+**Method:** Full codebase review of every screen in the first-time user journey
 
 ---
 
-## Value Delivery Timeline
+## SCORES
 
-### What does the trial include?
-- **3 complete analyses** per month (`quota.py:67` -- `max_requests_per_month: 3`)
-- **Full product access**: Excel export, pipeline, AI analysis with 10,000 tokens, 1 year history (`quota.py:63-70`)
-- **7-day duration** (confirmed by `signup/page.tsx:215` -- "Experimente o SmartLic completo por 7 dias")
-- **No credit card required** (`InstitutionalSidebar.tsx:157` -- "Sem necessidade de cartao de credito")
-
-### Value-Before-Payment Verification
-
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| Trial searches available before payment | YES (3 searches) | `quota.py:67` |
-| User sees tangible results before paywall | YES -- full summary, recommendations, licitacoes preview | `SearchResults.tsx:467-558` |
-| "Aha moment" is clear | PARTIAL -- depends on whether search returns results for user's sector. Zero-result scenario is well-handled with suggestions but no immediate value. | `EmptyState.tsx:53-141`, `OnboardingEmptyState` (L82-109) |
-| Trial limitations are transparent | YES -- signup page lists "3 analises incluidas" | `signup/page.tsx:218-225` |
-| No bait-and-switch | YES -- trial gives full product, not stripped version | `quota.py:63-70` -- all capabilities match smartlic_pro |
-
-### Trial Expiry UX
-
-| Component | Trigger | Behavior | Evidence |
-|-----------|---------|----------|----------|
-| `TrialCountdown` badge | Days 1-7 of trial, shown in header | Color-coded: green (5-7d), yellow (3-4d), red (1-2d). Links to /planos. Pulse animation at <=2 days. | `TrialCountdown.tsx:17-58` |
-| `TrialExpiringBanner` | Day 6 (1 day remaining) | Amber banner with "Seu acesso ao SmartLic expira amanha" + CTA "Continuar tendo vantagem". Dismissable. | `TrialExpiringBanner.tsx:21, 36-84` |
-| `TrialConversionScreen` | Trial expired (subscription_status === "expired") | Full-screen overlay showing trial analytics (opportunities found, total value, searches executed). Billing period selector with pricing. CTA goes to /planos. Close button also goes to /planos. Escape key goes to /planos. | `TrialConversionScreen.tsx:32-187`, `buscar/page.tsx:141-170` |
-
-### Critical Gap: No "Soft Wall" Between Trial Expiry and Complete Block
-When trial expires, `check_quota` in `quota.py` blocks ALL searches. The user sees the TrialConversionScreen overlay but CANNOT dismiss it to use any remaining functionality. The close button (L49-52) and Escape key (L56-62) both redirect to `/planos`. This is aggressive -- there is no "read-only" mode or "view previous results" fallback. The user goes from full access to complete lockout.
+| Dimension | Score | Verdict |
+|-----------|-------|---------|
+| **D03 - Autonomous UX** | **6/10** | CONDITIONAL |
+| **D07 - Value Before Payment** | **7/10** | Production-ready (minor issues) |
+| **D08 - Onboarding Friction** | **5/10** | CONDITIONAL (significant gaps) |
 
 ---
 
-## Error Recovery Matrix
+## 1. First-Time User Journey Map
 
-### a) Search Returns 0 Results
+### Complete Flow: Landing -> Perceived Value
 
-| Context | What User Sees | Can Recover? | Evidence |
-|---------|----------------|--------------|----------|
-| Normal search, 0 filtered results, raw > 0 | `EmptyState` with filter breakdown showing WHY results were rejected (keyword mismatch, value range, UF not selected). Actionable suggestions: "Amplie o periodo", "Selecione mais estados", "Ajuste os filtros". Prominent "Ajustar criterios de busca" button scrolls to top. | YES | `EmptyState.tsx:28-141` |
-| Normal search, 0 raw results | `EmptyState` with generic "Nenhuma oportunidade encontrada para o periodo e estados selecionados. Tente ampliar a busca." + suggestions. | YES | `EmptyState.tsx:92-95` |
-| Auto-search from onboarding, 0 results | `OnboardingEmptyState` with "Nenhuma oportunidade encontrada para seu perfil" + specific suggestions + "Ajustar Filtros" button. | YES | `buscar/page.tsx:82-109` |
-| Partial results, all filtered out | `DegradationBanner` (yellow) + `EmptyState` with full filter breakdown. | YES | `SearchResults.tsx:278-294` |
+| # | Screen | Route | Est. Time | Obvious Next Action? | Loading State? | Error State? | Can Go Back? |
+|---|--------|-------|-----------|---------------------|---------------|-------------|-------------|
+| 1 | Landing Page | `/` | 0s | YES - Primary CTA "Descobrir minhas oportunidades" in hero, secondary "Como funciona" | N/A (static) | N/A | N/A |
+| 2 | Signup | `/signup` | 60-120s | YES - Form with "Criar conta" submit + Google OAuth | YES - "Criando conta..." spinner on submit button | YES - `getUserFriendlyError()` + inline error banner | YES - "Ja tem conta? Fazer login" link |
+| 3 | Email Confirmation | (same page, success state) | 0-300s | PARTIAL - "Aguardando confirmacao..." poll indicator + resend button with 60s countdown | YES - polling indicator | YES - spam helper section with tips | YES - "Alterar email" button + "Ir para login" link |
+| 4 | Login | `/login` | 10-15s | YES - form submit, Google OAuth, Magic Link toggle | YES - "Entrando..." spinner + "Verificando autenticacao..." on auth check | YES - translated Supabase errors (12 mappings), focus-visible error banners | YES - "Ver planos disponiveis" + "Nao tem conta? Criar conta" |
+| 5 | Onboarding Wizard | `/onboarding` | 45-120s | YES - "Continuar" button per step, progress bar "1 de 3" | YES - auth loading spinner | YES - toast errors on API failure | YES - "Voltar" on steps 2-3, "Pular por agora" on all steps |
+| 6 | Search Page | `/buscar` | 0s (initial), 15-120s (search) | YES - search button "Buscar [sectorName]" is prominent | YES - 5-stage progress + skeleton + UF progress grid + cancel button | YES - error banner with retry (30s cooldown) + quota exceeded with upgrade CTA | YES - header has logo link to `/` |
+| 7 | Results | `/buscar` (same page) | 0s after search | YES - "Baixar Excel" primary CTA, save search, sort results | N/A (already loaded) | YES - download error banner | YES - can modify filters and re-search |
 
-### b) Search Fails (API Error)
+### Total Time to Perceived Value
 
-| Scenario | What User Sees | Can Recover? | Evidence |
-|----------|----------------|--------------|----------|
-| Backend returns error | Red error card with translated message + "Tentar novamente" button with 30-second cooldown timer. Loading spinner while retrying. | YES | `SearchResults.tsx:209-236, 139-164` |
-| Network error / timeout | Same error display with user-friendly translated message (e.g., "Erro de conexao. Verifique sua internet." from `error-messages.ts`) | YES | `SearchResults.tsx:209-236` |
-| All data sources down | `SourcesUnavailable` component with retry button + option to load last cached search. | YES | `SearchResults.tsx:268-275` |
+**Best case (Google OAuth):** ~90s
+- Landing (3s) -> Click "Criar conta" (1s) -> Google OAuth (5s) -> Onboarding skip (3s) -> Search page (1s) -> Select sector + "Buscar" (5s) -> Wait for results (15-30s) -> **See results with AI summary**
 
-### c) Search Times Out
+**Best case (email):** ~180-300s
+- Landing -> Signup form (60-90s with 8 fields) -> Email confirmation (30-300s external) -> Login (10s) -> Onboarding (45-120s or skip) -> First search (20-60s)
 
-| Scenario | What User Sees | Can Recover? | Evidence |
-|----------|----------------|--------------|----------|
-| >15s elapsed with partial data | `PartialResultsPrompt` appears showing "X resultados ja encontrados em Y estados" with "Ver resultados parciais" + "Aguardar" buttons. | YES | `SearchResults.tsx:193-204` |
-| Cancel button during search | Cancel button available in `EnhancedLoadingProgress` component. | YES | `SearchResults.tsx:186` |
-| SSE timeout fallback | If SSE fails, frontend uses calibrated time-based simulation. `sseAvailable` flag controls display. | YES (graceful) | `buscar/page.tsx:404-405` |
-
-### d) Stripe Checkout Fails
-
-| Scenario | What User Sees | Can Recover? | Evidence |
-|----------|----------------|--------------|----------|
-| Checkout API error | Toast error with user-friendly message via `getUserFriendlyError()`. `checkoutLoading` and `stripeRedirecting` reset to false. User stays on /planos. | YES | `planos/page.tsx:176-186` |
-| User cancels Stripe checkout | Redirected back to `/planos?cancelled`. Status message "Processo cancelado." shown. | YES | `planos/page.tsx:83` |
-| Stripe redirect loading | Full-screen overlay with spinner + "Redirecionando para o checkout" message. Prevents double-clicks. | YES (informational) | `planos/page.tsx:193-199` |
-
-### e) Session Expires
-
-| Scenario | What User Sees | Can Recover? | Evidence |
-|----------|----------------|--------------|----------|
-| Session expires mid-use | `SessionExpiredBanner` appears as fixed top banner: "Sua sessao expirou. Faca login novamente para continuar." + "Fazer login" button. Login URL includes `redirect` param to return user to current page. Non-dismissable (no close button). | YES | `SessionExpiredBanner.tsx:11-53` |
-| Middleware catches expired session | Redirect to `/login?reason=session_expired&redirect=/buscar`. Login page shows "Sua sessao expirou. Faca login novamente." toast. | YES | `middleware.ts:139-141`, `login/page.tsx:117-126` |
-| Auth timeout (10s) in AuthProvider | Falls back to `getSession()` (local cookies, no network). If that also fails, `loading` set to false, user sees unauthenticated state. | PARTIAL -- no error shown, user may be confused | `AuthProvider.tsx:57-73` |
+**Verdict: The 2-minute target is achievable only via Google OAuth with onboarding skip. Email signup flow is 3-5 minutes minimum due to email confirmation and form length.**
 
 ---
 
-## Mobile & Accessibility
+## 2. Detailed Step Analysis
 
-### Responsive Breakpoints
+### Step 1: Landing Page (`/page.tsx`)
 
-| Breakpoint | Usage | Evidence |
-|------------|-------|----------|
-| `sm:` (640px) | Text size scaling, padding adjustments, layout switches | Used extensively throughout all components |
-| `md:` (768px) | Login/signup split layout (sidebar + form), footer grid, pull-to-refresh disabled | `login/page.tsx:280`, `globals.css:425-443` |
-| `lg:` (1024px) | Hero text scaling, landing page padding | `HeroSection.tsx:68` |
-| `max-w-4xl` | Main content area (buscar page) | `buscar/page.tsx:290, 327` |
-| `max-w-2xl` | Onboarding wizard card | `onboarding/page.tsx:615` |
+**STRENGTHS:**
+- Clean section hierarchy: Hero -> ValueProp -> OpportunityCost -> BeforeAfter -> ComparisonTable -> DifferentialsGrid -> HowItWorks -> Stats -> DataSources -> SectorsGrid -> AnalysisExamples -> FinalCTA
+- Primary CTA uses `GradientButton` with glow effect - visually prominent
+- Counter animations on stats badges (15 sectors, 1000+ rules, 27 states)
+- `<a href="#main-content">` skip-to-content link for accessibility (WCAG 2.4.1)
+- `lang="pt-BR"` on html tag
+- Sticky navbar with scroll detection (`isScrolled` opacity transition)
 
-### Touch Target Sizes (44x44px minimum)
+**WEAKNESSES:**
+- 11 sections is a lot of content before the final CTA. Users may not scroll that far.
+- The primary CTA "Descobrir minhas oportunidades" navigates to `/signup?source=landing-cta`. This means the user must create an account before seeing ANY value. No preview mode, no sample results, no guest access.
+- Secondary CTA "Como funciona" scrolls to `#como-funciona` which may not exist if the section id is different (HowItWorks component must set this id)
 
-| Element | Meets 44px? | Evidence |
-|---------|-------------|----------|
-| UF buttons in SearchForm | YES -- `min-h-[44px]` explicit | `SearchForm.tsx:461` |
-| UF buttons in Onboarding StepTwo | NO -- `px-2 py-1 text-xs` (~28px height) | `onboarding/page.tsx:351` |
-| Region toggle buttons (Onboarding) | NO -- `text-xs px-2 py-0.5` (~20px height) | `onboarding/page.tsx:336-345` |
-| Search button | YES -- `py-3.5 sm:py-4 min-h-[48px] sm:min-h-[52px]` | `SearchForm.tsx:352-356` |
-| Login submit button | YES -- `py-3` (~48px) | `login/page.tsx:440` |
-| Signup submit button | YES -- `py-3` (~48px) | `signup/page.tsx:552-558` |
-| Navigation links (LandingNavbar) | BORDERLINE -- `px-2 py-1` text links (~32px height) | `LandingNavbar.tsx:53-70` -- hidden on mobile anyway (`hidden md:flex`) |
-| Save search button | YES -- `py-2.5 sm:py-3` (~44px) | `SearchForm.tsx:380-381` |
-| CNAE suggestion items | BORDERLINE -- `px-3 py-2` (~36px) | `onboarding/page.tsx:144-156` |
-| Dialog close button | BORDERLINE -- `p-1` with 20px icon (~28px) | `Dialog.tsx:148` |
-| TrialConversionScreen close button | YES -- `p-2` with 24px icon (~40px) + positioned at top-right | `TrialConversionScreen.tsx:71-78` |
+**COPY QUALITY:**
+- Headline: "Saiba Onde Investir para Ganhar Mais Licitacoes" - clear, benefit-focused
+- Subhead: "Inteligencia que avalia oportunidades, prioriza o que importa e guia suas decisoes" - clear value proposition
 
-### Mobile-Specific Issues
+### Step 2: Signup (`/signup/page.tsx`)
 
-1. **Onboarding wizard UF buttons too small for touch** -- `px-2 py-1 text-xs` produces ~28px tall targets on the state selection in Step 2. This is a premium R$1,999/month product; every touch target on mobile must be at least 44x44px.
-   - File: `onboarding/page.tsx:351`
+**STRENGTHS:**
+- Google OAuth as first option (reduces form friction)
+- "OU" divider between Google and email form is standard pattern
+- InstitutionalSidebar provides social proof during signup
+- Password policy with real-time feedback (checkmark/cross per rule)
+- Phone masking for Brazilian format `(XX) XXXXX-XXXX`
+- Sector dropdown with 16 options + "Outro" freetext
+- Clear trial value proposition: "Experimente o SmartLic completo por 7 dias" with feature list
 
-2. **InstitutionalSidebar on mobile** -- The login/signup sidebar takes `min-h-screen` on mobile (`min-h-screen md:min-h-0`), meaning users must scroll past a full-screen institutional panel before seeing the form. This doubles the perceived time to start.
-   - File: `InstitutionalSidebar.tsx:179`
+**WEAKNESSES:**
+- **8 mandatory fields** for email signup: fullName, company, sector, email, phone, password, confirmPassword, whatsappConsent. This is HEAVY friction.
+- **Consent scroll requirement**: User must scroll to bottom of 400-word legal text before checkbox becomes enabled. This is an unusual and frustrating pattern.
+- WhatsApp consent is MANDATORY (`isFormValid` requires `whatsappConsent`). Users who do not want promotional WhatsApp messages cannot sign up. This is a conversion killer and possibly LGPD-questionable (consent should be freely given).
+- No autocomplete attributes on form fields (missing `autocomplete="name"`, `autocomplete="organization"`, `autocomplete="email"`, `autocomplete="tel"`, `autocomplete="new-password"`)
+- Form inputs use `py-3` (12px padding) which provides adequate touch targets, but no explicit `min-h-[44px]` constraint
 
-3. **Landing page navigation hidden on mobile** -- Nav links (Planos, Como Funciona, Suporte) are `hidden md:flex`. No hamburger menu. Mobile users have no way to navigate to these sections from the navbar.
-   - File: `LandingNavbar.tsx:52`
+**FRICTION SCORE:** HIGH (8 fields + consent scroll = ~60-90 seconds minimum)
 
-4. **Consent scroll box in signup** -- `h-36` (~144px) scroll box with terms text. On small screens this is a significant portion of viewport. The forced scroll-to-bottom pattern is hostile UX.
-   - File: `signup/page.tsx:510-519`
+### Step 3: Email Confirmation (signup success state)
 
-### Accessibility Assessment
+**STRENGTHS:**
+- Auto-polling every 5s (`useEffect` interval checking `/api/auth/status`)
+- "Aguardando confirmacao..." indicator shows the system is working
+- Resend button with 60-second countdown prevents abuse
+- Spam helper section with practical tips (check spam, wait 5 minutes, confirm email)
+- "Alterar email" button to go back and correct email
+- Auto-redirect to `/onboarding` on confirmation detected
 
-| Criterion | Status | Evidence |
-|-----------|--------|----------|
-| Skip navigation link | YES -- "Pular para conteudo principal" with focus styling | `layout.tsx:100-107` |
-| ARIA roles on dialogs | YES -- `role="dialog"`, `aria-modal="true"`, `aria-labelledby` | `Dialog.tsx:130-132` |
-| Focus trap in dialogs | YES -- Tab/Shift+Tab cycling, focus restoration on close | `Dialog.tsx:91-120, 42-61` |
-| Escape key closes dialogs | YES -- capture phase listener | `Dialog.tsx:64-77` |
-| Error alerts use role="alert" | YES -- consistently applied | `SearchResults.tsx:210`, `SearchForm.tsx:127`, etc. |
-| Form labels present | YES -- all inputs have labels | `login/page.tsx:364`, `signup/page.tsx:260-275` |
-| aria-pressed on UF toggles | YES | `SearchForm.tsx:460` |
-| aria-busy on search button | YES | `SearchForm.tsx:351` |
-| Color-only indicators | RISK -- TrialCountdown uses green/yellow/red only. Text label "X dias restantes" mitigates this partially. | `TrialCountdown.tsx:17-40` |
-| Loading states announced | YES -- `aria-live="polite"` on loading container | `SearchResults.tsx:180` |
-| SVG icons have aria-label/aria-hidden | MOSTLY -- most icons have `aria-hidden="true"` or `role="img" aria-label="..."` | Throughout codebase |
-| Keyboard navigation of critical flows | PARTIAL -- Dialog has focus trap. But TrialConversionScreen (z-60 overlay) does NOT have focus trap; it only handles Escape. Tab could escape the overlay into the background. | `TrialConversionScreen.tsx:55-63` -- only Escape, no focus trap |
+**WEAKNESSES:**
+- User must leave the app entirely to check email. This is a standard pattern but still a friction point.
+- No deep-link guidance (e.g., "Open Gmail" button for Gmail users)
+- If user closes browser during this step, they must manually navigate back to `/login`
+- Polling interval of 5s creates up to 5s delay between actual confirmation and redirect
 
----
+### Step 4: Login (`/login/page.tsx`)
 
-## Critical Gaps
+**STRENGTHS:**
+- Three auth methods: Google OAuth, Email+Password, Magic Link
+- Mode toggle between Password and Magic Link is clean
+- Error messages translated to Portuguese (12 Supabase error mappings)
+- Already-authenticated detection with auto-redirect to `/buscar`
+- "Esqueci minha senha" link for password mode
+- Suspense boundary with loading fallback
+- `?redirect=` parameter support for post-auth routing
+- Login attempt/success/failure analytics tracking
 
-### P0 (Blockers for Autonomous Onboarding)
+**WEAKNESSES:**
+- Password mode `minLength={6}` on login but signup requires 8 - inconsistency
+- No "remember me" checkbox
+- No rate limiting feedback (Supabase handles it, but user sees generic error)
 
-1. **Email confirmation dead end (signup/page.tsx:183-200)**
-   - After email signup, user sees a static screen with "Verifique seu email" and a link to login.
-   - No "Resend email" button.
-   - No polling/auto-detection of confirmed email.
-   - No timer or expectation-setting ("Usually arrives within 1-2 minutes").
-   - For a R$1,999/month product, losing users at email confirmation is unacceptable.
-   - **Impact**: Estimated 20-40% of email signups may abandon here.
+### Step 5: Onboarding Wizard (`/onboarding/page.tsx`)
 
-2. **No mobile navigation on landing page (LandingNavbar.tsx:52)**
-   - `hidden md:flex` hides all nav links on mobile. No hamburger menu.
-   - Mobile users see only the logo and Login/Signup buttons.
-   - "Planos", "Como Funciona", "Suporte" are invisible on mobile.
-   - **Impact**: Mobile users cannot access key decision-making pages from the landing page.
+**STRENGTHS:**
+- 3-step progressive disclosure: Business -> Location/Value -> Confirmation
+- Progress bar with "X de 3" indicator
+- "Pular por agora" (Skip for now) on every step - crucial escape valve
+- CNAE autocomplete with 10 suggestions filtered as user types
+- Region-based UF selection (Norte, Nordeste, Centro-Oeste, Sudeste, Sul) with "Todos"/"Limpar" shortcuts
+- Value range presets (R$ 50k to R$ 5M) as dropdowns
+- Value validation (max must be > min)
+- Confirmation summary on Step 3 shows all selections
+- Auto-analysis with spinner: "Analisando oportunidades... ~15 segundos"
+- Graceful degradation: if first-analysis API fails, redirects to `/buscar` with UF presets
+- All buttons have `min-h-[44px]` for touch targets
+- Existing context re-loading for returning users
 
-3. **Onboarding touch targets too small (onboarding/page.tsx:336-358)**
-   - UF buttons: `px-2 py-1 text-xs` = ~28px height (should be 44px).
-   - Region toggle buttons: `px-2 py-0.5 text-xs` = ~20px height.
-   - On a 375px screen, users will struggle to accurately tap Brazilian state abbreviations.
+**WEAKNESSES:**
+- Step 1 requires BOTH CNAE and objective text (`canProceed` checks both `cnae.trim().length > 0` AND `objetivo_principal.trim().length > 0`). For a user who just wants to search, this is unnecessary friction.
+- CNAE autocomplete only has 10 hardcoded suggestions. If user's business does not match these, they must type freetext with no validation that it will map to useful results.
+- No indication of what the onboarding data will be used for. Users may not understand why they need to provide CNAE/objective.
+- The auto-analysis call to `/api/first-analysis` maps CNAE to sector and runs a background search. If the CNAE mapping fails, the user gets redirected to `/buscar` with no pre-selected sector.
+- Profile context save (`PUT /api/profile-context`) failure shows generic toast error
 
-### P1 (Significant Friction)
+### Step 6: Search Page (`/buscar/page.tsx`)
 
-4. **Signup form is too long (signup/page.tsx:257-561)**
-   - 8 fields: Name, Company, Sector, Email, WhatsApp, Password, Confirm Password + consent scroll box.
-   - Password policy: 8+ chars, 1 uppercase, 1 digit -- with real-time validation but still adds friction.
-   - Consent scroll-to-bottom is a dark pattern that adds ~10-15s.
-   - **Recommendation**: Remove WhatsApp requirement from signup (collect later). Remove forced consent scroll. Reduce to 4 fields: Name, Email, Password, Sector.
+**STRENGTHS:**
+- Auth loading state with centered spinner + "Carregando..."
+- Search mode toggle: "Setor" (dropdown) vs "Termos Especificos" (tag input)
+- Search button is sticky on mobile (`sticky bottom-4`)
+- "Personalizar busca" accordion hides advanced filters by default (reduces cognitive load)
+- Collapsed state shows summary badge: "Buscando em todo o Brasil / X estados"
+- Default is all 27 UFs selected - user gets maximum coverage immediately
+- Search button label is dynamic: "Buscar [sectorName]" or "Buscar X termos"
+- 5-stage loading progress with percentage bar, stage indicators, elapsed/remaining time
+- "Voce sabia?" curiosity cards during loading (engagement while waiting)
+- UF progress grid showing per-state status during search
+- Cancel button available during search
+- Partial results prompt after 15 seconds
+- Pull-to-refresh on mobile (`react-simple-pull-to-refresh`)
+- Keyboard shortcuts (Ctrl+K search, Ctrl+A select all, Esc clear)
+- Navigation guard warns before leaving with unsaved results
 
-5. **InstitutionalSidebar takes full screen on mobile (InstitutionalSidebar.tsx:179)**
-   - `min-h-screen` means mobile users scroll through an entire screen of marketing copy before reaching the actual login/signup form.
-   - This adds 3-5 seconds of scrolling friction on EVERY authentication attempt.
-   - **Recommendation**: Hide sidebar on mobile or collapse to a compact header.
+**WEAKNESSES:**
+- The `/buscar` page requires authentication (the `HomePageContent` component uses `useAuth()` and the page wrapper shows "Carregando..." until auth resolves). No guest/preview mode available.
+- Sector selector loads asynchronously with fallback mode. If backend is down, user sees "Usando lista offline de setores" warning.
+- The search can take 15-120+ seconds (estimated 15s base + 20s per UF). For 27 UFs, that is ~555 seconds estimated. The loading progress uses asymptotic function capping at 95% - user may feel stuck.
+- Term validation warnings use technical language: "muito curto (minimo 4 caracteres)", "stopword"
+- Date range validation warns about plan limits but the user hasn't searched yet - premature friction
 
-6. **Onboarding is mandatory on first login (protected/layout.tsx:61-62)**
-   - Even with "Pular por agora" option, the redirect to `/onboarding` adds one navigation hop.
-   - The skip lands at `/buscar` without any pre-selected context, making first search harder.
-   - CNAE requirement on Step 1 uses jargon ("CNAE") that non-technical business owners may not understand.
-   - **Recommendation**: Make the CNAE field optional. Auto-detect sector from company name if possible.
+### Step 7: Results Display (`SearchResults.tsx`)
 
-7. **TrialConversionScreen has no focus trap (TrialConversionScreen.tsx)**
-   - Full-screen overlay at z-60 with no focus trap. Keyboard users can tab behind it.
-   - No `aria-modal="true"` attribute.
-   - Close and Escape both redirect to `/planos` rather than dismissing -- no way to access the underlying search page.
-   - **Impact**: Trial-expired users have zero access to their previous data or the search interface.
+**STRENGTHS:**
+- Executive summary card with AI-generated text, opportunity count, total value
+- "Insight Setorial" banner with sector context
+- Urgency alerts for time-sensitive opportunities
+- Recommendation cards with urgency badges (alta/media/normal)
+- Licitacoes preview cards with top 5 results
+- "Baixar Excel" primary download CTA with opportunity count
+- Google Sheets export as alternative
+- Filter summary badges showing active filters
+- Cache banner when results come from stale cache, with refresh button
+- Truncation warning banner when results were cut short
+- Source badges (PNCP, PCP) toggleable for power users
+- Timestamp of last update
+- Empty state with detailed rejection breakdown (keyword mismatches, value range, UF) and actionable suggestions
 
-### P2 (Polish Issues)
-
-8. **Accent/diacritics missing in several UI strings**
-   - `SessionExpiredBanner.tsx:41`: "Sua sessao expirou. Faca login novamente" -- missing accents on "sessao" and "Faca".
-   - `signup/page.tsx:145`: "A senha deve ter pelo menos 8 caracteres, 1 letra maiuscula e 1 numero" -- missing accents.
-   - `signup/page.tsx:150`: "As senhas nao coincidem" -- missing accent.
-   - `signup/page.tsx:506`: "role ate o final para aceitar" -- missing accents.
-   - **Impact**: For a premium Brazilian product, missing Portuguese diacritics signals lack of polish.
-
-9. **Google OAuth callback has excessive console logging in production**
-   - `auth/callback/page.tsx:88-89, 131, 147, 152, 167`: Console.log statements leak session info like access token prefix and user email.
-   - Guarded by `process.env.NODE_ENV === 'development'` at L70/L133 but not for all log lines (L88, 131, 147 are unguarded).
-
-10. **AuthProvider 10-second timeout is aggressive**
-    - `AuthProvider.tsx:57`: 10s timeout on initial auth check means on slow 3G connections, users may see a loading spinner for 10 full seconds before being able to interact.
-
-11. **No "remember me" or persistent session indication**
-    - No visible indicator of session duration or auto-logout timing.
-    - Users discover session expiry only when it happens.
-
----
-
-## Summary Scores Breakdown
-
-### D03 (Autonomous UX): 6/10
-
-| Factor | Score | Notes |
-|--------|-------|-------|
-| Self-explanatory flows | 7/10 | Generally clear CTAs, good copy. CNAE jargon is an issue. |
-| No dead ends | 5/10 | Email confirmation is a dead end. Trial expiry is a hard wall. |
-| Loading states | 9/10 | Excellent -- spinners, skeletons, progress bars everywhere. |
-| Error states | 8/10 | Comprehensive error handling with user-friendly Portuguese translations. |
-| Back navigation | 7/10 | Onboarding has back/skip. But TrialConversionScreen traps you. |
-| No tutorial needed | 5/10 | Onboarding wizard is a tutorial. Search form is intuitive but "Personalizar busca" accordion hides important controls. |
-
-### D07 (Value Before Payment): 7/10
-
-| Factor | Score | Notes |
-|--------|-------|-------|
-| Trial generosity | 8/10 | Full product for 7 days, 3 searches. No credit card. |
-| Aha moment clarity | 6/10 | Depends on whether PNCP has results for user's sector. Empty state is handled but no guaranteed value. |
-| Paywall transparency | 8/10 | Clear "3 analises incluidas" on signup. Countdown badge. Expiry banner. |
-| Post-trial grace | 4/10 | No grace. Hard wall at expiry. No read-only mode. |
-| Upgrade path smoothness | 8/10 | TrialConversionScreen shows what they discovered. Pricing cards. Direct Stripe checkout. |
-
-### D08 (Onboarding Friction): 5/10
-
-| Factor | Score | Notes |
-|--------|-------|-------|
-| Steps to first value | 4/10 | Email path: 6+ steps, 3-5 minutes. Google path: 3 steps, 45s. |
-| Form field count | 3/10 | 8 mandatory fields at signup is excessive for a SaaS trial. |
-| Mandatory vs optional | 5/10 | Onboarding has skip option. But signup has no optional fields. |
-| Mobile friction | 4/10 | Sidebar scroll, small touch targets, no hamburger menu. |
-| Progressive disclosure | 7/10 | Search form uses accordion for advanced filters. Onboarding uses steps. |
-| Time to value (measured) | 5/10 | Google OAuth: ~45s (PASS). Email: ~3-5min (FAIL for 2-min target). |
+**WEAKNESSES:**
+- "Assine para exportar" CTA appears when Excel is not available on free plan - but by this point the user has already seen value. The lock icon may feel punitive.
+- Download error display is minimal (just text, no retry button)
+- Quota counter shows usage but does not clearly show what happens at quota limit
 
 ---
 
-## Recommendations (Priority Order)
+## 3. Value Before Payment (D07)
 
-1. **Add Google OAuth prominence** -- Make Google signup the primary CTA on signup page. Move email form below/into accordion. This is the only path that can achieve <2 min time-to-value.
+### Trial Access Details
 
-2. **Add email resend + auto-detect** -- After email signup, show a countdown, "Resend email" button, and poll for confirmation status.
+| Feature | Trial Access | Paid Access |
+|---------|-------------|-------------|
+| Searches | 3 searches in 7 days | 1000/month |
+| History | Full (1825 days) | Same |
+| Excel export | YES | YES |
+| Pipeline | YES | YES |
+| AI summaries | YES | YES |
 
-3. **Add mobile hamburger menu** -- Replace `hidden md:flex` with a responsive hamburger navigation.
+**The trial is generous.** 3 full searches with Excel export and AI summaries in 7 days gives users enough to evaluate the product. The "Aha moment" occurs when the user sees:
+1. The executive summary with opportunity count and total value
+2. AI-generated recommendations with urgency badges
+3. The downloadable Excel with full details
 
-4. **Fix onboarding touch targets** -- Increase UF buttons to `min-h-[44px]` in onboarding wizard.
+### "Aha Moment" Clarity
 
-5. **Reduce signup fields** -- Move WhatsApp and consent to post-signup profile completion. Minimum viable signup: Name, Email, Password.
+The results summary card (`SearchResults.tsx` L480-572) is the primary value delivery:
+- Large numbers for opportunity count and total value (visually prominent, `text-3xl sm:text-4xl font-bold`)
+- AI narrative in natural language
+- Sector insight provides industry context
+- Urgency alerts create FOMO
+- Recommendation cards with specific actions
 
-6. **Add trial grace period** -- When trial expires, allow read-only access to previous search results for 3 days.
+**This is well-designed.** The user immediately sees quantified value.
 
-7. **Add focus trap to TrialConversionScreen** -- Use Dialog pattern with `aria-modal="true"` and Tab cycling.
+### Trial Conversion Flow
 
-8. **Fix Portuguese diacritics** -- Audit all user-facing strings for missing accents.
+1. **Day 6 banner** (`TrialExpiringBanner.tsx`): "Seu acesso ao SmartLic expira amanha" with "Continuar tendo vantagem" CTA. Dismissible.
+2. **Expired trial overlay** (`TrialConversionScreen.tsx`): Full-screen overlay showing value accumulated during trial (opportunities analyzed, total contract value, searches executed). Billing period toggle (monthly/semiannual/annual) with pricing. "Uma unica licitacao ganha pode pagar o sistema por um ano inteiro." anchor message. Close button redirects to `/planos`.
+3. **Quota exceeded state** (`SearchResults.tsx` L243-269): Warning banner with "Ver Planos" CTA.
 
-9. **Hide InstitutionalSidebar on mobile** -- Or collapse to a compact trust-badge header.
+**STRENGTHS:** The conversion screen personalized with trial data is compelling. The anchor message about ROI is effective.
+**WEAKNESSES:** The trial expiring banner only shows on day 6 (1 day remaining). No reminders on days 3-5. No email/WhatsApp reminders (despite collecting consent at signup).
 
-10. **Make CNAE optional in onboarding** -- Accept text-only description without CNAE code requirement.
+---
+
+## 4. Error Recovery UX
+
+### 0 Results -> Empty State
+
+The `EmptyState` component (`EmptyState.tsx`) handles this well:
+- Icon + "Nenhuma Oportunidade Relevante Encontrada" heading
+- If `rawCount > 0`: Shows filter rejection breakdown with per-reason counts and tips
+- If `rawCount === 0`: Generic "Nenhuma oportunidade encontrada" message
+- Suggestions panel: "Amplie o periodo", "Selecione mais estados", "Ajuste os filtros"
+- "Ajustar criterios de busca" action button scrolls to top
+
+**Score: 8/10** - Clear, actionable, and informative.
+
+### API Error -> Recovery
+
+Error handling in `SearchResults.tsx` L212-239:
+- Error banner with message + "Tentar novamente" button
+- 30-second cooldown timer prevents spam-clicking retry
+- Cooldown display: "Tentar novamente (0:XX)"
+- Cooldown resets when error changes
+
+**Score: 7/10** - Good, but the 30-second forced cooldown may feel excessive for transient errors.
+
+### All Sources Down -> SourcesUnavailable
+
+`SourcesUnavailable.tsx`:
+- Friendly refresh icon
+- "Nossas fontes de dados governamentais estao temporariamente indisponiveis"
+- "Isso geralmente se resolve em poucos minutos"
+- Retry button with 30-second cooldown
+- "Ver ultima busca salva" button (disabled if no saved search)
+
+**Score: 8/10** - Honest, non-technical messaging. Good escape hatch with saved searches.
+
+### Search Timeout -> Cancel
+
+During loading, `onCancel={search.cancelSearch}` is passed to `EnhancedLoadingProgress`. The partial results prompt appears after 15 seconds offering to show what was found so far.
+
+**Score: 7/10** - Cancel is available. Partial results are a good pattern.
+
+### Quota Exceeded -> Upgrade
+
+`quotaError` displays a warning banner with "Escolha um plano para continuar buscando" and "Ver Planos" button.
+
+**Score: 6/10** - Functional but could be more specific about what the quota limit is and when it resets.
+
+### Page-Level Error Boundary
+
+`/buscar/error.tsx` catches unhandled errors:
+- Sentry error reporting
+- "Erro na busca" heading
+- "Seus filtros foram preservados" reassurance
+- "Tentar busca novamente" reset button
+- "Precisa de ajuda?" support link
+
+**Score: 8/10** - Solid error boundary with user reassurance.
+
+---
+
+## 5. Mobile Responsiveness
+
+### Touch Targets
+
+All interactive elements in the onboarding wizard use `min-h-[44px] min-w-[44px]` - compliant with Apple HIG 44x44pt minimum.
+
+The search form UF buttons use `min-h-[44px]` with appropriate padding.
+
+Mobile menu buttons use `min-h-[44px] min-w-[44px]`.
+
+**Score: 9/10** - Consistently applied across critical interactions.
+
+### CSS Responsive Breakpoints
+
+From `globals.css` and Tailwind usage:
+- Base: mobile-first (no prefix)
+- `sm:` (640px): Tablet portrait
+- `md:` (768px): Tablet landscape
+- `lg:` (1024px): Desktop
+- `xl:` (1280px): Large desktop
+
+Evidence of responsive patterns:
+- Landing navbar: `hidden md:flex` for desktop nav, hamburger on mobile
+- Hero: `text-4xl sm:text-5xl lg:text-6xl` fluid typography
+- Search form: `grid grid-cols-4 xs:grid-cols-5 sm:grid-cols-7 md:grid-cols-9` UF grid
+- Results: `flex flex-col sm:flex-row` for stat badges
+- Signup: `flex flex-col md:flex-row` for sidebar + form layout
+- Search button: `sticky bottom-4 sm:bottom-auto` for mobile sticky positioning
+- Loading stages: `hidden sm:block` for stage labels (icons-only on mobile with detail card below)
+
+**Score: 7/10** - Good responsive patterns throughout. The UF selector in the accordion may be cramped on small screens with 4-column grid.
+
+### Mobile Menu
+
+`MobileMenu.tsx`:
+- Slide-in panel from right (280px, max 80vw)
+- Backdrop overlay with blur
+- Body scroll lock when open
+- Escape key to close
+- `role="dialog"` + `aria-modal="true"` + `aria-label="Menu de navegacao"`
+- Focus-visible rings on all items
+- Auth state awareness (shows "Ir para Busca" if logged in, Login/Criar conta if not)
+
+**Score: 8/10** - Well-implemented mobile menu with proper ARIA attributes.
+
+### Pull-to-Refresh
+
+The search page implements `PullToRefresh` from `react-simple-pull-to-refresh` with resistance=3 and custom spinner.
+
+**Score: 7/10** - Good native-feel interaction.
+
+---
+
+## 6. Accessibility
+
+### Skip Navigation
+
+`layout.tsx` L146-152: `<a href="#main-content" className="sr-only focus:not-sr-only ...">Pular para conteudo principal</a>` - WCAG 2.4.1 compliant.
+
+### Keyboard Navigation
+
+- Tab order follows visual order (no `tabindex` manipulation found)
+- Focus-visible rings on all buttons and links (`focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]`)
+- Keyboard shortcuts on search page (Ctrl+K, Ctrl+A, Enter, Esc, /)
+- Escape closes mobile menu, trial conversion screen, keyboard help dialog
+- `Dialog` component likely manages focus trapping (used for save search and keyboard help)
+
+### ARIA Labels
+
+- Landing hamburger: `aria-label="Abrir menu"` + `aria-expanded`
+- Mobile menu: `role="dialog"` + `aria-modal="true"` + `aria-label="Menu de navegacao"`
+- Close buttons: `aria-label="Fechar"` / `aria-label="Fechar menu"`
+- UF buttons: `aria-pressed={ufsSelecionadas.has(uf)}`
+- Search button: `aria-busy={loading}`
+- Progress bar: `role="progressbar"` + `aria-valuenow` + `aria-valuemin` + `aria-valuemax`
+- Error/warning banners: `role="alert"` consistently applied
+- Remove term buttons: `aria-label="Remover termo ${termo}"`
+- SVG icons: mix of `aria-hidden="true"` (decorative) and `aria-label` (semantic)
+- `aria-expanded` on accordion toggles
+
+### Color Contrast
+
+From `globals.css`:
+- `--ink` (#1e2d3b) vs `--canvas` (#ffffff): 12.6:1 (AAA)
+- `--ink-secondary` (#3d5975) vs `--canvas`: 5.5:1 (AA)
+- `--ink-muted` (#6b7a8a) vs `--canvas`: 5.1:1 (AA) - explicitly documented as bug fix
+- `--brand-blue` (#116dff) vs `--canvas`: 4.8:1 (AA)
+- `--error` (#dc2626) vs `--canvas`: 5.9:1 (AA)
+- Dark mode also documented with contrast ratios
+
+**Score: 8/10** - Systematically documented contrast ratios. All meet WCAG AA minimum. The `--brand-blue` at 4.8:1 barely passes AA for normal text but fails AAA. The `--ink-faint` at 1.9:1 is correctly labeled as "decorative only."
+
+### Screen Reader Considerations
+
+- `lang="pt-BR"` on `<html>` enables correct pronunciation
+- `<title>` elements on SVG icons where semantic
+- `role="contentinfo"` on footer
+- Error messages use `role="alert"` for live announcements
+- `aria-live="polite"` on loading state container
+
+**MISSING:**
+- No `aria-live` on search results container (new results appear silently)
+- No `aria-describedby` linking form fields to their validation errors
+- Custom `<select>` components may not be fully accessible (need to verify `CustomSelect`)
+- No `aria-current="page"` on active navigation items
+
+### Overall Accessibility Score: 7/10
+
+---
+
+## 7. Critical Issues
+
+### Issue 1: Signup Form Length (HIGH)
+
+**Impact:** Conversion rate
+**Description:** 8 mandatory fields + forced consent scroll is excessive for initial signup. Industry standard for SaaS is 3-4 fields (name, email, password). The WhatsApp phone + consent requirement alone adds 20-30 seconds.
+**File:** `D:\pncp-poc\frontend\app\signup\page.tsx` L189-196
+
+### Issue 2: No Preview/Guest Mode (HIGH)
+
+**Impact:** Value demonstration
+**Description:** Users must create an account and confirm their email before seeing ANY search results. There is no sample data, demo mode, or guest access. The landing page describes value but does not show it.
+**File:** All search routes are behind auth guard
+
+### Issue 3: Mandatory WhatsApp Consent (MEDIUM)
+
+**Impact:** Conversion rate + LGPD compliance
+**Description:** `isFormValid` requires `whatsappConsent === true`. Under LGPD, consent for promotional communications should be freely given and optional. Making it mandatory may be legally questionable and definitely hurts conversion.
+**File:** `D:\pncp-poc\frontend\app\signup\page.tsx` L196
+
+### Issue 4: Long Search Wait Times (MEDIUM)
+
+**Impact:** Perceived performance
+**Description:** Search for all 27 UFs is estimated at 555 seconds (over 9 minutes). The progress bar caps at 95% asymptotically, so users will see it stall near the end. While the cancel/partial results feature mitigates this, the base wait time is too long for a first impression.
+**File:** `D:\pncp-poc\frontend\app\components\LoadingProgress.tsx` L78-86
+
+### Issue 5: Onboarding Step 1 Requires Both CNAE and Objective (LOW-MEDIUM)
+
+**Impact:** Drop-off rate
+**Description:** Step 1 of onboarding requires both a CNAE/segment AND a text objective. Many users will not know their CNAE code, and the autocomplete only has 10 options. The "skip" option mitigates this, but the default path is friction-heavy.
+**File:** `D:\pncp-poc\frontend\app\onboarding\page.tsx` L510-512
+
+---
+
+## 8. Positive Observations
+
+1. **Error handling is comprehensive.** Every error state has a recovery action (retry, adjust filters, contact support). No dead ends in the core flow.
+2. **Loading states are well-designed.** The 5-stage progress indicator with curiosity cards is engaging and informative. The UF progress grid gives granular feedback.
+3. **Empty state is excellent.** Filter rejection breakdown with actionable tips is best-in-class for a search product.
+4. **Trial value proposition is clear.** 3 searches with full features gives users genuine evaluation capability.
+5. **Mobile implementation is solid.** Touch targets are consistently 44px+, mobile menu is properly implemented with ARIA, pull-to-refresh works.
+6. **Accessibility fundamentals are in place.** Skip navigation, ARIA labels, focus rings, color contrast documentation, screen reader considerations.
+7. **Graceful degradation throughout.** Sector fallback, cache fallback, partial results, API error recovery - the system degrades gracefully rather than breaking.
+8. **Auto-analysis from onboarding** (GTM-004) is a strong pattern. Completing onboarding triggers an automatic first search, reducing time-to-value.
+9. **Dark mode support** with documented contrast ratios shows attention to visual quality.
+10. **Keyboard shortcuts** for power users (Ctrl+K search, /, Esc) show product maturity.
+
+---
+
+## 9. Score Justification
+
+### D03 - Autonomous UX: 6/10 (CONDITIONAL)
+
+**Why not higher:**
+- No guest/preview mode means users must commit (account creation) before seeing any value
+- Signup form with 8 fields + consent scroll is not "autonomous" - it requires significant user effort
+- Search wait times of 15s-500s+ are a friction point that cannot be eliminated purely by UX
+- The onboarding wizard adds another 45-120s before first search
+
+**Why not lower:**
+- Every screen has clear next actions
+- Error recovery is comprehensive with no dead ends
+- Skip options are available in onboarding
+- The Google OAuth path significantly reduces signup friction
+- After signup, the search flow is intuitive (select sector -> click search -> see results)
+
+### D07 - Value Before Payment: 7/10 (Production-ready)
+
+**Why 7:**
+- Trial gives 3 full searches with all features (Excel, AI, pipeline)
+- Results summary card with AI narrative is immediate "aha moment"
+- Trial conversion screen with personalized data is compelling
+- Users CAN evaluate the product fully within the trial period
+- The only deduction is that users must create an account first (no anonymous value preview)
+
+### D08 - Onboarding Friction: 5/10 (CONDITIONAL)
+
+**Why 5:**
+- Best case (Google OAuth + skip onboarding): ~90s to first search - acceptable
+- Typical case (email signup + onboarding): 3-5 minutes - too long
+- 8-field signup form is the primary bottleneck
+- Mandatory WhatsApp consent blocks users who decline
+- Email confirmation is a dead-end exit from the app
+- Onboarding wizard adds useful personalization but is friction for impatient users
+- The "skip" option is crucial but not prominently featured
+
+---
+
+## 10. Recommendations for Improvement (Not Implemented - For Planning)
+
+1. **Reduce signup to 3 fields** (email, password, name) - collect company/sector/phone during onboarding instead
+2. **Make WhatsApp consent optional** - promotional consent should not gate account creation
+3. **Add a sample/demo search** visible from the landing page without account creation
+4. **Set default search to fewer UFs** (e.g., user's region) to reduce first-search wait time
+5. **Add `aria-live="polite"` to results container** so screen readers announce new results
+6. **Add form autocomplete attributes** to signup fields for faster completion
+7. **Add a day 3-4 trial reminder** (banner or notification) instead of only day 6
+8. **Consider email-link signup** (passwordless) as the primary flow to eliminate password friction

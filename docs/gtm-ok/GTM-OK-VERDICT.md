@@ -1,45 +1,96 @@
-# GTM-OK Assessment: SmartLic v0.3
+# GTM-OK v2.0 VERDICT
 
-**Date:** 2026-02-16
-**Assessor:** GTM-OK Workflow v1.0 (Claude Opus 4.6)
-**Standard:** CTO-level production readiness
-**Duration:** ~45 minutes (10 phases, 7 parallel agents)
+**Date:** 2026-02-17
+**Assessment Version:** v2.0 (16 dimensions, WIN-based ranking)
+**Assessor Team:** Multi-phase agent audit (@architect, @analyst, @ux-design-expert)
+**Method:** 8 independent evidence documents, 460+ source files analyzed, cross-validated
+**Previous Assessment:** v1.0 (2026-02-16) -- NO GO at 5.42/10
 
 ---
 
-## VERDICT: NO GO
+## VERDICT: GO CONDICIONAL (5.92/10)
 
-### Verdict Rationale
+### Conditional On:
 
-SmartLic cannot charge R$1,999/month in its current state because **revenue cannot flow from checkout to plan activation**. The Stripe integration has three compounding P0 bugs: (1) `smartlic_pro` creates a one-time payment instead of a subscription (`billing.py:63`), (2) `checkout.session.completed` webhook is not handled (`webhooks/stripe.py:120-127`), and (3) `_activate_plan()` is dead code never called by any path (`billing.py:82`). A user who completes payment will be charged but remain on `free_trial` with 3 searches/month. This was independently identified by 4 of 7 assessment phases, confirming it is not an edge case but the primary payment pathway.
+1. **P0-CRIT: Fix the active production outage** (PCP 404 + PNCP canary 400) within 24 hours
+2. **P0-OPS: Deploy Sentry + Mixpanel tokens** to Railway within 48 hours
+3. **P0-LEGAL: Remove fabricated review data** from StructuredData.tsx immediately
 
-Beyond the revenue blocker, the marketing copy makes 19 NOT DELIVERED and 17 MISLEADING claims out of 95 total promises -- including "dezenas de fontes oficiais" (actually 3-4), "notificacoes em tempo real" (no notification system exists), "monitoramento continuo/diario" (system is 100% on-demand), and "R$ 2.3 bi em oportunidades mapeadas" (no measurement infrastructure). At R$1,999/month, these claims expose SmartLic to CDC Art. 37 (Brazilian Consumer Defense Code) complaints. A sophisticated B2B buyer discovering these gaps after payment would immediately churn and potentially file regulatory complaints.
-
-The system has genuine strengths -- sector-specific filtering with 1000+ curated rules is a real competitive moat, the error handling architecture scores 7/10 with 14 of 20 failure scenarios handled excellently, security posture is strong (PII masking, LGPD compliance, JWT validation), and the CI/CD pipeline is comprehensive (13 workflows, auto-deploy, 96.69% backend coverage). The path to GO CONDICIONAL requires only fixing the 3 Stripe P0 bugs (~4-8 hours of work). The path to full GO requires 2-3 sprints.
+If any P0 condition is not met within its timeframe, verdict reverts to **NO GO**.
 
 ---
 
 ## Executive Scorecard
 
-| # | Dimension | Weight | Score | Verdict |
-|---|-----------|--------|-------|---------|
+| # | Dimension | Weight | Score | Status |
+|---|-----------|--------|-------|--------|
 | D01 | Core Value Delivery | [5] | 6/10 | CONDITIONAL |
-| D02 | Revenue Infrastructure | [5] | **3/10** | **FAIL** |
+| D02 | Revenue Infrastructure | [5] | 6/10 | CONDITIONAL |
 | D03 | Autonomous UX | [5] | 6/10 | CONDITIONAL |
-| D04 | Data Reliability | [5] | 5/10 | CONDITIONAL |
+| D04 | Data Reliability | [5] | 5/10 | AT FLOOR |
 | D05 | Failure Transparency | [3] | 7/10 | PASS |
-| D06 | Observability | [3] | 5/10 | NEEDS WORK |
+| D06 | Observability | [3] | 5/10 | WEAK |
 | D07 | Value Before Payment | [3] | 7/10 | PASS |
-| D08 | Onboarding Friction | [3] | 5/10 | NEEDS WORK |
-| D09 | Copy-Code Alignment | [3] | 4/10 | FAIL |
+| D08 | Onboarding Friction | [3] | 5/10 | WEAK |
+| D09 | Copy-Code Alignment | [3] | 6/10 | CONDITIONAL |
 | D10 | Security & LGPD | [3] | 7/10 | PASS |
 | D11 | Infrastructure | [3] | 6/10 | CONDITIONAL |
-| D12 | Pricing-Risk Alignment | [1] | 4/10 | FAIL |
-| D13 | Analytics & Metrics | [1] | 3/10 | FAIL |
+| D12 | Pricing-Risk Alignment | [1] | 7/10 | PASS |
+| D13 | Analytics & Metrics | [1] | 4/10 | FAIL |
 | D14 | Differentiation | [1] | 7/10 | PASS |
 | D15 | Feedback Loop Speed | [1] | 7/10 | PASS |
+| D16 | SEO & Discovery | [3] | 5/10 | WEAK |
 
-**Weighted Overall Score: 5.42 / 10**
+**Weighted Score:** 284 / 48 = **5.92 / 10**
+
+### Threshold Results
+
+| Threshold | Criteria | Result |
+|-----------|----------|--------|
+| **GO** | All [5]-weight >= 7, weighted >= 7.0 | FAIL (D01=6, D02=6, D03=6, D04=5) |
+| **GO CONDICIONAL** | All [5]-weight >= 5, weighted >= 5.5 | **PASS** (min [5]-weight = 5, weighted = 5.92) |
+| **NO GO** | Any [5]-weight < 5 | NOT TRIGGERED |
+
+### Delta from Previous Assessment (2026-02-16 v1.0)
+
+| Metric | v1.0 | v2.0 | Change |
+|--------|------|------|--------|
+| Overall Score | 5.42 | 5.92 | +0.50 |
+| Verdict | NO GO | GO CONDICIONAL | UPGRADED |
+| D02 (Revenue) | 3/10 | 6/10 | +3 (Stripe lifecycle implemented) |
+| D09 (Copy) | 4/10 | 6/10 | +2 (copy remediation via GTM-FIX-003) |
+| D12 (Pricing) | 4/10 | 7/10 | +3 (single-plan clarity via GTM-002) |
+| D16 (SEO) | N/A | 5/10 | New dimension in v2.0 |
+
+---
+
+## CRITICAL PRODUCTION INCIDENT
+
+**Status:** ACTIVE as of 2026-02-17
+**Impact:** ZERO RESULTS for all users across all sectors
+**Detection method:** Manual user discovery (no automated alerting)
+
+### Root Causes
+
+**1. PCP API returning 404:**
+```
+"A rota GET /publico/obterprocessosabertos?...&uf=AC&publicKey=... nao existe."
+```
+The Portal de Compras Publicas API endpoint no longer exists at the expected URL. This breaks the secondary data source entirely.
+
+**2. PNCP health canary returning 400:**
+```
+"must be greater than or equal to 10" (tamanhoPagina=1)
+```
+The health canary probe sends `tamanhoPagina=1` to PNCP, but the API now requires a minimum page size of 10. This causes the health check to fail, potentially triggering the circuit breaker and blocking all PNCP queries.
+
+### Why This Was Not Detected
+
+- Sentry is NOT deployed (D06: 5/10)
+- Mixpanel is NOT deployed (D13: 4/10)
+- No synthetic canary search
+- No uptime monitoring polling `/health`
+- **The user discovered it manually** -- strongest evidence for the D06 score
 
 ---
 
@@ -47,138 +98,242 @@ The system has genuine strengths -- sector-specific filtering with 1000+ curated
 
 ### Strengths (What's Working)
 
-1. **Sector-specific filtering engine** (D14: 7/10) -- 15 sectors with 1000+ curated keyword rules, context-required keywords, red flag detection, exclusion-first fail-fast optimization. This represents genuine domain knowledge and a competitive moat. (`filter.py:682-799`, `sectors_data.yaml`)
+1. **Sector-specific filtering** (D14: 7/10) -- 15 sectors with 2,486 keyword/exclusion rules. Genuine competitive moat. (`filter.py`, `sectors_data.yaml`)
 
-2. **Error handling architecture** (D05: 7/10) -- 20 failure scenarios analyzed; 14 score 7+/10. Five degradation UI components (DegradationBanner, FailedUfsBanner, PartialResultsBanner, SourcesUnavailable, EmptyState). User-friendly Portuguese messages for every PNCP failure mode. (`error-messages.ts`, `SearchResults.tsx:209-345`)
+2. **Error handling architecture** (D05: 7/10) -- 8+ dedicated UI components for every failure mode. Non-technical Portuguese messaging. Recovery actions on every screen. Cooldown protection. (`DegradationBanner`, `CacheBanner`, `SourcesUnavailable`, `TruncationWarningBanner`, `EmptyState`, `error.tsx`)
 
-3. **Security & LGPD compliance** (D10: 7/10) -- 606-line PII log sanitizer, JWT validation (ES256+JWKS+HS256), CORS allowlist, webhook signature validation, TruffleHog in CI, LGPD compliance (all Art. 18 rights: deletion, export, consent, DPO contact). (`log_sanitizer.py`, `auth.py`, `privacidade/page.tsx`)
+3. **Security & LGPD** (D10: 7/10) -- JWT with local verification + JWKS, comprehensive RLS across all tables, full LGPD stack (consent, PII masking, audit trail, privacy page, DPO contact), no secrets in source code. (`auth.py`, `log_sanitizer.py`, `privacidade/page.tsx`)
 
-4. **CI/CD pipeline** (D15: 7/10) -- 13 GitHub Actions workflows, auto-deploy with health checks and smoke tests, 96.69% backend coverage, multi-browser E2E testing. Push-to-production in ~3-5 minutes. (`deploy.yml`, `tests.yml`, `codeql.yml`)
+4. **CI/CD pipeline** (D15: 7/10) -- 12 GitHub Actions workflows, auto-deploy with health checks + smoke tests, 96.69% backend coverage, CodeQL + TruffleHog security scanning. (`deploy.yml`, `tests.yml`, `codeql.yml`)
 
-5. **Quota enforcement** -- Atomic PostgreSQL RPC with FOR UPDATE row-level locking, 4-layer plan resolution (active subscription > grace period > profiles.plan_type > free_trial), 3-day billing grace period. (`quota.py:437-497`, migration 003)
+5. **Revenue infrastructure** (D02: 6/10, up from 3) -- Complete Stripe lifecycle now implemented: checkout, activation, renewal, cancellation at period end, dunning (payment_failed with email), billing portal. 54 tests. (`webhooks/stripe.py`, `routes/billing.py`, `routes/subscriptions.py`)
 
-6. **Observability instrumentation** (code: 9/10) -- 50+ Mixpanel events, Sentry integration in both error boundaries, correlation IDs (frontend + backend), audit trail with SHA-256 hashed PII, health endpoint checking all dependencies. Everything is wired up -- just needs env vars configured.
+6. **Pricing clarity** (D12: 7/10) -- Single SmartLic Pro plan with 3 billing periods eliminates tier confusion. Honest ROI framing with disclaimers. 1-click cancel path exists. (`planos/page.tsx`, `quota.py`)
 
-### Blockers (Must Fix for GO)
+7. **Multi-source resilience** (D01: 6/10) -- PNCP client with 5-level retry, circuit breaker, health canary, degraded mode. 4-level fallback cascade (primary -> partial -> ComprasGov -> cache). SWR cache with Supabase persistence. (`pncp_client.py`, `consolidation.py`, `search_cache.py`)
 
-1. **[P0] Stripe checkout-to-activation chain is broken** (D02)
-   - `smartlic_pro` not in `is_subscription` list (`billing.py:63`) -- creates one-time payment
-   - `checkout.session.completed` not handled (`webhooks/stripe.py:120-127`)
-   - `_activate_plan()` is dead code (`billing.py:82`) -- never called
-   - **Impact:** Every paying customer charged but plan never activated
-   - **Fix effort:** 4-8 hours
+### Blockers
 
-2. **[P0] Copy makes 36 undelivered/misleading claims** (D09)
-   - "Dezenas de fontes" (3-4 actual), "R$ 2.3 bi" (no measurement), "notificacoes em tempo real" (doesn't exist), "monitoramento continuo" (on-demand only)
-   - **Impact:** CDC Art. 37 regulatory risk, immediate churn on discovery
-   - **Fix effort:** 1-2 days (copy rewrite) or 2-4 sprints (implement features)
+1. **[ACTIVE] Production outage** -- PCP 404 + PNCP canary 400 = zero results for all users NOW
 
-3. **[P0] Silent data truncation at max_pages=500** (D01, D04)
-   - User never notified when results are truncated (`pncp_client.py:694-703`)
-   - Paying user could lose thousands of results silently
-   - **Fix effort:** 4 hours
+2. **[CRITICAL] Fabricated review data** -- `StructuredData.tsx` claims 127 reviews with 4.8 rating. No review system exists. Google penalty risk + CDC Art. 37 liability.
 
-4. **[P0] Global circuit breaker cascade** (D01, D04)
-   - Module-level singleton with threshold=20 (`pncp_client.py:170`) -- one user's aggressive search blocks all users for 120 seconds
-   - **Fix effort:** 5 minutes (raise threshold) to 8 hours (per-user CB)
+3. **[HIGH] Zero observability in production** -- Sentry and Mixpanel tokens not deployed. 50+ analytics events and all error tracking are dead code.
 
-5. **[P1] Zero production observability** (D06, D13)
-   - Sentry DSN not configured -- all production errors invisible
-   - Mixpanel token not set -- zero analytics data (50+ events going nowhere)
-   - **Fix effort:** 15 minutes (set 3 env vars in Railway)
+4. **[HIGH] Pipeline access blocked for paying plan** -- `routes/pipeline.py` only allows legacy plans `maquina`/`sala_guerra`, not `smartlic_pro`
 
-6. **[P1] No self-service subscription cancellation** (D02, D12)
-   - Users can only cancel by deleting their entire account
-   - Copy promises "Cancele quando quiser" but no cancel button exists
-   - **Fix effort:** 4-8 hours
+5. **[HIGH] Copy still has misleading claims** -- "GPT-4o" (actually GPT-4.1-nano), "Diario analises programadas" (no scheduler), "resposta garantida no mesmo dia" (no SLA), "Ranqueamento por relevancia" (no ranking algorithm)
 
-### Risks (Known but Accepted for GO CONDICIONAL)
+6. **[MEDIUM] Multi-source data loss** -- `to_legacy_format()` drops `dataEncerramentoProposta` for ALL records in multi-source mode, breaking deadline filters and urgency badges
 
-1. **PNCP API instability** -- The system has no local data lake or SWR cache. If PNCP is down, users get nothing. Circuit breaker and retry logic mitigate but don't eliminate this risk. (Addressed in Phase 10 architecture recommendation.)
-
-2. **Single Uvicorn worker** -- Backend runs single async worker. Will bottleneck under concurrent heavy searches. Acceptable for launch (<50 concurrent users) but needs `--workers 2-4` before scaling.
-
-3. **Trial is too short for price point** -- 3 searches in 7 days may not demonstrate enough value to justify R$1,999/month. Product decision required.
-
-4. **Frontend test coverage below threshold** -- 49.46% vs 60% target. CI will fail. Not blocking launch but indicates test debt.
+7. **[MEDIUM] Webhook-dependent activation** -- No polling fallback if Stripe webhook is delayed. User sees "Assinatura confirmada!" based on URL parameter regardless of backend state.
 
 ---
 
-## Remediation Plan
+## WIN-RANKED REMEDIATION PLAN
 
-### Sprint 1 (Week 1-2): Revenue & Observability Unlock
+**WIN Formula:** WIN = (DeltaScore x Weight x Confidence) / Effort
 
-**Goal: Reach GO CONDICIONAL (D02 >= 5, weighted >= 5.5)**
-
-Focus: Fix the revenue chain so money flows correctly, enable production observability, and fix the most dangerous copy claims.
-
-| # | Story | Dimensions | Effort | Priority |
-|---|-------|-----------|--------|----------|
-| 1 | GTM-FIX-001: Fix Stripe checkout-to-activation chain | D02 | S (4-8h) | P0 |
-| 2 | GTM-FIX-002: Enable production observability (Sentry + Mixpanel) | D06, D13 | XS (30min) | P0 |
-| 3 | GTM-FIX-003: Rewrite copy to match delivered features | D09 | M (2-3d) | P0 |
-| 4 | GTM-FIX-004: Fix PNCP silent truncation notification | D01, D04 | S (4h) | P0 |
-| 5 | GTM-FIX-005: Raise circuit breaker threshold | D01 | XS (15min) | P0 |
-
-### Sprint 2 (Week 3-4): UX & Lifecycle Completeness
-
-**Goal: Approach GO (all [5]-weight >= 7)**
-
-Focus: Complete the subscription lifecycle, fix UX blockers, implement PNCP resilience basics.
-
-| # | Story | Dimensions | Effort | Priority |
-|---|-------|-----------|--------|----------|
-| 6 | GTM-FIX-006: Add subscription cancellation endpoint + UI | D02, D12 | S (8h) | P1 |
-| 7 | GTM-FIX-007: Handle invoice.payment_failed with dunning | D02 | S (8h) | P1 |
-| 8 | GTM-FIX-008: Fix mobile navigation + onboarding touch targets | D03, D08 | S (4h) | P1 |
-| 9 | GTM-FIX-009: Fix email confirmation dead end | D03, D08 | S (4h) | P1 |
-| 10 | GTM-FIX-010: Implement SWR cache for PNCP results | D01, D04 | M (3-5d) | P1 |
-
-### Expected Score Improvement
-
-| Dimension | Current | After Sprint 1 | After Sprint 2 |
-|-----------|---------|-----------------|-----------------|
-| D01 Core Value | 6 | 7 | 8 |
-| D02 Revenue | 3 | 6 | 8 |
-| D03 Autonomous UX | 6 | 6 | 7 |
-| D04 Data Reliability | 5 | 6 | 7 |
-| D05 Failure Transparency | 7 | 7 | 7 |
-| D06 Observability | 5 | 7 | 7 |
-| D07 Value Before Payment | 7 | 7 | 7 |
-| D08 Onboarding Friction | 5 | 5 | 7 |
-| D09 Copy-Code Alignment | 4 | 7 | 7 |
-| D10 Security & LGPD | 7 | 7 | 7 |
-| D11 Infrastructure | 6 | 6 | 7 |
-| D12 Pricing-Risk Alignment | 4 | 5 | 6 |
-| D13 Analytics & Metrics | 3 | 5 | 5 |
-| D14 Differentiation | 7 | 7 | 7 |
-| D15 Feedback Loop Speed | 7 | 7 | 7 |
-| **Weighted Score** | **5.42** | **6.31** | **7.11** |
-| **Verdict** | **NO GO** | **GO CONDICIONAL** | **GO** |
+| Rank | Story | WIN | Effort | Priority | Impact |
+|------|-------|-----|--------|----------|--------|
+| 1 | GTM-FIX-014: Remove fabricated reviews | **30.00** | 5 min | P0 | D09+D16: legal/SEO risk elimination |
+| 2 | GTM-FIX-015: Fix pipeline access for smartlic_pro | **30.00** | 5 min | P0 | D09: unblock promised feature |
+| 3 | GTM-FIX-013: Deploy Sentry + Mixpanel tokens | **11.40** | 30 min | P0 | D06+D13: incident detection |
+| 4 | GTM-FIX-020: Multi-worker uvicorn | **5.70** | 30 min | P2 | D11: scalability |
+| 5 | GTM-FIX-022: Uptime monitoring | **5.40** | 30 min | P2 | D06: external health polling |
+| 6 | GTM-FIX-012: Fix PCP 404 + PNCP canary 400 | **3.38** | 4 hrs | P0 | D01+D04: restore production |
+| 7 | GTM-FIX-021: OG image + logo assets | **3.00** | 1 hr | P2 | D16: social sharing |
+| 8 | GTM-FIX-018: Fix copy claims | **2.85** | 1 hr | P1 | D09: accuracy |
+| 9 | GTM-FIX-017: Fix to_legacy_format() | **1.13** | 4 hrs | P1 | D01+D04: multi-source data integrity |
+| 10 | GTM-FIX-016: Checkout completion polling | **0.67** | 6 hrs | P1 | D02: activation reliability |
+| 11 | GTM-FIX-019: Reduce signup friction | **0.44** | 8 hrs | P2 | D03+D08: conversion |
+| 12 | GTM-FIX-023: Frontend test coverage | **0.05** | 8 hrs | P2 | D15: CI stability |
 
 ---
 
-## Appendix: Evidence Files
+## Remediation Story Details
 
-| File | Dimensions | Phase |
-|------|-----------|-------|
-| `docs/gtm-ok/evidence/D01-pncp-pipeline.md` | D01, D04 | Phase 1 |
-| `docs/gtm-ok/evidence/D02-stripe-revenue.md` | D02 | Phase 2 |
-| `docs/gtm-ok/evidence/D03-autonomous-ux.md` | D03, D07, D08 | Phase 3 |
-| `docs/gtm-ok/evidence/D05-D06-failure-observability.md` | D05, D06 | Phase 5 |
-| `docs/gtm-ok/evidence/D09-copy-alignment.md` | D09 | Phase 4 |
-| `docs/gtm-ok/evidence/D10-D11-security-infra.md` | D10, D11 | Phase 6 |
-| `docs/gtm-ok/evidence/D12-D15-rapid-scan.md` | D12, D13, D14, D15 | Phase 7 |
-| `docs/gtm-ok/evidence/consolidated-scores.md` | All | Phase 8 |
+### P0: CRITICAL (Must fix before any GTM activity)
+
+#### GTM-FIX-012: Fix PCP 404 + PNCP Health Canary (WIN: 3.38)
+
+**Problem:** PCP API returns 404 on `/publico/obterprocessosabertos`. PNCP canary sends `tamanhoPagina=1` but API now requires >= 10. Both sources broken, causing zero results.
+
+**Tasks:**
+1. Update PNCP health canary to use `tamanhoPagina=10` instead of 1
+2. Investigate PCP: check if endpoint URL changed, API key expired, or service discontinued
+3. Update `portal_compras_client.py` with correct endpoint or disable PCP if API is gone
+4. Add integration smoke test validating both sources return non-error responses
+5. Deploy and verify
+
+**Files:** `backend/pncp_client.py` (canary params), `backend/clients/portal_compras_client.py` (endpoint URL)
+**Effort:** 4 hours | **Impact:** D01: 6->7, D04: 5->6
+
+#### GTM-FIX-013: Deploy Observability Tokens (WIN: 11.40)
+
+**Problem:** `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_MIXPANEL_TOKEN` not set in Railway.
+
+**Tasks:**
+1. Create Sentry project (or verify existing) and get DSN
+2. Set `SENTRY_DSN` in Railway backend service
+3. Set `NEXT_PUBLIC_SENTRY_DSN` in Railway frontend service
+4. Set `NEXT_PUBLIC_MIXPANEL_TOKEN` in Railway frontend service
+5. Trigger redeploy, verify events flow
+
+**Effort:** 30 min | **Impact:** D06: 5->7, D13: 4->6
+
+#### GTM-FIX-014: Remove Fabricated Review Data (WIN: 30.00)
+
+**Problem:** `StructuredData.tsx` emits `aggregateRating: { ratingValue: "4.8", reviewCount: "127" }`. No review system exists. Google penalty risk + legal liability.
+
+**Tasks:**
+1. Remove the `aggregateRating` object from `frontend/app/components/StructuredData.tsx`
+2. Deploy
+
+**Files:** `frontend/app/components/StructuredData.tsx` lines 77-82
+**Effort:** 5 min | **Impact:** D09: +0.5, D16: +0.5
+
+#### GTM-FIX-015: Fix Pipeline Access for SmartLic Pro (WIN: 30.00)
+
+**Problem:** `routes/pipeline.py` line 61: `allowed_plans = {"maquina", "sala_guerra"}` blocks `smartlic_pro`.
+
+**Tasks:**
+1. Add `"smartlic_pro"` to `allowed_plans` set
+2. Add test
+3. Deploy
+
+**Files:** `backend/routes/pipeline.py` line 61
+**Effort:** 5 min | **Impact:** Prevents paying customer 403 errors
+
+### P1: HIGH (Required for comfortable GO CONDICIONAL)
+
+#### GTM-FIX-016: Add Checkout Completion Polling (WIN: 0.67)
+
+**Problem:** Plan activation depends entirely on webhook delivery with no fallback.
+
+**Tasks:**
+1. Create `GET /v1/subscription/status` that checks local DB + Stripe API
+2. Frontend obrigado page polls every 5s for up to 2 min
+3. Add timeout state with support contact info
+
+**Effort:** 6 hours | **Impact:** D02: 6->7
+
+#### GTM-FIX-017: Fix to_legacy_format() Data Loss (WIN: 1.13)
+
+**Problem:** `to_legacy_format()` drops `dataEncerramentoProposta`, `esferaId`, `numeroEdital`, `anoCompra`. Multi-source records lose deadline data.
+
+**Tasks:**
+1. Add missing field mappings to `to_legacy_format()` in `base.py`
+2. Fix `PNCPLegacyAdapter.fetch()` to set `data_encerramento` and `data_publicacao`
+3. Add integration test
+
+**Effort:** 4 hours | **Impact:** D01: 6->7, D04: 5->6
+
+#### GTM-FIX-018: Fix Copy Claims (WIN: 2.85)
+
+**Problem:** "GPT-4o" (uses 4.1-nano), "Diario analises programadas" (no scheduler), "resposta garantida no mesmo dia" (no SLA), "Ranqueamento por relevancia" (no algorithm).
+
+**Tasks:**
+1. Change "GPT-4o" to "IA avancada" on pricing page
+2. Change "Diario -- analises programadas" to "Sob demanda"
+3. Standardize support SLA to "24 horas uteis"
+4. Remove or soften "Ranqueamento por relevancia"
+
+**Effort:** 1 hour | **Impact:** D09: 6->7
+
+### P2: MEDIUM (Path toward GO)
+
+#### GTM-FIX-019: Reduce Signup Friction (WIN: 0.44)
+
+**Problem:** 8 mandatory fields + consent scroll + mandatory WhatsApp consent.
+
+**Tasks:** Reduce to 3 fields (email, password, name). Move extras to onboarding. Make WhatsApp optional.
+**Effort:** 8 hours | **Impact:** D03: 6->7, D08: 5->6
+
+#### GTM-FIX-020: Multi-Worker Uvicorn (WIN: 5.70)
+
+**Problem:** Single uvicorn worker blocks on CPU-bound operations.
+
+**Tasks:** Change CMD to `gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app`.
+**Effort:** 30 min | **Impact:** D11: 6->7
+
+#### GTM-FIX-021: Create OG Image + Logo Assets (WIN: 3.00)
+
+**Problem:** `og-image.png` and `logo.png` referenced but missing from `frontend/public/`.
+
+**Tasks:** Create and deploy both image assets.
+**Effort:** 1 hour | **Impact:** D16: 5->6
+
+#### GTM-FIX-022: Add Uptime Monitoring (WIN: 5.40)
+
+**Problem:** No external service monitors `/health`. Outages go undetected.
+
+**Tasks:** Set up UptimeRobot for `/health` and `/api/health`. Configure alerts.
+**Effort:** 30 min | **Impact:** D06: +1
+
+#### GTM-FIX-023: Improve Frontend Test Coverage (WIN: 0.05)
+
+**Problem:** Frontend coverage at 49.46%, below 60% threshold.
+
+**Tasks:** Add tests for LoadingProgress, RegionSelector, SavedSearchesDropdown, AnalyticsProvider.
+**Effort:** 8 hours | **Impact:** D15: 7->7.5
 
 ---
 
-## Methodology Note
+## Path to GO
 
-This assessment follows the GTM-OK Framework v1.0, evaluating 15 dimensions across 4 weight tiers ([5] Critical, [3] Important, [1] Nice-to-have). The standard applied is: "Would this pass scrutiny from a Silicon Valley CTO evaluating the system for investment or acquisition?" All findings are evidence-based with specific file:line code references. Seven parallel assessment agents were deployed for maximum speed and independence, followed by cross-validation to check for contradictions (none found).
+To reach GO, ALL [5]-weight dimensions must reach >= 7 and weighted average >= 7.0.
 
-**GO threshold:** All [5]-weight dimensions >= 7/10, weighted overall >= 7.0
-**GO CONDICIONAL:** All [5]-weight dimensions >= 5/10, weighted overall >= 5.5
-**NO GO:** Any [5]-weight dimension < 5/10
+**Required improvements:**
 
-D02 (Revenue Infrastructure) scored 3/10, triggering NO GO.
+| Dimension | Current | Target | Key Fixes |
+|-----------|---------|--------|-----------|
+| D01 | 6 | 7 | FIX-012 (PCP/PNCP), FIX-017 (to_legacy_format) |
+| D02 | 6 | 7 | FIX-016 (checkout polling), atomic idempotency, Customer reuse |
+| D03 | 6 | 7 | FIX-019 (signup friction), add preview/demo mode |
+| D04 | 5 | 7 | FIX-017, validate dedup, per-record freshness indicator |
+
+**Estimated effort for GO:** 3-4 sprints (6-8 weeks)
+
+**Projected score after all P0+P1+P2 fixes:**
+
+With D01=7, D02=7, D03=7, D04=7, D06=7, D09=7, D11=7, D13=6, D16=6:
+Weighted = (7+7+7+7)*5 + (7+7+7+6+7+7+7+6)*3 + (7+6+7+7)*1 = 140 + 162 + 27 = 329
+329 / 48 = **6.85** (still below 7.0 -- would need D08 and D16 to also reach 7)
+
+---
+
+## Evidence Document Index
+
+| File | Dimensions | Date |
+|------|-----------|------|
+| `evidence/D01-D04-multi-source-pipeline.md` | D01, D04 | 2026-02-17 |
+| `evidence/D02-stripe-revenue.md` | D02 | 2026-02-17 |
+| `evidence/D03-autonomous-ux.md` | D03, D07, D08 | 2026-02-17 |
+| `evidence/D05-D06-failure-observability.md` | D05, D06 | 2026-02-17 |
+| `evidence/D09-copy-alignment.md` | D09 | 2026-02-17 |
+| `evidence/D10-D11-security-infra.md` | D10, D11 | 2026-02-17 |
+| `evidence/D12-D15-rapid-scan.md` | D12, D13, D14, D15 | 2026-02-17 |
+| `evidence/D16-seo-discovery.md` | D16 | 2026-02-17 |
+| `evidence/consolidated-scores.md` | All (cross-validation) | 2026-02-17 |
+
+---
+
+## Methodology
+
+GTM-OK v2.0 evaluates 16 dimensions across 3 weight tiers:
+- **[5] Critical (D01-D04):** Core value, revenue, UX, data reliability
+- **[3] Important (D05-D11, D16):** Failure handling, observability, onboarding, copy, security, infra, SEO
+- **[1] Nice-to-have (D12-D15):** Pricing, analytics, differentiation, feedback loops
+
+**Total weight:** 48 (4x5 + 8x3 + 4x1)
+
+**WIN ranking** (Weighted Impact Number) prioritizes fixes by: DeltaScore x Weight x Confidence / Effort. This ensures the highest-value, lowest-effort fixes are executed first.
+
+**GO threshold:** All [5]-weight >= 7/10, weighted overall >= 7.0
+**GO CONDICIONAL:** All [5]-weight >= 5/10, weighted overall >= 5.5
+**NO GO:** Any [5]-weight < 5/10
+
+---
+
+*GTM-OK v2.0 assessment completed 2026-02-17. Previous verdict (v1.0, 2026-02-16): NO GO at 5.42/10. Current verdict: GO CONDICIONAL at 5.92/10. Primary improvement: D02 Revenue Infrastructure 3->6 (Stripe lifecycle implemented). Critical condition: production outage must be resolved within 24 hours.*

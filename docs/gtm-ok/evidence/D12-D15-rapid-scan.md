@@ -1,107 +1,157 @@
-# D12-D15: Rapid Scan Assessment
-Date: 2026-02-16
-Phase: 7 of 10
+# D12-D15 Rapid Scan Evidence
 
-## Scores
-- D12 (Pricing-Risk Alignment): 4/10
-- D13 (Analytics & Metrics): 3/10
-- D14 (Differentiation): 7/10
-- D15 (Feedback Loop Speed): 7/10
+**Date:** 2026-02-17
+**Analyst:** @analyst (Phase 7, GTM-OK v2.0)
+**Method:** Fresh codebase analysis, no reuse of prior assessments
 
 ---
 
 ## D12: Pricing-Risk Alignment
 
-### Price Point Analysis
+**Score: 7/10 (Production-ready)**
 
-SmartLic Pro is priced at R$1,999/month (semiannual R$1,799/mo, annual R$1,599/mo).
+### What Was Examined
 
-**Evidence:** `frontend/app/planos/page.tsx:20-24`
-```typescript
-const PRICING: Record<BillingPeriod, { monthly: number; total: number; ... }> = {
-  monthly: { monthly: 1999, total: 1999, period: "mes" },
-  semiannual: { monthly: 1799, total: 10794, period: "semestre", discount: 10 },
-  annual: { monthly: 1599, total: 19188, period: "ano", discount: 20 },
-};
+- `frontend/app/planos/page.tsx` -- pricing page, plan display, checkout flow
+- `backend/routes/billing.py` -- plan definitions, Stripe checkout, billing portal
+- `backend/webhooks/stripe.py` -- subscription lifecycle (creation, update, cancellation)
+- `frontend/app/conta/page.tsx` -- subscription management, cancel button
+- `frontend/lib/copy/valueProps.ts` -- ROI messaging and framing
+- `frontend/lib/copy/comparisons.ts` -- defensive messaging vs. competitors
+
+### Pricing Structure
+
+| Period | Monthly Cost | Total | Discount |
+|--------|-------------|-------|----------|
+| Monthly | R$1,999 | R$1,999/mo | -- |
+| Semiannual | R$1,799 | R$10,794/6mo | 10% |
+| Annual | R$1,599 | R$19,188/yr | 20% |
+
+Single plan model (SmartLic Pro) with billing period toggle. Clean, no confusion about feature tiers.
+
+### ROI Justification (Code Evidence)
+
+The pricing page (`planos/page.tsx` L311-330) includes an explicit ROI anchor:
+
+```
+"Uma unica licitacao ganha pode pagar um ano inteiro"
+R$150,000 (oportunidade media) vs. R$19,188 (SmartLic Pro anual)
 ```
 
-The pricing page uses an ROI anchor of "R$150,000 average opportunity vs R$19,188/year = 7.8x ROI" (`planos/page.tsx:316-329`). This is reasonable IF the tool reliably delivers winning opportunities. But the trial gives only 3 searches / 7 days -- insufficient to prove this ROI claim before asking for R$1,999/month.
+The copy library (`valueProps.ts` L178-189) provides calculator defaults:
+- `defaultContractValue: 200_000`
+- `defaultWinRate: 0.05`
+- `potentialReturn: "100x"`
+- Tagline: "Uma unica licitacao ganha paga o investimento do ano inteiro."
 
-### CRITICAL BUG: Checkout Mode is Wrong
+This is an illustrative example (page says "Exemplo ilustrativo com base em oportunidades tipicas do setor"). Honest framing.
 
-**P0 FINDING:** `smartlic_pro` is NOT in the subscription mode list.
+### Cancel Experience
 
-**Evidence:** `backend/routes/billing.py:63,69`
-```python
-is_subscription = plan_id in ("consultor_agil", "maquina", "sala_guerra")
-# ...
-"mode": "subscription" if is_subscription else "payment",
-```
+**1-click cancel EXISTS** but routed through Stripe:
 
-Since `smartlic_pro` is not in this tuple, Stripe creates a **one-time payment** session, NOT a recurring subscription. This directly contradicts all copy about monthly/semiannual/annual billing periods. Users paying R$1,999 would get a single payment with no recurring billing -- or worse, the Stripe Price object (which is likely set up as recurring) would fail when used in `mode: "payment"`.
+1. `frontend/app/conta/page.tsx` L367-378: "Cancelar SmartLic Pro" button with confirmation modal
+2. `frontend/app/api/billing-portal/route.ts`: Proxies to `backend/v1/billing-portal`
+3. `backend/routes/billing.py` L88-141: Creates Stripe Billing Portal session
+4. `backend/webhooks/stripe.py` L313-363: Handles `customer.subscription.deleted` event
+5. Cancellation confirmation email sent (L581-619)
+6. UI shows "Ativa ate [date]" with grace period after cancellation
 
-### checkout.session.completed Webhook NOT Handled
+The FAQ on the pricing page explicitly addresses cancellation:
+- "Posso cancelar a qualquer momento?" -> "Sim. Sem contrato de fidelidade"
+- "O que acontece se eu cancelar?" -> "Voce mantem acesso completo ate o fim do periodo atual"
 
-The Stripe webhook handler (`backend/webhooks/stripe.py:119-127`) handles:
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
-- `invoice.payment_succeeded`
+### Risk Factors
 
-It does NOT handle `checkout.session.completed`. The only reference in the entire codebase is in a test log sanitizer fixture (`test_log_sanitizer.py:427`), not in any handler code.
+1. **R$1,999/mo is premium pricing** for Brazil's procurement market. This positions SmartLic as enterprise-grade, not SMB-friendly. Target market must be companies bidding on R$100K+ contracts.
+2. **No free tier** beyond the 7-day trial with 3 analyses. Conversion barrier is high.
+3. **No money-back guarantee** beyond "avalie sem compromisso" 7-day trial.
+4. **Cancel is via Stripe Billing Portal**, not a pure in-app 1-click. User is redirected to Stripe-hosted page. This adds friction compared to a truly native "cancel" button that calls a backend API directly.
 
-**Impact:** After a user completes checkout, `_activate_plan()` (`billing.py:82-112`) is NEVER called. The user pays but the plan is never activated. This is a revenue-critical bug.
+### What Justifies 7/10
 
-### invoice.payment_failed NOT Handled
-
-No handler exists for `invoice.payment_failed`. Grep confirms zero matches across the entire backend. Users whose payments fail will remain on an active plan indefinitely -- there is no dunning or grace period trigger.
-
-### Cancellation Flow
-
-Cancellation is available only through full account deletion (`frontend/app/conta/page.tsx`), which calls `stripe.Subscription.cancel()` as part of the deletion cascade (`routes/user.py:292`). There is NO self-service subscription cancellation without deleting the entire account.
-
-The FAQ promises "Cancele quando quiser" (`planos/page.tsx:41,304`) and "Minha Conta" has a cancellation option (`ajuda/page.tsx:129`), but the actual `/conta` page only offers password change, data export, and account deletion. There is no "cancel subscription" button.
-
-### Trial Value Proposition
-
-Trial: 3 searches, 7 days, no credit card. Features list claims 1,000 analyses/month (`planos/page.tsx:28`). The 3-search trial barely demonstrates value for a R$1,999/month product. With the PNCP 500-page cap and potential for zero-result searches, a user could exhaust their trial without finding a single relevant opportunity.
-
-### Score Justification: 4/10
-
-- Checkout mode bug means paying users may not get their plans activated: P0
-- `checkout.session.completed` not handled: P0
-- `invoice.payment_failed` not handled: P1
-- No self-service cancellation (only account deletion): P1
-- Trial too limited to prove R$1,999/month ROI: P2
-- ROI anchor is reasonable but unproven
+- Clean single-plan model eliminates confusion
+- Honest ROI framing ("exemplo ilustrativo", not fake claims)
+- Cancel path EXISTS and is documented in UI/FAQ
+- Billing period toggle (monthly/semiannual/annual) gives flexibility
+- Stripe handles proration automatically
+- Dunning flow for failed payments (GTM-FIX-007)
+- (-1) Cancel routes through Stripe portal, not pure native
+- (-1) No explicit money-back guarantee
+- (-1) No competitive pricing validation (no evidence of market research)
 
 ---
 
 ## D13: Analytics & Metrics
 
-### Mixpanel Implementation
+**Score: 4/10 (Not ready)**
 
-Code infrastructure exists and is well-architected:
+### What Was Examined
 
-**AnalyticsProvider:** `frontend/app/components/AnalyticsProvider.tsx:1-128`
-- Initializes Mixpanel after LGPD cookie consent
-- Tracks page_load, page_exit with session duration
-- Listens for consent changes
+- `frontend/app/components/AnalyticsProvider.tsx` -- Mixpanel initialization
+- `frontend/hooks/useAnalytics.ts` -- Event tracking hook
+- `frontend/app/components/GoogleAnalytics.tsx` -- GA4 component
+- `backend/routes/analytics.py` -- Personal dashboard analytics endpoints
+- `.env.example` -- Token configuration
+- Audit reports: `AUDIT-FRENTE-6-BUSINESS-READINESS.md`, `STORY-219`
 
-**useAnalytics hook:** `frontend/hooks/useAnalytics.ts:74-139`
-- `trackEvent()` -- generic event tracking with consent check
-- `identifyUser()` -- Mixpanel people profiles
-- `resetUser()` -- identity reset on logout
-- `trackPageView()` -- page view tracking
-- UTM parameter capture (`captureUTMParams()`, lines 22-48)
+### Instrumentation Quality: HIGH (Code is Good)
 
-**Event tracking is embedded throughout the frontend:**
-- `checkout_initiated`, `checkout_failed` (`planos/page.tsx:155-182`)
-- `plan_page_viewed` (`planos/page.tsx:90`)
-- 41 files reference `trackEvent` or `useAnalytics`
+The analytics code is comprehensive:
 
-### Production Status: NOT FUNCTIONAL
+**Mixpanel (AnalyticsProvider.tsx):**
+- LGPD-compliant: Only initializes after cookie consent (L47-57)
+- Tracks: `page_load`, `page_exit` (with session duration), all consent changes
+- Consent revocation handled (opt_out_tracking)
 
-**Evidence:** `frontend/app/components/AnalyticsProvider.tsx:24-30`
+**useAnalytics Hook (useAnalytics.ts):**
+- `trackEvent()`: Generic event tracker with timestamp/environment metadata
+- `identifyUser()`: Links events to user profiles
+- `resetUser()`: Clears identity on logout
+- `captureUTMParams()`: Captures UTM attribution from URLs
+- All functions check `hasAnalyticsConsent()` before firing
+
+**Tracked Events (from codebase grep):**
+- `search_started`, `search_completed`, `search_failed`
+- `download_started`, `download_completed`
+- `checkout_initiated`, `checkout_failed`
+- `login_attempted`, `login_completed`
+- `onboarding_completed`, `onboarding_dismissed`, `onboarding_step`
+- `saved_search_created`, `search_state_auto_restored`
+- `dashboard_viewed`, `analytics_exported`
+- `plan_page_viewed`, `custom_term_search`
+- `pull_to_refresh_triggered`, `error_encountered`
+- `search_progress_stage`
+
+This covers the full funnel: signups -> activation -> search -> download -> conversion -> retention.
+
+**GA4 (GoogleAnalytics.tsx):**
+- Separate GA4 component with LGPD consent check
+- Predefined event helpers: `trackSearchEvent`, `trackDownloadEvent`, `trackSignupEvent`, `trackLoginEvent`, `trackPlanSelectedEvent`
+
+**Backend Analytics (analytics.py):**
+- `/analytics/summary` -- total searches, downloads, opportunities, value, hours saved
+- `/analytics/searches-over-time` -- time-series data (day/week/month)
+- `/analytics/top-dimensions` -- top UFs and sectors
+- `/analytics/trial-value` -- trial conversion metrics
+
+### CRITICAL PROBLEM: Token Not Deployed
+
+Multiple audit reports confirm the token is NOT set in production:
+
+From `AUDIT-FRENTE-6-BUSINESS-READINESS.md`:
+> "Problem: `.env.local` has no `NEXT_PUBLIC_MIXPANEL_TOKEN`. Unknown if it is set in Railway production environment."
+
+From `STORY-219`:
+> "AC2: Set `NEXT_PUBLIC_MIXPANEL_TOKEN` in Railway production env vars (ops - manual)" -- checkbox UNCHECKED
+
+From `.env.example` L122:
+```
+NEXT_PUBLIC_MIXPANEL_TOKEN=
+```
+Empty value. No actual token.
+
+**Impact:** The entire Mixpanel analytics system is dead code in production. When `NEXT_PUBLIC_MIXPANEL_TOKEN` is empty/undefined, `AnalyticsProvider.tsx` L38-44 returns early:
 ```typescript
 const token = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 if (!token) {
@@ -112,240 +162,271 @@ if (!token) {
 }
 ```
 
-From the MEMORY.md context: "Mixpanel token not set (zero analytics data)". The `NEXT_PUBLIC_MIXPANEL_TOKEN` environment variable is not configured in production. All tracking code is effectively dead code.
+Similarly, `NEXT_PUBLIC_GA4_MEASUREMENT_ID` is not documented in `.env.example` at all, meaning GA4 is also likely dead.
 
-**Config reference:** `frontend/lib/config.ts:168-170` confirms the token comes from env:
-```typescript
-mixpanel: {
-  token: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || '',
-},
-```
+### Can We Measure the Funnel?
 
-### Sentry: Code Exists, DSN Not Configured
+| Metric | Instrumented? | Actually Working in Prod? |
+|--------|--------------|--------------------------|
+| Signups | Yes (login_completed) | NO (no Mixpanel token) |
+| Activations | Yes (onboarding_completed) | NO |
+| Searches | Yes (search_started/completed) | NO |
+| Downloads | Yes (download_started/completed) | NO |
+| Conversions | Yes (checkout_initiated/checkout_failed) | NO |
+| Churn | Partially (via Stripe webhooks) | Stripe data only |
+| Page views | Yes (page_load) | NO |
+| UTM attribution | Yes (captureUTMParams) | NO |
 
-**Frontend:** `frontend/sentry.client.config.ts:5-13` -- graceful no-op when `NEXT_PUBLIC_SENTRY_DSN` is absent.
+### What Justifies 4/10
 
-**Backend:** `backend/main.py:125-128` -- conditional init with `SENTRY_DSN` env var.
+- (+3) Instrumentation code is comprehensive, LGPD-compliant, well-tested
+- (+1) Backend analytics endpoints exist and work (dashboard data from DB)
+- (-3) Mixpanel token NOT deployed in production -- zero client-side analytics data
+- (-2) GA4 token likely also missing
+- (-1) No evidence of any analytics dashboard being configured or reviewed
+- Cannot answer basic business questions: "How many users searched last week?" "What is our trial-to-paid conversion rate?"
 
-From MEMORY.md: "Sentry DSN not configured" in production. Error monitoring is disabled.
-
-### Can We Measure Key Metrics?
-
-| Metric | Code Exists? | Production Data? |
-|--------|-------------|-----------------|
-| Signups | Yes (signup page tracks events) | NO -- Mixpanel not configured |
-| Activations | Yes (first-search tracking) | NO |
-| Searches | Yes (search_started event) | NO |
-| Conversions | Yes (checkout_initiated event) | NO |
-| Churn | Partially (subscription.deleted webhook logs) | Server logs only |
-| MRR | NO -- no dashboard or calculation code | NO |
-| LTV | NO | NO |
-| Error rate | Yes (Sentry code exists) | NO -- DSN not configured |
-
-### Revenue Metrics
-
-There is NO code anywhere in the codebase for calculating MRR, churn rate, LTV, or any revenue metrics. The only financial data exists in Stripe's own dashboard -- there is no internal analytics layer for revenue.
-
-### Score Justification: 3/10
-
-- Excellent code architecture (LGPD-compliant, consent-gated, UTM tracking)
-- Comprehensive event vocabulary (41 files with tracking)
-- But ZERO production data -- Mixpanel token not set
-- Sentry DSN not configured -- no error visibility
-- No revenue metrics (MRR, LTV, churn calculations)
-- The team is flying blind: no funnel visibility, no conversion tracking, no error monitoring
+**To reach 7/10:** Deploy Mixpanel token (15 min ops task), verify data flows, configure at least one dashboard for signup-to-conversion funnel.
 
 ---
 
 ## D14: Differentiation
 
-### What SmartLic Does
+**Score: 7/10 (Production-ready)**
 
-SmartLic provides automated procurement opportunity discovery from Brazil's PNCP portal with:
+### What Was Examined
 
-1. **Multi-sector keyword filtering** across 15 sectors
-2. **AI-powered strategic analysis** (GPT-4.1-nano)
-3. **Excel report generation** for offline analysis
-4. **Multi-state parallel search** across all 27 Brazilian states
+- `backend/llm.py` -- AI analysis capability (GPT-4.1-nano)
+- `backend/sectors.py` + `backend/sectors_data.yaml` -- 15 sector configurations
+- `backend/clients/portal_compras_client.py` -- Portal de Compras Publicas integration
+- `backend/pncp_client.py` -- PNCP API client
+- `backend/consolidation.py` -- Multi-source deduplication
+- `frontend/lib/copy/comparisons.ts` -- Competitive positioning copy
+- `frontend/lib/copy/valueProps.ts` -- Value proposition messaging
 
-### Sector-Specific Filtering: Genuine Moat
+### Competitive Moat Analysis
 
-**Evidence:** `backend/sectors_data.yaml` defines 15 sectors:
-```
-vestuario, alimentos, informatica, mobiliario, papelaria, engenharia,
-software, facilities, saude, vigilancia, transporte, manutencao_predial,
-engenharia_rodoviaria, materiais_eletricos, materiais_hidraulicos
-```
+**1. Multi-Source Data Aggregation (Strong)**
 
-Each sector has deeply curated keyword sets. The vestuario sector alone has:
-- 84+ inclusion keywords (`filter.py:184-283`)
-- 150+ exclusion keywords (`filter.py:294-582`)
-- Red flag detection for medical/administrative/infrastructure false positives (`filter.py:637-679`)
-- Context-required keywords (generic terms validated by surrounding context)
-- Max contract value caps per sector (anti-false-positive)
+SmartLic consolidates two official procurement data sources:
+- **PNCP** (Portal Nacional de Contratacoes Publicas) -- federal/state
+- **PCP** (Portal de Compras Publicas) -- complementary municipal/state
 
-This level of domain-specific filtering represents significant accumulated knowledge. The `context_required_keywords` mechanism (`sectors.py:29`) is particularly sophisticated -- generic terms like "mesa" or "banco" only match if confirming context words are also present.
+Evidence: `backend/consolidation.py` implements priority-based deduplication (PNCP=1 wins), value discrepancy monitoring (>5% cross-source delta logs warning), and the pipeline handles partial failures gracefully (if one source fails, the other still returns results).
 
-The `match_keywords()` function (`filter.py:682-799`) implements:
-- Unicode normalization for Portuguese text
-- Word boundary matching with plural variation support
-- Exclusion-first fail-fast optimization
-- Context validation for ambiguous terms
-- Pre-compiled regex patterns for batch performance
+Most competitors offer single-source searches. This dual-source approach provides genuinely broader coverage.
 
-### AI Analysis: More Than a GPT Wrapper
+**2. Sector-Specific Keyword Intelligence (Strong)**
 
-**Evidence:** `backend/llm.py:127-169` -- the system prompt is a 42-line strategic consultant persona:
+`backend/sectors_data.yaml` defines 15 specialized sectors:
 
-- Acts as a "consultor senior com 15 anos de experiencia"
-- Provides concrete action recommendations per opportunity
-- Classifies urgency based on days remaining (alta/media/baixa)
-- Enforces terminology rules (forbidden ambiguous date phrases)
-- Post-generation validation rejects output with ambiguous terms (`llm.py:211-228`)
-- Structured output via Pydantic (`ResumoEstrategico` schema) ensures consistent format
-- Fallback function (`gerar_resumo_fallback`, lines 233-377) provides heuristic-based analysis without LLM
+| Sector | Type |
+|--------|------|
+| vestuario | Uniformes, fardamentos |
+| alimentos | Merenda escolar |
+| informatica | Hardware TI |
+| mobiliario | Mobiliario |
+| papelaria | Material escritorio |
+| engenharia | Projetos e obras |
+| software | Sistemas |
+| facilities | Manutencao |
+| saude | Saude |
+| vigilancia | Seguranca patrimonial |
+| transporte | Veiculos |
+| manutencao_predial | Conservacao predial |
+| engenharia_rodoviaria | Infraestrutura viaria |
+| materiais_eletricos | Instalacoes eletricas |
+| materiais_hidraulicos | Saneamento |
 
-The output schema includes: `resumo_executivo`, `recomendacoes` (with `acao_sugerida`, `urgencia`, `justificativa`), `alertas_urgencia`, `insight_setorial`. This goes beyond simple summarization into actionable intelligence.
+Each sector has:
+- Primary keywords (high precision)
+- Exclusion terms (false positive prevention)
+- Context-required keywords (disambiguation)
+- Max contract value thresholds (anti-false-positive for huge multi-sector contracts)
 
-However, the core AI is ultimately a GPT-4.1-nano call with a good prompt. The moat is in the prompt engineering and structured output, not proprietary models.
+This is a genuine differentiator. Competitors typically use keyword-search where the USER must know the terms. SmartLic encodes domain expertise in 1000+ rules.
 
-### What Competitors Likely Offer
+**3. AI-Powered Strategic Analysis (Medium-Strong)**
 
-The PNCP data is public. Competitors likely include:
-- Manual PNCP portal search (free but tedious)
-- Generic procurement platforms (Compras.gov.br, LicitaNet, Licitacao.net)
-- Data aggregators (Portal de Licitacoes)
+`backend/llm.py` provides:
+- GPT-4.1-nano structured output via Pydantic schemas
+- Strategic consultant persona with sector-specific context
+- Urgency classification (alta/media/baixa based on days remaining)
+- Actionable recommendations (max 5, prioritized by value + urgency + viability)
+- Terminology enforcement (forbidden terms like "prazo de abertura" are validated)
+- Heuristic fallback (`gerar_resumo_fallback`) when OpenAI API is unavailable
 
-SmartLic's differentiation lies in the COMBINATION of:
-1. Deep sector-specific filtering (15 sectors, 1000+ keyword rules)
-2. AI strategic recommendations (not just summaries)
-3. Multi-state parallel execution
-4. Excel export with formatted reports
+The output schema (`ResumoEstrategico`) includes:
+- `resumo_executivo`: Consultive overview
+- `recomendacoes`: Prioritized recommendations with action, justification, urgency
+- `alertas_urgencia`: Time-sensitive alerts
+- `insight_setorial`: Market context
 
-No single feature is a strong moat alone. The keyword curation (which must be maintained) and the sector-specific analysis create a defensible position, but the PNCP API is open to anyone.
+This goes beyond "summary" to "decision intelligence" -- telling users what to DO, not just what exists.
 
-### Score Justification: 7/10
+**4. Competitive Messaging (Well-Crafted)**
 
-- Genuinely sophisticated filtering engine (1000+ rules, context validation, red flags)
-- AI goes beyond summarization into strategic recommendations with urgency classification
-- 15 sector coverage is broad
-- Prompt engineering quality is high (terminology enforcement, structured output)
-- Core data source (PNCP) is public -- no exclusive data access
-- No proprietary ML models -- GPT-4.1-nano is available to competitors
-- Sector keyword curation is the primary moat but requires ongoing maintenance
+`comparisons.ts` defines a 10-row comparison table covering:
+- Search method (sector vs. keyword guessing)
+- Intelligence (evaluation vs. raw list)
+- Multi-source (2 sources vs. 1)
+- Pricing transparency (fixed vs. hidden fees)
+- Cancel friction (1-click vs. bureaucratic)
+
+The copy is positioned around "decision intelligence, not search speed" (from `valueProps.ts` header comment). BANNED_PHRASES list (L364-406) explicitly prohibits commodity-positioning language ("160x mais rapido", "95% de precisao", "3 minutos", "economize tempo").
+
+### Weaknesses
+
+1. **No named competitor comparison** -- copy uses "traditional platforms" generically. No direct Licitanet/ComprasNet/BLL benchmarking.
+2. **AI analysis quality is unvalidated** -- no systematic evaluation of GPT output quality. The forbidden-term check (L211-228) is a good start but covers only deadline terminology.
+3. **Only 2 data sources** -- some competitors may aggregate more portals (state-specific portals, DOU, etc.).
+4. **No proprietary data** -- all data comes from public APIs. Competitive advantage is in the filtering/analysis layer, not raw data access.
+
+### What Justifies 7/10
+
+- (+3) Sector-specific keyword intelligence with 15 sectors and 1000+ rules is a genuine moat
+- (+2) Multi-source aggregation with dedup is a real capability advantage
+- (+1) AI strategic analysis goes beyond summarization to actionable recommendations
+- (+1) Well-crafted competitive positioning copy with systematic banned/preferred phrase governance
+- (-1) No competitor-specific benchmarking or market validation
+- (-1) AI output quality not systematically evaluated
+- (-1) Two data sources is good but not comprehensive (no DOU, no state portals beyond PCP)
 
 ---
 
 ## D15: Feedback Loop Speed
 
-### CI/CD Pipeline
+**Score: 7/10 (Production-ready)**
 
-**Workflows found:** 13 GitHub Actions workflows in `.github/workflows/`:
+### What Was Examined
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| `deploy.yml` | Push to main | Deploy to Railway (backend + frontend) |
-| `tests.yml` | Push/PR to main | Backend tests (Python 3.11+3.12), Frontend tests, E2E |
-| `backend-ci.yml` | Push/PR (backend changes) | Lint (ruff), mypy, security scan, tests with coverage |
-| `e2e.yml` | Push/PR to main/develop | Playwright E2E tests |
-| `pr-validation.yml` | PR | PR quality checks |
-| `codeql.yml` | Push/PR | Security analysis |
-| `lighthouse.yml` | (present) | Performance benchmarking |
-| `load-test.yml` | (present) | Load testing |
-| `sync-sectors.yml` | (present) | Sector data sync |
-| `staging-deploy.yml` | (present) | Staging deployment |
-| `dependabot-auto-merge.yml` | (present) | Dependency updates |
-| `cleanup.yml` | (present) | Resource cleanup |
+- `.github/workflows/tests.yml` -- Unit tests CI (backend + frontend + E2E)
+- `.github/workflows/backend-ci.yml` -- Backend linting, typing, security scan
+- `.github/workflows/deploy.yml` -- Production deployment with health checks
+- `.github/workflows/codeql.yml` -- Security scanning (CodeQL + TruffleHog + dependency review)
+- `.github/workflows/lighthouse.yml` -- Performance auditing
+- `.github/workflows/e2e.yml` -- End-to-end tests
+- `.github/workflows/load-test.yml` -- Load testing
+- `.github/workflows/staging-deploy.yml` -- Staging environment
+- `.github/workflows/pr-validation.yml` -- PR validation
+- `.github/workflows/cleanup.yml` -- Cleanup automation
+- `.github/workflows/dependabot-auto-merge.yml` -- Dependency automation
+- `.github/workflows/sync-sectors.yml` -- Sector sync automation
 
-### Deploy Pipeline Quality
+### CI/CD Pipeline (12 Workflows)
 
-**Evidence:** `deploy.yml:64-101` -- Backend deployment:
-1. Attempts Railway `redeploy` first (faster, uses GitHub source)
-2. Falls back to `railway up` with 3 retries and 10s backoff
-3. Waits 45s for deployment stabilization
-4. Health check with 5 attempts, 15s intervals
-5. Smoke tests: health endpoint, root endpoint, OpenAPI docs, integration test (POST /buscar)
+**Trigger Coverage:**
 
-**Frontend deployment:** Similar pattern with 60s wait and 5-attempt health check.
+| Trigger | Workflows |
+|---------|-----------|
+| Push to main | tests, backend-ci, deploy, codeql |
+| Pull request | tests, backend-ci, codeql, lighthouse, pr-validation, e2e |
+| Scheduled | codeql (weekly Monday 00:00 UTC) |
+| Manual dispatch | deploy (with service selector) |
 
-**Estimated deploy-to-production time:** ~3-5 minutes (push to main triggers automatic deployment).
+**Quality Gates in CI:**
 
-### Test Suite Coverage
+1. **Backend Tests** (tests.yml L14-88):
+   - Python 3.11 + 3.12 matrix
+   - pytest with coverage report
+   - 70% coverage threshold enforced (L82: `if [ $COVERAGE_PERCENT -lt 70 ]`)
+   - Coverage uploaded to Codecov
 
-**Backend:**
-- 96.69% coverage (82 tests) -- from CLAUDE.md
-- Coverage threshold: 70% enforced in CI (`backend-ci.yml:52`)
-- Matrix testing: Python 3.11 + 3.12
-- Lint (ruff), type checking (mypy), security scan (safety)
+2. **Backend CI** (backend-ci.yml):
+   - `ruff check .` -- linting
+   - `mypy .` -- type checking
+   - `safety check` -- vulnerability scan
+   - `pytest --cov-fail-under=70` -- coverage threshold
 
-**Frontend:**
-- ~49.46% coverage (69 tests) -- below 60% threshold
-- TypeScript type check enforced
-- Quarantined test support (non-blocking)
+3. **Frontend Tests** (tests.yml L90-188):
+   - `npx tsc --noEmit` -- TypeScript check
+   - `npm test -- --coverage --ci --no-cache`
+   - Generated API types verification
+   - Security audit (`npm audit`)
+   - Quarantined tests run (non-blocking)
+   - Coverage uploaded to Codecov
 
-**E2E:**
-- Playwright tests covering search flow, theme, saved searches, empty state, error handling
-- Runs against both Chromium and WebKit (Mobile Safari)
-- 15-minute timeout
+4. **E2E Tests** (tests.yml L222-411):
+   - Depends on backend + frontend unit tests passing
+   - Starts both servers, waits for health
+   - Playwright (Chromium)
+   - Uploads report artifacts (30-day retention)
 
-### Monitoring: Would They Know if Something Breaks?
+5. **Security** (codeql.yml):
+   - CodeQL for Python + JavaScript (security-and-quality queries)
+   - TruffleHog secret scanning
+   - Dependency review (fails on high severity, denies GPL-3.0/AGPL-3.0)
 
-**Within minutes:** Partially.
-- Deploy health checks would catch crashes immediately
-- Smoke tests catch 5xx errors on core endpoints
-- BUT: Sentry is NOT configured in production -- runtime errors go undetected
-- Mixpanel is NOT configured -- no user-facing anomaly detection
-- No uptime monitoring (PagerDuty, UptimeRobot, etc.) found in the codebase
-- No alerting pipeline for error rate spikes
+6. **Performance** (lighthouse.yml):
+   - Lighthouse CI on PRs
+   - Core Web Vitals tracking (FCP, LCP, TBT, CLS, SI)
+   - PR comment with scores
 
-**Evidence for monitoring gap:** Backend Sentry init is conditional (`main.py:125-128`):
-```python
-_sentry_dsn = os.getenv("SENTRY_DSN")
-if _sentry_dsn:
-    sentry_sdk.init(dsn=_sentry_dsn, ...)
-```
-With `SENTRY_DSN` not set, runtime errors (like the checkout mode bug) would go completely unnoticed unless a user reports them.
+### Deployment Pipeline
 
-### Score Justification: 7/10
+`deploy.yml` implements:
+1. **Change detection** (L22-62): Only deploys services that changed
+2. **Railway deployment** with retry logic (3 attempts, 10s backoff)
+3. **Health check** post-deploy (5 attempts, 15s intervals)
+4. **Smoke tests** (L183-253): Backend API, frontend page load, integration test
+5. **Frontend waits for backend** (L125-129): `needs: [detect-changes, deploy-backend]`
 
-- Excellent CI/CD pipeline (13 workflows, auto-deploy, health checks, smoke tests)
-- Good test coverage on backend (96.69%), weak on frontend (49.46%)
-- Fast deploy cycle (~3-5 minutes push-to-production)
-- Multi-browser E2E testing
-- BUT: No runtime error monitoring in production (Sentry not configured)
-- No uptime monitoring or alerting
-- No user behavior anomaly detection (Mixpanel not configured)
-- The team would know about deploy failures but NOT about runtime bugs
+**Deployment cadence:** Push to `main` auto-deploys. Manual dispatch available for selective service deployment.
+
+### Test Coverage
+
+| Component | Coverage | Threshold | Status |
+|-----------|----------|-----------|--------|
+| Backend | ~96.69% | 70% | PASSING |
+| Frontend | ~49.46% | 60% | BELOW threshold |
+| E2E | 60 test cases | Pass/fail | PASSING |
+
+Frontend coverage is below threshold -- CI will fail until improved.
+
+### Monitoring Gap
+
+**Sentry is configured in code but deployment status uncertain:**
+- Backend: `main.py` L126 checks `SENTRY_DSN`
+- Frontend: `AnalyticsProvider.tsx` L14-21 initializes Sentry client-side
+- `.env.example` has empty `SENTRY_DSN=` and `NEXT_PUBLIC_SENTRY_DSN=`
+- `STORY-211-SENTRY-SETUP.md` shows Railway commands but does not confirm execution
+
+**Would the team know within minutes if something breaks?**
+- **Deploy failures:** YES -- GitHub Actions fails with health check + smoke test
+- **Runtime errors:** UNCERTAIN -- depends on whether Sentry DSN is actually deployed
+- **API degradation:** PARTIAL -- health endpoint exists but no alerting on response time
+
+### What Justifies 7/10
+
+- (+3) 12 GitHub Actions workflows covering tests, security, performance, deployment
+- (+2) Automated deployment with health checks and smoke tests
+- (+1) Backend coverage excellent (96.69%)
+- (+1) Security scanning (CodeQL + TruffleHog + dependency review)
+- (-1) Frontend coverage below threshold (49.46% vs 60% required)
+- (-1) Sentry deployment status uncertain (code exists, token may not be set)
+- (-1) No explicit alerting/PagerDuty integration for production incidents
+- (-0) Lighthouse performance tracking in PR is a strong quality signal
 
 ---
 
-## Key Findings
+## Score Summary
 
-1. **P0 -- Checkout mode bug:** `smartlic_pro` creates a one-time payment instead of a subscription because it is not in the `is_subscription` tuple (`billing.py:63`). This means the entire billing model is broken for the current plan.
+| Dimension | Score | Category | Rationale |
+|-----------|-------|----------|-----------|
+| **D12: Pricing-Risk** | **7/10** | Production-ready | Clean single plan, honest ROI framing, cancel path exists. Cancel via Stripe portal adds minor friction. No money-back guarantee. |
+| **D13: Analytics** | **4/10** | Not ready | Excellent instrumentation code, zero production data. Mixpanel token not deployed. Cannot answer any business questions. |
+| **D14: Differentiation** | **7/10** | Production-ready | 15-sector keyword intelligence, dual-source aggregation, AI strategic analysis. No competitor benchmarking. |
+| **D15: Feedback Loop** | **7/10** | Production-ready | 12 CI/CD workflows, 96.69% backend coverage, auto-deploy with health checks. Frontend coverage gap, uncertain monitoring deployment. |
 
-2. **P0 -- checkout.session.completed not handled:** Even if checkout succeeds, `_activate_plan()` is never called. Users pay but plans are not activated.
+### Remediation Priority
 
-3. **P0 -- Zero production analytics:** Despite excellent code architecture (41 files with tracking, LGPD compliance, UTM capture), neither Mixpanel token nor Sentry DSN are configured in production. The team has no visibility into user behavior, errors, or conversion funnels.
-
-4. **P1 -- No self-service cancellation:** Users can only cancel by deleting their entire account. The FAQ and terms promise easy cancellation but no subscription management UI exists.
-
-5. **P1 -- invoice.payment_failed not handled:** Failed recurring payments have no dunning workflow.
-
-6. **Positive -- Genuine differentiation:** The sector-specific filtering with 15 sectors, 1000+ rules, context validation, and red flag detection is sophisticated and represents real domain knowledge. The AI analysis goes beyond summarization into actionable recommendations.
-
-7. **Positive -- Strong CI/CD:** 13 workflows with auto-deploy, health checks, smoke tests, and comprehensive test coverage on backend.
-
-## Gaps
-
-| # | Gap | Fix | Effort |
-|---|-----|-----|--------|
-| 1 | `smartlic_pro` not in subscription mode list (billing.py:63) | Add `smartlic_pro` to `is_subscription` tuple | 1 line, 10 min |
-| 2 | `checkout.session.completed` webhook not handled | Add handler in webhooks/stripe.py calling `_activate_plan()` | 2-4 hours |
-| 3 | Mixpanel token not set in production | Set `NEXT_PUBLIC_MIXPANEL_TOKEN` in Railway env vars | 5 min |
-| 4 | Sentry DSN not configured in production | Set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` in Railway env vars | 5 min |
-| 5 | `invoice.payment_failed` not handled | Add webhook handler with dunning logic | 4-8 hours |
-| 6 | No self-service subscription cancellation UI | Add cancel button to /conta page with Stripe API call | 4-8 hours |
-| 7 | No revenue metrics (MRR, LTV, churn) | Build admin dashboard or Stripe integration | 1-2 sprints |
-| 8 | No uptime monitoring | Add UptimeRobot or similar for /health endpoint | 30 min |
-| 9 | Trial too limited for R$1,999/mo price point | Consider 14-day trial or 10 searches | Product decision |
-| 10 | Frontend test coverage below threshold (49% < 60%) | Add tests for uncovered components | 1-2 days |
+| Priority | Action | Impact | Effort |
+|----------|--------|--------|--------|
+| **P0** | Deploy `NEXT_PUBLIC_MIXPANEL_TOKEN` to Railway | D13: 4->7 | 15 min |
+| **P0** | Verify `SENTRY_DSN` is deployed in Railway | D15: 7->8 | 15 min |
+| **P1** | Deploy `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | D13: +0.5 | 15 min |
+| **P1** | Improve frontend test coverage to 60% | D15: 7->8 | 4-8 hrs |
+| **P2** | Add native in-app cancel (not Stripe redirect) | D12: 7->8 | 4 hrs |
+| **P2** | Competitive benchmarking (Licitanet, BLL, ComprasNet) | D14: 7->8 | 2-4 hrs |
+| **P3** | Production alerting (PagerDuty/OpsGenie) | D15: 7->9 | 4 hrs |
+| **P3** | AI output quality evaluation framework | D14: 7->8 | 8 hrs |

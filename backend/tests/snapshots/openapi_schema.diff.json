@@ -192,6 +192,30 @@
           "title": "AdminUsersListResponse",
           "type": "object"
         },
+        "AuthStatusResponse": {
+          "properties": {
+            "confirmed": {
+              "title": "Confirmed",
+              "type": "boolean"
+            },
+            "user_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          "required": [
+            "confirmed"
+          ],
+          "title": "AuthStatusResponse",
+          "type": "object"
+        },
         "BillingPlansResponse": {
           "description": "Response for GET /plans (billing.py).",
           "properties": {
@@ -575,6 +599,21 @@
               "description": "ISO timestamp of when cached results were generated",
               "title": "Cached At"
             },
+            "cached_sources": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "GTM-FIX-010 AC5r: Source codes that contributed to cached data (e.g. ['PNCP','PORTAL_COMPRAS'])",
+              "title": "Cached Sources"
+            },
             "data_sources": {
               "anyOf": [
                 {
@@ -733,6 +772,21 @@
               "description": "Per-source fetch metrics when multi-source is active",
               "title": "Source Stats"
             },
+            "sources_used": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "List of source codes that returned data (e.g., ['PNCP', 'PORTAL_COMPRAS'])",
+              "title": "Sources Used"
+            },
             "stopwords_removidas": {
               "anyOf": [
                 {
@@ -817,6 +871,21 @@
               "description": "UF codes where results were truncated due to max_pages limit",
               "title": "Truncated Ufs"
             },
+            "truncation_details": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Per-source truncation flags, e.g. {'pncp': true, 'portal_compras': false}. None when no truncation occurred (backward compatible).",
+              "title": "Truncation Details"
+            },
             "ultima_atualizacao": {
               "anyOf": [
                 {
@@ -851,6 +920,30 @@
             "total_filtrado"
           ],
           "title": "BuscaResponse",
+          "type": "object"
+        },
+        "CancelSubscriptionResponse": {
+          "description": "Response for subscription cancellation.",
+          "properties": {
+            "ends_at": {
+              "title": "Ends At",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "success": {
+              "title": "Success",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "ends_at",
+            "message"
+          ],
+          "title": "CancelSubscriptionResponse",
           "type": "object"
         },
         "CheckoutResponse": {
@@ -2581,6 +2674,38 @@
             "status"
           ],
           "title": "ReplyStatusResponse",
+          "type": "object"
+        },
+        "ResendRequest": {
+          "properties": {
+            "email": {
+              "format": "email",
+              "title": "Email",
+              "type": "string"
+            }
+          },
+          "required": [
+            "email"
+          ],
+          "title": "ResendRequest",
+          "type": "object"
+        },
+        "ResendResponse": {
+          "properties": {
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "success": {
+              "title": "Success",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "message"
+          ],
+          "title": "ResendResponse",
           "type": "object"
         },
         "ResumoEstrategico": {
@@ -4801,6 +4926,33 @@
           ]
         }
       },
+      "/api/subscriptions/cancel": {
+        "post": {
+          "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
+          "operationId": "cancel_subscription_api_subscriptions_cancel_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CancelSubscriptionResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Cancel Subscription",
+          "tags": [
+            "subscriptions"
+          ]
+        }
+      },
       "/api/subscriptions/update-billing-period": {
         "post": {
           "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow \u2014 Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
@@ -4845,6 +4997,118 @@
           "summary": "Update Billing Period",
           "tags": [
             "subscriptions"
+          ]
+        }
+      },
+      "/auth/resend-confirmation": {
+        "post": {
+          "description": "Resend signup confirmation email with 60s rate limiting.\n\nAC4: Calls Supabase auth.resend({ type: 'signup', email }).\nAC1-AC6: Frontend uses this with countdown timer.",
+          "operationId": "resend_confirmation_auth_resend_confirmation_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ResendResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Resend Confirmation",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/auth/status": {
+        "get": {
+          "description": "Check if a signup email has been confirmed.\n\nAC8: Returns { confirmed: boolean, user_id?: string }.\nAC7/AC9: Frontend polls this every 5s for auto-redirect.",
+          "operationId": "auth_status_auth_status_get",
+          "parameters": [
+            {
+              "description": "Email to check",
+              "in": "query",
+              "name": "email",
+              "required": true,
+              "schema": {
+                "description": "Email to check",
+                "title": "Email",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AuthStatusResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Auth Status",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/billing-portal": {
+        "post": {
+          "description": "Create Stripe Billing Portal session (GTM-FIX-007 AC6-AC7).\n\nAllows users to update payment methods, view invoices, and manage subscriptions.\n\nReturns:\n    dict: {\"url\": \"https://billing.stripe.com/...\"}",
+          "operationId": "create_billing_portal_session_billing_portal_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Create Billing Portal Session",
+          "tags": [
+            "billing"
           ]
         }
       },
@@ -7003,6 +7267,33 @@
           ]
         }
       },
+      "/v1/api/subscriptions/cancel": {
+        "post": {
+          "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
+          "operationId": "cancel_subscription_v1_api_subscriptions_cancel_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CancelSubscriptionResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Cancel Subscription",
+          "tags": [
+            "subscriptions"
+          ]
+        }
+      },
       "/v1/api/subscriptions/update-billing-period": {
         "post": {
           "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow \u2014 Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
@@ -7047,6 +7338,118 @@
           "summary": "Update Billing Period",
           "tags": [
             "subscriptions"
+          ]
+        }
+      },
+      "/v1/auth/resend-confirmation": {
+        "post": {
+          "description": "Resend signup confirmation email with 60s rate limiting.\n\nAC4: Calls Supabase auth.resend({ type: 'signup', email }).\nAC1-AC6: Frontend uses this with countdown timer.",
+          "operationId": "resend_confirmation_v1_auth_resend_confirmation_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ResendResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Resend Confirmation",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/v1/auth/status": {
+        "get": {
+          "description": "Check if a signup email has been confirmed.\n\nAC8: Returns { confirmed: boolean, user_id?: string }.\nAC7/AC9: Frontend polls this every 5s for auto-redirect.",
+          "operationId": "auth_status_v1_auth_status_get",
+          "parameters": [
+            {
+              "description": "Email to check",
+              "in": "query",
+              "name": "email",
+              "required": true,
+              "schema": {
+                "description": "Email to check",
+                "title": "Email",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AuthStatusResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Auth Status",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/v1/billing-portal": {
+        "post": {
+          "description": "Create Stripe Billing Portal session (GTM-FIX-007 AC6-AC7).\n\nAllows users to update payment methods, view invoices, and manage subscriptions.\n\nReturns:\n    dict: {\"url\": \"https://billing.stripe.com/...\"}",
+          "operationId": "create_billing_portal_session_v1_billing_portal_post",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Create Billing Portal Session",
+          "tags": [
+            "billing"
           ]
         }
       },
