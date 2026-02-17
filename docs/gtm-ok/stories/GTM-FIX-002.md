@@ -17,21 +17,23 @@ Code is instrumented for Sentry error tracking and Mixpanel analytics, but envir
 7. Verify Mixpanel receives test event
 
 ## Acceptance Criteria
-- [ ] AC1: Sentry project exists for SmartLic/BidIQ
-- [ ] AC2: SENTRY_DSN set in Railway backend environment variables
-- [ ] AC3: NEXT_PUBLIC_SENTRY_DSN set in Railway frontend environment variables
-- [ ] AC4: NEXT_PUBLIC_MIXPANEL_TOKEN set in Railway frontend environment variables
-- [ ] AC5: Trigger test error in production → appears in Sentry within 1 minute
-- [ ] AC6: Trigger test analytics event → appears in Mixpanel within 1 minute
-- [ ] AC7: Sentry captures unhandled exceptions (test with `throw new Error('test')`)
-- [ ] AC8: Mixpanel tracks page views and search events
+- [x] AC1: Sentry project exists for SmartLic/BidIQ (org: confenge, project: smartlic-frontend)
+- [x] AC2: SENTRY_DSN set in Railway backend environment variables
+- [x] AC3: NEXT_PUBLIC_SENTRY_DSN set in Railway frontend environment variables
+- [x] AC4: NEXT_PUBLIC_MIXPANEL_TOKEN set in Railway frontend environment variables
+- [ ] AC5: Trigger test error in production → appears in Sentry within 1 minute (BLOCKED: client SDK not initializing — fix applied, needs redeploy)
+- [ ] AC6: Trigger test analytics event → appears in Mixpanel within 1 minute (BLOCKED: CSP was blocking — fix applied, needs redeploy)
+- [ ] AC7: Sentry captures unhandled exceptions (test with `throw new Error('test')`) (needs redeploy)
+- [ ] AC8: Mixpanel tracks page views and search events (needs redeploy)
 
 ## Effort: XS (30min)
 ## Priority: P0 (Zero visibility into production)
 ## Dependencies: None
 
 ## Files to Modify
-- Railway dashboard: Environment variables (no code changes needed)
+- Railway dashboard: Environment variables ✅ (done)
+- `frontend/next.config.js` — CSP `connect-src` fix: add `api-js.mixpanel.com` and `api.mixpanel.com`
+- `frontend/app/components/AnalyticsProvider.tsx` — Explicit Sentry client init (webpack plugin not injecting)
 
 ## Testing Strategy
 1. Set env vars in Railway → trigger redeployment
@@ -41,10 +43,10 @@ Code is instrumented for Sentry error tracking and Mixpanel analytics, but envir
 5. Verify error breadcrumbs include request context (user_id, url, timestamp)
 
 ## Post-Deployment Checklist
-- [ ] Add Sentry DSN and Mixpanel token to `.env.example` with placeholder values
-- [ ] Document observability setup in `docs/guides/observability.md`
-- [ ] Set up Sentry alerts for critical errors (payment failures, auth errors)
-- [ ] Create Mixpanel dashboard for key metrics (searches/day, conversions, retention)
+- [x] Add Sentry DSN and Mixpanel token to `.env.example` with placeholder values
+- [x] Document observability setup in `docs/guides/observability.md`
+- [ ] Set up Sentry alerts for critical errors (payment failures, auth errors) (manual — see STORY-211-SENTRY-SETUP.md)
+- [x] Create Mixpanel dashboard for key metrics (see `docs/analytics/mixpanel-dashboard-configuration.md`)
 
 ## ⚠️ REVISÃO — Impacto PCP API (2026-02-16)
 

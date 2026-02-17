@@ -2,9 +2,23 @@
 
 import { useEffect, useRef } from 'react';
 import mixpanel from 'mixpanel-browser';
+import * as Sentry from '@sentry/nextjs';
 import { usePathname } from 'next/navigation';
 import { getCookieConsent, type CookieConsent } from './CookieConsentBanner';
 import { captureUTMParams } from '../../hooks/useAnalytics';
+
+// GTM-FIX-002: Explicit client-side Sentry initialization
+// withSentryConfig webpack plugin should auto-inject sentry.client.config.ts,
+// but in production builds (standalone output) it may fail silently.
+// This ensures Sentry is always initialized on the client.
+const sentryDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+if (sentryDsn && !Sentry.getClient()) {
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 0.1,
+    environment: process.env.NEXT_PUBLIC_ENVIRONMENT || process.env.NODE_ENV,
+  });
+}
 
 /**
  * Analytics Provider - Initializes Mixpanel ONLY after cookie consent (LGPD Art. 7)
