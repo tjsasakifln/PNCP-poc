@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     images: [
       {
-        url: "/og-image.png",
+        url: "/api/og",
         width: 1200,
         height: 630,
         alt: `${appName} - Plataforma de Busca Inteligente de Licitações Públicas`,
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${appName} - Como Encontrar Licitações Públicas Lucrativas`,
     description: "Busca inteligente de editais por setor, região e valor. Notificações, análise de viabilidade e relatórios completos. Usado por 500+ empresas.",
-    images: ["/og-image.png"],
+    images: ["/api/og"],
     creator: "@smartlic",
     site: "@smartlic",
   },

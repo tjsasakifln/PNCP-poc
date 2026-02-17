@@ -7,7 +7,7 @@ import os
 import random
 import time
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Callable, Dict, Generator, List, Optional
 
 import httpx
@@ -1585,6 +1585,28 @@ class PNCPLegacyAdapter:
                 ufs=_ufs, modalidades=self._modalidades,
             ))
         for item in results:
+            # GTM-FIX-017: Parse date fields from PNCP response
+            data_pub = None
+            if item.get("dataPublicacaoPncp"):
+                try:
+                    data_pub = datetime.fromisoformat(item["dataPublicacaoPncp"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    pass
+
+            data_enc = None
+            if item.get("dataEncerramentoProposta"):
+                try:
+                    data_enc = datetime.fromisoformat(item["dataEncerramentoProposta"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    pass
+
+            data_abertura = None
+            if item.get("dataAberturaProposta"):
+                try:
+                    data_abertura = datetime.fromisoformat(item["dataAberturaProposta"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    pass
+
             yield UnifiedProcurement(
                 source_id=item.get("codigoCompra", ""),
                 source_name="PNCP",
@@ -1594,7 +1616,12 @@ class PNCPLegacyAdapter:
                 cnpj_orgao=item.get("cnpjOrgao", ""),
                 uf=item.get("uf", ""),
                 municipio=item.get("municipio", ""),
+                data_publicacao=data_pub,
+                data_abertura=data_abertura,
+                data_encerramento=data_enc,
                 numero_edital=item.get("numeroEdital", ""),
+                ano=item.get("anoCompra", ""),
+                esfera=item.get("esferaId", ""),
                 modalidade=item.get("modalidadeNome", ""),
                 situacao=item.get("situacaoCompraNome", ""),
                 link_edital=item.get("linkSistemaOrigem", ""),

@@ -36,6 +36,8 @@ EXPOSE 8000
 # NOTE: Railway handles healthcheck via railway.toml (healthcheckPath = "/health")
 # Do NOT add HEALTHCHECK instruction here - it conflicts with Railway's system
 
-# Run with uvicorn - Railway will inject $PORT
+# Run with gunicorn + uvicorn workers for production concurrency (GTM-FIX-020)
+# WEB_CONCURRENCY: Railway can override; default 4 workers
+# --timeout 120: allow long-running search requests to complete
 # Using shell form for guaranteed variable expansion
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD gunicorn main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-4} --bind 0.0.0.0:${PORT:-8000} --timeout 120 --graceful-timeout 30

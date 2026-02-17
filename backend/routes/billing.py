@@ -139,3 +139,78 @@ async def create_billing_portal_session(
     except stripe_lib.error.StripeError as e:
         logger.error(f"Stripe billing portal error: {e}")
         raise HTTPException(status_code=500, detail="Erro ao criar sessão do portal de cobrança")
+
+
+@router.get("/subscription/status")
+async def get_subscription_status(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """
+    Check subscription activation status (GTM-FIX-016).
+
+    Used by obrigado page to poll for webhook completion.
+    Returns current subscription state from DB, with Stripe API fallback.
+    """
+    import stripe as stripe_lib
+
+    user_id = user["id"]
+
+    # Check DB first (webhook already processed?)
+    sub_result = (
+        db.table("user_subscriptions")
+        .select("plan_id, subscription_status, stripe_subscription_id, created_at")
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    if sub_result.data and sub_result.data[0].get("subscription_status") == "active":
+        sub = sub_result.data[0]
+        return {
+            "status": "active",
+            "plan_id": sub.get("plan_id"),
+            "activated_at": sub.get("created_at"),
+        }
+
+    # Check profile plan_type as secondary source
+    profile_result = (
+        db.table("profiles")
+        .select("plan_type")
+        .eq("id", user_id)
+        .single()
+        .execute()
+    )
+
+    if profile_result.data and profile_result.data.get("plan_type") not in (None, "free_trial"):
+        return {
+            "status": "active",
+            "plan_id": profile_result.data["plan_type"],
+            "activated_at": None,
+        }
+
+    # Stripe API fallback: check if there's a recent checkout session
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+    if stripe_key and sub_result.data:
+        stripe_sub_id = sub_result.data[0].get("stripe_subscription_id")
+        if stripe_sub_id:
+            try:
+                stripe_sub = stripe_lib.Subscription.retrieve(
+                    stripe_sub_id, api_key=stripe_key
+                )
+                if stripe_sub.status == "active":
+                    return {
+                        "status": "active",
+                        "plan_id": sub_result.data[0].get("plan_id"),
+                        "activated_at": None,
+                    }
+            except Exception as e:
+                logger.warning(f"Stripe subscription check failed: {e}")
+
+    return {
+        "status": "pending",
+        "plan_id": None,
+        "activated_at": None,
+    }

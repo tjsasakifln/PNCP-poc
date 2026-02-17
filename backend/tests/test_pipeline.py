@@ -445,6 +445,22 @@ class TestPipelineAccessControl:
     @patch("quota.check_quota")
     @patch("authorization.has_master_access")
     @patch("routes.pipeline.get_supabase")
+    def test_access_smartlic_pro_allowed(self, mock_get_sb, mock_has_master, mock_check_quota):
+        """GTM-FIX-015: SmartLic Pro plan users can access pipeline."""
+        mock_has_master.return_value = False
+        mock_check_quota.return_value = Mock(plan_id="smartlic_pro")
+        sb = _mock_sb()
+        sb.execute.return_value = Mock(data=[], count=0)
+        mock_get_sb.return_value = sb
+        client = _create_client()
+
+        resp = client.get("/pipeline")
+
+        assert resp.status_code == 200
+
+    @patch("quota.check_quota")
+    @patch("authorization.has_master_access")
+    @patch("routes.pipeline.get_supabase")
     def test_access_maquina_allowed(self, mock_get_sb, mock_has_master, mock_check_quota):
         """Maquina plan users can access pipeline."""
         mock_has_master.return_value = False

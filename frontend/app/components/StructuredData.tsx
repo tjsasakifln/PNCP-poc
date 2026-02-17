@@ -8,7 +8,7 @@ export function StructuredData() {
     name: 'SmartLic',
     legalName: 'SmartLic - Busca Inteligente de Licitações',
     url: 'https://smartlic.tech',
-    logo: 'https://smartlic.tech/logo.png',
+    logo: 'https://smartlic.tech/logo.svg',
     foundingDate: '2025',
     description: 'Inteligência de decisão em licitações com avaliação objetiva por setor, região e período',
     address: {
@@ -40,7 +40,7 @@ export function StructuredData() {
       name: 'SmartLic',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://smartlic.tech/logo.png',
+        url: 'https://smartlic.tech/logo.svg',
       },
     },
     potentialAction: {
@@ -72,7 +72,7 @@ export function StructuredData() {
       },
     },
     description: 'Inteligência de decisão para oportunidades de licitação. Busca inteligente, análise por setor, geração de relatórios e muito mais.',
-    screenshot: 'https://smartlic.tech/og-image.png',
+    screenshot: 'https://smartlic.tech/api/og',
     featureList: [
       'Busca inteligente de licitações',
       'Análise por setor e região',
