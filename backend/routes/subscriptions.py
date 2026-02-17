@@ -5,17 +5,19 @@ GTM-002: Removed pro-rata calculations — Stripe handles proration automaticall
 """
 
 import logging
+import os
 from typing import Literal
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
+import stripe as stripe_lib
 
 from auth import require_auth
 from services.billing import (
     update_stripe_subscription_billing_period,
     get_next_billing_date,
 )
-from log_sanitizer import mask_user_id
+from log_sanitizer import mask_user_id, log_user_action
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,13 @@ class UpdateBillingPeriodResponse(BaseModel):
     success: bool
     new_billing_period: str
     next_billing_date: str
+    message: str
+
+
+class CancelSubscriptionResponse(BaseModel):
+    """Response for subscription cancellation."""
+    success: bool
+    ends_at: str
     message: str
 
 
@@ -154,4 +163,106 @@ async def update_billing_period(
         new_billing_period=request.new_billing_period,
         next_billing_date=next_billing_str,
         message=f"Período de cobrança atualizado para {request.new_billing_period}.",
+    )
+
+
+@router.post("/cancel", response_model=CancelSubscriptionResponse)
+async def cancel_subscription(
+    user: dict = Depends(require_auth),
+):
+    """Cancel subscription at period end.
+
+    GTM-FIX-006: User-initiated cancellation flow.
+    Sets cancel_at_period_end=True in Stripe, updates status to 'canceling'.
+    """
+    from supabase_client import get_supabase
+
+    user_id = user["id"]
+    logger.info(f"Cancellation requested for user {mask_user_id(user_id)}")
+
+    sb = get_supabase()
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+
+    if not stripe_key:
+        logger.error("STRIPE_SECRET_KEY not configured")
+        raise HTTPException(status_code=500, detail="Configuração de pagamento ausente")
+
+    # Step 1: Fetch current active subscription
+    try:
+        result = (
+            sb.table("user_subscriptions")
+            .select("id, stripe_subscription_id, expires_at")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=404, detail="Nenhuma assinatura ativa encontrada")
+
+        subscription = result.data[0]
+        stripe_subscription_id = subscription.get("stripe_subscription_id")
+
+        if not stripe_subscription_id:
+            raise HTTPException(status_code=400, detail="Assinatura sem Stripe subscription_id")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch subscription for user {mask_user_id(user_id)}: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao buscar assinatura ativa")
+
+    # Step 2: Cancel subscription at period end in Stripe
+    try:
+        stripe_subscription = stripe_lib.Subscription.modify(
+            stripe_subscription_id,
+            cancel_at_period_end=True,
+            api_key=stripe_key,
+        )
+
+        # Get the period end timestamp and convert to ISO string
+        current_period_end = stripe_subscription.current_period_end
+        ends_at_iso = datetime.fromtimestamp(current_period_end, tz=timezone.utc).isoformat()
+
+        logger.info(f"Stripe subscription {stripe_subscription_id} set to cancel at {ends_at_iso}")
+    except stripe_lib.error.StripeError as e:
+        logger.error(f"Stripe cancellation failed for user {mask_user_id(user_id)}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erro ao cancelar no Stripe")
+    except Exception as e:
+        logger.error(f"Unexpected error during Stripe cancellation for user {mask_user_id(user_id)}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erro ao processar cancelamento")
+
+    # Step 3: Update profiles table with canceling status and end date
+    try:
+        sb.table("profiles").update({
+            "subscription_status": "canceling",
+            "subscription_end_date": ends_at_iso,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", user_id).execute()
+
+        logger.info(f"Updated profiles for user {mask_user_id(user_id)} to canceling status")
+    except Exception as e:
+        logger.error(f"Failed to update profiles for user {mask_user_id(user_id)}: {e}", exc_info=True)
+        logger.critical(
+            f"DATA INCONSISTENCY: Stripe canceled but profiles update failed for user {mask_user_id(user_id)}"
+        )
+        raise HTTPException(status_code=500, detail="Erro ao atualizar status de cancelamento")
+
+    # Step 4: Log the action
+    log_user_action(
+        logger,
+        "subscription-cancel-requested",
+        user_id,
+        details={
+            "stripe_subscription_id": stripe_subscription_id,
+            "ends_at": ends_at_iso,
+        }
+    )
+
+    return CancelSubscriptionResponse(
+        success=True,
+        ends_at=ends_at_iso,
+        message=f"Sua assinatura foi cancelada e permanecerá ativa até {datetime.fromisoformat(ends_at_iso).strftime('%d/%m/%Y')}.",
     )

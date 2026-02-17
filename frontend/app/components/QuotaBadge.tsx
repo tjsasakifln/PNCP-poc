@@ -46,6 +46,40 @@ export function QuotaBadge() {
     );
   }
 
+  // Canceling subscription - show warning badge with end date
+  if (quota.subscriptionStatus === "canceling") {
+    const endsAtDisplay = quota.subscriptionEndDate
+      ? new Date(quota.subscriptionEndDate).toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "short",
+        })
+      : "";
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium
+                   bg-[var(--warning-subtle,#fef3cd)] text-[var(--warning,#856404)]
+                   rounded-full border border-[var(--warning,#856404)]/20"
+        title={`Cancelamento agendado${endsAtDisplay ? ` — ativa até ${endsAtDisplay}` : ""}`}
+      >
+        <svg
+          aria-hidden="true"
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        Ativa até {endsAtDisplay}
+      </span>
+    );
+  }
+
   // Unlimited users (non-admin) - show plan badge
   if (quota.isUnlimited) {
     return (

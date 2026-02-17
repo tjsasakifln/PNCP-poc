@@ -11,6 +11,8 @@ interface QuotaInfo {
   isUnlimited: boolean;
   isFreeUser: boolean;
   isAdmin: boolean;
+  subscriptionStatus?: string; // "active" | "canceling" | "canceled" | etc.
+  subscriptionEndDate?: string; // ISO date string
 }
 
 interface UseQuotaReturn {
@@ -64,6 +66,8 @@ export function useQuota(): UseQuotaReturn {
       const quotaRemaining = data.quota_remaining;
       const quotaUsed = data.quota_used || 0;
       const isAdmin = data.is_admin === true;
+      const subscriptionStatus = data.subscription_status;
+      const subscriptionEndDate = data.subscription_end_date;
 
       // Check if backend returned degraded data (free_trial) but we have a cached paid plan
       if (planId === "free_trial" && typeof window !== "undefined") {
@@ -124,6 +128,8 @@ export function useQuota(): UseQuotaReturn {
         isUnlimited,
         isFreeUser,
         isAdmin,
+        subscriptionStatus,
+        subscriptionEndDate,
       };
 
       // If data is from a paid plan (not free_trial, not free), cache it

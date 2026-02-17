@@ -5,6 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import Link from "next/link";
 import { toast } from "sonner";
+import { CancelSubscriptionModal } from "../../components/account/CancelSubscriptionModal";
 
 export default function ContaPage() {
   const { user, session, loading: authLoading, signOut } = useAuth();
@@ -24,6 +25,10 @@ export default function ContaPage() {
 
   // Data export state
   const [exporting, setExporting] = useState(false);
+
+  // Subscription cancellation state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancellingEndsAt, setCancellingEndsAt] = useState<string | null>(null);
 
   if (authLoading) {
     return (
@@ -340,6 +345,40 @@ export default function ContaPage() {
           </form>
         </div>
 
+        {/* Subscription Management */}
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
+          <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Gerenciar SmartLic Pro</h2>
+
+          {cancellingEndsAt ? (
+            <div className="flex items-center gap-3 p-4 bg-[var(--warning-subtle,#fef3cd)] rounded-input">
+              <svg aria-hidden="true" className="w-5 h-5 text-[var(--warning,#856404)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-[var(--warning,#856404)]">
+                  Ativa até {new Date(cancellingEndsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                </p>
+                <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+                  Você mantém acesso completo até esta data.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowCancelModal(true)}
+              className="w-full py-3 px-4 rounded-button border border-[var(--error,#dc2626)]
+                         text-[var(--error,#dc2626)] bg-transparent
+                         hover:bg-[var(--error-subtle,#fef2f2)] transition-colors
+                         flex items-center justify-center gap-2 text-sm"
+            >
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancelar SmartLic Pro
+            </button>
+          )}
+        </div>
+
         {/* Data & Privacy section (LGPD) */}
         <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
           <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Dados e Privacidade</h2>
@@ -380,6 +419,17 @@ export default function ContaPage() {
           </div>
         </div>
       </div>
+
+      {/* Cancel Subscription Modal */}
+      <CancelSubscriptionModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onCancelled={(endsAt) => {
+          setShowCancelModal(false);
+          setCancellingEndsAt(endsAt);
+        }}
+        accessToken={session.access_token}
+      />
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteModal && (
