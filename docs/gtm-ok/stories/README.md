@@ -131,6 +131,21 @@ The v2.0 stories (FIX-012 to FIX-023) address NEW issues discovered in the fresh
 
 ---
 
-**Last updated:** 2026-02-17 (GTM-OK v2.0 assessment)
+---
+
+## Post-Assessment Hotfixes (GTM-FIX-024+)
+
+Stories created after the v2.0 assessment to address production incidents discovered during remediation.
+
+| # | Story | Priority | Effort | Status | Impact |
+|---|-------|----------|--------|--------|--------|
+| 24 | **GTM-FIX-024** — Fix 6 chained bugs in multi-source pipeline | P0 BLOCKER | M (4-6h) | COMPLETED | D01: 6→9, D02: 6→8, D03: 6→8 |
+| 25 | **GTM-FIX-025** — Pipeline resilience + ComprasGov sunset | P0 BLOCKER | S (1-2h core) | PENDING | D01: 9→10, D02: 8→9, D03: 8→9 |
+
+**GTM-FIX-025 detail:** ComprasGov API (compras.dados.gov.br) permanently unstable — 503 crashes entire pipeline. Fix: disable ComprasGov v1, add generic exception catch, increase PNCP page size 20→500. Optional T4: migrate to new v3 API (dadosabertos.compras.gov.br).
+
+---
+
+**Last updated:** 2026-02-17 (GTM-FIX-025 added)
 **Full verdict:** See [GTM-OK-VERDICT.md](../GTM-OK-VERDICT.md)
 **Evidence:** See [evidence/](../evidence/) directory (9 files)
