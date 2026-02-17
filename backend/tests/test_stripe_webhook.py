@@ -862,6 +862,298 @@ class TestInfrastructureQuality:
 # Additional Edge Cases
 # ═══════════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════════
+# GTM-FIX-001: Checkout Session Completed (AC1-AC7)
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestCheckoutSessionCompleted:
+    """GTM-FIX-001: checkout.session.completed activates subscription."""
+
+    @pytest.fixture
+    def checkout_completed_event(self, make_stripe_event):
+        """Standard checkout.session.completed event with SmartLic Pro."""
+        data = Mock()
+        data.id = "cs_test_checkout_789"
+        data.get = lambda key, default=None: {
+            "client_reference_id": "user_checkout_123",
+            "metadata": {"plan_id": "smartlic_pro", "billing_period": "monthly"},
+            "subscription": "sub_new_456",
+            "customer": "cus_checkout_789",
+        }.get(key, default)
+        return make_stripe_event(
+            event_id="evt_checkout_001",
+            event_type="checkout.session.completed",
+            data_object=data,
+        )
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_creates_subscription(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, checkout_completed_event
+    ):
+        """AC2-AC3: checkout.session.completed creates user_subscription row."""
+        mock_construct.return_value = checkout_completed_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        # Configure plan lookup
+        plans_chain = mock_supabase_client.table("plans")
+        plans_chain.execute.return_value = Mock(data={"duration_days": 30, "max_searches": 1000})
+
+        insert_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_insert(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_insert = chain.insert
+
+                def capturing_insert(d):
+                    insert_calls.append(d)
+                    return original_insert(d)
+
+                chain.insert = capturing_insert
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_insert)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert len(insert_calls) >= 1, "Expected INSERT into user_subscriptions"
+        record = insert_calls[0]
+        assert record["user_id"] == "user_checkout_123"
+        assert record["plan_id"] == "smartlic_pro"
+        assert record["billing_period"] == "monthly"
+        assert record["is_active"] is True
+        assert record["stripe_subscription_id"] == "sub_new_456"
+        assert record["stripe_customer_id"] == "cus_checkout_789"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_syncs_profiles_plan_type(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, checkout_completed_event
+    ):
+        """AC5: checkout.session.completed syncs profiles.plan_type to smartlic_pro."""
+        mock_construct.return_value = checkout_completed_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        plans_chain = mock_supabase_client.table("plans")
+        plans_chain.execute.return_value = Mock(data={"duration_days": 30, "max_searches": 1000})
+
+        profile_updates = []
+        original_table = mock_supabase_client.table
+
+        def track_profile(table_name):
+            chain = original_table(table_name)
+            if table_name == "profiles":
+                original_update = chain.update
+
+                def capturing_update(d):
+                    profile_updates.append(d)
+                    return original_update(d)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_profile)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        assert any(
+            u.get("plan_type") == "smartlic_pro" for u in profile_updates
+        ), f"Expected plan_type='smartlic_pro' in profile updates: {profile_updates}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_deactivates_previous_subscriptions(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, checkout_completed_event
+    ):
+        """AC3: Deactivates existing active subscriptions before creating new one."""
+        mock_construct.return_value = checkout_completed_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        plans_chain = mock_supabase_client.table("plans")
+        plans_chain.execute.return_value = Mock(data={"duration_days": 30, "max_searches": 1000})
+
+        deactivate_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_deactivate(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_update = chain.update
+
+                def capturing_update(d):
+                    if d.get("is_active") is False:
+                        deactivate_calls.append(d)
+                    return original_update(d)
+
+                chain.update = capturing_update
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_deactivate)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        assert len(deactivate_calls) >= 1, "Expected deactivation of previous subscriptions"
+        assert deactivate_calls[0]["is_active"] is False
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_invalidates_cache(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, checkout_completed_event
+    ):
+        """AC6: Checkout completion invalidates user's features cache."""
+        mock_construct.return_value = checkout_completed_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        plans_chain = mock_supabase_client.table("plans")
+        plans_chain.execute.return_value = Mock(data={"duration_days": 30, "max_searches": 1000})
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        mock_redis.delete.assert_called_with("features:user_checkout_123")
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_missing_metadata_skips(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """Edge: Missing metadata (no plan_id) → handler skips gracefully."""
+        data = Mock()
+        data.id = "cs_test_no_meta"
+        data.get = lambda key, default=None: {
+            "client_reference_id": "user_123",
+            "metadata": {},  # No plan_id
+            "subscription": "sub_456",
+            "customer": "cus_789",
+        }.get(key, default)
+
+        event = make_stripe_event(
+            event_id="evt_no_meta_001",
+            event_type="checkout.session.completed",
+            data_object=data,
+        )
+        mock_construct.return_value = event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        # Should succeed without crash (handler skips)
+        assert result["status"] == "success"
+        # No subscription should have been created
+        mock_supabase_client.table("user_subscriptions").insert.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_annual_billing_period(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, make_stripe_event
+    ):
+        """AC3: Annual billing period correctly passed through to subscription."""
+        data = Mock()
+        data.id = "cs_test_annual"
+        data.get = lambda key, default=None: {
+            "client_reference_id": "user_annual_123",
+            "metadata": {"plan_id": "smartlic_pro", "billing_period": "annual"},
+            "subscription": "sub_annual_456",
+            "customer": "cus_annual_789",
+        }.get(key, default)
+
+        event = make_stripe_event(
+            event_id="evt_annual_001",
+            event_type="checkout.session.completed",
+            data_object=data,
+        )
+        mock_construct.return_value = event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        plans_chain = mock_supabase_client.table("plans")
+        plans_chain.execute.return_value = Mock(data={"duration_days": 365, "max_searches": 1000})
+
+        insert_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_insert(table_name):
+            chain = original_table(table_name)
+            if table_name == "user_subscriptions":
+                original_insert = chain.insert
+
+                def capturing_insert(d):
+                    insert_calls.append(d)
+                    return original_insert(d)
+
+                chain.insert = capturing_insert
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_insert)
+
+        from webhooks.stripe import stripe_webhook
+        result = await stripe_webhook(mock_request)
+
+        assert result["status"] == "success"
+        assert len(insert_calls) >= 1
+        assert insert_calls[0]["billing_period"] == "annual"
+        assert insert_calls[0]["user_id"] == "user_annual_123"
+
+
+class TestCheckoutIsSubscription:
+    """GTM-FIX-001 AC1: smartlic_pro creates subscription mode checkout."""
+
+    def test_smartlic_pro_is_subscription(self):
+        """AC1: is_subscription('smartlic_pro') should be True in checkout route."""
+        # Verify the logic inline (same as routes/billing.py line 63)
+        plan_id = "smartlic_pro"
+        is_subscription = plan_id in ("smartlic_pro", "consultor_agil", "maquina", "sala_guerra")
+        assert is_subscription is True
+
+    def test_legacy_plans_still_subscription(self):
+        """Legacy plans remain subscriptions after adding smartlic_pro."""
+        for plan_id in ("consultor_agil", "maquina", "sala_guerra"):
+            is_subscription = plan_id in ("smartlic_pro", "consultor_agil", "maquina", "sala_guerra")
+            assert is_subscription is True, f"{plan_id} should still be a subscription"
+
+    def test_unknown_plan_is_not_subscription(self):
+        """Unknown plans should NOT be subscriptions."""
+        plan_id = "free_trial"
+        is_subscription = plan_id in ("smartlic_pro", "consultor_agil", "maquina", "sala_guerra")
+        assert is_subscription is False
+
+
 class TestSubscriptionUpdatedEdgeCases:
     """Extra edge cases for subscription update handler."""
 

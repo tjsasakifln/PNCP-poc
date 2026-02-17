@@ -12,6 +12,7 @@ CRITICAL FEATURES:
 6. profiles.plan_type sync (keeps fallback current)
 
 Supported Events:
+- checkout.session.completed (initial subscription activation after payment)
 - customer.subscription.updated (billing period changes, plan changes)
 - customer.subscription.deleted (cancellation)
 - invoice.payment_succeeded (renewal)
@@ -117,7 +118,9 @@ async def stripe_webhook(request: Request):
             return {"status": "already_processed", "event_id": event.id}
 
         # Process event based on type
-        if event.type == "customer.subscription.updated":
+        if event.type == "checkout.session.completed":
+            await _handle_checkout_session_completed(sb, event)
+        elif event.type == "customer.subscription.updated":
             await _handle_subscription_updated(sb, event)
         elif event.type == "customer.subscription.deleted":
             await _handle_subscription_deleted(sb, event)
@@ -140,6 +143,86 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         logger.error(f"Error processing webhook: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Database error")
+
+
+async def _handle_checkout_session_completed(sb, event: stripe.Event):
+    """
+    Handle checkout.session.completed event.
+
+    Creates user_subscription row and activates plan after successful Stripe Checkout.
+    This is the critical handler that bridges payment → activation.
+
+    Flow:
+    1. Extract user_id from client_reference_id (set during checkout creation)
+    2. Extract plan_id and billing_period from session metadata
+    3. Look up plan details (duration_days, max_searches)
+    4. Deactivate any existing active subscriptions for the user
+    5. Insert new active subscription row
+    6. Sync profiles.plan_type for fallback reliability
+    7. Invalidate Redis cache
+
+    Args:
+        sb: Supabase client
+        event: Stripe event with checkout.session data
+    """
+    session_data = event.data.object
+    user_id = session_data.get("client_reference_id")
+    metadata = session_data.get("metadata") or {}
+    plan_id = metadata.get("plan_id")
+    billing_period = metadata.get("billing_period", "monthly")
+    stripe_subscription_id = session_data.get("subscription")
+    stripe_customer_id = session_data.get("customer")
+
+    if not user_id or not plan_id:
+        logger.warning(
+            f"Checkout session missing user_id or plan_id: "
+            f"client_reference_id={user_id}, metadata={metadata}"
+        )
+        return
+
+    logger.info(
+        f"Checkout completed: user_id={user_id}, plan_id={plan_id}, "
+        f"billing_period={billing_period}, stripe_sub={stripe_subscription_id}"
+    )
+
+    # Look up plan for duration_days and max_searches
+    plan_result = sb.table("plans").select("duration_days, max_searches").eq("id", plan_id).single().execute()
+    duration_days = 30
+    max_searches = 1000
+    if plan_result.data:
+        duration_days = plan_result.data.get("duration_days", 30) or 30
+        max_searches = plan_result.data.get("max_searches", 1000) or 1000
+
+    expires_at = (datetime.now(timezone.utc) + timedelta(days=duration_days)).isoformat()
+
+    # Deactivate existing active subscriptions for this user
+    sb.table("user_subscriptions").update(
+        {"is_active": False}
+    ).eq("user_id", user_id).eq("is_active", True).execute()
+
+    # Create new active subscription
+    sb.table("user_subscriptions").insert({
+        "user_id": user_id,
+        "plan_id": plan_id,
+        "billing_period": billing_period,
+        "credits_remaining": max_searches,
+        "expires_at": expires_at,
+        "stripe_subscription_id": stripe_subscription_id,
+        "stripe_customer_id": stripe_customer_id,
+        "is_active": True,
+    }).execute()
+
+    # Sync profiles.plan_type (keeps fallback current — CRITICAL)
+    sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
+
+    # Invalidate Redis cache
+    cache_key = f"features:{user_id}"
+    try:
+        await redis_cache.delete(cache_key)
+        logger.info(f"Checkout activation complete: user_id={user_id}, plan={plan_id}, cache invalidated")
+    except Exception as e:
+        logger.warning(f"Cache invalidation failed on checkout activation (non-fatal): {e}")
+        logger.info(f"Checkout activation complete: user_id={user_id}, plan={plan_id}")
 
 
 async def _handle_subscription_updated(sb, event: stripe.Event):

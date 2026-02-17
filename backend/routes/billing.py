@@ -60,7 +60,7 @@ async def create_checkout(
     if not stripe_price_id:
         raise HTTPException(status_code=400, detail="Plano sem preco Stripe configurado")
 
-    is_subscription = plan_id in ("consultor_agil", "maquina", "sala_guerra")
+    is_subscription = plan_id in ("smartlic_pro", "consultor_agil", "maquina", "sala_guerra")
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
     session_params = {
