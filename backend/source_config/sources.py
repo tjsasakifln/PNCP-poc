@@ -236,8 +236,9 @@ class SingleSourceConfig:
         """
         if not self.enabled:
             return False
-        # PNCP, ComprasGov, and Querido Diário don't require credentials (open data)
-        if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV, SourceCode.QUERIDO_DIARIO):
+        # PNCP, ComprasGov, Portal de Compras (v2), and Querido Diário don't require credentials (open data)
+        # GTM-FIX-024 T2: Added PORTAL — v2 API is fully public, no API key needed
+        if self.code in (SourceCode.PNCP, SourceCode.COMPRAS_GOV, SourceCode.PORTAL, SourceCode.QUERIDO_DIARIO):
             return True
         # All other sources require an API key to function
         if not self.credentials.has_api_key():

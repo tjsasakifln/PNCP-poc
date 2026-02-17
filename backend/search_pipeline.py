@@ -628,9 +628,9 @@ class SearchPipeline:
                 timeout=source_config.compras_gov.timeout
             )
 
-        if source_config.portal.enabled and source_config.portal.credentials.has_api_key():
+        # GTM-FIX-024 T2: PCP v2 API is public — no API key required
+        if source_config.portal.enabled:
             adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
-                api_key=source_config.portal.credentials.api_key,
                 timeout=source_config.portal.timeout,
             )
 

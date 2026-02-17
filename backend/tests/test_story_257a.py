@@ -295,18 +295,27 @@ def test_t8_cache_returns_data_structure(mock_busca_request):
 def test_t9_source_unavailable_without_credentials():
     """T9: is_available() retorna False para fonte enabled sem API key."""
 
-    # Create source config with enabled=True but no credentials
-    # SingleSourceConfig is a dataclass that requires name and base_url
+    # GTM-FIX-024: Portal v2 is now public (no API key needed), use Licitar instead
     source_with_no_key = SingleSourceConfig(
-        code=SourceCode.PORTAL,  # Portal requires API key
-        name="Portal de Compras",
-        base_url="https://portal.example.com",
+        code=SourceCode.LICITAR,  # Licitar requires API key
+        name="Licitar Digital",
+        base_url="https://licitar.example.com",
         enabled=True,
         credentials=SourceCredentials(api_key=None, api_secret=None),
     )
 
     # is_available should return False for sources that need credentials
-    assert not source_with_no_key.is_available(), "Portal without API key should be unavailable"
+    assert not source_with_no_key.is_available(), "Licitar without API key should be unavailable"
+
+    # Portal should be available without credentials (v2 public API, GTM-FIX-024 T2)
+    portal_source = SingleSourceConfig(
+        code=SourceCode.PORTAL,
+        name="Portal de Compras",
+        base_url="https://portal.example.com",
+        enabled=True,
+        credentials=SourceCredentials(api_key=None, api_secret=None),
+    )
+    assert portal_source.is_available(), "Portal v2 should be available without credentials"
 
     # PNCP should be available even without credentials (public data)
     pncp_source = SingleSourceConfig(

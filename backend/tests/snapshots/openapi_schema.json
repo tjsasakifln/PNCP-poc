@@ -5987,6 +5987,31 @@
         "summary": "Sources Health"
       }
     },
+    "/subscription/status": {
+      "get": {
+        "description": "Check subscription activation status (GTM-FIX-016).\n\nUsed by obrigado page to poll for webhook completion.\nReturns current subscription state from DB, with Stripe API fallback.",
+        "operationId": "get_subscription_status_subscription_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Subscription Status",
+        "tags": [
+          "billing"
+        ]
+      }
+    },
     "/trial-status": {
       "get": {
         "description": "Get detailed trial status for conversion flow (GTM-010 AC3).\n\nReturns days remaining, usage stats, and expiration info.",
@@ -8264,6 +8289,31 @@
           }
         },
         "summary": "Listar Setores"
+      }
+    },
+    "/v1/subscription/status": {
+      "get": {
+        "description": "Check subscription activation status (GTM-FIX-016).\n\nUsed by obrigado page to poll for webhook completion.\nReturns current subscription state from DB, with Stripe API fallback.",
+        "operationId": "get_subscription_status_v1_subscription_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Subscription Status",
+        "tags": [
+          "billing"
+        ]
       }
     },
     "/v1/trial-status": {

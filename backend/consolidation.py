@@ -92,6 +92,23 @@ class ConsolidationService:
                 fallback when all other sources fail (AC15). This adapter is
                 tried even if ComprasGov is disabled in env config.
         """
+        # GTM-FIX-024 T5: Fail-fast contract validation
+        required_attrs = ("code", "metadata", "fetch", "health_check", "close")
+        for adapter_key, adapter in adapters.items():
+            missing = [attr for attr in required_attrs if not hasattr(adapter, attr)]
+            if missing:
+                raise TypeError(
+                    f"Adapter '{adapter_key}' ({type(adapter).__name__}) missing required "
+                    f"attributes: {', '.join(missing)}. Must implement SourceAdapter interface."
+                )
+        if fallback_adapter is not None:
+            missing = [attr for attr in required_attrs if not hasattr(fallback_adapter, attr)]
+            if missing:
+                raise TypeError(
+                    f"Fallback adapter ({type(fallback_adapter).__name__}) missing required "
+                    f"attributes: {', '.join(missing)}. Must implement SourceAdapter interface."
+                )
+
         self._adapters = adapters
         self._timeout_per_source = timeout_per_source
         self._timeout_global = timeout_global

@@ -167,6 +167,9 @@ class UnifiedProcurement:
     modalidade: str = ""
     """Procurement modality (e.g., 'Pregao Eletronico')."""
 
+    modalidade_id: Optional[int] = None
+    """Procurement modality ID (e.g., 6 for Pregão Eletrônico). GTM-FIX-024 T4."""
+
     situacao: str = ""
     """Current status (e.g., 'Publicada', 'Em andamento')."""
 
@@ -215,10 +218,18 @@ class UnifiedProcurement:
         if self.numero_edital and self.ano:
             return f"{cnpj_clean}:{self.numero_edital}:{self.ano}"
 
-        # Fallback: use objeto hash and value
+        # Fallback: use objeto hash + discriminator
+        # GTM-FIX-024 T3: When valor is 0 (common for PCP), use data_publicacao
+        # instead to avoid false collisions between same-organ bids
         objeto_normalized = " ".join(self.objeto.lower().split()) if self.objeto else ""
         objeto_hash = hashlib.md5(objeto_normalized.encode()).hexdigest()[:12]
-        return f"{cnpj_clean}:{objeto_hash}:{int(self.valor_estimado)}"
+        if self.valor_estimado > 0:
+            discriminator = str(int(self.valor_estimado))
+        elif self.data_publicacao:
+            discriminator = self.data_publicacao.strftime("%Y%m%d")
+        else:
+            discriminator = self.source_id or "0"
+        return f"{cnpj_clean}:{objeto_hash}:{discriminator}"
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -273,6 +284,7 @@ class UnifiedProcurement:
             "dataAberturaProposta": (
                 self.data_abertura.isoformat() if self.data_abertura else None
             ),
+            "modalidadeId": self.modalidade_id,
             "modalidadeNome": self.modalidade,
             "situacaoCompraNome": self.situacao,
             "dataEncerramentoProposta": (

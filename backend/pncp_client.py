@@ -1554,6 +1554,16 @@ class PNCPLegacyAdapter:
             rate_limit_rps=10.0, priority=1,
         )
 
+    @property
+    def name(self) -> str:
+        """Human-readable source name (GTM-FIX-024 T1)."""
+        return self.metadata.name
+
+    @property
+    def code(self) -> str:
+        """Short code for logs/metrics (GTM-FIX-024 T1)."""
+        return self.metadata.code
+
     async def health_check(self):
         from clients.base import SourceStatus
         if _circuit_breaker.is_degraded:
@@ -1623,6 +1633,7 @@ class PNCPLegacyAdapter:
                 ano=item.get("anoCompra", ""),
                 esfera=item.get("esferaId", ""),
                 modalidade=item.get("modalidadeNome", ""),
+                modalidade_id=item.get("modalidadeId"),
                 situacao=item.get("situacaoCompraNome", ""),
                 link_edital=item.get("linkSistemaOrigem", ""),
                 link_portal=item.get("linkProcessoEletronico", ""),
