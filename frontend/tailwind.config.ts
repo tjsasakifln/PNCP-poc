@@ -108,6 +108,10 @@ const config: Config = {
           "from": { opacity: "0", transform: "scale(0.95)" },
           "to": { opacity: "1", transform: "scale(1)" },
         },
+        "slide-in-right": {
+          "from": { transform: "translateX(100%)" },
+          "to": { transform: "translateX(0)" },
+        },
       },
       animation: {
         "fade-in-up": "fade-in-up 0.4s ease-out both",
@@ -116,6 +120,7 @@ const config: Config = {
         "float": "float 3s ease-in-out infinite",
         "slide-up": "slide-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both",
         "scale-in": "scale-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both",
+        "slide-in-right": "slide-in-right 0.3s ease-out both",
       },
       /* STORY-174: Backdrop blur utilities */
       backdropBlur: {

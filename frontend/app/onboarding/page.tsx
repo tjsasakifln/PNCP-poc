@@ -191,7 +191,7 @@ function ValueRangeSelector({
           <select
             value={valorMin}
             onChange={(e) => onChangeMin(parseInt(e.target.value))}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
+            className="w-full min-h-[44px] px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
           >
             <option value={0}>Sem limite</option>
             {VALUE_PRESETS.map((p) => (
@@ -204,7 +204,7 @@ function ValueRangeSelector({
           <select
             value={valorMax}
             onChange={(e) => onChangeMax(parseInt(e.target.value))}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
+            className="w-full min-h-[44px] px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface-0)] text-sm text-[var(--ink)]"
           >
             <option value={0}>Sem limite</option>
             {VALUE_PRESETS.map((p) => (
@@ -333,27 +333,29 @@ function StepTwo({
               <div key={region}>
                 <button
                   onClick={() => toggleRegion(ufs)}
-                  className={`text-xs font-medium mb-1 px-2 py-0.5 rounded transition-colors ${
+                  className={`text-sm font-medium mb-1.5 min-h-[44px] px-3 py-2 rounded-lg transition-colors ${
                     allSelected
                       ? "text-[var(--brand-blue)] bg-[var(--brand-blue)]/10"
                       : someSelected
                       ? "text-[var(--ink)] bg-[var(--surface-1)]"
                       : "text-[var(--ink-secondary)]"
                   }`}
+                  data-testid={`region-button-${region}`}
                 >
                   {region}
                 </button>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1.5">
                   {ufs.map((uf) => (
                     <button
                       key={uf}
                       onClick={() => toggleUf(uf)}
-                      className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      className={`min-h-[44px] min-w-[44px] px-3 py-2 text-sm rounded-lg border transition-colors ${
                         data.ufs_atuacao.includes(uf)
                           ? "border-[var(--brand-blue)] bg-[var(--brand-blue)] text-white"
                           : "border-[var(--border)] text-[var(--ink-secondary)] hover:border-[var(--ink-secondary)]"
                       }`}
                       title={UF_NAMES[uf]}
+                      data-testid={`uf-button-${uf}`}
                     >
                       {uf}
                     </button>
@@ -639,14 +641,16 @@ export default function OnboardingPage() {
                 <button
                   onClick={prevStep}
                   disabled={isAnalyzing}
-                  className="px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors disabled:opacity-40"
+                  className="min-h-[44px] px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors disabled:opacity-40"
+                  data-testid="btn-voltar"
                 >
                   Voltar
                 </button>
               ) : (
                 <button
                   onClick={handleSkip}
-                  className="px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+                  className="min-h-[44px] px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+                  data-testid="btn-pular"
                 >
                   Pular por agora
                 </button>
@@ -656,7 +660,8 @@ export default function OnboardingPage() {
               {currentStep < 2 && (
                 <button
                   onClick={handleSkip}
-                  className="px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+                  className="min-h-[44px] px-4 py-2 text-sm text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+                  data-testid="btn-pular-alt"
                 >
                   Pular por agora
                 </button>
@@ -664,8 +669,9 @@ export default function OnboardingPage() {
               <button
                 onClick={nextStep}
                 disabled={!canProceed() || isAnalyzing}
-                className="px-6 py-2.5 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium
+                className="min-h-[44px] px-6 py-2.5 rounded-lg bg-[var(--brand-blue)] text-white text-sm font-medium
                            disabled:opacity-40 hover:bg-[var(--brand-blue-hover)] transition-colors"
+                data-testid="btn-continuar"
               >
                 {currentStep === 2
                   ? isAnalyzing
