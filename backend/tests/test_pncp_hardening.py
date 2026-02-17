@@ -22,9 +22,12 @@ from pncp_client import (
     PNCPCircuitBreaker,
     PNCPDegradedError,
     _circuit_breaker,
+    _pcp_circuit_breaker,
     get_circuit_breaker,
     PNCP_TIMEOUT_PER_MODALITY,
     PNCP_MODALITY_RETRY_BACKOFF,
+    PNCP_CIRCUIT_BREAKER_THRESHOLD,
+    PCP_CIRCUIT_BREAKER_THRESHOLD,
 )
 from exceptions import PNCPAPIError
 
@@ -167,18 +170,33 @@ class TestPNCPCircuitBreaker:
 
 
 class TestCircuitBreakerSingleton:
-    """Test module-level circuit breaker singleton."""
+    """Test module-level circuit breaker singletons (GTM-FIX-005)."""
 
     def setup_method(self):
-        """Reset the global circuit breaker before each test."""
+        """Reset the global circuit breakers before each test."""
         _circuit_breaker.reset()
+        _pcp_circuit_breaker.reset()
 
-    def test_get_circuit_breaker_returns_singleton(self):
-        """get_circuit_breaker() returns the same instance."""
+    def test_get_circuit_breaker_returns_pncp_singleton(self):
+        """get_circuit_breaker() defaults to PNCP singleton."""
         cb1 = get_circuit_breaker()
-        cb2 = get_circuit_breaker()
+        cb2 = get_circuit_breaker("pncp")
         assert cb1 is cb2
         assert cb1 is _circuit_breaker
+
+    def test_get_circuit_breaker_returns_pcp_singleton(self):
+        """get_circuit_breaker('pcp') returns PCP singleton."""
+        cb = get_circuit_breaker("pcp")
+        assert cb is _pcp_circuit_breaker
+        assert cb is not _circuit_breaker
+
+    def test_pncp_and_pcp_are_separate_instances(self):
+        """PNCP and PCP circuit breakers are independent instances."""
+        pncp = get_circuit_breaker("pncp")
+        pcp = get_circuit_breaker("pcp")
+        assert pncp is not pcp
+        assert pncp.name == "pncp"
+        assert pcp.name == "pcp"
 
 
 # ---------------------------------------------------------------------------
@@ -762,11 +780,128 @@ class TestEnvironmentConfiguration:
         assert PNCP_MODALITY_RETRY_BACKOFF == 3.0
 
     def test_circuit_breaker_default_threshold(self):
-        """Default circuit breaker threshold is 20 (raised for 27 UFs × 4 modalidades)."""
+        """Default PNCP circuit breaker threshold is 50 (GTM-FIX-005)."""
         cb = PNCPCircuitBreaker()
-        assert cb.threshold == 20
+        assert cb.threshold == 50
 
     def test_circuit_breaker_default_cooldown(self):
         """Default circuit breaker cooldown is 120s (2 minutes)."""
         cb = PNCPCircuitBreaker()
         assert cb.cooldown_seconds == 120
+
+
+# ---------------------------------------------------------------------------
+# GTM-FIX-005: Per-source circuit breaker + raised threshold tests
+# ---------------------------------------------------------------------------
+
+class TestGTMFIX005CircuitBreaker:
+    """GTM-FIX-005: Configurable per-source circuit breaker."""
+
+    def setup_method(self):
+        _circuit_breaker.reset()
+        _pcp_circuit_breaker.reset()
+
+    # AC1: Threshold defaults
+    def test_pncp_threshold_default_is_50(self):
+        """PNCP circuit breaker threshold defaults to 50."""
+        assert PNCP_CIRCUIT_BREAKER_THRESHOLD == 50
+        assert _circuit_breaker.threshold == 50
+
+    def test_pcp_threshold_default_is_30(self):
+        """PCP circuit breaker threshold defaults to 30."""
+        assert PCP_CIRCUIT_BREAKER_THRESHOLD == 30
+        assert _pcp_circuit_breaker.threshold == 30
+
+    # AC5: Configurable threshold
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_threshold_configurable(self):
+        """Circuit breaker threshold can be set to any value."""
+        cb = PNCPCircuitBreaker(name="test", threshold=10, cooldown_seconds=60)
+        assert cb.threshold == 10
+        assert cb.name == "test"
+
+        for _ in range(9):
+            await cb.record_failure()
+        assert cb.is_degraded is False
+
+        await cb.record_failure()
+        assert cb.is_degraded is True
+
+    # AC6: 18% failure rate (20/108) does NOT trip with threshold=50
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_does_not_trip_at_18_percent_failure(self):
+        """With threshold=50, 20 failures (18% of 108 parallel slots) don't trip."""
+        cb = PNCPCircuitBreaker(name="pncp-18pct", threshold=50, cooldown_seconds=120)
+        for _ in range(20):
+            await cb.record_failure()
+
+        assert cb.consecutive_failures == 20
+        assert cb.is_degraded is False, "18% failure rate should NOT trip threshold=50"
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_trips_at_50(self):
+        """Circuit breaker trips at exactly 50 failures."""
+        cb = PNCPCircuitBreaker(name="pncp-50", threshold=50, cooldown_seconds=120)
+        for _ in range(50):
+            await cb.record_failure()
+
+        assert cb.consecutive_failures == 50
+        assert cb.is_degraded is True
+
+    # AC9: Named instances are independent
+    @pytest.mark.asyncio
+    async def test_named_circuit_breakers_are_independent(self):
+        """Failures in PNCP circuit breaker don't affect PCP and vice versa."""
+        pncp = get_circuit_breaker("pncp")
+        pcp = get_circuit_breaker("pcp")
+
+        # Trip PCP (threshold=30)
+        for _ in range(30):
+            await pcp.record_failure()
+
+        assert pcp.is_degraded is True, "PCP should be degraded after 30 failures"
+        assert pncp.is_degraded is False, "PNCP must NOT be affected by PCP failures"
+        assert pncp.consecutive_failures == 0
+
+    @pytest.mark.asyncio
+    async def test_pcp_does_not_cascade_to_pncp(self):
+        """Tripping PCP does not cascade to PNCP — the core GTM-FIX-005 guarantee."""
+        pncp = get_circuit_breaker("pncp")
+        pcp = get_circuit_breaker("pcp")
+
+        # Simulate PCP down
+        for _ in range(30):
+            await pcp.record_failure()
+        assert pcp.is_degraded is True
+
+        # PNCP still works fine
+        await pncp.record_success()
+        assert pncp.is_degraded is False
+        assert pncp.consecutive_failures == 0
+
+    # AC10: Name appears in logs
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_name_in_trip_log(self, caplog):
+        """Circuit breaker log includes source name when tripping."""
+        cb = PNCPCircuitBreaker(name="test-source", threshold=2, cooldown_seconds=10)
+        with caplog.at_level("WARNING"):
+            await cb.record_failure()
+            await cb.record_failure()
+
+        assert any("Circuit breaker [test-source] TRIPPED" in msg for msg in caplog.messages)
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_name_in_recovery_log(self, caplog):
+        """Circuit breaker log includes source name on recovery."""
+        cb = PNCPCircuitBreaker(name="test-recover", threshold=2, cooldown_seconds=10)
+        await cb.record_failure()
+        await cb.record_failure()
+        assert cb.is_degraded is True
+
+        # Expire cooldown
+        cb.degraded_until = time.time() - 1
+
+        with caplog.at_level("INFO"):
+            await cb.try_recover()
+
+        assert any("Circuit breaker [test-recover] cooldown expired" in msg for msg in caplog.messages)

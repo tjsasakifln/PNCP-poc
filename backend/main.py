@@ -382,9 +382,11 @@ async def health():
     for source_name in source_names:
         sources[source_name] = source_health_registry.get_status(source_name)
 
-    # Include PNCP circuit breaker status (property access)
-    pncp_cb = get_circuit_breaker()
+    # Include per-source circuit breaker status (GTM-FIX-005)
+    pncp_cb = get_circuit_breaker("pncp")
     sources["PNCP_circuit_breaker"] = "degraded" if pncp_cb.is_degraded else "healthy"
+    pcp_cb = get_circuit_breaker("pcp")
+    sources["PCP_circuit_breaker"] = "degraded" if pcp_cb.is_degraded else "healthy"
 
     # Determine overall health status
     # Supabase is critical, Redis is optional

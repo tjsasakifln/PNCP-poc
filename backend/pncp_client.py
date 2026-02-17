@@ -35,12 +35,18 @@ class PNCPDegradedError(PNCPAPIError):
 # Circuit Breaker (STORY-252 AC8)
 # ============================================================================
 
-# Configurable via environment variables
+# Configurable via environment variables (GTM-FIX-005)
 PNCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "20")  # Raised: 27 UFs × 4 mods = 108 reqs
+    os.environ.get("PNCP_CIRCUIT_BREAKER_THRESHOLD", "50")  # 27 UFs × 4 mods = 108 slots; 18% ≈ 20 → raised to 50
 )
 PNCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
-    os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "120")  # Changed from "300" to "120"
+    os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "120")
+)
+PCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
+    os.environ.get("PCP_CIRCUIT_BREAKER_THRESHOLD", "30")  # Conservative: PCP API stability unknown
+)
+PCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
+    os.environ.get("PCP_CIRCUIT_BREAKER_COOLDOWN", "120")
 )
 
 # Per-modality timeout (STORY-252 AC6) — configurable
@@ -68,28 +74,32 @@ class ParallelFetchResult:
 
 
 class PNCPCircuitBreaker:
-    """Circuit breaker for PNCP API to prevent cascading failures.
+    """Circuit breaker for API sources to prevent cascading failures.
 
-    After ``threshold`` consecutive timeouts (any UF+modality combination),
-    the circuit breaker marks PNCP as *degraded* for ``cooldown_seconds``.
-    While degraded, callers should skip PNCP and use alternative sources.
+    After ``threshold`` consecutive timeouts, the circuit breaker marks the
+    source as *degraded* for ``cooldown_seconds``. While degraded, callers
+    should skip that source and use alternatives.
 
-    Thread-safety: Python's GIL makes simple int/float assignments atomic.
-    For async code an asyncio.Lock is used around state mutations.
+    Each source (PNCP, PCP, etc.) gets its own named instance so failures
+    in one source don't cascade to others (GTM-FIX-005 AC9).
+
+    Thread-safety: asyncio.Lock around state mutations.
 
     Attributes:
+        name: Identifier for this circuit breaker instance (e.g. "pncp", "pcp").
         consecutive_failures: Running count of consecutive timeout failures.
-        degraded_until: Unix timestamp until which PNCP is considered degraded.
-            ``None`` when not degraded.
+        degraded_until: Unix timestamp until which source is considered degraded.
         threshold: Number of consecutive failures before tripping.
         cooldown_seconds: Duration in seconds to stay degraded after tripping.
     """
 
     def __init__(
         self,
+        name: str = "pncp",
         threshold: int = PNCP_CIRCUIT_BREAKER_THRESHOLD,
         cooldown_seconds: int = PNCP_CIRCUIT_BREAKER_COOLDOWN,
     ):
+        self.name = name
         self.threshold = threshold
         self.cooldown_seconds = cooldown_seconds
         self.consecutive_failures: int = 0
@@ -113,13 +123,13 @@ class PNCPCircuitBreaker:
         async with self._lock:
             self.consecutive_failures += 1
             logger.debug(
-                f"PNCP circuit breaker: failure #{self.consecutive_failures} "
+                f"Circuit breaker [{self.name}]: failure #{self.consecutive_failures} "
                 f"(threshold={self.threshold})"
             )
             if self.consecutive_failures >= self.threshold and not self.is_degraded:
                 self.degraded_until = time.time() + self.cooldown_seconds
                 logger.warning(
-                    f"PNCP circuit breaker TRIPPED after {self.consecutive_failures} "
+                    f"Circuit breaker [{self.name}] TRIPPED after {self.consecutive_failures} "
                     f"consecutive failures — degraded for {self.cooldown_seconds}s"
                 )
 
@@ -128,7 +138,7 @@ class PNCPCircuitBreaker:
         async with self._lock:
             if self.consecutive_failures > 0:
                 logger.debug(
-                    f"PNCP circuit breaker: success after {self.consecutive_failures} "
+                    f"Circuit breaker [{self.name}]: success after {self.consecutive_failures} "
                     f"failures — resetting counter"
                 )
             self.consecutive_failures = 0
@@ -151,12 +161,17 @@ class PNCPCircuitBreaker:
                 if self.degraded_until is not None and time.time() >= self.degraded_until:
                     self.degraded_until = None
                     self.consecutive_failures = 0
-                    logger.info("PNCP circuit breaker cooldown expired — resetting to healthy")
+                    logger.info(
+                        f"Circuit breaker [{self.name}] cooldown expired — resetting to healthy"
+                    )
                     return True
             finally:
                 self._lock.release()
         except asyncio.TimeoutError:
-            logger.warning("Circuit breaker lock timeout in try_recover — proceeding with current state")
+            logger.warning(
+                f"Circuit breaker [{self.name}] lock timeout in try_recover — "
+                f"proceeding with current state"
+            )
 
         return not self.is_degraded
 
@@ -166,12 +181,27 @@ class PNCPCircuitBreaker:
         self.degraded_until = None
 
 
-# Module-level singleton
-_circuit_breaker = PNCPCircuitBreaker()
+# Module-level singletons — one per data source (GTM-FIX-005 AC9)
+_circuit_breaker = PNCPCircuitBreaker(
+    name="pncp",
+    threshold=PNCP_CIRCUIT_BREAKER_THRESHOLD,
+    cooldown_seconds=PNCP_CIRCUIT_BREAKER_COOLDOWN,
+)
+_pcp_circuit_breaker = PNCPCircuitBreaker(
+    name="pcp",
+    threshold=PCP_CIRCUIT_BREAKER_THRESHOLD,
+    cooldown_seconds=PCP_CIRCUIT_BREAKER_COOLDOWN,
+)
 
 
-def get_circuit_breaker() -> PNCPCircuitBreaker:
-    """Return the module-level circuit breaker singleton."""
+def get_circuit_breaker(source: str = "pncp") -> PNCPCircuitBreaker:
+    """Return the circuit breaker singleton for a given data source.
+
+    Args:
+        source: "pncp" (default) or "pcp".
+    """
+    if source == "pcp":
+        return _pcp_circuit_breaker
     return _circuit_breaker
 
 

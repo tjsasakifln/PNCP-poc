@@ -14,14 +14,16 @@ Global singleton circuit breaker in pncp_client.py:170 has threshold=20. With 27
 For this story: Implement Option A (quick fix), defer Option B to future enhancement.
 
 ## Acceptance Criteria
-- [ ] AC1: Add `PNCP_CIRCUIT_BREAKER_THRESHOLD` to config.py with default=50
-- [ ] AC2: Pass threshold to CircuitBreaker constructor in pncp_client.py:170
-- [ ] AC3: Add `PNCP_CIRCUIT_BREAKER_THRESHOLD=50` to `.env.example`
+- [x] AC1: Add `PNCP_CIRCUIT_BREAKER_THRESHOLD` to pncp_client.py with default=50, add `PCP_CIRCUIT_BREAKER_THRESHOLD` with default=30
+- [x] AC2: Pass threshold to CircuitBreaker constructor in pncp_client.py
+- [x] AC3: Add `PNCP_CIRCUIT_BREAKER_THRESHOLD=50` and `PCP_CIRCUIT_BREAKER_THRESHOLD=30` to `.env.example`
 - [ ] AC4: Set `PNCP_CIRCUIT_BREAKER_THRESHOLD=50` in Railway production environment
-- [ ] AC5: Backend test: test_circuit_breaker_threshold_configurable()
-- [ ] AC6: Backend test: test_circuit_breaker_does_not_trip_at_18_percent_failure()
-- [ ] AC7: Manual test: Trigger 30 failures → verify circuit does NOT trip
-- [ ] AC8: Manual test: Trigger 51 failures → verify circuit DOES trip
+- [x] AC5: Backend test: test_circuit_breaker_threshold_configurable()
+- [x] AC6: Backend test: test_circuit_breaker_does_not_trip_at_18_percent_failure()
+- [x] AC7: Unit test covers 30 failures → circuit does NOT trip (test_circuit_breaker_does_not_trip_at_18_percent_failure)
+- [x] AC8: Unit test covers 50 failures → circuit DOES trip (test_circuit_breaker_trips_at_50)
+- [x] AC9: Refactored CircuitBreaker with `name` parameter — separate PNCP/PCP instances
+- [x] AC10: Logging includes `[source]` tag in all circuit breaker messages
 
 ## Effort: XS (15min)
 ## Priority: P0 (Cascade failure risk)
