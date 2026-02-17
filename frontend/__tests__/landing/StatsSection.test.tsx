@@ -8,24 +8,24 @@ describe('StatsSection', () => {
     expect(screen.getByText(/Impacto real no mercado de licitações/i)).toBeInTheDocument();
   });
 
-  it('renders hero stat 6M+', () => {
+  it('renders hero stat — 15 setores', () => {
     render(<StatsSection />);
 
-    expect(screen.getByText('R$ 2.3bi')).toBeInTheDocument();
-    expect(screen.getByText(/em oportunidades\/mês/i)).toBeInTheDocument();
+    expect(screen.getByText('15')).toBeInTheDocument();
+    expect(screen.getByText(/setores especializados/i)).toBeInTheDocument();
   });
 
   it('renders 3 supporting stats', () => {
     render(<StatsSection />);
 
-    expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText(/setores especializados/i)).toBeInTheDocument();
+    expect(screen.getByText('1000+')).toBeInTheDocument();
+    expect(screen.getByText(/regras de filtragem/i)).toBeInTheDocument();
 
     expect(screen.getByText('27')).toBeInTheDocument();
     expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
 
     expect(screen.getByText('Diário')).toBeInTheDocument();
-    expect(screen.getByText(/monitoramento contínuo/i)).toBeInTheDocument();
+    expect(screen.getByText(/análises programadas/i)).toBeInTheDocument();
   });
 
   it('uses hero number layout', () => {

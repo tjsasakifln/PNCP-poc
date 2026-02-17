@@ -246,8 +246,8 @@ describe('PlanosPage Component', () => {
       // This text appears in both plan description and features list - use getAllByText
       expect(screen.getAllByText(/Inteligência de decisão completa/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/5 anos de histórico/i)).toBeInTheDocument();
-      expect(screen.getByText(/Cobertura nacional/i)).toBeInTheDocument();
-      expect(screen.getByText(/Processamento prioritário/i)).toBeInTheDocument();
+      expect(screen.getByText(/15 setores e 27 estados/i)).toBeInTheDocument();
+      expect(screen.getByText(/Filtragem com 1\.000\+ regras/i)).toBeInTheDocument();
     });
 
     it('should show feature details', async () => {
@@ -861,7 +861,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/ROI de 7\.8x em uma única oportunidade ganha/i)).toBeInTheDocument();
+        expect(screen.getByText(/Exemplo ilustrativo com base em oportunidades típicas do setor/i)).toBeInTheDocument();
       });
     });
   });

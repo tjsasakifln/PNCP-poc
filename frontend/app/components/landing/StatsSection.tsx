@@ -24,16 +24,16 @@ export default function StatsSection({ className = '' }: StatsSectionProps) {
 
       {/* Layout Hero Number + 3 menores (Assimétrico) */}
       <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-        {/* Hero Number — R$ 2.3bi */}
+        {/* Hero Number — 15 setores */}
         <div
           className={`flex-shrink-0 text-center p-8 lg:p-12 bg-surface-0 rounded-card border border-[var(--border)] shadow-sm transition-all duration-500 delay-100 ${
             isInView ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
         >
           <div className="text-5xl sm:text-6xl lg:text-7xl font-display tracking-tighter text-brand-navy tabular-nums">
-            R$ 2.3bi
+            15
           </div>
-          <div className="text-lg text-ink-secondary mt-2 font-medium">em oportunidades/mês</div>
+          <div className="text-lg text-ink-secondary mt-2 font-medium">setores especializados</div>
           <div className="w-16 h-1 bg-brand-blue mx-auto mt-4 rounded-full" />
         </div>
 
@@ -44,8 +44,8 @@ export default function StatsSection({ className = '' }: StatsSectionProps) {
               isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
-            <div className="text-3xl sm:text-4xl font-bold text-brand-blue tabular-nums">12</div>
-            <div className="text-sm text-ink-secondary mt-1">setores especializados</div>
+            <div className="text-3xl sm:text-4xl font-bold text-brand-blue tabular-nums">1000+</div>
+            <div className="text-sm text-ink-secondary mt-1">regras de filtragem</div>
           </div>
 
           <div
@@ -63,7 +63,7 @@ export default function StatsSection({ className = '' }: StatsSectionProps) {
             }`}
           >
             <div className="text-2xl sm:text-3xl font-bold text-brand-blue">Diário</div>
-            <div className="text-sm text-ink-secondary mt-1">monitoramento contínuo</div>
+            <div className="text-sm text-ink-secondary mt-1">análises programadas</div>
           </div>
         </div>
       </div>

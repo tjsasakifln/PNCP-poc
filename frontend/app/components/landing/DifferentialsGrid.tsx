@@ -40,7 +40,7 @@ const differentials: DifferentialCard[] = [
       </svg>
     ),
     title: 'REDUÇÃO DE INCERTEZA',
-    bullets: ['Critérios objetivos de avaliação', 'Dados consolidados de múltiplas fontes', 'Confiança em cada decisão'],
+    bullets: ['Critérios objetivos de avaliação', 'Dados do PNCP e Portal de Compras Públicas', 'Confiança em cada decisão'],
   },
   {
     icon: (
@@ -49,7 +49,7 @@ const differentials: DifferentialCard[] = [
       </svg>
     ),
     title: 'COBERTURA NACIONAL',
-    bullets: ['Todas as fontes oficiais monitoradas', '27 estados cobertos diariamente', 'Atualização contínua em tempo real'],
+    bullets: ['PNCP e Portal de Compras Públicas integrados', '27 estados cobertos diariamente', 'Novas fontes adicionadas regularmente'],
   },
 ];
 

@@ -28,7 +28,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          Monitoramos dezenas de fontes oficiais em tempo real para garantir que nenhuma oportunidade passe despercebida.
+          Conectados ao PNCP e ao Portal de Compras Públicas — as duas maiores bases de licitações do Brasil.
         </p>
 
         {/* Fonte Primária: Inteligência de Fontes */}
@@ -54,8 +54,8 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             </svg>
             <h3 className="text-xl font-bold">Inteligência de Fontes Oficiais</h3>
           </div>
-          <p className="text-2xl font-bold mb-1">Dezenas de fontes consolidadas em tempo real</p>
-          <p className="text-white/80 text-sm mb-4">Governo Federal + 27 estados + Diários oficiais + Bases complementares</p>
+          <p className="text-2xl font-bold mb-1">Duas das maiores bases de licitações públicas do Brasil</p>
+          <p className="text-white/80 text-sm mb-4">Portal Nacional de Contratações Públicas (PNCP) + Portal de Compras Públicas</p>
         </div>
 
         {/* Fontes Complementares */}
@@ -68,7 +68,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             Cobertura em Constante Expansão
           </h4>
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-ink-secondary">
-            {['Fontes federais', 'Portais estaduais', 'Diários oficiais', 'Bases complementares', 'Fontes municipais'].map((source) => (
+            {['PNCP (Federal)', 'Portal de Compras Públicas', 'Novas fontes em breve'].map((source) => (
               <span
                 key={source}
                 className="bg-surface-0 border border-[var(--border)] px-3 py-1.5 rounded-full"
@@ -77,7 +77,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
               </span>
             ))}
           </div>
-          <p className="text-xs text-ink-muted mt-4">Integrações em constante expansão para cobertura máxima</p>
+          <p className="text-xs text-ink-muted mt-4">Novas integrações sendo adicionadas regularmente</p>
         </div>
       </div>
     </section>

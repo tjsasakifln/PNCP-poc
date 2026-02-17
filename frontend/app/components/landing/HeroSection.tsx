@@ -132,9 +132,9 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           className="mt-12 flex flex-wrap items-center justify-center gap-4"
           variants={fadeInUp}
         >
-          <StatsBadge icon={Target} value="R$ 2.3" label="bi em oportunidades" delay={0} />
-          <StatsBadge icon={Zap} value="12" label="setores cobertos" delay={0.1} />
-          <StatsBadge icon={Globe} value="27" label="estados monitorados" delay={0.2} />
+          <StatsBadge icon={Target} value="15" label="setores especializados" delay={0} />
+          <StatsBadge icon={Zap} value="1000+" label="regras de filtragem" delay={0.1} />
+          <StatsBadge icon={Globe} value="27" label="estados cobertos" delay={0.2} />
         </motion.div>
       </motion.div>
     </section>

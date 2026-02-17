@@ -17,20 +17,20 @@
 8. Add "beta" or "preview" labels to incomplete features
 
 ## Acceptance Criteria
-- [ ] AC1: HeroSection.tsx headline passes fact-check (no undelivered claims)
-- [ ] AC2: StatsSection.tsx ROI figures include disclaimers or removed
-- [ ] AC3: DifferentialsGrid.tsx removes "notificações em tempo real" claim
-- [ ] AC4: DataSourcesSection.tsx changes "Dezenas de fontes" → "Portal PNCP + sistemas estaduais"
-- [ ] AC5: SectorsGrid.tsx sector claims match actual backend coverage (9 sectors verified)
-- [ ] AC6: HowItWorks.tsx removes "monitoramento contínuo" or qualifies as "programado"
-- [ ] AC7: BeforeAfter.tsx before/after examples match real user workflows
-- [ ] AC8: OpportunityCost.tsx calculator assumptions documented
-- [ ] AC9: comparisons.ts competitor comparison claims are verifiable
-- [ ] AC10: valueProps.ts value props reference delivered features only
-- [ ] AC11: analysisExamples.ts examples include timestamps/disclaimers
-- [ ] AC12: planos/page.tsx plan features list matches quota.py capabilities
-- [ ] AC13: All 19 NOT DELIVERED claims removed or marked "em breve"
-- [ ] AC14: All 17 MISLEADING claims qualified with context
+- [x] AC1: HeroSection.tsx headline passes fact-check (no undelivered claims) — removed "R$ 2.3 bi" unverified claim, fixed sector count 12→15
+- [x] AC2: StatsSection.tsx ROI figures include disclaimers or removed — replaced R$ 2.3bi hero with "15 setores", fixed "12 setores"→"1000+ regras", "monitoramento contínuo"→"análises programadas"
+- [x] AC3: DifferentialsGrid.tsx removes "notificações em tempo real" claim — removed "Atualização contínua em tempo real", "Todas as fontes oficiais monitoradas"→"PNCP e PCP integrados"
+- [x] AC4: DataSourcesSection.tsx changes "Dezenas de fontes" → "Portal PNCP + Portal de Compras Públicas" — complete rewrite with accurate dual-source claims
+- [x] AC5: SectorsGrid.tsx sector claims match actual backend coverage (15 sectors verified against sectors_data.yaml)
+- [x] AC6: HowItWorks.tsx — already accurate, no false claims found
+- [ ] AC7: BeforeAfter.tsx — FILE DOES NOT EXIST (not yet created)
+- [ ] AC8: OpportunityCost.tsx — FILE DOES NOT EXIST (not yet created)
+- [ ] AC9: comparisons.ts — FILE DOES NOT EXIST (not yet created)
+- [ ] AC10: valueProps.ts — FILE DOES NOT EXIST (not yet created)
+- [ ] AC11: analysisExamples.ts — FILE DOES NOT EXIST (not yet created)
+- [x] AC12: planos/page.tsx plan features list matches quota.py — removed "Processamento prioritário" (Pro=NORMAL), fixed AI claim to "GPT-4o", added "1000+ regras", qualified ROI example
+- [x] AC13: All NOT DELIVERED claims in existing files removed or qualified — "em tempo real", "monitoramento contínuo", "dezenas de fontes" all fixed
+- [x] AC14: All MISLEADING claims in existing files qualified — "R$ 2.3 bi" removed, "12 setores"→15, ROI qualified as "exemplo ilustrativo", sources made specific
 - [ ] AC15: Manual review by non-technical stakeholder confirms accuracy
 
 ## Effort: M (2-3 days)
@@ -80,9 +80,10 @@
 
 1. **AC4 revisado:** `DataSourcesSection.tsx` deve agora listar **2 fontes reais**: "Portal PNCP" + "Portal de Compras Públicas". O claim "Dezenas de fontes" ainda é falso (são 2, não dezenas), mas o texto pode ser: **"Duas das maiores bases de licitações públicas do Brasil"** em vez de "Portal PNCP + sistemas estaduais".
 
-2. **Novo AC16:** Todas as referências a "fonte única" ou que impliquem exclusividade PNCP devem ser atualizadas para refletir dual-source. Exemplos:
-   - "Conectado diretamente ao PNCP" → "Conectado ao PNCP e ao Portal de Compras Públicas"
-   - "Dados do governo federal" → "Dados de portais oficiais de licitações"
+2. **AC16 (DONE):** Todas as referências a "fonte única" ou que impliquem exclusividade PNCP atualizadas para refletir dual-source:
+   - DataSourcesSection: "Dezenas de fontes" → "PNCP + Portal de Compras Públicas"
+   - DifferentialsGrid: "múltiplas fontes" → "PNCP e Portal de Compras Públicas"
+   - planos/page.tsx: "setores monitorados" → "PNCP e Portal de Compras Públicas integrados"
 
 3. **Impacto no effort:** Sem aumento — é apenas ajuste de texto no mesmo escopo.
 

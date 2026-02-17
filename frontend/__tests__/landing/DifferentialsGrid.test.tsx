@@ -38,13 +38,13 @@ describe('DifferentialsGrid', () => {
 
     // REDUÇÃO DE INCERTEZA
     expect(screen.getByText(/Critérios objetivos de avaliação/i)).toBeInTheDocument();
-    expect(screen.getByText(/Dados consolidados de múltiplas fontes/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dados do PNCP e Portal de Compras Públicas/i)).toBeInTheDocument();
     expect(screen.getByText(/Confiança em cada decisão/i)).toBeInTheDocument();
 
     // COBERTURA NACIONAL
-    expect(screen.getByText(/Todas as fontes oficiais monitoradas/i)).toBeInTheDocument();
+    expect(screen.getByText(/PNCP e Portal de Compras Públicas integrados/i)).toBeInTheDocument();
     expect(screen.getByText(/27 estados cobertos diariamente/i)).toBeInTheDocument();
-    expect(screen.getByText(/Atualização contínua em tempo real/i)).toBeInTheDocument();
+    expect(screen.getByText(/Novas fontes adicionadas regularmente/i)).toBeInTheDocument();
   });
 
   it('uses 1+3 asymmetric layout', () => {

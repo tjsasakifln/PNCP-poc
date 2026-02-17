@@ -27,9 +27,9 @@ describe('HeroSection', () => {
   it('renders stats badges with trust signals (AC4)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/bi em oportunidades/i)).toBeInTheDocument();
-    expect(screen.getByText(/setores cobertos/i)).toBeInTheDocument();
-    expect(screen.getByText(/estados monitorados/i)).toBeInTheDocument();
+    expect(screen.getByText(/setores especializados/i)).toBeInTheDocument();
+    expect(screen.getByText(/regras de filtragem/i)).toBeInTheDocument();
+    expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
   });
 
   it('renders secondary CTA button with scroll functionality', () => {

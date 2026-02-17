@@ -28,10 +28,10 @@ const FEATURES = [
   { text: "1.000 análises por mês", detail: "Avalie oportunidades em todos os 27 estados" },
   { text: "Exportação Excel completa", detail: "Relatórios detalhados para sua equipe" },
   { text: "Pipeline de acompanhamento", detail: "Gerencie oportunidades do início ao fim" },
-  { text: "Inteligência de decisão completa", detail: "IA com 10.000 tokens de análise estratégica" },
-  { text: "5 anos de histórico", detail: "Acesso ao maior acervo de oportunidades" },
-  { text: "Cobertura nacional", detail: "Todos os estados e setores monitorados" },
-  { text: "Processamento prioritário", detail: "Resultados em segundos, não minutos" },
+  { text: "Resumos executivos com GPT-4o", detail: "Análise estratégica de cada oportunidade" },
+  { text: "5 anos de histórico", detail: "Acesso a oportunidades desde 2021" },
+  { text: "15 setores e 27 estados", detail: "PNCP e Portal de Compras Públicas integrados" },
+  { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
 ];
 
 // FAQ items
@@ -325,7 +325,7 @@ export default function PlanosPage() {
               </div>
             </div>
             <p className="mt-3 text-sm font-semibold text-[var(--brand-blue)]">
-              ROI de 7.8x em uma única oportunidade ganha
+              Exemplo ilustrativo com base em oportunidades típicas do setor
             </p>
           </div>
         </div>
