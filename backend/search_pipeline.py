@@ -634,12 +634,10 @@ class SearchPipeline:
                 timeout=source_config.portal.timeout,
             )
 
-        # STORY-252 T8: Create ComprasGov fallback adapter for last-resort use
-        # when all primary sources fail (AC15). Only effective if ComprasGov
-        # is NOT already included as a primary adapter.
-        fallback_adapter = ComprasGovAdapter(
-            timeout=source_config.compras_gov.timeout
-        )
+        # GTM-FIX-025 T1: ComprasGov v1 is permanently unstable (503s).
+        # Removed as fallback — PNCP+PCP provide sufficient coverage.
+        # Will be restored when ComprasGov v3 migration is ready (GTM-FIX-026).
+        fallback_adapter = None
 
         consolidation_svc = ConsolidationService(
             adapters=adapters,
@@ -802,6 +800,56 @@ class SearchPipeline:
                     f"Tente com menos estados ou um período menor."
                 ),
             )
+        except Exception as e:
+            # GTM-FIX-025 T2: Generic catch — no consolidation exception should
+            # result in HTTP 500. Log, send to Sentry, try cache, degrade gracefully.
+            logger.error(
+                f"Unexpected exception in multi-source fetch: "
+                f"{type(e).__name__}: {e}",
+                exc_info=True,
+            )
+            sentry_sdk.set_tag("data_source", "consolidation_unexpected")
+            sentry_sdk.capture_exception(e)
+
+            # Try stale cache before returning empty
+            stale_cache = None
+            if ctx.user and ctx.user.get("id"):
+                try:
+                    stale_cache = await _supabase_get_cache(
+                        user_id=ctx.user["id"],
+                        params={
+                            "setor_id": request.setor_id,
+                            "ufs": request.ufs,
+                            "status": request.status.value if request.status else None,
+                            "modalidades": request.modalidades,
+                            "modo_busca": request.modo_busca,
+                        },
+                    )
+                except Exception as cache_err:
+                    logger.warning(f"Cache fallback also failed: {cache_err}")
+
+            if stale_cache:
+                logger.info(
+                    f"Serving stale cache ({stale_cache['cache_age_hours']}h old) "
+                    f"after unexpected {type(e).__name__}"
+                )
+                ctx.licitacoes_raw = stale_cache["results"]
+                ctx.cached = True
+                ctx.cached_at = stale_cache["cached_at"]
+                ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.is_partial = True
+                ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
+                ctx.data_sources = []
+                ctx.source_stats_data = []
+            else:
+                logger.warning(
+                    f"No stale cache available after {type(e).__name__} — returning empty"
+                )
+                ctx.licitacoes_raw = []
+                ctx.is_partial = True
+                ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
+                ctx.data_sources = []
+                ctx.source_stats_data = []
         finally:
             await consolidation_svc.close()
 

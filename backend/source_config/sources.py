@@ -402,8 +402,10 @@ class SourceConfig:
         config.licitar.enabled = (
             os.getenv("ENABLE_SOURCE_LICITAR", "true").lower() == "true"
         )
+        # GTM-FIX-025 T1: ComprasGov v1 API permanently unstable (503s kill pipeline).
+        # Default disabled. Re-enable via env var when v3 migration is ready.
         config.compras_gov.enabled = (
-            os.getenv("ENABLE_SOURCE_COMPRAS_GOV", "true").lower() == "true"
+            os.getenv("ENABLE_SOURCE_COMPRAS_GOV", "false").lower() == "true"
         )
         config.portal_transparencia.enabled = (
             os.getenv("ENABLE_SOURCE_PORTAL_TRANSPARENCIA", "false").lower() == "true"

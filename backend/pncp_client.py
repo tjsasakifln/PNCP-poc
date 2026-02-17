@@ -1118,6 +1118,7 @@ class AsyncPNCPClient:
                     modalidade=modalidade,
                     uf=uf,
                     pagina=pagina,
+                    tamanho=500,  # GTM-FIX-025 T3: 25x fewer requests (was 20)
                     status=status,
                 )
 
