@@ -4,6 +4,13 @@
 // STORY-257B AC8: Cache banner with relative time when cached results are returned
 // ---------------------------------------------------------------------------
 
+/** Human-readable source name mapping */
+const SOURCE_DISPLAY_NAMES: Record<string, string> = {
+  PNCP: "PNCP",
+  PORTAL_COMPRAS: "Portal de Compras Públicas",
+  COMPRAS_GOV: "ComprasGov",
+};
+
 interface CacheBannerProps {
   /** ISO timestamp of when cache was created */
   cachedAt: string;
@@ -11,6 +18,8 @@ interface CacheBannerProps {
   onRefresh: () => void;
   /** Whether a refresh is currently in progress */
   refreshing: boolean;
+  /** GTM-FIX-010 AC8r: Source codes that contributed to cached data */
+  cachedSources?: string[];
 }
 
 /**
@@ -42,8 +51,12 @@ export function CacheBanner({
   cachedAt,
   onRefresh,
   refreshing,
+  cachedSources,
 }: CacheBannerProps) {
   const relativeTime = formatRelativeTime(cachedAt);
+  const sourceNames = cachedSources?.length
+    ? cachedSources.map((s) => SOURCE_DISPLAY_NAMES[s] || s).join(" + ")
+    : null;
 
   return (
     <div
@@ -71,9 +84,14 @@ export function CacheBanner({
         <div className="flex-1 min-w-0">
           {/* Primary message with relative time */}
           <p className="text-sm sm:text-base font-medium text-amber-800 dark:text-amber-200">
-            Nossas fontes estão temporariamente lentas. Mostrando resultados de{" "}
-            <strong>{relativeTime}</strong>. Os dados podem estar levemente
-            desatualizados.
+            {sourceNames
+              ? `Resultados de `
+              : "Nossas fontes estão temporariamente lentas. Mostrando resultados de "}
+            <strong>{relativeTime}</strong>
+            {sourceNames && (
+              <> ({sourceNames})</>
+            )}
+            . Dados podem estar desatualizados.
           </p>
 
           {/* Refresh button */}

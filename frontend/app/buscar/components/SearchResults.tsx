@@ -314,6 +314,7 @@ export default function SearchResults({
           cachedAt={result.cached_at}
           onRefresh={onRetryForceFresh || onSearch}
           refreshing={loading}
+          cachedSources={result.cached_sources}
         />
       )}
 

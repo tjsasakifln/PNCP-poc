@@ -98,6 +98,8 @@ export interface BuscaResult {
   cached?: boolean;
   /** STORY-257B AC8: ISO timestamp of when cache was created */
   cached_at?: string;
+  /** GTM-FIX-010 AC5r: Source codes that contributed to cached data */
+  cached_sources?: string[];
   /** STORY-257B AC10: List of UF codes that failed during search */
   failed_ufs?: string[];
   /** GTM-FIX-004: True when at least one UF hit the max_pages limit */

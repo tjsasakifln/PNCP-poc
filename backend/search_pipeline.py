@@ -40,6 +40,7 @@ from llm import gerar_resumo, gerar_resumo_fallback
 from authorization import get_admin_ids, get_master_quota_info
 from log_sanitizer import mask_user_id
 from redis_pool import get_fallback_cache
+from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -552,7 +553,7 @@ class SearchPipeline:
         enriquecer_com_status_inferido(ctx.licitacoes_raw)
         logger.info(f"Status inference complete for {len(ctx.licitacoes_raw)} bids")
 
-        # STORY-257A AC8: Cache write-through on successful fetch
+        # STORY-257A AC8 + GTM-FIX-010 AC3: Cache write-through on successful fetch
         if ctx.licitacoes_raw and len(ctx.licitacoes_raw) > 0:
             cache_data = {
                 "licitacoes": ctx.licitacoes_raw,
@@ -566,6 +567,28 @@ class SearchPipeline:
             }
             _write_cache(cache_key, cache_data)
             logger.info(f"Cache WRITE: {len(ctx.licitacoes_raw)} results cached (TTL={SEARCH_CACHE_TTL}s)")
+
+            # GTM-FIX-010 AC3: Also persist to Supabase for cross-restart resilience
+            if ctx.user and ctx.user.get("id"):
+                sources = (
+                    [ds.source for ds in ctx.data_sources if ds.records > 0]
+                    if ctx.data_sources else ["PNCP"]
+                )
+                try:
+                    await _supabase_save_cache(
+                        user_id=ctx.user["id"],
+                        params={
+                            "setor_id": request.setor_id,
+                            "ufs": request.ufs,
+                            "status": request.status.value if request.status else None,
+                            "modalidades": request.modalidades,
+                            "modo_busca": request.modo_busca,
+                        },
+                        results=ctx.licitacoes_raw,
+                        sources=sources,
+                    )
+                except Exception as e:
+                    logger.warning(f"Supabase cache write failed (non-fatal): {e}")
 
     async def _execute_multi_source(
         self, ctx, request, deps, modalidades_to_fetch, status_value,
@@ -671,30 +694,77 @@ class SearchPipeline:
                 f"{' [PARTIAL]' if ctx.is_partial else ''}"
             )
         except AllSourcesFailedError as e:
-            # STORY-252 T8: All sources failed — return empty results with
-            # detailed degradation info instead of crashing the request.
+            # GTM-FIX-010 AC4/AC16r/AC17r: All sources failed — try Supabase cache fallback
             logger.error(f"All sources failed during multi-source fetch: {e}")
-            ctx.licitacoes_raw = []
-            ctx.is_partial = True
-            ctx.degradation_reason = str(e)
-            ctx.data_sources = [
-                DataSourceStatus(
-                    source=src,
-                    status="error",
-                    records=0,
+
+            # AC17r: Fallback cascade step 3 — try stale cache
+            stale_cache = None
+            if ctx.user and ctx.user.get("id"):
+                stale_cache = await _supabase_get_cache(
+                    user_id=ctx.user["id"],
+                    params={
+                        "setor_id": request.setor_id,
+                        "ufs": request.ufs,
+                        "status": request.status.value if request.status else None,
+                        "modalidades": request.modalidades,
+                        "modo_busca": request.modo_busca,
+                    },
                 )
-                for src in e.source_errors
-            ]
-            ctx.source_stats_data = [
-                {
-                    "source_code": src,
-                    "record_count": 0,
-                    "duration_ms": 0,
-                    "error": err,
-                    "status": "error",
-                }
-                for src, err in e.source_errors.items()
-            ]
+
+            if stale_cache:
+                # AC5: Serve stale cache with cache metadata
+                logger.info(
+                    f"Serving stale cache ({stale_cache['cache_age_hours']}h old) "
+                    f"after all sources failed"
+                )
+                ctx.licitacoes_raw = stale_cache["results"]
+                ctx.cached = True
+                ctx.cached_at = stale_cache["cached_at"]
+                ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.is_partial = True
+                ctx.degradation_reason = str(e)
+                ctx.data_sources = [
+                    DataSourceStatus(
+                        source=src,
+                        status="error",
+                        records=0,
+                    )
+                    for src in e.source_errors
+                ]
+                ctx.source_stats_data = [
+                    {
+                        "source_code": src,
+                        "record_count": 0,
+                        "duration_ms": 0,
+                        "error": err,
+                        "status": "error",
+                    }
+                    for src, err in e.source_errors.items()
+                ]
+            else:
+                # AC6/AC17r: No cache — return empty with degradation info
+                logger.warning("No stale cache available — returning empty results")
+                ctx.licitacoes_raw = []
+                ctx.is_partial = True
+                ctx.degradation_reason = str(e)
+                ctx.data_sources = [
+                    DataSourceStatus(
+                        source=src,
+                        status="error",
+                        records=0,
+                    )
+                    for src in e.source_errors
+                ]
+                ctx.source_stats_data = [
+                    {
+                        "source_code": src,
+                        "record_count": 0,
+                        "duration_ms": 0,
+                        "error": err,
+                        "status": "error",
+                    }
+                    for src, err in e.source_errors.items()
+                ]
         except asyncio.TimeoutError:
             logger.error(f"Multi-source fetch timed out after {fetch_timeout}s")
             if ctx.tracker:
@@ -792,18 +862,49 @@ class SearchPipeline:
             if ctx.failed_ufs:
                 ctx.is_partial = True
         except PNCPDegradedError as e:
-            # STORY-252 T8: PNCP circuit breaker tripped during fetch.
-            # Return empty results with degradation info rather than crashing.
+            # GTM-FIX-010 AC4/AC17r: PNCP circuit breaker tripped — try stale cache
             logger.warning(f"PNCP degraded during fetch: {e}")
-            ctx.licitacoes_raw = []
-            ctx.is_partial = True
-            ctx.degradation_reason = (
-                "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
-                "Tente novamente em alguns minutos."
-            )
-            ctx.data_sources = [
-                DataSourceStatus(source="PNCP", status="error", records=0)
-            ]
+
+            stale_cache = None
+            if ctx.user and ctx.user.get("id"):
+                stale_cache = await _supabase_get_cache(
+                    user_id=ctx.user["id"],
+                    params={
+                        "setor_id": request.setor_id,
+                        "ufs": request.ufs,
+                        "status": request.status.value if request.status else None,
+                        "modalidades": request.modalidades,
+                        "modo_busca": request.modo_busca,
+                    },
+                )
+
+            if stale_cache:
+                logger.info(
+                    f"Serving stale cache ({stale_cache['cache_age_hours']}h old) "
+                    f"after PNCP degradation"
+                )
+                ctx.licitacoes_raw = stale_cache["results"]
+                ctx.cached = True
+                ctx.cached_at = stale_cache["cached_at"]
+                ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.is_partial = True
+                ctx.degradation_reason = (
+                    "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
+                    "Mostrando resultados do cache."
+                )
+                ctx.data_sources = [
+                    DataSourceStatus(source="PNCP", status="error", records=0)
+                ]
+            else:
+                ctx.licitacoes_raw = []
+                ctx.is_partial = True
+                ctx.degradation_reason = (
+                    "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
+                    "Tente novamente em alguns minutos."
+                )
+                ctx.data_sources = [
+                    DataSourceStatus(source="PNCP", status="error", records=0)
+                ]
         except asyncio.TimeoutError:
             logger.error(f"PNCP fetch timed out after {fetch_timeout}s for {len(request.ufs)} UFs")
             if ctx.tracker:
@@ -1022,8 +1123,9 @@ class SearchPipeline:
                 failed_ufs=ctx.failed_ufs,
                 succeeded_ufs=ctx.succeeded_ufs,
                 total_ufs_requested=len(ctx.request.ufs),
-                cached=getattr(ctx, 'cached', False),
-                cached_at=getattr(ctx, 'cached_at', None),
+                cached=ctx.cached,
+                cached_at=ctx.cached_at,
+                cached_sources=ctx.cached_sources,
                 is_truncated=ctx.is_truncated,
                 truncated_ufs=ctx.truncated_ufs,
             )
@@ -1136,8 +1238,9 @@ class SearchPipeline:
             failed_ufs=ctx.failed_ufs,
             succeeded_ufs=ctx.succeeded_ufs,
             total_ufs_requested=len(ctx.request.ufs),
-            cached=getattr(ctx, 'cached', False),
-            cached_at=getattr(ctx, 'cached_at', None),
+            cached=ctx.cached,
+            cached_at=ctx.cached_at,
+            cached_sources=ctx.cached_sources,
             is_truncated=ctx.is_truncated,
             truncated_ufs=ctx.truncated_ufs,
         )
@@ -1262,7 +1365,7 @@ class SearchPipeline:
             "sources_attempted": sources_attempted,
             "sources_succeeded": sources_succeeded,
             "sources_failed": [s["source"] for s in sources_failed_with_reason],
-            "cache_hit": getattr(ctx, 'cached', False),
+            "cache_hit": ctx.cached,
             "pncp_circuit_breaker": "degraded" if get_circuit_breaker("pncp").is_degraded else "healthy",
             "pcp_circuit_breaker": "degraded" if get_circuit_breaker("pcp").is_degraded else "healthy",
             "total_results": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,

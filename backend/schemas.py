@@ -924,6 +924,10 @@ class BuscaResponse(BaseModel):
         default=None,
         description="ISO timestamp of when cached results were generated"
     )
+    cached_sources: Optional[List[str]] = Field(
+        default=None,
+        description="GTM-FIX-010 AC5r: Source codes that contributed to cached data (e.g. ['PNCP','PORTAL_COMPRAS'])"
+    )
     hidden_by_min_match: Optional[int] = Field(
         default=None,
         description="Number of bids that matched at least 1 term but were below the minimum match floor"
