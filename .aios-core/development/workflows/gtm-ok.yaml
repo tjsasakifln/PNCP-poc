@@ -1,0 +1,1514 @@
+workflow:
+  id: gtm-ok
+  name: "GTM-OK: Go-To-Market Readiness Assessment"
+  version: "2.0"
+  changelog:
+    - version: "2.0"
+      date: "2026-02-17"
+      changes:
+        - "Added D16: SEO & Discovery dimension (Google Search 2026 best practices)"
+        - "Updated D01+D04: Dual-source evaluation (PNCP + Portal de Compras Públicas)"
+        - "Removed 10-story limit in Phase 9 (unlimited stories, WIN-ranked)"
+        - "Implemented WIN-based ranking (score evolution impact)"
+        - "Added Phase 11: SEO/Discovery audit with E-E-A-T and Google 2026 guidelines"
+    - version: "1.0"
+      date: "2026-02-16"
+      changes:
+        - "Initial GTM-OK framework with 15 dimensions"
+  description: >-
+    Comprehensive, holistic Go-To-Market readiness assessment for SmartLic.
+    Returns a definitive verdict: GO, NO GO, or GO CONDICIONAL.
+
+    Unlike brownfield-discovery (which audits technical debt), GTM-OK evaluates the
+    system's ability to DELIVER on every promise made to paying customers, from a
+    CTO-level perspective. It verifies that:
+
+    1. The product solves the user's problem autonomously (no calls, no manual intervention)
+    2. Core flows are predictable and consistent (Multi-source search ALWAYS returns results)
+    3. Failures are explicit, informative, and recoverable (never silent)
+    4. Revenue infrastructure works end-to-end (Stripe checkout to plan activation)
+    5. Observability exists to diagnose any user's experience in minutes
+    6. The value proposition is delivered before any charge
+    7. The system is discoverable by target users (Google Search #1 for "editais licitações")
+    8. The system is ready for investor scrutiny
+
+    OUTPUT: A single document with GO/NO-GO/CONDICIONAL verdict, supported by
+    evidence-based assessment of 16 evaluation dimensions, and (if not GO) an
+    UNLIMITED number of WIN-ranked stories prioritized by score evolution impact.
+
+    STANDARD: This assessment must be defensible before any Silicon Valley CTO.
+    No hand-waving. No "we'll fix it later." Every claim backed by code evidence.
+
+  type: brownfield
+  project_types:
+    - gtm-readiness
+    - investor-readiness
+    - production-launch
+    - revenue-validation
+    - seo-readiness
+
+  # ===========================================================================
+  #                         PRE-FLIGHT CONFIGURATION
+  # ===========================================================================
+
+  pre_flight:
+    enabled: true
+    detector: TechStackDetector
+    abort_on_empty: false
+    log_results: true
+
+  condition_aliases:
+    has_backend: 'techStackProfile.hasBackend'
+    has_frontend: 'techStackProfile.hasFrontend'
+    has_database: 'techStackProfile.hasDatabase'
+    has_stripe: 'fs.existsSync("backend/webhooks/stripe.py")'
+    has_pncp: 'fs.existsSync("backend/pncp_client.py")'
+    has_pcp: 'fs.existsSync("backend/portal_compras.py")'
+    has_sitemap: 'fs.existsSync("frontend/public/sitemap.xml")'
+
+  # ===========================================================================
+  #                         ORCHESTRATION CONFIGURATION
+  # ===========================================================================
+
+  orchestration:
+    parallel_phases: [1, 2, 3, 4, 5]
+    subagent_mode: true
+    dispatch_mode: skill
+    max_concurrency: 5
+
+    early_exit:
+      enabled: true
+      log_skipped: true
+      save_skip_reason: true
+
+    setup_directories:
+      - docs/gtm-ok
+      - docs/gtm-ok/evidence
+      - docs/gtm-ok/stories
+
+  # ===========================================================================
+  #                         STARTUP CONFIGURATION
+  # ===========================================================================
+
+  startup:
+    mode: single_option
+    default_action: yolo
+    options:
+      - id: yolo
+        label: "GTM-OK Assessment v2.0 (Full Scan)"
+        description: "Executa varredura completa (16 dimensões) e produz veredicto GO/NO-GO/CONDICIONAL com WIN-ranked stories"
+        sets_yolo: true
+    ui:
+      show_phase_table: false
+      show_progress_bar: true
+
+  # ===========================================================================
+  #                              EVALUATION DIMENSIONS (v2.0: 16 dimensions)
+  # ===========================================================================
+  #
+  # Each dimension is scored 0-10 with explicit pass/fail criteria.
+  # Dimensions are weighted by GTM impact.
+  #
+  # WEIGHT KEY: [5] = Critical (blocks GO), [3] = Important, [1] = Nice-to-have
+  #
+  # D01  [5] Core Value Delivery - Does multi-source search work reliably?
+  # D02  [5] Revenue Infrastructure - Does Stripe checkout-to-activation work?
+  # D03  [5] Autonomous UX - Can user get value without help?
+  # D04  [5] Data Reliability - Are results complete/accurate across PNCP+PCP?
+  # D05  [3] Failure Transparency - Are errors explicit and recoverable?
+  # D06  [3] Observability - Can we diagnose any user's experience?
+  # D07  [3] Value Before Payment - Does trial deliver clear value?
+  # D08  [3] Onboarding Friction - Is first-to-value under 2 minutes?
+  # D09  [3] Copy-Code Alignment - Does the product deliver what copy promises?
+  # D10  [3] Security & LGPD - Are basics covered?
+  # D11  [3] Infrastructure Resilience - Can it handle launch traffic?
+  # D12  [1] Pricing-Risk Alignment - Is pricing justified by delivered value?
+  # D13  [1] Analytics & Metrics - Can we measure what matters?
+  # D14  [1] Differentiation - Is there a clear moat?
+  # D15  [1] Feedback Loop Speed - Can we ship fixes in hours?
+  # D16  [3] SEO & Discovery - Can users find us? (Google Search 2026 standards)
+  #
+  # GO threshold: All [5]-weight dimensions >= 7/10, overall weighted >= 7.0
+  # GO CONDICIONAL: All [5]-weight dimensions >= 5/10, overall weighted >= 5.5
+  # NO GO: Any [5]-weight dimension < 5/10
+  #
+  # Total weight v2.0: 4x5 + 8x3 + 4x1 = 48 points
+  # Weighted score = Sum(score_i * weight_i) / 48 * 10
+  #
+
+  # ===========================================================================
+  #                         WORKFLOW SEQUENCE (11 PHASES)
+  # ===========================================================================
+
+  sequence:
+
+    # =========================================================================
+    # PHASE 1: MULTI-SOURCE DATA PIPELINE DEEP DIVE (Critical Path - v2.0 UPDATED)
+    # Agent: @architect + @dev (code audit)
+    # Weight: [5] - Blocks GO verdict
+    # =========================================================================
+
+    - step: multi_source_pipeline_audit
+      phase: 1
+      phase_name: "D01+D04: Multi-Source Data Pipeline Audit (PNCP + PCP)"
+      agent: architect
+      action: analyze
+      creates:
+        - docs/gtm-ok/evidence/D01-D04-multi-source-pipeline.md
+      elicit: false
+      duration_estimate: "60-75 min"
+
+      preActions:
+        - type: mkdir
+          path: docs/gtm-ok/evidence
+
+      notes: |
+        ## OBJECTIVE (v2.0 UPDATED)
+        Determine if multi-source search (PNCP + Portal de Compras Públicas) delivers
+        RELIABLE, COMPLETE, and DEDUPLICATED results to paying users.
+
+        This is the #1 risk factor for GTM. The system now has 2 active data sources
+        and must handle cross-source deduplication, prioritization, and failure modes.
+
+        ## INVESTIGATION PROTOCOL
+
+        ### 1. End-to-End Data Flow Trace (Multi-Source)
+        Read and trace the COMPLETE data flow for BOTH sources:
+        - `backend/pncp_client.py` - AsyncPNCPClient, _fetch_page_async, _fetch_uf_all_pages
+        - `backend/portal_compras.py` - Portal de Compras Públicas client (NEW)
+        - `backend/search_pipeline.py` - Multi-source orchestration, deduplication
+        - `backend/consolidation.py` - Cross-source merge logic (if exists)
+        - `backend/search_cache.py` - SWR failover cache (GTM-FIX-010)
+        - `backend/main.py` - buscar_licitacoes endpoint
+        - `backend/filter.py` - filtering pipeline
+        - `frontend/app/buscar/page.tsx` - buscar() function
+        - `frontend/app/api/buscar/route.ts` - API proxy
+
+        ### 2. Multi-Source Failure Mode Analysis (CRITICAL)
+        For EACH of these scenarios, trace the code path and document what ACTUALLY happens:
+
+        **Single-Source Failures:**
+        a) **PNCP API returns 500, PCP works** - Does user see PCP-only results? Warning shown?
+        b) **PCP API returns 500, PNCP works** - Does user see PNCP-only results? Warning shown?
+        c) **PNCP API times out (30s), PCP fast** - Does circuit breaker trip? Blast radius?
+        d) **PCP API times out (30s), PNCP fast** - Partial results shown? Timeout handling?
+
+        **Cross-Source Failures:**
+        e) **Both PNCP and PCP return 500** - Does cache serve stale data? (GTM-FIX-010)
+        f) **Both APIs timeout** - What does user see? Is it error page or graceful degradation?
+        g) **PNCP returns empty, PCP has results** - Does user see PCP results? Source badge?
+        h) **PNCP has results, PCP returns empty** - Does user see PNCP results? Source badge?
+        i) **Both return empty for valid query** - "0 results" or error? Cache fallback?
+
+        **Deduplication & Prioritization:**
+        j) **Same bid appears in PNCP and PCP** - Is deduplication working? Which source wins?
+        k) **PNCP bid value: R$100k, PCP same bid: R$105k** - Value discrepancy handling?
+        l) **Deduplication key collision (false positive)** - Are distinct bids being merged?
+        m) **Cross-source pagination (PNCP page 5, PCP page 3)** - Result ordering consistent?
+
+        **Performance Under Dual-Source Load:**
+        n) **27 UFs x 2 sources x 180 days** - Realistic response time? Semaphore limits?
+        o) **Sequential vs parallel source fetching** - Is it optimized? Latency impact?
+        p) **Cache hit rate with dual sources** - Does cache reduce load? Effectiveness?
+
+        ### 3. Minimum Result Guarantee (Multi-Source)
+        The system MUST guarantee minimum 30 results for any reasonable query across both sources.
+        - Is there a local cache/data lake that can serve results when both APIs are down?
+        - Is there a date-range expansion strategy when results are below threshold?
+        - Does the system prioritize sources based on historical reliability?
+        - Document the EXACT code path for a query that returns <30 results across both sources
+
+        ### 4. Data Completeness Verification (Dual-Source)
+        - What is the max_pages limit per source? (Check for HOTFIX STORY-183)
+        - For a high-volume UF like SP, can >10,000 results be truncated silently across both sources?
+        - Is deduplication happening BEFORE or AFTER full fetch from both sources? Memory implications?
+        - Are all modalities being queried from both sources?
+        - Read: `docs/gtm-ok/stories/GTM-FIX-011.md` (PCP Integration story)
+
+        ### 5. Source Priority & Fallback Logic
+        - Is there a source priority ranking? (e.g., PNCP preferred over PCP)
+        - When sources disagree on bid values, which wins? Is there a conflict resolution strategy?
+        - Is there a "source health" monitoring to adjust priority dynamically?
+        - Read: Migration `027_search_cache_add_sources_and_fetched_at.sql`
+
+        ### 6. Cache Strategy Validation (GTM-FIX-010)
+        - Is the SWR cache working for both PNCP and PCP?
+        - TTL policy: Fresh (0-6h), Stale (6-24h), Expired (>24h)
+        - Fallback cascade: Live (PNCP+PCP) → Partial (one source) → Stale cache → Empty
+        - `cached_sources` field in BuscaResponse - is it accurate?
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D01+D04: Multi-Source Data Pipeline Assessment (v2.0)
+
+        ## Verdict: [PASS/FAIL/CONDITIONAL]
+        ## Score: D01 (Core Value Delivery): X/10
+        ## Score: D04 (Data Reliability): X/10
+
+        ## Evidence
+
+        ### Multi-Source Architecture
+        | Component | PNCP | PCP | Deduplication | Cache |
+        |-----------|------|-----|---------------|-------|
+        | Status    | ...  | ... | ...           | ...   |
+
+        ### Failure Mode Matrix (Dual-Source)
+        | Scenario | PNCP | PCP | User Experience | Severity |
+        |----------|------|-----|-----------------|----------|
+        | Both API 500  | DOWN | DOWN | Cache fallback | HIGH |
+        | PNCP 500, PCP OK | DOWN | UP | PCP-only results | MEDIUM |
+        | ...      | ...  | ... | ...             | ...      |
+
+        ### Deduplication Analysis
+        - Deduplication key: [description]
+        - Collision rate: [X%]
+        - Priority logic: [PNCP/PCP/value-based/timestamp-based]
+        - Value discrepancy handling: [yes/no/threshold]
+
+        ### Data Completeness Risks
+        1. [Risk description with code line references across both sources]
+
+        ### Minimum Result Guarantee
+        - Current status: [EXISTS/DOES NOT EXIST]
+        - Implementation: [description]
+        - Cross-source threshold: [N results]
+
+        ### Cache Strategy Effectiveness (GTM-FIX-010)
+        - Cache hit rate: [X%]
+        - Stale data served: [X% of requests]
+        - TTL policy working: [YES/NO]
+
+        ### Performance Profile (Dual-Source)
+        - 1 UF, 7 days (both sources): ~Xs
+        - 5 UFs, 30 days (both sources): ~Xs
+        - 27 UFs, 180 days (both sources): ~Xs
+
+        ## Critical Gaps (if FAIL/CONDITIONAL)
+        1. [Gap] -> [Required fix] -> [Effort estimate]
+        ```
+
+    # =========================================================================
+    # PHASE 2: STRIPE REVENUE PIPELINE AUDIT (Critical Path)
+    # Agent: @architect
+    # Weight: [5] - Blocks GO verdict
+    # =========================================================================
+
+    - step: stripe_revenue_audit
+      phase: 2
+      phase_name: "D02: Revenue Infrastructure Audit"
+      agent: architect
+      action: analyze
+      creates:
+        - docs/gtm-ok/evidence/D02-stripe-revenue.md
+      elicit: false
+      duration_estimate: "30-45 min"
+
+      notes: |
+        ## OBJECTIVE
+        Verify that the Stripe integration supports a COMPLETE revenue lifecycle:
+        User signs up -> Trial -> Checkout -> Payment -> Plan activation -> Renewal -> Cancel
+
+        ## INVESTIGATION PROTOCOL
+
+        ### 1. Checkout-to-Activation Flow (CRITICAL)
+        Trace the EXACT code path:
+        - `backend/routes/billing.py` - POST /v1/checkout
+        - `backend/webhooks/stripe.py` - ALL webhook handlers
+        - `backend/routes/subscriptions.py` - subscription management
+
+        KEY QUESTION: When a user completes Stripe checkout, does their plan
+        activate IMMEDIATELY? Or is there a gap? Specifically:
+        - Is `checkout.session.completed` webhook handled? (Check line ~120-127)
+        - Is `_activate_plan()` ever called? By what trigger?
+        - What happens if webhook delivery is delayed 5 minutes?
+
+        ### 2. Payment Failure Handling
+        - Is `invoice.payment_failed` handled?
+        - What happens when a card is declined on renewal?
+        - Does the user get notified? How?
+        - Is there a dunning process (retry payment)?
+
+        ### 3. Subscription Lifecycle Completeness
+        For each operation, verify code exists AND is tested:
+        - [ ] Create subscription (checkout)
+        - [ ] Activate plan (post-checkout)
+        - [ ] Change billing period (monthly <-> semiannual <-> annual)
+        - [ ] Cancel subscription
+        - [ ] Handle cancellation at period end
+        - [ ] Reactivate after cancellation
+        - [ ] Handle payment failure
+        - [ ] Handle refund
+        - [ ] Account deletion (cancel Stripe sub)
+
+        ### 4. Quota Enforcement
+        - `backend/quota.py` - check_and_increment_quota_atomic
+        - Is it truly atomic (PostgreSQL RPC)?
+        - What happens on race conditions?
+        - Grace period logic - is it correct?
+        - What happens when quota is exhausted mid-search?
+
+        ### 5. Security
+        - Webhook signature validation
+        - Idempotency protection
+        - No API keys in frontend
+        - Rate limiting on checkout endpoint
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D02: Revenue Infrastructure Assessment
+
+        ## Verdict: [PASS/FAIL/CONDITIONAL]
+        ## Score: X/10
+
+        ## Checkout-to-Activation Analysis
+        - checkout.session.completed handler: [EXISTS/MISSING]
+        - _activate_plan() invocation: [VERIFIED/NOT FOUND]
+        - Activation latency: [IMMEDIATE/DELAYED/MANUAL]
+
+        ## Lifecycle Completeness
+        | Operation | Code | Tests | Status |
+        |-----------|------|-------|--------|
+        | Create    | ...  | ...   | ...    |
+
+        ## Payment Failure Handling
+        - invoice.payment_failed: [HANDLED/NOT HANDLED]
+        - Dunning process: [EXISTS/MISSING]
+        - User notification: [EXISTS/MISSING]
+
+        ## Critical Gaps
+        1. [Gap] -> [Fix] -> [Effort]
+        ```
+
+    # =========================================================================
+    # PHASE 3: AUTONOMOUS UX & ONBOARDING AUDIT
+    # Agent: @ux-design-expert
+    # Weight: [5] - Blocks GO verdict
+    # =========================================================================
+
+    - step: autonomous_ux_audit
+      phase: 3
+      phase_name: "D03+D07+D08: Autonomous UX & Value Delivery"
+      agent: ux-design-expert
+      action: analyze
+      creates:
+        - docs/gtm-ok/evidence/D03-autonomous-ux.md
+      elicit: false
+      duration_estimate: "30-45 min"
+
+      notes: |
+        ## OBJECTIVE
+        Verify that a user can go from signup to perceived value in under 2 minutes,
+        WITHOUT any call, tutorial, or manual intervention. The product must be
+        self-explanatory and self-sufficient.
+
+        ## INVESTIGATION PROTOCOL
+
+        ### 1. First-Time User Journey (Critical Path)
+        Map the EXACT flow a new user experiences:
+        - Landing page -> Sign up -> Onboarding -> First search -> Results -> "Aha moment"
+        - Read: `frontend/app/page.tsx` (landing)
+        - Read: `frontend/app/onboarding/page.tsx` (onboarding wizard)
+        - Read: `frontend/app/buscar/page.tsx` (search)
+        - Read: `frontend/app/components/EmptyState.tsx` (zero results)
+
+        For EACH step, evaluate:
+        a) Is it obvious what to do next? (No dead ends)
+        b) Is there a loading state? (No blank screens)
+        c) Is there an error state? (No silent failures)
+        d) Can the user go back? (No traps)
+        e) Is the copy clear? (No jargon, no ambiguity)
+
+        ### 2. Value-Before-Payment Verification
+        - How many searches does the trial include?
+        - What does the user SEE after their first search?
+        - Is the "aha moment" clear? (e.g., "Found R$ 2.3M in opportunities for your sector")
+        - Read: `frontend/app/components/trial/` (trial conversion components)
+        - Read: `frontend/app/buscar/page.tsx` - look for trial-related logic
+
+        ### 3. Error Recovery UX
+        For EACH of these scenarios, trace what the user SEES:
+        a) Search returns 0 results -> EmptyState component -> Actionable suggestions?
+        b) Search fails (API error) -> Error boundary -> Recovery options?
+        c) Search times out -> Progress indicator -> Cancel option?
+        d) Stripe checkout fails -> Error message -> Retry option?
+        e) Session expires -> Re-login flow -> Data preserved?
+
+        ### 4. Mobile Responsiveness
+        - Check CSS for responsive breakpoints
+        - Is the search flow usable on mobile?
+        - Are buttons touch-friendly (min 44x44px)?
+        - Does the onboarding wizard work on small screens?
+
+        ### 5. Accessibility Basics
+        - Keyboard navigation on critical flows
+        - Focus management in modals/dialogs
+        - Color contrast for error/warning states
+        - Screen reader compatibility (aria labels)
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D03+D07+D08: Autonomous UX Assessment
+
+        ## Verdict: [PASS/FAIL/CONDITIONAL]
+        ## Score: D03 (Autonomous UX): X/10
+        ## Score: D07 (Value Before Payment): X/10
+        ## Score: D08 (Onboarding Friction): X/10
+
+        ## First-Time User Journey Map
+        | Step | Screen | Time | Friction Points | Dead Ends |
+        |------|--------|------|-----------------|-----------|
+
+        ## Value Delivery Timeline
+        - Time to first search: Xs
+        - Time to "aha moment": Xs
+        - Trial searches included: N
+        - Clear value perception: [YES/NO]
+
+        ## Error Recovery Matrix
+        | Scenario | User Sees | Recovery Path | Grade |
+        |----------|-----------|---------------|-------|
+
+        ## Critical Gaps
+        1. [Gap] -> [Fix] -> [Effort]
+        ```
+
+    # =========================================================================
+    # PHASE 4: COPY-CODE ALIGNMENT AUDIT
+    # Agent: @analyst
+    # Weight: [3] - Important but not blocking
+    # =========================================================================
+
+    - step: copy_code_alignment
+      phase: 4
+      phase_name: "D09: Copy vs Code Reality Check"
+      agent: analyst
+      action: analyze
+      creates:
+        - docs/gtm-ok/evidence/D09-copy-alignment.md
+      elicit: false
+      duration_estimate: "30-45 min"
+
+      notes: |
+        ## OBJECTIVE
+        Verify that EVERY promise in marketing copy is backed by working code.
+        A premium product at R$1,999/month cannot make claims it cannot deliver.
+
+        ## INVESTIGATION PROTOCOL
+
+        ### 1. Promise Extraction
+        Read ALL user-facing copy:
+        - `frontend/app/page.tsx` (landing page - hero, features, CTA)
+        - `frontend/app/features/page.tsx` (features page)
+        - `frontend/app/planos/page.tsx` (pricing page)
+        - `frontend/app/onboarding/page.tsx` (onboarding)
+        - `frontend/app/components/trial/` (trial conversion)
+
+        ### 2. Promise-to-Code Mapping
+        For EACH promise, find the code that delivers it:
+
+        HIGH-RISK PROMISES (likely gaps):
+        a) "27 estados monitorados" -> Does the system query ALL 27 UFs?
+        b) "Múltiplas fontes oficiais" -> PNCP + PCP active? Others planned? (v2.0 UPDATE)
+        c) "R$ 2.3 bi em oportunidades mapeadas" -> Where does this number come from?
+        d) "Inteligência que avalia e prioriza" -> Is there AI prioritization beyond filtering?
+        e) "Notificações em tempo real" -> Do real-time notifications exist?
+        f) "Pipeline de acompanhamento" -> Is pipeline management functional?
+        g) "10.000 tokens de análise estratégica" -> Is strategic analysis implemented?
+        h) "12 setores especializados" -> Are all 12 sectors configured and working?
+        i) "5 anos de histórico" -> Can the system actually query 1825 days back?
+        j) "Avaliação objetiva: vale a pena ou não" -> Is there a yes/no recommendation per bid?
+        k) "Monitoramento contínuo" -> Is there continuous monitoring or only on-demand search?
+        l) "Descubra antes da concorrência" -> Is there any timing advantage mechanism?
+        m) "1000 análises por mês" -> Is this enforced by quota? Tested?
+
+        ### 3. Risk Classification
+        For each promise, classify as:
+        - DELIVERED: Code exists, tested, working
+        - PARTIALLY DELIVERED: Feature exists but incomplete
+        - NOT DELIVERED: Promise in copy but no code
+        - MISLEADING: Promise implies something the code doesn't do
+
+        ### 4. Regulatory Risk
+        - Any claims that could be considered false advertising?
+        - "ROI de 7.8x" - is this substantiated?
+        - "Uma única licitação ganha paga o investimento do ano inteiro" - disclaimers?
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D09: Copy-Code Alignment Assessment
+
+        ## Verdict: [PASS/FAIL/CONDITIONAL]
+        ## Score: X/10
+
+        ## Promise Alignment Matrix
+        | # | Promise (Copy) | Code Location | Status | Risk |
+        |---|---------------|---------------|--------|------|
+        | 1 | 27 estados    | pncp_client.py:XXX | DELIVERED | Low |
+        | 2 | Múltiplas fontes | PNCP+PCP active | DELIVERED | Low |
+        | 3 | R$ 2.3 bi     | ???           | NOT DELIVERED | High |
+
+        ## High-Risk Gaps (NOT DELIVERED or MISLEADING)
+        1. [Promise] -> [Reality] -> [Fix or Remove from Copy]
+
+        ## Regulatory Concerns
+        1. [Claim] -> [Risk] -> [Recommendation]
+        ```
+
+    # =========================================================================
+    # PHASE 5: FAILURE TRANSPARENCY & OBSERVABILITY
+    # Agent: @qa
+    # Weight: [3] each
+    # =========================================================================
+
+    - step: failure_observability_audit
+      phase: 5
+      phase_name: "D05+D06: Failure Transparency & Observability"
+      agent: qa
+      action: analyze
+      requires:
+        - multi_source_pipeline_audit
+      creates:
+        - docs/gtm-ok/evidence/D05-D06-failure-observability.md
+      elicit: false
+      duration_estimate: "30 min"
+
+      notes: |
+        ## OBJECTIVE
+        Verify that (1) failures are NEVER silent and (2) the team can diagnose
+        any user's experience within minutes.
+
+        ## INVESTIGATION PROTOCOL
+
+        ### D05: Failure Transparency
+        For EACH error scenario, verify the user receives:
+        1. An explicit message (not a blank screen or spinner)
+        2. Context about what happened (not technical jargon)
+        3. Next steps (retry button, adjust filters, contact support)
+        4. Backend logging of the error for investigation
+
+        Test scenarios:
+        - PNCP API down -> What does user see?
+        - PCP API down -> What does user see? (v2.0 UPDATE)
+        - Both PNCP and PCP down -> What does user see? Cache fallback? (v2.0 UPDATE)
+        - Stripe checkout fails -> What does user see?
+        - Auth token expires -> What does user see?
+        - Quota exceeded -> What does user see?
+        - Server error (500) -> What does user see?
+        - Network disconnection -> What does user see?
+
+        Read error handling:
+        - `frontend/app/error.tsx` (page error boundary)
+        - `frontend/app/global-error.tsx` (root error boundary)
+        - `frontend/app/buscar/page.tsx` (search error handling)
+        - `backend/middleware.py` (request logging)
+
+        ### D06: Observability
+        Can we answer these questions for ANY user within 5 minutes?
+        1. "What happened with user X's search 10 minutes ago?"
+        2. "Why did user X get 0 results?"
+        3. "How long did user X's search take?"
+        4. "Did user X's payment go through?"
+        5. "Is PNCP API currently degraded?"
+        6. "Is PCP API currently degraded?" (v2.0 UPDATE)
+        7. "Which source provided results for user X's last search?" (v2.0 UPDATE)
+
+        Check:
+        - `backend/middleware.py` - Request correlation IDs
+        - `backend/log_sanitizer.py` - Are logs useful or over-sanitized?
+        - `backend/audit.py` - Audit trail completeness
+        - `backend/health.py` - Health check endpoint
+        - Is Sentry deployed? (Check for SENTRY_DSN in Railway config)
+        - Is Mixpanel collecting data? (Check NEXT_PUBLIC_MIXPANEL_TOKEN)
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D05+D06: Failure Transparency & Observability
+
+        ## Score: D05 (Failure Transparency): X/10
+        ## Score: D06 (Observability): X/10
+
+        ## Failure Transparency Matrix
+        | Scenario | User Message | Next Steps | Backend Log | Grade |
+        |----------|-------------|------------|-------------|-------|
+
+        ## Observability Diagnostic Test
+        | Question | Can Answer? | How? | Time |
+        |----------|-------------|------|------|
+
+        ## Critical Gaps
+        1. [Gap] -> [Fix] -> [Effort]
+        ```
+
+    # =========================================================================
+    # PHASE 6: SECURITY, LGPD & INFRASTRUCTURE
+    # Agent: @architect
+    # Weight: [3] each
+    # =========================================================================
+
+    - step: security_infra_audit
+      phase: 6
+      phase_name: "D10+D11: Security & Infrastructure"
+      agent: architect
+      action: analyze
+      creates:
+        - docs/gtm-ok/evidence/D10-D11-security-infra.md
+      elicit: false
+      duration_estimate: "20-30 min"
+
+      notes: |
+        ## OBJECTIVE
+        Verify security basics and infrastructure readiness for launch traffic.
+
+        ## INVESTIGATION PROTOCOL
+
+        ### D10: Security & LGPD
+        - Authentication: Supabase Auth (email + Google OAuth) - verify configuration
+        - Authorization: RLS policies on Supabase tables - verify they exist
+        - LGPD: Cookie consent, privacy policy, PII masking in logs
+        - API keys: No secrets in frontend code (grep for sk-, api_key, password)
+        - CORS: Properly configured (not wildcard in production)
+        - Rate limiting: On auth endpoints, checkout endpoint
+        - Input validation: Pydantic models on all endpoints
+
+        Read:
+        - `backend/main.py` - CORS config, middleware
+        - `backend/log_sanitizer.py` - PII masking
+        - `frontend/app/components/CookieConsentBanner.tsx` - LGPD
+        - `frontend/app/privacidade/page.tsx` - Privacy policy
+
+        ### D11: Infrastructure Resilience
+        - Hosting: Railway (check deployment config)
+        - Database: Supabase (check connection pooling)
+        - Concurrent users: What's the expected launch load?
+        - Known bottlenecks: PNCP rate limiting (10 req/s), PCP rate limiting, circuit breaker blast radius
+        - Health checks: /health endpoint
+        - Auto-scaling: Does Railway auto-scale?
+        - Cold start: How long does the backend take to start?
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D10+D11: Security & Infrastructure Assessment
+
+        ## Score: D10 (Security): X/10
+        ## Score: D11 (Infrastructure): X/10
+
+        ## Security Checklist
+        | Item | Status | Evidence |
+        |------|--------|----------|
+
+        ## Infrastructure Profile
+        - Hosting: [provider]
+        - Expected concurrent users: [N]
+        - Known bottlenecks: [list]
+        - Cold start time: [Xs]
+
+        ## Critical Gaps
+        1. [Gap] -> [Fix] -> [Effort]
+        ```
+
+    # =========================================================================
+    # PHASE 7: REMAINING DIMENSIONS RAPID SCAN
+    # Agent: @analyst
+    # Weight: [1] each - not blocking but informative
+    # =========================================================================
+
+    - step: remaining_dimensions
+      phase: 7
+      phase_name: "D12-D15: Pricing, Analytics, Differentiation, Feedback Loop"
+      agent: analyst
+      action: analyze
+      requires:
+        - copy_code_alignment
+      creates:
+        - docs/gtm-ok/evidence/D12-D15-rapid-scan.md
+      elicit: false
+      duration_estimate: "20 min"
+
+      notes: |
+        ## OBJECTIVE
+        Rapid assessment of lower-weight dimensions.
+
+        ### D12: Pricing-Risk Alignment
+        - R$1,999/month - is this justified by delivered value?
+        - Trial delivers enough value to justify price?
+        - Comparison to alternatives (check frontend pricing page)
+        - Cancellation friction: 1-click cancel exists?
+
+        ### D13: Analytics & Metrics
+        - Is Mixpanel token configured? (production)
+        - Can we measure: signups, activations, searches, conversions, churn?
+        - Funnel visibility: Where do users drop off?
+        - Revenue metrics: MRR, churn rate, LTV calculable?
+
+        ### D14: Differentiation
+        - What does SmartLic do that competitors don't?
+        - Is the AI analysis genuinely useful or just GPT wrapper?
+        - Is sector-specific filtering a real moat?
+        - Multi-source data advantage? (v2.0 UPDATE)
+        - Read `backend/llm.py` - what does the AI actually analyze?
+
+        ### D15: Feedback Loop Speed
+        - CI/CD pipeline: How fast can we deploy a fix?
+        - Test suite: Does it catch regressions?
+        - Monitoring: Would we know within minutes if something breaks?
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D12-D15: Rapid Scan Assessment
+
+        ## Scores
+        - D12 (Pricing): X/10
+        - D13 (Analytics): X/10
+        - D14 (Differentiation): X/10
+        - D15 (Feedback Loop): X/10
+
+        ## Key Findings
+        [Brief assessment per dimension]
+
+        ## Gaps
+        1. [Gap] -> [Fix] -> [Effort]
+        ```
+
+    # =========================================================================
+    # PHASE 8: SEO & DISCOVERY AUDIT (NEW - v2.0)
+    # Agent: @analyst + @ux-design-expert
+    # Weight: [3] - Important for acquisition
+    # =========================================================================
+
+    - step: seo_discovery_audit
+      phase: 8
+      phase_name: "D16: SEO & Discovery (Google Search 2026)"
+      agent: analyst
+      action: analyze
+      creates:
+        - docs/gtm-ok/evidence/D16-seo-discovery.md
+      elicit: false
+      duration_estimate: "45-60 min"
+
+      notes: |
+        ## OBJECTIVE (NEW - v2.0)
+        Verify that SmartLic can be discovered by target users searching for
+        "editais licitações", "busca licitações", "oportunidades pregão", etc.
+
+        GOAL: Rank #1 on Google Search for primary keywords using February 2026
+        best practices (E-E-A-T, Helpful Content, Core Web Vitals).
+
+        ## INVESTIGATION PROTOCOL
+
+        ### 1. Google Search 2026 Best Practices Compliance
+        Review against latest Google guidelines (Feb 2026):
+
+        **E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness):**
+        - [ ] Author credentials visible on content pages
+        - [ ] Company "About" page with team expertise
+        - [ ] Case studies with real procurement results
+        - [ ] Industry recognition/citations (news, partners)
+        - [ ] Trust signals (SSL, privacy policy, testimonials)
+
+        **Helpful Content Guidelines:**
+        - [ ] Content created for users, not search engines
+        - [ ] Original insights about procurement (not just keywords)
+        - [ ] Comprehensive answers to user questions
+        - [ ] No keyword stuffing or low-value AI content
+        - [ ] Clear value proposition above the fold
+
+        **Technical SEO Fundamentals:**
+        - [ ] Sitemap.xml exists and submitted to Google Search Console
+        - [ ] Robots.txt properly configured
+        - [ ] Structured data (JSON-LD) for Organization, Product, BreadcrumbList
+        - [ ] Canonical URLs set correctly
+        - [ ] Meta descriptions optimized for CTR (155 chars)
+        - [ ] Title tags follow best practices (<60 chars, keyword-front)
+        - [ ] Internal linking structure (hub-spoke model)
+        - [ ] XML sitemap includes all important pages
+
+        ### 2. Core Web Vitals Assessment
+        Check production site (Railway deployment):
+        - [ ] Largest Contentful Paint (LCP): <2.5s
+        - [ ] First Input Delay (FID): <100ms
+        - [ ] Cumulative Layout Shift (CLS): <0.1
+        - [ ] First Contentful Paint (FCP): <1.8s
+        - [ ] Time to Interactive (TTI): <3.8s
+        - [ ] Total Blocking Time (TBT): <200ms
+
+        Tool: Run Lighthouse audit on production URL
+
+        ### 3. Target Keyword Analysis
+        Primary keywords for SmartLic:
+        1. "busca editais licitações"
+        2. "oportunidades pregão eletrônico"
+        3. "monitoramento licitações públicas"
+        4. "portal licitações Brasil"
+        5. "análise editais inteligência artificial"
+
+        For EACH keyword:
+        - Does the landing page target it? (title, H1, meta description)
+        - Is there dedicated content? (blog post, guide, feature page)
+        - Keyword difficulty: [High/Medium/Low]
+        - Current ranking: [Check Google Search Console if configured]
+        - Competition analysis: Who ranks #1-3 currently?
+
+        ### 4. Content Coverage & Quality
+        Read and evaluate:
+        - `frontend/app/page.tsx` (homepage SEO)
+        - `frontend/app/features/page.tsx` (features content)
+        - `frontend/app/blog/` (if exists - educational content)
+        - `frontend/public/sitemap.xml` (sitemap structure)
+        - `frontend/public/robots.txt` (crawler access)
+        - `frontend/app/components/StructuredData.tsx` (if exists - schema markup)
+
+        Quality criteria:
+        - [ ] Unique value proposition (not generic)
+        - [ ] Educational content (guides, best practices)
+        - [ ] User-generated content (testimonials, case studies)
+        - [ ] Visual content (screenshots, videos, infographics)
+        - [ ] Regular updates (blog frequency, changelog)
+
+        ### 5. Mobile-First Indexing Compliance
+        Google uses mobile version for indexing (2026 standard):
+        - [ ] Responsive design (tested at 375px, 768px, 1024px)
+        - [ ] Touch targets >=44x44px
+        - [ ] Font size >=16px (no pinch-zoom needed)
+        - [ ] No mobile-specific errors (console, network)
+        - [ ] Same content on mobile as desktop (no hidden content)
+
+        ### 6. Local SEO (if applicable)
+        For Brazilian market:
+        - [ ] hreflang tags for pt-BR
+        - [ ] Local business schema (if physical office)
+        - [ ] Google Business Profile (if applicable)
+        - [ ] Local backlinks from Brazilian procurement sites
+
+        ### 7. Backlink Profile & Authority
+        - Domain authority indicators (check via Ahrefs/Semrush if available)
+        - Quality backlinks from:
+          - [ ] Government portals (PNCP, Comprasnet)
+          - [ ] Industry associations
+          - [ ] Procurement news sites
+          - [ ] Partner websites
+        - No toxic backlinks (spam, PBNs)
+
+        ### 8. Content Freshness & Update Frequency
+        - Last update date visible on pages?
+        - Changelog published?
+        - Blog posting frequency: [X posts/month]
+        - Dynamic content (real-time data, trending bids)
+
+        ### 9. Conversion-Optimized SEO
+        Landing pages for target keywords should have:
+        - [ ] Clear CTA above the fold
+        - [ ] Trust signals (customer count, value tracked)
+        - [ ] Fast path to trial (no friction)
+        - [ ] Exit-intent popups (if applicable)
+        - [ ] Internal linking to conversion pages
+
+        ### 10. Indexation Status
+        - Google Search Console configured? (check for verification meta tag)
+        - Index coverage: [X pages indexed / Y total pages]
+        - Any indexation errors? (4xx, 5xx, soft 404s)
+        - Crawl budget issues? (large site only)
+
+        ## SCORING RUBRIC (D16)
+
+        **9-10/10: SEO Excellence**
+        - All E-E-A-T signals present
+        - Core Web Vitals pass (green)
+        - #1-3 for primary keywords
+        - Comprehensive content strategy
+        - Strong backlink profile
+
+        **7-8/10: SEO Ready**
+        - Most E-E-A-T signals present
+        - Core Web Vitals mostly green
+        - #4-10 for primary keywords
+        - Good content, needs expansion
+        - Moderate backlink profile
+
+        **5-6/10: SEO Foundations**
+        - Basic E-E-A-T (SSL, about page)
+        - Core Web Vitals mixed (some yellow)
+        - #11-20 for primary keywords
+        - Minimal content strategy
+        - Few quality backlinks
+
+        **3-4/10: SEO Gaps**
+        - Weak E-E-A-T signals
+        - Core Web Vitals fail (red)
+        - Not ranking for primary keywords
+        - Thin content
+        - No backlink strategy
+
+        **1-2/10: SEO Broken**
+        - No indexation
+        - Critical technical errors
+        - Zero organic visibility
+        - Penalized or blocked
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # D16: SEO & Discovery Assessment (Google Search 2026)
+
+        ## Verdict: [PASS/FAIL/CONDITIONAL]
+        ## Score: X/10
+
+        ## Executive Summary
+        - Current Google ranking for "busca editais licitações": [#X or Not Ranked]
+        - Estimated monthly organic traffic: [X visits]
+        - SEO readiness: [Excellent/Good/Needs Work/Broken]
+
+        ## E-E-A-T Compliance
+        | Signal | Status | Evidence |
+        |--------|--------|----------|
+        | Experience | [✓/✗] | ... |
+        | Expertise | [✓/✗] | ... |
+        | Authoritativeness | [✓/✗] | ... |
+        | Trustworthiness | [✓/✗] | ... |
+
+        ## Core Web Vitals
+        | Metric | Value | Status | Target |
+        |--------|-------|--------|--------|
+        | LCP | Xs | [🟢/🟡/🔴] | <2.5s |
+        | FID | Xms | [🟢/🟡/🔴] | <100ms |
+        | CLS | X.XX | [🟢/🟡/🔴] | <0.1 |
+
+        ## Keyword Ranking Analysis
+        | Keyword | Current Rank | Competition | Opportunity |
+        |---------|-------------|-------------|-------------|
+        | busca editais licitações | #X | High | Medium |
+        | ... | ... | ... | ... |
+
+        ## Technical SEO Checklist
+        | Item | Status | Notes |
+        |------|--------|-------|
+        | Sitemap.xml | [✓/✗] | ... |
+        | Robots.txt | [✓/✗] | ... |
+        | Structured data | [✓/✗] | ... |
+        | Mobile-friendly | [✓/✗] | ... |
+
+        ## Content Quality Assessment
+        - Unique value: [High/Medium/Low]
+        - Depth: [Comprehensive/Adequate/Thin]
+        - Freshness: [Current/Outdated]
+        - User intent match: [Excellent/Good/Poor]
+
+        ## Backlink Profile
+        - Total backlinks: [X]
+        - Referring domains: [X]
+        - Domain authority (est): [X/100]
+        - Quality score: [High/Medium/Low]
+
+        ## Critical Gaps (if FAIL/CONDITIONAL)
+        1. [Gap] -> [Required fix] -> [Effort estimate] -> [Impact on rank]
+
+        ## Quick Wins (High Impact, Low Effort)
+        1. [Action] -> [Effort: XS/S/M] -> [Expected impact: +X positions]
+
+        ## References
+        - Google Search Essentials: https://developers.google.com/search/docs/essentials
+        - E-E-A-T Guidelines: https://searchengineland.com/guide/google-e-e-a-t-for-seo
+        - Core Web Vitals: https://web.dev/vitals/
+        ```
+
+    # =========================================================================
+    # PHASE 9: CROSS-VALIDATION & CONSOLIDATION
+    # Agent: @architect (lead) + review ALL phase outputs
+    # This is the critical synthesis phase
+    # =========================================================================
+
+    - step: cross_validation
+      phase: 9
+      phase_name: "Cross-Validation & Scoring (16 Dimensions)"
+      agent: architect
+      action: consolidate
+      requires:
+        - multi_source_pipeline_audit
+        - stripe_revenue_audit
+        - autonomous_ux_audit
+        - copy_code_alignment
+        - failure_observability_audit
+        - security_infra_audit
+        - remaining_dimensions
+        - seo_discovery_audit
+      creates:
+        - docs/gtm-ok/evidence/consolidated-scores.md
+      elicit: false
+      duration_estimate: "20-30 min"
+
+      notes: |
+        ## OBJECTIVE
+        Cross-validate ALL phase outputs (v2.0: 8 phases, 16 dimensions).
+        Challenge findings. Verify evidence. Produce consolidated scoring.
+
+        ## PROTOCOL
+
+        ### 1. Read ALL Phase Outputs
+        Read every file in docs/gtm-ok/evidence/ produced by phases 1-8.
+
+        ### 2. Cross-Validation Checks
+        - Do Phase 1 (Multi-Source) findings align with Phase 5 (failure transparency)?
+        - Do Phase 2 (Stripe) findings align with Phase 4 (copy promises)?
+        - Do Phase 3 (UX) findings align with Phase 5 (error recovery)?
+        - Do Phase 8 (SEO) findings align with Phase 4 (copy claims)?
+        - Are there contradictions between phase assessments?
+
+        ### 3. Scoring
+        Apply scores based on evidence (NOT optimism):
+
+        SCORING RUBRIC:
+        - 9-10: Production-excellent. Would pass any audit.
+        - 7-8: Production-ready. Minor issues, none blocking.
+        - 5-6: Conditional. Significant gaps but workable with effort.
+        - 3-4: Not ready. Major gaps requiring multiple sprints.
+        - 1-2: Fundamentally broken. Architecture-level changes needed.
+
+        ### 4. Weighted Score Calculation (v2.0 UPDATED)
+        Weights: [5] = Critical, [3] = Important, [1] = Nice-to-have
+
+        v2.0 dimensions:
+        - D01 [5], D02 [5], D03 [5], D04 [5] = 20 points
+        - D05 [3], D06 [3], D07 [3], D08 [3], D09 [3], D10 [3], D11 [3], D16 [3] = 24 points
+        - D12 [1], D13 [1], D14 [1], D15 [1] = 4 points
+
+        Total weight: 20 + 24 + 4 = 48 points
+
+        Weighted score = Sum(score_i * weight_i) / 48 * 10
+
+        GO threshold: All [5]-weight >= 7, weighted overall >= 7.0
+        GO CONDICIONAL: All [5]-weight >= 5, weighted overall >= 5.5
+        NO GO: Any [5]-weight < 5
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # Consolidated GTM-OK Scores (v2.0: 16 Dimensions)
+
+        | # | Dimension | Weight | Score | Status |
+        |---|-----------|--------|-------|--------|
+        | D01 | Core Value Delivery (Multi-Source) | [5] | X/10 | PASS/FAIL |
+        | D02 | Revenue Infrastructure | [5] | X/10 | PASS/FAIL |
+        | D03 | Autonomous UX | [5] | X/10 | PASS/FAIL |
+        | D04 | Data Reliability (PNCP+PCP) | [5] | X/10 | PASS/FAIL |
+        | D05 | Failure Transparency | [3] | X/10 | - |
+        | D06 | Observability | [3] | X/10 | - |
+        | D07 | Value Before Payment | [3] | X/10 | - |
+        | D08 | Onboarding Friction | [3] | X/10 | - |
+        | D09 | Copy-Code Alignment | [3] | X/10 | - |
+        | D10 | Security & LGPD | [3] | X/10 | - |
+        | D11 | Infrastructure | [3] | X/10 | - |
+        | D12 | Pricing Alignment | [1] | X/10 | - |
+        | D13 | Analytics | [1] | X/10 | - |
+        | D14 | Differentiation | [1] | X/10 | - |
+        | D15 | Feedback Loop | [1] | X/10 | - |
+        | D16 | SEO & Discovery | [3] | X/10 | - |
+
+        ## Weighted Overall Score: X.X/10 (v2.0: 48-point scale)
+        ## Preliminary Verdict: [GO / NO GO / GO CONDICIONAL]
+        ```
+
+    # =========================================================================
+    # PHASE 10: VERDICT & WIN-RANKED REMEDIATION PLAN (v2.0 UPDATED)
+    # Agent: @pm (story creation) + @architect (technical guidance)
+    # This produces the FINAL deliverable
+    # =========================================================================
+
+    - step: verdict_and_remediation
+      phase: 10
+      phase_name: "Final Verdict & WIN-Ranked Remediation Stories"
+      agent: pm
+      action: create
+      requires:
+        - cross_validation
+      creates:
+        - docs/gtm-ok/GTM-OK-VERDICT.md
+        - docs/gtm-ok/stories/
+      elicit: false
+      duration_estimate: "45-60 min"
+
+      notes: |
+        ## OBJECTIVE (v2.0 UPDATED)
+        Produce the FINAL GTM-OK verdict document and, if not GO, create
+        UNLIMITED remediation stories prioritized by WIN score (score evolution impact).
+
+        **CRITICAL CHANGE**: No longer limited to 10 stories. Create ALL necessary
+        stories to reach GO threshold, ranked by WIN (Weighted Impact on Numbers).
+
+        ## PROTOCOL
+
+        ### 1. Read Consolidated Scores
+        Read `docs/gtm-ok/evidence/consolidated-scores.md`
+
+        ### 2. Determine Verdict
+        Apply the scoring thresholds defined in Phase 9.
+
+        ### 3. If NOT GO: Create WIN-Ranked Remediation Stories
+
+        **WIN Score Calculation:**
+        For each potential story, calculate:
+
+        WIN = (ΔScore × Weight × Confidence) / Effort
+
+        Where:
+        - ΔScore = Expected score improvement (e.g., D02: 3→7 = +4 points)
+        - Weight = Dimension weight (5, 3, or 1)
+        - Confidence = Probability of success (0.5-1.0)
+        - Effort = Story points (1, 2, 3, 5, 8)
+
+        Example:
+        - Story: Fix Stripe checkout→activation bug
+        - ΔScore: D02 improves 3→7 (+4 points)
+        - Weight: 5 (critical dimension)
+        - Confidence: 0.9 (well-understood fix)
+        - Effort: 3 story points
+        - WIN = (4 × 5 × 0.9) / 3 = 6.0
+
+        **Ranking Rules:**
+        1. Sort ALL stories by WIN score (descending)
+        2. Mark P0: Stories that move [5]-weight dimensions from <7 to >=7
+        3. Mark P1: Stories that move overall weighted score past 7.0 threshold
+        4. Mark P2: All other improvements
+
+        **Story Creation Guidelines:**
+        - Create stories for EVERY gap identified across all 16 dimensions
+        - No arbitrary limits (removed 10-story cap)
+        - Each story MUST follow INVEST criteria
+        - Each story MUST include WIN score calculation
+        - Group related fixes into epics if >20 stories
+
+        Story format:
+        ```
+        # GTM-FIX-XXX: [Title]
+
+        ## WIN Score: X.XX (Rank #Y)
+        - ΔScore: DXX from A/10 to B/10 (+N points)
+        - Weight: [5/3/1]
+        - Confidence: X.X (rationale)
+        - Effort: X story points
+        - Calculation: (N × weight × confidence) / effort = WIN
+
+        ## Dimension Impact
+        - Primary: DXX (A/10 → B/10)
+        - Secondary: DYY (C/10 → D/10) [if applicable]
+
+        ## Problem
+        [1-2 sentences describing the gap with code references]
+
+        ## Solution
+        [Concrete technical approach]
+
+        ## Acceptance Criteria
+        - [ ] AC1: ...
+        - [ ] AC2: ...
+
+        ## Effort: [1/2/3/5/8] story points
+        ## Priority: [P0/P1/P2]
+        ## Dependencies: [None / GTM-FIX-YYY]
+        ```
+
+        ### 4. Produce Final Document
+
+        ## OUTPUT FORMAT (GTM-OK-VERDICT.md)
+        ```markdown
+        # GTM-OK Assessment v2.0: SmartLic
+
+        **Date:** YYYY-MM-DD
+        **Assessor:** GTM-OK Workflow v2.0
+        **Standard:** CTO-level production readiness
+        **Dimensions:** 16 (v2.0: added D16 SEO & Discovery)
+
+        ---
+
+        ## VERDICT: [GO / NO GO / GO CONDICIONAL]
+
+        ### Verdict Rationale
+        [2-3 paragraphs explaining the verdict with specific evidence]
+
+        ---
+
+        ## Executive Scorecard (v2.0: 16 Dimensions)
+
+        | # | Dimension | Weight | Score | Verdict |
+        |---|-----------|--------|-------|---------|
+        [Full 16-dimension table]
+
+        **Weighted Overall Score: X.X/10** (v2.0: 48-point scale)
+
+        ---
+
+        ## Critical Findings
+
+        ### Strengths (What's Working)
+        1. [Strength with evidence]
+
+        ### Blockers (Must Fix for GO)
+        1. [Blocker with code reference and impact]
+
+        ### Risks (Known but Accepted)
+        1. [Risk with mitigation plan]
+
+        ---
+
+        ## WIN-Ranked Remediation Plan (v2.0: Unlimited Stories)
+
+        ### Story Backlog (Sorted by WIN Score)
+
+        | # | Story | WIN | Dimensions | Effort | Priority |
+        |---|-------|-----|------------|--------|----------|
+        | 1 | GTM-FIX-001: ... | 8.50 | D02 (3→7) | 2 | P0 |
+        | 2 | GTM-FIX-002: ... | 6.00 | D01, D04 | 5 | P0 |
+        | 3 | GTM-FIX-003: ... | 4.20 | D16 (2→7) | 3 | P1 |
+        [...]
+
+        ### Sprint Allocation (Based on WIN Ranking)
+
+        **Sprint 1 (Week 1-2): P0 Blockers (WIN >= 5.0)**
+        - GTM-FIX-001: [Title] (WIN: 8.50)
+        - GTM-FIX-002: [Title] (WIN: 6.00)
+        - GTM-FIX-003: [Title] (WIN: 5.50)
+        - Total effort: XX story points
+        - Expected score improvement: X.X → Y.Y
+
+        **Sprint 2 (Week 3-4): P1 Improvements (WIN 3.0-4.9)**
+        - GTM-FIX-004: [Title] (WIN: 4.20)
+        - [...]
+        - Total effort: XX story points
+        - Expected score improvement: Y.Y → Z.Z
+
+        **Backlog: P2 Polish (WIN < 3.0)**
+        - [Sorted list of remaining stories]
+
+        ### Expected Score Evolution
+
+        | Sprint | D01 | D02 | D03 | D04 | ... | D16 | Weighted | Verdict |
+        |--------|-----|-----|-----|-----|-----|-----|----------|---------|
+        | Current | X | X | X | X | ... | X | X.XX | NO GO |
+        | After S1 | Y | Y | Y | Y | ... | Y | Y.YY | CONDICIONAL |
+        | After S2 | Z | Z | Z | Z | ... | Z | Z.ZZ | GO |
+
+        ### Path to GO Analysis
+        - Current score: X.XX/10
+        - GO threshold: 7.0/10
+        - Gap: Y.YY points
+        - Stories needed: N (ranked by WIN)
+        - Estimated time: X sprints
+
+        ---
+
+        ## Appendix: Evidence Files
+        - docs/gtm-ok/evidence/D01-D04-multi-source-pipeline.md
+        - docs/gtm-ok/evidence/D02-stripe-revenue.md
+        - docs/gtm-ok/evidence/D16-seo-discovery.md
+        - [...]
+
+        ---
+
+        ## Methodology Note
+        This assessment follows the GTM-OK Framework v2.0, evaluating 16 dimensions
+        (v2.0: added D16 SEO & Discovery) across 4 weight tiers. Stories are ranked
+        by WIN score (Weighted Impact on Numbers) without arbitrary limits. The
+        standard applied is: "Would this pass scrutiny from a Silicon Valley CTO
+        evaluating the system for investment or acquisition?"
+
+        All findings are evidence-based with specific code references.
+        ```
+
+    # =========================================================================
+    # PHASE 11: MULTI-SOURCE RESILIENCE ARCHITECTURE ADDENDUM (v2.0 UPDATED)
+    # Agent: @architect
+    # Special focus: PNCP + PCP reliability architecture
+    # =========================================================================
+
+    - step: multi_source_resilience_architecture
+      phase: 11
+      phase_name: "Multi-Source Resilience Architecture Recommendation"
+      agent: architect
+      action: design
+      requires:
+        - multi_source_pipeline_audit
+        - verdict_and_remediation
+      creates:
+        - docs/gtm-ok/evidence/MULTI-SOURCE-RESILIENCE-ARCHITECTURE.md
+      elicit: false
+      duration_estimate: "30-45 min"
+
+      notes: |
+        ## OBJECTIVE (v2.0 UPDATED)
+        Design a production-grade architecture for making multi-source search
+        (PNCP + Portal de Compras Públicas) bulletproof.
+
+        PNCP and PCP are the primary data sources. User-facing failures are
+        unacceptable for a premium product at R$1,999/month.
+
+        ## REQUIREMENTS
+        1. Users ALWAYS get results (minimum 30 for any reasonable query)
+        2. Users NEVER see raw API errors from either source
+        3. Response time < 15 seconds for any query across both sources
+        4. System works even if BOTH PNCP and PCP are 100% down for hours
+        5. Deduplication is accurate (no false positives/negatives)
+        6. Value discrepancies across sources are flagged
+
+        ## ARCHITECTURE TO EVALUATE
+
+        ### Option A: Local Data Lake + Live Augmentation
+        - Nightly ETL sync of PNCP + PCP data to PostgreSQL (Supabase)
+        - User queries hit LOCAL database (fast, reliable)
+        - Live API call only for data published in last 24 hours
+        - If live call fails, serve cache-only with "data up to 24h ago" indicator
+
+        ### Option B: Stale-While-Revalidate Cache (IMPLEMENTED - GTM-FIX-010)
+        - First search hits PNCP + PCP live, results cached in PostgreSQL
+        - Subsequent identical searches served from cache instantly
+        - Background revalidation refreshes cache
+        - If both sources down, serve stale data with staleness indicator
+
+        ### Option C: Hybrid (Recommended)
+        - Combine A + B
+        - Background ETL for historical data (stable, doesn't change)
+        - SWR cache for recent searches (fast repeat queries)
+        - Live augmentation for freshest data (best-effort, 5s timeout per source)
+        - Minimum result guarantee via date-range expansion from local DB
+        - Cross-source deduplication at cache layer
+
+        ## DESIGN CONSTRAINTS
+        - Must be implementable in 1-2 sprints
+        - Must use existing infrastructure (PostgreSQL/Supabase, Railway)
+        - No new infrastructure (no Redis, no Kafka, no Elasticsearch initially)
+        - Must not increase hosting costs by >20%
+
+        ## DEDUPLICATION STRATEGY
+        Current implementation (GTM-FIX-011):
+        - Dedup key: `cnpj:edital:ano`
+        - Priority: PNCP=1 (wins) over PCP=2
+        - Value discrepancy monitor: Logs warning when >5% difference
+
+        Evaluate:
+        - Is the dedup key sufficient? (collisions, false positives)
+        - Should priority be value-based instead of source-based?
+        - How to handle temporal conflicts (same bid, different publication dates)?
+
+        ## OUTPUT FORMAT
+        ```markdown
+        # Multi-Source Resilience Architecture (v2.0)
+
+        ## Recommended Architecture: [A/B/C]
+
+        ## Architecture Diagram
+        [ASCII diagram of data flow across PNCP + PCP]
+
+        ## Implementation Plan
+        ### Sprint 1
+        1. [Task] - [Effort] - [Impact]
+
+        ### Sprint 2
+        1. [Task] - [Effort] - [Impact]
+
+        ## Database Schema Changes
+        [SQL for new tables/indexes to support dual-source]
+
+        ## Code Changes Required
+        | File | Change | Effort |
+        |------|--------|--------|
+
+        ## Minimum Result Guarantee Implementation
+        [Specific algorithm for ensuring >= 30 results across both sources]
+
+        ## Deduplication Algorithm
+        - Current: `cnpj:edital:ano` with PNCP priority
+        - Recommended: [same / improved / value-based]
+        - Conflict resolution: [strategy]
+
+        ## Degradation Levels
+        | Level | PNCP | PCP | User Experience | Data Freshness |
+        |-------|------|-----|-----------------|----------------|
+        | Normal | Online | Online | Full live results | Real-time |
+        | Partial | Online | Down | PNCP-only + cache | Real-time PNCP |
+        | Partial | Down | Online | PCP-only + cache | Real-time PCP |
+        | Degraded | Slow | Slow | Cache + partial live | Up to 6h old |
+        | Offline | Down | Down | Cache only | Up to 24h old |
+
+        ## Risk Mitigation
+        1. [Risk] -> [Mitigation]
+        ```
+
+  # ===========================================================================
+  #                         QUICK REFERENCE
+  # ===========================================================================
+
+  quick_reference:
+    phases:
+      - "Phase 1: Multi-Source Pipeline Audit (@architect) -> D01+D04 evidence"
+      - "Phase 2: Stripe Revenue Audit (@architect) -> D02 evidence"
+      - "Phase 3: Autonomous UX Audit (@ux-design-expert) -> D03+D07+D08 evidence"
+      - "Phase 4: Copy-Code Alignment (@analyst) -> D09 evidence"
+      - "Phase 5: Failure & Observability (@qa) -> D05+D06 evidence"
+      - "Phase 6: Security & Infra (@architect) -> D10+D11 evidence"
+      - "Phase 7: Rapid Scan (@analyst) -> D12-D15 evidence"
+      - "Phase 8: SEO & Discovery (@analyst) -> D16 evidence (NEW v2.0)"
+      - "Phase 9: Cross-Validation (@architect) -> Consolidated scores (16 dims)"
+      - "Phase 10: Verdict & WIN-Ranked Stories (@pm) -> GTM-OK-VERDICT.md"
+      - "Phase 11: Multi-Source Resilience (@architect) -> Architecture recommendation"
+
+    agents_involved:
+      - "@architect (lead): Phases 1, 2, 6, 9, 11"
+      - "@ux-design-expert: Phase 3"
+      - "@analyst: Phases 4, 7, 8"
+      - "@qa: Phase 5"
+      - "@pm: Phase 10"
+
+    outputs:
+      - "docs/gtm-ok/GTM-OK-VERDICT.md (FINAL DELIVERABLE)"
+      - "docs/gtm-ok/evidence/*.md (supporting evidence, 16 dimensions)"
+      - "docs/gtm-ok/stories/GTM-FIX-*.md (WIN-ranked remediation stories, UNLIMITED)"
+
+    duration:
+      minimum: "4-5 hours"
+      typical: "5-7 hours"
+      complex: "7-10 hours"
+
+    verdict_thresholds:
+      GO: "All [5]-weight dimensions >= 7/10, weighted overall >= 7.0"
+      GO_CONDICIONAL: "All [5]-weight dimensions >= 5/10, weighted overall >= 5.5"
+      NO_GO: "Any [5]-weight dimension < 5/10"
+
+    v2_changes:
+      - "Added D16: SEO & Discovery (weight [3])"
+      - "Updated D01+D04: Multi-source evaluation (PNCP + PCP)"
+      - "Removed 10-story limit in Phase 10"
+      - "Implemented WIN-based story ranking (score evolution × weight × confidence / effort)"
+      - "Total weight: 45 points (v1.0) -> 48 points (v2.0)"
+      - "Added Phase 8: SEO audit with Google 2026 best practices"
+
+  # ===========================================================================
+  #                         HANDOFF PROMPTS
+  # ===========================================================================
+
+  handoff_prompts:
+    phase_1_to_5: >
+      Phase 1 (Multi-Source Pipeline Audit) complete. Evidence document created at
+      docs/gtm-ok/evidence/D01-D04-multi-source-pipeline.md. Phase 5 (Failure & Observability)
+      should cross-reference these findings for error handling assessment across PNCP and PCP.
+
+    phase_2_to_8: >
+      Phase 2 (Stripe Revenue Audit) complete. Evidence at
+      docs/gtm-ok/evidence/D02-stripe-revenue.md. Key finding:
+      checkout.session.completed handler status and payment failure handling.
+
+    phase_4_to_7: >
+      Phase 4 (Copy-Code Alignment) complete. Evidence at
+      docs/gtm-ok/evidence/D09-copy-alignment.md. Phase 7 should reference
+      the promise alignment matrix for pricing justification assessment.
+
+    phases_1_8_to_9: >
+      All evidence phases (1-8) complete. Phase 9 (Cross-Validation) must read
+      ALL evidence files, verify consistency, resolve contradictions, and
+      produce consolidated scoring with weighted verdict calculation (v2.0: 16 dimensions, 48-point scale).
+
+    phase_9_to_10: >
+      Cross-validation complete with consolidated scores at
+      docs/gtm-ok/evidence/consolidated-scores.md. Phase 10 must produce
+      the FINAL verdict document and, if not GO, create UNLIMITED WIN-ranked
+      remediation stories (v2.0: no 10-story limit).
+
+    workflow_complete: >
+      GTM-OK Assessment v2.0 complete. Final verdict at docs/gtm-ok/GTM-OK-VERDICT.md.
+      Evidence files (16 dimensions) at docs/gtm-ok/evidence/. WIN-ranked remediation
+      stories (unlimited) at docs/gtm-ok/stories/. This assessment is designed to be
+      defensible before any Silicon Valley CTO evaluating the system for investment readiness.
