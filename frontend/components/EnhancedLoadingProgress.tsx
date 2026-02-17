@@ -83,11 +83,16 @@ const SSE_STAGE_MAP: Record<string, number> = {
 };
 
 /** Graduated honest overtime messages */
-function getOvertimeMessage(overBySeconds: number): string {
+function getOvertimeMessage(overBySeconds: number, stateCount: number): string {
   if (overBySeconds < 15) return 'Quase pronto, finalizando...';
   if (overBySeconds < 45) return 'Estamos trabalhando nisso, só mais um instante!';
-  if (overBySeconds < 90) return 'Ainda processando. Buscas com muitos estados demoram mais.';
-  return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar com menos estados.';
+  if (overBySeconds < 90) {
+    // GTM-FIX-027 T4 AC22: Only mention "muitos estados" if >10 states
+    return stateCount > 10
+      ? 'Ainda processando. Buscas com muitos estados demoram mais.'
+      : 'A busca pode demorar em horários de pico.';
+  }
+  return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar novamente.';
 }
 
 export function EnhancedLoadingProgress({
@@ -315,7 +320,7 @@ export function EnhancedLoadingProgress({
       {/* Overtime warning message */}
       {isOvertime && (
         <div className="mb-3 p-3 bg-warning-subtle border border-warning/20 rounded-lg text-sm text-warning-dark">
-          {getOvertimeMessage(overtimeSeconds)}
+          {getOvertimeMessage(overtimeSeconds, stateCount)}
         </div>
       )}
 

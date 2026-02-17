@@ -73,14 +73,14 @@ const STAGES = [
   },
 ];
 
-// Time estimation formula (calibrated from production data - Jan 2026)
-// Real-world measurements show ~20-25s per state due to PNCP API latency
+// GTM-FIX-027 T4 AC23: Time estimation formula recalibrated for tamanhoPagina=500
+// With 500 items/page (was 20), ~25x fewer requests → ~4-5x faster per state
 const estimateTotalTime = (ufCount: number): number => {
-  const baseTime = 15;     // 15s minimum (connection + initial setup)
-  const perUfTime = 20;    // 20s per state (PNCP API is slow)
+  const baseTime = 10;     // 10s minimum (connection + initial setup, was 15s)
+  const perUfTime = 5;     // 5s per state (was 20s with tamanhoPagina=20)
   const filteringTime = 3; // 3s filtering
-  const llmTime = 8;       // 8s LLM (GPT-4.1-nano)
-  const excelTime = 5;     // 5s Excel generation
+  const llmTime = 5;       // 5s LLM (GPT-4.1-nano, was 8s)
+  const excelTime = 3;     // 3s Excel generation (was 5s)
 
   return baseTime + (ufCount * perUfTime) + filteringTime + llmTime + excelTime;
 };

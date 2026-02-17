@@ -1,22 +1,27 @@
-"""ComprasGov API client adapter (Federal Open Data).
+"""ComprasGov API client adapter (v3 - Dados Abertos Federal).
 
 This module implements the SourceAdapter interface for the ComprasGov
-open data API (https://compras.dados.gov.br/).
+v3 open data API (https://dadosabertos.compras.gov.br/).
 
-API Characteristics:
+API Characteristics (v3):
 - REST API with JSON responses
 - No authentication required (open government data)
 - Federal procurement data
-- Rate limit: conservative 2 req/s
+- Dual-endpoint fetch: Legacy (pre-2024) + Lei 14.133 (new procurements)
+- Rate limit: 5 req/s (200ms between requests)
 
-Documentation: https://compras.dados.gov.br/
+Migration history:
+- v1: compras.dados.gov.br — permanently unstable, disabled in GTM-FIX-025
+- v3: dadosabertos.compras.gov.br — new stable API (GTM-FIX-027 T5)
+
+Documentation: https://dadosabertos.compras.gov.br/
 """
 
 import asyncio
 import logging
 import random
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Dict, Optional, Set
+from typing import Any, AsyncGenerator, Dict, List, Optional, Set
 
 import httpx
 
@@ -36,100 +41,54 @@ logger = logging.getLogger(__name__)
 
 
 class ComprasGovAdapter(SourceAdapter):
-    """
-    Adapter for ComprasGov Federal Open Data API.
+    """Adapter for ComprasGov v3 Federal Open Data API.
 
     This adapter fetches procurement data from the Brazilian federal
-    government's open data portal. No authentication is required.
+    government's open data portal (v3). No authentication is required.
+
+    Dual-endpoint strategy:
+    - Legacy endpoint: /modulo-legado/1_consultarLicitacao
+      For pre-2024 procurements. Supports server-side UF filtering.
+    - Lei 14.133 endpoint: /modulo-contratacoes/1_consultarContratacoes_PNCP_14133
+      For new procurements. UF filtering is client-side only.
+
+    Both endpoints are queried in parallel and results are merged with
+    deduplication.
 
     Attributes:
-        BASE_URL: API base URL
+        BASE_URL: v3 API base URL
         DEFAULT_TIMEOUT: Request timeout in seconds
         MAX_RETRIES: Maximum number of retry attempts
         RATE_LIMIT_DELAY: Minimum delay between requests (seconds)
     """
 
-    BASE_URL = "https://compras.dados.gov.br"
-    DEFAULT_TIMEOUT = 25
+    BASE_URL = "https://dadosabertos.compras.gov.br"
+    DEFAULT_TIMEOUT = 30
     MAX_RETRIES = 3
-    RATE_LIMIT_DELAY = 0.5  # 500ms between requests (~2 req/s)
-    PAGE_SIZE = 500
+    RATE_LIMIT_DELAY = 0.2  # 200ms between requests (5 req/s)
+    DEFAULT_PAGE_SIZE = 500
 
-    # Modalidade name normalization mapping (Lei 14.133/2021)
-    MODALIDADE_MAPPING = {
-        # Exact Lei 14.133 names (preferred output)
-        "Pregao Eletronico": "Pregao Eletronico",
-        "Pregao Presencial": "Pregao Presencial",
-        "Concorrencia": "Concorrencia",
-        "Concurso": "Concurso",
-        "Leilao": "Leilao",
-        "Dispensa de Licitacao": "Dispensa de Licitacao",
-        "Inexigibilidade": "Inexigibilidade",
-        "Dialogo Competitivo": "Dialogo Competitivo",
-        # Common variations (input normalization)
-        "PREGAO ELETRONICO": "Pregao Eletronico",
-        "PREGÃO ELETRÔNICO": "Pregao Eletronico",
-        "Pregão Eletrônico": "Pregao Eletronico",
-        "pregão eletrônico": "Pregao Eletronico",
-        "Pregão - Eletrônico": "Pregao Eletronico",
-        "PE": "Pregao Eletronico",
-        "PREGAO PRESENCIAL": "Pregao Presencial",
-        "PREGÃO PRESENCIAL": "Pregao Presencial",
-        "Pregão Presencial": "Pregao Presencial",
-        "pregão presencial": "Pregao Presencial",
-        "Pregão - Presencial": "Pregao Presencial",
-        "PP": "Pregao Presencial",
-        "CONCORRENCIA": "Concorrencia",
-        "CONCORRÊNCIA": "Concorrencia",
-        "Concorrência": "Concorrencia",
-        "concorrência": "Concorrencia",
-        "CONCURSO": "Concurso",
-        "concurso": "Concurso",
-        "LEILAO": "Leilao",
-        "LEILÃO": "Leilao",
-        "Leilão": "Leilao",
-        "leilão": "Leilao",
-        "DISPENSA DE LICITACAO": "Dispensa de Licitacao",
-        "DISPENSA DE LICITAÇÃO": "Dispensa de Licitacao",
-        "Dispensa de Licitação": "Dispensa de Licitacao",
-        "dispensa de licitação": "Dispensa de Licitacao",
-        "Dispensa": "Dispensa de Licitacao",
-        "DISPENSA": "Dispensa de Licitacao",
-        "INEXIGIBILIDADE": "Inexigibilidade",
-        "inexigibilidade": "Inexigibilidade",
-        "Inexigível": "Inexigibilidade",
-        "INEXIGIVEL": "Inexigibilidade",
-        "DIALOGO COMPETITIVO": "Dialogo Competitivo",
-        "DIÁLOGO COMPETITIVO": "Dialogo Competitivo",
-        "Diálogo Competitivo": "Dialogo Competitivo",
-        "diálogo competitivo": "Dialogo Competitivo",
-        # Deprecated (Lei 8.666/93) - flag for logging
-        "Tomada de Precos": "DEPRECATED_TOMADA_PRECOS",
-        "TOMADA DE PREÇOS": "DEPRECATED_TOMADA_PRECOS",
-        "Tomada de Preços": "DEPRECATED_TOMADA_PRECOS",
-        "TP": "DEPRECATED_TOMADA_PRECOS",
-        "Convite": "DEPRECATED_CONVITE",
-        "CONVITE": "DEPRECATED_CONVITE",
-        "convite": "DEPRECATED_CONVITE",
-    }
+    # Legacy endpoint paths
+    LEGACY_ENDPOINT = "/modulo-legado/1_consultarLicitacao"
+    LEI_14133_ENDPOINT = "/modulo-contratacoes/1_consultarContratacoes_PNCP_14133"
 
     _metadata = SourceMetadata(
         name="ComprasGov - Dados Abertos Federal",
         code="COMPRAS_GOV",
-        base_url="https://compras.dados.gov.br",
-        documentation_url="https://compras.dados.gov.br/",
+        base_url="https://dadosabertos.compras.gov.br",
+        documentation_url="https://dadosabertos.compras.gov.br/",
         capabilities={
             SourceCapability.PAGINATION,
             SourceCapability.DATE_RANGE,
+            SourceCapability.FILTER_BY_UF,  # Legacy endpoint supports server-side UF
         },
-        rate_limit_rps=2.0,
+        rate_limit_rps=5.0,
         typical_response_ms=3000,
-        priority=4,
+        priority=3,
     )
 
     def __init__(self, timeout: Optional[int] = None):
-        """
-        Initialize ComprasGov adapter.
+        """Initialize ComprasGov v3 adapter.
 
         Args:
             timeout: Request timeout in seconds. Defaults to DEFAULT_TIMEOUT.
@@ -138,6 +97,7 @@ class ComprasGovAdapter(SourceAdapter):
         self._client: Optional[httpx.AsyncClient] = None
         self._last_request_time = 0.0
         self._request_count = 0
+        self.was_truncated: bool = False
 
     @property
     def metadata(self) -> SourceMetadata:
@@ -172,8 +132,7 @@ class ComprasGovAdapter(SourceAdapter):
         path: str,
         params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        Make HTTP request with retry logic and rate limiting.
+        """Make HTTP request with retry logic and rate limiting.
 
         Args:
             method: HTTP method
@@ -212,7 +171,7 @@ class ComprasGovAdapter(SourceAdapter):
                     return response.json()
 
                 if response.status_code == 204:
-                    return {"_embedded": {"licitacoes": []}, "count": 0}
+                    return {"data": [], "totalRegistros": 0, "totalPaginas": 0, "paginasRestantes": 0}
 
                 if response.status_code >= 500:
                     if attempt < self.MAX_RETRIES:
@@ -250,47 +209,10 @@ class ComprasGovAdapter(SourceAdapter):
         delay *= random.uniform(0.5, 1.5)
         return delay
 
-    def _normalize_modalidade_name(self, raw_name: str) -> str:
-        """
-        Normalize modalidade name to Lei 14.133 standard.
-
-        Args:
-            raw_name: Raw modalidade name from API
-
-        Returns:
-            Normalized modalidade name or empty string
-        """
-        if not raw_name:
-            return ""
-
-        # Try direct mapping first
-        normalized = self.MODALIDADE_MAPPING.get(raw_name)
-        if normalized:
-            if normalized.startswith("DEPRECATED_"):
-                logger.warning(
-                    f"[COMPRAS_GOV] Deprecated modalidade found: {raw_name}. "
-                    "This modality was revoked by Lei 14.133/2021."
-                )
-                # Return normalized name without DEPRECATED_ prefix for legacy data
-                return normalized.replace("DEPRECATED_", "").replace("_", " ").title()
-            return normalized
-
-        # Try case-insensitive match
-        raw_upper = raw_name.upper()
-        for key, value in self.MODALIDADE_MAPPING.items():
-            if key.upper() == raw_upper:
-                return value
-
-        # Unknown modalidade - log warning
-        logger.warning(
-            f"[COMPRAS_GOV] Unknown modalidade name: {raw_name}. "
-            "Please add to MODALIDADE_MAPPING if valid."
-        )
-        return raw_name  # Return as-is for debugging
-
     async def health_check(self) -> SourceStatus:
-        """
-        Check if ComprasGov API is available.
+        """Check if ComprasGov v3 API is available.
+
+        Uses a minimal query to the legacy endpoint as health probe.
 
         Returns:
             SourceStatus indicating current health
@@ -300,8 +222,8 @@ class ComprasGovAdapter(SourceAdapter):
             start = asyncio.get_running_loop().time()
 
             response = await client.get(
-                "/licitacoes/v1/licitacoes.json",
-                params={"offset": 0, "limit": 1},
+                self.LEGACY_ENDPOINT,
+                params={"pagina": 1, "tamanhoPagina": 1},
                 timeout=5.0,
             )
 
@@ -330,99 +252,292 @@ class ComprasGovAdapter(SourceAdapter):
         ufs: Optional[Set[str]] = None,
         **kwargs: Any,
     ) -> AsyncGenerator[UnifiedProcurement, None]:
-        """
-        Fetch procurement records from ComprasGov.
+        """Fetch procurement records from ComprasGov v3 (dual-endpoint).
+
+        Queries both legacy and Lei 14.133 endpoints in parallel and
+        merges results with deduplication.
 
         Args:
             data_inicial: Start date in YYYY-MM-DD format
             data_final: End date in YYYY-MM-DD format
-            ufs: Optional set of Brazilian state codes to filter (client-side)
-            **kwargs: Additional parameters
+            ufs: Optional set of Brazilian state codes to filter
+            **kwargs: Additional parameters (max_pages supported)
 
         Yields:
             UnifiedProcurement records
         """
-        offset = 0
-        total_fetched = 0
+        max_pages = kwargs.get("max_pages", 50)
         seen_ids: Set[str] = set()
+        total_fetched = 0
 
-        while True:
+        # Run both endpoints in parallel
+        legacy_records: List[UnifiedProcurement] = []
+        lei_records: List[UnifiedProcurement] = []
+
+        legacy_task = asyncio.create_task(
+            self._fetch_legacy(data_inicial, data_final, ufs, max_pages)
+        )
+        lei_task = asyncio.create_task(
+            self._fetch_lei_14133(data_inicial, data_final, ufs, max_pages)
+        )
+
+        # Gather results — tolerate individual endpoint failures
+        results = await asyncio.gather(legacy_task, lei_task, return_exceptions=True)
+
+        if isinstance(results[0], list):
+            legacy_records = results[0]
+        else:
+            logger.warning(f"[COMPRAS_GOV] Legacy endpoint failed: {results[0]}")
+
+        if isinstance(results[1], list):
+            lei_records = results[1]
+        else:
+            logger.warning(f"[COMPRAS_GOV] Lei 14.133 endpoint failed: {results[1]}")
+
+        if not legacy_records and not lei_records:
+            # Both endpoints failed — re-raise the first exception if available
+            for result in results:
+                if isinstance(result, Exception):
+                    raise result
+            return
+
+        # Merge and deduplicate: yield legacy first, then lei 14.133
+        for record in legacy_records:
+            if record.source_id not in seen_ids:
+                seen_ids.add(record.source_id)
+                total_fetched += 1
+                yield record
+
+        for record in lei_records:
+            if record.source_id not in seen_ids:
+                seen_ids.add(record.source_id)
+                total_fetched += 1
+                yield record
+
+        logger.info(
+            f"[COMPRAS_GOV] Fetch complete: {total_fetched} records "
+            f"(legacy={len(legacy_records)}, lei14133={len(lei_records)}, "
+            f"truncated={self.was_truncated})"
+        )
+
+    async def _fetch_legacy(
+        self,
+        data_inicial: str,
+        data_final: str,
+        ufs: Optional[Set[str]] = None,
+        max_pages: int = 50,
+    ) -> List[UnifiedProcurement]:
+        """Fetch from legacy endpoint (pre-2024 procurements).
+
+        The legacy endpoint supports server-side UF filtering via the
+        `uf` parameter, so we make one request per UF when UFs are provided.
+
+        Args:
+            data_inicial: Start date YYYY-MM-DD
+            data_final: End date YYYY-MM-DD
+            ufs: Optional set of UF codes
+            max_pages: Maximum pages to fetch per UF
+
+        Returns:
+            List of UnifiedProcurement records
+        """
+        records: List[UnifiedProcurement] = []
+
+        if ufs:
+            # Server-side UF filtering: one set of paginated requests per UF
+            for uf in sorted(ufs):
+                uf_records = await self._fetch_legacy_paginated(
+                    data_inicial, data_final, uf=uf, max_pages=max_pages
+                )
+                records.extend(uf_records)
+        else:
+            # No UF filter: fetch all
+            records = await self._fetch_legacy_paginated(
+                data_inicial, data_final, uf=None, max_pages=max_pages
+            )
+
+        return records
+
+    async def _fetch_legacy_paginated(
+        self,
+        data_inicial: str,
+        data_final: str,
+        uf: Optional[str] = None,
+        max_pages: int = 50,
+    ) -> List[UnifiedProcurement]:
+        """Paginated fetch from legacy endpoint.
+
+        Args:
+            data_inicial: Start date YYYY-MM-DD
+            data_final: End date YYYY-MM-DD
+            uf: Optional single UF code for server-side filtering
+            max_pages: Maximum pages to fetch
+
+        Returns:
+            List of UnifiedProcurement records
+        """
+        records: List[UnifiedProcurement] = []
+        pagina = 1
+
+        while pagina <= max_pages:
             params: Dict[str, Any] = {
-                "data_inicio": data_inicial,
-                "data_fim": data_final,
-                "offset": offset,
-                "limit": self.PAGE_SIZE,
+                "dataInicial": data_inicial,
+                "dataFinal": data_final,
+                "pagina": pagina,
+                "tamanhoPagina": self.DEFAULT_PAGE_SIZE,
             }
+
+            if uf:
+                params["uf"] = uf
 
             try:
                 response = await self._request_with_retry(
-                    "GET", "/licitacoes/v1/licitacoes.json", params
+                    "GET", self.LEGACY_ENDPOINT, params
                 )
             except Exception as e:
-                logger.error(f"[COMPRAS_GOV] Error fetching offset {offset}: {e}")
-                if total_fetched > 0:
-                    logger.warning(f"[COMPRAS_GOV] Returning {total_fetched} partial results")
-                    return
+                logger.error(
+                    f"[COMPRAS_GOV] Legacy endpoint error at page {pagina}: {e}"
+                )
+                if records:
+                    logger.warning(
+                        f"[COMPRAS_GOV] Returning {len(records)} partial legacy results"
+                    )
+                    return records
                 raise
 
-            # Extract data - ComprasGov uses _embedded pattern or direct list
-            data = response.get("_embedded", {}).get("licitacoes", [])
-            if not data:
-                data = response.get("licitacoes", [])
-            if not data:
-                data = response.get("data", [])
+            data = response.get("data", [])
+            total_registros = response.get("totalRegistros", 0)
+            total_paginas = response.get("totalPaginas", 0)
+            paginas_restantes = response.get("paginasRestantes", 0)
 
-            total_count = response.get("count", response.get("total", 0))
-
-            if offset == 0:
+            if pagina == 1 and total_registros > 0:
                 logger.info(
-                    f"[COMPRAS_GOV] Query returned {total_count} total records"
+                    f"[COMPRAS_GOV] Legacy{' (' + uf + ')' if uf else ''}: "
+                    f"{total_registros} records across {total_paginas} pages"
                 )
 
             if not data:
-                logger.debug(f"[COMPRAS_GOV] No more data at offset {offset}")
                 break
 
             for raw_record in data:
                 try:
-                    record = self.normalize(raw_record)
+                    record = self._normalize_legacy(raw_record)
+                    records.append(record)
+                except Exception as e:
+                    logger.warning(f"[COMPRAS_GOV] Failed to normalize legacy record: {e}")
+                    continue
 
-                    if record.source_id in seen_ids:
-                        continue
-                    seen_ids.add(record.source_id)
+            if paginas_restantes <= 0:
+                break
 
-                    # Client-side UF filtering
+            if pagina >= max_pages:
+                self.was_truncated = True
+                logger.warning(
+                    f"[COMPRAS_GOV] Legacy: reached max_pages ({max_pages}). "
+                    f"Results may be incomplete."
+                )
+                break
+
+            pagina += 1
+
+        return records
+
+    async def _fetch_lei_14133(
+        self,
+        data_inicial: str,
+        data_final: str,
+        ufs: Optional[Set[str]] = None,
+        max_pages: int = 50,
+    ) -> List[UnifiedProcurement]:
+        """Fetch from Lei 14.133 endpoint (new procurements).
+
+        This endpoint does NOT support server-side UF filtering.
+        UF filtering is done client-side.
+
+        Args:
+            data_inicial: Start date YYYY-MM-DD
+            data_final: End date YYYY-MM-DD
+            ufs: Optional set of UF codes for client-side filtering
+            max_pages: Maximum pages to fetch
+
+        Returns:
+            List of UnifiedProcurement records
+        """
+        records: List[UnifiedProcurement] = []
+        pagina = 1
+
+        while pagina <= max_pages:
+            params: Dict[str, Any] = {
+                "dataInicial": data_inicial,
+                "dataFinal": data_final,
+                "pagina": pagina,
+                "tamanhoPagina": self.DEFAULT_PAGE_SIZE,
+            }
+
+            try:
+                response = await self._request_with_retry(
+                    "GET", self.LEI_14133_ENDPOINT, params
+                )
+            except Exception as e:
+                logger.error(
+                    f"[COMPRAS_GOV] Lei 14.133 endpoint error at page {pagina}: {e}"
+                )
+                if records:
+                    logger.warning(
+                        f"[COMPRAS_GOV] Returning {len(records)} partial Lei 14.133 results"
+                    )
+                    return records
+                raise
+
+            data = response.get("data", [])
+            total_registros = response.get("totalRegistros", 0)
+            total_paginas = response.get("totalPaginas", 0)
+            paginas_restantes = response.get("paginasRestantes", 0)
+
+            if pagina == 1 and total_registros > 0:
+                logger.info(
+                    f"[COMPRAS_GOV] Lei 14.133: "
+                    f"{total_registros} records across {total_paginas} pages"
+                )
+
+            if not data:
+                break
+
+            for raw_record in data:
+                try:
+                    record = self._normalize_lei_14133(raw_record)
+
+                    # Client-side UF filtering for Lei 14.133
                     if ufs and record.uf and record.uf not in ufs:
                         continue
 
-                    total_fetched += 1
-                    yield record
-
+                    records.append(record)
                 except Exception as e:
-                    logger.warning(f"[COMPRAS_GOV] Failed to normalize record: {e}")
+                    logger.warning(
+                        f"[COMPRAS_GOV] Failed to normalize Lei 14.133 record: {e}"
+                    )
                     continue
 
-            if total_fetched % 100 == 0 and total_fetched > 0:
-                logger.info(f"[COMPRAS_GOV] Progress: {total_fetched} records fetched")
-
-            # Check if there are more results
-            if len(data) < self.PAGE_SIZE:
+            if paginas_restantes <= 0:
                 break
 
-            offset += self.PAGE_SIZE
-
-            # Safety limit
-            if offset > 50000:
-                logger.warning("[COMPRAS_GOV] Reached offset limit (50000)")
+            if pagina >= max_pages:
+                self.was_truncated = True
+                logger.warning(
+                    f"[COMPRAS_GOV] Lei 14.133: reached max_pages ({max_pages}). "
+                    f"Results may be incomplete."
+                )
                 break
 
-        logger.info(f"[COMPRAS_GOV] Fetch complete: {total_fetched} records")
+            pagina += 1
+
+        return records
 
     def normalize(self, raw_record: Dict[str, Any]) -> UnifiedProcurement:
-        """
-        Convert ComprasGov record to UnifiedProcurement.
+        """Convert a ComprasGov record to UnifiedProcurement.
 
-        The API field names may vary; this method tries multiple variations.
+        Auto-detects whether the record is from legacy or Lei 14.133 endpoint
+        based on field presence and delegates accordingly.
 
         Args:
             raw_record: Raw record from API response
@@ -430,114 +545,103 @@ class ComprasGovAdapter(SourceAdapter):
         Returns:
             Normalized UnifiedProcurement record
         """
+        # Detect endpoint type by field presence
+        if "numeroControlePNCP" in raw_record or "objetoCompra" in raw_record:
+            return self._normalize_lei_14133(raw_record)
+        return self._normalize_legacy(raw_record)
+
+    def _normalize_legacy(self, raw_record: Dict[str, Any]) -> UnifiedProcurement:
+        """Normalize a legacy endpoint record.
+
+        Legacy field mapping:
+        - numero_aviso -> source_id (prefixed with cg_leg_)
+        - objeto -> objeto
+        - uasg.nome -> orgao
+        - uf -> uf
+        - modalidade.descricao -> modalidade
+        - situacao.descricao -> situacao
+        - data_publicacao -> data_publicacao
+        - data_entrega_proposta -> data_abertura
+
+        Args:
+            raw_record: Raw record from legacy endpoint
+
+        Returns:
+            UnifiedProcurement record
+        """
         try:
-            # Extract source ID (try multiple field names)
+            # Source ID
             source_id = str(
-                raw_record.get("identificador")
+                raw_record.get("numero_aviso")
+                or raw_record.get("identificador")
                 or raw_record.get("id")
-                or raw_record.get("numero")
                 or ""
             )
-
             if not source_id:
                 raise SourceParseError(self.code, "source_id", raw_record)
 
-            # Extract value
-            valor = (
-                raw_record.get("valor_licitacao")
-                or raw_record.get("valor")
-                or raw_record.get("valor_estimado")
-                or 0
-            )
+            source_id = f"cg_leg_{source_id}"
+
+            # Object description
+            objeto = raw_record.get("objeto") or raw_record.get("descricao") or ""
+
+            # Value
+            valor = raw_record.get("valor_estimado") or raw_record.get("valor") or 0
             if isinstance(valor, str):
-                valor = valor.replace(".", "").replace(",", ".")
                 try:
-                    valor = float(valor)
+                    valor = float(valor.replace(".", "").replace(",", "."))
                 except ValueError:
                     valor = 0.0
 
-            # Extract orgao info
-            orgao_nome = (
-                raw_record.get("orgao_nome")
-                or raw_record.get("nome_orgao")
-                or raw_record.get("uasg_nome")
-                or ""
-            )
-            orgao_cnpj = (
-                raw_record.get("orgao_cnpj")
-                or raw_record.get("cnpj")
-                or raw_record.get("uasg_cnpj")
-                or ""
-            )
+            # UASG / Orgao
+            uasg = raw_record.get("uasg") or {}
+            if isinstance(uasg, dict):
+                orgao = uasg.get("nome") or raw_record.get("orgao_nome") or ""
+                cnpj = uasg.get("cnpj") or raw_record.get("cnpj") or ""
+            else:
+                orgao = raw_record.get("orgao_nome") or ""
+                cnpj = raw_record.get("cnpj") or ""
 
-            # Extract location
-            uf = raw_record.get("uf") or raw_record.get("estado") or ""
-            municipio = raw_record.get("municipio") or raw_record.get("cidade") or ""
+            # Location
+            uf = raw_record.get("uf") or ""
+            municipio = raw_record.get("municipio") or ""
 
-            # Parse dates
-            data_publicacao = self._parse_datetime(
-                raw_record.get("data_publicacao")
-                or raw_record.get("data_resultado_compra")
-            )
-            data_abertura = self._parse_datetime(
-                raw_record.get("data_abertura")
-                or raw_record.get("data_abertura_proposta")
-            )
+            # Modalidade
+            modalidade_obj = raw_record.get("modalidade") or {}
+            if isinstance(modalidade_obj, dict):
+                modalidade = modalidade_obj.get("descricao") or ""
+            else:
+                modalidade = str(modalidade_obj) if modalidade_obj else ""
 
-            # Extract edital info
-            numero_edital = str(
-                raw_record.get("numero_aviso")
-                or raw_record.get("numero_edital")
-                or raw_record.get("numero")
-                or ""
-            )
-            ano = str(
-                raw_record.get("ano")
-                or raw_record.get("ano_compra")
-                or ""
-            )
+            # Situacao
+            situacao_obj = raw_record.get("situacao") or {}
+            if isinstance(situacao_obj, dict):
+                situacao = situacao_obj.get("descricao") or ""
+            else:
+                situacao = str(situacao_obj) if situacao_obj else ""
+
+            # Dates
+            data_publicacao = self._parse_datetime(raw_record.get("data_publicacao"))
+            data_abertura = self._parse_datetime(raw_record.get("data_entrega_proposta"))
+
+            # Edital info
+            numero_edital = str(raw_record.get("numero_aviso") or "")
+            ano = str(raw_record.get("ano") or "")
             if not ano and data_publicacao:
                 ano = str(data_publicacao.year)
 
-            # Build link
-            link = raw_record.get("link") or raw_record.get("url") or ""
+            # Link
+            link = raw_record.get("link") or ""
             if not link and source_id:
-                link = f"https://compras.dados.gov.br/licitacoes/id/licitacao/{source_id}"
-
-            # Extract objeto
-            objeto = (
-                raw_record.get("objeto")
-                or raw_record.get("descricao")
-                or raw_record.get("informacao_geral")
-                or ""
-            )
-
-            # Extract modalidade
-            modalidade_raw = (
-                raw_record.get("modalidade_licitacao")
-                or raw_record.get("modalidade")
-                or raw_record.get("tipo")
-                or ""
-            )
-
-            # Normalize modalidade name
-            modalidade = self._normalize_modalidade_name(modalidade_raw)
-
-            # Extract situacao
-            situacao = (
-                raw_record.get("situacao")
-                or raw_record.get("situacao_aviso")
-                or raw_record.get("status")
-                or ""
-            )
+                link = f"{self.BASE_URL}/modulo-legado/licitacao/{source_id}"
 
             return UnifiedProcurement(
                 source_id=source_id,
                 source_name=self.code,
                 objeto=objeto,
                 valor_estimado=float(valor),
-                orgao=orgao_nome,
-                cnpj_orgao=orgao_cnpj,
+                orgao=orgao,
+                cnpj_orgao=cnpj,
                 uf=uf,
                 municipio=municipio,
                 data_publicacao=data_publicacao,
@@ -556,8 +660,115 @@ class ComprasGovAdapter(SourceAdapter):
         except SourceParseError:
             raise
         except Exception as e:
-            logger.error(f"[COMPRAS_GOV] Normalization error: {e}")
-            raise SourceParseError(self.code, "record", str(e)) from e
+            logger.error(f"[COMPRAS_GOV] Legacy normalization error: {e}")
+            raise SourceParseError(self.code, "legacy_record", str(e)) from e
+
+    def _normalize_lei_14133(self, raw_record: Dict[str, Any]) -> UnifiedProcurement:
+        """Normalize a Lei 14.133 endpoint record.
+
+        Lei 14.133 field mapping:
+        - numeroControlePNCP -> source_id (prefixed with cg_14133_)
+        - objetoCompra -> objeto
+        - orgaoEntidade.razaoSocial -> orgao
+        - uf -> uf
+        - modalidadeNome -> modalidade
+        - situacaoCompraNome -> situacao
+        - dataPublicacaoPncp -> data_publicacao
+        - dataEncerramentoProposta -> data_encerramento
+
+        Args:
+            raw_record: Raw record from Lei 14.133 endpoint
+
+        Returns:
+            UnifiedProcurement record
+        """
+        try:
+            # Source ID
+            source_id = str(
+                raw_record.get("numeroControlePNCP")
+                or raw_record.get("id")
+                or ""
+            )
+            if not source_id:
+                raise SourceParseError(self.code, "source_id", raw_record)
+
+            source_id = f"cg_14133_{source_id}"
+
+            # Object description
+            objeto = raw_record.get("objetoCompra") or ""
+
+            # Value
+            valor = raw_record.get("valorTotalEstimado") or raw_record.get("valorEstimado") or 0
+            if isinstance(valor, str):
+                try:
+                    valor = float(valor)
+                except ValueError:
+                    valor = 0.0
+
+            # Orgao / Entity
+            orgao_obj = raw_record.get("orgaoEntidade") or {}
+            if isinstance(orgao_obj, dict):
+                orgao = orgao_obj.get("razaoSocial") or ""
+                cnpj = orgao_obj.get("cnpj") or ""
+                municipio = orgao_obj.get("municipio") or ""
+            else:
+                orgao = str(orgao_obj) if orgao_obj else ""
+                cnpj = ""
+                municipio = ""
+
+            # Location
+            uf = raw_record.get("uf") or ""
+
+            # Modalidade
+            modalidade = raw_record.get("modalidadeNome") or ""
+
+            # Situacao
+            situacao = raw_record.get("situacaoCompraNome") or ""
+
+            # Dates
+            data_publicacao = self._parse_datetime(raw_record.get("dataPublicacaoPncp"))
+            data_encerramento = self._parse_datetime(raw_record.get("dataEncerramentoProposta"))
+            data_abertura = self._parse_datetime(raw_record.get("dataAberturaProposta"))
+
+            # Edital info
+            numero_edital = str(raw_record.get("numeroCompra") or raw_record.get("numero") or "")
+            ano = str(raw_record.get("anoCompra") or "")
+            if not ano and data_publicacao:
+                ano = str(data_publicacao.year)
+
+            # Link
+            link = raw_record.get("link") or ""
+            if not link and raw_record.get("numeroControlePNCP"):
+                link = f"https://pncp.gov.br/app/editais/{raw_record['numeroControlePNCP']}"
+
+            return UnifiedProcurement(
+                source_id=source_id,
+                source_name=self.code,
+                objeto=objeto,
+                valor_estimado=float(valor),
+                orgao=orgao,
+                cnpj_orgao=cnpj,
+                uf=uf,
+                municipio=municipio,
+                data_publicacao=data_publicacao,
+                data_abertura=data_abertura,
+                data_encerramento=data_encerramento,
+                numero_edital=numero_edital,
+                ano=ano,
+                modalidade=modalidade,
+                situacao=situacao,
+                esfera="F",  # Federal
+                link_edital=link,
+                link_portal=link,
+                fetched_at=datetime.now(timezone.utc),
+                raw_data=raw_record,
+            )
+
+        except SourceParseError:
+            raise
+        except Exception as e:
+            logger.error(f"[COMPRAS_GOV] Lei 14.133 normalization error: {e}")
+            raise SourceParseError(self.code, "lei_14133_record", str(e)) from e
 
     def _parse_datetime(self, value: Any) -> Optional[datetime]:
         """Parse datetime from various formats."""

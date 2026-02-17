@@ -484,8 +484,9 @@ class ConsolidationService:
 
             if salvaged > 0:
                 logger.warning(
-                    f"[CONSOLIDATION] {code}: error after {duration}ms - {e} — "
-                    f"salvaged {salvaged} partial records"
+                    f"[CONSOLIDATION] {code}: PARTIAL after {duration}ms -- "
+                    f"{type(e).__name__}: {e} — salvaged {salvaged} records",
+                    exc_info=True,  # GTM-FIX-027 T3: Full traceback for diagnosis
                 )
                 return {
                     "code": code,
@@ -494,7 +495,11 @@ class ConsolidationService:
                     "duration_ms": duration,
                     "error": f"{e} (salvaged {salvaged} records)",
                 }
-            logger.error(f"[CONSOLIDATION] {code}: error after {duration}ms - {e}")
+            logger.error(
+                f"[CONSOLIDATION] {code}: FAILED after {duration}ms -- "
+                f"{type(e).__name__}: {e}",
+                exc_info=True,  # GTM-FIX-027 T3: Full traceback for PCP diagnosis
+            )
             return {
                 "code": code,
                 "status": "error",

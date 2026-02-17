@@ -300,7 +300,7 @@ class SourceConfig:
     portal: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
         code=SourceCode.PORTAL,
         name="Portal de Compras Publicas",
-        base_url="https://apipcp.portaldecompraspublicas.com.br",
+        base_url="https://compras.api.portaldecompraspublicas.com.br",  # GTM-FIX-027 T3: v2 URL
         enabled=True,
         timeout=30,
         rate_limit_rps=10.0,
@@ -320,11 +320,11 @@ class SourceConfig:
     compras_gov: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
         code=SourceCode.COMPRAS_GOV,
         name="ComprasGov - Dados Abertos Federal",
-        base_url="https://compras.dados.gov.br",
+        base_url="https://dadosabertos.compras.gov.br",  # GTM-FIX-027 T5: v3 URL
         enabled=True,  # No auth required (open government data)
         timeout=30,
-        rate_limit_rps=2.0,
-        priority=4,
+        rate_limit_rps=5.0,  # GTM-FIX-027 T5: v3 supports 5 req/s
+        priority=3,  # GTM-FIX-027 T5: Promoted from 4 to 3 (PNCP=1, PCP=2, ComprasGov=3)
     ))
 
     portal_transparencia: SingleSourceConfig = field(default_factory=lambda: SingleSourceConfig(
@@ -420,10 +420,8 @@ class SourceConfig:
         config.portal_transparencia.credentials = SourceCredentials(
             api_key=os.getenv("PORTAL_TRANSPARENCIA_API_KEY")
         )
-        # GTM-FIX-011: PCP uses PCP_PUBLIC_KEY (preferred) or PORTAL_COMPRAS_API_KEY (legacy)
-        config.portal.credentials = SourceCredentials(
-            api_key=os.getenv("PCP_PUBLIC_KEY") or os.getenv("PORTAL_COMPRAS_API_KEY")
-        )
+        # GTM-FIX-027 T3: PCP v2 API is public — no API key required
+        config.portal.credentials = SourceCredentials(api_key=None)
         # GTM-FIX-011 AC16: Feature flag to disable PCP without deploy
         pcp_enabled = os.getenv("PCP_ENABLED", "true").lower() == "true"
         if not pcp_enabled:
@@ -525,10 +523,7 @@ class SourceConfig:
             messages.append("ERROR: No sources enabled. At least one source required.")
 
         # Check credentials for enabled sources that require them
-        if self.portal.enabled and not self.portal.credentials.has_api_key():
-            messages.append(
-                "WARNING: Portal de Compras enabled but PORTAL_COMPRAS_API_KEY not set"
-            )
+        # GTM-FIX-027 T3: Portal v2 is public, no API key needed — removed misleading warning
 
         if self.licitar.enabled and not self.licitar.credentials.has_api_key():
             messages.append(

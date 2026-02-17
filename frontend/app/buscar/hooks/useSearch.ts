@@ -147,12 +147,14 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
   const estimateSearchTime = (ufCount: number, dateRangeDays: number): number => {
-    const baseTime = 20;
+    // GTM-FIX-027 T4 AC23: Recalibrated for tamanhoPagina=500 (was 20)
+    // With 500 items/page, ~25x fewer requests per modality
+    const baseTime = 10; // Base overhead (was 20)
     const parallelUfs = Math.min(ufCount, 10);
     const queuedUfs = Math.max(0, ufCount - 10);
-    const fetchTime = parallelUfs * 12 + queuedUfs * 6;
-    const dateMultiplier = dateRangeDays > 14 ? 1.5 : dateRangeDays > 7 ? 1.2 : 1.0;
-    return Math.ceil(baseTime + (fetchTime * dateMultiplier) + 5 + 10 + 5);
+    const fetchTime = parallelUfs * 3 + queuedUfs * 2; // ~4x faster per UF (was 12+6)
+    const dateMultiplier = dateRangeDays > 14 ? 1.3 : dateRangeDays > 7 ? 1.1 : 1.0;
+    return Math.ceil(baseTime + (fetchTime * dateMultiplier) + 3 + 5 + 3); // filter+LLM+Excel
   };
 
   const cancelSearch = () => {

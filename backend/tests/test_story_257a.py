@@ -448,7 +448,7 @@ async def test_t12_auto_retry_failed_ufs():
 
     call_count = {}
 
-    async def mock_fetch_page(data_inicial, data_final, modalidade, uf=None, pagina=1, tamanho=20, status=None):
+    async def mock_fetch_page(data_inicial, data_final, modalidade, uf=None, pagina=1, tamanho=500, status=None):  # GTM-FIX-027 T1: new default
         f"{uf}-{call_count.get(uf, 0)}"
         call_count[uf] = call_count.get(uf, 0) + 1
 

@@ -403,11 +403,11 @@ class SearchPipeline:
         if ctx.request.modo_busca == "abertas":
             from datetime import date, timedelta
             today = date.today()
-            ctx.request.data_inicial = (today - timedelta(days=180)).isoformat()
+            ctx.request.data_inicial = (today - timedelta(days=60)).isoformat()
             ctx.request.data_final = today.isoformat()
             logger.info(
                 f"modo_busca='abertas': date range overridden to "
-                f"{ctx.request.data_inicial} → {ctx.request.data_final} (180 days)"
+                f"{ctx.request.data_inicial} → {ctx.request.data_final} (60 days)"
             )
 
         try:
