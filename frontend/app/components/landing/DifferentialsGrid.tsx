@@ -22,7 +22,7 @@ const differentials: DifferentialCard[] = [
       </svg>
     ),
     title: 'PRIORIZAÇÃO INTELIGENTE',
-    bullets: ['Análise de adequação ao seu perfil', 'Ranqueamento por relevância', 'Foco no que gera resultado'],
+    bullets: ['Análise de adequação ao seu perfil', 'Filtros inteligentes por setor', 'Foco no que gera resultado'],
   },
   {
     icon: (

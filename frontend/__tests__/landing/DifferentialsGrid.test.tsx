@@ -28,7 +28,7 @@ describe('DifferentialsGrid', () => {
 
     // PRIORIZAÇÃO INTELIGENTE
     expect(screen.getByText(/Análise de adequação ao seu perfil/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ranqueamento por relevância/i)).toBeInTheDocument();
+    expect(screen.getByText(/Filtros inteligentes por setor/i)).toBeInTheDocument();
     expect(screen.getByText(/Foco no que gera resultado/i)).toBeInTheDocument();
 
     // ANÁLISE AUTOMATIZADA

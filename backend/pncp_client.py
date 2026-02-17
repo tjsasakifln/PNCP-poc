@@ -835,7 +835,7 @@ class AsyncPNCPClient:
                 "dataFinal": date.today().strftime("%Y%m%d"),
                 "codigoModalidadeContratacao": 6,
                 "pagina": 1,
-                "tamanhoPagina": 1,
+                "tamanhoPagina": 10,
                 "uf": "SP",
             }
             url = f"{self.BASE_URL}/contratacoes/publicacao"

@@ -62,8 +62,8 @@ export default function StatsSection({ className = '' }: StatsSectionProps) {
               isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           >
-            <div className="text-2xl sm:text-3xl font-bold text-brand-blue">Diário</div>
-            <div className="text-sm text-ink-secondary mt-1">análises programadas</div>
+            <div className="text-2xl sm:text-3xl font-bold text-brand-blue">Sob demanda</div>
+            <div className="text-sm text-ink-secondary mt-1">análises quando você precisar</div>
           </div>
         </div>
       </div>

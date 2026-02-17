@@ -73,13 +73,6 @@ export function StructuredData() {
     },
     description: 'Inteligência de decisão para oportunidades de licitação. Busca inteligente, análise por setor, geração de relatórios e muito mais.',
     screenshot: 'https://smartlic.tech/og-image.png',
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      reviewCount: '127',
-      bestRating: '5',
-      worstRating: '1',
-    },
     featureList: [
       'Busca inteligente de licitações',
       'Análise por setor e região',

@@ -275,8 +275,15 @@ class UnifiedProcurement:
             ),
             "modalidadeNome": self.modalidade,
             "situacaoCompraNome": self.situacao,
+            "dataEncerramentoProposta": (
+                self.data_encerramento.isoformat() if self.data_encerramento else None
+            ),
             "linkSistemaOrigem": self.link_edital,
             "linkProcessoEletronico": self.link_portal,
+            "esferaId": self.esfera,
+            "numeroEdital": self.numero_edital,
+            "anoCompra": self.ano,
+            "poder": self.poder,
             # Source tracking (new fields)
             "_source": self.source_name,
             "_dedup_key": self.dedup_key,

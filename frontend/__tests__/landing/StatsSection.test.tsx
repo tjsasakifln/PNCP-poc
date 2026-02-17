@@ -24,8 +24,8 @@ describe('StatsSection', () => {
     expect(screen.getByText('27')).toBeInTheDocument();
     expect(screen.getByText(/estados cobertos/i)).toBeInTheDocument();
 
-    expect(screen.getByText('Diário')).toBeInTheDocument();
-    expect(screen.getByText(/análises programadas/i)).toBeInTheDocument();
+    expect(screen.getByText('Sob demanda')).toBeInTheDocument();
+    expect(screen.getByText(/análises quando você precisar/i)).toBeInTheDocument();
   });
 
   it('uses hero number layout', () => {

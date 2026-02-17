@@ -85,7 +85,7 @@ export const comparisonTable: ComparisonRow[] = [
   {
     feature: "Suporte",
     traditional: "Lento (dias para responder)",
-    smartlic: "Resposta garantida no mesmo dia",
+    smartlic: "Resposta em até 24 horas úteis",
     advantage: "Problemas resolvidos rapidamente",
     icon: LifeBuoy,
   },
@@ -188,7 +188,7 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
     painPoint: "Suporte lento e ineficiente",
     traditionalProblem:
       "Outras plataformas demoram dias para responder",
-    smartlicSolution: "No SmartLic, suporte com resposta garantida no mesmo dia",
+    smartlicSolution: "No SmartLic, suporte com resposta em até 24 horas úteis",
     quantifiedBenefit:
       "Problemas resolvidos rapidamente. Seu tempo vale ouro",
   },
@@ -308,7 +308,7 @@ export const painPoints: PainPoint[] = [
     title: "Atendimento Lento",
     userComplaint: "Demora dias para receber suporte",
     impact: "Problemas não resolvidos a tempo",
-    smartlicDifferentiator: "Suporte com resposta garantida no mesmo dia",
+    smartlicDifferentiator: "Suporte com resposta em até 24 horas úteis",
   },
 ];
 
@@ -339,12 +339,12 @@ export const proofPoints: Record<string, ProofPoint> = {
   },
 
   monitoring: {
-    claim: "Análises sob demanda diário de todas as fontes",
+    claim: "Análises sob demanda de todas as fontes oficiais",
     proofSource: "System uptime and crawl frequency metrics",
   },
 
   supportSLA: {
-    claim: "Suporte com resposta no mesmo dia",
+    claim: "Suporte com resposta em até 24 horas úteis",
     proofSource: "Customer support policy SLA commitment",
   },
 

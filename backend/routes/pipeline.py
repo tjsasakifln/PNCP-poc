@@ -57,18 +57,18 @@ def _check_pipeline_access(user: dict) -> None:
     quota_info = check_quota(user_id)
     plan_id = quota_info.plan_id
 
-    # Pipeline available for maquina and sala_guerra
-    allowed_plans = {"maquina", "sala_guerra"}
+    # Pipeline available for smartlic_pro and legacy plans
+    allowed_plans = {"smartlic_pro", "maquina", "sala_guerra"}
     if plan_id not in allowed_plans:
         raise HTTPException(
             status_code=403,
             detail={
-                "message": "Pipeline de oportunidades disponível a partir do plano Máquina.",
+                "message": "Pipeline de oportunidades disponível para assinantes SmartLic Pro.",
                 "error_code": "pipeline_not_available",
-                "upgrade_cta": "Fazer upgrade",
-                "suggested_plan": "maquina",
-                "suggested_plan_name": "Máquina",
-                "suggested_plan_price": "R$ 597/mês",
+                "upgrade_cta": "Assinar SmartLic Pro",
+                "suggested_plan": "smartlic_pro",
+                "suggested_plan_name": "SmartLic Pro",
+                "suggested_plan_price": "R$ 1.999/mês",
             },
         )
 

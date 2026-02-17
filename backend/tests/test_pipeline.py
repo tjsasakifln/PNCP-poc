@@ -488,8 +488,8 @@ class TestPipelineAccessControl:
         assert resp.status_code == 403
         body = resp.json()
         assert body["detail"]["error_code"] == "pipeline_not_available"
-        assert body["detail"]["upgrade_cta"] == "Fazer upgrade"
-        assert body["detail"]["suggested_plan"] == "maquina"
+        assert body["detail"]["upgrade_cta"] == "Assinar SmartLic Pro"
+        assert body["detail"]["suggested_plan"] == "smartlic_pro"
 
     @patch("quota.check_quota")
     @patch("authorization.has_master_access")

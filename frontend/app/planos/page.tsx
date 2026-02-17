@@ -28,7 +28,7 @@ const FEATURES = [
   { text: "1.000 análises por mês", detail: "Avalie oportunidades em todos os 27 estados" },
   { text: "Exportação Excel completa", detail: "Relatórios detalhados para sua equipe" },
   { text: "Pipeline de acompanhamento", detail: "Gerencie oportunidades do início ao fim" },
-  { text: "Resumos executivos com GPT-4o", detail: "Análise estratégica de cada oportunidade" },
+  { text: "Resumos executivos com IA avançada", detail: "Análise estratégica de cada oportunidade" },
   { text: "5 anos de histórico", detail: "Acesso a oportunidades desde 2021" },
   { text: "15 setores e 27 estados", detail: "PNCP e Portal de Compras Públicas integrados" },
   { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
