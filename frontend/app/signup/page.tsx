@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
@@ -77,6 +79,7 @@ Ao rolar ate o final deste texto e marcar a caixa abaixo, voce confirma que leu 
 export default function SignupPage() {
   const { signUpWithEmail, signInWithGoogle } = useAuth();
   const { trackEvent } = useAnalytics();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -93,7 +96,67 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // GTM-FIX-009: Confirmation screen state
+  const [countdown, setCountdown] = useState(60);
+  const [isResending, setIsResending] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+
   const scrollBoxRef = useRef<HTMLDivElement>(null);
+
+  // GTM-FIX-009 AC2: Countdown timer (starts at 60s on success)
+  useEffect(() => {
+    if (!success || countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [success, countdown]);
+
+  // GTM-FIX-009 AC7/AC9: Poll for confirmation every 5s
+  useEffect(() => {
+    if (!success || isConfirmed) return;
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `/api/auth/status?email=${encodeURIComponent(email)}`
+        );
+        const data = await response.json();
+        if (data.confirmed) {
+          setIsConfirmed(true);
+          clearInterval(interval);
+          toast.success("Email confirmado! Redirecionando...");
+          setTimeout(() => router.push("/onboarding"), 1500);
+        }
+      } catch {
+        // Silently retry on next interval
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [success, isConfirmed, email, router]);
+
+  // GTM-FIX-009 AC3/AC5: Resend handler
+  const handleResend = async () => {
+    if (countdown > 0 || isResending) return;
+    setIsResending(true);
+    try {
+      const response = await fetch("/api/auth/resend-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (response.ok) {
+        toast.success("Email reenviado! Verifique sua caixa de entrada.");
+        setCountdown(60); // AC5: Reset countdown
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || data.message || "Erro ao reenviar.");
+      }
+    } catch {
+      toast.error("Erro ao reenviar email. Tente novamente.");
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneBR(e.target.value);
@@ -184,17 +247,82 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
         <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg text-center">
-          <div className="text-4xl mb-4">&#10003;</div>
-          <h2 className="text-xl font-semibold text-[var(--ink)] mb-2">Conta criada!</h2>
-          <p className="text-[var(--ink-secondary)]">
-            Verifique seu email <strong>{email}</strong> para confirmar o cadastro.
-          </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-block text-[var(--brand-blue)] hover:underline"
-          >
-            Ir para login
-          </Link>
+          {/* AC10: Confirmed transition */}
+          {isConfirmed ? (
+            <>
+              <div className="text-4xl mb-4" data-testid="confirmed-icon">&#10003;</div>
+              <h2 className="text-xl font-semibold text-green-600 mb-2">
+                Email confirmado!
+              </h2>
+              <p className="text-[var(--ink-secondary)]">Redirecionando...</p>
+            </>
+          ) : (
+            <>
+              {/* AC1: Mail icon */}
+              <div className="text-4xl mb-4" data-testid="mail-icon">&#9993;</div>
+
+              <h2 className="text-xl font-semibold text-[var(--ink)] mb-2">
+                Confirme seu email
+              </h2>
+
+              <p className="text-[var(--ink-secondary)] mb-4">
+                Enviamos um link de confirmação para:
+                <br />
+                <strong>{email}</strong>
+              </p>
+
+              {/* AC7: Polling indicator */}
+              <p className="text-sm text-[var(--brand-blue)] mb-4" data-testid="polling-indicator">
+                Aguardando confirmação...
+              </p>
+
+              {/* AC1/AC2: Resend button with countdown */}
+              <button
+                onClick={handleResend}
+                disabled={countdown > 0 || isResending}
+                data-testid="resend-button"
+                className="w-full py-3 bg-[var(--brand-blue)] text-white rounded-button
+                           font-semibold disabled:bg-gray-300 disabled:text-gray-500
+                           disabled:cursor-not-allowed hover:opacity-90 transition-colors"
+              >
+                {isResending
+                  ? "Reenviando..."
+                  : countdown > 0
+                    ? `Reenviar em ${countdown}s`
+                    : "Reenviar email"}
+              </button>
+
+              {/* AC11: Spam helper section */}
+              <div className="mt-6 p-4 bg-[var(--surface-1)] rounded-input text-left">
+                <h3 className="font-semibold text-sm mb-2 text-[var(--ink)]">
+                  Não recebeu o email?
+                </h3>
+                <ul className="text-sm space-y-1 text-[var(--ink-secondary)]">
+                  <li>• Verifique sua caixa de spam/lixo eletrônico</li>
+                  <li>• Aguarde até 5 minutos</li>
+                  <li>• Confirme se o email está correto</li>
+                </ul>
+                {/* AC12: Change email link */}
+                <button
+                  onClick={() => {
+                    setSuccess(false);
+                    setCountdown(60);
+                  }}
+                  data-testid="change-email-link"
+                  className="text-[var(--brand-blue)] text-sm mt-2 underline hover:opacity-80"
+                >
+                  Alterar email
+                </button>
+              </div>
+
+              <Link
+                href="/login"
+                className="mt-4 inline-block text-sm text-[var(--ink-muted)] hover:underline"
+              >
+                Ir para login
+              </Link>
+            </>
+          )}
         </div>
       </div>
     );

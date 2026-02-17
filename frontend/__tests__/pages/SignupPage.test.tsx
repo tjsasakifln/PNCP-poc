@@ -19,6 +19,21 @@ jest.mock('../../app/components/AuthProvider', () => ({
   }),
 }));
 
+// Mock next/navigation (GTM-FIX-009: useRouter for redirect)
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+  }),
+}));
+
+// Mock sonner toast (GTM-FIX-009)
+jest.mock('sonner', () => ({
+  toast: { success: jest.fn(), error: jest.fn() },
+}));
+
 // Mock Next.js Link
 jest.mock('next/link', () => {
   return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
@@ -403,7 +418,15 @@ describe('SignupPage Component', () => {
   });
 
   describe('Success state', () => {
-    it('should show success message after signup', async () => {
+    beforeEach(() => {
+      // GTM-FIX-009: Mock fetch for polling
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ confirmed: false }),
+      });
+    });
+
+    it('should show confirmation screen after signup', async () => {
       mockSignUpWithEmail.mockResolvedValue(undefined);
 
       render(<SignupPage />);
@@ -417,11 +440,11 @@ describe('SignupPage Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Conta criada!/i)).toBeInTheDocument();
+        expect(screen.getByText(/Confirme seu email/i)).toBeInTheDocument();
       });
     });
 
-    it('should show email confirmation message', async () => {
+    it('should show email confirmation message with user email', async () => {
       mockSignUpWithEmail.mockResolvedValue(undefined);
 
       render(<SignupPage />);
@@ -435,7 +458,7 @@ describe('SignupPage Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Verifique seu email/i)).toBeInTheDocument();
+        expect(screen.getByText(/Enviamos um link de confirmação para/i)).toBeInTheDocument();
         expect(screen.getByText(/john@example.com/i)).toBeInTheDocument();
       });
     });

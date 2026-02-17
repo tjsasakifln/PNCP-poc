@@ -16,22 +16,22 @@ After email signup, user sees a static "Check your email" screen with no resend 
 6. Add "Change email address" link (back to signup form with email pre-filled)
 
 ## Acceptance Criteria
-- [ ] AC1: Signup success screen shows "Resend email" button (initially disabled for 60s)
-- [ ] AC2: Button includes countdown: "Resend in 57s" → "Resend email"
-- [ ] AC3: Clicking "Resend" calls `POST /api/auth/resend-confirmation`
-- [ ] AC4: Backend endpoint calls Supabase `auth.resend({ type: 'signup', email })`
-- [ ] AC5: After resend, button disabled again for 60s with new countdown
-- [ ] AC6: Toast notification: "Email reenviado! Verifique sua caixa de entrada."
-- [ ] AC7: Client polls `GET /api/auth/status` every 5s
-- [ ] AC8: Endpoint returns `{ confirmed: boolean, user_id?: string }`
-- [ ] AC9: When `confirmed === true`, auto-redirect to /onboarding
-- [ ] AC10: Show transition message: "Email confirmado! Redirecionando..."
-- [ ] AC11: "Não recebeu?" section includes spam folder GIF/illustration
-- [ ] AC12: "Alterar email" link → back to signup with email field pre-filled
-- [ ] AC13: Backend test: test_resend_confirmation_rate_limit()
-- [ ] AC14: Backend test: test_auth_status_returns_confirmation_state()
-- [ ] AC15: Frontend test: test_resend_button_countdown()
-- [ ] AC16: Frontend test: test_auto_redirect_on_confirmation()
+- [x] AC1: Signup success screen shows "Resend email" button (initially disabled for 60s)
+- [x] AC2: Button includes countdown: "Resend in 57s" → "Resend email"
+- [x] AC3: Clicking "Resend" calls `POST /api/auth/resend-confirmation`
+- [x] AC4: Backend endpoint calls Supabase `auth.resend({ type: 'signup', email })`
+- [x] AC5: After resend, button disabled again for 60s with new countdown
+- [x] AC6: Toast notification: "Email reenviado! Verifique sua caixa de entrada."
+- [x] AC7: Client polls `GET /api/auth/status` every 5s
+- [x] AC8: Endpoint returns `{ confirmed: boolean, user_id?: string }`
+- [x] AC9: When `confirmed === true`, auto-redirect to /onboarding
+- [x] AC10: Show transition message: "Email confirmado! Redirecionando..."
+- [x] AC11: "Não recebeu?" section includes spam folder helper text
+- [x] AC12: "Alterar email" link → back to signup with email field pre-filled
+- [x] AC13: Backend test: test_resend_confirmation_rate_limit()
+- [x] AC14: Backend test: test_auth_status_returns_confirmation_state()
+- [x] AC15: Frontend test: test_resend_button_countdown()
+- [x] AC16: Frontend test: test_auto_redirect_on_confirmation()
 
 ## Effort: S (4h)
 ## Priority: P1 (High abandonment risk)

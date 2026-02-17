@@ -62,6 +62,7 @@ from routes.plans import router as plans_router  # STORY-203 CROSS-M01
 from routes.emails import router as emails_router  # STORY-225: Transactional emails
 from routes.pipeline import router as pipeline_router  # STORY-250: Pipeline de Oportunidades
 from routes.onboarding import router as onboarding_router  # GTM-004: First analysis after onboarding
+from routes.auth_email import router as auth_email_router  # GTM-FIX-009: Email confirmation recovery
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -257,6 +258,7 @@ app.include_router(plans_router, prefix="/v1")  # STORY-203 CROSS-M01
 app.include_router(emails_router, prefix="/v1")  # STORY-225
 app.include_router(pipeline_router, prefix="/v1")  # STORY-250: Pipeline
 app.include_router(onboarding_router, prefix="/v1")  # GTM-004: First analysis
+app.include_router(auth_email_router, prefix="/v1")  # GTM-FIX-009: Email confirmation recovery
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -278,6 +280,7 @@ app.include_router(plans_router)
 app.include_router(emails_router)  # STORY-225
 app.include_router(pipeline_router)  # STORY-250: Pipeline
 app.include_router(onboarding_router)  # GTM-004: First analysis
+app.include_router(auth_email_router)  # GTM-FIX-009: Email confirmation recovery
 
 logger.info(
     "FastAPI application initialized — PORT=%s",
