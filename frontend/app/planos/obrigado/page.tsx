@@ -27,7 +27,7 @@ const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; messag
   sala_guerra: {
     name: "Sala de Guerra",
     icon: <Trophy className="w-5 h-5 inline-block" />,
-    message: "Você agora tem 1.000 análises/mês, processamento prioritário e histórico de 5 anos.",
+    message: "Você agora tem 1.000 análises/mês, exportação Excel completa e histórico de 5 anos.",
   },
 };
 

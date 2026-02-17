@@ -1043,6 +1043,62 @@ class TestCheckoutSessionCompleted:
     @patch('webhooks.stripe.redis_cache')
     @patch('webhooks.stripe.get_supabase')
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
+    async def test_checkout_completed_sets_subscription_status_active(
+        self, mock_construct, mock_get_sb, mock_redis, mock_request,
+        mock_supabase_client, checkout_completed_event
+    ):
+        """AC6: checkout.session.completed sets subscription_status='active' in profiles."""
+        mock_construct.return_value = checkout_completed_event
+        mock_get_sb.return_value = mock_supabase_client
+        configure_idempotency(mock_supabase_client, already_processed=False)
+
+        plans_chain = mock_supabase_client.table("plans")
+        plans_chain.execute.return_value = Mock(data={"duration_days": 30, "max_searches": 1000})
+
+        profile_updates = []
+        insert_calls = []
+        original_table = mock_supabase_client.table
+
+        def track_all(table_name):
+            chain = original_table(table_name)
+            if table_name == "profiles":
+                original_update = chain.update
+
+                def capturing_update(d):
+                    profile_updates.append(d)
+                    return original_update(d)
+
+                chain.update = capturing_update
+            if table_name == "user_subscriptions":
+                original_insert = chain.insert
+
+                def capturing_insert(d):
+                    insert_calls.append(d)
+                    return original_insert(d)
+
+                chain.insert = capturing_insert
+            return chain
+
+        mock_supabase_client.table = MagicMock(side_effect=track_all)
+
+        from webhooks.stripe import stripe_webhook
+        await stripe_webhook(mock_request)
+
+        # AC6: profiles.subscription_status must be 'active'
+        assert any(
+            u.get("subscription_status") == "active" for u in profile_updates
+        ), f"Expected subscription_status='active' in profile updates: {profile_updates}"
+
+        # Also check user_subscriptions has subscription_status='active'
+        assert any(
+            d.get("subscription_status") == "active" for d in insert_calls
+        ), f"Expected subscription_status='active' in subscription insert: {insert_calls}"
+
+    @pytest.mark.asyncio
+    @patch('webhooks.stripe.STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    @patch('webhooks.stripe.redis_cache')
+    @patch('webhooks.stripe.get_supabase')
+    @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_checkout_completed_missing_metadata_skips(
         self, mock_construct, mock_get_sb, mock_redis, mock_request,
         mock_supabase_client, make_stripe_event

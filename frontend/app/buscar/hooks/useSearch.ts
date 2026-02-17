@@ -345,11 +345,15 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
       if (session?.access_token) await refreshQuota();
 
+      // GTM-FIX-002 AC10: Include sources_used for multi-source analytics
       trackEvent('search_completed', {
         time_elapsed_ms: Date.now() - searchStartTime,
         total_raw: data.total_raw || 0,
         total_filtered: data.total_filtrado || 0,
         search_mode: filters.searchMode,
+        sources_used: data.sources_used || [],  // AC10: Track which sources returned data
+        is_partial: data.is_partial || false,
+        cached: data.cached || false,
       });
 
     } catch (e) {

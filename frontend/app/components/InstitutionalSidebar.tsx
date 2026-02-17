@@ -137,15 +137,15 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
     headline: "Descubra oportunidades de licitação antes da concorrência",
     subheadline: "Acesse seu painel e encontre as melhores oportunidades para sua empresa",
     benefits: [
-      { icon: "clock", text: "Monitoramento em tempo real de licitações" },
+      { icon: "clock", text: "Consulta sob demanda de 2 bases oficiais" },
       { icon: "filter", text: "Filtros por estado, valor e setor" },
       { icon: "brain", text: "Avaliação estratégica por IA" },
       { icon: "download", text: "Exportação de relatórios em Excel" },
       { icon: "history", text: "Histórico completo de buscas" },
     ],
     stats: [
-      { value: "27", label: "estados monitorados" },
-      { value: "12", label: "setores pré-configurados" },
+      { value: "27", label: "estados cobertos" },
+      { value: "15", label: "setores especializados" },
       { value: "24h", label: "atualização diária" },
     ],
   },
@@ -250,7 +250,7 @@ export default function InstitutionalSidebar({ variant, className = "" }: Instit
           <div className="flex items-center gap-2 px-4 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
             <ICONS.check className="w-5 h-5 text-white flex-shrink-0" />
             <span className="text-sm text-white/90">
-              Dados oficiais em tempo real
+              Dados de fontes oficiais federais e estaduais
             </span>
           </div>
         </div>

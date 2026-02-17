@@ -212,10 +212,15 @@ async def _handle_checkout_session_completed(sb, event: stripe.Event):
         "stripe_subscription_id": stripe_subscription_id,
         "stripe_customer_id": stripe_customer_id,
         "is_active": True,
+        "subscription_status": "active",
     }).execute()
 
-    # Sync profiles.plan_type (keeps fallback current — CRITICAL)
-    sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
+    # Sync profiles.plan_type AND subscription_status (keeps fallback current — CRITICAL)
+    # GTM-FIX-001 AC5+AC6: Both plan_type and subscription_status must be set on checkout
+    sb.table("profiles").update({
+        "plan_type": plan_id,
+        "subscription_status": "active",
+    }).eq("id", user_id).execute()
 
     # Invalidate Redis cache
     cache_key = f"features:{user_id}"

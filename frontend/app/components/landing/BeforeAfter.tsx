@@ -88,7 +88,7 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
           <ul className="space-y-3 text-blue-800 dark:text-blue-200">
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Visão completa do mercado <strong className="text-blue-900 dark:text-blue-100">em tempo real</strong></span>
+              <span>Visão completa do mercado <strong className="text-blue-900 dark:text-blue-100">em duas fontes oficiais</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />

@@ -245,3 +245,135 @@ class TestParallelFetchResultDataclass:
             truncated_ufs=["SP"],
         )
         assert result.truncated_ufs == ["SP"]
+
+
+class TestBuscaResponseTruncationDetails:
+    """AC2r/AC3: BuscaResponse includes truncation_details for per-source granularity."""
+
+    def test_truncation_details_none_by_default(self):
+        """truncation_details is None when no truncation occurred."""
+        from schemas import BuscaResponse, ResumoEstrategico
+
+        resp = BuscaResponse(
+            resumo=ResumoEstrategico(
+                resumo_executivo="test",
+                total_oportunidades=0,
+                valor_total=0.0,
+            ),
+            excel_available=False,
+            quota_used=0,
+            quota_remaining=100,
+            total_raw=0,
+            total_filtrado=0,
+        )
+        assert resp.truncation_details is None
+        assert resp.is_truncated is False
+
+    def test_truncation_details_pncp_only(self):
+        """truncation_details correctly represents PNCP-only truncation."""
+        from schemas import BuscaResponse, ResumoEstrategico
+
+        resp = BuscaResponse(
+            resumo=ResumoEstrategico(
+                resumo_executivo="test",
+                total_oportunidades=5,
+                valor_total=100000.0,
+            ),
+            excel_available=True,
+            quota_used=1,
+            quota_remaining=99,
+            total_raw=250000,
+            total_filtrado=5,
+            is_truncated=True,
+            truncated_ufs=["SP"],
+            truncation_details={"pncp": True},
+        )
+        assert resp.is_truncated is True
+        assert resp.truncation_details == {"pncp": True}
+        assert resp.truncated_ufs == ["SP"]
+
+    def test_truncation_details_both_sources(self):
+        """truncation_details when both PNCP and PCP are truncated."""
+        from schemas import BuscaResponse, ResumoEstrategico
+
+        resp = BuscaResponse(
+            resumo=ResumoEstrategico(
+                resumo_executivo="test",
+                total_oportunidades=10,
+                valor_total=200000.0,
+            ),
+            excel_available=True,
+            quota_used=1,
+            quota_remaining=99,
+            total_raw=500000,
+            total_filtrado=10,
+            is_truncated=True,
+            truncation_details={"pncp": True, "portal_compras": True},
+        )
+        assert resp.truncation_details["pncp"] is True
+        assert resp.truncation_details["portal_compras"] is True
+
+    def test_truncation_details_pcp_only(self):
+        """truncation_details when only PCP is truncated."""
+        from schemas import BuscaResponse, ResumoEstrategico
+
+        resp = BuscaResponse(
+            resumo=ResumoEstrategico(
+                resumo_executivo="test",
+                total_oportunidades=5,
+                valor_total=100000.0,
+            ),
+            excel_available=True,
+            quota_used=1,
+            quota_remaining=99,
+            total_raw=100,
+            total_filtrado=5,
+            is_truncated=True,
+            truncation_details={"pncp": False, "portal_compras": True},
+        )
+        assert resp.truncation_details["pncp"] is False
+        assert resp.truncation_details["portal_compras"] is True
+
+
+class TestSearchContextTruncationDetails:
+    """SearchContext carries truncation_details through pipeline stages."""
+
+    def test_default_truncation_details_is_none(self):
+        """truncation_details defaults to None in SearchContext."""
+        from search_context import SearchContext
+
+        ctx = SearchContext(request=None, user={})
+        assert ctx.truncation_details is None
+
+    def test_truncation_details_can_be_set(self):
+        """truncation_details can be populated on SearchContext."""
+        from search_context import SearchContext
+
+        ctx = SearchContext(request=None, user={})
+        ctx.truncation_details = {"pncp": True, "portal_compras": False}
+        assert ctx.truncation_details == {"pncp": True, "portal_compras": False}
+
+
+class TestPCPAdapterTruncation:
+    """AC11: PCP adapter tracks truncation when page limit is reached."""
+
+    def test_pcp_adapter_was_truncated_default_false(self):
+        """PortalComprasAdapter.was_truncated starts as False."""
+        from clients.portal_compras_client import PortalComprasAdapter
+
+        adapter = PortalComprasAdapter(api_key="test-key")
+        assert adapter.was_truncated is False
+
+    def test_pncp_legacy_adapter_truncation_tracking(self):
+        """PNCPLegacyAdapter has was_truncated and truncated_ufs fields."""
+        from pncp_client import PNCPLegacyAdapter
+
+        adapter = PNCPLegacyAdapter(ufs=["SP", "RJ"])
+        assert adapter.was_truncated is False
+        assert adapter.truncated_ufs == []
+
+        # Simulate truncation detection
+        adapter.was_truncated = True
+        adapter.truncated_ufs = ["SP"]
+        assert adapter.was_truncated is True
+        assert adapter.truncated_ufs == ["SP"]

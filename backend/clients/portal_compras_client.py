@@ -142,6 +142,8 @@ class PortalComprasAdapter(SourceAdapter):
         self._client: Optional[httpx.AsyncClient] = None
         self._last_request_time = 0.0
         self._request_count = 0
+        # GTM-FIX-004 AC11: Truncation detection for PCP source
+        self.was_truncated: bool = False
 
     @property
     def metadata(self) -> SourceMetadata:
@@ -407,10 +409,16 @@ class PortalComprasAdapter(SourceAdapter):
                 pagina += 1
 
                 if pagina > 100:
-                    logger.warning(f"[PCP] UF={uf}: Reached page limit (100)")
+                    # GTM-FIX-004 AC11: Detect truncation when page limit reached
+                    self.was_truncated = True
+                    logger.warning(
+                        f"[PCP] UF={uf}: Reached page limit (100). "
+                        f"quantidadeTotal may exceed fetched records. "
+                        f"Results may be incomplete."
+                    )
                     break
 
-        logger.info(f"[PCP] Fetch complete: {total_fetched} records")
+        logger.info(f"[PCP] Fetch complete: {total_fetched} records (truncated={self.was_truncated})")
 
     def normalize(self, raw_record: Dict[str, Any]) -> UnifiedProcurement:
         """Convert PCP record to UnifiedProcurement.

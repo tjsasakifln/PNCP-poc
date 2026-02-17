@@ -50,7 +50,11 @@ class SourceMetadata:
 
 
 class SourceError(Exception):
-    """Base exception for source adapter errors."""
+    """Base exception for source adapter errors.
+
+    GTM-FIX-002 AC9: All SourceError subclasses include source_code attribute
+    for Sentry tagging (data_source tag).
+    """
 
     def __init__(self, source_code: str, message: str):
         self.source_code = source_code

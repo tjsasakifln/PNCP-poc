@@ -57,7 +57,7 @@ export const comparisonTable: ComparisonRow[] = [
   {
     feature: "Fontes Consultadas",
     traditional: "Fonte única ou busca manual em múltiplos portais",
-    smartlic: "Dezenas de fontes oficiais consolidadas automaticamente",
+    smartlic: "PNCP + Portal de Compras Públicas oficiais consolidadas automaticamente",
     advantage: "Visibilidade completa",
     icon: Globe,
   },
@@ -139,7 +139,7 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
     painPoint: "Falta de visibilidade do mercado",
     traditionalProblem:
       "Sem visibilidade completa, você perde oportunidades para concorrentes que encontram antes",
-    smartlicSolution: "No SmartLic, visibilidade total com dezenas de fontes oficiais consolidadas",
+    smartlicSolution: "No SmartLic, visibilidade total com PNCP + Portal de Compras Públicas consolidadas",
     quantifiedBenefit:
       "Cada licitação perdida por falta de visibilidade pode custar R$ 50.000 ou mais",
   },
@@ -169,7 +169,7 @@ export const defensiveMessaging: Record<string, DefensiveMessage> = {
     traditionalProblem:
       "Outras plataformas consultam uma única fonte ou exigem busca manual em dezenas de portais",
     smartlicSolution:
-      "No SmartLic, consolidamos dezenas de fontes oficiais automaticamente",
+      "No SmartLic, consolidamos PNCP + Portal de Compras Públicas automaticamente",
     quantifiedBenefit:
       "Nunca perca uma oportunidade. Visibilidade completa do mercado",
   },
@@ -234,7 +234,7 @@ export const painPoints: PainPoint[] = [
     userComplaint: "Não sei quantas oportunidades existem para o meu setor",
     impact: "Empresas perdem contratos para concorrentes com mais informação",
     smartlicDifferentiator:
-      "Visibilidade completa: dezenas de fontes oficiais monitoradas diariamente",
+      "Visibilidade completa: PNCP + Portal de Compras Públicas monitoradas diariamente",
     metric: "27 estados cobertos",
   },
   {
@@ -252,7 +252,7 @@ export const painPoints: PainPoint[] = [
     userComplaint: "Quando encontro a licitação, o prazo já está curto",
     impact: "Propostas apressadas com menor chance de vitória",
     smartlicDifferentiator: "Oportunidades identificadas assim que publicadas",
-    metric: "Monitoramento contínuo",
+    metric: "Análises sob demanda",
   },
   {
     id: 4,
@@ -277,7 +277,7 @@ export const painPoints: PainPoint[] = [
     impact: "Empresas perdem oportunidades por não saber os termos certos",
     smartlicDifferentiator:
       "Busca por setor de atuação com cobertura automática de termos",
-    metric: "12 setores especializados",
+    metric: "15 setores especializados",
   },
   {
     id: 7,
@@ -285,7 +285,7 @@ export const painPoints: PainPoint[] = [
     userComplaint: "Preciso acessar dezenas de sites diferentes",
     impact: "Empresas perdem oportunidades por não conseguir monitorar tudo",
     smartlicDifferentiator:
-      "Consolidação automática de dezenas de fontes oficiais",
+      "Consolidação automática de 2 bases principais (PNCP + Portal de Compras Públicas)",
     metric: "Cobertura nacional",
   },
   {
@@ -324,22 +324,22 @@ export interface ProofPoint {
 
 export const proofPoints: Record<string, ProofPoint> = {
   coverage: {
-    claim: "Dezenas de fontes oficiais consolidadas em todos os 27 estados",
+    claim: "PNCP + Portal de Compras Públicas oficiais consolidadas em todos os 27 estados",
     proofSource: "Technical architecture — multi-source integration",
   },
 
   sectors: {
-    claim: "12 setores especializados com cobertura completa de termos",
+    claim: "15 setores especializados com cobertura completa de termos",
     proofSource: "System capability — sector-specific keyword databases",
   },
 
   opportunities: {
-    claim: "R$ 2.3 bilhões em oportunidades mapeadas mensalmente",
-    proofSource: "Platform data — aggregate monthly opportunity volume",
+    claim: "Cobertura completa de licitações federais e estaduais em 27 UFs",
+    proofSource: "Platform capability — dual-source integration (PNCP + Portal de Compras Públicas)",
   },
 
   monitoring: {
-    claim: "Monitoramento contínuo diário de todas as fontes",
+    claim: "Análises sob demanda diário de todas as fontes",
     proofSource: "System uptime and crawl frequency metrics",
   },
 
@@ -369,7 +369,7 @@ export const beforeAfter: BeforeAfterItem[] = [
   {
     aspect: "Visibilidade de Mercado",
     before: "Visão parcial — perda de oportunidades por falta de cobertura",
-    after: "Visão completa — dezenas de fontes oficiais monitoradas diariamente",
+    after: "Visão completa — PNCP + Portal de Compras Públicas monitoradas diariamente",
     icon: Globe,
   },
   {

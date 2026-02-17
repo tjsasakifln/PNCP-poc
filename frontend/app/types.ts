@@ -106,6 +106,8 @@ export interface BuscaResult {
   is_truncated?: boolean;
   /** GTM-FIX-004: UF codes where results were truncated */
   truncated_ufs?: string[];
+  /** GTM-FIX-004 AC2r: Per-source truncation flags, e.g. { pncp: true, portal_compras: false } */
+  truncation_details?: Record<string, boolean>;
 }
 
 // ============================================================================

@@ -79,37 +79,10 @@ async def create_checkout(
     return {"checkout_url": checkout_session.url}
 
 
-def _activate_plan(user_id: str, plan_id: str, stripe_session: dict):
-    """Activate a plan for a user after successful payment."""
-    from supabase_client import get_supabase
-    from datetime import datetime, timezone, timedelta
-    sb = get_supabase()
-
-    plan = sb.table("plans").select("*").eq("id", plan_id).single().execute()
-    if not plan.data:
-        logger.error(f"Plan {plan_id} not found during activation")
-        return
-
-    p = plan.data
-    expires_at = None
-    if p["duration_days"]:
-        expires_at = (datetime.now(timezone.utc) + timedelta(days=p["duration_days"])).isoformat()
-
-    sb.table("user_subscriptions").update({"is_active": False}).eq("user_id", user_id).eq("is_active", True).execute()
-
-    sb.table("user_subscriptions").insert({
-        "user_id": user_id,
-        "plan_id": plan_id,
-        "credits_remaining": p["max_searches"],
-        "expires_at": expires_at,
-        "stripe_subscription_id": stripe_session.get("subscription"),
-        "stripe_customer_id": stripe_session.get("customer"),
-        "is_active": True,
-    }).execute()
-
-    sb.table("profiles").update({"plan_type": plan_id}).eq("id", user_id).execute()
-
-    log_user_action(logger, "plan-activated", user_id, details={"plan_id": plan_id})
+# GTM-FIX-001: _activate_plan() removed — was dead code never called from any handler.
+# Plan activation is handled by _handle_checkout_session_completed() in webhooks/stripe.py,
+# which is the canonical path: Stripe checkout.session.completed webhook -> activate subscription.
+# That handler includes billing_period, subscription_status sync, and Redis cache invalidation.
 
 
 @router.post("/billing-portal")

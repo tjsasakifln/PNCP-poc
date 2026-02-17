@@ -1540,6 +1540,9 @@ class PNCPLegacyAdapter:
         self._status = status
         self._on_uf_complete = on_uf_complete
         self._on_uf_status = on_uf_status
+        # GTM-FIX-004: Truncation detection for PNCP in multi-source mode
+        self.was_truncated: bool = False
+        self.truncated_ufs: List[str] = []
 
     @property
     def metadata(self):
@@ -1567,7 +1570,14 @@ class PNCPLegacyAdapter:
                 max_concurrent=10, on_uf_complete=self._on_uf_complete,
                 on_uf_status=self._on_uf_status,
             )
-            results = fetch_result.items if isinstance(fetch_result, ParallelFetchResult) else fetch_result
+            if isinstance(fetch_result, ParallelFetchResult):
+                results = fetch_result.items
+                # GTM-FIX-004: Capture truncation state for multi-source propagation
+                if fetch_result.truncated_ufs:
+                    self.was_truncated = True
+                    self.truncated_ufs = fetch_result.truncated_ufs
+            else:
+                results = fetch_result
         else:
             client = PNCPClient()
             results = list(client.fetch_all(

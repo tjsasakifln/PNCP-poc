@@ -11,7 +11,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Set
 
-from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement
+import sentry_sdk  # GTM-FIX-002 AC9: Tag source errors
+from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement, SourceError
 from source_config.sources import source_health_registry
 
 logger = logging.getLogger(__name__)
@@ -455,6 +456,15 @@ class ConsolidationService:
         except Exception as e:
             duration = int((time.time() - start) * 1000)
             salvaged = len(partial_records)
+
+            # GTM-FIX-002 AC9: Tag source errors with data_source for Sentry filtering
+            source_code = code  # Use local code var (pncp, pcp, etc.)
+            if isinstance(e, SourceError):
+                # SourceError subclasses have source_code attribute
+                source_code = e.source_code
+            sentry_sdk.set_tag("data_source", source_code)
+            sentry_sdk.capture_exception(e)
+
             if salvaged > 0:
                 logger.warning(
                     f"[CONSOLIDATION] {code}: error after {duration}ms - {e} — "

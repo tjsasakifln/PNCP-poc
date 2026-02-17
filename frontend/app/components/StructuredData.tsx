@@ -85,7 +85,7 @@ export function StructuredData() {
       'Análise por setor e região',
       'Relatórios personalizados',
       'Pipeline de oportunidades',
-      'Notificações em tempo real',
+      'Avaliação por IA',
       'Exportação para Excel',
     ],
   };

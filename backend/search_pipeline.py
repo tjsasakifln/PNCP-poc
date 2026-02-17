@@ -24,6 +24,7 @@ import time as sync_time_module
 from datetime import datetime
 from types import SimpleNamespace
 
+import sentry_sdk  # GTM-FIX-002 AC9: Tag errors with data source
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
@@ -687,6 +688,25 @@ class SearchPipeline:
                 for sr in consolidation_result.source_results
             ]
 
+            # GTM-FIX-004: Collect per-source truncation flags from adapters
+            truncation_details = {}
+            for code, adapter in adapters.items():
+                if hasattr(adapter, "was_truncated"):
+                    truncation_details[code.lower()] = adapter.was_truncated
+                    if adapter.was_truncated:
+                        ctx.is_truncated = True
+                        # Merge truncated UFs from PNCP adapter
+                        if hasattr(adapter, "truncated_ufs") and adapter.truncated_ufs:
+                            if ctx.truncated_ufs is None:
+                                ctx.truncated_ufs = []
+                            ctx.truncated_ufs.extend(adapter.truncated_ufs)
+
+            if any(truncation_details.values()):
+                ctx.truncation_details = truncation_details
+                logger.warning(
+                    f"GTM-FIX-004: Multi-source truncation detected: {truncation_details}"
+                )
+
             logger.info(
                 f"Multi-source fetch: {consolidation_result.total_before_dedup} raw -> "
                 f"{consolidation_result.total_after_dedup} deduped "
@@ -696,6 +716,10 @@ class SearchPipeline:
         except AllSourcesFailedError as e:
             # GTM-FIX-010 AC4/AC16r/AC17r: All sources failed — try Supabase cache fallback
             logger.error(f"All sources failed during multi-source fetch: {e}")
+
+            # GTM-FIX-002 AC9: Tag error with data_source=all_sources for Sentry filtering
+            sentry_sdk.set_tag("data_source", "all_sources")
+            sentry_sdk.capture_exception(e)
 
             # AC17r: Fallback cascade step 3 — try stale cache
             stale_cache = None
@@ -815,6 +839,8 @@ class SearchPipeline:
                         if fetch_result.truncated_ufs:
                             ctx.is_truncated = True
                             ctx.truncated_ufs = fetch_result.truncated_ufs
+                            # Per-source truncation details (PNCP-only path)
+                            ctx.truncation_details = {"pncp": True}
                         return fetch_result.items
                     return fetch_result
                 except PNCPDegradedError:
@@ -864,6 +890,10 @@ class SearchPipeline:
         except PNCPDegradedError as e:
             # GTM-FIX-010 AC4/AC17r: PNCP circuit breaker tripped — try stale cache
             logger.warning(f"PNCP degraded during fetch: {e}")
+
+            # GTM-FIX-002 AC9: Tag with data_source=pncp for Sentry filtering
+            sentry_sdk.set_tag("data_source", "pncp")
+            sentry_sdk.capture_exception(e)
 
             stale_cache = None
             if ctx.user and ctx.user.get("id"):
@@ -1128,6 +1158,7 @@ class SearchPipeline:
                 cached_sources=ctx.cached_sources,
                 is_truncated=ctx.is_truncated,
                 truncated_ufs=ctx.truncated_ufs,
+                truncation_details=ctx.truncation_details,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1243,6 +1274,7 @@ class SearchPipeline:
             cached_sources=ctx.cached_sources,
             is_truncated=ctx.is_truncated,
             truncated_ufs=ctx.truncated_ufs,
+            truncation_details=ctx.truncation_details,
         )
 
         logger.info(

@@ -38,17 +38,17 @@ export const hero = {
   trustBadges: [
     {
       icon: Target,
-      text: "R$ 2.3 bi em oportunidades",
-      detail: "Mapeadas mensalmente",
+      text: "2 bases oficiais",
+      detail: "PNCP + Portal de Compras Públicas",
     },
     {
       icon: Search,
-      text: "12 setores cobertos",
+      text: "15 setores cobertos",
       detail: "Especialização por mercado",
     },
     {
       icon: Globe,
-      text: "27 estados monitorados",
+      text: "27 estados cobertos",
       detail: "Cobertura nacional completa",
     },
     {
@@ -96,20 +96,20 @@ export const valueProps = {
     title: "Redução de Incerteza",
     shortDescription: "Entre preparado. Decisões baseadas em critérios objetivos, não intuição",
     longDescription:
-      "Elimine o achismo. Cada oportunidade vem com dados consolidados de múltiplas fontes oficiais, avaliação de adequação e critérios objetivos. Decida com confiança em vez de apostar no escuro.",
+      "Elimine o achismo. Cada oportunidade vem com dados consolidados de 2 fontes oficiais principais (PNCP + Portal de Compras Públicas), avaliação de adequação e critérios objetivos. Decida com confiança em vez de apostar no escuro.",
     icon: ShieldCheck,
     metric: "Confiança",
-    proof: "Dados consolidados de dezenas de fontes oficiais",
+    proof: "Dados consolidados de PNCP + Portal de Compras Públicas",
   },
 
   coverage: {
     title: "Cobertura Nacional",
     shortDescription: "Nunca perca uma oportunidade por falta de visibilidade",
     longDescription:
-      "Monitoramos dezenas de fontes oficiais em todos os 27 estados, todos os dias. Cada oportunidade relevante para o seu setor é identificada, avaliada e entregue. Visibilidade completa do mercado.",
+      "Consultamos 2 bases oficiais principais (PNCP + Portal de Compras Públicas) cobrindo todos os 27 estados. Cada oportunidade relevante para o seu setor é identificada, avaliada e entregue. Visibilidade completa do mercado.",
     icon: Globe,
     metric: "27 UFs",
-    proof: "Monitoramento contínuo de fontes federais, estaduais e municipais",
+    proof: "PNCP + Portal de Compras Públicas (cobertura federal e estadual)",
   },
 };
 
@@ -142,7 +142,7 @@ export const features = {
     without:
       "Você consulta 3-4 fontes manualmente. Oportunidades em portais estaduais passam despercebidas. Seu concorrente descobre antes.",
     withSmartLic:
-      "Consulta em tempo real dezenas de fontes oficiais, federais e estaduais. Cobertura nacional completa. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
+      "Consulta 2 bases principais (PNCP + Portal de Compras Públicas) cobrindo fontes federais e estaduais. Cobertura nacional completa. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
     gemAccent: "emerald" as const,
   },
 
@@ -160,7 +160,7 @@ export const features = {
     without:
       "Você descobre oportunidades dias depois da publicação. Concorrentes já estão preparando propostas. Você entra atrasado.",
     withSmartLic:
-      "Notificações em tempo real de novas oportunidades compatíveis com seu perfil. Você descobre antes, se posiciona antes, compete melhor. Quem encontra primeiro tem vantagem.",
+      "Acesso sob demanda às bases oficiais com busca inteligente por setor. Você descobre antes consultando diretamente as fontes, se posiciona antes, compete melhor. Quem vê primeiro tem vantagem.",
     gemAccent: "ruby" as const,
   },
 };
@@ -414,7 +414,7 @@ export const PREFERRED_PHRASES = {
   decision: ["avaliação objetiva", "decisão informada", "vale a pena ou não"],
   competitive: ["vantagem competitiva", "posicione-se antes", "visibilidade de mercado"],
   intelligence: ["priorização inteligente", "análise automatizada", "inteligência de fontes"],
-  coverage: ["fontes oficiais", "cobertura nacional", "dezenas de fontes consolidadas"],
+  coverage: ["fontes oficiais", "cobertura nacional", "PNCP + Portal de Compras Públicas"],
   uncertainty: ["redução de incerteza", "critérios objetivos", "confiança na decisão"],
   cost: ["custo de não ter visibilidade", "licitação perdida", "oportunidade que vai para outro"],
   trust: "Cancele em 1 clique, sem burocracia",

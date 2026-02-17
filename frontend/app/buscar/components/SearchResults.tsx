@@ -333,7 +333,10 @@ export default function SearchResults({
 
           {/* GTM-FIX-004: Truncation warning banner */}
           {result.is_truncated && (
-            <TruncationWarningBanner truncatedUfs={result.truncated_ufs} />
+            <TruncationWarningBanner
+              truncatedUfs={result.truncated_ufs}
+              truncationDetails={result.truncation_details}
+            />
           )}
 
           {/* STORY-257B AC6: Partial results mini-banner */}

@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     default: `${appName} - Como Encontrar e Vencer Licitações Públicas Facilmente`,
     template: `%s | ${appName}`,
   },
-  description: "Encontre oportunidades de licitações públicas filtradas por setor, região e valor. Descubra quais editais valem a pena, receba notificações em tempo real e exporte relatórios completos. Sistema usado por 500+ empresas para aumentar taxa de aprovação em concorrências públicas.",
+  description: "Encontre oportunidades de licitações públicas filtradas por setor, região e valor. Descubra quais editais valem a pena com avaliação por IA e exporte relatórios completos. Sistema usado por 500+ empresas para aumentar taxa de aprovação em concorrências públicas.",
   keywords: [
     // Conversational long-tail keywords for AI search
     "como encontrar licitações públicas",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: `${appName} - Encontre e Vença Licitações Públicas com Inteligência Artificial`,
-    description: "Descubra as melhores oportunidades de licitações públicas com busca inteligente por setor, análise de viabilidade, notificações em tempo real e relatórios completos. Economize horas de trabalho manual e aumente sua taxa de aprovação em concorrências governamentais.",
+    description: "Descubra as melhores oportunidades de licitações públicas com busca inteligente por setor, análise de viabilidade por IA e relatórios completos. Economize horas de trabalho manual e aumente sua taxa de aprovação em concorrências governamentais.",
     siteName: appName,
     url: "https://smartlic.tech",
     type: "website",

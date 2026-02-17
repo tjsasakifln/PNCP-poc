@@ -53,6 +53,7 @@ class SearchContext:
     # GTM-FIX-004: Truncation tracking
     is_truncated: bool = False  # True when any UF hit max_pages limit
     truncated_ufs: Optional[list] = None  # UF codes where data was truncated
+    truncation_details: Optional[dict] = None  # Per-source truncation: {"pncp": True, "portal_compras": False}
     # GTM-FIX-010: SWR cache fields
     cached: bool = False  # True when serving stale cached results
     cached_at: Optional[str] = None  # ISO timestamp of cache creation

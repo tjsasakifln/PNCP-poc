@@ -912,6 +912,11 @@ class BuscaResponse(BaseModel):
         default=None,
         description="UF codes where results were truncated due to max_pages limit"
     )
+    truncation_details: Optional[Dict[str, bool]] = Field(
+        default=None,
+        description="Per-source truncation flags, e.g. {'pncp': true, 'portal_compras': false}. "
+                    "None when no truncation occurred (backward compatible)."
+    )
     total_ufs_requested: Optional[int] = Field(
         default=None,
         description="Total number of UFs in the original request"
