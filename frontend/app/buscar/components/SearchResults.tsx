@@ -136,6 +136,9 @@ export default function SearchResults({
     ? Array.from(ufStatuses.values()).filter(s => s.status === 'pending' || s.status === 'fetching' || s.status === 'retrying').length
     : 0;
 
+  // GTM-FIX-011 AC22: Toggle source badges for power users
+  const [showSourceBadges, setShowSourceBadges] = useState(false);
+
   // STORY-257B AC13: 30-second cooldown for retry button
   const [retryCooldown, setRetryCooldown] = useState(0);
 
@@ -651,21 +654,66 @@ export default function SearchResults({
             </div>
           )}
 
-          {/* Stats + Timestamp */}
+          {/* Stats + Timestamp + Source Indicators (GTM-FIX-011) */}
           <div className="text-xs sm:text-sm text-ink-muted text-center space-y-1">
             {rawCount > 0 && (
               <p>
                 {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitação compatível' : 'licitações compatíveis'} com os filtros selecionados nesta busca
                 {searchMode === "setor" && sectorName !== "Licitações" ? ` para o setor ${sectorName.toLowerCase()}` : ''}
+                {/* AC19: Source count summary with tooltip */}
+                {result.sources_used && result.sources_used.length > 1 && (
+                  <span
+                    className="ml-1 cursor-help border-b border-dotted border-ink-faint"
+                    title={result.source_stats
+                      ?.filter((s: { status: string }) => s.status === "success" || s.status === "partial")
+                      .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count} registros`)
+                      .join('\n') || ''}
+                  >
+                    ({result.sources_used.length} fontes consultadas)
+                  </span>
+                )}
               </p>
             )}
-            {result.source_stats && result.source_stats.length > 1 && (
-              <p className="text-ink-faint">
-                Fontes: {result.source_stats
-                  .filter((s: { status: string }) => s.status === "success")
-                  .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count}`)
-                  .join(", ")}
+            {/* AC21: Partial failure — simple message without technical source names */}
+            {result.is_partial && !result.cached && result.sources_used && result.sources_used.length > 0 && (
+              <p className="text-amber-600 dark:text-amber-400">
+                Busca concluída | Uma fonte temporariamente indisponível (dados podem estar incompletos)
               </p>
+            )}
+            {/* AC22: Source badges — hidden by default, toggle for power users */}
+            {result.source_stats && result.source_stats.length > 1 && (
+              <div className="space-y-1">
+                <button
+                  onClick={() => setShowSourceBadges(!showSourceBadges)}
+                  className="text-ink-faint hover:text-ink-secondary transition-colors text-xs underline-offset-2 hover:underline"
+                  aria-expanded={showSourceBadges}
+                >
+                  {showSourceBadges ? 'Ocultar fontes' : 'Mostrar fontes'}
+                </button>
+                {showSourceBadges && (
+                  <div className="flex items-center justify-center gap-2 animate-fade-in">
+                    {result.source_stats
+                      .filter((s: { status: string }) => s.status === "success" || s.status === "partial")
+                      .map((s: { source_code: string; record_count: number; status: string }) => (
+                        <span
+                          key={s.source_code}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            s.source_code === 'PNCP'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                              : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                          }`}
+                        >
+                          {s.source_code === 'PNCP' ? (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>
+                          ) : (
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                          )}
+                          {s.source_code}: {s.record_count}
+                        </span>
+                      ))}
+                  </div>
+                )}
+              </div>
             )}
             {result.ultima_atualizacao && (
               <p className="text-ink-faint">

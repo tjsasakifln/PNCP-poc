@@ -874,6 +874,10 @@ class BuscaResponse(BaseModel):
         default=None,
         description="Message shown when Excel is blocked, encouraging upgrade"
     )
+    sources_used: Optional[List[str]] = Field(
+        default=None,
+        description="List of source codes that returned data (e.g., ['PNCP', 'PORTAL_COMPRAS'])"
+    )
     source_stats: Optional[List[dict]] = Field(
         default=None,
         description="Per-source fetch metrics when multi-source is active"

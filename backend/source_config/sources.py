@@ -417,9 +417,21 @@ class SourceConfig:
         config.portal_transparencia.credentials = SourceCredentials(
             api_key=os.getenv("PORTAL_TRANSPARENCIA_API_KEY")
         )
+        # GTM-FIX-011: PCP uses PCP_PUBLIC_KEY (preferred) or PORTAL_COMPRAS_API_KEY (legacy)
         config.portal.credentials = SourceCredentials(
-            api_key=os.getenv("PORTAL_COMPRAS_API_KEY")
+            api_key=os.getenv("PCP_PUBLIC_KEY") or os.getenv("PORTAL_COMPRAS_API_KEY")
         )
+        # GTM-FIX-011 AC16: Feature flag to disable PCP without deploy
+        pcp_enabled = os.getenv("PCP_ENABLED", "true").lower() == "true"
+        if not pcp_enabled:
+            config.portal.enabled = False
+        # GTM-FIX-011 AC26: Configurable timeout and rate limit
+        pcp_timeout = os.getenv("PCP_TIMEOUT")
+        if pcp_timeout:
+            config.portal.timeout = int(pcp_timeout)
+        pcp_rps = os.getenv("PCP_RATE_LIMIT_RPS")
+        if pcp_rps:
+            config.portal.rate_limit_rps = float(pcp_rps)
         config.licitar.credentials = SourceCredentials(
             api_key=os.getenv("LICITAR_API_KEY")
         )

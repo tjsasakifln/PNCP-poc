@@ -505,6 +505,23 @@ class ConsolidationService:
             if existing is None:
                 seen[key] = record
             else:
+                # AC17: Log warning if same procurement has >5% value discrepancy
+                if (
+                    existing.source_name != record.source_name
+                    and existing.valor_estimado > 0
+                    and record.valor_estimado > 0
+                ):
+                    diff_pct = abs(existing.valor_estimado - record.valor_estimado) / max(
+                        existing.valor_estimado, record.valor_estimado
+                    )
+                    if diff_pct > 0.05:
+                        logger.warning(
+                            f"[CONSOLIDATION] Value discrepancy >5% for dedup_key={key}: "
+                            f"{existing.source_name}=R${existing.valor_estimado:,.2f} vs "
+                            f"{record.source_name}=R${record.valor_estimado:,.2f} "
+                            f"(diff={diff_pct:.1%})"
+                        )
+
                 # Keep the one from higher priority source (lower number)
                 existing_priority = source_priority.get(existing.source_name, 999)
                 new_priority = source_priority.get(record.source_name, 999)

@@ -687,6 +687,12 @@
               "title": "Is Partial",
               "type": "boolean"
             },
+            "is_truncated": {
+              "default": false,
+              "description": "True when at least one UF hit the max_pages limit (data may be incomplete)",
+              "title": "Is Truncated",
+              "type": "boolean"
+            },
             "licitacoes": {
               "description": "List of individual bids for display. FREE tier shows 5-10 fully, rest blurred.",
               "items": {
@@ -795,6 +801,21 @@
               ],
               "description": "Total number of UFs in the original request",
               "title": "Total Ufs Requested"
+            },
+            "truncated_ufs": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UF codes where results were truncated due to max_pages limit",
+              "title": "Truncated Ufs"
             },
             "ultima_atualizacao": {
               "anyOf": [
@@ -3085,6 +3106,106 @@
           "title": "TopDimensionsResponse",
           "type": "object"
         },
+        "TopOpportunity": {
+          "properties": {
+            "title": {
+              "title": "Title",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "title",
+            "value"
+          ],
+          "title": "TopOpportunity",
+          "type": "object"
+        },
+        "TrialStatusResponse": {
+          "properties": {
+            "days_remaining": {
+              "title": "Days Remaining",
+              "type": "integer"
+            },
+            "expires_at": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expires At"
+            },
+            "is_expired": {
+              "title": "Is Expired",
+              "type": "boolean"
+            },
+            "plan": {
+              "title": "Plan",
+              "type": "string"
+            },
+            "searches_limit": {
+              "title": "Searches Limit",
+              "type": "integer"
+            },
+            "searches_used": {
+              "title": "Searches Used",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "plan",
+            "days_remaining",
+            "searches_used",
+            "searches_limit",
+            "is_expired"
+          ],
+          "title": "TrialStatusResponse",
+          "type": "object"
+        },
+        "TrialValueResponse": {
+          "properties": {
+            "avg_opportunity_value": {
+              "title": "Avg Opportunity Value",
+              "type": "number"
+            },
+            "searches_executed": {
+              "title": "Searches Executed",
+              "type": "integer"
+            },
+            "top_opportunity": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TopOpportunity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "total_opportunities": {
+              "title": "Total Opportunities",
+              "type": "integer"
+            },
+            "total_value": {
+              "title": "Total Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "total_opportunities",
+            "total_value",
+            "searches_executed",
+            "avg_opportunity_value"
+          ],
+          "title": "TrialValueResponse",
+          "type": "object"
+        },
         "UnreadCountResponse": {
           "description": "Unread message count for badge display.",
           "properties": {
@@ -3338,6 +3459,13 @@
         },
         "ValidationError": {
           "properties": {
+            "ctx": {
+              "title": "Context",
+              "type": "object"
+            },
+            "input": {
+              "title": "Input"
+            },
             "loc": {
               "items": {
                 "anyOf": [
@@ -3396,7 +3524,7 @@
       }
     },
     "info": {
-      "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es de uniformes no PNCP. Permite filtrar oportunidades por estado, valor e keywords, gerando relat\u00f3rios Excel e resumos executivos via IA.",
+      "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relat\u00f3rios Excel e avalia\u00e7\u00e3o estrat\u00e9gica via IA.",
       "title": "BidIQ Uniformes API",
       "version": "0.2.0"
     },
@@ -4035,6 +4163,33 @@
             }
           ],
           "summary": "Get Top Dimensions",
+          "tags": [
+            "analytics"
+          ]
+        }
+      },
+      "/analytics/trial-value": {
+        "get": {
+          "description": "Get value generated during trial period (GTM-010 AC1).\n\nReturns aggregated statistics of opportunities analyzed during the user's trial.\nUsed by TrialConversionScreen to show personalized conversion messaging.",
+          "operationId": "get_trial_value_analytics_trial_value_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TrialValueResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Trial Value",
           "tags": [
             "analytics"
           ]
@@ -5569,6 +5724,33 @@
           "summary": "Sources Health"
         }
       },
+      "/trial-status": {
+        "get": {
+          "description": "Get detailed trial status for conversion flow (GTM-010 AC3).\n\nReturns days remaining, usage stats, and expiration info.",
+          "operationId": "get_trial_status_trial_status_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TrialStatusResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Trial Status",
+          "tags": [
+            "user"
+          ]
+        }
+      },
       "/v1/admin/admin/filter-stats": {
         "get": {
           "description": "STORY-248 AC10: Filter rejection statistics.\n\nReturns counts of each rejection reason code for the specified period.\nAdmin-only endpoint.\n\nReason codes:\n- keyword_miss: No sector keyword found in procurement description\n- exclusion_hit: Exclusion keyword matched (false-positive prevention)\n- llm_reject: LLM arbiter rejected the contract\n- density_low: Term density below minimum threshold\n- value_exceed: Contract value exceeds sector maximum\n- uf_mismatch: State (UF) not in selected set\n- status_mismatch: Procurement status does not match filter",
@@ -6183,6 +6365,33 @@
             }
           ],
           "summary": "Get Top Dimensions",
+          "tags": [
+            "analytics"
+          ]
+        }
+      },
+      "/v1/analytics/trial-value": {
+        "get": {
+          "description": "Get value generated during trial period (GTM-010 AC1).\n\nReturns aggregated statistics of opportunities analyzed during the user's trial.\nUsed by TrialConversionScreen to show personalized conversion messaging.",
+          "operationId": "get_trial_value_v1_analytics_trial_value_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TrialValueResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Trial Value",
           "tags": [
             "analytics"
           ]
@@ -7653,6 +7862,33 @@
             }
           },
           "summary": "Listar Setores"
+        }
+      },
+      "/v1/trial-status": {
+        "get": {
+          "description": "Get detailed trial status for conversion flow (GTM-010 AC3).\n\nReturns days remaining, usage stats, and expiration info.",
+          "operationId": "get_trial_status_v1_trial_status_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TrialStatusResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Trial Status",
+          "tags": [
+            "user"
+          ]
         }
       },
       "/v1/webhooks/stripe": {

@@ -76,6 +76,8 @@ export interface BuscaResult {
   stopwords_removidas: string[] | null;
   excel_available: boolean;
   upgrade_message: string | null;
+  /** GTM-FIX-011 AC18: List of source codes that returned data */
+  sources_used?: string[] | null;
   /** Per-source metrics when multi-source is active */
   source_stats: SourceStat[] | null;
   /** Number of bids with partial matches hidden by min match floor */
