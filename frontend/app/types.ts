@@ -21,7 +21,13 @@ export type Resumo = components["schemas"]["ResumoEstrategico"];
 export type Recomendacao = components["schemas"]["Recomendacao"];
 
 /** Breakdown of filter rejection reasons */
-export type FilterStats = components["schemas"]["FilterStats"];
+export type FilterStats = components["schemas"]["FilterStats"] & {
+  /** GTM-FIX-028 AC7: LLM zero-match classification stats */
+  llm_zero_match_calls?: number;
+  llm_zero_match_aprovadas?: number;
+  llm_zero_match_rejeitadas?: number;
+  llm_zero_match_skipped_short?: number;
+};
 
 /** Lightweight sanctions summary for search result badges (STORY-256 AC11) */
 export interface SanctionsSummary {
@@ -35,6 +41,8 @@ export interface SanctionsSummary {
 export type LicitacaoItem = components["schemas"]["LicitacaoItem"] & {
   /** Sanctions check result (only when check_sanctions=true in request) — STORY-256 AC11 */
   supplier_sanctions?: SanctionsSummary | null;
+  /** GTM-FIX-028 AC8: How relevance was determined */
+  relevance_source?: "keyword" | "llm_standard" | "llm_conservative" | "llm_zero_match" | null;
 };
 
 /** InMail message response */

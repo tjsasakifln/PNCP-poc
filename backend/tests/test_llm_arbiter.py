@@ -28,7 +28,7 @@ from llm_arbiter import (
 def setup_env():
     """Set up environment variables for testing."""
     os.environ["LLM_ARBITER_ENABLED"] = "true"
-    os.environ["LLM_ARBITER_MODEL"] = "gpt-4o-mini"
+    os.environ["LLM_ARBITER_MODEL"] = "gpt-4.1-nano"
     os.environ["LLM_ARBITER_MAX_TOKENS"] = "1"
     os.environ["LLM_ARBITER_TEMPERATURE"] = "0"
     os.environ["OPENAI_API_KEY"] = "test-key-12345"
@@ -337,7 +337,7 @@ class TestLLMParameters:
         call_args = mock_openai_client.chat.completions.create.call_args
 
         # Verify parameters
-        assert call_args.kwargs["model"] == "gpt-4o-mini"
+        assert call_args.kwargs["model"] == "gpt-4.1-nano"
         assert call_args.kwargs["max_tokens"] == 1  # Force single token
         assert call_args.kwargs["temperature"] == 0  # Deterministic
 

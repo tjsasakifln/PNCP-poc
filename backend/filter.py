@@ -2184,6 +2184,103 @@ def aplicar_todos_filtros(
             except Exception:
                 pass
 
+    # ========================================================================
+    # GTM-FIX-028: LLM Zero Match Classification
+    # ========================================================================
+    # Instead of auto-rejecting bids with 0 keyword matches, collect them
+    # and send to LLM for sector-aware classification.
+    from config import LLM_ZERO_MATCH_ENABLED
+
+    resultado_llm_zero: List[dict] = []
+    stats["llm_zero_match_calls"] = 0
+    stats["llm_zero_match_aprovadas"] = 0
+    stats["llm_zero_match_rejeitadas"] = 0
+    stats["llm_zero_match_skipped_short"] = 0
+
+    if LLM_ZERO_MATCH_ENABLED and setor:
+        # Collect bids that were rejected by keyword gate (in resultado_valor but not in resultado_keyword)
+        keyword_approved_ids = {id(lic) for lic in resultado_keyword}
+        zero_match_pool: List[dict] = []
+        for lic in resultado_valor:
+            if id(lic) not in keyword_approved_ids:
+                objeto = lic.get("objetoCompra", "")
+                # AC3: Skip bids with objeto < 20 chars (PCP short resumo, insufficient signal)
+                if len(objeto) < 20:
+                    stats["llm_zero_match_skipped_short"] += 1
+                    logger.debug(
+                        f"LLM zero_match: SKIP (objeto < 20 chars) objeto={objeto!r}"
+                    )
+                    continue
+                zero_match_pool.append(lic)
+
+        if zero_match_pool:
+            from llm_arbiter import classify_contract_primary_match as _classify_zm
+            from sectors import get_sector as _get_sector_zm
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            try:
+                setor_config_zm = _get_sector_zm(setor)
+                setor_name_zm = setor_config_zm.name
+            except (KeyError, Exception):
+                setor_name_zm = setor
+
+            # AC6: Concurrent LLM calls with max 10 threads (equivalent to Semaphore(10))
+            def _classify_one(lic_item: dict) -> tuple[dict, bool]:
+                obj = lic_item.get("objetoCompra", "")
+                val = lic_item.get("valorTotalEstimado") or lic_item.get("valorEstimado") or 0
+                if isinstance(val, str):
+                    try:
+                        val = float(val.replace(".", "").replace(",", "."))
+                    except ValueError:
+                        val = 0.0
+                else:
+                    val = float(val) if val else 0.0
+                result = _classify_zm(
+                    objeto=obj,
+                    valor=val,
+                    setor_name=setor_name_zm,
+                    prompt_level="zero_match",
+                    setor_id=setor,
+                )
+                return lic_item, result
+
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {
+                    executor.submit(_classify_one, lic): lic
+                    for lic in zero_match_pool
+                }
+                for future in as_completed(futures):
+                    stats["llm_zero_match_calls"] += 1
+                    try:
+                        lic_item, is_relevant = future.result()
+                        if is_relevant:
+                            stats["llm_zero_match_aprovadas"] += 1
+                            # AC8: Tag relevance source
+                            lic_item["_relevance_source"] = "llm_zero_match"
+                            lic_item["_term_density"] = 0.0
+                            lic_item["_matched_terms"] = []
+                            resultado_llm_zero.append(lic_item)
+                            logger.info(
+                                f"LLM zero_match: ACCEPT objeto={lic_item.get('objetoCompra', '')[:80]}"
+                            )
+                        else:
+                            stats["llm_zero_match_rejeitadas"] += 1
+                            logger.debug(
+                                f"LLM zero_match: REJECT objeto={lic_item.get('objetoCompra', '')[:80]}"
+                            )
+                    except Exception as e:
+                        # AC9: Fallback on LLM failure = REJECT
+                        stats["llm_zero_match_rejeitadas"] += 1
+                        logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
+
+            logger.info(
+                f"GTM-FIX-028 LLM Zero Match: "
+                f"{stats['llm_zero_match_calls']} calls, "
+                f"{stats['llm_zero_match_aprovadas']} approved, "
+                f"{stats['llm_zero_match_rejeitadas']} rejected, "
+                f"{stats['llm_zero_match_skipped_short']} skipped (short)"
+            )
+
     # STORY-181 AC2: Camada 2A - Calibrated Term Density Decision Thresholds
     # Using configurable thresholds from config.py (env-var adjustable)
     from config import (
@@ -2207,6 +2304,8 @@ def aplicar_todos_filtros(
         if density > TERM_DENSITY_HIGH_THRESHOLD:
             # High confidence (>5%) - dominant term, accept without LLM
             stats["aprovadas_alta_densidade"] += 1
+            # GTM-FIX-028 AC8: Tag relevance source
+            lic["_relevance_source"] = "keyword"
             logger.info(
                 f"[{trace_id}] Camada 2A: ACCEPT (alta densidade) "
                 f"density={density:.1%} objeto={objeto_preview}"
@@ -2331,6 +2430,8 @@ def aplicar_todos_filtros(
 
             if is_primary:
                 stats["aprovadas_llm_arbiter"] += 1
+                # GTM-FIX-028 AC8: Tag relevance source based on prompt level
+                lic["_relevance_source"] = f"llm_{prompt_level}"
                 resultado_densidade.append(lic)
                 logger.info(
                     f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
@@ -2374,6 +2475,14 @@ def aplicar_todos_filtros(
         )
 
     resultado_keyword = resultado_densidade
+
+    # GTM-FIX-028: Merge LLM zero-match approved bids into the keyword results
+    if resultado_llm_zero:
+        resultado_keyword.extend(resultado_llm_zero)
+        logger.info(
+            f"GTM-FIX-028: Merged {len(resultado_llm_zero)} LLM zero-match bids "
+            f"into resultado_keyword (total now: {len(resultado_keyword)})"
+        )
 
     # Etapa 8b: Minimum Match Floor (STORY-178 AC2.2)
     # When min_match_floor is provided, apply additional filtering
@@ -2550,8 +2659,17 @@ def aplicar_todos_filtros(
     stats["llm_arbiter_calls_fn_flow"] = 0
     stats["zero_results_relaxation_triggered"] = False
 
+    # GTM-FIX-028 AC10: When LLM zero-match is enabled, skip FLUXO 2 to avoid
+    # double-classification (zero-match bids already went through LLM)
+    _skip_fluxo_2 = LLM_ZERO_MATCH_ENABLED and stats.get("llm_zero_match_calls", 0) > 0
+    if _skip_fluxo_2:
+        logger.info(
+            "GTM-FIX-028 AC10: FLUXO 2 DISABLED — LLM zero-match already classified "
+            f"{stats['llm_zero_match_calls']} bids"
+        )
+
     # Only run recovery when we have a sector (synonym dictionaries are sector-specific)
-    if setor:
+    if setor and not _skip_fluxo_2:
         from synonyms import find_synonym_matches, should_auto_approve_by_synonyms
         from sectors import get_sector as _get_sector
 

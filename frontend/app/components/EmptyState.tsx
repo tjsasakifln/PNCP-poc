@@ -60,10 +60,22 @@ export function EmptyState({
         </svg>
       </div>
 
-      {/* Title (STORY-173 AC3) */}
+      {/* Title (STORY-173 AC3, GTM-FIX-028 AC14) */}
       <h3 className="text-xl font-semibold font-display text-ink mb-2">
         Nenhuma Oportunidade Relevante Encontrada
       </h3>
+
+      {/* GTM-FIX-028 AC14/AC16: LLM zero-match analysis note */}
+      {filterStats && (filterStats.llm_zero_match_calls ?? 0) > 0 && (
+        <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-card text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <span>
+            IA analisou {filterStats.llm_zero_match_calls} licitações adicionais e nenhuma é relevante para {sectorName.toLowerCase()} neste período. Tente ampliar sua busca.
+          </span>
+        </div>
+      )}
 
       {/* Context with filter breakdown (STORY-173 AC3) */}
       {rawCount > 0 && rejectionBreakdown.length > 0 ? (

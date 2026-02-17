@@ -201,7 +201,8 @@ ENABLE_NEW_PRICING: bool = str_to_bool(os.getenv("ENABLE_NEW_PRICING", "true"))
 LLM_ARBITER_ENABLED: bool = str_to_bool(os.getenv("LLM_ARBITER_ENABLED", "true"))
 
 # LLM model for contract classification
-LLM_ARBITER_MODEL: str = os.getenv("LLM_ARBITER_MODEL", "gpt-4o-mini")
+# GTM-FIX-028 AC5: Migrated from gpt-4o-mini to gpt-4.1-nano (33% cheaper, same quality for binary)
+LLM_ARBITER_MODEL: str = os.getenv("LLM_ARBITER_MODEL", "gpt-4.1-nano")
 
 # Max tokens for LLM output (1 token forces "SIM" or "NAO" response)
 LLM_ARBITER_MAX_TOKENS: int = int(os.getenv("LLM_ARBITER_MAX_TOKENS", "1"))
@@ -306,6 +307,14 @@ ZERO_RESULTS_RELAXATION_ENABLED: bool = str_to_bool(
     os.getenv("ZERO_RESULTS_RELAXATION_ENABLED", "true")
 )
 
+# GTM-FIX-028: LLM Zero Match — classify bids with 0 keyword matches via LLM
+# When enabled, bids that fail keyword matching are sent to LLM for sector-aware
+# classification instead of being auto-rejected. Disables FLUXO 2 to avoid
+# double-classification.
+LLM_ZERO_MATCH_ENABLED: bool = str_to_bool(
+    os.getenv("LLM_ZERO_MATCH_ENABLED", "true")
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -326,6 +335,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "LLM_ARBITER_ENABLED": ("LLM_ARBITER_ENABLED", "true"),
     "SYNONYM_MATCHING_ENABLED": ("SYNONYM_MATCHING_ENABLED", "true"),
     "ZERO_RESULTS_RELAXATION_ENABLED": ("ZERO_RESULTS_RELAXATION_ENABLED", "true"),
+    "LLM_ZERO_MATCH_ENABLED": ("LLM_ZERO_MATCH_ENABLED", "true"),
     "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
 }
 

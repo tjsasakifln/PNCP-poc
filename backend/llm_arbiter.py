@@ -1,10 +1,11 @@
 """
-LLM Arbiter for False Positive Elimination (STORY-179 AC3).
+LLM Arbiter for False Positive Elimination (STORY-179 AC3) + Zero Match Classification (GTM-FIX-028).
 
-Uses GPT-4o-mini to classify contracts in the "uncertain zone" (1-5% term density)
-as PRIMARILY about a sector or custom search terms (SIM) vs. secondary/tangential (NAO).
+Uses GPT-4.1-nano to classify contracts:
+- "uncertain zone" (1-5% term density): PRIMARILY about sector? SIM/NAO
+- "zero match" (0% keyword match): Is this contract relevant to sector? YES/NO
 
-Cost: ~R$ 0.00003 per classification
+Cost: ~R$ 0.00002 per classification (gpt-4.1-nano)
 Latency: ~50ms per call
 Cache: In-memory MD5-based cache for repeated queries
 """
@@ -32,7 +33,8 @@ def _get_client() -> OpenAI:
 
 
 # LLM configuration
-LLM_MODEL = os.getenv("LLM_ARBITER_MODEL", "gpt-4o-mini")
+# GTM-FIX-028 AC5: Migrated default from gpt-4o-mini to gpt-4.1-nano (33% cheaper)
+LLM_MODEL = os.getenv("LLM_ARBITER_MODEL", "gpt-4.1-nano")
 LLM_MAX_TOKENS = int(os.getenv("LLM_ARBITER_MAX_TOKENS", "1"))
 LLM_TEMPERATURE = float(os.getenv("LLM_ARBITER_TEMPERATURE", "0"))
 LLM_ENABLED = os.getenv("LLM_ARBITER_ENABLED", "true").lower() == "true"
@@ -123,6 +125,78 @@ Este contrato é PRIMARIAMENTE sobre {setor_name}?
 Responda APENAS: SIM ou NAO"""
 
 
+def _build_zero_match_prompt(
+    setor_id: Optional[str],
+    setor_name: str,
+    objeto_truncated: str,
+    valor: float,
+) -> str:
+    """
+    Build sector-aware prompt for bids with ZERO keyword matches (GTM-FIX-028 AC4).
+
+    These bids had no keyword overlap at all, so we ask the LLM to classify
+    purely based on the object description and sector context.
+
+    Includes:
+    - Sector name and description
+    - Top 5 keywords as YES examples
+    - Top 3 exclusions as NO examples
+    - Value shown as "Não informado" when 0.0 (PCP v2 has no value data)
+    """
+    from sectors import get_sector
+
+    valor_display = f"R$ {valor:,.2f}" if valor > 0 else "Não informado"
+
+    if not setor_id:
+        return f"""SETOR: {setor_name}
+
+CONTRATO:
+Valor: {valor_display}
+Objeto: {objeto_truncated}
+
+Este contrato é sobre {setor_name}? Responda APENAS: SIM ou NAO"""
+
+    try:
+        config = get_sector(setor_id)
+    except (KeyError, Exception):
+        logger.warning(f"Sector '{setor_id}' not found for zero_match prompt, using fallback")
+        return f"""SETOR: {setor_name}
+
+CONTRATO:
+Valor: {valor_display}
+Objeto: {objeto_truncated}
+
+Este contrato é sobre {setor_name}? Responda APENAS: SIM ou NAO"""
+
+    description = config.description or setor_name
+
+    # AC4: Top 5 keywords as YES examples
+    keywords = sorted(config.keywords)[:5]
+    sim_lines = "\n".join(f'- "{kw}"' for kw in keywords)
+
+    # AC4: Top 3 exclusions as NO examples
+    exclusions = sorted(config.exclusions)[:3]
+    nao_section = ""
+    if exclusions:
+        nao_lines = "\n".join(f'- "{exc}"' for exc in exclusions)
+        nao_section = f"\nExemplos de NÃO (não é sobre o setor):\n{nao_lines}"
+
+    return f"""Você classifica licitações públicas. Este contrato NÃO contém palavras-chave do setor — analise o OBJETO para determinar se é relevante.
+
+SETOR: {setor_name}
+DESCRIÇÃO: {description}
+
+Exemplos de SIM (é sobre o setor):
+{sim_lines}
+{nao_section}
+
+CONTRATO:
+Valor: {valor_display}
+Objeto: {objeto_truncated}
+
+Este contrato é sobre {setor_name}? Responda APENAS: SIM ou NAO"""
+
+
 def classify_contract_primary_match(
     objeto: str,
     valor: float,
@@ -188,11 +262,20 @@ def classify_contract_primary_match(
     objeto_truncated = objeto[:500]
 
     # STORY-181 AC3: Determine mode and build prompt (dual-level)
+    # GTM-FIX-028 AC4: Added "zero_match" prompt level for bids with 0 keyword matches
     if setor_name:
         mode = "setor"
         context = setor_name
 
-        if prompt_level == "conservative":
+        if prompt_level == "zero_match":
+            # GTM-FIX-028: Zero keyword match — sector-aware classification prompt
+            user_prompt = _build_zero_match_prompt(
+                setor_id=setor_id,
+                setor_name=setor_name,
+                objeto_truncated=objeto_truncated,
+                valor=valor,
+            )
+        elif prompt_level == "conservative":
             # STORY-251: Dynamic conservative prompt with sector-aware examples
             user_prompt = _build_conservative_prompt(
                 setor_id=setor_id,

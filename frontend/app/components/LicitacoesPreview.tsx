@@ -84,6 +84,29 @@ export function LicitacoesPreview({
     );
   };
 
+  /** GTM-FIX-028 AC12: Badge based on relevance_source */
+  const getRelevanceSourceBadge = (source?: string | null) => {
+    if (!source) return null;
+    if (source === "keyword") {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          Palavra-chave
+        </span>
+      );
+    }
+    // All LLM variants get the same blue "Validado por IA" badge
+    if (source.startsWith("llm")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          Validado por IA
+        </span>
+      );
+    }
+    return null;
+  };
+
   if (!licitacoes || licitacoes.length === 0) {
     return null;
   }
@@ -174,6 +197,7 @@ export function LicitacoesPreview({
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {getRelevanceBadge(item.relevance_score)}
+                  {getRelevanceSourceBadge(item.relevance_source)}
                   {getSourceBadge(item._source ?? undefined)}
                   <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                     {item.uf}
@@ -301,6 +325,8 @@ export function LicitacoesPreview({
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {getRelevanceBadge(item.relevance_score)}
+                    {getRelevanceSourceBadge(item.relevance_source)}
+                    {getSourceBadge(item._source ?? undefined)}
                     <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                       {item.uf}
                       {item.municipio && ` - ${item.municipio}`}

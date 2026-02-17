@@ -358,17 +358,39 @@ export default function SearchResults({
             />
           )}
 
-          {/* Results header with ordering */}
+          {/* Results header with ordering (GTM-FIX-028 AC13) */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong">
-            <h2 className="text-lg font-semibold text-ink">
-              Resultados da Busca
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-ink">
+                Resultados da Busca
+              </h2>
+              {rawCount > 0 && (
+                <p className="text-sm text-ink-secondary mt-0.5">
+                  {rawCount.toLocaleString("pt-BR")} analisadas, {result.resumo.total_oportunidades} relevantes{searchMode === "setor" && sectorName ? ` para ${sectorName.toLowerCase()}` : ""}
+                </p>
+              )}
+            </div>
             <OrdenacaoSelect
               value={ordenacao}
               onChange={onOrdenacaoChange}
               disabled={loading}
             />
           </div>
+
+          {/* GTM-FIX-028 AC16: LLM zero-match analysis note */}
+          {result.filter_stats && (result.filter_stats.llm_zero_match_calls ?? 0) > 0 && (
+            <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-card text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span>
+                IA analisou {result.filter_stats.llm_zero_match_calls} licitações adicionais para identificar oportunidades relevantes
+                {(result.filter_stats.llm_zero_match_aprovadas ?? 0) > 0 && (
+                  <> — {result.filter_stats.llm_zero_match_aprovadas} aprovadas</>
+                )}
+              </span>
+            </div>
+          )}
 
           {/* STORY-246 AC10: Active filter summary */}
           <div className="flex flex-wrap items-center gap-2 text-sm text-ink-secondary">

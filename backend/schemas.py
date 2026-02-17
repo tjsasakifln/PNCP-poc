@@ -731,6 +731,11 @@ class FilterStats(BaseModel):
     rejeitadas_min_match: int = Field(default=0, description="Rejected by minimum match floor (had matches but below threshold)")
     rejeitadas_prazo: int = Field(default=0, description="Rejected by deadline")
     rejeitadas_outros: int = Field(default=0, description="Rejected by other reasons")
+    # GTM-FIX-028 AC7: LLM zero-match classification stats
+    llm_zero_match_calls: int = Field(default=0, description="Number of LLM calls for zero-keyword-match bids")
+    llm_zero_match_aprovadas: int = Field(default=0, description="Zero-match bids approved by LLM")
+    llm_zero_match_rejeitadas: int = Field(default=0, description="Zero-match bids rejected by LLM")
+    llm_zero_match_skipped_short: int = Field(default=0, description="Zero-match bids skipped due to objeto < 20 chars")
 
 
 class SanctionsSummarySchema(BaseModel):
@@ -774,6 +779,11 @@ class LicitacaoItem(BaseModel):
     supplier_sanctions: Optional[SanctionsSummarySchema] = Field(
         default=None,
         description="Sanctions check result (only when check_sanctions=true in request)"
+    )
+    # GTM-FIX-028 AC8: How this bid was classified as relevant
+    relevance_source: Optional[str] = Field(
+        default=None,
+        description="How relevance was determined: 'keyword' (density >5%), 'llm_standard' (2-5%), 'llm_conservative' (1-2%), 'llm_zero_match' (0% keyword match, LLM classified)"
     )
 
     class Config:

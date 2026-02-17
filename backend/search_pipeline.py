@@ -193,6 +193,7 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 source=lic.get("_source"),
                 relevance_score=lic.get("_relevance_score"),
                 matched_terms=lic.get("_matched_terms"),
+                relevance_source=lic.get("_relevance_source"),
             )
             items.append(item)
         except Exception as e:
@@ -1151,6 +1152,11 @@ class SearchPipeline:
             rejeitadas_min_match=ctx.filter_stats.get("rejeitadas_min_match", 0),
             rejeitadas_prazo=ctx.filter_stats.get("rejeitadas_prazo", 0),
             rejeitadas_outros=ctx.filter_stats.get("rejeitadas_outros", 0),
+            # GTM-FIX-028 AC7: LLM zero-match stats
+            llm_zero_match_calls=ctx.filter_stats.get("llm_zero_match_calls", 0),
+            llm_zero_match_aprovadas=ctx.filter_stats.get("llm_zero_match_aprovadas", 0),
+            llm_zero_match_rejeitadas=ctx.filter_stats.get("llm_zero_match_rejeitadas", 0),
+            llm_zero_match_skipped_short=ctx.filter_stats.get("llm_zero_match_skipped_short", 0),
         )
 
         # Early return path: no results passed filters
