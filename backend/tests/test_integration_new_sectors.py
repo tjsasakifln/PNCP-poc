@@ -65,7 +65,7 @@ def fetch_pncp_sample(client: PNCPClient, uf: str, max_pages: int = 3) -> list:
                 modalidade=MODALIDADE,
                 uf=uf,
                 pagina=page,
-                tamanho=500,  # GTM-FIX-027 T1: use new default
+                tamanho=50,  # PNCP max reduced 500→50 (~Feb 2026)
             )
             data = resp.get("data", [])
             if not data:

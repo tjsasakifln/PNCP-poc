@@ -520,15 +520,15 @@ class TestAllSourcesFailCache:
 
 
 # ---------------------------------------------------------------------------
-# AC22: PNCP uses tamanhoPagina=500
+# AC22: PNCP uses tamanhoPagina=50 (reduced from 500 by PNCP ~Feb 2026)
 # ---------------------------------------------------------------------------
 
 class TestPNCPPageSize:
-    """T3 AC10/AC22: PNCP client sends tamanhoPagina=500."""
+    """T3 AC10/AC22: PNCP client sends tamanhoPagina=50."""
 
     @pytest.mark.asyncio
-    async def test_ac22_pncp_uses_page_size_500(self):
-        """AC22: _fetch_single_modality passes tamanho=500 to _fetch_page_async."""
+    async def test_ac22_pncp_uses_page_size_50(self):
+        """AC22: _fetch_single_modality passes tamanho=50 to _fetch_page_async."""
         from pncp_client import AsyncPNCPClient
 
         captured_kwargs_list = []
@@ -557,8 +557,8 @@ class TestPNCPPageSize:
             )
 
         assert len(captured_kwargs_list) >= 1, "Expected at least 1 page fetch"
-        assert captured_kwargs_list[0].get("tamanho") == 500, (
-            f"Expected tamanho=500, got {captured_kwargs_list[0].get('tamanho')}"
+        assert captured_kwargs_list[0].get("tamanho") == 50, (
+            f"Expected tamanho=50, got {captured_kwargs_list[0].get('tamanho')}"
         )
 
     @pytest.mark.asyncio
@@ -594,11 +594,11 @@ class TestPNCPPageSize:
                 data_final="2026-01-07",
                 modalidade=6,
                 uf="SP",
-                tamanho=500,
+                tamanho=50,
             )
 
-        assert captured_params.get("tamanhoPagina") == 500, (
-            f"Expected tamanhoPagina=500 in API params, got: {captured_params}"
+        assert captured_params.get("tamanhoPagina") == 50, (
+            f"Expected tamanhoPagina=50 in API params, got: {captured_params}"
         )
 
 

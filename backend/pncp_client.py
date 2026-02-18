@@ -322,7 +322,7 @@ class PNCPClient:
         modalidade: int,
         uf: str | None = None,
         pagina: int = 1,
-        tamanho: int = 500,  # GTM-FIX-027 T1: PNCP API max (was 20)
+        tamanho: int = 50,  # PNCP API max (reduced from 500 to 50 by PNCP ~Feb 2026)
     ) -> Dict[str, Any]:
         """
         Fetch a single page of procurement data from PNCP API.
@@ -333,7 +333,7 @@ class PNCPClient:
             modalidade: Modality code (codigoModalidadeContratacao), e.g., 6 for Pregão Eletrônico
             uf: Optional state code (e.g., "SP", "RJ")
             pagina: Page number (1-indexed)
-            tamanho: Page size (default 500, PNCP API max)
+            tamanho: Page size (default 50, PNCP API max as of Feb 2026)
 
         Returns:
             API response as dictionary containing:
@@ -904,7 +904,7 @@ class AsyncPNCPClient:
         modalidade: int,
         uf: str | None = None,
         pagina: int = 1,
-        tamanho: int = 500,  # GTM-FIX-027 T1: consistent default
+        tamanho: int = 50,  # PNCP API max (reduced from 500 to 50 by PNCP ~Feb 2026)
         status: str | None = None,
     ) -> Dict[str, Any]:
         """
@@ -916,7 +916,7 @@ class AsyncPNCPClient:
             modalidade: Modality code
             uf: Optional state code
             pagina: Page number
-            tamanho: Page size (default 500)
+            tamanho: Page size (default 50, PNCP API max as of Feb 2026)
             status: Optional status filter (PNCP API value)
 
         Returns:
@@ -1118,7 +1118,7 @@ class AsyncPNCPClient:
                     modalidade=modalidade,
                     uf=uf,
                     pagina=pagina,
-                    tamanho=500,  # GTM-FIX-025 T3: 25x fewer requests (was 20)
+                    tamanho=50,  # PNCP API max reduced from 500→50 (~Feb 2026)
                     status=status,
                 )
 

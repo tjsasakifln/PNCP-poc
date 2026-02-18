@@ -499,7 +499,7 @@ class SearchPipeline:
                 # Skip the actual fetch — go straight to filtering
                 return
 
-        enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "false").lower() == "true"
+        enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "true").lower() == "true"
         ctx.source_stats_data = None
 
         use_parallel = len(request.ufs) > 1

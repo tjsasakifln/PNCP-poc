@@ -66,7 +66,7 @@ def test_benchmark_build_params(benchmark, client, sample_params):
     """Benchmark: Construção de parâmetros de requisição."""
     def build():
         params = sample_params.copy()
-        params["tamanhoPagina"] = 500
+        params["tamanhoPagina"] = 50
         return params
 
     result = benchmark(build)
