@@ -3,7 +3,7 @@
 **Priority:** P2 (impacta conversão mas não bloqueia uso)
 **Effort:** S (2-3h)
 **Origin:** Teste de produção manual 2026-02-18
-**Status:** PENDENTE
+**Status:** CONCLUÍDO
 **Assignee:** @dev + @ux-design-expert
 **Tracks:** Frontend (3 ACs)
 
@@ -33,9 +33,9 @@ Para um trial grátis sem cartão, 4 campos (nome, email, senha, confirmar senha
 
 ### Frontend
 
-- [ ] **AC1**: Mostrar mensagem de validação inline para email inválido (ex: "Digite um email válido") quando o campo perde foco e não contém "@" + domínio. Similar à checklist visual já existente para senha.
-- [ ] **AC2**: Quando botão "Criar conta" está disabled, mostrar texto discreto abaixo: "Preencha todos os campos corretamente para continuar."
-- [ ] **AC3**: Considerar remover campo "Confirmar senha" para reduzir fricção (decisão de UX — pode manter se houver argumento forte de segurança, mas o toggle "Mostrar senha" já existe como alternativa).
+- [x] **AC1**: Mostrar mensagem de validação inline para email inválido (ex: "Digite um email válido") quando o campo perde foco e não contém "@" + domínio. Similar à checklist visual já existente para senha.
+- [x] **AC2**: Quando botão "Criar conta" está disabled, mostrar texto discreto abaixo: "Preencha todos os campos corretamente para continuar."
+- [x] **AC3**: Removido campo "Confirmar senha" — o toggle "Mostrar senha" já cobre a necessidade. Formulário reduzido de 4 para 3 campos.
 
 ---
 

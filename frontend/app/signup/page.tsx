@@ -19,10 +19,10 @@ export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -93,12 +93,16 @@ export default function SignupPage() {
     password.length >= 8 &&
     /[A-Z]/.test(password) &&
     /\d/.test(password);
-  const passwordsMatch = password === confirmPassword && passwordMeetsPolicy;
+
+  // GTM-FIX-037 AC1: Email validation
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const showEmailError = emailTouched && email.trim() !== "" && !isEmailValid;
 
   const isFormValid =
     fullName.trim() !== "" &&
     email.trim() !== "" &&
-    passwordsMatch;
+    isEmailValid &&
+    passwordMeetsPolicy;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,11 +110,6 @@ export default function SignupPage() {
 
     if (!passwordMeetsPolicy) {
       setError("A senha deve ter pelo menos 8 caracteres, 1 letra maiúscula e 1 número");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem");
       return;
     }
 
@@ -285,7 +284,7 @@ export default function SignupPage() {
               type="text"
               required
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => { setFullName(e.target.value); setFormTouched(true); }}
               className="w-full px-4 py-3 rounded-input border border-[var(--border)]
                          bg-[var(--surface-0)] text-[var(--ink)]
                          focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
@@ -304,13 +303,20 @@ export default function SignupPage() {
               type="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-input border border-[var(--border)]
+              onChange={(e) => { setEmail(e.target.value); setFormTouched(true); }}
+              onBlur={() => setEmailTouched(true)}
+              className={`w-full px-4 py-3 rounded-input border
                          bg-[var(--surface-0)] text-[var(--ink)]
                          focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                         focus:ring-[var(--brand-blue-subtle)]"
+                         focus:ring-[var(--brand-blue-subtle)]
+                         ${showEmailError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
               placeholder="seu@email.com"
             />
+            {showEmailError && (
+              <p className="mt-1 text-xs text-[var(--error)]" data-testid="email-error">
+                Digite um email válido
+              </p>
+            )}
           </div>
 
           {/* Password */}
@@ -324,7 +330,7 @@ export default function SignupPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setFormTouched(true); }}
                 className="w-full px-4 py-3 pr-12 rounded-input border border-[var(--border)]
                            bg-[var(--surface-0)] text-[var(--ink)]
                            focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
@@ -374,59 +380,6 @@ export default function SignupPage() {
             )}
           </div>
 
-          {/* Confirm Password */}
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
-              Confirmar senha
-            </label>
-            <div className="relative">
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full px-4 py-3 pr-12 rounded-input border
-                           bg-[var(--surface-0)] text-[var(--ink)]
-                           focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
-                           focus:ring-[var(--brand-blue-subtle)]
-                           ${confirmPassword && password !== confirmPassword
-                             ? 'border-[var(--error)]'
-                             : 'border-[var(--border)]'}`}
-                placeholder="Digite a senha novamente"
-                minLength={8}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--ink-muted)]
-                           hover:text-[var(--ink)] transition-colors"
-                aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {showConfirmPassword ? (
-                  <svg
-              role="img"
-              aria-label="Ícone" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg
-              role="img"
-              aria-label="Ícone" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-            {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-[var(--error)]">As senhas não coincidem</p>
-            )}
-          </div>
-
           <button
             type="submit"
             disabled={loading || !isFormValid}
@@ -436,6 +389,11 @@ export default function SignupPage() {
           >
             {loading ? "Criando conta..." : "Criar conta"}
           </button>
+          {!isFormValid && formTouched && !loading && (
+            <p className="mt-2 text-xs text-center text-[var(--ink-muted)]" data-testid="form-hint">
+              Preencha todos os campos corretamente para continuar.
+            </p>
+          )}
         </form>
 
         <p className="mt-6 text-center text-sm text-[var(--ink-secondary)]">

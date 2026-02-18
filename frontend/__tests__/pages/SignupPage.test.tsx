@@ -3,6 +3,7 @@
  *
  * Tests form submission, validation, success/error states
  * for the simplified 3-field signup form (GTM-FIX-019)
+ * Updated: GTM-FIX-037 — removed confirmPassword, added email validation + form hint
  */
 
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
@@ -57,32 +58,28 @@ jest.mock('../../app/components/InstitutionalSidebar', () => {
   };
 });
 
-// Helper to fill the simplified 3-field form
+// Helper to fill the simplified 3-field form (no confirmPassword — GTM-FIX-037 AC3)
 async function fillForm(
   options: {
     name?: string;
     email?: string;
     password?: string;
-    confirmPassword?: string;
   } = {}
 ) {
   const {
     name = 'John Doe',
     email = 'john@example.com',
     password = 'Password123',
-    confirmPassword = 'Password123',
   } = options;
 
   const nameInput = screen.getByLabelText(/Nome completo/i);
   const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
   const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
-  const confirmPasswordInput = screen.getByPlaceholderText(/Digite a senha novamente/i);
 
   await act(async () => {
     fireEvent.change(nameInput, { target: { value: name } });
     fireEvent.change(emailInput, { target: { value: email } });
     fireEvent.change(passwordInput, { target: { value: password } });
-    fireEvent.change(confirmPasswordInput, { target: { value: confirmPassword } });
   });
 }
 
@@ -104,13 +101,15 @@ describe('SignupPage Component', () => {
       expect(screen.getByText(/Experimente o SmartLic completo por 7 dias/i)).toBeInTheDocument();
     });
 
-    it('should render simplified form fields (name, email, password, confirm)', () => {
+    it('should render simplified form fields (name, email, password — no confirm)', () => {
       render(<SignupPage />);
 
       expect(screen.getByLabelText(/Nome completo/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/seu@email.com/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i)).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/Digite a senha novamente/i)).toBeInTheDocument();
+      // GTM-FIX-037 AC3: Confirm password removed
+      expect(screen.queryByPlaceholderText(/Digite a senha novamente/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Confirmar senha/i)).not.toBeInTheDocument();
     });
 
     it('should NOT render removed fields (company, sector, phone, consent)', () => {
@@ -186,15 +185,6 @@ describe('SignupPage Component', () => {
       expect(submitButton).not.toBeDisabled();
     });
 
-    it('should disable submit when passwords do not match', async () => {
-      render(<SignupPage />);
-
-      await fillForm({ password: 'Password123', confirmPassword: 'Different456' });
-
-      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
-      expect(submitButton).toBeDisabled();
-    });
-
     it('should show password policy feedback when password is weak', async () => {
       render(<SignupPage />);
 
@@ -208,19 +198,97 @@ describe('SignupPage Component', () => {
       expect(screen.getByText(/Pelo menos 1 letra maiúscula/i)).toBeInTheDocument();
       expect(screen.getByText(/Pelo menos 1 número/i)).toBeInTheDocument();
     });
+  });
 
-    it('should show mismatch error when confirm password differs', async () => {
+  describe('GTM-FIX-037 AC1: Email validation on blur', () => {
+    it('should NOT show email error before field is blurred', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
-      const confirmPasswordInput = screen.getByPlaceholderText(/Digite a senha novamente/i);
+      const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
 
       await act(async () => {
-        fireEvent.change(passwordInput, { target: { value: 'Password123' } });
-        fireEvent.change(confirmPasswordInput, { target: { value: 'Different456' } });
+        fireEvent.change(emailInput, { target: { value: 'invalido' } });
       });
 
-      expect(screen.getByText(/As senhas não coincidem/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('email-error')).not.toBeInTheDocument();
+    });
+
+    it('should show email error after blur with invalid email', async () => {
+      render(<SignupPage />);
+
+      const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
+
+      await act(async () => {
+        fireEvent.change(emailInput, { target: { value: 'invalido' } });
+        fireEvent.blur(emailInput);
+      });
+
+      expect(screen.getByTestId('email-error')).toBeInTheDocument();
+      expect(screen.getByText(/Digite um email válido/i)).toBeInTheDocument();
+    });
+
+    it('should NOT show email error with valid email after blur', async () => {
+      render(<SignupPage />);
+
+      const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
+
+      await act(async () => {
+        fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+        fireEvent.blur(emailInput);
+      });
+
+      expect(screen.queryByTestId('email-error')).not.toBeInTheDocument();
+    });
+
+    it('should NOT show email error when field is empty after blur', async () => {
+      render(<SignupPage />);
+
+      const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
+
+      await act(async () => {
+        fireEvent.blur(emailInput);
+      });
+
+      // Empty field should not show "invalid email" — only required validation applies
+      expect(screen.queryByTestId('email-error')).not.toBeInTheDocument();
+    });
+
+    it('should disable submit button when email is invalid', async () => {
+      render(<SignupPage />);
+
+      await fillForm({ email: 'not-an-email' });
+
+      const submitButton = screen.getByRole('button', { name: /Criar conta$/i });
+      expect(submitButton).toBeDisabled();
+    });
+  });
+
+  describe('GTM-FIX-037 AC2: Form hint when button disabled', () => {
+    it('should NOT show form hint before any interaction', () => {
+      render(<SignupPage />);
+
+      expect(screen.queryByTestId('form-hint')).not.toBeInTheDocument();
+    });
+
+    it('should show form hint when form is touched but incomplete', async () => {
+      render(<SignupPage />);
+
+      const nameInput = screen.getByLabelText(/Nome completo/i);
+
+      await act(async () => {
+        fireEvent.change(nameInput, { target: { value: 'John' } });
+      });
+
+      expect(screen.getByTestId('form-hint')).toBeInTheDocument();
+      expect(screen.getByText(/Preencha todos os campos corretamente para continuar/i)).toBeInTheDocument();
+    });
+
+    it('should NOT show form hint when form is completely valid', async () => {
+      render(<SignupPage />);
+
+      await fillForm();
+
+      expect(screen.queryByTestId('form-hint')).not.toBeInTheDocument();
     });
   });
 
@@ -416,9 +484,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
-      // Get first toggle button (password field, not confirm password)
-      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
-      const toggleButton = toggleButtons[0];
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
 
       expect(passwordInput).toHaveAttribute('type', 'password');
 
@@ -433,8 +499,7 @@ describe('SignupPage Component', () => {
       render(<SignupPage />);
 
       const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
-      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
-      const toggleButton = toggleButtons[0];
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
 
       // First click - show password
       await act(async () => {
@@ -443,9 +508,9 @@ describe('SignupPage Component', () => {
       expect(passwordInput).toHaveAttribute('type', 'text');
 
       // Second click - hide password
-      const hideButtons = screen.getAllByRole('button', { name: /Ocultar senha/i });
+      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
       await act(async () => {
-        fireEvent.click(hideButtons[0]);
+        fireEvent.click(hideButton);
       });
       expect(passwordInput).toHaveAttribute('type', 'password');
     });
@@ -453,16 +518,15 @@ describe('SignupPage Component', () => {
     it('should update aria-label based on visibility state', async () => {
       render(<SignupPage />);
 
-      const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
-      const toggleButton = toggleButtons[0];
+      const toggleButton = screen.getByRole('button', { name: /Mostrar senha/i });
       expect(toggleButton).toHaveAttribute('aria-label', 'Mostrar senha');
 
       await act(async () => {
         fireEvent.click(toggleButton);
       });
 
-      const hideButtons = screen.getAllByRole('button', { name: /Ocultar senha/i });
-      expect(hideButtons[0]).toHaveAttribute('aria-label', 'Ocultar senha');
+      const hideButton = screen.getByRole('button', { name: /Ocultar senha/i });
+      expect(hideButton).toHaveAttribute('aria-label', 'Ocultar senha');
     });
   });
 });
