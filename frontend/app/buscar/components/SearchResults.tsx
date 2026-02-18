@@ -181,20 +181,23 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Loading State */}
+      {/* Loading State — GTM-FIX-035 AC2: sticky progress tracker */}
       {loading && (
         <div aria-live="polite">
-          <EnhancedLoadingProgress
-            currentStep={loadingStep}
-            estimatedTime={estimatedTime}
-            stateCount={stateCount}
-            statesProcessed={statesProcessed}
-            onCancel={onCancel}
-            sseEvent={sseEvent}
-            useRealProgress={useRealProgress && sseAvailable}
-            sseDisconnected={sseDisconnected}
-            onStageChange={onStageChange}
-          />
+          <div className="sticky top-[68px] z-30 bg-[var(--canvas)] pb-2">
+            <EnhancedLoadingProgress
+              currentStep={loadingStep}
+              estimatedTime={estimatedTime}
+              stateCount={stateCount}
+              statesProcessed={statesProcessed}
+              onCancel={onCancel}
+              sseEvent={sseEvent}
+              useRealProgress={useRealProgress && sseAvailable}
+              sseDisconnected={sseDisconnected}
+              onStageChange={onStageChange}
+              ufAllComplete={ufAllComplete}
+            />
+          </div>
           <LoadingResultsSkeleton count={1} />
 
           {/* STORY-257B AC5: Partial results prompt after 15s */}

@@ -32,6 +32,8 @@ export interface EnhancedLoadingProgressProps {
   useRealProgress?: boolean;
   /** GTM-FIX-033 AC3: SSE disconnected — show "Finalizando busca..." */
   sseDisconnected?: boolean;
+  /** GTM-FIX-035 AC3: Whether all UFs have completed fetching (from useUfProgress) */
+  ufAllComplete?: boolean;
 }
 
 interface Stage {
@@ -46,13 +48,13 @@ const STAGES: Stage[] = [
     id: 1,
     label: 'Consultando fontes oficiais',
     progressTarget: 10,
-    description: 'Conectando a fontes oficiais de contratações públicas',
+    description: 'Conectando a 2 fontes oficiais de contratações públicas',
   },
   {
     id: 2,
     label: 'Buscando dados',
-    progressTarget: 40,
-    description: 'Coletando licitações publicadas nos estados selecionados',
+    progressTarget: 10,
+    description: 'Coletando licitações dos estados selecionados',
   },
   {
     id: 3,
@@ -84,17 +86,21 @@ const SSE_STAGE_MAP: Record<string, number> = {
   complete: 5,
 };
 
-/** Graduated honest overtime messages */
-function getOvertimeMessage(overBySeconds: number, stateCount: number): string {
+/** GTM-FIX-035 AC5: Graduated honest overtime messages with 2x overrun detection */
+function getOvertimeMessage(overBySeconds: number, stateCount: number, estimatedTime: number, elapsedTime: number): string {
+  // AC5: If elapsed > 2x estimate, show specific reassurance message
+  if (elapsedTime > estimatedTime * 2) {
+    return 'Esta busca está demorando mais que o normal. Pode ficar nesta página — os resultados serão exibidos automaticamente.';
+  }
   if (overBySeconds < 15) return 'Quase pronto, finalizando...';
   if (overBySeconds < 45) return 'Estamos trabalhando nisso, só mais um instante!';
   if (overBySeconds < 90) {
     // GTM-FIX-027 T4 AC22: Only mention "muitos estados" if >10 states
     return stateCount > 10
       ? 'Ainda processando. Buscas com muitos estados demoram mais.'
-      : 'A busca pode demorar em horários de pico.';
+      : 'Processando, aguarde mais um momento.';
   }
-  return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar novamente.';
+  return 'Esta busca está demorando mais que o normal. Pode ficar nesta página — os resultados serão exibidos automaticamente.';
 }
 
 export function EnhancedLoadingProgress({
@@ -107,6 +113,7 @@ export function EnhancedLoadingProgress({
   sseEvent,
   useRealProgress = false,
   sseDisconnected = false,
+  ufAllComplete = false,
 }: EnhancedLoadingProgressProps) {
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
@@ -154,17 +161,40 @@ export function EnhancedLoadingProgress({
     return () => clearInterval(interval);
   }, [estimatedTime]);
 
-  // Determine effective progress, stage, and message from SSE or simulation
-  const effectiveProgress = useRealProgress && sseEvent && sseEvent.progress >= 0
-    ? sseEvent.progress
-    : Math.max(simulatedProgress, lastSseProgressRef.current); // Don't jump backwards on fallback
+  // GTM-FIX-035 AC3: Compute UF-aware progress that syncs states processed with percentage.
+  // Fetch stage (10%-70%) is proportional to UF completion. Post-fetch stages use SSE or simulation.
+  const ufBasedProgress = (() => {
+    if (stateCount <= 0) return simulatedProgress;
+    const effectiveStatesProcessed = useRealProgress && sseEvent?.detail?.uf_index
+      ? sseEvent.detail.uf_index
+      : statesProcessed;
+    if (effectiveStatesProcessed <= 0 && !ufAllComplete) return Math.min(simulatedProgress, 10); // Cap at connecting stage
+    const ufRatio = ufAllComplete ? 1 : Math.min(effectiveStatesProcessed / stateCount, 1);
+    // Map UF ratio to 10%-70% range (fetch stage)
+    return 10 + (ufRatio * 60);
+  })();
 
-  // Determine stage from SSE or from simulated progress
+  // Determine effective progress, stage, and message from SSE or simulation
+  let effectiveProgress: number;
+  if (useRealProgress && sseEvent && sseEvent.progress >= 0) {
+    // SSE has real progress — but reconcile with UF data if in fetch stage
+    if (sseEvent.stage === 'fetching' || (!sseEvent.stage && sseEvent.progress < 70)) {
+      // Use the higher of SSE progress and UF-based progress to avoid contradictions
+      effectiveProgress = Math.max(sseEvent.progress, ufBasedProgress);
+    } else {
+      effectiveProgress = sseEvent.progress;
+    }
+  } else {
+    // No SSE — use UF-aware progress (better than pure time simulation)
+    effectiveProgress = Math.max(ufBasedProgress, lastSseProgressRef.current);
+  }
+
+  // Determine stage from SSE or from effective progress
   let effectiveStageId: number;
   if (useRealProgress && sseEvent && SSE_STAGE_MAP[sseEvent.stage]) {
     effectiveStageId = SSE_STAGE_MAP[sseEvent.stage];
   } else {
-    // Derive from simulated progress
+    // Derive from effective progress
     effectiveStageId = 1;
     for (const stage of STAGES) {
       if (effectiveProgress >= stage.progressTarget) {
@@ -186,10 +216,20 @@ export function EnhancedLoadingProgress({
 
   const activeStage = STAGES.find(s => s.id === currentStage) || STAGES[0];
 
-  // Use SSE message when available, otherwise stage description
-  const statusDescription = useRealProgress && sseEvent
-    ? sseEvent.message
-    : activeStage.description;
+  // GTM-FIX-035 AC4: Contextual status description with source count and time estimate
+  const statusDescription = (() => {
+    if (useRealProgress && sseEvent) return sseEvent.message;
+    if (currentStage === 1) {
+      return `Buscando em 2 fontes oficiais. Resultados em aproximadamente ${estimatedTime}s.`;
+    }
+    if (currentStage === 2 && stateCount > 0) {
+      const remaining = Math.max(0, estimatedTime - elapsedTime);
+      return remaining > 0
+        ? `Coletando dados de ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}. ~${remaining}s restantes.`
+        : `Coletando dados de ${stateCount} ${stateCount === 1 ? 'estado' : 'estados'}.`;
+    }
+    return activeStage.description;
+  })();
 
   // States processed: from SSE detail or from prop
   const effectiveStatesProcessed = useRealProgress && sseEvent?.detail?.uf_index
@@ -323,7 +363,7 @@ export function EnhancedLoadingProgress({
       {/* Overtime warning message */}
       {isOvertime && (
         <div className="mb-3 p-3 bg-warning-subtle border border-warning/20 rounded-lg text-sm text-warning-dark">
-          {getOvertimeMessage(overtimeSeconds, stateCount)}
+          {getOvertimeMessage(overtimeSeconds, stateCount, estimatedTime, elapsedTime)}
         </div>
       )}
 

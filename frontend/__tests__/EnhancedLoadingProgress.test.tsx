@@ -35,8 +35,8 @@ describe('EnhancedLoadingProgress Component', () => {
 
       expect(screen.getByRole('status')).toBeInTheDocument();
       // Use getAllByText and check first match (main heading) to handle duplicates
-      expect(screen.getAllByText('Conectando ao PNCP')[0]).toBeInTheDocument();
-      expect(screen.getByText(/Estabelecendo conexão com o Portal Nacional/)).toBeInTheDocument();
+      expect(screen.getAllByText('Consultando fontes oficiais')[0]).toBeInTheDocument();
+      expect(screen.getByText(/Buscando em 2 fontes oficiais/)).toBeInTheDocument();
     });
 
     it('should display state count correctly', () => {
@@ -123,50 +123,49 @@ describe('EnhancedLoadingProgress Component', () => {
   });
 
   describe('TC-LOADING-003: Stage transitions', () => {
-    it('should transition through all 5 stages', async () => {
-      render(
+    it('should transition through stages as progress increases', async () => {
+      // GTM-FIX-035: With UF-based progress, stages now depend on statesProcessed
+      // Stage 1 (0-10%): Consultando fontes oficiais
+      // Stage 2 (10-70%): Buscando dados (driven by UF completion)
+      // Stage 3 (70%+): Filtrando resultados
+      const { rerender } = render(
         <EnhancedLoadingProgress
           currentStep={1}
           estimatedTime={50}
           stateCount={3}
+          statesProcessed={0}
           onStageChange={mockOnStageChange}
         />
       );
 
-      // Stage 1: Conectando (0-10%)
-      expect(screen.getAllByText('Conectando ao PNCP')[0]).toBeInTheDocument();
+      // Stage 1: Consultando fontes oficiais (0% progress, no states processed)
+      expect(screen.getAllByText('Consultando fontes oficiais')[0]).toBeInTheDocument();
 
-      // Fast-forward to Stage 2: Buscando (10-40%)
-      act(() => {
-        jest.advanceTimersByTime(6000); // 12% of 50s
-      });
-      await waitFor(() => {
-        expect(screen.getByText('Buscando dados')).toBeInTheDocument();
-      });
+      // Rerender with 2 of 3 states processed → 10 + (2/3 * 60) = 50% → Stage 2
+      rerender(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={50}
+          stateCount={3}
+          statesProcessed={2}
+          onStageChange={mockOnStageChange}
+        />
+      );
+      // "Buscando dados" appears both in header and in stage indicator
+      expect(screen.getAllByText('Buscando dados').length).toBeGreaterThanOrEqual(1);
 
-      // Fast-forward to Stage 3: Filtrando (40-70%)
-      act(() => {
-        jest.advanceTimersByTime(15000); // 30% more
-      });
-      await waitFor(() => {
-        expect(screen.getByText('Filtrando resultados')).toBeInTheDocument();
-      });
-
-      // Fast-forward to Stage 4: Avaliando oportunidades (70-90%)
-      act(() => {
-        jest.advanceTimersByTime(10000); // 20% more
-      });
-      await waitFor(() => {
-        expect(screen.getByText('Avaliando oportunidades')).toBeInTheDocument();
-      });
-
-      // Fast-forward to Stage 5: Preparando Excel (90-100%)
-      act(() => {
-        jest.advanceTimersByTime(7000); // 14% more
-      });
-      await waitFor(() => {
-        expect(screen.getByText('Preparando Excel')).toBeInTheDocument();
-      });
+      // Rerender with all states processed + ufAllComplete → 70% → Stage 3
+      rerender(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={50}
+          stateCount={3}
+          statesProcessed={3}
+          ufAllComplete={true}
+          onStageChange={mockOnStageChange}
+        />
+      );
+      expect(screen.getAllByText('Filtrando resultados')[0]).toBeInTheDocument();
     });
 
     it('should call onStageChange callback when stage changes', async () => {
@@ -218,6 +217,7 @@ describe('EnhancedLoadingProgress Component', () => {
           currentStep={1}
           estimatedTime={30}
           stateCount={3}
+          statesProcessed={1}
         />
       );
 
@@ -227,7 +227,8 @@ describe('EnhancedLoadingProgress Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/~20s restantes/)).toBeInTheDocument();
+        // GTM-FIX-035: "~20s restantes" appears in both status description and meta area
+        expect(screen.getAllByText(/~20s restantes/).length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -381,6 +382,104 @@ describe('EnhancedLoadingProgress Component', () => {
         const percentage = parseInt(width);
         expect(percentage).toBeGreaterThan(0);
       });
+    });
+  });
+
+  describe('TC-LOADING-035: GTM-FIX-035 Progress UX improvements', () => {
+    it('AC3: should sync progress with UF completion (statesProcessed drives percentage)', () => {
+      render(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={60}
+          stateCount={5}
+          statesProcessed={3}
+        />
+      );
+
+      // With 3 of 5 states processed, UF-based progress = 10 + (3/5 * 60) = 46%
+      // The percentage shown should be >= 46%
+      const progressText = screen.getByText(/\d+%/);
+      const percentage = parseInt(progressText.textContent || '0');
+      expect(percentage).toBeGreaterThanOrEqual(46);
+    });
+
+    it('AC3: should show 70% when all UFs complete (ufAllComplete=true)', () => {
+      render(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={60}
+          stateCount={3}
+          statesProcessed={3}
+          ufAllComplete={true}
+        />
+      );
+
+      // ufAllComplete=true → ufRatio=1 → 10 + (1 * 60) = 70%
+      const progressText = screen.getByText(/\d+%/);
+      const percentage = parseInt(progressText.textContent || '0');
+      expect(percentage).toBeGreaterThanOrEqual(70);
+    });
+
+    it('AC3: should cap at connecting stage (10%) when no states processed yet', () => {
+      render(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={60}
+          stateCount={5}
+          statesProcessed={0}
+        />
+      );
+
+      const progressText = screen.getByText(/\d+%/);
+      const percentage = parseInt(progressText.textContent || '0');
+      expect(percentage).toBeLessThanOrEqual(10);
+    });
+
+    it('AC4: should show contextual message with source count and time estimate', () => {
+      render(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={45}
+          stateCount={3}
+          statesProcessed={0}
+        />
+      );
+
+      expect(screen.getByText(/Buscando em 2 fontes oficiais\. Resultados em aproximadamente 45s\./)).toBeInTheDocument();
+    });
+
+    it('AC5: should show 2x overrun reassurance message', async () => {
+      render(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={10}
+          stateCount={3}
+          statesProcessed={3}
+        />
+      );
+
+      // Fast-forward past 2x estimate (>20s)
+      act(() => {
+        jest.advanceTimersByTime(21000);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Esta busca está demorando mais que o normal/)).toBeInTheDocument();
+        expect(screen.getByText(/os resultados serão exibidos automaticamente/)).toBeInTheDocument();
+      });
+    });
+
+    it('AC2: should accept sseDisconnected prop without crashing', () => {
+      render(
+        <EnhancedLoadingProgress
+          currentStep={1}
+          estimatedTime={60}
+          stateCount={3}
+          sseDisconnected={true}
+        />
+      );
+
+      expect(screen.getByText(/Finalizando busca/)).toBeInTheDocument();
     });
   });
 

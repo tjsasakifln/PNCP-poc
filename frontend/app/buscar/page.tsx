@@ -199,12 +199,26 @@ function HomePageContent() {
     onStepChange: (stepId, stepIndex) => trackEvent('onboarding_step', { step_id: stepId, step_index: stepIndex }),
   });
 
+  // GTM-FIX-035 AC1: Ref for progress/results area (scroll target)
+  const progressAreaRef = useRef<HTMLDivElement>(null);
+
   // Ref to break circular dependency between hooks:
   // useSearchFilters needs clearResult (from useSearch), useSearch needs filters
   const clearResultRef = useRef<() => void>(() => {});
   const filters = useSearchFilters(() => clearResultRef.current());
   const search = useSearch(filters);
   clearResultRef.current = () => search.setResult(null);
+
+  // GTM-FIX-035 AC1: Auto-collapse filters + scroll to progress when search starts
+  const originalBuscar = search.buscar;
+  const buscarWithCollapse = useCallback(() => {
+    setCustomizeOpen(false);
+    originalBuscar();
+    // Smooth-scroll to progress area after a tick (let state update + render)
+    setTimeout(() => {
+      progressAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }, [originalBuscar]);
 
   // TD-006 AC9-15: Navigation guard — warn before leaving with active results
   const [hasDownloaded, setHasDownloaded] = useState(false);
@@ -260,9 +274,9 @@ function HomePageContent() {
 
   // Keyboard shortcuts
   useKeyboardShortcuts({ shortcuts: [
-    { key: 'k', ctrlKey: true, action: () => { if (filters.canSearch && !search.loading) search.buscar(); }, description: 'Search' },
+    { key: 'k', ctrlKey: true, action: () => { if (filters.canSearch && !search.loading) buscarWithCollapse(); }, description: 'Search' },
     { key: 'a', ctrlKey: true, action: filters.selecionarTodos, description: 'Select all' },
-    { key: 'Enter', ctrlKey: true, action: () => { if (filters.canSearch && !search.loading) search.buscar(); }, description: 'Search alt' },
+    { key: 'Enter', ctrlKey: true, action: () => { if (filters.canSearch && !search.loading) buscarWithCollapse(); }, description: 'Search alt' },
     { key: '/', action: () => setShowKeyboardHelp(true), description: 'Show shortcuts' },
     { key: 'Escape', action: filters.limparSelecao, description: 'Clear' },
   ] });
@@ -359,7 +373,7 @@ function HomePageContent() {
             <SearchForm
               {...filters}
               loading={search.loading}
-              buscar={search.buscar}
+              buscar={buscarWithCollapse}
               searchButtonRef={search.searchButtonRef}
               result={search.result}
               handleSaveSearch={search.handleSaveSearch}
@@ -392,6 +406,9 @@ function HomePageContent() {
                 }}
               />
             )}
+
+            {/* GTM-FIX-035 AC1: Scroll target for progress area */}
+            <div ref={progressAreaRef} />
 
             <SearchResults
               loading={search.loading}
