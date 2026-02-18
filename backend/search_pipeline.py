@@ -400,16 +400,24 @@ class SearchPipeline:
     # ------------------------------------------------------------------
     async def stage_prepare(self, ctx: SearchContext) -> None:
         """Load sector, parse custom terms, configure keywords and exclusions."""
-        # STORY-240 AC2: Override dates for "abertas" mode
+        # GTM-FIX-032 AC3: Override dates for "abertas" mode using explicit UTC
         if ctx.request.modo_busca == "abertas":
-            from datetime import date, timedelta
-            today = date.today()
+            from datetime import date, timedelta, timezone, datetime as dt
+            today = dt.now(timezone.utc).date()  # AC3.2: explicit UTC
             ctx.request.data_inicial = (today - timedelta(days=10)).isoformat()
             ctx.request.data_final = today.isoformat()
             logger.info(
                 f"modo_busca='abertas': date range overridden to "
-                f"{ctx.request.data_inicial} → {ctx.request.data_final} (10 days)"
+                f"{ctx.request.data_inicial} → {ctx.request.data_final} (10 days, UTC)"
             )
+
+        # GTM-FIX-032 AC3.1: Normalize all dates to canonical YYYY-MM-DD
+        from datetime import date as date_type
+        d_ini = date_type.fromisoformat(ctx.request.data_inicial)
+        d_fin = date_type.fromisoformat(ctx.request.data_final)
+        ctx.request.data_inicial = d_ini.isoformat()
+        ctx.request.data_final = d_fin.isoformat()
+        logger.info(f"stage_prepare: dates normalized to {ctx.request.data_inicial} → {ctx.request.data_final}")
 
         try:
             ctx.sector = get_sector(ctx.request.setor_id)

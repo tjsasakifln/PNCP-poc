@@ -234,6 +234,83 @@ STATUS_PNCP_MAP = {
 }
 
 
+def _validate_date_params(
+    data_inicial: str, data_inicial_fmt: str,
+    data_final: str, data_final_fmt: str,
+) -> None:
+    """GTM-FIX-032 AC2: Pre-flight date validation before sending to PNCP."""
+    if len(data_inicial_fmt) != 8 or not data_inicial_fmt.isdigit():
+        raise ValueError(f"Malformed data_inicial: '{data_inicial}' → '{data_inicial_fmt}'")
+    if len(data_final_fmt) != 8 or not data_final_fmt.isdigit():
+        raise ValueError(f"Malformed data_final: '{data_final}' → '{data_final_fmt}'")
+
+
+def _handle_422_response(
+    response_text: str,
+    params: dict,
+    data_inicial: str,
+    data_final: str,
+    attempt: int,
+    max_retries: int = 1,
+) -> str | dict:
+    """GTM-FIX-032 AC1+AC4+AC6: Shared 422 handling for sync and async clients.
+
+    Returns:
+        "retry" — caller should retry
+        dict — empty result (graceful skip for date-related 422s)
+        "raise" — caller should raise PNCPAPIError
+    """
+    body_preview = response_text[:500] if response_text else "(empty)"
+    uf_param = params.get("uf", "?")
+    mod_param = params.get("codigoModalidadeContratacao", "?")
+    pagina = params.get("pagina", 1)
+
+    if attempt < max_retries:
+        # AC1: Diagnostic logging with full params and raw dates
+        logger.warning(
+            f"PNCP 422 for UF={uf_param} mod={mod_param} "
+            f"(attempt {attempt + 1}/{max_retries + 1}). Body: {body_preview}. "
+            f"Params: {params}. Raw dates: {data_inicial} → {data_final}. "
+            f"Retrying once..."
+        )
+        return "retry"
+
+    # Retry exhausted
+    logger.warning(
+        f"PNCP 422 persisted for UF={uf_param} mod={mod_param} "
+        f"after {max_retries} retry. Body: {body_preview}. "
+        f"Params: {params}. Raw dates: {data_inicial} → {data_final}"
+    )
+
+    # AC4.1: NO circuit breaker for 422 (transient validation, not API down)
+    # AC4.2: Categorize and handle gracefully
+    _422_type = "unknown"
+    if "Data Inicial" in body_preview:
+        _422_type = "date_swap"
+    elif "365 dias" in body_preview:
+        _422_type = "date_range"
+
+    # AC4.4: Sentry-style metric tag
+    logger.info(
+        f"pncp_422_count uf={uf_param} modality={mod_param} type={_422_type}"
+    )
+
+    if _422_type != "unknown":
+        # AC4.3: Return empty instead of crashing
+        logger.info(
+            f"pncp_422_date_skip uf={uf_param} modality={mod_param} type={_422_type}"
+        )
+        return {
+            "data": [],
+            "totalRegistros": 0,
+            "totalPaginas": 0,
+            "paginaAtual": pagina,
+            "temProximaPagina": False,
+        }
+
+    return "raise"
+
+
 def calculate_delay(attempt: int, config: RetryConfig) -> float:
     """
     Calculate exponential backoff delay with optional jitter.
@@ -363,9 +440,13 @@ class PNCPClient:
         """
         self._rate_limit()
 
-        # Convert dates from YYYY-MM-DD to yyyyMMdd (PNCP API format)
+        # GTM-FIX-032 AC2: Pre-flight date validation + formatting
         data_inicial_fmt = data_inicial.replace("-", "")
         data_final_fmt = data_final.replace("-", "")
+        _validate_date_params(data_inicial, data_inicial_fmt, data_final, data_final_fmt)
+        if data_inicial_fmt > data_final_fmt:
+            logger.warning(f"Dates swapped: {data_inicial_fmt} > {data_final_fmt}. Auto-swapping.")
+            data_inicial_fmt, data_final_fmt = data_final_fmt, data_inicial_fmt
 
         params = {
             "dataInicial": data_inicial_fmt,
@@ -462,6 +543,22 @@ class PNCPClient:
                         "paginaAtual": pagina,
                         "temProximaPagina": False,
                     }
+
+                # GTM-FIX-032 AC6: Sync client 422 handling (parity with async)
+                if response.status_code == 422:
+                    result = _handle_422_response(
+                        response.text, params, data_inicial, data_final, attempt, max_retries=1
+                    )
+                    if result == "retry":
+                        time.sleep(self.config.base_delay)
+                        continue
+                    elif isinstance(result, dict):
+                        return result
+                    # result == "raise" for unknown 422
+                    raise PNCPAPIError(
+                        f"PNCP 422 after 1 retry for UF={params.get('uf', '?')} "
+                        f"mod={params.get('codigoModalidadeContratacao', '?')}"
+                    )
 
                 # Non-retryable errors - fail immediately
                 if response.status_code not in self.config.retryable_status_codes:
@@ -941,9 +1038,13 @@ class AsyncPNCPClient:
 
         await self._rate_limit()
 
-        # Convert dates from YYYY-MM-DD to yyyyMMdd (PNCP API format)
+        # GTM-FIX-032 AC2: Pre-flight date validation + formatting
         data_inicial_fmt = data_inicial.replace("-", "")
         data_final_fmt = data_final.replace("-", "")
+        _validate_date_params(data_inicial, data_inicial_fmt, data_final, data_final_fmt)
+        if data_inicial_fmt > data_final_fmt:
+            logger.warning(f"Dates swapped: {data_inicial_fmt} > {data_final_fmt}. Auto-swapping.")
+            data_inicial_fmt, data_final_fmt = data_final_fmt, data_inicial_fmt
 
         params = {
             "dataInicial": data_inicial_fmt,
@@ -1046,33 +1147,22 @@ class AsyncPNCPClient:
                         "temProximaPagina": False,
                     }
 
-                # GTM-FIX-029 AC12-AC15: Special 422 handling — max 1 retry, log body, circuit breaker
+                # GTM-FIX-032 AC1+AC4: Improved 422 handling — diagnostic logging, graceful recovery, NO circuit breaker
                 if response.status_code == 422:
-                    body_preview = response.text[:500] if response.text else "(empty)"
-                    uf_param = params.get("uf", "?")
-                    mod_param = params.get("codigoModalidadeContratacao", "?")
-                    if attempt < 1:  # AC12: max 1 retry for 422 (not full max_retries)
-                        logger.warning(
-                            f"PNCP 422 for UF={uf_param} mod={mod_param} "
-                            f"(attempt {attempt + 1}/2). Body: {body_preview}. Retrying once..."
-                        )
+                    result = _handle_422_response(
+                        response.text, params, data_inicial, data_final, attempt, max_retries=1
+                    )
+                    if result == "retry":
                         await asyncio.sleep(self.config.base_delay)
                         continue
-                    else:
-                        # AC13: Log complete response after retry exhausted
-                        logger.warning(
-                            f"PNCP 422 persisted for UF={uf_param} mod={mod_param} "
-                            f"after 1 retry. Body: {body_preview}"
-                        )
-                        # AC14: Count as circuit breaker failure
-                        await _circuit_breaker.record_failure()
-                        # AC15: Metric tag for diagnostics
-                        logger.info(
-                            f"pncp_422_count uf={uf_param} modality={mod_param}"
-                        )
-                        raise PNCPAPIError(
-                            f"PNCP 422 after 1 retry for UF={uf_param} mod={mod_param}"
-                        )
+                    elif isinstance(result, dict):
+                        # AC4.3: Return empty instead of crashing for date-related 422s
+                        return result
+                    # Unknown 422 — still raise (but NO circuit breaker — AC4.1)
+                    raise PNCPAPIError(
+                        f"PNCP 422 after 1 retry for UF={params.get('uf', '?')} "
+                        f"mod={params.get('codigoModalidadeContratacao', '?')}"
+                    )
 
                 # Non-retryable error
                 if response.status_code not in self.config.retryable_status_codes:

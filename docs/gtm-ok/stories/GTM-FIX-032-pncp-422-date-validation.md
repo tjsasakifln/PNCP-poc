@@ -3,7 +3,7 @@
 **Priority:** P0 (causes full search failures for affected UFs)
 **Effort:** M (4-6h)
 **Origin:** Production logs 2026-02-18, originally GTM-FIX-030 T4 (deferred)
-**Status:** OPEN
+**Status:** COMPLETED
 **Assignee:** @dev
 **Tracks:** Backend (5 ACs), Frontend (1 AC), Tests (1 AC)
 
@@ -127,9 +127,9 @@ Frontend (useSearchFilters.ts L206-214)
 
 **Goal:** Confirm whether our dates are correct when PNCP returns 422.
 
-- [ ] **AC1.1:** In `_fetch_page_async()` L1049-1075: Log the full `params` dict (including formatted `dataInicial`/`dataFinal`, `uf`, `codigoModalidadeContratacao`, `pagina`) on every 422
-- [ ] **AC1.2:** In `_fetch_page_async()`: Log the raw (pre-format) `data_inicial` and `data_final` strings alongside the formatted versions
-- [ ] **AC1.3:** In `fetch_page()` L466-477 (sync client): Add equivalent 422 diagnostic logging with body preview
+- [x] **AC1.1:** In `_fetch_page_async()` L1049-1075: Log the full `params` dict (including formatted `dataInicial`/`dataFinal`, `uf`, `codigoModalidadeContratacao`, `pagina`) on every 422
+- [x] **AC1.2:** In `_fetch_page_async()`: Log the raw (pre-format) `data_inicial` and `data_final` strings alongside the formatted versions
+- [x] **AC1.3:** In `fetch_page()` L466-477 (sync client): Add equivalent 422 diagnostic logging with body preview
 
 **Implementation:**
 
@@ -151,12 +151,12 @@ if response.status_code == 422:
 
 **Goal:** Guarantee dates are valid BEFORE sending to PNCP. Defense in depth.
 
-- [ ] **AC2.1:** In both `_fetch_page_async()` and `fetch_page()`, after L945-946 / L367-368 (date formatting), add assertions:
+- [x] **AC2.1:** In both `_fetch_page_async()` and `fetch_page()`, after L945-946 / L367-368 (date formatting), add assertions:
   1. `len(data_inicial_fmt) == 8` and `len(data_final_fmt) == 8`
   2. `data_inicial_fmt.isdigit()` and `data_final_fmt.isdigit()`
   3. `data_inicial_fmt <= data_final_fmt` (lexicographic comparison works for yyyyMMdd)
-- [ ] **AC2.2:** If assertion (3) fails (dates swapped), **swap them** and log a warning (auto-recover)
-- [ ] **AC2.3:** If assertions (1) or (2) fail (malformed), raise `ValueError` with descriptive message (don't send garbage to PNCP)
+- [x] **AC2.2:** If assertion (3) fails (dates swapped), **swap them** and log a warning (auto-recover)
+- [x] **AC2.3:** If assertions (1) or (2) fail (malformed), raise `ValueError` with descriptive message (don't send garbage to PNCP)
 
 **Implementation:**
 
@@ -179,9 +179,9 @@ if data_inicial_fmt > data_final_fmt:
 
 **Goal:** Guarantee dates entering the pipeline are canonical `YYYY-MM-DD`.
 
-- [ ] **AC3.1:** In `search_pipeline.py` `stage_prepare()`, after receiving `ctx.request.data_inicial` / `ctx.request.data_final`: re-parse with `date.fromisoformat()` and re-serialize with `.isoformat()` to guarantee zero-padded format
-- [ ] **AC3.2:** In abertas mode (L406): use `datetime.now(timezone.utc).date()` instead of `date.today()` (explicit UTC, no server-timezone dependency)
-- [ ] **AC3.3:** Log the normalized dates at INFO level in `stage_prepare()` for traceability
+- [x] **AC3.1:** In `search_pipeline.py` `stage_prepare()`, after receiving `ctx.request.data_inicial` / `ctx.request.data_final`: re-parse with `date.fromisoformat()` and re-serialize with `.isoformat()` to guarantee zero-padded format
+- [x] **AC3.2:** In abertas mode (L406): use `datetime.now(timezone.utc).date()` instead of `date.today()` (explicit UTC, no server-timezone dependency)
+- [x] **AC3.3:** Log the normalized dates at INFO level in `stage_prepare()` for traceability
 
 **Implementation:**
 
@@ -207,13 +207,13 @@ logger.info(f"stage_prepare: dates normalized to {ctx.request.data_inicial} → 
 
 **Goal:** Don't let PNCP transient 422s cascade to full search failure.
 
-- [ ] **AC4.1:** 422 should **NOT** trigger circuit breaker. Remove `_circuit_breaker.record_failure()` from the 422 handler (L1068). Rationale: 422 is a request-level validation issue (possibly transient on PNCP side), not an indicator that the PNCP API is down. Circuit breaker should only trip on 5xx/timeout patterns.
-- [ ] **AC4.2:** After 422 retry exhausted: parse the error message to categorize:
+- [x] **AC4.1:** 422 should **NOT** trigger circuit breaker. Remove `_circuit_breaker.record_failure()` from the 422 handler (L1068). Rationale: 422 is a request-level validation issue (possibly transient on PNCP side), not an indicator that the PNCP API is down. Circuit breaker should only trip on 5xx/timeout patterns.
+- [x] **AC4.2:** After 422 retry exhausted: parse the error message to categorize:
   - `"Data Inicial"` → log + skip modality (return empty result, don't raise)
   - `"maior que 365 dias"` → log + skip modality (return empty result, don't raise)
   - Unknown 422 message → raise `PNCPAPIError` (existing behavior)
-- [ ] **AC4.3:** When skipping a modality due to 422, return the standard empty response `{"data": [], "totalRegistros": 0, ...}` instead of raising an exception
-- [ ] **AC4.4:** Add Sentry tag `pncp_422_type: date_swap | date_range | unknown` for monitoring
+- [x] **AC4.3:** When skipping a modality due to 422, return the standard empty response `{"data": [], "totalRegistros": 0, ...}` instead of raising an exception
+- [x] **AC4.4:** Add Sentry tag `pncp_422_type: date_swap | date_range | unknown` for monitoring
 
 **Implementation:**
 
@@ -249,7 +249,7 @@ else:
 
 **Goal:** Eliminate the fragile double-conversion date computation pattern.
 
-- [ ] **AC5.1:** In `useSearchFilters.ts` L206-214 and L217-226: Replace the `new Date(new Date().toLocaleString(...))` pattern with a robust approach:
+- [x] **AC5.1:** In `useSearchFilters.ts` L206-214 and L217-226: Replace the `new Date(new Date().toLocaleString(...))` pattern with a robust approach:
 
 **Current (fragile):**
 ```typescript
@@ -282,29 +282,29 @@ const dataFinal = getBrtDate();                // "2026-02-18"
 const dataInicial = addDays(dataFinal, -10);   // "2026-02-08"
 ```
 
-- [ ] **AC5.2:** Extract these helpers to a shared `utils/dates.ts` file (used in 2 places in `useSearchFilters.ts`)
+- [x] **AC5.2:** Extract these helpers to a shared `utils/dates.ts` file (used in 2 places in `useSearchFilters.ts`)
 
 ### AC6 (P2): Sync Client 422 Parity
 
 **Goal:** Give `fetch_page()` (sync) the same 422 handling as the async client.
 
-- [ ] **AC6.1:** In `fetch_page()` L466-495: Add explicit 422 handling matching the async client (1 retry max, body logging, graceful skip for date errors, no circuit breaker)
-- [ ] **AC6.2:** Extract shared 422 handling logic into a helper function `_handle_422_response(body_preview, uf, mod, attempt)` to avoid duplication
+- [x] **AC6.1:** In `fetch_page()` L466-495: Add explicit 422 handling matching the async client (1 retry max, body logging, graceful skip for date errors, no circuit breaker)
+- [x] **AC6.2:** Extract shared 422 handling logic into a helper function `_handle_422_response(body_preview, uf, mod, attempt)` to avoid duplication
 
 ### AC7 (P0): Tests
 
-- [ ] **AC7.1:** Unit test: `_fetch_page_async()` with valid dates → params contain correct `dataInicial`/`dataFinal` format (8 digits)
-- [ ] **AC7.2:** Unit test: `_fetch_page_async()` with swapped dates → auto-swaps and logs warning
-- [ ] **AC7.3:** Unit test: `_fetch_page_async()` with malformed date (e.g., `"2026-2-8"`) → `ValueError` raised before API call
-- [ ] **AC7.4:** Unit test: 422 with "Data Inicial" message → returns empty result (no exception)
-- [ ] **AC7.5:** Unit test: 422 with "365 dias" message → returns empty result (no exception)
-- [ ] **AC7.6:** Unit test: 422 with unknown message → raises `PNCPAPIError`
-- [ ] **AC7.7:** Unit test: 422 does NOT trigger circuit breaker
-- [ ] **AC7.8:** Unit test: `stage_prepare()` abertas mode → uses UTC date (mock `datetime.now(timezone.utc)`)
-- [ ] **AC7.9:** Unit test: `stage_prepare()` normalizes dates to zero-padded YYYY-MM-DD
-- [ ] **AC7.10:** Frontend unit test: `getBrtDate()` returns YYYY-MM-DD format
-- [ ] **AC7.11:** Frontend unit test: `addDays()` handles month/year boundaries correctly
-- [ ] **AC7.12:** Integration test: full search with 422-returning modality → partial results (not full failure)
+- [x] **AC7.1:** Unit test: `_fetch_page_async()` with valid dates → params contain correct `dataInicial`/`dataFinal` format (8 digits)
+- [x] **AC7.2:** Unit test: `_fetch_page_async()` with swapped dates → auto-swaps and logs warning
+- [x] **AC7.3:** Unit test: `_fetch_page_async()` with malformed date (e.g., `"2026-2-8"`) → `ValueError` raised before API call
+- [x] **AC7.4:** Unit test: 422 with "Data Inicial" message → returns empty result (no exception)
+- [x] **AC7.5:** Unit test: 422 with "365 dias" message → returns empty result (no exception)
+- [x] **AC7.6:** Unit test: 422 with unknown message → raises `PNCPAPIError`
+- [x] **AC7.7:** Unit test: 422 does NOT trigger circuit breaker
+- [x] **AC7.8:** Unit test: `stage_prepare()` abertas mode → uses UTC date (mock `datetime.now(timezone.utc)`)
+- [x] **AC7.9:** Unit test: `stage_prepare()` normalizes dates to zero-padded YYYY-MM-DD
+- [x] **AC7.10:** Frontend unit test: `getBrtDate()` returns YYYY-MM-DD format
+- [x] **AC7.11:** Frontend unit test: `addDays()` handles month/year boundaries correctly
+- [x] **AC7.12:** Integration test: full search with 422-returning modality → partial results (not full failure)
 
 ---
 

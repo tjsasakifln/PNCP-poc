@@ -11,6 +11,7 @@ import type { OrdenacaoOption } from "../../components/OrdenacaoSelect";
 import { UFS } from "../../../lib/constants/uf-names";
 import { STOPWORDS_PT, stripAccents, isStopword } from "../../../lib/constants/stopwords";
 import { useAuth } from "../../components/AuthProvider";
+import { getBrtDate, addDays } from "../utils/dates";
 
 export interface TermValidation {
   valid: string[];
@@ -203,25 +204,16 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   const [ufsSelecionadas, setUfsSelecionadas] = useState<Set<string>>(
     new Set(UFS as readonly string[])
   );
-  const [dataInicial, setDataInicial] = useState(() => {
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    now.setDate(now.getDate() - 10);
-    return now.toISOString().split("T")[0];
-  });
-  const [dataFinal, setDataFinal] = useState(() => {
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    return now.toISOString().split("T")[0];
-  });
+  // GTM-FIX-032 AC5: Robust timezone-safe date initialization
+  const [dataInicial, setDataInicial] = useState(() => addDays(getBrtDate(), -10));
+  const [dataFinal, setDataFinal] = useState(() => getBrtDate());
 
   // STORY-240 AC7: Override dates when modo_busca changes
   useEffect(() => {
     if (modoBusca === "abertas") {
-      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-      const dataFim = now.toISOString().split("T")[0];
-      now.setDate(now.getDate() - 10);
-      const dataIni = now.toISOString().split("T")[0];
-      setDataInicial(dataIni);
-      setDataFinal(dataFim);
+      const today = getBrtDate();
+      setDataFinal(today);
+      setDataInicial(addDays(today, -10));
     }
   }, [modoBusca]);
 
