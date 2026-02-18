@@ -120,6 +120,26 @@ class ProgressTracker:
             **detail,
         )
 
+    async def emit_batch_progress(
+        self, batch_num: int, total_batches: int, ufs_in_batch: list[str]
+    ) -> None:
+        """GTM-FIX-031: Emit batch progress event for phased UF fetching.
+
+        Args:
+            batch_num: Current batch number (1-indexed)
+            total_batches: Total number of batches
+            ufs_in_batch: UF codes in this batch
+        """
+        batch_progress = 10 + int((batch_num / max(total_batches, 1)) * 45)
+        await self.emit(
+            stage="batch_progress",
+            progress=batch_progress,
+            message=f"Fase {batch_num} de {total_batches}",
+            batch_num=batch_num,
+            total_batches=total_batches,
+            ufs_in_batch=ufs_in_batch,
+        )
+
     async def emit_complete(self) -> None:
         """Signal search completion."""
         self._is_complete = True

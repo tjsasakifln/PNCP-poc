@@ -69,6 +69,10 @@ PNCP_TIMEOUT_PER_UF_DEGRADED: float = float(
     os.environ.get("PNCP_TIMEOUT_PER_UF_DEGRADED", "120")
 )
 
+# GTM-FIX-031: Phased UF batching — reduces PNCP API pressure
+PNCP_BATCH_SIZE: int = int(os.environ.get("PNCP_BATCH_SIZE", "5"))
+PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "2.0"))
+
 # UFs ordered by population for degraded priority (STORY-257A AC1)
 UFS_BY_POPULATION = ["SP", "RJ", "MG", "BA", "PR", "RS", "PE", "CE", "SC", "GO",
                       "PA", "MA", "AM", "ES", "PB", "RN", "MT", "AL", "PI", "DF",
@@ -1446,36 +1450,58 @@ class AsyncPNCPClient:
                 await _safe_callback(on_uf_complete, uf, len(items))
             return items, was_truncated
 
-        tasks = [_fetch_with_callback(uf) for uf in ufs_ordered]
-
-        # Execute all tasks concurrently (semaphore limits actual concurrency)
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # Flatten results and handle errors
+        # GTM-FIX-031: Phased UF batching — execute in batches of PNCP_BATCH_SIZE
+        # with PNCP_BATCH_DELAY_S between batches to reduce API pressure
+        batch_size = PNCP_BATCH_SIZE
+        batch_delay = PNCP_BATCH_DELAY_S
         all_items: List[Dict[str, Any]] = []
         errors = 0
         succeeded_ufs = []
         failed_ufs = []
         truncated_ufs = []  # GTM-FIX-004
+        total_batches = (len(ufs_ordered) + batch_size - 1) // batch_size
 
-        for uf, result in zip(ufs_ordered, results):
-            if isinstance(result, Exception):
-                logger.error(f"Error fetching UF={uf}: {result}")
-                errors += 1
-                failed_ufs.append(uf)
-            elif isinstance(result, tuple):
-                items, was_truncated = result
-                if was_truncated:
-                    truncated_ufs.append(uf)
-                if len(items) == 0:
-                    succeeded_ufs.append(uf)  # No data ≠ failure
+        for batch_idx in range(0, len(ufs_ordered), batch_size):
+            batch = ufs_ordered[batch_idx:batch_idx + batch_size]
+            batch_num = batch_idx // batch_size + 1
+
+            logger.info(
+                f"Batch {batch_num}/{total_batches}: fetching {len(batch)} UFs: {batch}"
+            )
+
+            # Emit batch progress via SSE
+            await _safe_callback(
+                on_uf_status, batch[0], "batch_info",
+                batch_num=batch_num, total_batches=total_batches,
+                ufs_in_batch=batch,
+            )
+
+            batch_tasks = [_fetch_with_callback(uf) for uf in batch]
+            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+
+            for uf, result in zip(batch, batch_results):
+                if isinstance(result, Exception):
+                    logger.error(f"Error fetching UF={uf}: {result}")
+                    errors += 1
+                    failed_ufs.append(uf)
+                elif isinstance(result, tuple):
+                    items, was_truncated = result
+                    if was_truncated:
+                        truncated_ufs.append(uf)
+                    if len(items) == 0:
+                        succeeded_ufs.append(uf)  # No data ≠ failure
+                    else:
+                        all_items.extend(items)
+                        succeeded_ufs.append(uf)
                 else:
-                    all_items.extend(items)
+                    # Backward compat: plain list (shouldn't happen with new code)
+                    all_items.extend(result)
                     succeeded_ufs.append(uf)
-            else:
-                # Backward compat: plain list (shouldn't happen with new code)
-                all_items.extend(result)
-                succeeded_ufs.append(uf)
+
+            # Inter-batch delay (skip after last batch)
+            if batch_idx + batch_size < len(ufs_ordered):
+                logger.debug(f"Batch {batch_num} complete, waiting {batch_delay}s before next batch")
+                await asyncio.sleep(batch_delay)
 
         # STORY-257A AC7: Auto-retry failed UFs (1 round, 5s delay)
         # GTM-FIX-029: Retry timeout matches degraded per-UF timeout (120s)

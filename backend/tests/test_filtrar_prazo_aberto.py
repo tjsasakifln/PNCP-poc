@@ -180,6 +180,142 @@ class TestFiltrarPorPrazoAberto:
         assert rejeitadas == 0
 
 
+class TestDatetimeNaiveAwareFix:
+    """GTM-FIX-031: Tests for naive/aware datetime comparison crash fix."""
+
+    def test_naive_datetime_string_no_crash(self):
+        """Adapter-produced naive datetime (no Z, no offset) should not crash."""
+        # Simulate adapter output: "2026-02-20T18:00:00" (no timezone info)
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        naive_str = tomorrow.strftime("%Y-%m-%dT%H:%M:%S")  # No Z suffix
+
+        licitacoes = [
+            {
+                "codigoCompra": "NAIVE001",
+                "objetoCompra": "Test naive datetime",
+                "dataEncerramentoProposta": naive_str,
+                "valorTotalEstimado": 100000,
+            }
+        ]
+
+        # This would crash before fix: can't compare offset-naive and offset-aware datetimes
+        aprovadas, rejeitadas = filtrar_por_prazo_aberto(licitacoes)
+
+        assert len(aprovadas) == 1, "Future naive datetime should be accepted"
+        assert rejeitadas == 0
+
+    def test_aware_datetime_string_no_crash(self):
+        """UTC-aware datetime (with Z suffix) should not crash."""
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        aware_str = tomorrow.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        licitacoes = [
+            {
+                "codigoCompra": "AWARE001",
+                "objetoCompra": "Test aware datetime",
+                "dataEncerramentoProposta": aware_str,
+                "valorTotalEstimado": 100000,
+            }
+        ]
+
+        aprovadas, rejeitadas = filtrar_por_prazo_aberto(licitacoes)
+
+        assert len(aprovadas) == 1, "Future aware datetime should be accepted"
+        assert rejeitadas == 0
+
+    def test_naive_past_datetime_rejected(self):
+        """Past naive datetime should be rejected, not crash."""
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        naive_str = yesterday.strftime("%Y-%m-%dT%H:%M:%S")  # No Z suffix
+
+        licitacoes = [
+            {
+                "codigoCompra": "NAIVE002",
+                "objetoCompra": "Test past naive datetime",
+                "dataEncerramentoProposta": naive_str,
+                "valorTotalEstimado": 100000,
+            }
+        ]
+
+        aprovadas, rejeitadas = filtrar_por_prazo_aberto(licitacoes)
+
+        assert len(aprovadas) == 0, "Past naive datetime should be rejected"
+        assert rejeitadas == 1
+
+    def test_offset_datetime_string_no_crash(self):
+        """Datetime with +00:00 offset should not crash."""
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        offset_str = tomorrow.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+        licitacoes = [
+            {
+                "codigoCompra": "OFFSET001",
+                "objetoCompra": "Test offset datetime",
+                "dataEncerramentoProposta": offset_str,
+                "valorTotalEstimado": 100000,
+            }
+        ]
+
+        aprovadas, rejeitadas = filtrar_por_prazo_aberto(licitacoes)
+
+        assert len(aprovadas) == 1, "Future offset datetime should be accepted"
+        assert rejeitadas == 0
+
+    def test_safety_net_naive_datetime_no_crash(self):
+        """Safety net in aplicar_todos_filtros with naive dates should not crash."""
+        # Simulate adapter-produced naive date strings
+        tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
+        naive_enc = tomorrow.strftime("%Y-%m-%dT%H:%M:%S")  # No Z
+
+        licitacoes = [
+            {
+                "uf": "SP",
+                "codigoCompra": "SN001",
+                "objetoCompra": "Uniformes - naive datetime test",
+                "dataEncerramentoProposta": naive_enc,
+                "valorTotalEstimado": 100000,
+                "situacaoCompraNome": "Aberta",
+            }
+        ]
+
+        aprovadas, stats = aplicar_todos_filtros(
+            licitacoes,
+            ufs_selecionadas={"SP"},
+            status="recebendo_proposta",
+            modo_busca="abertas",
+        )
+
+        # Should not crash and should accept the future bid
+        assert len(aprovadas) == 1
+
+    def test_safety_net_heuristic_naive_abertura(self):
+        """Safety net heuristic with naive dataAberturaProposta should not crash."""
+        # No encerramento, recent abertura (naive)
+        recent = datetime.now(timezone.utc) - timedelta(days=3)
+        naive_ab = recent.strftime("%Y-%m-%dT%H:%M:%S")
+
+        licitacoes = [
+            {
+                "uf": "SP",
+                "codigoCompra": "SN002",
+                "objetoCompra": "Uniformes - naive abertura",
+                "dataAberturaProposta": naive_ab,
+                "valorTotalEstimado": 100000,
+                "situacaoCompraNome": "Aberta",
+            }
+        ]
+
+        aprovadas, stats = aplicar_todos_filtros(
+            licitacoes,
+            ufs_selecionadas={"SP"},
+            status="recebendo_proposta",
+            modo_busca="abertas",
+        )
+
+        # Recent opening, no deadline → should be kept
+        assert len(aprovadas) == 1
+
+
 class TestModoFiscaIntegration:
     """Test suite for modo_busca integration in aplicar_todos_filtros()."""
 

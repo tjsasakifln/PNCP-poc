@@ -22,6 +22,13 @@ export interface UfStatusEvent {
   attempt?: number;
 }
 
+/** GTM-FIX-031: Batch progress info for phased UF fetching */
+export interface BatchProgress {
+  batchNum: number;
+  totalBatches: number;
+  ufsInBatch: string[];
+}
+
 interface UseUfProgressOptions {
   searchId: string | null;
   enabled: boolean;
@@ -33,6 +40,7 @@ interface UseUfProgressReturn {
   ufStatuses: Map<string, UfStatus>;
   totalFound: number;
   allComplete: boolean;
+  batchProgress: BatchProgress | null;
 }
 
 export function useUfProgress({
@@ -42,6 +50,7 @@ export function useUfProgress({
   selectedUfs,
 }: UseUfProgressOptions): UseUfProgressReturn {
   const [ufStatuses, setUfStatuses] = useState<Map<string, UfStatus>>(new Map());
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const selectedUfsRef = useRef(selectedUfs);
 
@@ -57,6 +66,7 @@ export function useUfProgress({
   useEffect(() => {
     if (!enabled || !searchId) {
       setUfStatuses(new Map());
+      setBatchProgress(null);
       return;
     }
 
@@ -65,6 +75,7 @@ export function useUfProgress({
       initialStatuses.set(uf, { status: 'pending' });
     });
     setUfStatuses(initialStatuses);
+    setBatchProgress(null);
   }, [searchId, enabled, selectedUfsKey]);
 
   const cleanup = useCallback(() => {
@@ -108,6 +119,20 @@ export function useUfProgress({
       }
     });
 
+    // GTM-FIX-031: Listen for batch_progress events
+    eventSource.addEventListener('batch_progress', (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        setBatchProgress({
+          batchNum: data.batch_num,
+          totalBatches: data.total_batches,
+          ufsInBatch: data.ufs_in_batch || [],
+        });
+      } catch (err) {
+        console.warn('Failed to parse batch_progress event:', err);
+      }
+    });
+
     eventSource.onerror = () => {
       console.warn('SSE connection error in useUfProgress');
       cleanup();
@@ -132,5 +157,6 @@ export function useUfProgress({
     ufStatuses,
     totalFound,
     allComplete,
+    batchProgress,
   };
 }

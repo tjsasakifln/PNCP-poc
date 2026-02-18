@@ -771,16 +771,24 @@ class ComprasGovAdapter(SourceAdapter):
             raise SourceParseError(self.code, "lei_14133_record", str(e)) from e
 
     def _parse_datetime(self, value: Any) -> Optional[datetime]:
-        """Parse datetime from various formats."""
+        """Parse datetime from various formats.
+
+        GTM-FIX-031: Always returns UTC-aware datetimes to prevent
+        naive/aware comparison crashes in filter.py.
+        """
+        from datetime import timezone as _tz
+
         if not value:
             return None
 
         if isinstance(value, datetime):
+            if value.tzinfo is None:
+                return value.replace(tzinfo=_tz.utc)
             return value
 
         if isinstance(value, (int, float)):
             try:
-                return datetime.fromtimestamp(value / 1000)
+                return datetime.fromtimestamp(value / 1000, tz=_tz.utc)
             except (ValueError, OSError):
                 return None
 
@@ -798,7 +806,8 @@ class ComprasGovAdapter(SourceAdapter):
             value = value.replace("+00:00", "Z").replace("+0000", "Z")
             for fmt in formats:
                 try:
-                    return datetime.strptime(value.rstrip("Z"), fmt.rstrip("Z"))
+                    dt = datetime.strptime(value.rstrip("Z"), fmt.rstrip("Z"))
+                    return dt.replace(tzinfo=_tz.utc)
                 except ValueError:
                     continue
             logger.debug(f"[COMPRAS_GOV] Failed to parse datetime: {value}")

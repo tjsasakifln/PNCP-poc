@@ -89,7 +89,7 @@ function OnboardingEmptyState({ onAdjustFilters }: { onAdjustFilters: () => void
         Nenhuma oportunidade encontrada para seu perfil
       </h3>
       <p className="text-sm text-[var(--ink-secondary)] mb-4 max-w-md mx-auto">
-        Não encontramos oportunidades exatas nos últimos 15 dias. Isso é normal para perfis muito específicos.
+        Não encontramos oportunidades exatas nos últimos 10 dias. Isso é normal para perfis muito específicos.
       </p>
       <div className="space-y-2 text-sm text-[var(--ink-secondary)] mb-4">
         <p>Sugestões para ampliar resultados:</p>

@@ -5,7 +5,7 @@ import random
 import re
 import unicodedata
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Set, Tuple, List, Dict, Optional
 
 # Configure logging
@@ -1700,7 +1700,6 @@ def filtrar_por_prazo_aberto(
 
     aprovadas: List[dict] = []
     rejeitadas = 0
-    agora = datetime.now(timezone.utc)
 
     for lic in licitacoes:
         data_fim_str = lic.get("dataEncerramentoProposta")
@@ -1713,6 +1712,10 @@ def filtrar_por_prazo_aberto(
             data_fim = datetime.fromisoformat(
                 data_fim_str.replace("Z", "+00:00")
             )
+            # GTM-FIX-031: Ensure both datetimes are tz-aware to avoid crash
+            if data_fim.tzinfo is None:
+                data_fim = data_fim.replace(tzinfo=timezone.utc)
+            agora = datetime.now(timezone.utc)
             if data_fim <= agora:
                 rejeitadas += 1
                 logger.debug(
@@ -2538,7 +2541,7 @@ def aplicar_todos_filtros(
     # - No dates at all → REJECT (cannot prove it's open)
     if status and status.lower() == "recebendo_proposta":
         aprovadas: List[dict] = []
-        agora = datetime.now()
+        agora = datetime.now(timezone.utc)
 
         for lic in resultado_keyword:
             data_enc_str = lic.get("dataEncerramentoProposta")
@@ -2549,8 +2552,10 @@ def aplicar_todos_filtros(
                     data_enc = datetime.fromisoformat(
                         data_enc_str.replace("Z", "+00:00")
                     )
-                    agora_tz = datetime.now(data_enc.tzinfo) if data_enc.tzinfo else agora
-                    if data_enc < agora_tz:
+                    # GTM-FIX-031: Ensure both datetimes are tz-aware
+                    if data_enc.tzinfo is None:
+                        data_enc = data_enc.replace(tzinfo=timezone.utc)
+                    if data_enc < agora:
                         stats["rejeitadas_prazo"] += 1
                         logger.debug(
                             f"  Rejeitada por prazo: encerramento={data_enc.date()} "
@@ -2572,8 +2577,10 @@ def aplicar_todos_filtros(
                     data_ab = datetime.fromisoformat(
                         data_ab_str.replace("Z", "+00:00")
                     )
-                    agora_ab = datetime.now(data_ab.tzinfo) if data_ab.tzinfo else agora
-                    dias_desde_abertura = (agora_ab - data_ab).days
+                    # GTM-FIX-031: Ensure tz-aware for safe comparison
+                    if data_ab.tzinfo is None:
+                        data_ab = data_ab.replace(tzinfo=timezone.utc)
+                    dias_desde_abertura = (agora - data_ab).days
 
                     if dias_desde_abertura <= 15:
                         # Very recent opening — likely still open
@@ -2618,8 +2625,10 @@ def aplicar_todos_filtros(
                     data_pub = datetime.fromisoformat(
                         data_pub_str.replace("Z", "+00:00")
                     )
-                    agora_pub = datetime.now(data_pub.tzinfo) if data_pub.tzinfo else agora
-                    dias_desde_pub = (agora_pub - data_pub).days
+                    # GTM-FIX-031: Ensure tz-aware for safe comparison
+                    if data_pub.tzinfo is None:
+                        data_pub = data_pub.replace(tzinfo=timezone.utc)
+                    dias_desde_pub = (agora - data_pub).days
                     if dias_desde_pub <= 15:
                         # Very recently published, no other dates — give benefit of doubt
                         aprovadas.append(lic)
