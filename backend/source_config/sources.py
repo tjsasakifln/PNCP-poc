@@ -257,8 +257,8 @@ class SingleSourceConfig:
 class ConsolidationConfig:
     """Configuration for multi-source consolidation service."""
 
-    timeout_global: int = 120
-    timeout_per_source: int = 50
+    timeout_global: int = 240
+    timeout_per_source: int = 180
     fail_on_all_errors: bool = True
     dedup_strategy: str = "first_seen"
     max_concurrent_sources: int = 5
