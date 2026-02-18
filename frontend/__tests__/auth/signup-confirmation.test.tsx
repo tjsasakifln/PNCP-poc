@@ -74,7 +74,7 @@ async function signupAndGetToConfirmation(
   const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
   const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
   const passwordInput = screen.getByPlaceholderText(
-    /Min\. 8 caracteres, 1 maiuscula, 1 numero/i
+    /Min\. 8 caracteres, 1 maiúscula, 1 número/i
   );
   const confirmPasswordInput = screen.getByPlaceholderText(
     /Digite a senha novamente/i

@@ -32,13 +32,13 @@ const STATUS_OPTIONS: StatusOption[] = [
   {
     value: "recebendo_proposta",
     label: "Abertas",
-    description: "Licitacoes que ainda aceitam propostas",
+    description: "Licitações que ainda aceitam propostas",
     badge: { text: "Recomendado" },
   },
   {
     value: "em_julgamento",
     label: "Em Julgamento",
-    description: "Propostas encerradas, em analise pelo orgao",
+    description: "Propostas encerradas, em análise pelo órgão",
   },
   {
     value: "encerrada",
@@ -80,11 +80,11 @@ export function StatusFilter({
       {/* Label with tooltip icon */}
       <div className="flex items-center gap-2">
         <label className="text-base font-semibold text-ink">
-          Status da Licitacao:
+          Status da Licitação:
         </label>
         <span
           className="text-ink-muted cursor-help"
-          title="Filtre por licitacoes abertas para enviar propostas"
+          title="Filtre por licitações abertas para enviar propostas"
         >
           <svg
             className="w-4 h-4"
@@ -106,7 +106,7 @@ export function StatusFilter({
       {/* Radio Group */}
       <div
         role="radiogroup"
-        aria-label="Status da licitacao"
+        aria-label="Status da licitação"
         className="grid grid-cols-2 gap-3"
       >
         {STATUS_OPTIONS.map((option) => {
@@ -173,7 +173,7 @@ export function StatusFilter({
 
       {/* Helper text */}
       <p className="text-sm text-ink-muted">
-        Dica: "Abertas" mostra licitacoes que ainda aceitam propostas
+        Dica: "Abertas" mostra licitações que ainda aceitam propostas
       </p>
     </div>
   );

@@ -3,7 +3,7 @@
 **Priority:** P1 (credibilidade profissional comprometida)
 **Effort:** S (2-3h)
 **Origin:** Teste de produção manual 2026-02-18
-**Status:** PENDENTE
+**Status:** CONCLUÍDO (6/6 ACs)
 **Assignee:** @dev
 **Tracks:** Frontend (4 ACs), Tests (2 ACs)
 
@@ -53,15 +53,15 @@ Pelo menos **20 instâncias** de textos em português sem acentos na UI de produ
 
 ### Frontend
 
-- [ ] **AC1**: Corrigir 9 labels de modalidade em `components/ModalidadeFilter.tsx:33-57` + botão "opcoes" na linha 253
-- [ ] **AC2**: Corrigir labels em `components/StatusFilter.tsx:18,25,56-57,68,83` (incluindo aria-label e type name)
-- [ ] **AC3**: Corrigir 7 strings de validação em `app/signup/page.tsx:108,113,332,365,368,426,442`
-- [ ] **AC4**: Fazer grep global por padrões sem acento (`Licitacao`, `opcoes`, `Pregao`, `Concorrencia`, `Avancad`, `Localizacao`, `Contratacao`, `Minimo`, `Maximo`, `maiuscula`, `numero`) e corrigir qualquer instância adicional em todo o frontend
+- [x] **AC1**: Corrigir 9 labels de modalidade em `components/ModalidadeFilter.tsx:33-57` + botão "opcoes" na linha 253
+- [x] **AC2**: Corrigir labels em `components/StatusFilter.tsx:18,25,56-57,68,83` (incluindo aria-label e type name)
+- [x] **AC3**: Corrigir 7 strings de validação em `app/signup/page.tsx:108,113,332,365,368,426,442`
+- [x] **AC4**: Fazer grep global por padrões sem acento (`Licitacao`, `opcoes`, `Pregao`, `Concorrencia`, `Avancad`, `Localizacao`, `Contratacao`, `Minimo`, `Maximo`, `maiuscula`, `numero`) e corrigir qualquer instância adicional em todo o frontend
 
 ### Tests
 
-- [ ] **AC5**: Atualizar assertions em `__tests__/pages/SignupPage.test.tsx` (linhas 78, 112, 160, 201, 207-208, 215, 223, 411, 418, 435) para refletir strings corrigidas
-- [ ] **AC6**: Adicionar smoke test que valide que labels de filtro contêm acentos corretos (previne regressão)
+- [x] **AC5**: Atualizar assertions em `__tests__/pages/SignupPage.test.tsx` (linhas 78, 112, 160, 201, 207-208, 215, 223, 411, 418, 435) para refletir strings corrigidas
+- [x] **AC6**: Adicionar smoke test que valide que labels de filtro contêm acentos corretos (previne regressão)
 
 ---
 

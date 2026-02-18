@@ -75,7 +75,7 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
         ${isExpiringSoon ? "animate-pulse" : ""}
       `}
       title="Ver planos disponíveis"
-      aria-label={`Plano atual: ${displayName}. Clique para ver opcoes de upgrade`}
+      aria-label={`Plano atual: ${displayName}. Clique para ver opções de upgrade`}
     >
       <span aria-hidden="true" className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{icon}</span>
       <span>{displayName}</span>

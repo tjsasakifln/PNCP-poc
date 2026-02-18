@@ -21,28 +21,28 @@ describe("ModalidadeFilter — STORY-241", () => {
   // AC7: Competitive modalities present and popular
   // ========================================================================
   describe("AC7: Competitive modalities", () => {
-    it("includes Concorrencia Eletronica (code 4)", () => {
+    it("includes Concorrência Eletrônica (code 4)", () => {
       const m = MODALIDADES.find((m) => m.codigo === 4);
       expect(m).toBeDefined();
-      expect(m!.nome).toContain("Concorrencia Eletronica");
+      expect(m!.nome).toContain("Concorrência Eletrônica");
     });
 
-    it("includes Concorrencia Presencial (code 5)", () => {
+    it("includes Concorrência Presencial (code 5)", () => {
       const m = MODALIDADES.find((m) => m.codigo === 5);
       expect(m).toBeDefined();
-      expect(m!.nome).toContain("Concorrencia Presencial");
+      expect(m!.nome).toContain("Concorrência Presencial");
     });
 
-    it("includes Pregao Eletronico (code 6)", () => {
+    it("includes Pregão Eletrônico (code 6)", () => {
       const m = MODALIDADES.find((m) => m.codigo === 6);
       expect(m).toBeDefined();
-      expect(m!.nome).toContain("Pregao Eletronico");
+      expect(m!.nome).toContain("Pregão Eletrônico");
     });
 
-    it("includes Pregao Presencial (code 7)", () => {
+    it("includes Pregão Presencial (code 7)", () => {
       const m = MODALIDADES.find((m) => m.codigo === 7);
       expect(m).toBeDefined();
-      expect(m!.nome).toContain("Pregao Presencial");
+      expect(m!.nome).toContain("Pregão Presencial");
     });
 
     it("marks all four competitive modalities as popular", () => {
@@ -85,10 +85,10 @@ describe("ModalidadeFilter — STORY-241", () => {
         <ModalidadeFilter value={[]} onChange={mockOnChange} />
       );
 
-      expect(screen.getByText("Concorrencia Eletronica")).toBeInTheDocument();
-      expect(screen.getByText("Concorrencia Presencial")).toBeInTheDocument();
-      expect(screen.getByText("Pregao Eletronico")).toBeInTheDocument();
-      expect(screen.getByText("Pregao Presencial")).toBeInTheDocument();
+      expect(screen.getByText("Concorrência Eletrônica")).toBeInTheDocument();
+      expect(screen.getByText("Concorrência Presencial")).toBeInTheDocument();
+      expect(screen.getByText("Pregão Eletrônico")).toBeInTheDocument();
+      expect(screen.getByText("Pregão Presencial")).toBeInTheDocument();
     });
 
     it("does not render Inexigibilidade in UI", () => {
@@ -104,7 +104,7 @@ describe("ModalidadeFilter — STORY-241", () => {
         <ModalidadeFilter value={[]} onChange={mockOnChange} />
       );
 
-      fireEvent.click(screen.getByText("Pregao Eletronico"));
+      fireEvent.click(screen.getByText("Pregão Eletrônico"));
       expect(mockOnChange).toHaveBeenCalledWith([6]);
     });
 
@@ -129,8 +129,8 @@ describe("ModalidadeFilter — STORY-241", () => {
       expect(allCodes).toContain(4);
       expect(allCodes).toContain(5);
       // Verify Pregão uses new codes
-      expect(MODALIDADES.find((m) => m.codigo === 6)?.nome).toContain("Pregao");
-      expect(MODALIDADES.find((m) => m.codigo === 7)?.nome).toContain("Pregao");
+      expect(MODALIDADES.find((m) => m.codigo === 6)?.nome).toContain("Pregão");
+      expect(MODALIDADES.find((m) => m.codigo === 7)?.nome).toContain("Pregão");
     });
   });
 });

@@ -11,7 +11,7 @@ import { useState } from "react";
  *
  * Features:
  * - Multi-select with checkboxes
- * - 4 popular competitive modalities always visible: Concorrencia (4,5), Pregao (6,7)
+ * - 4 popular competitive modalities always visible: Concorrência (4,5), Pregão (6,7)
  * - Collapsible section for other modalities
  * - "Todas" and "Limpar" buttons
  * - Counter showing selected count
@@ -30,52 +30,52 @@ export interface Modalidade {
 const MODALIDADES: Modalidade[] = [
   {
     codigo: 4,
-    nome: "Concorrencia Eletronica",
-    descricao: "Licitacao eletronica para obras e servicos de grande valor (Lei 14.133/21, Art. 28 I)",
+    nome: "Concorrência Eletrônica",
+    descricao: "Licitação eletrônica para obras e serviços de grande valor (Lei 14.133/21, Art. 28 I)",
     popular: true,
   },
   {
     codigo: 5,
-    nome: "Concorrencia Presencial",
-    descricao: "Licitacao presencial para obras e servicos de grande valor (Lei 14.133/21, Art. 28 I)",
+    nome: "Concorrência Presencial",
+    descricao: "Licitação presencial para obras e serviços de grande valor (Lei 14.133/21, Art. 28 I)",
     popular: true,
   },
   {
     codigo: 6,
-    nome: "Pregao Eletronico",
-    descricao: "Licitacao eletronica para bens e servicos comuns (Lei 14.133/21, Art. 6º XL)",
+    nome: "Pregão Eletrônico",
+    descricao: "Licitação eletrônica para bens e serviços comuns (Lei 14.133/21, Art. 6º XL)",
     popular: true,
   },
   {
     codigo: 7,
-    nome: "Pregao Presencial",
-    descricao: "Licitacao presencial para bens e servicos comuns (Lei 14.133/21, Art. 6º XL)",
+    nome: "Pregão Presencial",
+    descricao: "Licitação presencial para bens e serviços comuns (Lei 14.133/21, Art. 6º XL)",
     popular: true,
   },
   {
     codigo: 8,
-    nome: "Dispensa de Licitacao",
-    descricao: "Contratacao direta sem processo licitatorio (Lei 14.133/21, Art. 75)",
+    nome: "Dispensa de Licitação",
+    descricao: "Contratação direta sem processo licitatório (Lei 14.133/21, Art. 75)",
   },
   {
     codigo: 1,
-    nome: "Leilao Eletronico",
-    descricao: "Para alienacao de bens em formato eletronico (Lei 14.133/21, Art. 28 V)",
+    nome: "Leilão Eletrônico",
+    descricao: "Para alienação de bens em formato eletrônico (Lei 14.133/21, Art. 28 V)",
   },
   {
     codigo: 2,
-    nome: "Dialogo Competitivo",
-    descricao: "Para solucoes inovadoras (Lei 14.133/21, Art. 32 VII)",
+    nome: "Diálogo Competitivo",
+    descricao: "Para soluções inovadoras (Lei 14.133/21, Art. 32 VII)",
   },
   {
     codigo: 3,
     nome: "Concurso",
-    descricao: "Escolha de trabalho tecnico, cientifico ou artistico (Lei 14.133/21, Art. 6º XLIV)",
+    descricao: "Escolha de trabalho técnico, científico ou artístico (Lei 14.133/21, Art. 6º XLIV)",
   },
   {
     codigo: 12,
     nome: "Credenciamento",
-    descricao: "Cadastramento de interessados para prestacao de servicos (Lei 14.133/21, Art. 79)",
+    descricao: "Cadastramento de interessados para prestação de serviços (Lei 14.133/21, Art. 79)",
   },
 ];
 
@@ -193,7 +193,7 @@ export function ModalidadeFilter({
       {/* Header with label and action buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <label className="text-base font-semibold text-ink">
-          Modalidade de Contratacao:
+          Modalidade de Contratação:
         </label>
         <div className="flex gap-2">
           <button
@@ -250,7 +250,7 @@ export function ModalidadeFilter({
           aria-controls="outras-modalidades"
         >
           <span className="flex items-center gap-2">
-            {isExpanded ? "Menos opcoes" : "Mais opcoes"}
+            {isExpanded ? "Menos opções" : "Mais opções"}
             {!isExpanded && outrasSelectedCount > 0 && (
               <span className="text-brand-blue">
                 ({outrasSelectedCount} selecionadas)

@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
  *
  * Features:
  * - Dual slider (range) from R$ 0 to R$ 10M
- * - Quick range presets: Ate 50k, 50k-200k, 200k-1M, 1M-5M, Acima 5M, Qualquer
+ * - Quick range presets: Até 50k, 50k-200k, 200k-1M, 1M-5M, Acima 5M, Qualquer
  * - Custom numeric inputs for min/max values
  * - Brazilian currency formatting (R$ with dots)
  * - Full keyboard accessibility
@@ -26,7 +26,7 @@ interface FaixaValor {
 }
 
 const FAIXAS_VALOR: FaixaValor[] = [
-  { id: "micro", label: "Ate 50k", min: 0, max: 50000 },
+  { id: "micro", label: "Até 50k", min: 0, max: 50000 },
   { id: "pequeno", label: "50k-200k", min: 50000, max: 200000 },
   { id: "medio", label: "200k-1M", min: 200000, max: 1000000 },
   { id: "grande", label: "1M-5M", min: 1000000, max: 5000000 },
@@ -286,7 +286,7 @@ export function ValorFilter({
             `}
             style={{ left: `${minPosition}%` }}
             role="slider"
-            aria-label="Valor minimo"
+            aria-label="Valor mínimo"
             aria-valuemin={SLIDER_MIN}
             aria-valuemax={SLIDER_MAX}
             aria-valuenow={valorMin ?? 0}
@@ -324,7 +324,7 @@ export function ValorFilter({
             `}
             style={{ left: `${maxPosition}%` }}
             role="slider"
-            aria-label="Valor maximo"
+            aria-label="Valor máximo"
             aria-valuemin={SLIDER_MIN}
             aria-valuemax={SLIDER_MAX}
             aria-valuenow={valorMax ?? SLIDER_MAX}
@@ -375,7 +375,7 @@ export function ValorFilter({
             htmlFor="valor-min"
             className="block text-xs text-ink-muted font-medium"
           >
-            Minimo:
+            Mínimo:
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm">
@@ -420,7 +420,7 @@ export function ValorFilter({
             htmlFor="valor-max"
             className="block text-xs text-ink-muted font-medium"
           >
-            Maximo:
+            Máximo:
           </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm">
@@ -469,7 +469,7 @@ export function ValorFilter({
 
       {/* Helper text */}
       <p className="text-xs text-ink-muted">
-        Deixe "Maximo" vazio ou selecione "Qualquer" para buscar sem limite de valor
+        Deixe "Máximo" vazio ou selecione "Qualquer" para buscar sem limite de valor
       </p>
     </div>
   );

@@ -75,7 +75,7 @@ async function fillForm(
 
   const nameInput = screen.getByLabelText(/Nome completo/i);
   const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
-  const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+  const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
   const confirmPasswordInput = screen.getByPlaceholderText(/Digite a senha novamente/i);
 
   await act(async () => {
@@ -109,7 +109,7 @@ describe('SignupPage Component', () => {
 
       expect(screen.getByLabelText(/Nome completo/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/seu@email.com/i)).toBeInTheDocument();
-      expect(screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/Digite a senha novamente/i)).toBeInTheDocument();
     });
 
@@ -157,7 +157,7 @@ describe('SignupPage Component', () => {
     it('should have required password field with min length', () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
       expect(passwordInput).toHaveAttribute('required');
       expect(passwordInput).toHaveAttribute('type', 'password');
       expect(passwordInput).toHaveAttribute('minLength', '8');
@@ -198,21 +198,21 @@ describe('SignupPage Component', () => {
     it('should show password policy feedback when password is weak', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
 
       await act(async () => {
         fireEvent.change(passwordInput, { target: { value: 'short' } });
       });
 
-      expect(screen.getByText(/Minimo 8 caracteres/i)).toBeInTheDocument();
-      expect(screen.getByText(/Pelo menos 1 letra maiuscula/i)).toBeInTheDocument();
-      expect(screen.getByText(/Pelo menos 1 numero/i)).toBeInTheDocument();
+      expect(screen.getByText(/Mínimo 8 caracteres/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pelo menos 1 letra maiúscula/i)).toBeInTheDocument();
+      expect(screen.getByText(/Pelo menos 1 número/i)).toBeInTheDocument();
     });
 
     it('should show mismatch error when confirm password differs', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
       const confirmPasswordInput = screen.getByPlaceholderText(/Digite a senha novamente/i);
 
       await act(async () => {
@@ -220,7 +220,7 @@ describe('SignupPage Component', () => {
         fireEvent.change(confirmPasswordInput, { target: { value: 'Different456' } });
       });
 
-      expect(screen.getByText(/As senhas nao coincidem/i)).toBeInTheDocument();
+      expect(screen.getByText(/As senhas não coincidem/i)).toBeInTheDocument();
     });
   });
 
@@ -408,14 +408,14 @@ describe('SignupPage Component', () => {
     it('should hide password by default', () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
       expect(passwordInput).toHaveAttribute('type', 'password');
     });
 
     it('should show password when toggle button is clicked', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
       // Get first toggle button (password field, not confirm password)
       const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
       const toggleButton = toggleButtons[0];
@@ -432,7 +432,7 @@ describe('SignupPage Component', () => {
     it('should hide password again when toggle button is clicked twice', async () => {
       render(<SignupPage />);
 
-      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiuscula, 1 numero/i);
+      const passwordInput = screen.getByPlaceholderText(/Min\. 8 caracteres, 1 maiúscula, 1 número/i);
       const toggleButtons = screen.getAllByRole('button', { name: /Mostrar senha/i });
       const toggleButton = toggleButtons[0];
 

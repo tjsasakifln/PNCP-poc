@@ -83,8 +83,8 @@ export function TruncationWarningBanner({
           </h3>
           <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
             {description}
-            Para garantir analise completa, refine os filtros (selecione menos
-            UFs, reduza o periodo, ou ajuste a faixa de valores).
+            Para garantir análise completa, refine os filtros (selecione menos
+            UFs, reduza o período, ou ajuste a faixa de valores).
           </p>
         </div>
       </div>

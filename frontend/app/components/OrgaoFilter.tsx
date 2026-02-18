@@ -73,12 +73,12 @@ function useDebouncedCallback<T extends (...args: any[]) => any>(
 
 // Common Brazilian government agencies for quick selection
 const ORGAOS_FREQUENTES: Orgao[] = [
-  { codigo: "ms", nome: "Ministerio da Saude", uf: "DF" },
-  { codigo: "mec", nome: "Ministerio da Educacao", uf: "DF" },
+  { codigo: "ms", nome: "Ministério da Saúde", uf: "DF" },
+  { codigo: "mec", nome: "Ministério da Educação", uf: "DF" },
   { codigo: "inss", nome: "INSS - Instituto Nacional do Seguro Social", uf: "DF" },
   { codigo: "petrobras", nome: "Petrobras", uf: "RJ" },
   { codigo: "bb", nome: "Banco do Brasil", uf: "DF" },
-  { codigo: "caixa", nome: "Caixa Economica Federal", uf: "DF" },
+  { codigo: "caixa", nome: "Caixa Econômica Federal", uf: "DF" },
 ];
 
 export function OrgaoFilter({
@@ -256,14 +256,14 @@ export function OrgaoFilter({
   const placeholderText = useMemo(() => {
     if (disabled) return "Filtros desabilitados";
     if (value.length > 0) return "Adicionar mais...";
-    return "Buscar orgao...";
+    return "Buscar órgão...";
   }, [disabled, value.length]);
 
   return (
     <div className="space-y-3" ref={containerRef}>
       <div className="flex items-center justify-between">
         <label className="block text-base font-semibold text-ink">
-          Orgao/Entidade:{" "}
+          Órgão/Entidade:{" "}
           <span className="text-ink-muted font-normal">(opcional)</span>
         </label>
         {value.length > 0 && (
@@ -307,7 +307,7 @@ export function OrgaoFilter({
           onKeyDown={handleKeyDown}
           placeholder={placeholderText}
           disabled={disabled}
-          aria-label="Buscar orgao"
+          aria-label="Buscar órgão"
           aria-expanded={isOpen}
           aria-autocomplete="list"
           aria-controls="orgao-listbox"
@@ -368,7 +368,7 @@ export function OrgaoFilter({
                   ? "Digite pelo menos 2 caracteres"
                   : loading
                   ? "Buscando..."
-                  : "Nenhum orgao encontrado"}
+                  : "Nenhum órgão encontrado"}
               </li>
             ) : (
               suggestions.map((orgao, index) => (
@@ -405,7 +405,7 @@ export function OrgaoFilter({
       {/* Frequent Agencies - show when no search */}
       {!search && value.length === 0 && !disabled && (
         <div className="space-y-2">
-          <p className="text-xs text-ink-muted">Orgaos frequentes:</p>
+          <p className="text-xs text-ink-muted">Órgãos frequentes:</p>
           <div className="flex flex-wrap gap-2">
             {ORGAOS_FREQUENTES.slice(0, 4).map((orgao) => (
               <button
@@ -472,7 +472,7 @@ export function OrgaoFilter({
 
       {/* Helper text */}
       <p className="text-xs text-ink-muted">
-        Filtre por orgaos/entidades especificos (ex: Prefeitura, Ministerio)
+        Filtre por órgãos/entidades específicos (ex: Prefeitura, Ministério)
       </p>
     </div>
   );

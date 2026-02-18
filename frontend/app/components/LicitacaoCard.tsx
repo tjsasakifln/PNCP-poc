@@ -423,7 +423,7 @@ export function LicitacaoCard({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Licitacao: ${truncateText(licitacao.objeto, 50)}`,
+          title: `Licitação: ${truncateText(licitacao.objeto, 50)}`,
           text: `${licitacao.orgao} - ${formatCurrency(licitacao.valor)}`,
           url: licitacao.link,
         });
@@ -666,7 +666,7 @@ export function LicitacaoCard({
             onClick={handleShare}
             className="p-2 rounded-button text-ink-muted hover:text-brand-blue hover:bg-brand-blue-subtle transition-colors"
             title="Compartilhar"
-            aria-label="Compartilhar esta licitacao"
+            aria-label="Compartilhar esta licitação"
           >
             <ShareIcon className="w-5 h-5" />
           </button>

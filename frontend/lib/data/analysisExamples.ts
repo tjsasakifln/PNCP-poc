@@ -133,7 +133,7 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     category: 'uniformes',
     analysis: {
       timeline: 'Encerramento em 15 dias — prazo viavel para preparacao',
-      requirements: 'Amostras obrigatorias, certificacao INMETRO textil',
+      requirements: 'Amostras obrigatórias, certificação INMETRO têxtil',
       competitiveness: '3-5 concorrentes esperados, mercado fragmentado',
       score: 8.5,
     },
@@ -153,7 +153,7 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     analysis: {
       timeline: 'Encerramento em 8 dias — prazo apertado',
       requirements:
-        'Atestado de capacidade tecnica, equipe minima de 30 profissionais',
+        'Atestado de capacidade técnica, equipe mínima de 30 profissionais',
       competitiveness: '8-12 concorrentes, mercado saturado',
       score: 5.2,
     },
@@ -172,7 +172,7 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     category: 'epi',
     analysis: {
       timeline: 'Encerramento em 22 dias — prazo confortavel',
-      requirements: 'Certificacao CA valida, registro no fornecedor',
+      requirements: 'Certificação CA válida, registro no fornecedor',
       competitiveness: '5-8 concorrentes, mercado competitivo',
       score: 7.0,
     },
@@ -192,14 +192,14 @@ export const ANALYSIS_EXAMPLES: AnalysisExample[] = [
     analysis: {
       timeline: 'Encerramento em 5 dias — prazo muito curto',
       requirements:
-        'Registro CREA, equipe tecnica certificada, pecas originais',
+        'Registro CREA, equipe técnica certificada, peças originais',
       competitiveness: '2-3 concorrentes, mercado especializado',
       score: 4.8,
     },
     decision: {
       recommendation: 'Nao participar',
       justification:
-        'Prazo insuficiente para preparacao adequada. Requisitos tecnicos exigem certificacoes especificas. Risco elevado de desclassificacao.',
+        'Prazo insuficiente para preparação adequada. Requisitos técnicos exigem certificações específicas. Risco elevado de desclassificação.',
       type: 'no_go',
     },
   },

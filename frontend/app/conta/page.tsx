@@ -257,7 +257,7 @@ export default function ContaPage() {
                              bg-[var(--surface-0)] text-[var(--ink)]
                              focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
                              focus:ring-[var(--brand-blue-subtle)]"
-                  placeholder="Minimo 6 caracteres"
+                  placeholder="Mínimo 6 caracteres"
                 />
                 <button
                   type="button"

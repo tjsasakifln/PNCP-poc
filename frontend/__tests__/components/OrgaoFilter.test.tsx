@@ -21,7 +21,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    expect(screen.getByLabelText('Buscar orgao')).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar órgão')).toBeInTheDocument();
   });
 
   it('shows correct placeholder when no selection', () => {
@@ -31,8 +31,8 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao') as HTMLInputElement;
-    expect(input.placeholder).toBe('Buscar orgao...');
+    const input = screen.getByLabelText('Buscar órgão') as HTMLInputElement;
+    expect(input.placeholder).toBe('Buscar órgão...');
   });
 
   it('shows different placeholder when orgaos are selected', () => {
@@ -42,7 +42,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao') as HTMLInputElement;
+    const input = screen.getByLabelText('Buscar órgão') as HTMLInputElement;
     expect(input.placeholder).toBe('Adicionar mais...');
   });
 
@@ -54,7 +54,7 @@ describe('OrgaoFilter', () => {
         disabled={true}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao') as HTMLInputElement;
+    const input = screen.getByLabelText('Buscar órgão') as HTMLInputElement;
     expect(input.placeholder).toBe('Filtros desabilitados');
   });
 
@@ -125,7 +125,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    expect(screen.getByText('Orgaos frequentes:')).toBeInTheDocument();
+    expect(screen.getByText('Órgãos frequentes:')).toBeInTheDocument();
   });
 
   it('does not show frequent orgaos when disabled', () => {
@@ -136,7 +136,7 @@ describe('OrgaoFilter', () => {
         disabled={true}
       />
     );
-    expect(screen.queryByText('Orgaos frequentes:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Órgãos frequentes:')).not.toBeInTheDocument();
   });
 
   it('does not show frequent orgaos when there is a selection', () => {
@@ -146,7 +146,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    expect(screen.queryByText('Orgaos frequentes:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Órgãos frequentes:')).not.toBeInTheDocument();
   });
 
   it('updates input value on change', () => {
@@ -156,7 +156,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao') as HTMLInputElement;
+    const input = screen.getByLabelText('Buscar órgão') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Test' } });
     expect(input.value).toBe('Test');
   });
@@ -168,7 +168,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     expect(input).toBeInTheDocument();
   });
@@ -180,7 +180,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     fireEvent.keyDown(input, { key: 'ArrowUp' });
     expect(input).toBeInTheDocument();
   });
@@ -192,7 +192,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao') as HTMLInputElement;
+    const input = screen.getByLabelText('Buscar órgão') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Test' } });
     fireEvent.keyDown(input, { key: 'Escape' });
     expect(input.value).toBe('');
@@ -205,7 +205,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     fireEvent.keyDown(input, { key: 'Backspace' });
     expect(mockOnChange).toHaveBeenCalledWith([mockOrgaos[0]]);
   });
@@ -217,7 +217,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    expect(screen.getByText(/Filtre por orgaos\/entidades especificos/)).toBeInTheDocument();
+    expect(screen.getByText(/Filtre por órgãos\/entidades específicos/)).toBeInTheDocument();
   });
 
   it('respects disabled prop', () => {
@@ -228,7 +228,7 @@ describe('OrgaoFilter', () => {
         disabled={true}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     expect(input).toBeDisabled();
   });
 
@@ -244,7 +244,7 @@ describe('OrgaoFilter', () => {
         availableOrgaos={availableOrgaos}
       />
     );
-    expect(screen.getByLabelText('Buscar orgao')).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar órgão')).toBeInTheDocument();
   });
 
   it('has proper ARIA attributes', () => {
@@ -254,7 +254,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     expect(input).toHaveAttribute('aria-autocomplete', 'list');
     expect(input).toHaveAttribute('aria-controls', 'orgao-listbox');
   });
@@ -266,7 +266,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     fireEvent.change(input, { target: { value: 'Min' } });
 
     // Wait for debounce
@@ -283,7 +283,7 @@ describe('OrgaoFilter', () => {
         onChange={mockOnChange}
       />
     );
-    const input = screen.getByLabelText('Buscar orgao');
+    const input = screen.getByLabelText('Buscar órgão');
     fireEvent.change(input, { target: { value: 'Ministerio' } });
     fireEvent.focus(input);
 

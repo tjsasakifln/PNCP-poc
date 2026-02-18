@@ -105,12 +105,12 @@ export default function SignupPage() {
     setError(null);
 
     if (!passwordMeetsPolicy) {
-      setError("A senha deve ter pelo menos 8 caracteres, 1 letra maiuscula e 1 numero");
+      setError("A senha deve ter pelo menos 8 caracteres, 1 letra maiúscula e 1 número");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("As senhas nao coincidem");
+      setError("As senhas não coincidem");
       return;
     }
 
@@ -329,7 +329,7 @@ export default function SignupPage() {
                            bg-[var(--surface-0)] text-[var(--ink)]
                            focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
                            focus:ring-[var(--brand-blue-subtle)]"
-                placeholder="Min. 8 caracteres, 1 maiuscula, 1 numero"
+                placeholder="Min. 8 caracteres, 1 maiúscula, 1 número"
                 minLength={8}
               />
               <button
@@ -362,13 +362,13 @@ export default function SignupPage() {
             {password && !passwordMeetsPolicy && (
               <ul className="mt-1 text-xs space-y-0.5">
                 <li className={password.length >= 8 ? "text-green-600" : "text-[var(--error)]"}>
-                  {password.length >= 8 ? "\u2713" : "\u2717"} Minimo 8 caracteres
+                  {password.length >= 8 ? "\u2713" : "\u2717"} Mínimo 8 caracteres
                 </li>
                 <li className={/[A-Z]/.test(password) ? "text-green-600" : "text-[var(--error)]"}>
-                  {/[A-Z]/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 letra maiuscula
+                  {/[A-Z]/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 letra maiúscula
                 </li>
                 <li className={/\d/.test(password) ? "text-green-600" : "text-[var(--error)]"}>
-                  {/\d/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 numero
+                  {/\d/.test(password) ? "\u2713" : "\u2717"} Pelo menos 1 número
                 </li>
               </ul>
             )}
@@ -423,7 +423,7 @@ export default function SignupPage() {
               </button>
             </div>
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-[var(--error)]">As senhas nao coincidem</p>
+              <p className="mt-1 text-xs text-[var(--error)]">As senhas não coincidem</p>
             )}
           </div>
 
@@ -439,7 +439,7 @@ export default function SignupPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-[var(--ink-secondary)]">
-          Ja tem conta?{" "}
+          Já tem conta?{" "}
           <Link href="/login" className="text-[var(--brand-blue)] hover:underline">
             Fazer login
           </Link>
