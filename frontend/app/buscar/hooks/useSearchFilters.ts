@@ -13,6 +13,9 @@ import { STOPWORDS_PT, stripAccents, isStopword } from "../../../lib/constants/s
 import { useAuth } from "../../components/AuthProvider";
 import { getBrtDate, addDays } from "../utils/dates";
 
+/** Default search window in days — used for date calculation and user-facing copy */
+export const DEFAULT_SEARCH_DAYS = 10;
+
 export interface TermValidation {
   valid: string[];
   ignored: string[];
@@ -205,7 +208,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     new Set(UFS as readonly string[])
   );
   // GTM-FIX-032 AC5: Robust timezone-safe date initialization
-  const [dataInicial, setDataInicial] = useState(() => addDays(getBrtDate(), -10));
+  const [dataInicial, setDataInicial] = useState(() => addDays(getBrtDate(), -DEFAULT_SEARCH_DAYS));
   const [dataFinal, setDataFinal] = useState(() => getBrtDate());
 
   // STORY-240 AC7: Override dates when modo_busca changes
@@ -213,7 +216,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     if (modoBusca === "abertas") {
       const today = getBrtDate();
       setDataFinal(today);
-      setDataInicial(addDays(today, -10));
+      setDataInicial(addDays(today, -DEFAULT_SEARCH_DAYS));
     }
   }, [modoBusca]);
 

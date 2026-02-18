@@ -3,7 +3,7 @@
 **Priority:** P1 (informação incorreta exibida ao usuário)
 **Effort:** XS (30 min)
 **Origin:** Teste de produção manual 2026-02-18
-**Status:** PENDENTE
+**Status:** CONCLUÍDO
 **Assignee:** @dev
 **Tracks:** Frontend (1 AC), Tests (1 AC)
 
@@ -30,11 +30,11 @@ Usuário espera ver resultados de 15 dias mas recebe apenas 10. Pode pensar que 
 
 ### Frontend
 
-- [ ] **AC1**: Alterar copy para "Buscando nos últimos **10** dias — somente licitações com prazo aberto" em `app/buscar/page.tsx` (ou no hook/componente que gera essa mensagem)
+- [x] **AC1**: Alterar copy para "Buscando nos últimos **10** dias — somente licitações com prazo aberto" em `app/buscar/page.tsx` (ou no hook/componente que gera essa mensagem)
 
 ### Tests
 
-- [ ] **AC2**: Verificar que `useSearchFilters.ts` tem `DEFAULT_DAYS = 10` e que a copy reflete esse valor (idealmente usar a constante em vez de hardcode)
+- [x] **AC2**: Verificar que `useSearchFilters.ts` tem `DEFAULT_DAYS = 10` e que a copy reflete esse valor (idealmente usar a constante em vez de hardcode)
 
 ---
 

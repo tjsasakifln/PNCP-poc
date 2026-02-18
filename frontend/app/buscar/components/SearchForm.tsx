@@ -7,6 +7,7 @@ import { CustomSelect } from "../../components/CustomSelect";
 import { CustomDateInput } from "../../components/CustomDateInput";
 import { Tooltip } from "../../components/ui/Tooltip";
 import type { TermValidation } from "../hooks/useSearchFilters";
+import { DEFAULT_SEARCH_DAYS } from "../hooks/useSearchFilters";
 import type { StatusLicitacao } from "../../../components/StatusFilter";
 import type { Esfera } from "../../components/EsferaFilter";
 import type { Municipio } from "../../components/MunicipioFilter";
@@ -488,7 +489,7 @@ export default function SearchForm({
                     {dateLabel}
                   </p>
                   <p className="text-xs text-ink-secondary mt-1">
-                    Buscando nos últimos 15 dias — somente licitações com prazo aberto
+                    Buscando nos últimos {DEFAULT_SEARCH_DAYS} dias — somente licitações com prazo aberto
                   </p>
                 </div>
               ) : (
