@@ -51,7 +51,7 @@ PCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
 
 # Per-modality timeout (STORY-252 AC6) — configurable
 PNCP_TIMEOUT_PER_MODALITY: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "15")
+    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "120")  # Raised from 15→120: tamanhoPagina=50 needs ~10x more pages
 )
 
 # Modality retry on timeout (STORY-252 AC9)
