@@ -3,7 +3,7 @@
 **Priority:** P1 (frustração direta durante a ação principal do produto)
 **Effort:** M (4-6h)
 **Origin:** Teste de produção manual 2026-02-18
-**Status:** PENDENTE
+**Status:** CONCLUÍDO
 **Assignee:** @dev + @ux-design-expert
 **Tracks:** Frontend (5 ACs), Tests (1 AC)
 
@@ -38,15 +38,15 @@ Ao perder SSE, a barra que estava em 80%+ reseta para erro, dando impressão de 
 
 ### Frontend
 
-- [ ] **AC1**: Ao iniciar busca, auto-recolher a seção "Personalizar busca" e rolar para a área de progresso (smooth scroll)
-- [ ] **AC2**: Progress tracker deve ficar acima da dobra durante toda a busca — se necessário, usar `position: sticky` ou mover para cima dos filtros
-- [ ] **AC3**: Resolver contradição "X de Y estados processados" vs porcentagem — a porcentagem deve refletir a realidade do backend, não uma simulação independente
-- [ ] **AC4**: Mensagem de espera contextualizada: "Buscando em X fontes oficiais. Resultados em aproximadamente Y segundos." (usar estimativa do backend se disponível)
-- [ ] **AC5**: Se timer ultrapassa 2x a estimativa inicial, mostrar: "Esta busca está demorando mais que o normal. Pode ficar nesta página — os resultados serão exibidos automaticamente."
+- [x] **AC1**: Ao iniciar busca, auto-recolher a seção "Personalizar busca" e rolar para a área de progresso (smooth scroll)
+- [x] **AC2**: Progress tracker deve ficar acima da dobra durante toda a busca — se necessário, usar `position: sticky` ou mover para cima dos filtros
+- [x] **AC3**: Resolver contradição "X de Y estados processados" vs porcentagem — a porcentagem deve refletir a realidade do backend, não uma simulação independente
+- [x] **AC4**: Mensagem de espera contextualizada: "Buscando em X fontes oficiais. Resultados em aproximadamente Y segundos." (usar estimativa do backend se disponível)
+- [x] **AC5**: Se timer ultrapassa 2x a estimativa inicial, mostrar: "Esta busca está demorando mais que o normal. Pode ficar nesta página — os resultados serão exibidos automaticamente."
 
 ### Tests
 
-- [ ] **AC6**: Teste visual: ao clicar "Buscar", seção de filtros recolhe e progress tracker fica visível no viewport
+- [x] **AC6**: Teste visual: ao clicar "Buscar", seção de filtros recolhe e progress tracker fica visível no viewport
 
 ---
 
