@@ -37,7 +37,7 @@ EXPOSE 8000
 # Do NOT add HEALTHCHECK instruction here - it conflicts with Railway's system
 
 # Run with gunicorn + uvicorn workers for production concurrency (GTM-FIX-020)
-# WEB_CONCURRENCY: Railway can override; default 4 workers
-# --timeout 120: allow long-running search requests to complete
+# WEB_CONCURRENCY: Railway can override; default 2 workers (GTM-FIX-030 AC9)
+# GUNICORN_TIMEOUT: Must exceed SEARCH_FETCH_TIMEOUT (360s) to avoid silent worker kills
 # Using shell form for guaranteed variable expansion
-CMD gunicorn main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-4} --bind 0.0.0.0:${PORT:-8000} --timeout 120 --graceful-timeout 30
+CMD gunicorn main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-2} --bind 0.0.0.0:${PORT:-8000} --timeout ${GUNICORN_TIMEOUT:-600} --graceful-timeout ${GUNICORN_GRACEFUL_TIMEOUT:-60}

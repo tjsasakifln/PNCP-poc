@@ -1856,12 +1856,15 @@ def aplicar_todos_filtros(
     if status and status != "todos":
         resultado_status: List[dict] = []
         status_lower = status.lower()
+        # GTM-FIX-030 AC13: Diagnostic counters for status_mismatch analysis
+        _status_distribution: Dict[str, int] = {}
 
         for lic in resultado_uf:
             # Use inferred status if available (set by enriquecer_com_status_inferido)
             status_inferido = lic.get("_status_inferido", "")
 
             if status_inferido:
+                _status_distribution[status_inferido] = _status_distribution.get(status_inferido, 0) + 1
                 # Direct comparison with inferred status
                 if status_inferido == status_lower:
                     resultado_status.append(lic)
@@ -1917,6 +1920,12 @@ def aplicar_todos_filtros(
                     except Exception:
                         pass
 
+        # GTM-FIX-030 AC13: Log status distribution for diagnostics
+        logger.info(
+            f"  Status filter: wanted='{status_lower}', "
+            f"distribution={_status_distribution}, "
+            f"passed={len(resultado_status)}, rejected={stats['rejeitadas_status']}"
+        )
         logger.debug(
             f"  Após filtro Status: {len(resultado_status)} "
             f"(rejeitadas: {stats['rejeitadas_status']})"

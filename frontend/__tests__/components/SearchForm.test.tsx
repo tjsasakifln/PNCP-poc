@@ -200,7 +200,7 @@ describe('SearchForm Component', () => {
       render(<SearchForm {...defaultProps} modoBusca="abertas" dateLabel="Mostrando licitações abertas para proposta" />);
 
       expect(screen.getByText(/Mostrando licitações abertas para proposta/i)).toBeInTheDocument();
-      expect(screen.getByText(/Buscando nos últimos 180 dias/i)).toBeInTheDocument();
+      expect(screen.getByText(/Buscando nos últimos 15 dias/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/Data inicial/i)).not.toBeInTheDocument();
     });
 
@@ -355,7 +355,7 @@ describe('SearchForm Component', () => {
     it('AC10.2: should display 180-day info message in abertas mode', () => {
       render(<SearchForm {...defaultProps} modoBusca="abertas" dateLabel="Mostrando licitações abertas para proposta" />);
 
-      expect(screen.getByText(/Buscando nos últimos 180 dias/i)).toBeInTheDocument();
+      expect(screen.getByText(/Buscando nos últimos 15 dias/i)).toBeInTheDocument();
     });
 
     it('AC10.3: should show abertas-specific dateLabel', () => {
@@ -376,7 +376,7 @@ describe('SearchForm Component', () => {
 
       // In publicacao mode, dateLabel is not rendered - only date inputs are shown
       expect(screen.queryByText(/Mostrando licitações abertas para proposta/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Buscando nos últimos 180 dias/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Buscando nos últimos 15 dias/i)).not.toBeInTheDocument();
     });
 
     it('AC10: integration - should hide date inputs in abertas mode', () => {
@@ -389,7 +389,7 @@ describe('SearchForm Component', () => {
     it('AC10: integration - should hide info box in publicacao mode', () => {
       render(<SearchForm {...defaultProps} modoBusca="publicacao" dateLabel="Período de publicação" />);
 
-      expect(screen.queryByText(/Buscando nos últimos 180 dias/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Buscando nos últimos 15 dias/i)).not.toBeInTheDocument();
       expect(screen.queryByText(/Mostrando licitações abertas para proposta/i)).not.toBeInTheDocument();
     });
   });

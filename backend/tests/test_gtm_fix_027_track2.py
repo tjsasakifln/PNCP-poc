@@ -9,8 +9,8 @@ from schemas import BuscaRequest
 
 
 @pytest.mark.asyncio
-async def test_abertas_mode_uses_60_day_window():
-    """AC8+AC13: Default date range is 60 days for modo_busca='abertas'."""
+async def test_abertas_mode_uses_15_day_window():
+    """AC8+AC13: Default date range is 15 days for modo_busca='abertas'."""
     # Create a valid request with required fields (modo_busca will override dates)
     today = date.today()
     request = BuscaRequest(
@@ -47,7 +47,7 @@ async def test_abertas_mode_uses_60_day_window():
         # Call stage_prepare which overrides dates for modo_busca='abertas'
         await pipeline.stage_prepare(ctx)
 
-    expected_start = (date.today() - timedelta(days=60)).isoformat()
+    expected_start = (date.today() - timedelta(days=15)).isoformat()
     expected_end = date.today().isoformat()
     assert ctx.request.data_inicial == expected_start, f"Expected {expected_start}, got {ctx.request.data_inicial}"
     assert ctx.request.data_final == expected_end

@@ -205,7 +205,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   );
   const [dataInicial, setDataInicial] = useState(() => {
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    now.setDate(now.getDate() - 180);
+    now.setDate(now.getDate() - 15);
     return now.toISOString().split("T")[0];
   });
   const [dataFinal, setDataFinal] = useState(() => {
@@ -218,7 +218,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     if (modoBusca === "abertas") {
       const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
       const dataFim = now.toISOString().split("T")[0];
-      now.setDate(now.getDate() - 180);
+      now.setDate(now.getDate() - 15);
       const dataIni = now.toISOString().split("T")[0];
       setDataInicial(dataIni);
       setDataFinal(dataFim);

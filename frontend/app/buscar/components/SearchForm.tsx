@@ -488,7 +488,7 @@ export default function SearchForm({
                     {dateLabel}
                   </p>
                   <p className="text-xs text-ink-secondary mt-1">
-                    Buscando nos últimos 180 dias — somente licitações com prazo aberto
+                    Buscando nos últimos 15 dias — somente licitações com prazo aberto
                   </p>
                 </div>
               ) : (

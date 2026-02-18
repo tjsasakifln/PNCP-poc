@@ -41,7 +41,7 @@ describe('useSearchFilters Hook', () => {
       //
       // Tested behaviors (in SearchForm.test.tsx):
       // - AC10.1: Default modoBusca is "abertas"
-      // - AC10.2: 180-day info message displayed in abertas mode
+      // - AC10.2: 15-day info message displayed in abertas mode
       // - AC10.3: Abertas-specific dateLabel shown
       // - AC10.4: Date inputs rendered in publicacao mode
       // - AC10.5: Abertas-specific content hidden in publicacao mode
