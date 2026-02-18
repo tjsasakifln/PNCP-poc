@@ -30,6 +30,8 @@ export interface EnhancedLoadingProgressProps {
   sseEvent?: SearchProgressEvent | null;
   /** Whether to use real SSE data vs simulated progress */
   useRealProgress?: boolean;
+  /** GTM-FIX-033 AC3: SSE disconnected — show "Finalizando busca..." */
+  sseDisconnected?: boolean;
 }
 
 interface Stage {
@@ -104,6 +106,7 @@ export function EnhancedLoadingProgress({
   onCancel,
   sseEvent,
   useRealProgress = false,
+  sseDisconnected = false,
 }: EnhancedLoadingProgressProps) {
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
@@ -365,8 +368,16 @@ export function EnhancedLoadingProgress({
         </div>
       </div>
 
+      {/* GTM-FIX-033 AC3: "Finalizando busca..." when SSE disconnected */}
+      {sseDisconnected && (
+        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-lg text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          Finalizando busca... O progresso em tempo real foi interrompido, mas a busca continua sendo processada.
+        </div>
+      )}
+
       {/* SSE indicator (subtle) */}
-      {useRealProgress && sseEvent && (
+      {useRealProgress && sseEvent && !sseDisconnected && (
         <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-muted">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
           Progresso em tempo real

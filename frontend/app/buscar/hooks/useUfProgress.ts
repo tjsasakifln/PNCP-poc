@@ -41,6 +41,8 @@ interface UseUfProgressReturn {
   totalFound: number;
   allComplete: boolean;
   batchProgress: BatchProgress | null;
+  /** GTM-FIX-033 AC2: true when SSE disconnected after retry */
+  sseDisconnected: boolean;
 }
 
 export function useUfProgress({
@@ -51,7 +53,9 @@ export function useUfProgress({
 }: UseUfProgressOptions): UseUfProgressReturn {
   const [ufStatuses, setUfStatuses] = useState<Map<string, UfStatus>>(new Map());
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
+  const [sseDisconnected, setSseDisconnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const retryAttemptRef = useRef(0);
   const selectedUfsRef = useRef(selectedUfs);
 
   // Serialize selectedUfs for stable dependency comparison
@@ -67,6 +71,8 @@ export function useUfProgress({
     if (!enabled || !searchId) {
       setUfStatuses(new Map());
       setBatchProgress(null);
+      setSseDisconnected(false);
+      retryAttemptRef.current = 0;
       return;
     }
 
@@ -133,9 +139,57 @@ export function useUfProgress({
       }
     });
 
+    // GTM-FIX-033 AC2: Retry 1x with 2s delay before giving up
     eventSource.onerror = () => {
-      console.warn('SSE connection error in useUfProgress');
+      console.warn(`SSE connection error in useUfProgress (attempt ${retryAttemptRef.current})`);
       cleanup();
+
+      if (retryAttemptRef.current < 1 && searchId) {
+        retryAttemptRef.current += 1;
+        const retryTimeout = setTimeout(() => {
+          if (!eventSourceRef.current && searchId) {
+            let retryUrl = `/api/buscar-progress?search_id=${encodeURIComponent(searchId)}`;
+            if (authToken) {
+              retryUrl += `&token=${encodeURIComponent(authToken)}`;
+            }
+            const retrySource = new EventSource(retryUrl);
+            eventSourceRef.current = retrySource;
+
+            retrySource.addEventListener('uf_status', (e: MessageEvent) => {
+              try {
+                const event: UfStatusEvent = JSON.parse(e.data);
+                setUfStatuses(prev => {
+                  const next = new Map(prev);
+                  next.set(event.uf, { status: event.status, count: event.count, attempt: event.attempt });
+                  return next;
+                });
+              } catch (err) {
+                console.warn('Failed to parse uf_status event on retry:', err);
+              }
+            });
+
+            retrySource.addEventListener('batch_progress', (e: MessageEvent) => {
+              try {
+                const data = JSON.parse(e.data);
+                setBatchProgress({ batchNum: data.batch_num, totalBatches: data.total_batches, ufsInBatch: data.ufs_in_batch || [] });
+              } catch (err) {
+                console.warn('Failed to parse batch_progress on retry:', err);
+              }
+            });
+
+            retrySource.onerror = () => {
+              console.warn('SSE retry failed — marking disconnected');
+              retrySource.close();
+              eventSourceRef.current = null;
+              setSseDisconnected(true);
+            };
+          }
+        }, 2000);
+        // Store timeout for cleanup
+        return () => clearTimeout(retryTimeout);
+      } else {
+        setSseDisconnected(true);
+      }
     };
 
     return cleanup;
@@ -158,5 +212,6 @@ export function useUfProgress({
     totalFound,
     allComplete,
     batchProgress,
+    sseDisconnected,
   };
 }

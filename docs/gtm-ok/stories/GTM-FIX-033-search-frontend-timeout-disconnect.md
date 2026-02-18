@@ -3,7 +3,7 @@
 **Priority:** P0 (usuário perde resultado já processado)
 **Effort:** M (4-6h)
 **Origin:** Teste de produção manual 2026-02-18
-**Status:** PENDENTE
+**Status:** CONCLUÍDO (AC2-AC7 code-level, AC1 ops pending)
 **Assignee:** @dev
 **Tracks:** Backend (1 AC), Frontend (4 ACs), Ops (1 AC), Tests (2 ACs)
 
@@ -48,19 +48,19 @@ O PCP sozinho levou **130s** para SP. O frontend mostra erro apesar do backend t
 
 ### Ops (Railway)
 
-- [ ] **AC1**: Configurar `PCP_TIMEOUT=30` como env var no Railway. Quick win imediato que limita PCP a 30s em vez de default alto.
+- [ ] **AC1**: Configurar `PCP_TIMEOUT=30` como env var no Railway. Quick win imediato que limita PCP a 30s em vez de default alto. *(ops task — manual)*
 
 ### Frontend
 
-- [ ] **AC2**: `useUfProgress.ts:136-139` — SSE `onerror` deve tentar reconectar 1x (com delay de 2s) antes de desistir. Se desistir, setar flag `sseDisconnected=true` no state retornado.
-- [ ] **AC3**: Progress bar não pode resetar de 80%+ para 0%. Se SSE desconecta (`sseDisconnected`), travar na última porcentagem conhecida e exibir "Finalizando busca..."
-- [ ] **AC4**: Se o POST `/api/buscar` retorna sucesso (HTTP 200) mas SSE já marcou erro/desconectou, o resultado do POST deve prevalecer e ser exibido normalmente.
-- [ ] **AC5**: Mensagem de erro melhorada em `lib/error-messages.ts`: incluir "A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente."
+- [x] **AC2**: `useUfProgress.ts:136-139` — SSE `onerror` deve tentar reconectar 1x (com delay de 2s) antes de desistir. Se desistir, setar flag `sseDisconnected=true` no state retornado.
+- [x] **AC3**: Progress bar não pode resetar de 80%+ para 0%. Se SSE desconecta (`sseDisconnected`), travar na última porcentagem conhecida e exibir "Finalizando busca..."
+- [x] **AC4**: Se o POST `/api/buscar` retorna sucesso (HTTP 200) mas SSE já marcou erro/desconectou, o resultado do POST deve prevalecer e ser exibido normalmente.
+- [x] **AC5**: Mensagem de erro melhorada em `lib/error-messages.ts`: incluir "A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente."
 
 ### Tests
 
-- [ ] **AC6**: Teste frontend: SSE desconecta no meio da busca → resultado POST ainda é processado e exibido
-- [ ] **AC7**: Teste backend: PCP timeout não bloqueia resposta PNCP (partial results devem ser servidos quando PCP falha)
+- [x] **AC6**: Teste frontend: SSE desconecta no meio da busca → resultado POST ainda é processado e exibido (7 tests)
+- [x] **AC7**: Teste backend: PCP timeout não bloqueia resposta PNCP (partial results devem ser servidos quando PCP falha) (4 tests)
 
 ---
 

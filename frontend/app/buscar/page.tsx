@@ -403,6 +403,7 @@ function HomePageContent() {
               sseEvent={search.sseEvent}
               useRealProgress={search.useRealProgress}
               sseAvailable={search.sseAvailable}
+              sseDisconnected={search.sseDisconnected}
               onStageChange={(stage) => trackEvent('search_progress_stage', { stage, is_sse: search.useRealProgress && search.sseAvailable })}
               error={search.error}
               quotaError={search.quotaError}

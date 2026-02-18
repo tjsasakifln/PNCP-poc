@@ -30,6 +30,8 @@ export interface SearchResultsProps {
   sseEvent: SearchProgressEvent | null;
   useRealProgress: boolean;
   sseAvailable: boolean;
+  /** GTM-FIX-033 AC3: SSE disconnected flag */
+  sseDisconnected?: boolean;
   onStageChange: (stage: number) => void;
 
   // Error state
@@ -96,7 +98,7 @@ export interface SearchResultsProps {
 
 export default function SearchResults({
   loading, loadingStep, estimatedTime, stateCount, statesProcessed,
-  onCancel, sseEvent, useRealProgress, sseAvailable, onStageChange,
+  onCancel, sseEvent, useRealProgress, sseAvailable, sseDisconnected, onStageChange,
   error, quotaError,
   result, rawCount,
   ufsSelecionadas, sectorName,
@@ -190,6 +192,7 @@ export default function SearchResults({
             onCancel={onCancel}
             sseEvent={sseEvent}
             useRealProgress={useRealProgress && sseAvailable}
+            sseDisconnected={sseDisconnected}
             onStageChange={onStageChange}
           />
           <LoadingResultsSkeleton count={1} />

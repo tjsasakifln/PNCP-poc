@@ -32,9 +32,9 @@ const ERROR_MAP: Record<string, string> = {
   "is not valid JSON": "Erro temporário de comunicação. Tente novamente.",
   "Resposta inesperada": "Erro temporário de comunicação. Tente novamente.",
 
-  // Backend specific
-  "Backend indisponível": "Não foi possível processar sua busca. Tente novamente em instantes.",
-  "Erro ao buscar licitações": "Não foi possível processar sua busca. Tente novamente em instantes.",
+  // Backend specific — GTM-FIX-033 AC5: actionable message
+  "Backend indisponível": "Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.",
+  "Erro ao buscar licitações": "Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.",
   "Quota excedida": "Suas buscas do mês acabaram. Faça upgrade para continuar.",
 
   // Timeout / PNCP specific (from backend detail messages)
