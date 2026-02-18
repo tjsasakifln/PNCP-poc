@@ -504,6 +504,8 @@ class SearchPipeline:
                 ctx.licitacoes_raw = cached.get("licitacoes", [])
                 ctx.cached = True
                 ctx.cached_at = cached.get("cached_at")
+                ctx.cache_status = "fresh"  # InMemory cache is always fresh (< 6h TTL)
+                ctx.cache_level = "redis"  # InMemory serves as L2 cache
                 # Skip the actual fetch — go straight to filtering
                 return
 
@@ -754,6 +756,8 @@ class SearchPipeline:
                 ctx.cached = True
                 ctx.cached_at = stale_cache["cached_at"]
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
+                ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
                 ctx.is_partial = True
                 ctx.degradation_reason = str(e)
                 ctx.data_sources = [
@@ -848,6 +852,8 @@ class SearchPipeline:
                 ctx.cached = True
                 ctx.cached_at = stale_cache["cached_at"]
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
+                ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
                 ctx.is_partial = True
                 ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
                 ctx.data_sources = []
@@ -976,6 +982,8 @@ class SearchPipeline:
                 ctx.cached = True
                 ctx.cached_at = stale_cache["cached_at"]
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
+                ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
                 ctx.is_partial = True
                 ctx.degradation_reason = (
                     "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
@@ -1220,6 +1228,8 @@ class SearchPipeline:
                 cached=ctx.cached,
                 cached_at=ctx.cached_at,
                 cached_sources=ctx.cached_sources,
+                cache_status=ctx.cache_status,
+                cache_level=ctx.cache_level,
                 is_truncated=ctx.is_truncated,
                 truncated_ufs=ctx.truncated_ufs,
                 truncation_details=ctx.truncation_details,
@@ -1336,6 +1346,8 @@ class SearchPipeline:
             cached=ctx.cached,
             cached_at=ctx.cached_at,
             cached_sources=ctx.cached_sources,
+            cache_status=ctx.cache_status,
+            cache_level=ctx.cache_level,
             is_truncated=ctx.is_truncated,
             truncated_ufs=ctx.truncated_ufs,
             truncation_details=ctx.truncation_details,

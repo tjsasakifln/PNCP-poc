@@ -63,6 +63,7 @@ from routes.emails import router as emails_router  # STORY-225: Transactional em
 from routes.pipeline import router as pipeline_router  # STORY-250: Pipeline de Oportunidades
 from routes.onboarding import router as onboarding_router  # GTM-004: First analysis after onboarding
 from routes.auth_email import router as auth_email_router  # GTM-FIX-009: Email confirmation recovery
+from routes.health import router as cache_health_router  # UX-303: Cache health endpoint
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -190,12 +191,23 @@ async def lifespan(app_instance: FastAPI):
     # STORY-217: Initialize Redis pool
     await startup_redis()
 
+    # UX-303 AC8: Start periodic cache cleanup
+    from cron_jobs import start_cache_cleanup_task
+    cleanup_task = await start_cache_cleanup_task()
+
     # HOTFIX STORY-183: Diagnostic route logging
     _log_registered_routes(app_instance)
 
     yield
 
     # === SHUTDOWN ===
+    # UX-303: Cancel cache cleanup
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except Exception:
+        pass
+
     # STORY-217: Close Redis pool
     await shutdown_redis()
 
@@ -259,6 +271,7 @@ app.include_router(emails_router, prefix="/v1")  # STORY-225
 app.include_router(pipeline_router, prefix="/v1")  # STORY-250: Pipeline
 app.include_router(onboarding_router, prefix="/v1")  # GTM-004: First analysis
 app.include_router(auth_email_router, prefix="/v1")  # GTM-FIX-009: Email confirmation recovery
+app.include_router(cache_health_router, prefix="/v1")  # UX-303: Cache health
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -281,6 +294,7 @@ app.include_router(emails_router)  # STORY-225
 app.include_router(pipeline_router)  # STORY-250: Pipeline
 app.include_router(onboarding_router)  # GTM-004: First analysis
 app.include_router(auth_email_router)  # GTM-FIX-009: Email confirmation recovery
+app.include_router(cache_health_router)  # UX-303: Cache health
 
 logger.info(
     "FastAPI application initialized — PORT=%s",

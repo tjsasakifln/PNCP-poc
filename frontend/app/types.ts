@@ -108,6 +108,10 @@ export interface BuscaResult {
   cached_at?: string;
   /** GTM-FIX-010 AC5r: Source codes that contributed to cached data */
   cached_sources?: string[];
+  /** UX-303 AC5: Cache freshness status (fresh/stale) */
+  cache_status?: "fresh" | "stale";
+  /** UX-303 AC2: Which cache level served the data (supabase/redis/local) */
+  cache_level?: string;
   /** STORY-257B AC10: List of UF codes that failed during search */
   failed_ufs?: string[];
   /** GTM-FIX-004: True when at least one UF hit the max_pages limit */

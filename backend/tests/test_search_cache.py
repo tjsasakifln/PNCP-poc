@@ -171,12 +171,14 @@ class TestGetFromCache:
 
     @pytest.mark.asyncio
     async def test_cache_expired_not_served(self):
-        """AC12: Cache entry > 24h old — NOT served."""
+        """AC12: Cache entry > 24h old — NOT served at any level."""
         now = datetime.now(timezone.utc)
         fetched_at = (now - timedelta(hours=30)).isoformat()
         mock_sb = self._mock_supabase_with_cache(fetched_at)
 
-        with patch("supabase_client.get_supabase", return_value=mock_sb):
+        with patch("supabase_client.get_supabase", return_value=mock_sb), \
+             patch("search_cache._get_from_redis", return_value=None), \
+             patch("search_cache._get_from_local", return_value=None):
             result = await get_from_cache(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -186,7 +188,7 @@ class TestGetFromCache:
 
     @pytest.mark.asyncio
     async def test_cache_miss_returns_none(self):
-        """AC11: No cache entry — returns None."""
+        """AC11: No cache entry at any level — returns None."""
         mock_sb = MagicMock()
         mock_sb.table.return_value = mock_sb
         mock_sb.select.return_value = mock_sb
@@ -195,7 +197,9 @@ class TestGetFromCache:
         mock_sb.limit.return_value = mock_sb
         mock_sb.execute.return_value = Mock(data=[])
 
-        with patch("supabase_client.get_supabase", return_value=mock_sb):
+        with patch("supabase_client.get_supabase", return_value=mock_sb), \
+             patch("search_cache._get_from_redis", return_value=None), \
+             patch("search_cache._get_from_local", return_value=None):
             result = await get_from_cache(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -205,8 +209,10 @@ class TestGetFromCache:
 
     @pytest.mark.asyncio
     async def test_cache_read_failure_returns_none(self):
-        """Cache read failures are non-fatal."""
-        with patch("supabase_client.get_supabase", side_effect=Exception("DB down")):
+        """Cache read failures at all levels are non-fatal."""
+        with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
+             patch("search_cache._get_from_redis", return_value=None), \
+             patch("search_cache._get_from_local", return_value=None):
             result = await get_from_cache(
                 user_id="user-123",
                 params={"setor_id": 1, "ufs": ["SP"]},

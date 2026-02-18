@@ -6,7 +6,7 @@
 **Story Points:** 5 SP
 **Created:** 2026-02-18
 **Owner:** @devops + @dev
-**Status:** 🔴 TODO
+**Status:** 🟢 CONCLUÍDO (code-level)
 
 ---
 
@@ -474,5 +474,6 @@ export const CacheBanner: React.FC<CacheBannerProps> = ({
 
 ---
 
-**Status:** 🔴 TODO
-**Next:** @devops aplicar migration, @dev implementar fallback
+**Status:** 🟢 CONCLUÍDO (code-level: AC2-AC10, 9/10 ACs)
+**Pending:** AC1 (DevOps — apply migration in production via Supabase CLI)
+**Next:** @devops `npx supabase db push` em produção

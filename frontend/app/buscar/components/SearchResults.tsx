@@ -321,6 +321,8 @@ export default function SearchResults({
           onRefresh={onRetryForceFresh || onSearch}
           refreshing={loading}
           cachedSources={result.cached_sources}
+          cacheStatus={result.cache_status}
+          cacheLevel={result.cache_level}
         />
       )}
 

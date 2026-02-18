@@ -1,0 +1,127 @@
+"""UX-303 AC7: Cache health check endpoint.
+
+GET /v1/health/cache — Returns status of each cache level with latency.
+"""
+
+import logging
+import time
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["health"])
+
+
+@router.get("/health/cache")
+async def cache_health():
+    """AC7: Health check for all cache levels.
+
+    Returns status of Supabase, Redis/InMemory, and Local file caches
+    with latency measurements and error details.
+    """
+    result = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "supabase": await _check_supabase_cache(),
+        "redis": _check_redis_cache(),
+        "local": _check_local_cache(),
+    }
+
+    # Determine overall status
+    statuses = [result["supabase"]["status"], result["redis"]["status"], result["local"]["status"]]
+    if all(s == "healthy" for s in statuses):
+        result["overall"] = "healthy"
+    elif all(s == "down" for s in statuses):
+        result["overall"] = "down"
+    else:
+        result["overall"] = "degraded"
+
+    return result
+
+
+async def _check_supabase_cache() -> dict:
+    """Probe Supabase search_results_cache table."""
+    start = time.monotonic()
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        # Light probe: count recent entries
+        response = (
+            sb.table("search_results_cache")
+            .select("id", count="exact")
+            .limit(1)
+            .execute()
+        )
+
+        latency_ms = round((time.monotonic() - start) * 1000)
+        return {
+            "status": "healthy",
+            "latency_ms": latency_ms,
+            "total_entries": response.count if hasattr(response, "count") and response.count is not None else len(response.data),
+            "last_error": None,
+        }
+    except Exception as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        logger.warning(f"Supabase cache health check failed: {e}")
+        return {
+            "status": "down",
+            "latency_ms": latency_ms,
+            "total_entries": 0,
+            "last_error": str(e)[:200],
+        }
+
+
+def _check_redis_cache() -> dict:
+    """Probe Redis/InMemory cache."""
+    start = time.monotonic()
+    try:
+        from redis_pool import get_fallback_cache
+        cache = get_fallback_cache()
+
+        alive = cache.ping()
+        latency_ms = round((time.monotonic() - start) * 1000)
+        entries = len(cache)
+
+        return {
+            "status": "healthy" if alive else "down",
+            "latency_ms": latency_ms,
+            "entries": entries,
+            "last_error": None,
+        }
+    except Exception as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        return {
+            "status": "down",
+            "latency_ms": latency_ms,
+            "entries": 0,
+            "last_error": str(e)[:200],
+        }
+
+
+def _check_local_cache() -> dict:
+    """Probe local file cache directory."""
+    start = time.monotonic()
+    try:
+        from search_cache import get_local_cache_stats
+        stats = get_local_cache_stats()
+        latency_ms = round((time.monotonic() - start) * 1000)
+
+        return {
+            "status": "healthy",
+            "latency_ms": latency_ms,
+            "files_count": stats["files_count"],
+            "total_size_mb": stats["total_size_mb"],
+            "last_error": None,
+        }
+    except Exception as e:
+        latency_ms = round((time.monotonic() - start) * 1000)
+        return {
+            "status": "down",
+            "latency_ms": latency_ms,
+            "files_count": 0,
+            "total_size_mb": 0.0,
+            "last_error": str(e)[:200],
+        }

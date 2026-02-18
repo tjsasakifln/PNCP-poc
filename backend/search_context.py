@@ -58,6 +58,8 @@ class SearchContext:
     cached: bool = False  # True when serving stale cached results
     cached_at: Optional[str] = None  # ISO timestamp of cache creation
     cached_sources: Optional[list] = None  # Source codes in cached data
+    cache_status: Optional[str] = None  # UX-303: "fresh" or "stale"
+    cache_level: Optional[str] = None  # UX-303: "supabase", "redis", "local"
 
     # === Stage 4: FilterResults outputs ===
     licitacoes_filtradas: list = field(default_factory=list)

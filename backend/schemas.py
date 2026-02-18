@@ -943,6 +943,14 @@ class BuscaResponse(BaseModel):
         default=None,
         description="GTM-FIX-010 AC5r: Source codes that contributed to cached data (e.g. ['PNCP','PORTAL_COMPRAS'])"
     )
+    cache_status: Optional[str] = Field(
+        default=None,
+        description="UX-303 AC5: Cache freshness status — 'fresh' (0-6h) or 'stale' (6-24h)"
+    )
+    cache_level: Optional[str] = Field(
+        default=None,
+        description="UX-303 AC2: Which cache level served the data — 'supabase', 'redis', or 'local'"
+    )
     hidden_by_min_match: Optional[int] = Field(
         default=None,
         description="Number of bids that matched at least 1 term but were below the minimum match floor"
