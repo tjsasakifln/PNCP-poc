@@ -669,8 +669,8 @@ class TestPerUFTimeout:
         _circuit_breaker.reset()
 
     @pytest.mark.asyncio
-    async def test_per_uf_timeout_is_30s(self):
-        """Verify the per-UF timeout value in buscar_todas_ufs_paralelo is 30s."""
+    async def test_per_uf_timeout_is_90s(self):
+        """Verify the per-UF timeout value in buscar_todas_ufs_paralelo is 90s (GTM-FIX-029 AC1)."""
         # We verify by checking the timeout passed to asyncio.wait_for
         async with AsyncPNCPClient(max_concurrent=10) as client:
             timeout_seen = None
@@ -697,8 +697,8 @@ class TestPerUFTimeout:
                     data_final="2026-01-31",
                 )
 
-            # The per-UF timeout should be 30s (AC7)
-            assert timeout_seen == 30
+            # GTM-FIX-029 AC1: PER_UF_TIMEOUT raised from 30s to 90s
+            assert timeout_seen == 90
 
 
 # ---------------------------------------------------------------------------

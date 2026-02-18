@@ -65,10 +65,10 @@ class ConsolidationService:
     - Progress callback support
     """
 
-    # Timeout used for alternative sources when PNCP is degraded/down (AC13)
-    FAILOVER_TIMEOUT_PER_SOURCE = 40
-    # Global timeout when PNCP is degraded (AC17)
-    DEGRADED_GLOBAL_TIMEOUT = 90
+    # GTM-FIX-029 AC9: Failover timeout raised from 40→120 for slower pagination
+    FAILOVER_TIMEOUT_PER_SOURCE = 120
+    # GTM-FIX-029 AC8: Degraded global timeout raised from 90→360
+    DEGRADED_GLOBAL_TIMEOUT = 360
     # Timeout for ComprasGov last-resort fallback (AC15)
     FALLBACK_TIMEOUT = 40
 
@@ -114,6 +114,13 @@ class ConsolidationService:
         self._timeout_global = timeout_global
         self._fail_on_all_errors = fail_on_all_errors
         self._fallback_adapter = fallback_adapter
+
+        # GTM-FIX-029 AC10: Warn if per-source timeout is dangerously close to global
+        if timeout_per_source > timeout_global * 0.8:
+            logger.warning(
+                f"Timeout near-inversion: timeout_per_source ({timeout_per_source}s) > "
+                f"80% of timeout_global ({timeout_global}s). Sources may starve each other."
+            )
 
     async def fetch_all(
         self,

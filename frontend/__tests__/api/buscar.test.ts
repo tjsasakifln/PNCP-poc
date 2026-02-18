@@ -327,10 +327,10 @@ describe("POST /api/buscar", () => {
 
     await POST(request);
 
-    // Verify setTimeout was called with 60 minutes (3600000ms)
+    // GTM-FIX-029 AC19: Verify setTimeout was called with 8 minutes (480000ms)
     expect(setTimeoutSpy).toHaveBeenCalledWith(
       expect.any(Function),
-      60 * 60 * 1000
+      8 * 60 * 1000
     );
 
     setTimeoutSpy.mockRestore();

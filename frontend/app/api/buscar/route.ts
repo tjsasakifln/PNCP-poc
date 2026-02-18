@@ -87,9 +87,10 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Timeout de 5 minutos — consultas com muitos estados podem demorar
+        // GTM-FIX-029 AC19/AC20: Timeout hierarchy (outermost → innermost):
+        // FE proxy (480s) > Pipeline FETCH_TIMEOUT (360s) > Consolidation (300s) > Per-Source (180s) > Per-UF (90s)
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+        const timeout = setTimeout(() => controller.abort(), 8 * 60 * 1000);
 
         response = await fetch(`${backendUrl}/v1/buscar`, {
           method: "POST",
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
         if (isTimeout || attempt >= MAX_RETRIES - 1) {
           // Timeout or final attempt - return error
           const message = isTimeout
-            ? "A consulta excedeu o tempo limite (5 min). Tente com menos estados ou um período menor."
+            ? "A consulta excedeu o tempo limite (8 min). Tente com menos estados ou um período menor."
             : `Backend indisponível em ${backendUrl}: ${error instanceof Error ? error.message : 'conexão recusada'}`;
           console.error(`Erro ao conectar com backend em ${backendUrl}:`, error);
           return NextResponse.json(

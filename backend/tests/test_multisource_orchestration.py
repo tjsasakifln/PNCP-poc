@@ -244,7 +244,7 @@ class TestAutomaticFailover:
 
     @pytest.mark.asyncio
     async def test_failover_increases_alt_source_timeout_when_pncp_degraded(self):
-        """When PNCP is degraded, alternative sources get 40s timeout instead of 25s."""
+        """When PNCP is degraded, alternative sources get 120s timeout instead of 25s (GTM-FIX-029)."""
         # Mark PNCP as degraded
         for _ in range(3):
             source_health_registry.record_failure("PNCP")
@@ -273,8 +273,8 @@ class TestAutomaticFailover:
 
         # PNCP should keep its original timeout (25)
         assert captured_timeouts["PNCP"] == 25
-        # Portal should get increased timeout (40)
-        assert captured_timeouts["Portal"] == 40
+        # Portal should get increased timeout (120, GTM-FIX-029 AC9)
+        assert captured_timeouts["Portal"] == 120
 
     @pytest.mark.asyncio
     async def test_no_failover_when_pncp_healthy(self):
@@ -633,7 +633,7 @@ class TestGlobalTimeoutAdjustment:
 
     @pytest.mark.asyncio
     async def test_global_timeout_increases_when_pncp_degraded(self):
-        """Global timeout goes from 60s to 90s when PNCP is degraded."""
+        """Global timeout goes from 60s to 360s when PNCP is degraded (GTM-FIX-029 AC8)."""
         # Mark PNCP as degraded
         for _ in range(3):
             source_health_registry.record_failure("PNCP")
@@ -659,7 +659,8 @@ class TestGlobalTimeoutAdjustment:
         with patch("consolidation.asyncio.wait_for", side_effect=patched_wait_for):
             await svc.fetch_all("2026-01-01", "2026-01-31")
 
-        assert captured_global_timeout == 90
+        # GTM-FIX-029 AC8: DEGRADED_GLOBAL_TIMEOUT raised from 90 to 360
+        assert captured_global_timeout == 360
 
     @pytest.mark.asyncio
     async def test_global_timeout_normal_when_pncp_healthy(self):
@@ -713,7 +714,8 @@ class TestGlobalTimeoutAdjustment:
         with patch("consolidation.asyncio.wait_for", side_effect=patched_wait_for):
             await svc.fetch_all("2026-01-01", "2026-01-31")
 
-        assert captured_global_timeout == 90
+        # GTM-FIX-029 AC8: DEGRADED_GLOBAL_TIMEOUT raised from 90 to 360
+        assert captured_global_timeout == 360
 
 
 # ============ Integration-style Tests ============

@@ -59,6 +59,16 @@ PNCP_MODALITY_RETRY_BACKOFF: float = float(
     os.environ.get("PNCP_MODALITY_RETRY_BACKOFF", "3.0")
 )
 
+# Per-UF timeout (GTM-FIX-029 AC1/AC5) — configurable
+# Calculation: 4 modalities × ~15s/mod (with retry) = ~60s + 30s margin = 90s
+PNCP_TIMEOUT_PER_UF: float = float(
+    os.environ.get("PNCP_TIMEOUT_PER_UF", "90")
+)
+# Degraded mode per-UF timeout (GTM-FIX-029 AC2)
+PNCP_TIMEOUT_PER_UF_DEGRADED: float = float(
+    os.environ.get("PNCP_TIMEOUT_PER_UF_DEGRADED", "120")
+)
+
 # UFs ordered by population for degraded priority (STORY-257A AC1)
 UFS_BY_POPULATION = ["SP", "RJ", "MG", "BA", "PR", "RS", "PE", "CE", "SC", "GO",
                       "PA", "MA", "AM", "ES", "PB", "RN", "MT", "AL", "PI", "DF",
@@ -1032,6 +1042,34 @@ class AsyncPNCPClient:
                         "temProximaPagina": False,
                     }
 
+                # GTM-FIX-029 AC12-AC15: Special 422 handling — max 1 retry, log body, circuit breaker
+                if response.status_code == 422:
+                    body_preview = response.text[:500] if response.text else "(empty)"
+                    uf_param = params.get("uf", "?")
+                    mod_param = params.get("codigoModalidadeContratacao", "?")
+                    if attempt < 1:  # AC12: max 1 retry for 422 (not full max_retries)
+                        logger.warning(
+                            f"PNCP 422 for UF={uf_param} mod={mod_param} "
+                            f"(attempt {attempt + 1}/2). Body: {body_preview}. Retrying once..."
+                        )
+                        await asyncio.sleep(self.config.base_delay)
+                        continue
+                    else:
+                        # AC13: Log complete response after retry exhausted
+                        logger.warning(
+                            f"PNCP 422 persisted for UF={uf_param} mod={mod_param} "
+                            f"after 1 retry. Body: {body_preview}"
+                        )
+                        # AC14: Count as circuit breaker failure
+                        await _circuit_breaker.record_failure()
+                        # AC15: Metric tag for diagnostics
+                        logger.info(
+                            f"pncp_422_count uf={uf_param} modality={mod_param}"
+                        )
+                        raise PNCPAPIError(
+                            f"PNCP 422 after 1 retry for UF={uf_param} mod={mod_param}"
+                        )
+
                 # Non-retryable error
                 if response.status_code not in self.config.retryable_status_codes:
                     raise PNCPAPIError(
@@ -1343,13 +1381,14 @@ class AsyncPNCPClient:
         if _circuit_breaker.is_degraded:
             logger.warning(
                 "PNCP circuit breaker degraded — trying with reduced concurrency "
-                "(3 UFs, 45s timeout)"
+                f"(3 UFs, {PNCP_TIMEOUT_PER_UF_DEGRADED}s timeout)"
             )
             # Reorder UFs by population priority
             ufs_ordered = sorted(ufs, key=lambda u: UFS_BY_POPULATION.index(u) if u in UFS_BY_POPULATION else 99)
             # Reduce concurrency
             self._semaphore = asyncio.Semaphore(3)
-            PER_UF_TIMEOUT = 45  # Extended timeout in degraded mode
+            # GTM-FIX-029 AC2: 120s in degraded mode (was 45s)
+            PER_UF_TIMEOUT = PNCP_TIMEOUT_PER_UF_DEGRADED
         else:
             # STORY-252 AC10: Health canary — lightweight probe before full search
             canary_ok = await self.health_canary()
@@ -1361,9 +1400,10 @@ class AsyncPNCPClient:
 
             # Normal mode
             ufs_ordered = ufs
-            # STORY-252 AC7: Reduced per-UF timeout from 90s to 30s
-            # With 4 modalities at 15s each running in parallel, 30s is sufficient
-            PER_UF_TIMEOUT = 30  # seconds
+            # GTM-FIX-029 AC1/AC3: PER_UF_TIMEOUT raised from 30s to 90s
+            # With tamanhoPagina=50, each modality needs ~10x more pages than before.
+            # Calculation: 4 mods × ~15s/mod (with retry) = ~60s + 30s margin = 90s
+            PER_UF_TIMEOUT = PNCP_TIMEOUT_PER_UF
 
         # Helper to safely call async/sync callbacks
         async def _safe_callback(cb, *args, **kwargs):
@@ -1437,15 +1477,16 @@ class AsyncPNCPClient:
                 all_items.extend(result)
                 succeeded_ufs.append(uf)
 
-        # STORY-257A AC7: Auto-retry failed UFs (1 round, 5s delay, 45s timeout)
+        # STORY-257A AC7: Auto-retry failed UFs (1 round, 5s delay)
+        # GTM-FIX-029: Retry timeout matches degraded per-UF timeout (120s)
         if failed_ufs and succeeded_ufs:
             logger.info(
                 f"AC7: {len(failed_ufs)} UFs failed, {len(succeeded_ufs)} succeeded — "
-                f"retrying failed UFs in 5s with 45s timeout"
+                f"retrying failed UFs in 5s with {PNCP_TIMEOUT_PER_UF_DEGRADED}s timeout"
             )
             await asyncio.sleep(5)
 
-            RETRY_TIMEOUT = 45
+            RETRY_TIMEOUT = PNCP_TIMEOUT_PER_UF_DEGRADED
 
             async def _retry_uf(uf: str) -> tuple[List[Dict[str, Any]], bool]:
                 await _safe_callback(on_uf_status, uf, "retrying", attempt=2, max=2)

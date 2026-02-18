@@ -56,8 +56,9 @@ class RetryConfig:
     timeout: int = 30  # seconds
 
     # HTTP status codes that should trigger retry
+    # GTM-FIX-029 AC12: 422 added — PNCP returns 422 for certain UF+modality combos
     retryable_status_codes: Tuple[int, ...] = field(
-        default_factory=lambda: (408, 429, 500, 502, 503, 504)
+        default_factory=lambda: (408, 422, 429, 500, 502, 503, 504)
     )
 
     # Exception types that should trigger retry

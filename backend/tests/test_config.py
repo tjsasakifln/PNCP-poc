@@ -260,7 +260,8 @@ class TestRetryConfig:
         """Test default retryable HTTP status codes."""
         config = RetryConfig()
 
-        expected_codes = (408, 429, 500, 502, 503, 504)
+        # GTM-FIX-029 AC12: 422 added to retryable status codes
+        expected_codes = (408, 422, 429, 500, 502, 503, 504)
         assert config.retryable_status_codes == expected_codes
 
     def test_retryable_exceptions_default(self):
