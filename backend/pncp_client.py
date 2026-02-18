@@ -234,6 +234,78 @@ STATUS_PNCP_MAP = {
 }
 
 
+# ============================================================================
+# UX-336: Multi-format date handling for PNCP 422 recovery
+# ============================================================================
+
+class DateFormat:
+    """Supported PNCP date formats for 422 retry rotation."""
+    YYYYMMDD = "YYYYMMDD"       # 20260218 (current default)
+    ISO_DASH = "YYYY-MM-DD"     # 2026-02-18
+    BR_SLASH = "DD/MM/YYYY"     # 18/02/2026
+    BR_DASH = "DD-MM-YYYY"      # 18-02-2026
+
+    ALL = [YYYYMMDD, ISO_DASH, BR_SLASH, BR_DASH]
+
+
+# UX-336 AC3: In-memory cache of accepted date format (TTL 24h)
+_accepted_date_format: Optional[str] = None
+_accepted_date_format_ts: float = 0.0
+_DATE_FORMAT_CACHE_TTL = 86400.0  # 24 hours
+
+
+def _get_cached_date_format() -> Optional[str]:
+    """Return cached accepted format if still valid, else None."""
+    global _accepted_date_format, _accepted_date_format_ts
+    if _accepted_date_format and (time.time() - _accepted_date_format_ts) < _DATE_FORMAT_CACHE_TTL:
+        return _accepted_date_format
+    return None
+
+
+def _set_cached_date_format(fmt: str) -> None:
+    """Cache the accepted date format."""
+    global _accepted_date_format, _accepted_date_format_ts
+    _accepted_date_format = fmt
+    _accepted_date_format_ts = time.time()
+    logger.info(f"pncp_date_format_cached format={fmt}")
+
+
+def format_date(iso_date: str, fmt: str) -> str:
+    """Convert YYYY-MM-DD date string to the specified format.
+
+    Args:
+        iso_date: Date in YYYY-MM-DD format
+        fmt: Target format from DateFormat constants
+
+    Returns:
+        Formatted date string
+    """
+    parts = iso_date.split("-")
+    if len(parts) != 3:
+        raise ValueError(f"Invalid ISO date: '{iso_date}'")
+    yyyy, mm, dd = parts
+
+    if fmt == DateFormat.YYYYMMDD:
+        return f"{yyyy}{mm}{dd}"
+    elif fmt == DateFormat.ISO_DASH:
+        return iso_date  # Already in this format
+    elif fmt == DateFormat.BR_SLASH:
+        return f"{dd}/{mm}/{yyyy}"
+    elif fmt == DateFormat.BR_DASH:
+        return f"{dd}-{mm}-{yyyy}"
+    else:
+        raise ValueError(f"Unknown date format: '{fmt}'")
+
+
+def _get_format_rotation() -> List[str]:
+    """Return date formats to try, with cached format first if available."""
+    cached = _get_cached_date_format()
+    if cached:
+        # Put cached format first, then the rest
+        return [cached] + [f for f in DateFormat.ALL if f != cached]
+    return list(DateFormat.ALL)
+
+
 def _validate_date_params(
     data_inicial: str, data_inicial_fmt: str,
     data_final: str, data_final_fmt: str,
@@ -256,7 +328,8 @@ def _handle_422_response(
     """GTM-FIX-032 AC1+AC4+AC6: Shared 422 handling for sync and async clients.
 
     Returns:
-        "retry" — caller should retry
+        "retry" — caller should retry (same format)
+        "retry_format" — caller should retry with next date format (UX-336)
         dict — empty result (graceful skip for date-related 422s)
         "raise" — caller should raise PNCPAPIError
     """
@@ -265,17 +338,18 @@ def _handle_422_response(
     mod_param = params.get("codigoModalidadeContratacao", "?")
     pagina = params.get("pagina", 1)
 
-    if attempt < max_retries:
-        # AC1: Diagnostic logging with full params and raw dates
-        logger.warning(
-            f"PNCP 422 for UF={uf_param} mod={mod_param} "
-            f"(attempt {attempt + 1}/{max_retries + 1}). Body: {body_preview}. "
-            f"Params: {params}. Raw dates: {data_inicial} → {data_final}. "
-            f"Retrying once..."
-        )
-        return "retry"
+    # UX-336 AC4: Detailed logging of each attempt
+    logger.warning(
+        f"PNCP 422 for UF={uf_param} mod={mod_param} "
+        f"(attempt {attempt + 1}/{max_retries + 1}). Body: {body_preview}. "
+        f"Params: {params}. Raw dates: {data_inicial} → {data_final}."
+    )
 
-    # Retry exhausted
+    # UX-336: Always signal format rotation — the outer loop tracks format exhaustion
+    if attempt < max_retries:
+        return "retry_format"
+
+    # Retry exhausted — categorize (called explicitly when formats are exhausted)
     logger.warning(
         f"PNCP 422 persisted for UF={uf_param} mod={mod_param} "
         f"after {max_retries} retry. Body: {body_preview}. "
@@ -290,7 +364,7 @@ def _handle_422_response(
     elif "365 dias" in body_preview:
         _422_type = "date_range"
 
-    # AC4.4: Sentry-style metric tag
+    # AC4.4 + UX-336 AC5: Sentry-style metric tag with format info
     logger.info(
         f"pncp_422_count uf={uf_param} modality={mod_param} type={_422_type}"
     )
@@ -467,6 +541,10 @@ class PNCPClient:
         if req_id and req_id != "-":
             headers["X-Request-ID"] = req_id
 
+        # UX-336: Track format rotation for 422 recovery
+        format_rotation = _get_format_rotation()
+        format_idx = 0
+
         for attempt in range(self.config.max_retries + 1):
             try:
                 logger.debug(
@@ -527,6 +605,12 @@ class PNCPClient:
                                 f"PNCP returned invalid JSON after {self.config.max_retries + 1} attempts: {e}"
                             ) from e
 
+                    # UX-336 AC3+AC5: Cache successful format + telemetry
+                    current_fmt = format_rotation[format_idx] if format_idx < len(format_rotation) else DateFormat.YYYYMMDD
+                    if current_fmt != DateFormat.YYYYMMDD or format_idx > 0:
+                        _set_cached_date_format(current_fmt)
+                        logger.info(f"pncp_date_format_accepted format={current_fmt}")
+
                     logger.debug(
                         f"Success: fetched page {pagina} "
                         f"({len(data.get('data', []))} items)"
@@ -544,20 +628,34 @@ class PNCPClient:
                         "temProximaPagina": False,
                     }
 
-                # GTM-FIX-032 AC6: Sync client 422 handling (parity with async)
+                # GTM-FIX-032 AC6 + UX-336 AC1: 422 handling with format rotation
                 if response.status_code == 422:
+                    # UX-336: Use format_idx to determine if more formats are available
+                    has_more_formats = (format_idx + 1) < len(format_rotation)
+                    effective_attempt = 0 if has_more_formats else 1
                     result = _handle_422_response(
-                        response.text, params, data_inicial, data_final, attempt, max_retries=1
+                        response.text, params, data_inicial, data_final,
+                        attempt=effective_attempt, max_retries=1
                     )
-                    if result == "retry":
+                    if result == "retry_format" and has_more_formats:
+                        # UX-336: Try next date format
+                        format_idx += 1
+                        next_fmt = format_rotation[format_idx]
+                        logger.info(
+                            f"UX-336: Retrying with format {next_fmt} "
+                            f"(attempt {format_idx + 1}/{len(format_rotation)})"
+                        )
+                        params["dataInicial"] = format_date(data_inicial, next_fmt)
+                        params["dataFinal"] = format_date(data_final, next_fmt)
                         time.sleep(self.config.base_delay)
                         continue
-                    elif isinstance(result, dict):
+                    if isinstance(result, dict):
                         return result
-                    # result == "raise" for unknown 422
+                    # UX-336 AC6: All formats failed
                     raise PNCPAPIError(
-                        f"PNCP 422 after 1 retry for UF={params.get('uf', '?')} "
-                        f"mod={params.get('codigoModalidadeContratacao', '?')}"
+                        f"PNCP 422 after all {len(format_rotation)} date formats for "
+                        f"UF={params.get('uf', '?')} mod={params.get('codigoModalidadeContratacao', '?')}. "
+                        f"Reduza o período de busca."
                     )
 
                 # Non-retryable errors - fail immediately
@@ -1063,6 +1161,10 @@ class AsyncPNCPClient:
 
         url = f"{self.BASE_URL}/contratacoes/publicacao"
 
+        # UX-336: Track format rotation for 422 recovery
+        format_rotation = _get_format_rotation()
+        format_idx = 0
+
         for attempt in range(self.config.max_retries + 1):
             try:
                 logger.debug(
@@ -1135,6 +1237,12 @@ class AsyncPNCPClient:
                                 f"PNCP returned invalid JSON after {self.config.max_retries + 1} attempts: {e}"
                             ) from e
 
+                    # UX-336 AC3+AC5: Cache successful format + telemetry
+                    current_fmt = format_rotation[format_idx] if format_idx < len(format_rotation) else DateFormat.YYYYMMDD
+                    if current_fmt != DateFormat.YYYYMMDD or format_idx > 0:
+                        _set_cached_date_format(current_fmt)
+                        logger.info(f"pncp_date_format_accepted format={current_fmt}")
+
                     return data
 
                 # No content
@@ -1147,21 +1255,35 @@ class AsyncPNCPClient:
                         "temProximaPagina": False,
                     }
 
-                # GTM-FIX-032 AC1+AC4: Improved 422 handling — diagnostic logging, graceful recovery, NO circuit breaker
+                # GTM-FIX-032 AC1+AC4 + UX-336 AC1: 422 handling with format rotation
                 if response.status_code == 422:
+                    # UX-336: Use format_idx to determine if more formats are available
+                    has_more_formats = (format_idx + 1) < len(format_rotation)
+                    effective_attempt = 0 if has_more_formats else 1
                     result = _handle_422_response(
-                        response.text, params, data_inicial, data_final, attempt, max_retries=1
+                        response.text, params, data_inicial, data_final,
+                        attempt=effective_attempt, max_retries=1
                     )
-                    if result == "retry":
+                    if result == "retry_format" and has_more_formats:
+                        # UX-336: Try next date format
+                        format_idx += 1
+                        next_fmt = format_rotation[format_idx]
+                        logger.info(
+                            f"UX-336: Retrying with format {next_fmt} "
+                            f"(attempt {format_idx + 1}/{len(format_rotation)})"
+                        )
+                        params["dataInicial"] = format_date(data_inicial, next_fmt)
+                        params["dataFinal"] = format_date(data_final, next_fmt)
                         await asyncio.sleep(self.config.base_delay)
                         continue
-                    elif isinstance(result, dict):
+                    if isinstance(result, dict):
                         # AC4.3: Return empty instead of crashing for date-related 422s
                         return result
-                    # Unknown 422 — still raise (but NO circuit breaker — AC4.1)
+                    # UX-336 AC6: All formats failed
                     raise PNCPAPIError(
-                        f"PNCP 422 after 1 retry for UF={params.get('uf', '?')} "
-                        f"mod={params.get('codigoModalidadeContratacao', '?')}"
+                        f"PNCP 422 after all {len(format_rotation)} date formats for "
+                        f"UF={params.get('uf', '?')} mod={params.get('codigoModalidadeContratacao', '?')}. "
+                        f"Reduza o período de busca."
                     )
 
                 # Non-retryable error

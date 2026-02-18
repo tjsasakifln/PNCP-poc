@@ -75,13 +75,13 @@ class TestHandle422Response:
         "pagina": 1,
     }
 
-    def test_first_attempt_returns_retry(self):
-        """First 422 attempt returns 'retry'."""
+    def test_first_attempt_returns_retry_format(self):
+        """First 422 attempt returns 'retry_format' for format rotation (UX-336)."""
         result = _handle_422_response(
             '{"message":"some error"}', self.PARAMS,
             "2026-02-08", "2026-02-18", attempt=0, max_retries=1
         )
-        assert result == "retry"
+        assert result == "retry_format"
 
     def test_date_swap_message_returns_empty(self):
         """AC7.4: 422 with 'Data Inicial' message returns empty result."""
@@ -139,9 +139,12 @@ class TestAsyncClient422NoCB:
         client = AsyncPNCPClient.__new__(AsyncPNCPClient)
         client._client = mock_client
         client.config = MagicMock()
-        client.config.max_retries = 3
-        client.config.base_delay = 0.01
+        client.config.max_retries = 5  # UX-336: enough for 4 format rotations
+        client.config.base_delay = 0.001
         client.config.retryable_status_codes = {500, 502, 503}
+        client.config.exponential_base = 2
+        client.config.jitter = False
+        client.config.max_delay = 1
         client.BASE_URL = "https://pncp.gov.br/api/consulta/v1"
         client._last_request_time = 0
         client._rate_limit = AsyncMock()
@@ -150,7 +153,7 @@ class TestAsyncClient422NoCB:
             result = await client._fetch_page_async(
                 "2026-02-08", "2026-02-18", 6, uf="SP"
             )
-            # Should return empty dict, NOT raise
+            # Should return empty dict, NOT raise (date_swap is a known 422 type)
             assert result["data"] == []
             assert result["totalRegistros"] == 0
             # Circuit breaker should NOT have been called
@@ -169,15 +172,18 @@ class TestAsyncClient422NoCB:
         client = AsyncPNCPClient.__new__(AsyncPNCPClient)
         client._client = mock_client
         client.config = MagicMock()
-        client.config.max_retries = 3
-        client.config.base_delay = 0.01
+        client.config.max_retries = 5  # UX-336: enough for 4 format rotations
+        client.config.base_delay = 0.001
         client.config.retryable_status_codes = {500, 502, 503}
+        client.config.exponential_base = 2
+        client.config.jitter = False
+        client.config.max_delay = 1
         client.BASE_URL = "https://pncp.gov.br/api/consulta/v1"
         client._last_request_time = 0
         client._rate_limit = AsyncMock()
 
         with patch("pncp_client._circuit_breaker") as mock_cb:
-            with pytest.raises(PNCPAPIError, match="PNCP 422"):
+            with pytest.raises(PNCPAPIError, match="Reduza o período"):
                 await client._fetch_page_async(
                     "2026-02-08", "2026-02-18", 6, uf="SP"
                 )
