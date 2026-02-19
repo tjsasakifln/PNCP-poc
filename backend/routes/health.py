@@ -130,7 +130,9 @@ def _check_local_cache() -> dict:
 
 
 async def _check_cache_degradation() -> dict:
-    """B-03 AC9: Aggregate fail_streak and degradation metrics from Supabase."""
+    """B-03 AC9: Aggregate fail_streak and degradation metrics from Supabase.
+    B-02 AC10: Includes priority_distribution {hot, warm, cold}.
+    """
     try:
         from supabase_client import get_supabase
         sb = get_supabase()
@@ -156,10 +158,25 @@ async def _check_cache_degradation() -> dict:
         streaks = [row.get("fail_streak", 0) for row in (streak_resp.data or [])]
         avg_streak = round(sum(streaks) / len(streaks), 1) if streaks else 0.0
 
+        # B-02 AC10: Priority distribution
+        priority_resp = (
+            sb.table("search_results_cache")
+            .select("priority")
+            .execute()
+        )
+        priority_counts = {"hot": 0, "warm": 0, "cold": 0}
+        for row in (priority_resp.data or []):
+            p = row.get("priority", "cold")
+            if p in priority_counts:
+                priority_counts[p] += 1
+            else:
+                priority_counts["cold"] += 1
+
         return {
             "degraded_keys_count": degraded_count,
             "avg_fail_streak": avg_streak,
             "keys_with_failures": len(streaks),
+            "priority_distribution": priority_counts,
         }
     except Exception as e:
         logger.warning(f"Cache degradation check failed: {e}")
@@ -167,5 +184,6 @@ async def _check_cache_degradation() -> dict:
             "degraded_keys_count": 0,
             "avg_fail_streak": 0.0,
             "keys_with_failures": 0,
+            "priority_distribution": {"hot": 0, "warm": 0, "cold": 0},
             "error": str(e)[:200],
         }

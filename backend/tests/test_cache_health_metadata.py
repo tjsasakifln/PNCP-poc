@@ -419,7 +419,14 @@ class TestHealthEndpointDegradation:
             {"fail_streak": 5},
         ]
 
-        mock_sb.execute.side_effect = [degraded_mock, streak_mock]
+        # Third call: priority distribution (B-02 AC10)
+        priority_mock = Mock()
+        priority_mock.data = [
+            {"priority": "hot"},
+            {"priority": "cold"},
+        ]
+
+        mock_sb.execute.side_effect = [degraded_mock, streak_mock, priority_mock]
 
         with patch("supabase_client.get_supabase", return_value=mock_sb):
             result = await _check_cache_degradation()
@@ -427,6 +434,7 @@ class TestHealthEndpointDegradation:
         assert result["degraded_keys_count"] == 2
         assert result["avg_fail_streak"] == 3.0  # (1+3+5)/3
         assert result["keys_with_failures"] == 3
+        assert "priority_distribution" in result
 
     @pytest.mark.asyncio
     async def test_health_degradation_handles_empty(self):
@@ -446,7 +454,11 @@ class TestHealthEndpointDegradation:
         empty_streaks = Mock()
         empty_streaks.data = []
 
-        mock_sb.execute.side_effect = [empty_count, empty_streaks]
+        # B-02 AC10: priority distribution (empty)
+        empty_priority = Mock()
+        empty_priority.data = []
+
+        mock_sb.execute.side_effect = [empty_count, empty_streaks, empty_priority]
 
         with patch("supabase_client.get_supabase", return_value=mock_sb):
             result = await _check_cache_degradation()

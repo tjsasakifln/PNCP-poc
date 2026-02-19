@@ -60,6 +60,52 @@ class CacheStatus(str, Enum):
     EXPIRED = "expired"
 
 
+class CachePriority(str, Enum):
+    """B-02 AC1: Cache entry priority classification for hot/warm/cold tiering."""
+    HOT = "hot"
+    WARM = "warm"
+    COLD = "cold"
+
+
+# B-02 AC6: Redis TTL by priority (seconds)
+REDIS_TTL_BY_PRIORITY = {
+    CachePriority.HOT: 7200,    # 2h
+    CachePriority.WARM: 21600,  # 6h
+    CachePriority.COLD: 3600,   # 1h
+}
+
+
+def classify_priority(
+    access_count: int,
+    last_accessed_at: Optional[datetime],
+    is_saved_search: bool = False,
+) -> CachePriority:
+    """B-02 AC2: Deterministic priority classification.
+
+    Returns:
+        HOT if access_count >= 3 in last 24h OR is_saved_search with recent access
+        WARM if access_count >= 1 in last 24h
+        COLD otherwise
+    """
+    now = datetime.now(timezone.utc)
+
+    recent_access = False
+    if last_accessed_at:
+        if last_accessed_at.tzinfo is None:
+            last_accessed_at = last_accessed_at.replace(tzinfo=timezone.utc)
+        age_hours = (now - last_accessed_at).total_seconds() / 3600
+        recent_access = age_hours <= 24
+
+    if recent_access and access_count >= 3:
+        return CachePriority.HOT
+    if is_saved_search and recent_access:
+        return CachePriority.HOT
+    if recent_access and access_count >= 1:
+        return CachePriority.WARM
+
+    return CachePriority.COLD
+
+
 def compute_search_hash(params: dict) -> str:
     """Deterministic hash from search params for deduplication.
 
@@ -154,13 +200,16 @@ async def _save_to_supabase(
 
 
 async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
-    """Read from Supabase cache (Level 1)."""
+    """Read from Supabase cache (Level 1).
+
+    B-02 AC8: Also returns priority, access_count, last_accessed_at for classification.
+    """
     from supabase_client import get_supabase
     sb = get_supabase()
 
     response = (
         sb.table("search_results_cache")
-        .select("results, total_results, sources_json, fetched_at, created_at")
+        .select("results, total_results, sources_json, fetched_at, created_at, priority, access_count, last_accessed_at")
         .eq("user_id", user_id)
         .eq("params_hash", params_hash)
         .order("created_at", desc=True)
@@ -178,6 +227,10 @@ async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
         "total_results": row.get("total_results", 0),
         "sources_json": row.get("sources_json"),
         "fetched_at": fetched_at_str,
+        # B-02 fields
+        "priority": row.get("priority", "cold"),
+        "access_count": row.get("access_count", 0),
+        "last_accessed_at": row.get("last_accessed_at"),
     }
 
 
@@ -186,17 +239,24 @@ async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
 # ============================================================================
 
 
-def _save_to_redis(cache_key: str, results: list, sources: list[str]) -> None:
-    """Save to Redis/InMemory cache (Level 2)."""
+def _save_to_redis(
+    cache_key: str, results: list, sources: list[str],
+    *, priority: CachePriority = CachePriority.COLD,
+) -> None:
+    """Save to Redis/InMemory cache (Level 2).
+
+    B-02 AC6: Uses priority-based TTL instead of fixed 4h.
+    """
     from redis_pool import get_fallback_cache
     cache = get_fallback_cache()
 
+    ttl = REDIS_TTL_BY_PRIORITY.get(priority, REDIS_CACHE_TTL_SECONDS)
     cache_data = json.dumps({
         "results": results,
         "sources_json": sources,
         "fetched_at": datetime.now(timezone.utc).isoformat(),
     })
-    cache.setex(f"search_cache:{cache_key}", REDIS_CACHE_TTL_SECONDS, cache_data)
+    cache.setex(f"search_cache:{cache_key}", ttl, cache_data)
 
 
 def _get_from_redis(cache_key: str) -> Optional[dict]:
@@ -350,8 +410,12 @@ async def get_from_cache(
     """Retrieve cached results with 3-level fallback (AC2).
 
     Cascade: Supabase → Redis/InMemory → Local file.
+    B-02 AC4: Increments access_count on Supabase after each hit.
+    B-02 AC5: Reclassifies priority if it changed.
+    B-02 AC8: Includes cache_priority in result.
+    B-02 AC9: Triggers proactive refresh for hot keys near expiry.
     Returns dict with: results, cached_at, cached_sources, cache_age_hours,
-                       is_stale, cache_level
+                       is_stale, cache_level, cache_priority
     Returns None if no valid cache entry exists.
     """
     params_hash = compute_search_hash(params)
@@ -369,6 +433,8 @@ async def get_from_cache(
                     len(result["results"]), elapsed,
                     cache_age_seconds=result["cache_age_hours"] * 3600,
                 )
+                # B-02 AC4/AC5: Increment access_count and reclassify
+                await _increment_and_reclassify(user_id, params_hash, params, result)
                 return result
     except Exception as e:
         # GTM-RESILIENCE-E02: centralized reporting (cache read is expected/transient)
@@ -389,6 +455,11 @@ async def get_from_cache(
                     len(result["results"]), elapsed,
                     cache_age_seconds=result["cache_age_hours"] * 3600,
                 )
+                # B-02 AC4/AC5: Track access in Supabase (best-effort)
+                try:
+                    await _increment_and_reclassify(user_id, params_hash, params, result)
+                except Exception:
+                    pass
                 return result
     except Exception as e:
         logger.error(f"Redis cache read failed: {e}")
@@ -607,6 +678,23 @@ def _process_cache_hit(data: dict, params_hash: str, level: CacheLevel) -> Optio
         f"(age={age_hours:.1f}h, status={status.value})"
     )
 
+    # B-02 AC8: Determine cache_priority from data if available
+    priority_str = data.get("priority", "cold")
+    access_count = data.get("access_count", 0)
+    last_accessed_str = data.get("last_accessed_at")
+    last_accessed = None
+    if last_accessed_str:
+        try:
+            last_accessed = datetime.fromisoformat(str(last_accessed_str).replace("Z", "+00:00"))
+        except (ValueError, TypeError):
+            pass
+    cache_priority = classify_priority(access_count, last_accessed)
+    # If DB has a stored priority, prefer it for consistency
+    try:
+        cache_priority = CachePriority(priority_str)
+    except (ValueError, KeyError):
+        pass
+
     return {
         "results": data.get("results", []),
         "cached_at": fetched_at_str,
@@ -615,6 +703,7 @@ def _process_cache_hit(data: dict, params_hash: str, level: CacheLevel) -> Optio
         "is_stale": is_stale,
         "cache_level": level,
         "cache_status": status,
+        "cache_priority": cache_priority,
     }
 
 
@@ -696,6 +785,97 @@ def _track_cache_operation(
         })
     except Exception:
         pass  # Analytics failures are silent
+
+
+# ============================================================================
+# B-02 AC4/AC5/AC9: Access tracking, reclassification, proactive refresh
+# ============================================================================
+
+
+async def _increment_and_reclassify(
+    user_id: str,
+    params_hash: str,
+    params: dict,
+    result: dict,
+) -> None:
+    """B-02 AC4/AC5/AC9: Increment access_count, reclassify, trigger proactive refresh.
+
+    Called after every cache hit. Updates Supabase with:
+      - access_count + 1
+      - last_accessed_at = now()
+      - priority (if reclassified)
+    AC9: If hot key is within 30min of expiry, dispatches proactive revalidation.
+    """
+    from supabase_client import get_supabase
+
+    now = datetime.now(timezone.utc)
+
+    try:
+        sb = get_supabase()
+
+        # Read current state
+        resp = (
+            sb.table("search_results_cache")
+            .select("access_count, last_accessed_at, priority")
+            .eq("user_id", user_id)
+            .eq("params_hash", params_hash)
+            .limit(1)
+            .execute()
+        )
+
+        if not resp.data:
+            return
+
+        row = resp.data[0]
+        old_count = row.get("access_count", 0) or 0
+        old_priority = row.get("priority", "cold")
+        new_count = old_count + 1
+
+        # AC2: Reclassify with updated access_count
+        new_priority = classify_priority(new_count, now)
+
+        update_data = {
+            "access_count": new_count,
+            "last_accessed_at": now.isoformat(),
+        }
+
+        # AC5: Only update priority if it changed
+        if new_priority.value != old_priority:
+            update_data["priority"] = new_priority.value
+            logger.info(
+                f"Cache key {params_hash[:12]} reclassified: "
+                f"{old_priority} → {new_priority.value} (access_count={new_count})"
+            )
+
+        sb.table("search_results_cache").update(update_data).eq(
+            "user_id", user_id
+        ).eq("params_hash", params_hash).execute()
+
+        # Update result dict with current priority
+        result["cache_priority"] = new_priority
+
+        # AC9: Proactive refresh for hot keys near expiry
+        cache_age_hours = result.get("cache_age_hours", 0)
+        if new_priority == CachePriority.HOT and cache_age_hours >= (CACHE_FRESH_HOURS - 0.5):
+            # Hot key within 30min of going stale — trigger proactive refresh
+            try:
+                dispatched = await trigger_background_revalidation(
+                    user_id=user_id,
+                    params=params,
+                    request_data=params,
+                )
+                if dispatched:
+                    logger.info(json.dumps({
+                        "event": "proactive_refresh_dispatched",
+                        "params_hash": params_hash[:12],
+                        "cache_age_hours": cache_age_hours,
+                        "priority": new_priority.value,
+                    }))
+            except Exception:
+                pass  # Proactive refresh is best-effort
+
+    except Exception as e:
+        logger.debug(f"Access tracking failed for {params_hash[:12]}: {e}")
 
 
 # ============================================================================
