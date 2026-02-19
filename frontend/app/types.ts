@@ -120,6 +120,8 @@ export interface BuscaResult {
   coverage_pct?: number;
   /** GTM-RESILIENCE-A05 AC2: Per-UF status breakdown */
   ufs_status_detail?: UfStatusDetailItem[];
+  /** GTM-RESILIENCE-C03 AC4: Consolidated coverage metadata */
+  coverage_metadata?: CoverageMetadata | null;
   /** STORY-257B AC10: List of UF codes that failed during search */
   failed_ufs?: string[];
   /** GTM-FIX-004: True when at least one UF hit the max_pages limit */
@@ -128,6 +130,17 @@ export interface BuscaResult {
   truncated_ufs?: string[];
   /** GTM-FIX-004 AC2r: Per-source truncation flags, e.g. { pncp: true, portal_compras: false } */
   truncation_details?: Record<string, boolean>;
+}
+
+// ============================================================================
+/** GTM-RESILIENCE-C03 AC1: Consolidated coverage metadata */
+export interface CoverageMetadata {
+  ufs_requested: string[];
+  ufs_processed: string[];
+  ufs_failed: string[];
+  coverage_pct: number;
+  data_timestamp: string;
+  freshness: "live" | "cached_fresh" | "cached_stale";
 }
 
 // ============================================================================

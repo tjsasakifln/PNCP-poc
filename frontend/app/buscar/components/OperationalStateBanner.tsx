@@ -3,7 +3,7 @@
 import { CoverageBar } from "./CoverageBar";
 import { FreshnessIndicator } from "./FreshnessIndicator";
 import { ReliabilityBadge } from "./ReliabilityBadge";
-import type { UfStatusDetailItem } from "../../types";
+import type { CoverageMetadata, UfStatusDetailItem } from "../../types";
 
 export type OperationalState = "operational" | "partial" | "degraded" | "unavailable";
 
@@ -14,6 +14,7 @@ export interface OperationalStateBannerProps {
   ultimaAtualizacao?: string | null;
   cachedAt?: string | null;
   cacheStatus?: "fresh" | "stale";
+  coverageMetadata?: CoverageMetadata | null;
 }
 
 function deriveState(
@@ -71,6 +72,7 @@ export function OperationalStateBanner({
   ultimaAtualizacao,
   cachedAt,
   cacheStatus,
+  coverageMetadata,
 }: OperationalStateBannerProps) {
   const state = deriveState(coveragePct, responseState);
   const config = stateConfig[state];
@@ -103,7 +105,12 @@ export function OperationalStateBanner({
         </div>
 
         <div className="flex items-center gap-3">
-          {timestamp && <FreshnessIndicator timestamp={timestamp} />}
+          {timestamp && (
+            <FreshnessIndicator
+              timestamp={timestamp}
+              freshness={coverageMetadata?.freshness}
+            />
+          )}
           <ReliabilityBadge
             coveragePct={coveragePct}
             timestamp={timestamp || undefined}
@@ -113,16 +120,13 @@ export function OperationalStateBanner({
         </div>
       </div>
 
-      {state !== "unavailable" && ufsStatusDetail && ufsStatusDetail.length > 0 && (
-        <div className="mt-3 hidden sm:block">
-          <CoverageBar
-            coveragePct={coveragePct}
-            ufsStatusDetail={ufsStatusDetail}
-          />
+      {state !== "unavailable" && coverageMetadata && (
+        <div className="mt-3">
+          <CoverageBar coverageMetadata={coverageMetadata} />
         </div>
       )}
 
-      {state !== "unavailable" && state !== "operational" && ufsStatusDetail && (
+      {state !== "unavailable" && state !== "operational" && !coverageMetadata && ufsStatusDetail && (
         <div className="mt-2 sm:hidden">
           <p className={`text-xs ${config.text}`}>
             {ufsStatusDetail.filter(u => u.status === "ok").length} de {ufsStatusDetail.length} estados processados

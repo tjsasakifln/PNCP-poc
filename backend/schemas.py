@@ -833,6 +833,16 @@ class UfStatusDetail(BaseModel):
     results_count: int = Field(default=0, ge=0, description="Number of results from this UF")
 
 
+class CoverageMetadata(BaseModel):
+    """GTM-RESILIENCE-C03 AC1: Consolidated coverage metadata."""
+    ufs_requested: List[str] = Field(..., description="UFs solicitadas pelo usuario")
+    ufs_processed: List[str] = Field(..., description="UFs que retornaram dados com sucesso")
+    ufs_failed: List[str] = Field(default_factory=list, description="UFs que falharam (timeout/erro)")
+    coverage_pct: float = Field(..., ge=0, le=100, description="Porcentagem de cobertura (1 decimal)")
+    data_timestamp: str = Field(..., description="ISO timestamp de quando dados foram obtidos")
+    freshness: Literal["live", "cached_fresh", "cached_stale"] = Field(..., description="Indicador de freshness")
+
+
 class BuscaResponse(BaseModel):
     """
     Response schema for /buscar endpoint.
@@ -978,6 +988,11 @@ class BuscaResponse(BaseModel):
     ufs_status_detail: Optional[List[UfStatusDetail]] = Field(
         default=None,
         description="GTM-RESILIENCE-A05 AC2: Per-UF status breakdown with results count"
+    )
+    # GTM-RESILIENCE-C03 AC1: Consolidated coverage metadata
+    coverage_metadata: Optional[CoverageMetadata] = Field(
+        default=None,
+        description="GTM-RESILIENCE-C03: Consolidated coverage metadata for frontend display"
     )
     hidden_by_min_match: Optional[int] = Field(
         default=None,

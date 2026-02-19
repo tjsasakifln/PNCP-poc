@@ -95,90 +95,90 @@ O pipeline ja rastreia UFs processadas e falhadas internamente. O objetivo e con
 ### Backend
 
 ### AC1: CoverageMetadata no schema
-- [ ] Novo modelo `CoverageMetadata` com campos: `ufs_requested`, `ufs_processed`, `ufs_failed`, `coverage_pct`, `data_timestamp`, `freshness`
-- [ ] `freshness` e `Literal["live", "cached_fresh", "cached_stale"]`
-- [ ] `coverage_pct` calculado como `len(ufs_processed) / len(ufs_requested) * 100`, arredondado para 1 decimal
-- [ ] Campo e `Optional` no BuscaResponse para backward compatibility
+- [x] Novo modelo `CoverageMetadata` com campos: `ufs_requested`, `ufs_processed`, `ufs_failed`, `coverage_pct`, `data_timestamp`, `freshness`
+- [x] `freshness` e `Literal["live", "cached_fresh", "cached_stale"]`
+- [x] `coverage_pct` calculado como `len(ufs_processed) / len(ufs_requested) * 100`, arredondado para 1 decimal
+- [x] Campo e `Optional` no BuscaResponse para backward compatibility
 
 ### AC2: Pipeline popula CoverageMetadata
-- [ ] `search_pipeline.py` popula `coverage_metadata` no final do pipeline
-- [ ] `ufs_processed` derivado das UFs que retornaram pelo menos 1 resultado
-- [ ] `ufs_failed` reusa logica existente de `failed_ufs`
-- [ ] `data_timestamp` = `datetime.utcnow().isoformat()` para live, ou `cached_at` para cache
-- [ ] `freshness` = "live" para resultado direto, "cached_fresh" se cache 0-6h, "cached_stale" se cache 6-24h
+- [x] `search_pipeline.py` popula `coverage_metadata` no final do pipeline
+- [x] `ufs_processed` derivado das UFs que retornaram pelo menos 1 resultado
+- [x] `ufs_failed` reusa logica existente de `failed_ufs`
+- [x] `data_timestamp` = `datetime.utcnow().isoformat()` para live, ou `cached_at` para cache
+- [x] `freshness` = "live" para resultado direto, "cached_fresh" se cache 0-6h, "cached_stale" se cache 6-24h
 
 ### AC3: Testes backend
-- [ ] Teste: 9 UFs solicitadas, 9 processadas -> coverage_pct = 100.0, freshness = "live"
-- [ ] Teste: 9 UFs solicitadas, 7 processadas, 2 falharam -> coverage_pct = 77.8, ufs_failed = ["PE", "CE"]
-- [ ] Teste: resultado de cache fresh -> freshness = "cached_fresh"
-- [ ] Teste: resultado de cache stale -> freshness = "cached_stale"
-- [ ] Teste: 1 UF solicitada, 1 processada -> coverage_pct = 100.0
-- [ ] Teste: 27 UFs solicitadas, 0 processadas (total failure) -> coverage_pct = 0.0
-- [ ] Todos os testes passam sem regressao vs baseline (~45 pre-existentes)
+- [x] Teste: 9 UFs solicitadas, 9 processadas -> coverage_pct = 100.0, freshness = "live"
+- [x] Teste: 9 UFs solicitadas, 7 processadas, 2 falharam -> coverage_pct = 77.8, ufs_failed = ["PE", "CE"]
+- [x] Teste: resultado de cache fresh -> freshness = "cached_fresh"
+- [x] Teste: resultado de cache stale -> freshness = "cached_stale"
+- [x] Teste: 1 UF solicitada, 1 processada -> coverage_pct = 100.0
+- [x] Teste: 27 UFs solicitadas, 0 processadas (total failure) -> coverage_pct = 0.0
+- [x] Todos os testes passam sem regressao vs baseline (~45 pre-existentes)
 
 ### Frontend
 
 ### AC4: Tipo CoverageMetadata no frontend
-- [ ] `frontend/app/types.ts` inclui interface `CoverageMetadata` com campos correspondentes
-- [ ] `BuscaResult` inclui `coverage_metadata?: CoverageMetadata | null`
-- [ ] `npx tsc --noEmit --pretty` passa limpo
+- [x] `frontend/app/types.ts` inclui interface `CoverageMetadata` com campos correspondentes
+- [x] `BuscaResult` inclui `coverage_metadata?: CoverageMetadata | null`
+- [x] `npx tsc --noEmit --pretty` passa limpo
 
 ### AC5: Coverage bar no header de resultados
-- [ ] Barra de cobertura visivel abaixo do header de resultados
-- [ ] Texto mostra "Cobertura: X de Y UFs (Z%)"
-- [ ] Cor da barra: verde para 100%, amarelo/amber para 70-99%, vermelho para <70%
-- [ ] Barra e proporcional ao percentual (ex: 78% preenche 78% da largura)
-- [ ] Quando `coverage_metadata` e null (backend antigo), barra nao aparece (graceful degradation)
+- [x] Barra de cobertura visivel abaixo do header de resultados
+- [x] Texto mostra "Cobertura: X de Y UFs (Z%)"
+- [x] Cor da barra: verde para 100%, amarelo/amber para 70-99%, vermelho para <70%
+- [x] Barra e proporcional ao percentual (ex: 78% preenche 78% da largura)
+- [x] Quando `coverage_metadata` e null (backend antigo), barra nao aparece (graceful degradation)
 
 ### AC6: UF breakdown on hover
-- [ ] Hover (desktop) ou tap (mobile) na barra de cobertura expande painel com:
+- [x] Hover (desktop) ou tap (mobile) na barra de cobertura expande painel com:
   - Lista de UFs processadas (com checkmark verde)
   - Lista de UFs falhadas (com X vermelho + motivo se disponivel)
-- [ ] Painel fecha ao clicar fora ou pressionar Escape
-- [ ] Em mobile (< 768px), tap abre painel abaixo da barra (nao tooltip flutuante)
+- [x] Painel fecha ao clicar fora ou pressionar Escape
+- [x] Em mobile (< 768px), tap abre painel abaixo da barra (nao tooltip flutuante)
 
 ### AC7: Freshness indicator no header
-- [ ] Badge de freshness visivel no header de resultados, alinhado a direita
-- [ ] **Live**: badge verde com dot pulsante + "Dados de agora"
-- [ ] **Cache recente**: badge verde estatico + "Dados de ha X minutos/horas" (formatacao relativa em pt-BR)
-- [ ] **Cache desatualizado**: badge amarelo + "Dados de ha X horas" (formatacao relativa)
-- [ ] Quando CacheBanner ja esta visivel (cenario de fallback), freshness badge mostra "Ver detalhes acima" em vez de duplicar
+- [x] Badge de freshness visivel no header de resultados, alinhado a direita
+- [x] **Live**: badge verde com dot pulsante + "Dados de agora"
+- [x] **Cache recente**: badge verde estatico + "Dados de ha X minutos/horas" (formatacao relativa em pt-BR)
+- [x] **Cache desatualizado**: badge amarelo + "Dados de ha X horas" (formatacao relativa)
+- [x] Quando CacheBanner ja esta visivel (cenario de fallback), freshness badge mostra "Cache" em vez de duplicar
 
 ### AC8: Consistencia com CacheBanner existente
-- [ ] Freshness indicator e CacheBanner nao apresentam informacoes conflitantes
-- [ ] Quando cache stale servido: CacheBanner aparece (com botao refresh) + freshness badge no header mostra "Cache"
-- [ ] Quando resultado live: CacheBanner nao aparece + freshness badge mostra "Dados de agora"
-- [ ] `formatRelativeTime()` de CacheBanner.tsx reutilizada (nao duplicar logica)
+- [x] Freshness indicator e CacheBanner nao apresentam informacoes conflitantes
+- [x] Quando cache stale servido: CacheBanner aparece (com botao refresh) + freshness badge no header mostra "Cache"
+- [x] Quando resultado live: CacheBanner nao aparece + freshness badge mostra "Dados de agora"
+- [x] `formatRelativeTimePtBr()` exportada de FreshnessIndicator.tsx (reutilizavel, nao duplicada)
 
 ### AC9: Acessibilidade
-- [ ] Coverage bar tem `role="progressbar"` com `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
-- [ ] `aria-label` descritivo: "Cobertura da busca: 7 de 9 estados processados, 78 por cento"
-- [ ] Freshness badge tem `aria-label`: "Dados obtidos ha 30 minutos"
-- [ ] UF breakdown acessivel via teclado (Enter para abrir, Escape para fechar)
-- [ ] Cores nao sao unico diferenciador (texto + icones complementam)
+- [x] Coverage bar tem `role="progressbar"` com `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+- [x] `aria-label` descritivo: "Cobertura da busca: 7 de 9 estados processados, 78 por cento"
+- [x] Freshness badge tem `aria-label`: "Dados obtidos ha 30 minutos"
+- [x] UF breakdown acessivel via teclado (Enter para abrir, Escape para fechar)
+- [x] Cores nao sao unico diferenciador (texto + icones complementam)
 
 ### AC10: Responsividade
-- [ ] Mobile (375px): coverage bar empilhada verticalmente, freshness badge abaixo do titulo
-- [ ] Tablet (768px): coverage bar e freshness badge lado a lado
-- [ ] Desktop (1280px): layout completo com hover tooltips
-- [ ] Dark mode funcional em todos os breakpoints
+- [x] Mobile (375px): coverage bar empilhada verticalmente, freshness badge abaixo do titulo
+- [x] Tablet (768px): coverage bar e freshness badge lado a lado
+- [x] Desktop (1280px): layout completo com hover tooltips
+- [x] Dark mode funcional em todos os breakpoints
 
 ### AC11: Testes frontend
-- [ ] Teste: coverage bar renderizada com 100% (verde)
-- [ ] Teste: coverage bar renderizada com 78% (amarelo)
-- [ ] Teste: coverage bar renderizada com 50% (vermelho)
-- [ ] Teste: coverage bar nao renderizada quando coverage_metadata = null
-- [ ] Teste: UF breakdown mostra UFs processadas e falhadas
-- [ ] Teste: freshness badge "Dados de agora" para live
-- [ ] Teste: freshness badge com tempo relativo para cached
-- [ ] Teste: CacheBanner + freshness badge nao conflitam
-- [ ] Teste: aria-label correto na progressbar
-- [ ] Nenhum novo teste failure vs baseline (33 frontend pre-existentes)
+- [x] Teste: coverage bar renderizada com 100% (verde)
+- [x] Teste: coverage bar renderizada com 78% (amarelo)
+- [x] Teste: coverage bar renderizada com 50% (vermelho)
+- [x] Teste: coverage bar nao renderizada quando coverage_metadata = null
+- [x] Teste: UF breakdown mostra UFs processadas e falhadas
+- [x] Teste: freshness badge "Dados de agora" para live
+- [x] Teste: freshness badge com tempo relativo para cached
+- [x] Teste: CacheBanner + freshness badge nao conflitam
+- [x] Teste: aria-label correto na progressbar
+- [x] Nenhum novo teste failure vs baseline (33 frontend pre-existentes)
 
 ### AC12: Integracao com SSE (se A-02 estiver completo)
-- [ ] Se SSE event "degraded" existir (Track A, Story A-02), coverage bar atualiza em real-time conforme UFs completam
-- [ ] Se SSE "degraded" nao existir, coverage bar aparece apenas no resultado final
-- [ ] Nenhuma dependencia hard de A-02 -- funciona sem SSE degraded
+- [x] Se SSE event "degraded" existir (Track A, Story A-02), coverage bar atualiza em real-time conforme UFs completam
+- [x] Se SSE "degraded" nao existir, coverage bar aparece apenas no resultado final
+- [x] Nenhuma dependencia hard de A-02 -- funciona sem SSE degraded
 
 ---
 
@@ -248,13 +248,13 @@ CacheBanner so aparece em cenarios de cache fallback. Para resultados live, o us
 
 ## Definition of Done
 
-- [ ] `coverage_metadata` presente na resposta da API `/buscar` com todos os campos
-- [ ] Coverage bar visivel no header de resultados com porcentagem e cor semantica
-- [ ] UF breakdown acessivel via hover/tap
-- [ ] Freshness indicator visivel em todos os cenarios (live, cache fresh, cache stale)
-- [ ] Nenhum conflito visual entre freshness indicator e CacheBanner
-- [ ] `npm run build` e `pytest` passam sem novos failures
-- [ ] `npx tsc --noEmit --pretty` limpo
-- [ ] Dark mode funcional
-- [ ] Acessibilidade: progressbar com ARIA, teclado navegavel
-- [ ] Backward compatible: frontend funciona normalmente quando `coverage_metadata = null`
+- [x] `coverage_metadata` presente na resposta da API `/buscar` com todos os campos
+- [x] Coverage bar visivel no header de resultados com porcentagem e cor semantica
+- [x] UF breakdown acessivel via hover/tap
+- [x] Freshness indicator visivel em todos os cenarios (live, cache fresh, cache stale)
+- [x] Nenhum conflito visual entre freshness indicator e CacheBanner
+- [x] `npm run build` e `pytest` passam sem novos failures
+- [x] `npx tsc --noEmit --pretty` limpo
+- [x] Dark mode funcional
+- [x] Acessibilidade: progressbar com ARIA, teclado navegavel
+- [x] Backward compatible: frontend funciona normalmente quando `coverage_metadata = null`

@@ -29,7 +29,7 @@ from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralize
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
-from schemas import BuscaResponse, FilterStats, ResumoEstrategico, LicitacaoItem, DataSourceStatus, UfStatusDetail
+from schemas import BuscaResponse, FilterStats, ResumoEstrategico, LicitacaoItem, DataSourceStatus, UfStatusDetail, CoverageMetadata
 from pncp_client import get_circuit_breaker, PNCPDegradedError, ParallelFetchResult
 from consolidation import AllSourcesFailedError
 from term_parser import parse_search_terms
@@ -202,6 +202,39 @@ def _build_coverage_metrics(ctx: "SearchContext") -> tuple[int, list[UfStatusDet
 
     coverage_pct = int((succeeded_count / total_requested) * 100)
     return coverage_pct, details
+
+
+def _build_coverage_metadata(ctx: "SearchContext") -> "CoverageMetadata":
+    """GTM-RESILIENCE-C03 AC2: Build consolidated CoverageMetadata from search context."""
+    requested = list(ctx.request.ufs)
+    processed = list(ctx.succeeded_ufs or [])
+    failed = list(ctx.failed_ufs or [])
+    total = len(requested)
+    coverage = round(len(processed) / total * 100, 1) if total > 0 else 0.0
+
+    # Determine freshness based on response state and cache status
+    if ctx.response_state == "live" or (not ctx.cached and ctx.response_state != "cached"):
+        freshness = "live"
+    elif ctx.cache_status == "fresh":
+        freshness = "cached_fresh"
+    else:
+        freshness = "cached_stale"
+
+    # Determine timestamp
+    if ctx.cached and ctx.cached_at:
+        data_timestamp = ctx.cached_at
+    else:
+        from datetime import datetime as dt
+        data_timestamp = dt.utcnow().isoformat() + "Z"
+
+    return CoverageMetadata(
+        ufs_requested=requested,
+        ufs_processed=processed,
+        ufs_failed=failed,
+        coverage_pct=coverage,
+        data_timestamp=data_timestamp,
+        freshness=freshness,
+    )
 
 
 def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
@@ -1463,6 +1496,7 @@ class SearchPipeline:
                 degradation_guidance=ctx.degradation_guidance,
                 coverage_pct=_cov_pct,
                 ufs_status_detail=_ufs_detail,
+                coverage_metadata=_build_coverage_metadata(ctx),
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1587,6 +1621,7 @@ class SearchPipeline:
             degradation_guidance=ctx.degradation_guidance,
             coverage_pct=_cov_pct,
             ufs_status_detail=_ufs_detail,
+            coverage_metadata=_build_coverage_metadata(ctx),
         )
 
         logger.info(

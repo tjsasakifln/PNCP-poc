@@ -302,6 +302,7 @@ export default function SearchResults({
             ultimaAtualizacao={result.ultima_atualizacao}
             cachedAt={result.cached_at}
             cacheStatus={result.cache_status}
+            coverageMetadata={result.coverage_metadata}
           />
           <EmptyState
             onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -374,6 +375,7 @@ export default function SearchResults({
             ultimaAtualizacao={result.ultima_atualizacao}
             cachedAt={result.cached_at}
             cacheStatus={result.cache_status}
+            coverageMetadata={result.coverage_metadata}
           />
 
           {/* Results header with ordering (GTM-FIX-028 AC13) */}
