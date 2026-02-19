@@ -26,8 +26,8 @@ def test_pcp_validate_no_warning():
 
 
 @pytest.mark.asyncio
-async def test_consolidation_logs_full_traceback(caplog):
-    """AC15: Exception logging includes exc_info=True (full traceback)."""
+async def test_consolidation_logs_via_report_error(caplog):
+    """GTM-RESILIENCE-E02: Consolidation uses report_error() — warning level, no double-reporting."""
     from consolidation import ConsolidationService
     from clients.base import SourceMetadata
 
@@ -54,19 +54,19 @@ async def test_consolidation_logs_full_traceback(caplog):
         fail_on_all_errors=False,
     )
 
-    with caplog.at_level(logging.ERROR):
+    with caplog.at_level(logging.WARNING):
         result = await service.fetch_all(
             data_inicial="2026-01-01",
             data_final="2026-02-17",
         )
 
-    # Verify the error was logged with the new format
-    error_logs = [r for r in caplog.records if r.levelno >= logging.WARNING]
-    assert any("FAILED" in r.message or "PARTIAL" in r.message for r in error_logs), \
-        f"Expected FAILED/PARTIAL in logs, got: {[r.message for r in error_logs]}"
+    # Verify the error was logged via report_error (warning level for expected)
+    warning_logs = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert any("FAILED" in r.message or "PARTIAL" in r.message for r in warning_logs), \
+        f"Expected FAILED/PARTIAL in logs, got: {[r.message for r in warning_logs]}"
 
-    # Verify exc_info was set (traceback included)
-    assert any(r.exc_info is not None for r in error_logs), \
-        "Expected exc_info=True in error logs for full traceback"
+    # GTM-RESILIENCE-E02: No exc_info for transient/expected consolidation errors
+    consolidation_logs = [r for r in warning_logs if "CONSOLIDATION" in r.message]
+    assert len(consolidation_logs) > 0, "Expected at least one [CONSOLIDATION] log"
 
     await service.close()

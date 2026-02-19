@@ -203,7 +203,7 @@ async def buscar_licitacoes(
         if tracker:
             await tracker.emit_error(f"PNCP rate limit: {e}")
             await remove_tracker(request.search_id)
-        logger.error(f"PNCP rate limit exceeded: {e}", exc_info=True)
+        logger.warning(f"PNCP rate limit exceeded: {type(e).__name__}: {e}")
         retry_after = getattr(e, "retry_after", 60)
         raise HTTPException(
             status_code=503,

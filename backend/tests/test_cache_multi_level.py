@@ -163,7 +163,7 @@ class TestMultiLevelSave:
     async def test_save_falls_back_to_redis_on_supabase_failure(self):
         """L1 fails → L2 succeeds."""
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache.sentry_sdk") as mock_sentry, \
+             patch("utils.error_reporting.sentry_sdk") as mock_sentry, \
              patch("search_cache._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
@@ -183,7 +183,7 @@ class TestMultiLevelSave:
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
              patch("search_cache._save_to_redis", side_effect=Exception("Redis down")), \
              patch("search_cache.LOCAL_CACHE_DIR", tmp_path), \
-             patch("search_cache.sentry_sdk"), \
+             patch("utils.error_reporting.sentry_sdk"), \
              patch("search_cache._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
@@ -201,7 +201,7 @@ class TestMultiLevelSave:
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
              patch("search_cache._save_to_redis", side_effect=Exception("Redis down")), \
              patch("search_cache._save_to_local", side_effect=Exception("FS error")), \
-             patch("search_cache.sentry_sdk"), \
+             patch("utils.error_reporting.sentry_sdk"), \
              patch("search_cache._track_cache_operation"):
             result = await save_to_cache(
                 user_id="user-1",
@@ -261,7 +261,7 @@ class TestMultiLevelRead:
         _save_to_redis(cache_key, [{"id": 2}], ["PNCP"])
 
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
-             patch("search_cache.sentry_sdk"), \
+             patch("utils.error_reporting.sentry_sdk"), \
              patch("search_cache._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
@@ -283,7 +283,7 @@ class TestMultiLevelRead:
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
              patch("search_cache._get_from_redis", return_value=None), \
              patch("search_cache.LOCAL_CACHE_DIR", tmp_path), \
-             patch("search_cache.sentry_sdk"), \
+             patch("utils.error_reporting.sentry_sdk"), \
              patch("search_cache._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
@@ -300,7 +300,7 @@ class TestMultiLevelRead:
         with patch("supabase_client.get_supabase", side_effect=Exception("DB down")), \
              patch("search_cache._get_from_redis", return_value=None), \
              patch("search_cache._get_from_local", return_value=None), \
-             patch("search_cache.sentry_sdk"), \
+             patch("utils.error_reporting.sentry_sdk"), \
              patch("search_cache._track_cache_operation"):
             result = await get_from_cache(
                 user_id="user-1",
@@ -513,7 +513,7 @@ class TestSentryAlerting:
     @pytest.mark.asyncio
     async def test_sentry_called_on_supabase_save_failure(self):
         with patch("supabase_client.get_supabase", side_effect=Exception("test error")), \
-             patch("search_cache.sentry_sdk") as mock_sentry, \
+             patch("utils.error_reporting.sentry_sdk") as mock_sentry, \
              patch("search_cache._track_cache_operation"):
             await save_to_cache(
                 user_id="user-1",
@@ -523,16 +523,16 @@ class TestSentryAlerting:
             )
 
         mock_sentry.capture_exception.assert_called_once()
-        call_kwargs = mock_sentry.capture_exception.call_args
-        assert call_kwargs[1]["extras"]["cache_operation"] == "save"
-        assert call_kwargs[1]["extras"]["cache_level"] == "supabase"
+        # GTM-RESILIENCE-E02: tags set via set_tag, not extras
+        mock_sentry.set_tag.assert_any_call("cache_operation", "save")
+        mock_sentry.set_tag.assert_any_call("cache_level", "supabase")
 
     @pytest.mark.asyncio
     async def test_sentry_called_on_supabase_read_failure(self):
         with patch("supabase_client.get_supabase", side_effect=Exception("read error")), \
              patch("search_cache._get_from_redis", return_value=None), \
              patch("search_cache._get_from_local", return_value=None), \
-             patch("search_cache.sentry_sdk") as mock_sentry, \
+             patch("utils.error_reporting.sentry_sdk") as mock_sentry, \
              patch("search_cache._track_cache_operation"):
             await get_from_cache(
                 user_id="user-1",

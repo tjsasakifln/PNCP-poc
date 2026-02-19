@@ -137,10 +137,6 @@ class PNCPCircuitBreaker:
         """Record a timeout/failure. Trips the breaker after ``threshold`` consecutive failures."""
         async with self._lock:
             self.consecutive_failures += 1
-            logger.debug(
-                f"Circuit breaker [{self.name}]: failure #{self.consecutive_failures} "
-                f"(threshold={self.threshold})"
-            )
             if self.consecutive_failures >= self.threshold and not self.is_degraded:
                 self.degraded_until = time.time() + self.cooldown_seconds
                 logger.warning(
@@ -151,11 +147,6 @@ class PNCPCircuitBreaker:
     async def record_success(self) -> None:
         """Record a successful request. Resets the failure counter."""
         async with self._lock:
-            if self.consecutive_failures > 0:
-                logger.debug(
-                    f"Circuit breaker [{self.name}]: success after {self.consecutive_failures} "
-                    f"failures — resetting counter"
-                )
             self.consecutive_failures = 0
 
     async def try_recover(self) -> bool:

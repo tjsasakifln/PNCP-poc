@@ -23,6 +23,8 @@ import os
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
+import httpx  # GTM-RESILIENCE-E02: for transient error fingerprinting
+
 # STORY-211: Sentry error tracking
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -124,15 +126,49 @@ def scrub_pii(event, hint):
     return event
 
 
+def _fingerprint_transients(event, hint):
+    """Fingerprint transient errors to avoid Sentry issue flood (GTM-RESILIENCE-E02 AC4).
+
+    Groups httpx timeouts and PNCP transients under custom fingerprints
+    and downgrades their level to 'warning' so they don't trigger alerts.
+    """
+    exc_info = hint.get("exc_info")
+    if exc_info and exc_info[1] is not None:
+        exc = exc_info[1]
+        if isinstance(exc, (httpx.TimeoutException, httpx.ConnectTimeout, httpx.ReadTimeout)):
+            event["fingerprint"] = ["transient-timeout", type(exc).__name__]
+            event["level"] = "warning"
+        elif type(exc).__name__ in ("PNCPRateLimitError", "PNCPDegradedError"):
+            event["fingerprint"] = [f"transient-{type(exc).__name__}"]
+            event["level"] = "warning"
+    return event
+
+
+def _before_send(event, hint):
+    """Combined before_send: PII scrubbing + transient fingerprinting (GTM-RESILIENCE-E02)."""
+    event = scrub_pii(event, hint)
+    if event is None:
+        return None
+    return _fingerprint_transients(event, hint)
+
+
+def _traces_sampler(sampling_context):
+    """Exclude health checks from Sentry traces (GTM-RESILIENCE-E02 AC5)."""
+    path = sampling_context.get("asgi_scope", {}).get("path", "")
+    if path in ("/health", "/v1/health", "/v1/health/cache"):
+        return 0.0  # Never trace health checks
+    return 0.1  # 10% for everything else
+
+
 _sentry_dsn = os.getenv("SENTRY_DSN")
 if _sentry_dsn:
     sentry_sdk.init(
         dsn=_sentry_dsn,
         integrations=[FastApiIntegration(), StarletteIntegration()],
-        traces_sample_rate=0.1,
+        traces_sampler=_traces_sampler,
         environment=_env,
         release=APP_VERSION,
-        before_send=scrub_pii,
+        before_send=_before_send,
     )
     logger.info("Sentry initialized for error tracking")
 else:

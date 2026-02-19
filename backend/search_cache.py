@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Optional
 
 import sentry_sdk
+from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
 
 logger = logging.getLogger(__name__)
 
@@ -242,14 +243,11 @@ async def save_to_cache(
         _track_cache_operation("save", True, CacheLevel.SUPABASE, len(results), elapsed)
         return {"level": CacheLevel.SUPABASE, "success": True}
     except Exception as e:
-        logger.error(f"Supabase cache save failed: {e}", exc_info=True)
-        sentry_sdk.capture_exception(e, extras={
-            "cache_operation": "save",
-            "cache_level": "supabase",
-            "cache_key": params_hash[:12],
-            "results_count": len(results),
-            "error_code": getattr(e, "code", None),
-        })
+        # GTM-RESILIENCE-E02: centralized reporting (cache save is expected/transient)
+        report_error(
+            e, f"Supabase cache save failed (key={params_hash[:12]}, n={len(results)})",
+            expected=True, tags={"cache_operation": "save", "cache_level": "supabase"}, log=logger,
+        )
 
     # Level 2: Redis/InMemory
     try:
@@ -313,12 +311,11 @@ async def get_from_cache(
                 )
                 return result
     except Exception as e:
-        logger.error(f"Supabase cache read failed: {e}")
-        sentry_sdk.capture_exception(e, extras={
-            "cache_operation": "read",
-            "cache_level": "supabase",
-            "cache_key": params_hash[:12],
-        })
+        # GTM-RESILIENCE-E02: centralized reporting (cache read is expected/transient)
+        report_error(
+            e, f"Supabase cache read failed (key={params_hash[:12]})",
+            expected=True, tags={"cache_operation": "read", "cache_level": "supabase"}, log=logger,
+        )
 
     # Level 2: Redis/InMemory
     try:

@@ -25,6 +25,7 @@ from datetime import datetime
 from types import SimpleNamespace
 
 import sentry_sdk  # GTM-FIX-002 AC9: Tag errors with data source
+from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
@@ -726,11 +727,11 @@ class SearchPipeline:
             )
         except AllSourcesFailedError as e:
             # GTM-FIX-010 AC4/AC16r/AC17r: All sources failed — try Supabase cache fallback
-            logger.error(f"All sources failed during multi-source fetch: {e}")
-
-            # GTM-FIX-002 AC9: Tag error with data_source=all_sources for Sentry filtering
-            sentry_sdk.set_tag("data_source", "all_sources")
-            sentry_sdk.capture_exception(e)
+            # GTM-RESILIENCE-E02: centralized reporting (no double stdout+Sentry)
+            report_error(
+                e, "All sources failed during multi-source fetch",
+                expected=True, tags={"data_source": "all_sources"}, log=logger,
+            )
 
             # AC17r: Fallback cascade step 3 — try stale cache
             stale_cache = None
@@ -818,13 +819,11 @@ class SearchPipeline:
         except Exception as e:
             # GTM-FIX-025 T2: Generic catch — no consolidation exception should
             # result in HTTP 500. Log, send to Sentry, try cache, degrade gracefully.
-            logger.error(
-                f"Unexpected exception in multi-source fetch: "
-                f"{type(e).__name__}: {e}",
-                exc_info=True,
+            # GTM-RESILIENCE-E02: centralized reporting (unexpected = full traceback)
+            report_error(
+                e, "Unexpected exception in multi-source fetch",
+                expected=False, tags={"data_source": "consolidation_unexpected"}, log=logger,
             )
-            sentry_sdk.set_tag("data_source", "consolidation_unexpected")
-            sentry_sdk.capture_exception(e)
 
             # Try stale cache before returning empty
             stale_cache = None
@@ -954,11 +953,11 @@ class SearchPipeline:
                 ctx.is_partial = True
         except PNCPDegradedError as e:
             # GTM-FIX-010 AC4/AC17r: PNCP circuit breaker tripped — try stale cache
-            logger.warning(f"PNCP degraded during fetch: {e}")
-
-            # GTM-FIX-002 AC9: Tag with data_source=pncp for Sentry filtering
-            sentry_sdk.set_tag("data_source", "pncp")
-            sentry_sdk.capture_exception(e)
+            # GTM-RESILIENCE-E02: centralized reporting (no double stdout+Sentry)
+            report_error(
+                e, "PNCP degraded during fetch",
+                expected=True, tags={"data_source": "pncp"}, log=logger,
+            )
 
             stale_cache = None
             if ctx.user and ctx.user.get("id"):
@@ -1248,8 +1247,7 @@ class SearchPipeline:
             logger.debug("LLM summary generated successfully")
         except Exception as e:
             logger.warning(
-                f"LLM generation failed, using fallback mechanism: {e}",
-                exc_info=True,
+                f"LLM generation failed, using fallback mechanism: {type(e).__name__}: {e}",
             )
             ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
             logger.debug("Fallback summary generated successfully")

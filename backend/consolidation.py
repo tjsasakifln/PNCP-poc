@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Set
 
 import sentry_sdk  # GTM-FIX-002 AC9: Tag source errors
+from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
 from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement, SourceError
 from source_config.sources import source_health_registry
 
@@ -481,19 +482,15 @@ class ConsolidationService:
             duration = int((time.time() - start) * 1000)
             salvaged = len(partial_records)
 
-            # GTM-FIX-002 AC9: Tag source errors with data_source for Sentry filtering
-            source_code = code  # Use local code var (pncp, pcp, etc.)
+            # GTM-RESILIENCE-E02: centralized reporting (no double stdout+Sentry)
+            source_code = code
             if isinstance(e, SourceError):
-                # SourceError subclasses have source_code attribute
                 source_code = e.source_code
-            sentry_sdk.set_tag("data_source", source_code)
-            sentry_sdk.capture_exception(e)
 
             if salvaged > 0:
-                logger.warning(
-                    f"[CONSOLIDATION] {code}: PARTIAL after {duration}ms -- "
-                    f"{type(e).__name__}: {e} — salvaged {salvaged} records",
-                    exc_info=True,  # GTM-FIX-027 T3: Full traceback for diagnosis
+                report_error(
+                    e, f"[CONSOLIDATION] {code}: PARTIAL after {duration}ms — salvaged {salvaged} records",
+                    expected=True, tags={"data_source": source_code}, log=logger,
                 )
                 return {
                     "code": code,
@@ -502,10 +499,9 @@ class ConsolidationService:
                     "duration_ms": duration,
                     "error": f"{e} (salvaged {salvaged} records)",
                 }
-            logger.error(
-                f"[CONSOLIDATION] {code}: FAILED after {duration}ms -- "
-                f"{type(e).__name__}: {e}",
-                exc_info=True,  # GTM-FIX-027 T3: Full traceback for PCP diagnosis
+            report_error(
+                e, f"[CONSOLIDATION] {code}: FAILED after {duration}ms",
+                expected=True, tags={"data_source": source_code}, log=logger,
             )
             return {
                 "code": code,

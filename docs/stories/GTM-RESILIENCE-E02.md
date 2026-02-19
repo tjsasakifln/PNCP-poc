@@ -203,41 +203,41 @@ Manter `exc_info=True` nos locais de erros inesperados:
 ## Criterios de Aceite
 
 ### AC1: Sem Double-Reporting para Erros Esperados
-- [ ] Nos 6 locais de double-reporting identificados, erros esperados (timeout, 429, cache fail) emitem `logger.warning` (1 linha, sem traceback) **e** `sentry_sdk.capture_exception` com tags, mas **nao** `logger.error(..., exc_info=True)` + `sentry_sdk.capture_exception`
-- [ ] Helper function `report_error()` (ou equivalente) centraliza a decisao de emissao
+- [x] Nos 6 locais de double-reporting identificados, erros esperados (timeout, 429, cache fail) emitem `logger.warning` (1 linha, sem traceback) **e** `sentry_sdk.capture_exception` com tags, mas **nao** `logger.error(..., exc_info=True)` + `sentry_sdk.capture_exception`
+- [x] Helper function `report_error()` (ou equivalente) centraliza a decisao de emissao
 - **Verificacao:** Simular timeout no PNCP via mock, verificar que stdout contem 1 linha warning (sem stack trace) e Sentry recebe o evento
 
 ### AC2: Circuit Breaker Loga Somente Transicao de Estado
-- [ ] `record_failure()` em `pncp_client.py` L140-143 nao emite mais `logger.debug` por cada falha
-- [ ] `record_success()` em `pncp_client.py` L155-158 nao emite mais `logger.debug` por cada sucesso
-- [ ] Logs preservados: `logger.warning` no trip (L146-148) e `logger.info` na recovery (L179-181)
+- [x] `record_failure()` em `pncp_client.py` L140-143 nao emite mais `logger.debug` por cada falha
+- [x] `record_success()` em `pncp_client.py` L155-158 nao emite mais `logger.debug` por cada sucesso
+- [x] Logs preservados: `logger.warning` no trip (L146-148) e `logger.info` na recovery (L179-181)
 - **Verificacao:** Trigger 5 falhas consecutivas no circuit breaker via mock. Verificar que apenas 1 log WARNING (trip) aparece, nao 5 logs DEBUG de incremento
 
 ### AC3: `exc_info=True` Somente para Erros Inesperados
-- [ ] `exc_info=True` removido de: `consolidation.py` L496, L508; `routes/search.py` L206; `search_cache.py` L245; `search_pipeline.py` L824, L1251
-- [ ] `exc_info=True` mantido em: `cron_jobs.py` L41; `filter.py` L2854; `pncp_client_resilient.py` L238; `storage.py` L120; `routes/subscriptions.py` (todos); `webhooks/stripe.py` L146
+- [x] `exc_info=True` removido de: `consolidation.py` L496, L508; `routes/search.py` L206; `search_cache.py` L245; `search_pipeline.py` L824, L1251
+- [x] `exc_info=True` mantido em: `cron_jobs.py` L41; `filter.py` L2854; `pncp_client_resilient.py` L238; `storage.py` L120; `routes/subscriptions.py` (todos); `webhooks/stripe.py` L146
 - **Verificacao:** `grep -rn "exc_info=True" backend/ --include="*.py" | grep -v test | grep -v venv` retorna apenas os locais de erros inesperados
 
 ### AC4: Sentry Configurado com Fingerprinting para Transientes
-- [ ] `before_send` ou `before_send_transaction` em `main.py` agrupa erros transientes com fingerprint customizado (evita flood de issues identicas no Sentry)
-- [ ] `httpx.TimeoutException`, `httpx.ConnectTimeout`, `httpx.ReadTimeout` agrupados sob fingerprint `["transient-timeout"]`
-- [ ] Nivel do evento rebaixado para `warning` (nao `error`) para excecoes transientes
+- [x] `before_send` ou `before_send_transaction` em `main.py` agrupa erros transientes com fingerprint customizado (evita flood de issues identicas no Sentry)
+- [x] `httpx.TimeoutException`, `httpx.ConnectTimeout`, `httpx.ReadTimeout` agrupados sob fingerprint `["transient-timeout"]`
+- [x] Nivel do evento rebaixado para `warning` (nao `error`) para excecoes transientes
 - **Verificacao:** Inspecionar configuracao do `sentry_sdk.init()` em `main.py`
 
 ### AC5: Health Checks Excluidos de Traces
-- [ ] `traces_sampler` (ou `traces_sample_rate` com filter) exclui paths `/health`, `/v1/health`, `/v1/health/cache` do sampling de traces
-- [ ] Traces de health check nao consomem quota do Sentry
+- [x] `traces_sampler` (ou `traces_sample_rate` com filter) exclui paths `/health`, `/v1/health`, `/v1/health/cache` do sampling de traces
+- [x] Traces de health check nao consomem quota do Sentry
 - **Verificacao:** Verificar `traces_sampler` callback na configuracao do Sentry
 
 ### AC6: Teste de Nao-Regressao do Circuit Breaker
-- [ ] Testes existentes do circuit breaker (`test_timeout_chain.py` e testes em `test_pncp_client.py`) passam sem regressao
-- [ ] Novo teste confirma que circuit breaker so emite log em trip e recovery (nao per-failure)
+- [x] Testes existentes do circuit breaker (`test_timeout_chain.py` e testes em `test_pncp_client.py`) passam sem regressao
+- [x] Novo teste confirma que circuit breaker so emite log em trip e recovery (nao per-failure)
 - **Verificacao:** `pytest -k "circuit" -v` verde
 
 ### AC7: Reducao Mensuravel de Volume
-- [ ] Teste que simula cenario de erro (3 timeouts + circuit breaker trip + recovery) e conta logs nivel INFO+WARNING+ERROR
-- [ ] O total de logs para o cenario de erro nao excede 5 linhas (1 warning por timeout final + 1 trip + 1 recovery + 1 sumario)
-- [ ] Comparado com baseline anterior de ~20 linhas para o mesmo cenario
+- [x] Teste que simula cenario de erro (3 timeouts + circuit breaker trip + recovery) e conta logs nivel INFO+WARNING+ERROR
+- [x] O total de logs para o cenario de erro nao excede 5 linhas (1 warning por timeout final + 1 trip + 1 recovery + 1 sumario)
+- [x] Comparado com baseline anterior de ~20 linhas para o mesmo cenario
 - **Verificacao:** Teste automatizado com contagem de log records
 
 ---
@@ -260,10 +260,10 @@ Manter `exc_info=True` nos locais de erros inesperados:
 
 ## Definition of Done
 
-- [ ] Todos os 7 ACs verificados e marcados
-- [ ] PR aprovado com lista de todos os locais alterados
-- [ ] Helper `report_error()` com docstring e exemplos
-- [ ] Testes existentes passam sem regressao (baseline backend ~47 fail mantido)
-- [ ] Novos testes para `report_error()` e circuit breaker log volume
-- [ ] `grep -rn "exc_info=True" backend/ --include="*.py" | grep -v test | grep -v venv` revisa lista final e confirma apenas erros inesperados
-- [ ] MEMORY.md atualizado com regra de emissao (Sentry XOR stdout para transientes)
+- [x] Todos os 7 ACs verificados e marcados
+- [x] PR aprovado com lista de todos os locais alterados
+- [x] Helper `report_error()` com docstring e exemplos
+- [x] Testes existentes passam sem regressao (baseline backend ~37 fail mantido)
+- [x] Novos testes para `report_error()` e circuit breaker log volume (26 new tests)
+- [x] `grep -rn "exc_info=True" backend/ --include="*.py" | grep -v test | grep -v venv` revisa lista final e confirma apenas erros inesperados
+- [x] MEMORY.md atualizado com regra de emissao (Sentry XOR stdout para transientes)

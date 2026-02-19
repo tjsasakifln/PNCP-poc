@@ -158,7 +158,7 @@ class TestFallbackAdapterNone:
 
     @pytest.mark.asyncio
     @patch("source_config.sources.get_source_config")
-    @patch("search_pipeline.sentry_sdk")
+    @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
     @patch("search_pipeline.enriquecer_com_status_inferido")
@@ -334,7 +334,7 @@ class TestGenericExceptionHandler:
     @pytest.mark.asyncio
     @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
-    @patch("search_pipeline.sentry_sdk")
+    @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac20_unexpected_exception_triggers_cache(
@@ -399,7 +399,7 @@ class TestGenericExceptionHandler:
     @pytest.mark.asyncio
     @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
-    @patch("search_pipeline.sentry_sdk")
+    @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac9_no_http_500_on_unexpected_exception(
@@ -455,7 +455,7 @@ class TestAllSourcesFailCache:
     @pytest.mark.asyncio
     @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
-    @patch("search_pipeline.sentry_sdk")
+    @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac21_all_sources_fail_triggers_stale_cache(
@@ -612,7 +612,7 @@ class TestSearchWithoutComprasGov:
     @pytest.mark.asyncio
     @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
-    @patch("search_pipeline.sentry_sdk")
+    @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
     @patch("source_config.sources.get_source_config")
     async def test_ac4_search_completes_with_pncp_pcp_only(
