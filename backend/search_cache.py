@@ -76,6 +76,19 @@ def compute_search_hash(params: dict) -> str:
     return hashlib.sha256(params_json.encode()).hexdigest()
 
 
+def calculate_backoff_minutes(fail_streak: int) -> int:
+    """B-03 AC4: Exponential backoff for cache key degradation.
+
+    Returns minutes to degrade: 1 (streak=1), 5 (streak=2), 15 (streak=3), 30 (streak>=4).
+    Returns 0 for streak=0 (no degradation).
+    """
+    if fail_streak <= 0:
+        return 0
+    backoff_schedule = [1, 5, 15, 30]
+    idx = min(fail_streak - 1, len(backoff_schedule) - 1)
+    return backoff_schedule[idx]
+
+
 def get_cache_status(fetched_at) -> CacheStatus:
     """Classify cache age into Fresh/Stale/Expired (AC4)."""
     if isinstance(fetched_at, str):
@@ -101,9 +114,13 @@ def get_cache_status(fetched_at) -> CacheStatus:
 
 
 async def _save_to_supabase(
-    user_id: str, params_hash: str, params: dict, results: list, sources: list[str]
+    user_id: str, params_hash: str, params: dict, results: list, sources: list[str],
+    *, fetch_duration_ms: Optional[int] = None, coverage: Optional[dict] = None,
 ) -> None:
-    """Save to Supabase cache (Level 1)."""
+    """Save to Supabase cache (Level 1).
+
+    B-03 AC2: On successful fetch, also writes health metadata fields.
+    """
     from supabase_client import get_supabase
     sb = get_supabase()
 
@@ -117,7 +134,18 @@ async def _save_to_supabase(
         "sources_json": sources,
         "fetched_at": now,
         "created_at": now,
+        # B-03 AC2: Health metadata — reset on successful fetch
+        "last_success_at": now,
+        "last_attempt_at": now,
+        "fail_streak": 0,
+        "degraded_until": None,
     }
+    # B-03 AC6: Structured coverage JSONB
+    if coverage is not None:
+        row["coverage"] = coverage
+    # B-03 AC7: Fetch duration tracking
+    if fetch_duration_ms is not None:
+        row["fetch_duration_ms"] = fetch_duration_ms
 
     sb.table("search_results_cache").upsert(
         row, on_conflict="user_id,params_hash"
@@ -247,10 +275,14 @@ async def save_to_cache(
     params: dict,
     results: list,
     sources: list[str],
+    *,
+    fetch_duration_ms: Optional[int] = None,
+    coverage: Optional[dict] = None,
 ) -> dict:
     """Save results to cache with 3-level fallback (AC2).
 
     Cascade: Supabase → Redis/InMemory → Local file.
+    B-03 AC2/AC6/AC7: Accepts fetch_duration_ms and coverage for health metadata.
     Returns dict with {level, success}.
     """
     params_hash = compute_search_hash(params)
@@ -258,7 +290,10 @@ async def save_to_cache(
 
     # Level 1: Supabase
     try:
-        await _save_to_supabase(user_id, params_hash, params, results, sources)
+        await _save_to_supabase(
+            user_id, params_hash, params, results, sources,
+            fetch_duration_ms=fetch_duration_ms, coverage=coverage,
+        )
         elapsed = (time.monotonic() - start) * 1000
         logger.info(
             f"Cache SAVE L1/supabase: {len(results)} results "
@@ -452,6 +487,92 @@ async def get_from_cache_cascade(
         logger.error(f"Cascade L3/local read failed: {e}")
 
     return None
+
+
+# ============================================================================
+# B-03 AC3/AC5: Cache key degradation tracking
+# ============================================================================
+
+
+async def record_cache_fetch_failure(user_id: str, params_hash: str) -> dict:
+    """B-03 AC3: Record a fetch failure for a cache key.
+
+    Increments fail_streak and calculates degraded_until with exponential backoff.
+    Does NOT update last_success_at, results, or sources_json.
+
+    Returns dict with {fail_streak, degraded_until} or empty dict if key not found.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    now = datetime.now(timezone.utc)
+
+    # Read current fail_streak
+    response = (
+        sb.table("search_results_cache")
+        .select("fail_streak")
+        .eq("user_id", user_id)
+        .eq("params_hash", params_hash)
+        .limit(1)
+        .execute()
+    )
+
+    if not response.data:
+        logger.warning(f"record_cache_fetch_failure: no cache key found for hash {params_hash[:12]}")
+        return {}
+
+    current_streak = response.data[0].get("fail_streak", 0) or 0
+    new_streak = current_streak + 1
+    backoff_min = calculate_backoff_minutes(new_streak)
+    degraded_until = (now + timedelta(minutes=backoff_min)).isoformat()
+
+    # Update with new values
+    sb.table("search_results_cache").update({
+        "fail_streak": new_streak,
+        "last_attempt_at": now.isoformat(),
+        "degraded_until": degraded_until,
+    }).eq("user_id", user_id).eq("params_hash", params_hash).execute()
+
+    logger.info(
+        f"Cache key {params_hash[:12]} fail_streak={new_streak}, "
+        f"degraded for {backoff_min}min"
+    )
+
+    return {"fail_streak": new_streak, "degraded_until": degraded_until}
+
+
+async def is_cache_key_degraded(user_id: str, params_hash: str) -> bool:
+    """B-03 AC5: Check if a cache key is currently degraded.
+
+    Returns True if degraded_until > now(), meaning callers should
+    avoid triggering a new fetch for this key.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    response = (
+        sb.table("search_results_cache")
+        .select("degraded_until")
+        .eq("user_id", user_id)
+        .eq("params_hash", params_hash)
+        .limit(1)
+        .execute()
+    )
+
+    if not response.data:
+        return False
+
+    degraded_until_str = response.data[0].get("degraded_until")
+    if not degraded_until_str:
+        return False
+
+    try:
+        degraded_until = datetime.fromisoformat(degraded_until_str.replace("Z", "+00:00"))
+        if degraded_until.tzinfo is None:
+            degraded_until = degraded_until.replace(tzinfo=timezone.utc)
+        return degraded_until > datetime.now(timezone.utc)
+    except (ValueError, TypeError):
+        return False
 
 
 def _process_cache_hit(data: dict, params_hash: str, level: CacheLevel) -> Optional[dict]:

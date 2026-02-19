@@ -21,12 +21,14 @@ async def cache_health():
 
     Returns status of Supabase, Redis/InMemory, and Local file caches
     with latency measurements and error details.
+    B-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.
     """
     result = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "supabase": await _check_supabase_cache(),
         "redis": _check_redis_cache(),
         "local": _check_local_cache(),
+        "degradation": await _check_cache_degradation(),
     }
 
     # Determine overall status
@@ -124,4 +126,46 @@ def _check_local_cache() -> dict:
             "files_count": 0,
             "total_size_mb": 0.0,
             "last_error": str(e)[:200],
+        }
+
+
+async def _check_cache_degradation() -> dict:
+    """B-03 AC9: Aggregate fail_streak and degradation metrics from Supabase."""
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        # Count keys where degraded_until > now()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        degraded_resp = (
+            sb.table("search_results_cache")
+            .select("id", count="exact")
+            .gt("degraded_until", now_iso)
+            .limit(0)
+            .execute()
+        )
+        degraded_count = degraded_resp.count if hasattr(degraded_resp, "count") and degraded_resp.count is not None else 0
+
+        # Aggregate fail_streak stats (only for keys with fail_streak > 0)
+        streak_resp = (
+            sb.table("search_results_cache")
+            .select("fail_streak")
+            .gt("fail_streak", 0)
+            .execute()
+        )
+        streaks = [row.get("fail_streak", 0) for row in (streak_resp.data or [])]
+        avg_streak = round(sum(streaks) / len(streaks), 1) if streaks else 0.0
+
+        return {
+            "degraded_keys_count": degraded_count,
+            "avg_fail_streak": avg_streak,
+            "keys_with_failures": len(streaks),
+        }
+    except Exception as e:
+        logger.warning(f"Cache degradation check failed: {e}")
+        return {
+            "degraded_keys_count": 0,
+            "avg_fail_streak": 0.0,
+            "keys_with_failures": 0,
+            "error": str(e)[:200],
         }

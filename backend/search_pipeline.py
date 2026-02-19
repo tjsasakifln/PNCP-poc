@@ -664,11 +664,18 @@ class SearchPipeline:
             logger.debug(f"Cache WRITE: {len(ctx.licitacoes_raw)} results cached (TTL={SEARCH_CACHE_TTL}s)")
 
             # GTM-FIX-010 AC3: Also persist to Supabase for cross-restart resilience
+            # B-03 AC2/AC6/AC7: Include health metadata (fetch_duration_ms, coverage)
             if ctx.user and ctx.user.get("id"):
                 sources = (
                     [ds.source for ds in ctx.data_sources if ds.records > 0]
                     if ctx.data_sources else ["PNCP"]
                 )
+                fetch_elapsed_ms = int((sync_time_module.time() - ctx.start_time) * 1000)
+                coverage_data = {
+                    "succeeded_ufs": list(ctx.succeeded_ufs or []),
+                    "failed_ufs": list(ctx.failed_ufs or []),
+                    "total_requested": len(request.ufs),
+                }
                 try:
                     await _supabase_save_cache(
                         user_id=ctx.user["id"],
@@ -681,6 +688,8 @@ class SearchPipeline:
                         },
                         results=ctx.licitacoes_raw,
                         sources=sources,
+                        fetch_duration_ms=fetch_elapsed_ms,
+                        coverage=coverage_data,
                     )
                 except Exception as e:
                     logger.warning(f"Supabase cache write failed (non-fatal): {e}")
