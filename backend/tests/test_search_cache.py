@@ -21,8 +21,11 @@ from search_cache import (
     compute_search_hash,
     save_to_cache,
     get_from_cache,
+    get_from_cache_cascade,
+    _get_from_local,
     CACHE_FRESH_HOURS,
     CACHE_STALE_HOURS,
+    LOCAL_CACHE_TTL_HOURS,
 )
 
 
@@ -348,3 +351,184 @@ class TestFallbackCascade:
         assert "cached_sources" in fields
         assert "cached" in fields
         assert "cached_at" in fields
+
+
+# ============================================================================
+# A-03 AC11: L3 with expired file returns None
+# ============================================================================
+
+
+class TestGetFromLocalTTL:
+    """A-03 AC1/AC2: _get_from_local() validates TTL and returns freshness metadata."""
+
+    def test_expired_file_returns_none(self, tmp_path):
+        """AC11: Local file with fetched_at 25h ago → returns None."""
+        now = datetime.now(timezone.utc)
+        expired_time = (now - timedelta(hours=25)).isoformat()
+
+        cache_key = "abcdef01234567890123456789abcdef0123456789abcdef0123456789abcdef"
+        cache_file = tmp_path / f"{cache_key[:32]}.json"
+        cache_file.write_text(json.dumps({
+            "results": [{"id": 1}],
+            "sources_json": ["PNCP"],
+            "fetched_at": expired_time,
+        }), encoding="utf-8")
+
+        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+            result = _get_from_local(cache_key)
+
+        assert result is None
+
+    def test_valid_file_returns_data_with_age(self, tmp_path):
+        """AC12: Local file with fetched_at 3h ago → returns data with _cache_age_hours ~3.0."""
+        now = datetime.now(timezone.utc)
+        valid_time = (now - timedelta(hours=3)).isoformat()
+
+        # _get_from_local uses cache_key[:32] as filename
+        cache_key = "abcdef01234567890123456789abcdef0123456789abcdef0123456789abcdef"
+        cache_file = tmp_path / f"{cache_key[:32]}.json"
+        cache_file.write_text(json.dumps({
+            "results": [{"id": 1, "objeto": "Test bid"}],
+            "sources_json": ["PNCP"],
+            "fetched_at": valid_time,
+        }), encoding="utf-8")
+
+        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+            result = _get_from_local(cache_key)
+
+        assert result is not None
+        assert result["results"] == [{"id": 1, "objeto": "Test bid"}]
+        assert 2.9 <= result["_cache_age_hours"] <= 3.2
+
+    def test_missing_fetched_at_returns_none(self, tmp_path):
+        """File without fetched_at field → returns None (no freshness info)."""
+        cache_key = "abcdef01234567890123456789abcdef0123456789abcdef0123456789abcdef"
+        cache_file = tmp_path / f"{cache_key[:32]}.json"
+        cache_file.write_text(json.dumps({
+            "results": [{"id": 1}],
+            "sources_json": ["PNCP"],
+        }), encoding="utf-8")
+
+        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+            result = _get_from_local(cache_key)
+
+        assert result is None
+
+    def test_nonexistent_file_returns_none(self, tmp_path):
+        """File does not exist → returns None."""
+        with patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+            result = _get_from_local("nonexistent_hash_value_that_does_not_exist_anywhere")
+        assert result is None
+
+
+# ============================================================================
+# A-03 AC10: L1 fail, L3 serve via cascade
+# ============================================================================
+
+
+class TestGetFromCacheCascade:
+    """A-03 AC3/AC4: get_from_cache_cascade() tries L2 → L1 → L3."""
+
+    @pytest.mark.asyncio
+    async def test_l1_fail_l3_serve(self, tmp_path):
+        """AC10: Supabase fails + Redis miss → L3 local file serves with cache_level='local'."""
+        now = datetime.now(timezone.utc)
+        valid_time = (now - timedelta(hours=5)).isoformat()
+
+        # Write a local cache file
+        params = {"setor_id": 1, "ufs": ["SP"]}
+        from search_cache import compute_search_hash
+        params_hash = compute_search_hash(params)
+        cache_file = tmp_path / f"{params_hash[:32]}.json"
+        cache_file.write_text(json.dumps({
+            "results": [{"id": 42, "objeto": "L3 cached bid"}],
+            "sources_json": ["PNCP"],
+            "fetched_at": valid_time,
+        }), encoding="utf-8")
+
+        with patch("search_cache._get_from_redis", return_value=None), \
+             patch("supabase_client.get_supabase", side_effect=Exception("Supabase down")), \
+             patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+            result = await get_from_cache_cascade(
+                user_id="user-123",
+                params=params,
+            )
+
+        assert result is not None
+        assert result["cache_level"] == "local"
+        assert result["results"] == [{"id": 42, "objeto": "L3 cached bid"}]
+        assert result["cache_age_hours"] <= CACHE_FRESH_HOURS
+
+    @pytest.mark.asyncio
+    async def test_l2_hit_skips_l1_l3(self):
+        """L2 (Redis/InMemory) hit → returns immediately without trying L1 or L3."""
+        now = datetime.now(timezone.utc)
+        redis_data = {
+            "results": [{"id": 99}],
+            "sources_json": ["PNCP", "PCP"],
+            "fetched_at": (now - timedelta(hours=1)).isoformat(),
+        }
+
+        with patch("search_cache._get_from_redis", return_value=redis_data), \
+             patch("search_cache._get_from_supabase") as mock_supa, \
+             patch("search_cache._get_from_local") as mock_local:
+            result = await get_from_cache_cascade(
+                user_id="user-123",
+                params={"setor_id": 1, "ufs": ["RJ"]},
+            )
+
+        assert result is not None
+        assert result["cache_level"] == "memory"
+        mock_supa.assert_not_called()
+        mock_local.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_all_levels_miss_returns_none(self):
+        """All 3 levels miss → returns None."""
+        mock_sb = MagicMock()
+        mock_sb.table.return_value = mock_sb
+        mock_sb.select.return_value = mock_sb
+        mock_sb.eq.return_value = mock_sb
+        mock_sb.order.return_value = mock_sb
+        mock_sb.limit.return_value = mock_sb
+        mock_sb.execute.return_value = Mock(data=[])
+
+        with patch("search_cache._get_from_redis", return_value=None), \
+             patch("supabase_client.get_supabase", return_value=mock_sb), \
+             patch("search_cache._get_from_local", return_value=None):
+            result = await get_from_cache_cascade(
+                user_id="user-123",
+                params={"setor_id": 1, "ufs": ["MG"]},
+            )
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_full_cascade_l2_miss_l1_error_l3_hit(self, tmp_path):
+        """AC13: L2 miss → L1 exception → L3 hit → returns data with cache_level='local'."""
+        now = datetime.now(timezone.utc)
+        valid_time = (now - timedelta(hours=10)).isoformat()
+
+        params = {"setor_id": 2, "ufs": ["BA", "PE"]}
+        from search_cache import compute_search_hash
+        params_hash = compute_search_hash(params)
+        cache_file = tmp_path / f"{params_hash[:32]}.json"
+        cache_file.write_text(json.dumps({
+            "results": [{"id": 7, "objeto": "Stale L3 data"}],
+            "sources_json": ["PNCP"],
+            "fetched_at": valid_time,
+        }), encoding="utf-8")
+
+        with patch("search_cache._get_from_redis", return_value=None), \
+             patch("supabase_client.get_supabase", side_effect=Exception("Network error")), \
+             patch("search_cache.LOCAL_CACHE_DIR", tmp_path):
+            result = await get_from_cache_cascade(
+                user_id="user-456",
+                params=params,
+            )
+
+        assert result is not None
+        assert result["cache_level"] == "local"
+        assert result["results"] == [{"id": 7, "objeto": "Stale L3 data"}]
+        assert result["is_stale"] is True  # 10h > CACHE_FRESH_HOURS (6h)
+        assert result["cache_age_hours"] >= 9.5

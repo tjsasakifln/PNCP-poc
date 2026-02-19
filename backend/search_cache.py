@@ -202,15 +202,39 @@ def _save_to_local(cache_key: str, results: list, sources: list[str]) -> None:
 
 
 def _get_from_local(cache_key: str) -> Optional[dict]:
-    """Read from local JSON file (Level 3)."""
+    """Read from local JSON file (Level 3).
+
+    A-03 AC1: Validates TTL — returns None if fetched_at + 24h < now(UTC).
+    A-03 AC2: Includes _cache_age_hours in returned dict when valid.
+    """
     cache_file = LOCAL_CACHE_DIR / f"{cache_key[:32]}.json"
     if not cache_file.exists():
         return None
 
     try:
-        return json.loads(cache_file.read_text(encoding="utf-8"))
+        data = json.loads(cache_file.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return None
+
+    # AC1: Validate TTL based on fetched_at timestamp
+    fetched_at_str = data.get("fetched_at")
+    if not fetched_at_str:
+        return None  # No freshness info — treat as expired
+
+    try:
+        fetched_at = datetime.fromisoformat(fetched_at_str.replace("Z", "+00:00"))
+        if fetched_at.tzinfo is None:
+            fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - fetched_at).total_seconds() / 3600
+    except (ValueError, TypeError):
+        return None
+
+    if age_hours > LOCAL_CACHE_TTL_HOURS:
+        return None  # AC1: Expired (>24h)
+
+    # AC2: Include freshness metadata for callers
+    data["_cache_age_hours"] = round(age_hours, 1)
+    return data
 
 
 # ============================================================================
@@ -353,6 +377,80 @@ async def get_from_cache(
     elapsed = (time.monotonic() - start) * 1000
     logger.info(f"Cache MISS all levels for hash {params_hash[:12]}... ({elapsed:.0f}ms)")
     _track_cache_operation("read", False, CacheLevel.MISS, 0, elapsed)
+    return None
+
+
+# ============================================================================
+# A-03 AC3: Unified cascade read (L2 → L1 → L3)
+# ============================================================================
+
+
+async def get_from_cache_cascade(
+    user_id: str,
+    params: dict,
+) -> Optional[dict]:
+    """Unified cache cascade: L2 (InMemory/Redis) → L1 (Supabase) → L3 (Local file).
+
+    A-03 AC3: Tries all 3 levels in order of speed (no I/O → HTTP → disk).
+    A-03 AC4: Returns cache_level as "memory" | "supabase" | "local".
+    A-03 AC9: Logs event "cache_l3_served" when L3 provides the data.
+
+    Returns dict with: results, cached_at, cached_sources, cache_age_hours,
+                       is_stale, cache_level, cache_status
+    Returns None if no valid cache entry exists at any level.
+    """
+    params_hash = compute_search_hash(params)
+
+    # AC4: Map internal enum to story-specified string values
+    _level_str = {
+        CacheLevel.REDIS: "memory",
+        CacheLevel.SUPABASE: "supabase",
+        CacheLevel.LOCAL: "local",
+    }
+
+    # L2: Redis/InMemory — O(1) lookup, no I/O
+    try:
+        data = _get_from_redis(params_hash)
+        if data:
+            result = _process_cache_hit(data, params_hash, CacheLevel.REDIS)
+            if result:
+                result["cache_level"] = _level_str[CacheLevel.REDIS]
+                return result
+    except Exception as e:
+        logger.warning(f"Cascade L2/redis read failed: {e}")
+
+    # L1: Supabase — HTTP roundtrip (~100-300ms)
+    try:
+        data = await _get_from_supabase(user_id, params_hash)
+        if data:
+            result = _process_cache_hit(data, params_hash, CacheLevel.SUPABASE)
+            if result:
+                result["cache_level"] = _level_str[CacheLevel.SUPABASE]
+                return result
+    except Exception as e:
+        report_error(
+            e, f"Cascade L1/supabase read failed (key={params_hash[:12]})",
+            expected=True, tags={"cache_operation": "cascade_read", "cache_level": "supabase"}, log=logger,
+        )
+
+    # L3: Local file — disk I/O (~5-20ms)
+    try:
+        data = _get_from_local(params_hash)
+        if data:
+            result = _process_cache_hit(data, params_hash, CacheLevel.LOCAL)
+            if result:
+                result["cache_level"] = _level_str[CacheLevel.LOCAL]
+                # AC9: Specific log when L3 serves data
+                logger.info(json.dumps({
+                    "event": "cache_l3_served",
+                    "cache_key": params_hash[:12],
+                    "cache_age_hours": result["cache_age_hours"],
+                    "results_count": len(result["results"]),
+                }))
+                return result
+    except Exception as e:
+        logger.error(f"Cascade L3/local read failed: {e}")
+
     return None
 
 

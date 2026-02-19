@@ -159,7 +159,7 @@ class TestFallbackAdapterNone:
     @pytest.mark.asyncio
     @patch("source_config.sources.get_source_config")
     @patch("utils.error_reporting.sentry_sdk")
-    @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
+    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
     @patch("search_pipeline.enriquecer_com_status_inferido")
     @patch("search_pipeline.os.getenv", return_value="true")  # ENABLE_MULTI_SOURCE
@@ -332,7 +332,7 @@ class TestGenericExceptionHandler:
     """T2 AC5-AC9 + T5 AC20: Generic exception handler in multi-source fetch."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock)
+    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
@@ -397,7 +397,7 @@ class TestGenericExceptionHandler:
         mock_sentry.capture_exception.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
+    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
@@ -453,7 +453,7 @@ class TestAllSourcesFailCache:
     """T5 AC21: When all sources fail, stale cache is served."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock)
+    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")
@@ -610,7 +610,7 @@ class TestSearchWithoutComprasGov:
     """T1 AC4: Search completes successfully with only PNCP+PCP."""
 
     @pytest.mark.asyncio
-    @patch("search_pipeline._supabase_get_cache", new_callable=AsyncMock, return_value=None)
+    @patch("search_pipeline.get_from_cache_cascade", new_callable=AsyncMock, return_value=None)
     @patch("search_pipeline._supabase_save_cache", new_callable=AsyncMock)
     @patch("utils.error_reporting.sentry_sdk")
     @patch("search_pipeline.enriquecer_com_status_inferido")

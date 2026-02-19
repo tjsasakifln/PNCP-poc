@@ -42,7 +42,7 @@ from llm import gerar_resumo, gerar_resumo_fallback
 from authorization import get_admin_ids, get_master_quota_info
 from log_sanitizer import mask_user_id
 from redis_pool import get_fallback_cache
-from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache
+from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache, get_from_cache_cascade
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -242,6 +242,17 @@ def _write_cache(cache_key: str, data: dict) -> None:
         cache.setex(cache_key, SEARCH_CACHE_TTL, json.dumps(data, default=str))
     except Exception as e:
         logger.warning(f"Failed to write search cache: {e}")
+
+
+def _build_cache_params(request) -> dict:
+    """Build normalized params dict from BuscaRequest for cache lookup (A-03 AC5-AC7)."""
+    return {
+        "setor_id": request.setor_id,
+        "ufs": request.ufs,
+        "status": request.status.value if request.status else None,
+        "modalidades": request.modalidades,
+        "modo_busca": request.modo_busca,
+    }
 
 
 # ============================================================================
@@ -733,19 +744,16 @@ class SearchPipeline:
                 expected=True, tags={"data_source": "all_sources"}, log=logger,
             )
 
-            # AC17r: Fallback cascade step 3 — try stale cache
+            # A-03 AC7: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
             if ctx.user and ctx.user.get("id"):
-                stale_cache = await _supabase_get_cache(
-                    user_id=ctx.user["id"],
-                    params={
-                        "setor_id": request.setor_id,
-                        "ufs": request.ufs,
-                        "status": request.status.value if request.status else None,
-                        "modalidades": request.modalidades,
-                        "modo_busca": request.modo_busca,
-                    },
-                )
+                try:
+                    stale_cache = await get_from_cache_cascade(
+                        user_id=ctx.user["id"],
+                        params=_build_cache_params(request),
+                    )
+                except Exception as cache_err:
+                    logger.warning(f"Cache cascade failed after AllSourcesFailedError: {cache_err}")
 
             if stale_cache:
                 # AC5: Serve stale cache with cache metadata
@@ -758,7 +766,7 @@ class SearchPipeline:
                 ctx.cached_at = stale_cache["cached_at"]
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
-                ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
+                ctx.cache_level = stale_cache.get("cache_level", "supabase")  # AC8: real level from cascade
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = str(e)
@@ -817,58 +825,35 @@ class SearchPipeline:
                 from progress import remove_tracker
                 await remove_tracker(ctx.request.search_id)
 
+            # A-03 AC5: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
-            cache_level_used = None
             if ctx.user and ctx.user.get("id"):
                 try:
-                    stale_cache = await _supabase_get_cache(
+                    stale_cache = await get_from_cache_cascade(
                         user_id=ctx.user["id"],
-                        params={
-                            "setor_id": request.setor_id,
-                            "ufs": request.ufs,
-                            "status": request.status.value if request.status else None,
-                            "modalidades": request.modalidades,
-                            "modo_busca": request.modo_busca,
-                        },
+                        params=_build_cache_params(request),
                     )
-                    if stale_cache:
-                        cache_level_used = "supabase"
                 except Exception as cache_err:
-                    logger.warning(f"Cache fallback (supabase) failed after timeout: {cache_err}")
-
-                # AC1: Try in-memory cache if Supabase failed
-                if not stale_cache:
-                    try:
-                        cache_key = _compute_cache_key(request)
-                        mem_data = _read_cache(cache_key)
-                        if mem_data and mem_data.get("results"):
-                            stale_cache = {
-                                "results": mem_data["results"],
-                                "cached_at": mem_data.get("fetched_at"),
-                                "cache_age_hours": 0,
-                                "cached_sources": mem_data.get("sources_json", ["PNCP"]),
-                                "cache_status": "stale",
-                            }
-                            cache_level_used = "memory"
-                    except Exception as mem_err:
-                        logger.warning(f"Cache fallback (memory) failed after timeout: {mem_err}")
+                    logger.warning(f"Cache cascade failed after timeout: {cache_err}")
 
             if stale_cache:
-                # AC2: Serve cached data with HTTP 200
+                # Serve cached data with HTTP 200
+                cache_level_used = stale_cache.get("cache_level", "unknown")
                 cache_age = stale_cache.get("cache_age_hours", 0)
                 results_count = len(stale_cache.get("results", []))
                 # AC8: Structured log
-                logger.info(
-                    '{"event": "timeout_cache_fallback", "cache_level": "%s", '
-                    '"cache_age_hours": %.1f, "results_count": %d}',
-                    cache_level_used, cache_age, results_count,
-                )
+                logger.info(json.dumps({
+                    "event": "timeout_cache_fallback",
+                    "cache_level": cache_level_used,
+                    "cache_age_hours": cache_age,
+                    "results_count": results_count,
+                }))
                 ctx.licitacoes_raw = stale_cache["results"]
                 ctx.cached = True
                 ctx.cached_at = stale_cache.get("cached_at")
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else "stale"
-                ctx.cache_level = cache_level_used or "supabase"
+                ctx.cache_level = cache_level_used  # AC8: real level from cascade
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # AC6
                 ctx.degradation_reason = f"Busca expirou após {fetch_timeout}s. Resultados de cache servidos."
@@ -893,22 +878,16 @@ class SearchPipeline:
                 expected=False, tags={"data_source": "consolidation_unexpected"}, log=logger,
             )
 
-            # Try stale cache before returning empty
+            # A-03 AC6: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
             if ctx.user and ctx.user.get("id"):
                 try:
-                    stale_cache = await _supabase_get_cache(
+                    stale_cache = await get_from_cache_cascade(
                         user_id=ctx.user["id"],
-                        params={
-                            "setor_id": request.setor_id,
-                            "ufs": request.ufs,
-                            "status": request.status.value if request.status else None,
-                            "modalidades": request.modalidades,
-                            "modo_busca": request.modo_busca,
-                        },
+                        params=_build_cache_params(request),
                     )
                 except Exception as cache_err:
-                    logger.warning(f"Cache fallback also failed: {cache_err}")
+                    logger.warning(f"Cache cascade failed after {type(e).__name__}: {cache_err}")
 
             if stale_cache:
                 logger.info(
@@ -920,7 +899,7 @@ class SearchPipeline:
                 ctx.cached_at = stale_cache["cached_at"]
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
-                ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
+                ctx.cache_level = stale_cache.get("cache_level", "supabase")  # AC8: real level from cascade
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
@@ -1033,18 +1012,16 @@ class SearchPipeline:
                 expected=True, tags={"data_source": "pncp"}, log=logger,
             )
 
+            # A-03 AC7: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
             if ctx.user and ctx.user.get("id"):
-                stale_cache = await _supabase_get_cache(
-                    user_id=ctx.user["id"],
-                    params={
-                        "setor_id": request.setor_id,
-                        "ufs": request.ufs,
-                        "status": request.status.value if request.status else None,
-                        "modalidades": request.modalidades,
-                        "modo_busca": request.modo_busca,
-                    },
-                )
+                try:
+                    stale_cache = await get_from_cache_cascade(
+                        user_id=ctx.user["id"],
+                        params=_build_cache_params(request),
+                    )
+                except Exception as cache_err:
+                    logger.warning(f"Cache cascade failed after PNCPDegradedError: {cache_err}")
 
             if stale_cache:
                 logger.info(
@@ -1056,7 +1033,7 @@ class SearchPipeline:
                 ctx.cached_at = stale_cache["cached_at"]
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
-                ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
+                ctx.cache_level = stale_cache.get("cache_level", "supabase")  # AC8: real level from cascade
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = (
@@ -1089,53 +1066,33 @@ class SearchPipeline:
                 from progress import remove_tracker
                 await remove_tracker(ctx.request.search_id)
 
+            # A-03 AC5: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
-            cache_level_used = None
             if ctx.user and ctx.user.get("id"):
                 try:
-                    stale_cache = await _supabase_get_cache(
+                    stale_cache = await get_from_cache_cascade(
                         user_id=ctx.user["id"],
-                        params={
-                            "setor_id": request.setor_id,
-                            "ufs": request.ufs,
-                            "status": request.status.value if request.status else None,
-                            "modalidades": request.modalidades,
-                            "modo_busca": request.modo_busca,
-                        },
+                        params=_build_cache_params(request),
                     )
-                    if stale_cache:
-                        cache_level_used = "supabase"
                 except Exception as cache_err:
-                    logger.warning(f"Cache fallback (supabase) failed after PNCP timeout: {cache_err}")
-
-                if not stale_cache:
-                    try:
-                        from search_cache import InMemoryCache
-                        mem_result = InMemoryCache.get(
-                            user_id=ctx.user["id"],
-                            setor_id=request.setor_id,
-                            ufs=request.ufs,
-                        )
-                        if mem_result:
-                            stale_cache = mem_result
-                            cache_level_used = "memory"
-                    except Exception as mem_err:
-                        logger.warning(f"Cache fallback (memory) failed after PNCP timeout: {mem_err}")
+                    logger.warning(f"Cache cascade failed after PNCP timeout: {cache_err}")
 
             if stale_cache:
+                cache_level_used = stale_cache.get("cache_level", "unknown")
                 cache_age = stale_cache.get("cache_age_hours", 0)
                 results_count = len(stale_cache.get("results", []))
-                logger.info(
-                    '{"event": "timeout_cache_fallback", "cache_level": "%s", '
-                    '"cache_age_hours": %.1f, "results_count": %d}',
-                    cache_level_used, cache_age, results_count,
-                )
+                logger.info(json.dumps({
+                    "event": "timeout_cache_fallback",
+                    "cache_level": cache_level_used,
+                    "cache_age_hours": cache_age,
+                    "results_count": results_count,
+                }))
                 ctx.licitacoes_raw = stale_cache["results"]
                 ctx.cached = True
                 ctx.cached_at = stale_cache.get("cached_at")
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else "stale"
-                ctx.cache_level = cache_level_used or "supabase"
+                ctx.cache_level = cache_level_used  # AC8: real level from cascade
                 ctx.is_partial = True
                 ctx.response_state = "cached"
                 ctx.degradation_reason = f"PNCP expirou após {fetch_timeout}s. Resultados de cache servidos."

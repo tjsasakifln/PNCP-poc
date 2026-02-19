@@ -151,10 +151,10 @@ InMemoryCache (L2) e O(1) lookup sem I/O. Supabase (L1) requer HTTP roundtrip (~
 
 ## Definition of Done
 
-- [ ] Todos os 13 ACs verificados e passing
-- [ ] Testes unitarios: 4 novos, zero regressoes
-- [ ] `_get_from_local()` nunca retorna dados com mais de 24h
-- [ ] `get_from_cache_cascade()` tenta todos os 3 niveis em ordem
-- [ ] Log de `cache_l3_served` visivel quando L3 e utilizado
-- [ ] Code review aprovado
-- [ ] Commit convencional: `feat(backend): GTM-RESILIENCE-A03 — L3 local file cache read + unified cascade`
+- [x] Todos os 13 ACs verificados e passing
+- [x] Testes unitarios: 8 novos (4 TTL + 4 cascade), zero regressoes
+- [x] `_get_from_local()` nunca retorna dados com mais de 24h
+- [x] `get_from_cache_cascade()` tenta todos os 3 niveis em ordem (L2→L1→L3)
+- [x] Log de `cache_l3_served` visivel quando L3 e utilizado
+- [x] Code review aprovado
+- [x] Commit convencional: `feat(backend): GTM-RESILIENCE-A03 — L3 local file cache read + unified cascade`
