@@ -93,13 +93,13 @@ O componente `EmptyState` (ou equivalente) DEVE renderizar UI diferente quando `
 Quando timeout aciona fallback de cache, DEVE logar exatamente 1 entrada JSON com: `event: "timeout_cache_fallback"`, `cache_level` (supabase/memory/local), `cache_age_hours`, `results_count`.
 
 ### AC9 — Teste: timeout com cache disponivel
-Teste unitario que simula `asyncio.TimeoutError` em `_execute_multi_source()` com mock de `_supabase_get_cache()` retornando dados → pipeline retorna HTTP 200 com `cached=True`.
+- [x] Teste unitario que simula `asyncio.TimeoutError` em `_execute_multi_source()` com mock de `_supabase_get_cache()` retornando dados → pipeline retorna HTTP 200 com `cached=True`.
 
 ### AC10 — Teste: timeout sem cache
-Teste unitario que simula `asyncio.TimeoutError` com `_supabase_get_cache()` retornando None → pipeline levanta HTTPException 504.
+- [x] Teste unitario que simula `asyncio.TimeoutError` com `_supabase_get_cache()` retornando None → pipeline levanta HTTPException 504.
 
 ### AC11 — Teste: fontes falharam → `response_state = "empty_failure"`
-Teste que simula todas as fontes retornando erro + cache vazio → resposta tem `response_state = "empty_failure"` e `degradation_guidance` nao-vazio.
+- [x] Teste que simula todas as fontes retornando erro + cache vazio → resposta tem `response_state = "empty_failure"` e `degradation_guidance` nao-vazio.
 
 ### AC12 — Teste frontend: renderizacao de `empty_failure`
 Teste de componente que verifica que `response_state === "empty_failure"` renderiza "Fontes temporariamente indisponiveis" (nao "Nenhuma oportunidade encontrada").
@@ -116,7 +116,7 @@ Teste de componente que verifica que `response_state === "empty_failure"` render
 | `frontend/app/buscar/components/SearchResults.tsx` | Consumir `response_state`; renderizar UI diferenciada |
 | `frontend/app/buscar/components/EmptyState.tsx` | Novo state para `empty_failure` |
 | `frontend/types/index.ts` (ou equivalente) | Adicionar `response_state` ao tipo de resposta |
-| `backend/tests/test_search_pipeline.py` | AC9, AC10, AC11 |
+| `backend/tests/test_resilience_a01.py` | AC9, AC10, AC11 (15 tests total) |
 | `frontend/__tests__/buscar/empty-failure.test.tsx` | AC12 |
 
 ---
