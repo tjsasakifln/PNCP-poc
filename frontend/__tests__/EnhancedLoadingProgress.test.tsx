@@ -36,7 +36,7 @@ describe('EnhancedLoadingProgress Component', () => {
       expect(screen.getByRole('status')).toBeInTheDocument();
       // Use getAllByText and check first match (main heading) to handle duplicates
       expect(screen.getAllByText('Consultando fontes oficiais')[0]).toBeInTheDocument();
-      expect(screen.getByText(/Buscando em 2 fontes oficiais/)).toBeInTheDocument();
+      expect(screen.getByText(/Consultando fontes oficiais\. Resultados em aproximadamente 60s\./)).toBeInTheDocument();
     });
 
     it('should display state count correctly', () => {
@@ -445,7 +445,7 @@ describe('EnhancedLoadingProgress Component', () => {
         />
       );
 
-      expect(screen.getByText(/Buscando em 2 fontes oficiais\. Resultados em aproximadamente 45s\./)).toBeInTheDocument();
+      expect(screen.getByText(/Consultando fontes oficiais\. Resultados em aproximadamente 45s\./)).toBeInTheDocument();
     });
 
     it('AC5: should show 2x overrun reassurance message', async () => {

@@ -704,7 +704,7 @@ export default function SearchResults({
                       .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count} registros`)
                       .join('\n') || ''}
                   >
-                    ({result.sources_used.length} fontes consultadas)
+                    (dados de múltiplas fontes)
                   </span>
                 )}
               </p>
@@ -712,7 +712,7 @@ export default function SearchResults({
             {/* AC21: Partial failure — simple message without technical source names */}
             {result.is_partial && !result.cached && result.sources_used && result.sources_used.length > 0 && (
               <p className="text-amber-600 dark:text-amber-400">
-                Busca concluída | Uma fonte temporariamente indisponível (dados podem estar incompletos)
+                Busca concluída | Fonte temporariamente indisponível (dados podem estar incompletos)
               </p>
             )}
             {/* AC22: Source badges — hidden by default, toggle for power users */}

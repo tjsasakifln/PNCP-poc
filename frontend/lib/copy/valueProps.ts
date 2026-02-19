@@ -38,8 +38,8 @@ export const hero = {
   trustBadges: [
     {
       icon: Target,
-      text: "2 bases oficiais",
-      detail: "PNCP + Portal de Compras Públicas",
+      text: "Cobertura +98%",
+      detail: "Fontes oficiais de contratações públicas",
     },
     {
       icon: Search,
@@ -96,20 +96,20 @@ export const valueProps = {
     title: "Redução de Incerteza",
     shortDescription: "Entre preparado. Decisões baseadas em critérios objetivos, não intuição",
     longDescription:
-      "Elimine o achismo. Cada oportunidade vem com dados consolidados de 2 fontes oficiais principais (PNCP + Portal de Compras Públicas), avaliação de adequação e critérios objetivos. Decida com confiança em vez de apostar no escuro.",
+      "Elimine o achismo. Cada oportunidade vem com dados consolidados de fontes oficiais verificadas, avaliação de adequação e critérios objetivos. Decida com confiança em vez de apostar no escuro.",
     icon: ShieldCheck,
     metric: "Confiança",
-    proof: "Dados consolidados de PNCP + Portal de Compras Públicas",
+    proof: "Dados consolidados de fontes oficiais verificadas",
   },
 
   coverage: {
     title: "Cobertura Nacional",
     shortDescription: "Nunca perca uma oportunidade por falta de visibilidade",
     longDescription:
-      "Consultamos 2 bases oficiais principais (PNCP + Portal de Compras Públicas) cobrindo todos os 27 estados. Cada oportunidade relevante para o seu setor é identificada, avaliada e entregue. Visibilidade completa do mercado.",
+      "Cobertura de +98% das oportunidades públicas em todos os 27 estados. Cada oportunidade relevante para o seu setor é identificada, avaliada e entregue. Visibilidade completa do mercado.",
     icon: Globe,
     metric: "27 UFs",
-    proof: "PNCP + Portal de Compras Públicas (cobertura federal e estadual)",
+    proof: "Fontes oficiais federais e estaduais integradas",
   },
 };
 
@@ -142,7 +142,7 @@ export const features = {
     without:
       "Você consulta 3-4 fontes manualmente. Oportunidades em portais estaduais passam despercebidas. Seu concorrente descobre antes.",
     withSmartLic:
-      "Consulta 2 bases principais (PNCP + Portal de Compras Públicas) cobrindo fontes federais e estaduais. Cobertura nacional completa. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
+      "Cobertura de +98% das oportunidades públicas federais e estaduais. Cobertura nacional completa. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
     gemAccent: "emerald" as const,
   },
 
@@ -384,6 +384,15 @@ export const BANNED_PHRASES = [
   "Simplificamos o PNCP",
   "Consulta ao Portal Nacional",
   "PNCP + 27",
+  // Source counting/enumeration (GTM-RESILIENCE-C01)
+  "2 fontes",
+  "duas fontes",
+  "2 bases",
+  "duas bases",
+  "3 fontes",
+  "três fontes",
+  "Portal de Compras Públicas",
+  "Portal Nacional de Contratações Públicas",
   // Generic/commodity positioning
   "Agregador de dados",
   "Portal governamental",
@@ -414,7 +423,7 @@ export const PREFERRED_PHRASES = {
   decision: ["avaliação objetiva", "decisão informada", "vale a pena ou não"],
   competitive: ["vantagem competitiva", "posicione-se antes", "visibilidade de mercado"],
   intelligence: ["priorização inteligente", "análise automatizada", "inteligência de fontes"],
-  coverage: ["fontes oficiais", "cobertura nacional", "PNCP + Portal de Compras Públicas"],
+  coverage: ["fontes oficiais", "cobertura nacional", "cobertura +98%"],
   uncertainty: ["redução de incerteza", "critérios objetivos", "confiança na decisão"],
   cost: ["custo de não ter visibilidade", "licitação perdida", "oportunidade que vai para outro"],
   trust: "Cancele em 1 clique, sem burocracia",

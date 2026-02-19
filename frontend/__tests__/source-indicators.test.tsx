@@ -148,7 +148,7 @@ const createMockResult = (overrides?: Partial<BuscaResult>): BuscaResult => ({
 
 describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
   describe("AC19: Source count summary with tooltip", () => {
-    it("shows '(2 fontes consultadas)' when multiple sources are used", () => {
+    it("shows '(dados de múltiplas fontes)' when multiple sources are used", () => {
       const result = createMockResult({
         sources_used: ["PNCP", "PORTAL_COMPRAS"],
         source_stats: [
@@ -172,8 +172,8 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
       const props = createMockProps({ result, rawCount: 100 });
       render(<SearchResults {...props} />);
 
-      // Check for source count text
-      expect(screen.getByText(/\(2 fontes consultadas\)/i)).toBeInTheDocument();
+      // Check for source text (no count)
+      expect(screen.getByText(/\(dados de múltiplas fontes\)/i)).toBeInTheDocument();
     });
 
     it("does not show source count when only one source is used", () => {
@@ -193,8 +193,8 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
       const props = createMockProps({ result, rawCount: 100 });
       render(<SearchResults {...props} />);
 
-      // Should NOT show source count for single source
-      expect(screen.queryByText(/fontes consultadas/i)).not.toBeInTheDocument();
+      // Should NOT show source text for single source
+      expect(screen.queryByText(/dados de múltiplas fontes/i)).not.toBeInTheDocument();
     });
 
     it("shows tooltip with per-source record counts on hover", () => {
@@ -254,7 +254,7 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
 
       // Check for partial failure message
       expect(
-        screen.getByText(/Busca concluída \| Uma fonte temporariamente indisponível/i)
+        screen.getByText(/Busca concluída \| Fonte temporariamente indisponível/i)
       ).toBeInTheDocument();
       expect(
         screen.getByText(/dados podem estar incompletos/i)
@@ -273,7 +273,7 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
 
       // Should NOT show partial message when results are cached
       expect(
-        screen.queryByText(/Uma fonte temporariamente indisponível/i)
+        screen.queryByText(/Fonte temporariamente indisponível/i)
       ).not.toBeInTheDocument();
     });
 
@@ -289,7 +289,7 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
 
       // Should NOT show partial message when search is complete
       expect(
-        screen.queryByText(/Uma fonte temporariamente indisponível/i)
+        screen.queryByText(/Fonte temporariamente indisponível/i)
       ).not.toBeInTheDocument();
     });
 
@@ -313,7 +313,7 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
       const { container } = render(<SearchResults {...props} />);
 
       // Find the partial failure text element and check its parent for styling
-      const partialText = screen.getByText(/Uma fonte temporariamente indisponível/i);
+      const partialText = screen.getByText(/Fonte temporariamente indisponível/i);
       expect(partialText.className).toContain("text-amber-");
     });
   });

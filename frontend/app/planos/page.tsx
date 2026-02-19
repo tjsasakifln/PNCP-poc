@@ -30,7 +30,7 @@ const FEATURES = [
   { text: "Pipeline de acompanhamento", detail: "Gerencie oportunidades do início ao fim" },
   { text: "Resumos executivos com IA avançada", detail: "Análise estratégica de cada oportunidade" },
   { text: "5 anos de histórico", detail: "Acesso a oportunidades desde 2021" },
-  { text: "15 setores e 27 estados", detail: "PNCP e Portal de Compras Públicas integrados" },
+  { text: "15 setores e 27 estados", detail: "Cobertura nacional integrada de fontes oficiais" },
   { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
 ];
 

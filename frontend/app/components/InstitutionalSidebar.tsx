@@ -137,7 +137,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
     headline: "Descubra oportunidades de licitação antes da concorrência",
     subheadline: "Acesse seu painel e encontre as melhores oportunidades para sua empresa",
     benefits: [
-      { icon: "clock", text: "Consulta sob demanda de 2 bases oficiais" },
+      { icon: "clock", text: "Cobertura nacional de fontes oficiais" },
       { icon: "filter", text: "Filtros por estado, valor e setor" },
       { icon: "brain", text: "Avaliação estratégica por IA" },
       { icon: "download", text: "Exportação de relatórios em Excel" },

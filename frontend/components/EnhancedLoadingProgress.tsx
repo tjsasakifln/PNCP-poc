@@ -48,7 +48,7 @@ const STAGES: Stage[] = [
     id: 1,
     label: 'Consultando fontes oficiais',
     progressTarget: 10,
-    description: 'Conectando a 2 fontes oficiais de contratações públicas',
+    description: 'Consultando fontes oficiais de contratações públicas',
   },
   {
     id: 2,
@@ -220,7 +220,7 @@ export function EnhancedLoadingProgress({
   const statusDescription = (() => {
     if (useRealProgress && sseEvent) return sseEvent.message;
     if (currentStage === 1) {
-      return `Buscando em 2 fontes oficiais. Resultados em aproximadamente ${estimatedTime}s.`;
+      return `Consultando fontes oficiais. Resultados em aproximadamente ${estimatedTime}s.`;
     }
     if (currentStage === 2 && stateCount > 0) {
       const remaining = Math.max(0, estimatedTime - elapsedTime);

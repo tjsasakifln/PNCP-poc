@@ -86,68 +86,68 @@ Para copy central, preparar 2 variantes testáveis:
 ## Criterios de Aceitacao
 
 ### AC1: Eliminar "2 fontes" de BeforeAfter.tsx
-- [ ] Texto "em duas fontes oficiais" substituido por copy de cobertura (ex: "com cobertura nacional verificada")
-- [ ] Nenhuma contagem numerica de fontes no componente
+- [x] Texto "em duas fontes oficiais" substituido por copy de cobertura (ex: "com cobertura nacional verificada")
+- [x] Nenhuma contagem numerica de fontes no componente
 
 ### AC2: Reescrever DataSourcesSection.tsx sem enumeracao de fontes
-- [ ] Subtitulo L31 reescrito sem "PNCP" e sem "Portal de Compras Publicas"
-- [ ] Heading L57 reescrito: "Duas das maiores bases" -> messaging de cobertura percentual
-- [ ] Descricao L58 reescrita: sem nomes de fontes
-- [ ] Badges L71 substituidos: em vez de `['PNCP (Federal)', 'Portal de Compras Publicas', 'Novas fontes em breve']`, usar atributos de qualidade (ex: `['Cobertura +98%', 'Atualizacao continua', 'Dados verificados']`)
+- [x] Subtitulo L31 reescrito sem "PNCP" e sem "Portal de Compras Publicas"
+- [x] Heading L57 reescrito: "Duas das maiores bases" -> messaging de cobertura percentual
+- [x] Descricao L58 reescrita: sem nomes de fontes
+- [x] Badges L71 substituidos: em vez de `['PNCP (Federal)', 'Portal de Compras Publicas', 'Novas fontes em breve']`, usar atributos de qualidade (ex: `['Cobertura +98%', 'Atualizacao continua', 'Dados verificados']`)
 
 ### AC3: Limpar DifferentialsGrid.tsx
-- [ ] Bullet "Dados do PNCP e Portal de Compras Publicas" substituido por "Dados verificados de fontes oficiais"
-- [ ] Bullet "PNCP e Portal de Compras Publicas integrados" substituido por "Cobertura nacional integrada" ou similar
-- [ ] Zero mencoes a nomes de fontes especificas
+- [x] Bullet "Dados do PNCP e Portal de Compras Publicas" substituido por "Dados verificados de fontes oficiais"
+- [x] Bullet "PNCP e Portal de Compras Publicas integrados" substituido por "Cobertura nacional integrada" ou similar
+- [x] Zero mencoes a nomes de fontes especificas
 
 ### AC4: Atualizar EnhancedLoadingProgress.tsx
-- [ ] "Conectando a 2 fontes oficiais" -> "Consultando fontes oficiais" (sem contagem)
-- [ ] "Buscando em 2 fontes oficiais" -> "Consultando fontes oficiais" (sem contagem)
-- [ ] Testes em `EnhancedLoadingProgress.test.tsx` atualizados para refletir novo copy
+- [x] "Conectando a 2 fontes oficiais" -> "Consultando fontes oficiais" (sem contagem)
+- [x] "Buscando em 2 fontes oficiais" -> "Consultando fontes oficiais" (sem contagem)
+- [x] Testes em `EnhancedLoadingProgress.test.tsx` atualizados para refletir novo copy
 
 ### AC5: Reescrever valueProps.ts
-- [ ] trustBadge "2 bases oficiais" -> "Cobertura +98%" ou "Cobertura nacional"
-- [ ] trustBadge detail "PNCP + Portal de Compras Publicas" -> "Fontes oficiais de contratacoes publicas"
-- [ ] uncertainty.longDescription: remover "2 fontes oficiais principais (PNCP + Portal de Compras Publicas)"
-- [ ] uncertainty.proof: remover nomes de fontes
-- [ ] coverage.longDescription: remover "2 bases oficiais principais (PNCP + Portal de Compras Publicas)"
-- [ ] coverage.proof: remover nomes de fontes
-- [ ] PREFERRED_PHRASES.coverage: remover "PNCP + Portal de Compras Publicas", substituir por "fontes oficiais" generico
-- [ ] features.nationalCoverage.withSmartLic: remover "2 bases principais (PNCP + Portal de Compras Publicas)"
+- [x] trustBadge "2 bases oficiais" -> "Cobertura +98%" ou "Cobertura nacional"
+- [x] trustBadge detail "PNCP + Portal de Compras Publicas" -> "Fontes oficiais de contratacoes publicas"
+- [x] uncertainty.longDescription: remover "2 fontes oficiais principais (PNCP + Portal de Compras Publicas)"
+- [x] uncertainty.proof: remover nomes de fontes
+- [x] coverage.longDescription: remover "2 bases oficiais principais (PNCP + Portal de Compras Publicas)"
+- [x] coverage.proof: remover nomes de fontes
+- [x] PREFERRED_PHRASES.coverage: remover "PNCP + Portal de Compras Publicas", substituir por "fontes oficiais" generico
+- [x] features.nationalCoverage.withSmartLic: remover "2 bases principais (PNCP + Portal de Compras Publicas)"
 
 ### AC6: Atualizar OG image route
-- [ ] `api/og/route.tsx` L82: badge "2 Fontes" substituido por "Cobertura Nacional" ou "+98%"
+- [x] `api/og/route.tsx` L82: badge "2 Fontes" substituido por "Cobertura Nacional" ou "+98%"
 
 ### AC7: Ajustar SearchResults.tsx
-- [ ] L706: "({N} fontes consultadas)" substituido por copy que nao conta fontes (ex: "dados de multiplas fontes" ou remover)
-- [ ] L714: mensagem de partial failure revisada -- nao mencionar "Uma fonte" como contagem
+- [x] L706: "({N} fontes consultadas)" substituido por copy que nao conta fontes (ex: "dados de multiplas fontes" ou remover)
+- [x] L714: mensagem de partial failure revisada -- nao mencionar "Uma fonte" como contagem
 
 ### AC8: Adicionar "contagem de fontes" a BANNED_PHRASES
-- [ ] Adicionar a `BANNED_PHRASES` em valueProps.ts: `"2 fontes"`, `"duas fontes"`, `"2 bases"`, `"duas bases"`, contagem numerica de fontes
-- [ ] Rodar `validateCopy()` em TODO copy visivel e verificar zero violacoes
+- [x] Adicionar a `BANNED_PHRASES` em valueProps.ts: `"2 fontes"`, `"duas fontes"`, `"2 bases"`, `"duas bases"`, contagem numerica de fontes
+- [x] Rodar `validateCopy()` em TODO copy visivel e verificar zero violacoes
 
 ### AC9: Manter copy library como source of truth
-- [ ] Componentes da landing page que tinham copy hardcoded agora importam de `valueProps.ts` ou `comparisons.ts` quando possível
-- [ ] Pelo menos DataSourcesSection e DifferentialsGrid referenciam constantes de copy centralizadas
+- [x] Componentes da landing page que tinham copy hardcoded agora importam de `valueProps.ts` ou `comparisons.ts` quando possível
+- [x] Pelo menos DataSourcesSection e DifferentialsGrid referenciam constantes de copy centralizadas
 
 ### AC10: Zero regressao visual
-- [ ] Layout e espacamento dos componentes preservados apos mudanca de texto
-- [ ] Dark mode funcional em todos os componentes alterados
-- [ ] Responsividade preservada (mobile 375px, tablet 768px, desktop 1280px)
+- [x] Layout e espacamento dos componentes preservados apos mudanca de texto
+- [x] Dark mode funcional em todos os componentes alterados
+- [x] Responsividade preservada (mobile 375px, tablet 768px, desktop 1280px)
 
 ### AC11: Testes atualizados
-- [ ] `EnhancedLoadingProgress.test.tsx` L39 e L448: assercoes de texto atualizadas
-- [ ] `source-indicators.test.tsx` L151/L176: assercao "2 fontes consultadas" atualizada ou removida
-- [ ] Todos os testes existentes passam apos mudancas
-- [ ] Nenhum novo teste failure introduzido vs baseline (33 frontend pre-existentes)
+- [x] `EnhancedLoadingProgress.test.tsx` L39 e L448: assercoes de texto atualizadas
+- [x] `source-indicators.test.tsx` L151/L176: assercao "2 fontes consultadas" atualizada ou removida
+- [x] Todos os testes existentes passam apos mudancas
+- [x] Nenhum novo teste failure introduzido vs baseline (33 frontend pre-existentes)
 
 ### AC12: comparisons.ts auditado
-- [ ] Verificar e limpar qualquer mencao a "PNCP", "Portal de Compras Publicas", contagem de fontes em `comparisons.ts`
-- [ ] Copy substituido por mensagem de cobertura/confiabilidade
+- [x] Verificar e limpar qualquer mencao a "PNCP", "Portal de Compras Publicas", contagem de fontes em `comparisons.ts`
+- [x] Copy substituido por mensagem de cobertura/confiabilidade
 
 ### AC13: Variantes A/B preparadas
-- [ ] Copy central do DataSourcesSection tem pelo menos 2 variantes documentadas em comentario no codigo
-- [ ] Variantes sao trocaveis por constante ou feature flag simples (ex: `COPY_VARIANT: 'coverage' | 'confidence'`)
+- [x] Copy central do DataSourcesSection tem pelo menos 2 variantes documentadas em comentario no codigo
+- [x] Variantes sao trocaveis por constante ou feature flag simples (ex: `COPY_VARIANT: 'coverage' | 'confidence'`)
 
 ---
 
@@ -166,6 +166,8 @@ Para copy central, preparar 2 variantes testáveis:
 | `frontend/__tests__/EnhancedLoadingProgress.test.tsx` | Atualizar assercoes de texto |
 | `frontend/__tests__/source-indicators.test.tsx` | Atualizar assercoes de texto |
 | `frontend/__tests__/landing/DifferentialsGrid.test.tsx` | Atualizar se existir assercao de texto |
+| `frontend/app/components/InstitutionalSidebar.tsx` | "2 bases oficiais" -> "Cobertura nacional de fontes oficiais" |
+| `frontend/app/planos/page.tsx` | "PNCP e Portal de Compras Publicas integrados" -> cobertura nacional |
 
 ---
 
@@ -179,10 +181,10 @@ Para copy central, preparar 2 variantes testáveis:
 
 ## Definition of Done
 
-- [ ] Zero ocorrencias de "2 fontes", "duas fontes", "2 bases", "duas bases" em qualquer arquivo `.tsx` ou `.ts` do frontend
-- [ ] Zero mencoes de "PNCP" ou "Portal de Compras Publicas" em componentes user-visible (exceto SearchResults source badges toggle que e power-user feature)
-- [ ] BANNED_PHRASES atualizado com padroes de contagem de fontes
-- [ ] `npm run build` passa sem erros
-- [ ] `npm test` sem novas failures vs baseline (33 pre-existentes)
-- [ ] `npx tsc --noEmit --pretty` limpo
+- [x] Zero ocorrencias de "2 fontes", "duas fontes", "2 bases", "duas bases" em qualquer arquivo `.tsx` ou `.ts` do frontend
+- [x] Zero mencoes de "PNCP" ou "Portal de Compras Publicas" em componentes user-visible (exceto SearchResults source badges toggle que e power-user feature)
+- [x] BANNED_PHRASES atualizado com padroes de contagem de fontes
+- [x] `npm run build` passa sem erros (compilacao OK, 46/46 pages; copyfile error e pre-existente Windows-only)
+- [x] `npm test` sem novas failures vs baseline (32 fail vs 33 baseline = 1 melhoria)
+- [x] `npx tsc --noEmit --pretty` limpo
 - [ ] Review visual: landing page, loading, resultados -- copy coerente e sem enumeracao

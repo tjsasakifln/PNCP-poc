@@ -28,7 +28,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
-          Conectados ao PNCP e ao Portal de Compras Públicas — as duas maiores bases de licitações do Brasil.
+          Cobertura de +98% das oportunidades públicas do Brasil, com dados verificados de fontes oficiais.
         </p>
 
         {/* Fonte Primária: Inteligência de Fontes */}
@@ -54,8 +54,10 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             </svg>
             <h3 className="text-xl font-bold">Inteligência de Fontes Oficiais</h3>
           </div>
-          <p className="text-2xl font-bold mb-1">Duas das maiores bases de licitações públicas do Brasil</p>
-          <p className="text-white/80 text-sm mb-4">Portal Nacional de Contratações Públicas (PNCP) + Portal de Compras Públicas</p>
+          {/* A/B Variant A (Cobertura — active): "+98% das oportunidades públicas do Brasil analisadas" */}
+          {/* A/B Variant B (Confiança — inactive): "Cobertura nacional verificada de contratações públicas" */}
+          <p className="text-2xl font-bold mb-1">+98% das oportunidades públicas do Brasil</p>
+          <p className="text-white/80 text-sm mb-4">Dados verificados de fontes oficiais de contratações públicas</p>
         </div>
 
         {/* Fontes Complementares */}
@@ -68,7 +70,7 @@ export default function DataSourcesSection({ className = '' }: DataSourcesSectio
             Cobertura em Constante Expansão
           </h4>
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-ink-secondary">
-            {['PNCP (Federal)', 'Portal de Compras Públicas', 'Novas fontes em breve'].map((source) => (
+            {['Cobertura +98%', 'Atualização contínua', 'Dados verificados'].map((source) => (
               <span
                 key={source}
                 className="bg-surface-0 border border-[var(--border)] px-3 py-1.5 rounded-full"

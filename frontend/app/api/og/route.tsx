@@ -79,7 +79,7 @@ export async function GET() {
             borderRadius: "12px",
           }}
         >
-          {["15 Setores", "27 Estados", "2 Fontes", "IA Avançada"].map(
+          {["15 Setores", "27 Estados", "Cobertura Nacional", "IA Avançada"].map(
             (feat) => (
               <span
                 key={feat}
