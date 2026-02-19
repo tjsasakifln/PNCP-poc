@@ -29,7 +29,7 @@ from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralize
 import quota  # Module-level import; accessed via quota.func() for mock compatibility
 
 from search_context import SearchContext
-from schemas import BuscaResponse, FilterStats, ResumoEstrategico, LicitacaoItem, DataSourceStatus
+from schemas import BuscaResponse, FilterStats, ResumoEstrategico, LicitacaoItem, DataSourceStatus, UfStatusDetail
 from pncp_client import get_circuit_breaker, PNCPDegradedError, ParallelFetchResult
 from consolidation import AllSourcesFailedError
 from term_parser import parse_search_terms
@@ -168,6 +168,40 @@ def _calcular_dias_restantes(data_encerramento_str: str | None) -> int | None:
         return (enc - date.today()).days
     except (ValueError, TypeError):
         return None
+
+
+def _build_coverage_metrics(ctx: "SearchContext") -> tuple[int, list[UfStatusDetail]]:
+    """Build coverage_pct and ufs_status_detail from search context (GTM-RESILIENCE-A05 AC1-AC2)."""
+    requested_ufs = list(ctx.request.ufs)
+    total_requested = len(requested_ufs)
+    if total_requested == 0:
+        return 100, []
+
+    failed_set = set(ctx.failed_ufs or [])
+    succeeded_set = set(ctx.succeeded_ufs or [])
+
+    # Count raw results per UF for results_count
+    uf_counts: dict[str, int] = {}
+    for lic in ctx.licitacoes_raw:
+        uf = lic.get("uf", "")
+        if uf:
+            uf_counts[uf] = uf_counts.get(uf, 0) + 1
+
+    details: list[UfStatusDetail] = []
+    succeeded_count = 0
+    for uf in requested_ufs:
+        if uf in failed_set:
+            details.append(UfStatusDetail(uf=uf, status="timeout", results_count=0))
+        else:
+            succeeded_count += 1
+            details.append(UfStatusDetail(
+                uf=uf,
+                status="ok",
+                results_count=uf_counts.get(uf, 0),
+            ))
+
+    coverage_pct = int((succeeded_count / total_requested) * 100)
+    return coverage_pct, details
 
 
 def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
@@ -1296,6 +1330,9 @@ class SearchPipeline:
             new_quota_used = ctx.quota_info.quota_used if ctx.quota_info else 0
             quota_remaining = ctx.quota_info.quota_remaining if ctx.quota_info else 0
 
+            # GTM-RESILIENCE-A05 AC1-AC2: Coverage metrics
+            _cov_pct, _ufs_detail = _build_coverage_metrics(ctx)
+
             ctx.response = BuscaResponse(
                 resumo=ctx.resumo,
                 licitacoes=[],
@@ -1329,6 +1366,8 @@ class SearchPipeline:
                 truncation_details=ctx.truncation_details,
                 response_state=ctx.response_state,
                 degradation_guidance=ctx.degradation_guidance,
+                coverage_pct=_cov_pct,
+                ufs_status_detail=_ufs_detail,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1413,6 +1452,9 @@ class SearchPipeline:
         new_quota_used = ctx.quota_info.quota_used if ctx.quota_info else 0
         quota_remaining = ctx.quota_info.quota_remaining if ctx.quota_info else 0
 
+        # GTM-RESILIENCE-A05 AC1-AC2: Coverage metrics
+        _cov_pct, _ufs_detail = _build_coverage_metrics(ctx)
+
         ctx.response = BuscaResponse(
             resumo=ctx.resumo,
             licitacoes=ctx.licitacao_items,
@@ -1448,6 +1490,8 @@ class SearchPipeline:
             truncation_details=ctx.truncation_details,
             response_state=ctx.response_state,
             degradation_guidance=ctx.degradation_guidance,
+            coverage_pct=_cov_pct,
+            ufs_status_detail=_ufs_detail,
         )
 
         logger.info(

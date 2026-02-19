@@ -7,7 +7,8 @@ import type { SearchProgressEvent } from "../../../hooks/useSearchProgress";
 import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
 import { EmptyState } from "../../components/EmptyState";
-import { DegradationBanner } from "./DegradationBanner";
+import { DegradationBanner } from "./DegradationBanner"; // AC10: kept as deprecated
+import { OperationalStateBanner } from "./OperationalStateBanner";
 import { UfProgressGrid } from "./UfProgressGrid";
 import type { UfStatus } from "../hooks/useUfProgress";
 import { PartialResultsPrompt, PartialResultsBanner, FailedUfsBanner } from "./PartialResultsPrompt";
@@ -288,11 +289,13 @@ export default function SearchResults({
       {/* STORY-252 AC23: Partial results, but all filtered out (total_raw>0, total_filtrado=0, is_partial=true) */}
       {result && result.is_partial && (result.total_raw || 0) > 0 && result.resumo.total_oportunidades === 0 && (
         <>
-          <DegradationBanner
-            variant="warning"
-            message="Resultados parciais — algumas fontes não responderam e nenhum resultado passou nos filtros."
-            detail="Os dados disponíveis não continham licitações compatíveis com os critérios selecionados. Tente ampliar o período ou selecionar mais estados."
-            dataSources={result.data_sources}
+          <OperationalStateBanner
+            coveragePct={result.coverage_pct ?? 100}
+            responseState={result.response_state}
+            ufsStatusDetail={result.ufs_status_detail}
+            ultimaAtualizacao={result.ultima_atualizacao}
+            cachedAt={result.cached_at}
+            cacheStatus={result.cache_status}
           />
           <EmptyState
             onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -357,15 +360,15 @@ export default function SearchResults({
             />
           )}
 
-          {/* STORY-252 AC21: Yellow banner for partial results (data source level) */}
-          {result.is_partial && !result.cached && (
-            <DegradationBanner
-              variant="warning"
-              message="Resultados parciais — algumas fontes de dados não responderam."
-              detail={result.degradation_reason}
-              dataSources={result.data_sources}
-            />
-          )}
+          {/* GTM-RESILIENCE-A05 AC3: Operational state banner replaces DegradationBanner */}
+          <OperationalStateBanner
+            coveragePct={result.coverage_pct ?? 100}
+            responseState={result.response_state}
+            ufsStatusDetail={result.ufs_status_detail}
+            ultimaAtualizacao={result.ultima_atualizacao}
+            cachedAt={result.cached_at}
+            cacheStatus={result.cache_status}
+          />
 
           {/* Results header with ordering (GTM-FIX-028 AC13) */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-strong">

@@ -116,6 +116,10 @@ export interface BuscaResult {
   response_state?: "live" | "cached" | "degraded" | "empty_failure";
   /** GTM-RESILIENCE-A01 AC5: User-facing guidance for degraded/failed states */
   degradation_guidance?: string;
+  /** GTM-RESILIENCE-A05 AC1: Coverage percentage (0-100) */
+  coverage_pct?: number;
+  /** GTM-RESILIENCE-A05 AC2: Per-UF status breakdown */
+  ufs_status_detail?: UfStatusDetailItem[];
   /** STORY-257B AC10: List of UF codes that failed during search */
   failed_ufs?: string[];
   /** GTM-FIX-004: True when at least one UF hit the max_pages limit */
@@ -161,6 +165,13 @@ export interface SourceStat {
   duration_ms: number;
   error: string | null;
   status: string;
+}
+
+/** Per-UF status detail for coverage indicators (GTM-RESILIENCE-A05 AC2) */
+export interface UfStatusDetailItem {
+  uf: string;
+  status: "ok" | "timeout" | "error" | "skipped";
+  results_count: number;
 }
 
 /** Per-source status for degradation banners (STORY-252 AC21-AC23) */

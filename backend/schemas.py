@@ -826,6 +826,13 @@ class DataSourceStatus(BaseModel):
     )
 
 
+class UfStatusDetail(BaseModel):
+    """Per-UF status detail for coverage indicators (GTM-RESILIENCE-A05 AC2)."""
+    uf: str = Field(..., description="State code (e.g., 'SP')")
+    status: Literal["ok", "timeout", "error", "skipped"] = Field(..., description="UF fetch status")
+    results_count: int = Field(default=0, ge=0, description="Number of results from this UF")
+
+
 class BuscaResponse(BaseModel):
     """
     Response schema for /buscar endpoint.
@@ -960,6 +967,17 @@ class BuscaResponse(BaseModel):
     degradation_guidance: Optional[str] = Field(
         default=None,
         description="GTM-RESILIENCE-A01: User-facing guidance when response_state is 'empty_failure' or 'degraded'"
+    )
+    # GTM-RESILIENCE-A05: Coverage indicators
+    coverage_pct: int = Field(
+        default=100,
+        ge=0,
+        le=100,
+        description="GTM-RESILIENCE-A05 AC1: Coverage percentage (succeeded_ufs / total_ufs_requested * 100)"
+    )
+    ufs_status_detail: Optional[List[UfStatusDetail]] = Field(
+        default=None,
+        description="GTM-RESILIENCE-A05 AC2: Per-UF status breakdown with results count"
     )
     hidden_by_min_match: Optional[int] = Field(
         default=None,
