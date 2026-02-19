@@ -375,17 +375,17 @@ class TestSentryTelemetry:
     }
 
     def test_format_accepted_logged(self, caplog):
-        """Accepted format emits telemetry log."""
+        """Accepted format emits telemetry log (DEBUG after E-01 consolidation)."""
         import logging
-        with caplog.at_level(logging.INFO):
+        with caplog.at_level(logging.DEBUG):
             _set_cached_date_format(DateFormat.ISO_DASH)
         assert "pncp_date_format_cached" in caplog.text
         assert "YYYY-MM-DD" in caplog.text
 
     def test_422_count_metric_logged(self, caplog):
-        """422 count with type is logged for Sentry."""
+        """422 count with type is logged for Sentry (DEBUG after E-01 consolidation)."""
         import logging
-        with caplog.at_level(logging.INFO):
+        with caplog.at_level(logging.DEBUG):
             _handle_422_response(
                 '{"message":"365 dias"}',
                 self.PARAMS, "2026-02-08", "2026-02-18",

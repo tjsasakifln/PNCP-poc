@@ -267,7 +267,7 @@ def _set_cached_date_format(fmt: str) -> None:
     global _accepted_date_format, _accepted_date_format_ts
     _accepted_date_format = fmt
     _accepted_date_format_ts = time.time()
-    logger.info(f"pncp_date_format_cached format={fmt}")
+    logger.debug(f"pncp_date_format_cached format={fmt}")
 
 
 def format_date(iso_date: str, fmt: str) -> str:
@@ -365,13 +365,13 @@ def _handle_422_response(
         _422_type = "date_range"
 
     # AC4.4 + UX-336 AC5: Sentry-style metric tag with format info
-    logger.info(
+    logger.debug(
         f"pncp_422_count uf={uf_param} modality={mod_param} type={_422_type}"
     )
 
     if _422_type != "unknown":
         # AC4.3: Return empty instead of crashing
-        logger.info(
+        logger.debug(
             f"pncp_422_date_skip uf={uf_param} modality={mod_param} type={_422_type}"
         )
         return {
@@ -560,7 +560,7 @@ class PNCPClient:
                 # Handle rate limiting specifically
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("Retry-After", 60))
-                    logger.warning(
+                    logger.debug(
                         f"Rate limited (429). Waiting {retry_after}s "
                         f"(Retry-After header)"
                     )
@@ -609,7 +609,7 @@ class PNCPClient:
                     current_fmt = format_rotation[format_idx] if format_idx < len(format_rotation) else DateFormat.YYYYMMDD
                     if current_fmt != DateFormat.YYYYMMDD or format_idx > 0:
                         _set_cached_date_format(current_fmt)
-                        logger.info(f"pncp_date_format_accepted format={current_fmt}")
+                        logger.debug(f"pncp_date_format_accepted format={current_fmt}")
 
                     logger.debug(
                         f"Success: fetched page {pagina} "
@@ -641,7 +641,7 @@ class PNCPClient:
                         # UX-336: Try next date format
                         format_idx += 1
                         next_fmt = format_rotation[format_idx]
-                        logger.info(
+                        logger.debug(
                             f"UX-336: Retrying with format {next_fmt} "
                             f"(attempt {format_idx + 1}/{len(format_rotation)})"
                         )
@@ -767,7 +767,7 @@ class PNCPClient:
         # Split large date ranges into 30-day chunks
         date_chunks = self._chunk_date_range(data_inicial, data_final)
         if len(date_chunks) > 1:
-            logger.info(
+            logger.debug(
                 f"Date range {data_inicial} to {data_final} split into "
                 f"{len(date_chunks)} chunks of up to 30 days"
             )
@@ -781,18 +781,18 @@ class PNCPClient:
 
         for chunk_idx, (chunk_start, chunk_end) in enumerate(date_chunks):
             if len(date_chunks) > 1:
-                logger.info(
+                logger.debug(
                     f"Processing date chunk {chunk_idx + 1}/{len(date_chunks)}: "
                     f"{chunk_start} to {chunk_end}"
                 )
 
             for modalidade in modalidades_to_fetch:
-                logger.info(f"Fetching modality {modalidade}")
+                logger.debug(f"Fetching modality {modalidade}")
 
                 # If specific UFs provided, fetch each separately
                 if ufs:
                     for uf in ufs:
-                        logger.info(f"Fetching modalidade={modalidade}, UF={uf}")
+                        logger.debug(f"Fetching modalidade={modalidade}, UF={uf}")
                         try:
                             for item in self._fetch_by_uf(
                                 chunk_start, chunk_end, modalidade, uf, on_progress
@@ -808,7 +808,7 @@ class PNCPClient:
                             )
                             continue
                 else:
-                    logger.info(f"Fetching modalidade={modalidade}, all UFs")
+                    logger.debug(f"Fetching modalidade={modalidade}, all UFs")
                     try:
                         for item in self._fetch_by_uf(
                             chunk_start, chunk_end, modalidade, None, on_progress
@@ -1185,7 +1185,7 @@ class AsyncPNCPClient:
                 # Handle rate limiting
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("Retry-After", 60))
-                    logger.warning(f"Rate limited (429). Waiting {retry_after}s")
+                    logger.debug(f"Rate limited (429). Waiting {retry_after}s")
                     await asyncio.sleep(retry_after)
                     continue
 
@@ -1241,7 +1241,7 @@ class AsyncPNCPClient:
                     current_fmt = format_rotation[format_idx] if format_idx < len(format_rotation) else DateFormat.YYYYMMDD
                     if current_fmt != DateFormat.YYYYMMDD or format_idx > 0:
                         _set_cached_date_format(current_fmt)
-                        logger.info(f"pncp_date_format_accepted format={current_fmt}")
+                        logger.debug(f"pncp_date_format_accepted format={current_fmt}")
 
                     return data
 
@@ -1268,7 +1268,7 @@ class AsyncPNCPClient:
                         # UX-336: Try next date format
                         format_idx += 1
                         next_fmt = format_rotation[format_idx]
-                        logger.info(
+                        logger.debug(
                             f"UX-336: Retrying with format {next_fmt} "
                             f"(attempt {format_idx + 1}/{len(format_rotation)})"
                         )
@@ -1300,7 +1300,7 @@ class AsyncPNCPClient:
                     )
                     if self.config.jitter:
                         delay *= random.uniform(0.5, 1.5)
-                    logger.warning(
+                    logger.debug(
                         f"Error {response.status_code}. Retrying in {delay:.1f}s"
                     )
                     await asyncio.sleep(delay)
@@ -1315,7 +1315,7 @@ class AsyncPNCPClient:
                         self.config.base_delay * (self.config.exponential_base ** attempt),
                         self.config.max_delay
                     )
-                    logger.warning(f"Timeout. Retrying in {delay:.1f}s")
+                    logger.debug(f"Timeout. Retrying in {delay:.1f}s")
                     await asyncio.sleep(delay)
                 else:
                     raise PNCPAPIError(f"Timeout after {self.config.max_retries + 1} attempts") from e
@@ -1326,7 +1326,7 @@ class AsyncPNCPClient:
                         self.config.base_delay * (self.config.exponential_base ** attempt),
                         self.config.max_delay
                     )
-                    logger.warning(f"HTTP error: {e}. Retrying in {delay:.1f}s")
+                    logger.debug(f"HTTP error: {e}. Retrying in {delay:.1f}s")
                     await asyncio.sleep(delay)
                 else:
                     raise PNCPAPIError(f"HTTP error after retries: {e}") from e
@@ -1533,7 +1533,7 @@ class AsyncPNCPClient:
                         seen_ids.add(item_id)
                         all_items.append(item)
 
-            logger.info(f"Fetched {len(all_items)} items for UF={uf} (truncated={uf_was_truncated})")
+            logger.debug(f"Fetched {len(all_items)} items for UF={uf} (truncated={uf_was_truncated})")
             return all_items, uf_was_truncated
 
     async def buscar_todas_ufs_paralelo(
@@ -1677,7 +1677,7 @@ class AsyncPNCPClient:
             batch = ufs_ordered[batch_idx:batch_idx + batch_size]
             batch_num = batch_idx // batch_size + 1
 
-            logger.info(
+            logger.debug(
                 f"Batch {batch_num}/{total_batches}: fetching {len(batch)} UFs: {batch}"
             )
 
@@ -1718,7 +1718,7 @@ class AsyncPNCPClient:
         # STORY-257A AC7: Auto-retry failed UFs (1 round, 5s delay)
         # GTM-FIX-029: Retry timeout matches degraded per-UF timeout (120s)
         if failed_ufs and succeeded_ufs:
-            logger.info(
+            logger.debug(
                 f"AC7: {len(failed_ufs)} UFs failed, {len(succeeded_ufs)} succeeded — "
                 f"retrying failed UFs in 5s with {PNCP_TIMEOUT_PER_UF_DEGRADED}s timeout"
             )
@@ -1762,7 +1762,7 @@ class AsyncPNCPClient:
                         if was_truncated and uf not in truncated_ufs:
                             truncated_ufs.append(uf)
                         await _safe_callback(on_uf_status, uf, "recovered", count=len(items))
-                        logger.info(f"AC7: UF={uf} recovered with {len(items)} items")
+                        logger.debug(f"AC7: UF={uf} recovered with {len(items)} items")
                 else:
                     await _safe_callback(on_uf_status, uf, "failed", reason="retry_failed")
 

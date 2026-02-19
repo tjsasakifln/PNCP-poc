@@ -1824,7 +1824,7 @@ def aplicar_todos_filtros(
         "duvidosas_llm_arbiter": 0,  # 1% ≤ density ≤ 5% (send to LLM)
     }
 
-    logger.info(
+    logger.debug(
         f"aplicar_todos_filtros: iniciando com {len(licitacoes)} licitações"
     )
 
@@ -1924,7 +1924,7 @@ def aplicar_todos_filtros(
                         pass
 
         # GTM-FIX-030 AC13: Log status distribution for diagnostics
-        logger.info(
+        logger.debug(
             f"  Status filter: wanted='{status_lower}', "
             f"distribution={_status_distribution}, "
             f"passed={len(resultado_status)}, rejected={stats['rejeitadas_status']}"
@@ -2272,7 +2272,7 @@ def aplicar_todos_filtros(
                             lic_item["_term_density"] = 0.0
                             lic_item["_matched_terms"] = []
                             resultado_llm_zero.append(lic_item)
-                            logger.info(
+                            logger.debug(
                                 f"LLM zero_match: ACCEPT objeto={lic_item.get('objetoCompra', '')[:80]}"
                             )
                         else:
@@ -2318,7 +2318,7 @@ def aplicar_todos_filtros(
             stats["aprovadas_alta_densidade"] += 1
             # GTM-FIX-028 AC8: Tag relevance source
             lic["_relevance_source"] = "keyword"
-            logger.info(
+            logger.debug(
                 f"[{trace_id}] Camada 2A: ACCEPT (alta densidade) "
                 f"density={density:.1%} objeto={objeto_preview}"
             )
@@ -2326,7 +2326,7 @@ def aplicar_todos_filtros(
         elif density < TERM_DENSITY_LOW_THRESHOLD:
             # Low confidence (<1%) - peripheral term, reject
             stats["rejeitadas_baixa_densidade"] += 1
-            logger.info(
+            logger.debug(
                 f"[{trace_id}] Camada 2A: REJECT (baixa densidade) "
                 f"density={density:.1%} objeto={objeto_preview}"
             )
@@ -2349,7 +2349,7 @@ def aplicar_todos_filtros(
             )
             if flagged:
                 stats["rejeitadas_red_flags"] += 1
-                logger.info(
+                logger.debug(
                     f"[{trace_id}] Camada 2A: REJECT (red flags: {flag_terms}) "
                     f"density={density:.1%} objeto={objeto_preview}"
                 )
@@ -2368,7 +2368,7 @@ def aplicar_todos_filtros(
             )
             if flagged:
                 stats["rejeitadas_red_flags"] += 1
-                logger.info(
+                logger.debug(
                     f"[{trace_id}] Camada 2A: REJECT (red flags: {flag_terms}) "
                     f"density={density:.1%} objeto={objeto_preview}"
                 )
@@ -2445,14 +2445,14 @@ def aplicar_todos_filtros(
                 # GTM-FIX-028 AC8: Tag relevance source based on prompt level
                 lic["_relevance_source"] = f"llm_{prompt_level}"
                 resultado_densidade.append(lic)
-                logger.info(
+                logger.debug(
                     f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
                     f"density={lic.get('_term_density', 0):.1%} "
                     f"objeto={objeto[:80]}"
                 )
             else:
                 stats["rejeitadas_llm_arbiter"] += 1
-                logger.info(
+                logger.debug(
                     f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
                     f"density={lic.get('_term_density', 0):.1%} "
                     f"valor=R$ {valor:,.2f} objeto={objeto[:80]}"

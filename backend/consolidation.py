@@ -172,7 +172,7 @@ class ConsolidationService:
             effective_global_timeout = max(
                 self._timeout_global, self.DEGRADED_GLOBAL_TIMEOUT
             )
-            logger.info(
+            logger.debug(
                 f"[CONSOLIDATION] PNCP is {pncp_status} — "
                 f"global timeout increased to {effective_global_timeout}s"
             )
@@ -284,7 +284,7 @@ class ConsolidationService:
             # Only attempt fallback if it wasn't already tried as a primary source
             already_tried = fallback_code in self._adapters
             if not already_tried:
-                logger.info(
+                logger.debug(
                     f"[CONSOLIDATION] All sources failed — attempting {fallback_code} "
                     f"as last-resort fallback (timeout={self.FALLBACK_TIMEOUT}s)"
                 )
@@ -309,7 +309,7 @@ class ConsolidationService:
                     source_results.append(sr)
                     fallback_used = True
                     # Clear source_errors partially since we got data
-                    logger.info(
+                    logger.debug(
                         f"[CONSOLIDATION] Fallback {fallback_code} returned "
                         f"{len(fb_records)} records"
                     )
@@ -442,7 +442,7 @@ class ConsolidationService:
                 timeout=effective_timeout,
             )
             duration = int((time.time() - start) * 1000)
-            logger.info(
+            logger.debug(
                 f"[CONSOLIDATION] {code}: {len(partial_records)} records in {duration}ms"
             )
             return {

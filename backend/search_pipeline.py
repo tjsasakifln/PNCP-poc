@@ -417,14 +417,14 @@ class SearchPipeline:
         d_fin = date_type.fromisoformat(ctx.request.data_final)
         ctx.request.data_inicial = d_ini.isoformat()
         ctx.request.data_final = d_fin.isoformat()
-        logger.info(f"stage_prepare: dates normalized to {ctx.request.data_inicial} → {ctx.request.data_final}")
+        logger.debug(f"stage_prepare: dates normalized to {ctx.request.data_inicial} → {ctx.request.data_final}")
 
         try:
             ctx.sector = get_sector(ctx.request.setor_id)
         except KeyError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-        logger.info(f"Using sector: {ctx.sector.name} ({len(ctx.sector.keywords)} keywords)")
+        logger.debug(f"Using sector: {ctx.sector.name} ({len(ctx.sector.keywords)} keywords)")
 
         ctx.custom_terms = []
         ctx.stopwords_removed = []
@@ -448,24 +448,24 @@ class SearchPipeline:
             ctx.custom_terms = validated['valid']
             ctx.stopwords_removed = validated['ignored']
 
-            logger.info(
+            logger.debug(
                 f"Term validation: {len(ctx.custom_terms)} valid, {len(ctx.stopwords_removed)} ignored. "
                 f"Valid={ctx.custom_terms}, Ignored={list(validated['reasons'].keys())}"
             )
 
             if ctx.custom_terms and not ctx.request.show_all_matches:
                 ctx.min_match_floor_value = calculate_min_matches(len(ctx.custom_terms))
-                logger.info(
+                logger.debug(
                     f"Min match floor: {ctx.min_match_floor_value} "
                     f"(total_terms={len(ctx.custom_terms)})"
                 )
 
         if ctx.custom_terms:
             ctx.active_keywords = set(ctx.custom_terms)
-            logger.info(f"Using {len(ctx.custom_terms)} custom search terms: {ctx.custom_terms}")
+            logger.debug(f"Using {len(ctx.custom_terms)} custom search terms: {ctx.custom_terms}")
         else:
             ctx.active_keywords = set(ctx.sector.keywords)
-            logger.info(f"Using sector keywords ({len(ctx.active_keywords)} terms)")
+            logger.debug(f"Using sector keywords ({len(ctx.active_keywords)} terms)")
 
         # Determine exclusions
         if ctx.request.exclusion_terms:
@@ -500,7 +500,7 @@ class SearchPipeline:
         if not request.force_fresh:
             cached = _read_cache(cache_key)
             if cached:
-                logger.info(f"Cache HIT for search (cached_at={cached.get('cached_at', 'unknown')})")
+                logger.debug(f"Cache HIT for search (cached_at={cached.get('cached_at', 'unknown')})")
                 ctx.licitacoes_raw = cached.get("licitacoes", [])
                 ctx.cached = True
                 ctx.cached_at = cached.get("cached_at")
@@ -563,9 +563,9 @@ class SearchPipeline:
             )
 
         # Enrich with inferred status
-        logger.info("Enriching bids with inferred status...")
+        logger.debug("Enriching bids with inferred status...")
         enriquecer_com_status_inferido(ctx.licitacoes_raw)
-        logger.info(f"Status inference complete for {len(ctx.licitacoes_raw)} bids")
+        logger.debug(f"Status inference complete for {len(ctx.licitacoes_raw)} bids")
 
         # STORY-257A AC8 + GTM-FIX-010 AC3: Cache write-through on successful fetch
         if ctx.licitacoes_raw and len(ctx.licitacoes_raw) > 0:
@@ -580,7 +580,7 @@ class SearchPipeline:
                 },
             }
             _write_cache(cache_key, cache_data)
-            logger.info(f"Cache WRITE: {len(ctx.licitacoes_raw)} results cached (TTL={SEARCH_CACHE_TTL}s)")
+            logger.debug(f"Cache WRITE: {len(ctx.licitacoes_raw)} results cached (TTL={SEARCH_CACHE_TTL}s)")
 
             # GTM-FIX-010 AC3: Also persist to Supabase for cross-restart resilience
             if ctx.user and ctx.user.get("id"):
@@ -609,7 +609,7 @@ class SearchPipeline:
         uf_progress_callback, fetch_timeout, uf_status_callback=None,
     ):
         """Multi-source consolidation path (STORY-177)."""
-        logger.info("Multi-source fetch enabled, using ConsolidationService")
+        logger.debug("Multi-source fetch enabled, using ConsolidationService")
         from consolidation import ConsolidationService
         from clients.compras_gov_client import ComprasGovAdapter
         from clients.portal_compras_client import PortalComprasAdapter
@@ -620,7 +620,7 @@ class SearchPipeline:
 
         # STORY-257A AC13: Only include sources that are actually available
         available_sources = source_config.get_enabled_source_configs()
-        logger.info(f"Available sources: {[s.code.value for s in available_sources]}")
+        logger.debug(f"Available sources: {[s.code.value for s in available_sources]}")
         pending_creds = source_config.get_pending_credentials()
         if pending_creds:
             logger.warning(f"Sources with pending credentials: {pending_creds}")
@@ -663,7 +663,7 @@ class SearchPipeline:
         source_complete_cb = None
         if ctx.tracker:
             def source_complete_cb(src_code, count, error):
-                logger.info(f"[MULTI-SOURCE] {src_code}: {count} records, error={error}")
+                logger.debug(f"[MULTI-SOURCE] {src_code}: {count} records, error={error}")
 
         try:
             consolidation_result = await asyncio.wait_for(
@@ -876,7 +876,7 @@ class SearchPipeline:
         uf_status_callback=None,
     ):
         """PNCP-only fetch path (default)."""
-        logger.info(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
+        logger.debug(f"Fetching bids from PNCP API for {len(request.ufs)} UFs")
 
         # STORY-257A AC1: Circuit breaker try_recover only (degraded mode tries with reduced concurrency)
         cb = get_circuit_breaker()
@@ -884,7 +884,7 @@ class SearchPipeline:
 
         async def _do_fetch() -> list:
             if use_parallel:
-                logger.info(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
+                logger.debug(f"Using parallel fetch for {len(request.ufs)} UFs (max_concurrent=10)")
                 try:
                     fetch_result = await deps.buscar_todas_ufs_paralelo(
                         ufs=request.ufs,
@@ -1086,23 +1086,24 @@ class SearchPipeline:
             )
             ctx.hidden_by_min_match = 0
 
-        # Detailed logging
-        logger.info(
-            f"Filtering complete: {len(ctx.licitacoes_filtradas)}/{len(ctx.licitacoes_raw)} bids passed"
-        )
+        # E-01 AC1: Consolidated filter stats in 1 JSON log (was 11 separate lines)
         stats = ctx.filter_stats
-        if stats:
-            logger.info(f"  - Total processadas: {stats.get('total', len(ctx.licitacoes_raw))}")
-            logger.info(f"  - Aprovadas: {stats.get('aprovadas', len(ctx.licitacoes_filtradas))}")
-            logger.info(f"  - Rejeitadas (UF): {stats.get('rejeitadas_uf', 0)}")
-            logger.info(f"  - Rejeitadas (Status): {stats.get('rejeitadas_status', 0)}")
-            logger.info(f"  - Rejeitadas (Esfera): {stats.get('rejeitadas_esfera', 0)}")
-            logger.info(f"  - Rejeitadas (Modalidade): {stats.get('rejeitadas_modalidade', 0)}")
-            logger.info(f"  - Rejeitadas (Município): {stats.get('rejeitadas_municipio', 0)}")
-            logger.info(f"  - Rejeitadas (Valor): {stats.get('rejeitadas_valor', 0)}")
-            logger.info(f"  - Rejeitadas (Keyword): {stats.get('rejeitadas_keyword', 0)}")
-            logger.info(f"  - Rejeitadas (Min Match): {stats.get('rejeitadas_min_match', 0)}")
-            logger.info(f"  - Rejeitadas (Outros): {stats.get('rejeitadas_outros', 0)}")
+        logger.info(json.dumps({
+            "event": "filter_complete",
+            "total": stats.get("total", len(ctx.licitacoes_raw)) if stats else len(ctx.licitacoes_raw),
+            "passed": stats.get("aprovadas", len(ctx.licitacoes_filtradas)) if stats else len(ctx.licitacoes_filtradas),
+            "rejected": {
+                "uf": stats.get("rejeitadas_uf", 0),
+                "status": stats.get("rejeitadas_status", 0),
+                "esfera": stats.get("rejeitadas_esfera", 0),
+                "modalidade": stats.get("rejeitadas_modalidade", 0),
+                "municipio": stats.get("rejeitadas_municipio", 0),
+                "valor": stats.get("rejeitadas_valor", 0),
+                "keyword": stats.get("rejeitadas_keyword", 0),
+                "min_match": stats.get("rejeitadas_min_match", 0),
+                "outros": stats.get("rejeitadas_outros", 0),
+            },
+        }) if stats else f"Filtering complete: {len(ctx.licitacoes_filtradas)}/{len(ctx.licitacoes_raw)} bids passed")
 
         # Diagnostic sample
         if stats.get('rejeitadas_keyword', 0) > 0:
@@ -1142,7 +1143,7 @@ class SearchPipeline:
 
         # Sorting
         if ctx.licitacoes_filtradas:
-            logger.info(f"Applying sorting: ordenacao='{ctx.request.ordenacao}'")
+            logger.debug(f"Applying sorting: ordenacao='{ctx.request.ordenacao}'")
             ctx.licitacoes_filtradas = ordenar_licitacoes(
                 ctx.licitacoes_filtradas,
                 ordenacao=ctx.request.ordenacao,
@@ -1150,7 +1151,7 @@ class SearchPipeline:
             )
 
             filter_elapsed = sync_time_module.time() - ctx.start_time
-            logger.info(
+            logger.debug(
                 f"Filtering and sorting complete in {filter_elapsed:.2f}s: "
                 f"{len(ctx.licitacoes_filtradas)} results ordered by '{ctx.request.ordenacao}'"
             )
@@ -1241,17 +1242,17 @@ class SearchPipeline:
             await ctx.tracker.emit("llm", 75, "Avaliando oportunidades com IA...")
 
         # LLM summary (with fallback)
-        logger.info("Generating executive summary")
+        logger.debug("Generating executive summary")
         try:
             ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
-            logger.info("LLM summary generated successfully")
+            logger.debug("LLM summary generated successfully")
         except Exception as e:
             logger.warning(
                 f"LLM generation failed, using fallback mechanism: {e}",
                 exc_info=True,
             )
             ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
-            logger.info("Fallback summary generated successfully")
+            logger.debug("Fallback summary generated successfully")
 
         # Override LLM-generated counts with actual values
         actual_total = len(ctx.licitacoes_filtradas)
@@ -1277,7 +1278,7 @@ class SearchPipeline:
         ctx.upgrade_message = None
 
         if ctx.excel_available:
-            logger.info("Generating Excel report")
+            logger.debug("Generating Excel report")
             excel_buffer = deps.create_excel(ctx.licitacoes_filtradas)
             excel_bytes = excel_buffer.read()
 
@@ -1285,7 +1286,7 @@ class SearchPipeline:
 
             if storage_result:
                 ctx.download_url = storage_result["signed_url"]
-                logger.info(
+                logger.debug(
                     f"Excel uploaded to storage: {storage_result['file_path']} "
                     f"(signed URL valid for {storage_result['expires_in']}s)"
                 )
@@ -1305,7 +1306,7 @@ class SearchPipeline:
                     "Erro temporário ao gerar Excel. Tente novamente em alguns instantes."
                 )
         else:
-            logger.info("Excel generation skipped (not allowed for user's plan)")
+            logger.debug("Excel generation skipped (not allowed for user's plan)")
             ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
 
         # Convert to LicitacaoItems
@@ -1389,11 +1390,11 @@ class SearchPipeline:
                         cnpj_map.setdefault(cleaned, []).append(idx)
 
             if not cnpj_map:
-                logger.info("[SANCTIONS] No valid CNPJs found in results, skipping")
+                logger.debug("[SANCTIONS] No valid CNPJs found in results, skipping")
                 return
 
             unique_cnpjs = list(cnpj_map.keys())
-            logger.info(f"[SANCTIONS] Checking {len(unique_cnpjs)} unique CNPJs from {len(ctx.licitacao_items)} results")
+            logger.debug(f"[SANCTIONS] Checking {len(unique_cnpjs)} unique CNPJs from {len(ctx.licitacao_items)} results")
 
             # Batch check
             service = SanctionsService()
@@ -1422,7 +1423,7 @@ class SearchPipeline:
                         ctx.licitacao_items[idx].supplier_sanctions = schema
                         enriched += 1
 
-            logger.info(
+            logger.debug(
                 f"[SANCTIONS] Enrichment complete: {enriched} items enriched, "
                 f"{sum(1 for r in reports.values() if r.is_sanctioned)} CNPJs sanctioned"
             )
@@ -1504,7 +1505,7 @@ class SearchPipeline:
                         resumo_executivo=ctx.resumo.resumo_executivo if ctx.resumo else None,
                         destaques=[],
                     )
-                    logger.info(f"Search session saved (0 results): {ctx.session_id[:8]}*** for user {mask_user_id(ctx.user['id'])}")
+                    logger.debug(f"Search session saved (0 results): {ctx.session_id[:8]}*** for user {mask_user_id(ctx.user['id'])}")
                 except Exception as e:
                     logger.error(
                         f"Failed to save search session for user {mask_user_id(ctx.user['id'])}: {type(e).__name__}: {e}",
@@ -1528,7 +1529,7 @@ class SearchPipeline:
                     resumo_executivo=ctx.resumo.resumo_executivo if ctx.resumo else None,
                     destaques=ctx.resumo.destaques if ctx.resumo else None,
                 )
-                logger.info(f"Search session saved: {ctx.session_id[:8]}*** for user {mask_user_id(ctx.user['id'])}")
+                logger.debug(f"Search session saved: {ctx.session_id[:8]}*** for user {mask_user_id(ctx.user['id'])}")
             except Exception as e:
                 logger.error(
                     f"Failed to save search session for user {mask_user_id(ctx.user['id'])}: {type(e).__name__}: {e}",

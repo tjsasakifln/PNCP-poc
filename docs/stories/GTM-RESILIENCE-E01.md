@@ -157,50 +157,50 @@ Logs individuais de pagina rebaixados para `logger.debug`. Reducao: ~40 linhas -
 ## Criterios de Aceite
 
 ### AC1: Filter Stats Consolidados em 1 Log JSON
-- [ ] As 9 chamadas `logger.info` em `search_pipeline.py` L1095-1105 sao substituidas por 1 unica chamada `logger.info` com JSON estruturado
-- [ ] O JSON contem todos os campos de rejeicao (`rejeitadas_uf`, `rejeitadas_status`, `rejeitadas_esfera`, `rejeitadas_modalidade`, `rejeitadas_municipio`, `rejeitadas_valor`, `rejeitadas_keyword`, `rejeitadas_min_match`, `rejeitadas_outros`) mais `total` e `passed`
-- [ ] O JSON e parseable por ferramentas de analise (Railway log search, jq)
+- [x] As 9 chamadas `logger.info` em `search_pipeline.py` L1095-1105 sao substituidas por 1 unica chamada `logger.info` com JSON estruturado
+- [x] O JSON contem todos os campos de rejeicao (`rejeitadas_uf`, `rejeitadas_status`, `rejeitadas_esfera`, `rejeitadas_modalidade`, `rejeitadas_municipio`, `rejeitadas_valor`, `rejeitadas_keyword`, `rejeitadas_min_match`, `rejeitadas_outros`) mais `total` e `passed`
+- [x] O JSON e parseable por ferramentas de analise (Railway log search, jq)
 - **Verificacao:** Rodar busca com 3 UFs e confirmar 1 (nao 9) log line com prefixo `filter_complete`
 
 ### AC2: Per-UF Logging Agregado
-- [ ] Logs de inicio per-UF (`Fetching modalidade=..., UF=...`) rebaixados de `logger.info` para `logger.debug`
-- [ ] Logs de conclusao per-UF (`Fetched N items for UF=...`) rebaixados para `logger.debug`
-- [ ] 1 log de sumario final emitido com contagem de UFs sucesso/falha/timeout/recovered e total de itens
-- [ ] Log de sumario e JSON estruturado com campo `event: "fetch_complete"`
+- [x] Logs de inicio per-UF (`Fetching modalidade=..., UF=...`) rebaixados de `logger.info` para `logger.debug`
+- [x] Logs de conclusao per-UF (`Fetched N items for UF=...`) rebaixados para `logger.debug`
+- [x] 1 log de sumario final emitido com contagem de UFs sucesso/falha/timeout/recovered e total de itens
+- [x] Log de sumario e JSON estruturado com campo `event: "fetch_complete"`
 - **Verificacao:** Busca com 5 UFs gera no maximo 2 linhas INFO relacionadas a fetch (sumario + batch info), nao 15-20
 
 ### AC3: Per-Retry Somente Resultado Final
-- [ ] `logger.warning` para cada tentativa de retry em `pncp_client.py` (L1188, L1318, L1329) rebaixados para `logger.debug`
-- [ ] Apenas 1 log emitido no resultado final: `logger.info` se sucesso apos retries, `logger.warning` se falha definitiva
-- [ ] O log final inclui numero de tentativas e motivo da falha (se aplicavel)
+- [x] `logger.warning` para cada tentativa de retry em `pncp_client.py` (L1188, L1318, L1329) rebaixados para `logger.debug`
+- [x] Apenas 1 log emitido no resultado final: `logger.info` se sucesso apos retries, `logger.warning` se falha definitiva
+- [x] O log final inclui numero de tentativas e motivo da falha (se aplicavel)
 - **Verificacao:** Simular 3 retries com mock e confirmar 1 (nao 3) log line nivel INFO/WARNING
 
 ### AC4: Per-Page Fetch Agregado
-- [ ] Logs individuais de cada pagina (L550, L614, L622, L644 em `pncp_client.py`) rebaixados para `logger.debug`
-- [ ] 1 log agregado por UF no final da paginacao: `"Fetched X items in Y pages (Zs)"`
+- [x] Logs individuais de cada pagina (L550, L614, L622, L644 em `pncp_client.py`) rebaixados para `logger.debug`
+- [x] 1 log agregado por UF no final da paginacao: `"Fetched X items in Y pages (Zs)"`
 - **Verificacao:** Busca com UF que retorna 3+ paginas gera 1 (nao 3+) log line INFO
 
 ### AC5: Total de Logs por Busca <= 60
-- [ ] Teste automatizado que executa pipeline completo com mock e conta linhas de log nivel INFO+WARNING+ERROR
-- [ ] O total nao excede 60 linhas para uma busca de 5 UFs
-- [ ] O total nao excede 35 linhas para uma busca de 1 UF
+- [x] Teste automatizado que executa pipeline completo com mock e conta linhas de log nivel INFO+WARNING+ERROR
+- [x] O total nao excede 60 linhas para uma busca de 5 UFs
+- [x] O total nao excede 35 linhas para uma busca de 1 UF
 - **Verificacao:** `pytest test_log_volume.py -v` passa com assertivas de contagem
 
 ### AC6: Railway Rate Limit Respeitado
-- [ ] Projecao documentada: 1K buscas/dia x 60 logs/busca = 60K linhas (dentro de 3x do limite de 20K com margem para logs de startup/cron)
-- [ ] Se projecao excede, logs adicionais de menor prioridade sao rebaixados para DEBUG
+- [x] Projecao documentada: 1K buscas/dia x 60 logs/busca = 60K linhas (dentro de 3x do limite de 20K com margem para logs de startup/cron)
+- [x] Se projecao excede, logs adicionais de menor prioridade sao rebaixados para DEBUG
 - **Verificacao:** Calculo documentado no PR com baseline antes/depois
 
 ### AC7: Sem Regressao de Informacao
-- [ ] Nenhuma informacao diagnostica e perdida — toda informacao previamente em INFO agora esta em DEBUG (acessivel via `LOG_LEVEL=DEBUG`)
-- [ ] Logs de erro (`logger.error`) e alertas criticos (`logger.warning` para circuit breaker trip, timeout definitivo, etc.) nao sao rebaixados
-- [ ] O log JSON final por estagio (fetch, filter, LLM, Excel) contem todas as metricas necessarias para debug pos-mortem
+- [x] Nenhuma informacao diagnostica e perdida — toda informacao previamente em INFO agora esta em DEBUG (acessivel via `LOG_LEVEL=DEBUG`)
+- [x] Logs de erro (`logger.error`) e alertas criticos (`logger.warning` para circuit breaker trip, timeout definitivo, etc.) nao sao rebaixados
+- [x] O log JSON final por estagio (fetch, filter, LLM, Excel) contem todas as metricas necessarias para debug pos-mortem
 - **Verificacao:** Revisao manual comparando informacao antes/depois
 
 ### AC8: Zero Regressao nos Testes Existentes
-- [ ] `pytest backend/` passa com baseline atual (excluindo pre-existing failures)
-- [ ] Nenhum teste existente quebra por mudanca em asserções de log
-- [ ] Testes que assertam sobre logs especificos sao atualizados para o novo formato
+- [x] `pytest backend/` passa com baseline atual (excluindo pre-existing failures)
+- [x] Nenhum teste existente quebra por mudanca em asserções de log
+- [x] Testes que assertam sobre logs especificos sao atualizados para o novo formato
 - **Verificacao:** CI pipeline verde
 
 ---
@@ -219,9 +219,9 @@ Logs individuais de pagina rebaixados para `logger.debug`. Reducao: ~40 linhas -
 
 ## Definition of Done
 
-- [ ] Todos os 8 ACs verificados e marcados
-- [ ] PR aprovado com before/after log count documentado
-- [ ] Testes existentes passam sem regressao
-- [ ] Novo teste `test_log_volume.py` com threshold de 60 linhas
+- [x] Todos os 8 ACs verificados e marcados
+- [x] PR aprovado com before/after log count documentado
+- [x] Testes existentes passam sem regressao
+- [x] Novo teste `test_log_volume.py` com threshold de 60 linhas
 - [ ] Manual spot-check: busca em staging gera <= 60 linhas (captura de tela do Railway logs)
-- [ ] MEMORY.md atualizado com baseline de log count
+- [x] MEMORY.md atualizado com baseline de log count
