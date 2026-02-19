@@ -208,6 +208,63 @@ class ProgressTracker:
         if self._use_redis:
             await self._publish_to_redis(event)
 
+    async def emit_partial_results(
+        self,
+        new_results_count: int,
+        total_so_far: int,
+        ufs_completed: list[str],
+        ufs_pending: list[str],
+    ) -> None:
+        """A-04 AC3: Emit partial results event during background live fetch.
+
+        Non-terminal event — SSE stream stays open after this.
+        Debounced by caller (every 3 UFs or 10s).
+        """
+        progress_pct = min(95, 10 + int((len(ufs_completed) / max(len(ufs_completed) + len(ufs_pending), 1)) * 85))
+        event = ProgressEvent(
+            stage="partial_results",
+            progress=progress_pct,
+            message=f"{len(ufs_completed)} de {len(ufs_completed) + len(ufs_pending)} UFs processadas",
+            detail={
+                "new_results_count": new_results_count,
+                "total_so_far": total_so_far,
+                "ufs_completed": ufs_completed,
+                "ufs_pending": ufs_pending,
+            },
+        )
+        await self.queue.put(event)
+        if self._use_redis:
+            await self._publish_to_redis(event)
+
+    async def emit_refresh_available(
+        self,
+        total_live: int,
+        total_cached: int,
+        new_count: int,
+        updated_count: int,
+        removed_count: int,
+    ) -> None:
+        """A-04 AC4: Emit refresh available event when background fetch completes.
+
+        Terminal event — SSE stream closes after this.
+        """
+        self._is_complete = True
+        event = ProgressEvent(
+            stage="refresh_available",
+            progress=100,
+            message=f"Dados atualizados disponíveis — {new_count} novas oportunidades",
+            detail={
+                "total_live": total_live,
+                "total_cached": total_cached,
+                "new_count": new_count,
+                "updated_count": updated_count,
+                "removed_count": removed_count,
+            },
+        )
+        await self.queue.put(event)
+        if self._use_redis:
+            await self._publish_to_redis(event)
+
     async def emit_error(self, error_message: str) -> None:
         """Signal search error."""
         self._is_complete = True

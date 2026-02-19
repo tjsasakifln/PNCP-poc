@@ -27,7 +27,35 @@ export interface SearchProgressEvent {
     sources_failed?: string[];
     sources_ok?: string[];
     coverage_pct?: number;
+    /** A-04 AC3: Partial results during background fetch */
+    new_results_count?: number;
+    total_so_far?: number;
+    ufs_completed?: string[];
+    ufs_pending?: string[];
+    /** A-04 AC4: Refresh available when background fetch completes */
+    total_live?: number;
+    total_cached?: number;
+    new_count?: number;
+    updated_count?: number;
+    removed_count?: number;
   };
+}
+
+/** A-04 AC7: Partial progress during background live fetch */
+export interface PartialProgress {
+  newCount: number;
+  totalSoFar: number;
+  ufsCompleted: string[];
+  ufsPending: string[];
+}
+
+/** A-04 AC4: Refresh available summary from background fetch */
+export interface RefreshAvailableInfo {
+  totalLive: number;
+  totalCached: number;
+  newCount: number;
+  updatedCount: number;
+  removedCount: number;
 }
 
 export interface UfStatusEvent {
@@ -56,6 +84,10 @@ interface UseSearchProgressReturn {
   isDegraded: boolean;
   /** A-02 AC10: metadata from degraded SSE event detail */
   degradedDetail: SearchProgressEvent['detail'] | null;
+  /** A-04 AC7: Partial progress during background fetch */
+  partialProgress: PartialProgress | null;
+  /** A-04 AC4: Refresh available info from background fetch */
+  refreshAvailable: RefreshAvailableInfo | null;
 }
 
 export function useSearchProgress({
@@ -72,6 +104,8 @@ export function useSearchProgress({
   const [sseDisconnected, setSseDisconnected] = useState(false);
   const [isDegraded, setIsDegraded] = useState(false);
   const [degradedDetail, setDegradedDetail] = useState<SearchProgressEvent['detail'] | null>(null);
+  const [partialProgress, setPartialProgress] = useState<PartialProgress | null>(null);
+  const [refreshAvailable, setRefreshAvailable] = useState<RefreshAvailableInfo | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryAttemptRef = useRef(0);
   const onEventRef = useRef(onEvent);
@@ -96,9 +130,11 @@ export function useSearchProgress({
       return;
     }
 
-    // Reset degraded state for new search
+    // Reset state for new search
     setIsDegraded(false);
     setDegradedDetail(null);
+    setPartialProgress(null);
+    setRefreshAvailable(null);
 
     // Build SSE URL through Next.js proxy
     // Auth token passed as query param since EventSource doesn't support custom headers
@@ -121,8 +157,26 @@ export function useSearchProgress({
         setCurrentEvent(event);
         onEventRef.current?.(event);
 
+        // A-04 AC7: partial_results is NON-terminal — SSE stays open
+        if (event.stage === 'partial_results') {
+          setPartialProgress({
+            newCount: event.detail.new_results_count ?? 0,
+            totalSoFar: event.detail.total_so_far ?? 0,
+            ufsCompleted: event.detail.ufs_completed ?? [],
+            ufsPending: event.detail.ufs_pending ?? [],
+          });
+        // A-04 AC4: refresh_available IS terminal — SSE closes
+        } else if (event.stage === 'refresh_available') {
+          setRefreshAvailable({
+            totalLive: event.detail.total_live ?? 0,
+            totalCached: event.detail.total_cached ?? 0,
+            newCount: event.detail.new_count ?? 0,
+            updatedCount: event.detail.updated_count ?? 0,
+            removedCount: event.detail.removed_count ?? 0,
+          });
+          cleanup();
         // A-02 AC7: "degraded" is terminal (close SSE) but NOT sseDisconnected
-        if (event.stage === 'degraded') {
+        } else if (event.stage === 'degraded') {
           setIsDegraded(true);
           setDegradedDetail(event.detail || null);
           cleanup();
@@ -170,7 +224,23 @@ export function useSearchProgress({
                 const event: SearchProgressEvent = JSON.parse(e.data);
                 setCurrentEvent(event);
                 onEventRef.current?.(event);
-                if (event.stage === 'degraded') {
+                if (event.stage === 'partial_results') {
+                  setPartialProgress({
+                    newCount: event.detail.new_results_count ?? 0,
+                    totalSoFar: event.detail.total_so_far ?? 0,
+                    ufsCompleted: event.detail.ufs_completed ?? [],
+                    ufsPending: event.detail.ufs_pending ?? [],
+                  });
+                } else if (event.stage === 'refresh_available') {
+                  setRefreshAvailable({
+                    totalLive: event.detail.total_live ?? 0,
+                    totalCached: event.detail.total_cached ?? 0,
+                    newCount: event.detail.new_count ?? 0,
+                    updatedCount: event.detail.updated_count ?? 0,
+                    removedCount: event.detail.removed_count ?? 0,
+                  });
+                  cleanup();
+                } else if (event.stage === 'degraded') {
                   setIsDegraded(true);
                   setDegradedDetail(event.detail || null);
                   cleanup();
@@ -214,5 +284,5 @@ export function useSearchProgress({
     };
   }, [searchId, enabled, authToken, cleanup]);
 
-  return { currentEvent, isConnected, sseAvailable, sseDisconnected, isDegraded, degradedDetail };
+  return { currentEvent, isConnected, sseAvailable, sseDisconnected, isDegraded, degradedDetail, partialProgress, refreshAvailable };
 }

@@ -63,6 +63,8 @@ class SearchContext:
     # GTM-RESILIENCE-A01: Semantic response state
     response_state: str = "live"  # "live" | "cached" | "degraded" | "empty_failure"
     degradation_guidance: Optional[str] = None
+    # GTM-RESILIENCE-A04: Progressive delivery
+    live_fetch_in_progress: bool = False
 
     # === Stage 4: FilterResults outputs ===
     licitacoes_filtradas: list = field(default_factory=list)

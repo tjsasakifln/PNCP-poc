@@ -1538,6 +1538,7 @@ class SearchPipeline:
                 coverage_pct=_cov_pct,
                 ufs_status_detail=_ufs_detail,
                 coverage_metadata=_build_coverage_metadata(ctx),
+                live_fetch_in_progress=ctx.live_fetch_in_progress,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1663,6 +1664,7 @@ class SearchPipeline:
             coverage_pct=_cov_pct,
             ufs_status_detail=_ufs_detail,
             coverage_metadata=_build_coverage_metadata(ctx),
+            live_fetch_in_progress=ctx.live_fetch_in_progress,
         )
 
         logger.info(

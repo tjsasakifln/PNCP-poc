@@ -10,7 +10,7 @@ import type { SavedSearch } from "../../../lib/savedSearches";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useAuth } from "../../components/AuthProvider";
 import { useQuota } from "../../../hooks/useQuota";
-import { useSearchProgress, type SearchProgressEvent } from "../../../hooks/useSearchProgress";
+import { useSearchProgress, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
 import { getUserFriendlyError } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
@@ -86,6 +86,14 @@ export interface UseSearchReturn {
   isDegraded: boolean;
   /** A-02 AC10: metadata from degraded SSE event */
   degradedDetail: SearchProgressEvent['detail'] | null;
+  /** A-04 AC7: Partial progress from background fetch */
+  partialProgress: PartialProgress | null;
+  /** A-04 AC4: Refresh available info from background fetch */
+  refreshAvailable: RefreshAvailableInfo | null;
+  /** A-04 AC1: True when cached data shown with live fetch in background */
+  liveFetchInProgress: boolean;
+  /** A-04 AC9: Fetch live results and replace cached data */
+  handleRefreshResults: () => Promise<void>;
   downloadLoading: boolean;
   downloadError: string | null;
   searchButtonRef: React.RefObject<HTMLButtonElement>;
@@ -142,10 +150,16 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const lastSearchParamsRef = useRef<SearchFiltersSnapshot | null>(null);
 
+  // A-04: Live fetch in progress state
+  const [liveFetchInProgress, setLiveFetchInProgress] = useState(false);
+  // A-04: Keep searchId alive for SSE after cache-first
+  const liveFetchSearchIdRef = useRef<string | null>(null);
+
   // SSE hook — GTM-FIX-033 AC2: sseDisconnected for resilience
-  const { currentEvent: sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail } = useSearchProgress({
-    searchId,
-    enabled: loading && !!searchId,
+  // A-04: Keep SSE open during background fetch (enabled when loading OR liveFetchInProgress)
+  const { currentEvent: sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail, partialProgress, refreshAvailable } = useSearchProgress({
+    searchId: liveFetchInProgress ? liveFetchSearchIdRef.current : searchId,
+    enabled: (loading && !!searchId) || liveFetchInProgress,
     authToken: session?.access_token,
     onError: () => setUseRealProgress(false),
   });
@@ -340,6 +354,12 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       setResult(data);
       setRawCount(data.total_raw || 0);
 
+      // A-04 AC1/AC6: Cache-first — keep SSE open for background fetch
+      if (data.live_fetch_in_progress) {
+        setLiveFetchInProgress(true);
+        liveFetchSearchIdRef.current = newSearchId;
+      }
+
       if (filters.searchMode === "termos" && filters.termosArray.length > 0) {
         filters.setOrdenacao("relevancia");
         trackEvent("custom_term_search", {
@@ -381,7 +401,10 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       setLoading(false);
       setLoadingStep(1);
       setStatesProcessed(0);
-      setSearchId(null);
+      // A-04: Don't kill searchId when live fetch is running in background
+      if (!liveFetchInProgress && !liveFetchSearchIdRef.current) {
+        setSearchId(null);
+      }
       setUseRealProgress(false);
       abortControllerRef.current = null;
     }
@@ -538,12 +561,46 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     }
   };
 
+  // A-04 AC9: Fetch live results from background fetch and replace cached data
+  const handleRefreshResults = async () => {
+    const sid = liveFetchSearchIdRef.current;
+    if (!sid) return;
+
+    try {
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+
+      const response = await fetch(`/api/buscar-results/${encodeURIComponent(sid)}`, { headers });
+      if (!response.ok) {
+        console.warn(`[A-04] Failed to fetch live results: ${response.status}`);
+        toast.info("Não foi possível carregar os dados atualizados. Tente uma nova busca.");
+        return;
+      }
+
+      const data = await response.json();
+      setResult(data as BuscaResult);
+      setRawCount(data.total_raw || 0);
+      trackEvent('progressive_refresh_applied', {
+        search_id: sid,
+        new_count: refreshAvailable?.newCount ?? 0,
+      });
+    } catch (e) {
+      console.warn('[A-04] Error fetching refresh results:', e);
+    } finally {
+      // Clean up live fetch state
+      setLiveFetchInProgress(false);
+      liveFetchSearchIdRef.current = null;
+      setSearchId(null);
+    }
+  };
+
   const buscarForceFresh = async () => buscar({ forceFresh: true });
 
   return {
     loading, loadingStep, statesProcessed, error, quotaError,
     result, setResult, rawCount,
     searchId, useRealProgress, sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail,
+    partialProgress, refreshAvailable, liveFetchInProgress, handleRefreshResults,
     downloadLoading, downloadError,
     searchButtonRef: searchButtonRef as React.RefObject<HTMLButtonElement>,
     showSaveDialog, setShowSaveDialog,

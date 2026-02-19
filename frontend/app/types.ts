@@ -130,6 +130,8 @@ export interface BuscaResult {
   truncated_ufs?: string[];
   /** GTM-FIX-004 AC2r: Per-source truncation flags, e.g. { pncp: true, portal_compras: false } */
   truncation_details?: Record<string, boolean>;
+  /** GTM-RESILIENCE-A04 AC1: True when cache-first response with live fetch running in background */
+  live_fetch_in_progress?: boolean;
 }
 
 // ============================================================================

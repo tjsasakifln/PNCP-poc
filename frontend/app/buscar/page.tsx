@@ -456,6 +456,10 @@ function HomePageContent() {
               // STORY-257B: Sources unavailable (AC10)
               hasLastSearch={false}
               onLoadLastSearch={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              // A-04: Progressive delivery
+              liveFetchInProgress={search.liveFetchInProgress}
+              refreshAvailable={search.refreshAvailable}
+              onRefreshResults={search.handleRefreshResults}
             />
           </div>
         </PullToRefresh>

@@ -974,6 +974,11 @@ class BuscaResponse(BaseModel):
         description="Semantic state of the response: 'live' (fresh data), 'cached' (stale cache served), "
                     "'degraded' (partial data), 'empty_failure' (all sources failed, no cache)"
     )
+    # GTM-RESILIENCE-A04: Progressive delivery — indicates live fetch running in background
+    live_fetch_in_progress: bool = Field(
+        default=False,
+        description="A-04 AC1: True when cache-first response returned and live fetch is running in background"
+    )
     degradation_guidance: Optional[str] = Field(
         default=None,
         description="GTM-RESILIENCE-A01: User-facing guidance when response_state is 'empty_failure' or 'degraded'"

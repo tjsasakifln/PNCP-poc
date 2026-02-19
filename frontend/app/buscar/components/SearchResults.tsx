@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { BuscaResult } from "../../types";
-import type { SearchProgressEvent } from "../../../hooks/useSearchProgress";
+import type { SearchProgressEvent, RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
+import RefreshBanner from "./RefreshBanner";
 import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
 import { EmptyState } from "../../components/EmptyState";
@@ -99,6 +100,11 @@ export interface SearchResultsProps {
   // STORY-257B: Sources unavailable (AC10)
   hasLastSearch?: boolean;
   onLoadLastSearch?: () => void;
+
+  // A-04: Progressive delivery
+  liveFetchInProgress?: boolean;
+  refreshAvailable?: RefreshAvailableInfo | null;
+  onRefreshResults?: () => void;
 }
 
 export default function SearchResults({
@@ -115,6 +121,8 @@ export default function SearchResults({
   searchElapsedSeconds = 0, onViewPartial, partialDismissed, onDismissPartial,
   onRetryForceFresh,
   hasLastSearch = false, onLoadLastSearch,
+  // A-04
+  liveFetchInProgress, refreshAvailable, onRefreshResults,
 }: SearchResultsProps) {
   // STORY-257B AC4: Track transition from grid to results
   const [showGrid, setShowGrid] = useState(false);
@@ -325,8 +333,29 @@ export default function SearchResults({
         />
       )}
 
-      {/* STORY-257B AC8: Cache banner when results come from cache */}
-      {result && result.cached && result.cached_at && (
+      {/* A-04 AC8: Refresh banner when background fetch completes */}
+      {refreshAvailable && onRefreshResults && (
+        <div className="mt-4">
+          <RefreshBanner
+            refreshInfo={refreshAvailable}
+            onRefresh={onRefreshResults}
+          />
+        </div>
+      )}
+
+      {/* A-04 AC6: "Atualizando..." indicator when cache-first + live fetch running */}
+      {liveFetchInProgress && !refreshAvailable && result && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200" role="status">
+          <svg className="h-4 w-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span>Atualizando dados em tempo real...</span>
+        </div>
+      )}
+
+      {/* STORY-257B AC8: Cache banner when results come from cache (only when NOT live-fetching) */}
+      {result && result.cached && result.cached_at && !liveFetchInProgress && !refreshAvailable && (
         <CacheBanner
           cachedAt={result.cached_at}
           onRefresh={onRetryForceFresh || onSearch}
