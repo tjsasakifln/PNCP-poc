@@ -44,6 +44,7 @@ from log_sanitizer import mask_user_id
 from redis_pool import get_fallback_cache
 from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache, get_from_cache_cascade
 from fastapi import HTTPException
+from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS
 
 logger = logging.getLogger(__name__)
 
@@ -416,6 +417,7 @@ class SearchPipeline:
 
     async def run(self, ctx: SearchContext) -> BuscaResponse:
         """Execute all 7 stages in sequence. Returns BuscaResponse."""
+        ACTIVE_SEARCHES.inc()
 
         logger.info(
             "Starting procurement search",
@@ -447,7 +449,26 @@ class SearchPipeline:
         await self.stage_generate(ctx)
 
         # Stage 7: Persist and build response
-        return await self.stage_persist(ctx)
+        try:
+            return await self.stage_persist(ctx)
+        finally:
+            ACTIVE_SEARCHES.dec()
+            elapsed_s = sync_time_module.time() - ctx.start_time
+            uf_count = str(len(ctx.request.ufs))
+            SEARCH_DURATION.labels(
+                sector=ctx.request.setor_id or "unknown",
+                uf_count=uf_count,
+                cache_status=ctx.cache_status or "miss",
+            ).observe(elapsed_s)
+            result_status = (
+                "success" if ctx.licitacoes_filtradas
+                else "empty" if not ctx.is_partial
+                else "partial"
+            )
+            SEARCHES.labels(
+                sector=ctx.request.setor_id or "unknown",
+                result_status=result_status,
+            ).inc()
 
     # ------------------------------------------------------------------
     # Stage 1: ValidateRequest
@@ -648,8 +669,11 @@ class SearchPipeline:
                 ctx.cached_at = cached.get("cached_at")
                 ctx.cache_status = "fresh"  # InMemory cache is always fresh (< 6h TTL)
                 ctx.cache_level = "redis"  # InMemory serves as L2 cache
+                CACHE_HITS.labels(level="memory", freshness="fresh").inc()
                 # Skip the actual fetch — go straight to filtering
                 return
+            else:
+                CACHE_MISSES.labels(level="memory").inc()
 
         enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "true").lower() == "true"
         ctx.source_stats_data = None
@@ -695,6 +719,7 @@ class SearchPipeline:
 
         fetch_elapsed = sync_time_module.time() - ctx.start_time
         logger.info(f"Fetched {len(ctx.licitacoes_raw)} raw bids in {fetch_elapsed:.2f}s")
+        FETCH_DURATION.labels(source="pipeline").observe(fetch_elapsed)
 
         # SSE: Fetch complete
         if ctx.tracker:
@@ -1350,6 +1375,22 @@ class SearchPipeline:
                 "outros": stats.get("rejeitadas_outros", 0),
             },
         }) if stats else f"Filtering complete: {len(ctx.licitacoes_filtradas)}/{len(ctx.licitacoes_raw)} bids passed")
+
+        # E-03: Emit Prometheus filter decision counters
+        if stats:
+            for stage_key, stage_label in [
+                ("rejeitadas_uf", "uf"), ("rejeitadas_status", "status"),
+                ("rejeitadas_esfera", "esfera"), ("rejeitadas_modalidade", "modalidade"),
+                ("rejeitadas_municipio", "municipio"), ("rejeitadas_valor", "valor"),
+                ("rejeitadas_keyword", "keyword"), ("rejeitadas_min_match", "min_match"),
+                ("rejeitadas_prazo", "prazo"), ("rejeitadas_outros", "outros"),
+            ]:
+                count = stats.get(stage_key, 0)
+                if count > 0:
+                    FILTER_DECISIONS.labels(stage=stage_label, decision="reject").inc(count)
+            passed = stats.get("aprovadas", len(ctx.licitacoes_filtradas))
+            if passed > 0:
+                FILTER_DECISIONS.labels(stage="final", decision="pass").inc(passed)
 
         # Diagnostic sample
         if stats.get('rejeitadas_keyword', 0) > 0:

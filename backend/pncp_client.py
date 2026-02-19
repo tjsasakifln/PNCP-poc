@@ -18,6 +18,7 @@ from urllib3.util.retry import Retry
 from config import RetryConfig, DEFAULT_MODALIDADES, MODALIDADES_EXCLUIDAS
 from exceptions import PNCPAPIError
 from middleware import request_id_var
+from metrics import CIRCUIT_BREAKER_STATE, API_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,7 @@ class PNCPCircuitBreaker:
             self.consecutive_failures += 1
             if self.consecutive_failures >= self.threshold and not self.is_degraded:
                 self.degraded_until = time.time() + self.cooldown_seconds
+                CIRCUIT_BREAKER_STATE.labels(source=self.name).set(1)
                 logger.warning(
                     f"Circuit breaker [{self.name}] TRIPPED after {self.consecutive_failures} "
                     f"consecutive failures — degraded for {self.cooldown_seconds}s"
@@ -174,6 +176,7 @@ class PNCPCircuitBreaker:
                 if self.degraded_until is not None and time.time() >= self.degraded_until:
                     self.degraded_until = None
                     self.consecutive_failures = 0
+                    CIRCUIT_BREAKER_STATE.labels(source=self.name).set(0)
                     logger.info(
                         f"Circuit breaker [{self.name}] cooldown expired — resetting to healthy"
                     )
@@ -264,6 +267,7 @@ return {failures, 0}
                 self.consecutive_failures = int(result[0])
                 if int(result[1]) == 1:
                     self.degraded_until = time.time() + self.cooldown_seconds
+                    CIRCUIT_BREAKER_STATE.labels(source=self.name).set(1)
                     logger.warning(
                         f"Circuit breaker [{self.name}] TRIPPED after "
                         f"{self.consecutive_failures} consecutive failures "
@@ -316,6 +320,7 @@ return {failures, 0}
                     await pipe.execute()
                     self.degraded_until = None
                     self.consecutive_failures = 0
+                    CIRCUIT_BREAKER_STATE.labels(source=self.name).set(0)
                     logger.info(
                         f"Circuit breaker [{self.name}] cooldown expired "
                         f"— resetting to healthy"

@@ -47,3 +47,6 @@ python-json-logger>=2.0.4,<3.0.0
 
 # Error tracking (STORY-211)
 sentry-sdk[fastapi]>=2.0.0
+
+# Prometheus metrics exporter (GTM-RESILIENCE-E03)
+prometheus_client>=0.20.0

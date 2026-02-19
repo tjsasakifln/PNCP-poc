@@ -15,6 +15,7 @@ import sentry_sdk  # GTM-FIX-002 AC9: Tag source errors
 from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
 from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement, SourceError
 from source_config.sources import source_health_registry
+from metrics import FETCH_DURATION, API_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -443,6 +444,7 @@ class ConsolidationService:
                 timeout=effective_timeout,
             )
             duration = int((time.time() - start) * 1000)
+            FETCH_DURATION.labels(source=code).observe(duration / 1000.0)
             logger.debug(
                 f"[CONSOLIDATION] {code}: {len(partial_records)} records in {duration}ms"
             )
@@ -454,6 +456,8 @@ class ConsolidationService:
             }
         except asyncio.TimeoutError:
             duration = int((time.time() - start) * 1000)
+            FETCH_DURATION.labels(source=code).observe(duration / 1000.0)
+            API_ERRORS.labels(source=code, error_type="timeout").inc()
             salvaged = len(partial_records)
             if salvaged > 0:
                 logger.warning(
@@ -480,6 +484,20 @@ class ConsolidationService:
                 }
         except Exception as e:
             duration = int((time.time() - start) * 1000)
+            FETCH_DURATION.labels(source=code).observe(duration / 1000.0)
+            # Classify error type for metrics
+            _err_type = "unknown"
+            if "429" in str(e):
+                _err_type = "429"
+            elif "422" in str(e):
+                _err_type = "422"
+            elif "500" in str(e) or "502" in str(e) or "503" in str(e) or "504" in str(e):
+                _err_type = "500"
+            elif "timeout" in str(e).lower() or "Timeout" in type(e).__name__:
+                _err_type = "timeout"
+            elif "connect" in str(e).lower() or "Connection" in type(e).__name__:
+                _err_type = "connection"
+            API_ERRORS.labels(source=code, error_type=_err_type).inc()
             salvaged = len(partial_records)
 
             # GTM-RESILIENCE-E02: centralized reporting (no double stdout+Sentry)

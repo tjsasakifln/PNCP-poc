@@ -28,6 +28,7 @@ from typing import Optional
 
 import sentry_sdk
 from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralized error emission
+from metrics import CACHE_HITS as METRICS_CACHE_HITS, CACHE_MISSES as METRICS_CACHE_MISSES
 
 logger = logging.getLogger(__name__)
 
@@ -433,6 +434,8 @@ async def get_from_cache(
                     len(result["results"]), elapsed,
                     cache_age_seconds=result["cache_age_hours"] * 3600,
                 )
+                _freshness = result.get("cache_status", "stale")
+                METRICS_CACHE_HITS.labels(level="supabase", freshness=_freshness).inc()
                 # B-02 AC4/AC5: Increment access_count and reclassify
                 await _increment_and_reclassify(user_id, params_hash, params, result)
                 return result
@@ -455,6 +458,8 @@ async def get_from_cache(
                     len(result["results"]), elapsed,
                     cache_age_seconds=result["cache_age_hours"] * 3600,
                 )
+                _freshness = result.get("cache_status", "stale")
+                METRICS_CACHE_HITS.labels(level="memory", freshness=_freshness).inc()
                 # B-02 AC4/AC5: Track access in Supabase (best-effort)
                 try:
                     await _increment_and_reclassify(user_id, params_hash, params, result)
@@ -476,6 +481,8 @@ async def get_from_cache(
                     len(result["results"]), elapsed,
                     cache_age_seconds=result["cache_age_hours"] * 3600,
                 )
+                _freshness = result.get("cache_status", "stale")
+                METRICS_CACHE_HITS.labels(level="local", freshness=_freshness).inc()
                 return result
     except Exception as e:
         logger.error(f"Local cache read failed: {e}")
@@ -484,6 +491,7 @@ async def get_from_cache(
     elapsed = (time.monotonic() - start) * 1000
     logger.info(f"Cache MISS all levels for hash {params_hash[:12]}... ({elapsed:.0f}ms)")
     _track_cache_operation("read", False, CacheLevel.MISS, 0, elapsed)
+    METRICS_CACHE_MISSES.labels(level="all").inc()
     return None
 
 
@@ -522,6 +530,8 @@ async def get_from_cache_cascade(
             result = _process_cache_hit(data, params_hash, CacheLevel.REDIS)
             if result:
                 result["cache_level"] = _level_str[CacheLevel.REDIS]
+                _freshness = result.get("cache_status", "stale")
+                METRICS_CACHE_HITS.labels(level="memory", freshness=_freshness).inc()
                 return result
     except Exception as e:
         logger.warning(f"Cascade L2/redis read failed: {e}")
@@ -533,6 +543,8 @@ async def get_from_cache_cascade(
             result = _process_cache_hit(data, params_hash, CacheLevel.SUPABASE)
             if result:
                 result["cache_level"] = _level_str[CacheLevel.SUPABASE]
+                _freshness = result.get("cache_status", "stale")
+                METRICS_CACHE_HITS.labels(level="supabase", freshness=_freshness).inc()
                 return result
     except Exception as e:
         report_error(
@@ -547,6 +559,8 @@ async def get_from_cache_cascade(
             result = _process_cache_hit(data, params_hash, CacheLevel.LOCAL)
             if result:
                 result["cache_level"] = _level_str[CacheLevel.LOCAL]
+                _freshness = result.get("cache_status", "stale")
+                METRICS_CACHE_HITS.labels(level="local", freshness=_freshness).inc()
                 # AC9: Specific log when L3 serves data
                 logger.info(json.dumps({
                     "event": "cache_l3_served",
@@ -558,6 +572,7 @@ async def get_from_cache_cascade(
     except Exception as e:
         logger.error(f"Cascade L3/local read failed: {e}")
 
+    METRICS_CACHE_MISSES.labels(level="cascade").inc()
     return None
 
 

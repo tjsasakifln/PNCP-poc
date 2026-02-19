@@ -36,7 +36,7 @@ load_dotenv()
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feature_flags, validate_env_vars
+from config import setup_logging, ENABLE_NEW_PRICING, get_cors_origins, log_feature_flags, validate_env_vars, METRICS_TOKEN
 from pncp_client import PNCPClient
 from sectors import list_sectors
 from schemas import (
@@ -331,6 +331,34 @@ app.include_router(pipeline_router)  # STORY-250: Pipeline
 app.include_router(onboarding_router)  # GTM-004: First analysis
 app.include_router(auth_email_router)  # GTM-FIX-009: Email confirmation recovery
 app.include_router(cache_health_router)  # UX-303: Cache health
+
+# ============================================================================
+# GTM-RESILIENCE-E03: Prometheus /metrics endpoint
+# ============================================================================
+from metrics import get_metrics_app
+
+_metrics_app = get_metrics_app()
+if _metrics_app:
+    from starlette.requests import Request as StarletteRequest
+    from starlette.responses import JSONResponse as StarletteJSONResponse
+
+    @app.middleware("http")
+    async def metrics_auth(request, call_next):
+        """Protect /metrics endpoint with Bearer token authentication."""
+        if request.url.path == "/metrics" or request.url.path.startswith("/metrics/"):
+            if METRICS_TOKEN:
+                token = request.headers.get("Authorization", "")
+                expected = f"Bearer {METRICS_TOKEN}"
+                if token != expected:
+                    return StarletteJSONResponse(
+                        status_code=401, content={"detail": "Unauthorized"}
+                    )
+        return await call_next(request)
+
+    app.mount("/metrics", _metrics_app)
+    logger.info("Prometheus /metrics endpoint mounted (auth=%s)", "enabled" if METRICS_TOKEN else "open")
+else:
+    logger.info("Prometheus metrics disabled or prometheus_client not installed")
 
 logger.info(
     "FastAPI application initialized — PORT=%s",

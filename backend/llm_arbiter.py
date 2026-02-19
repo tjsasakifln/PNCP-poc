@@ -13,9 +13,11 @@ Cache: In-memory MD5-based cache for repeated queries
 import hashlib
 import logging
 import os
+import time as _time_module
 from typing import Optional
 
 from openai import OpenAI
+from metrics import LLM_CALLS, LLM_DURATION
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -322,6 +324,7 @@ Responda APENAS: SIM ou NAO"""
             "Responda APENAS 'SIM' ou 'NAO'."
         )
 
+        _llm_start = _time_module.time()
         response = _get_client().chat.completions.create(
             model=LLM_MODEL,
             messages=[
@@ -331,10 +334,16 @@ Responda APENAS: SIM ou NAO"""
             max_tokens=LLM_MAX_TOKENS,  # Force single-token response
             temperature=LLM_TEMPERATURE,  # Deterministic
         )
+        _llm_elapsed = _time_module.time() - _llm_start
 
         # Extract response
         llm_response = response.choices[0].message.content.strip().upper()
         is_primary = llm_response == "SIM"
+
+        # E-03: Prometheus metrics
+        _decision = "SIM" if is_primary else "NAO"
+        LLM_DURATION.labels(model=LLM_MODEL, decision=_decision).observe(_llm_elapsed)
+        LLM_CALLS.labels(model=LLM_MODEL, decision=_decision, zone=prompt_level).inc()
 
         # Cache the decision
         _arbiter_cache[cache_key] = is_primary
@@ -349,6 +358,7 @@ Responda APENAS: SIM ou NAO"""
         return is_primary
 
     except Exception as e:
+        LLM_CALLS.labels(model=LLM_MODEL, decision="ERROR", zone=prompt_level).inc()
         logger.error(
             f"LLM arbiter FAILED (defaulting to REJECT): {e} | "
             f"mode={mode} context={context[:50]}... valor={valor:,.2f}"
@@ -470,6 +480,7 @@ Responda APENAS: SIM ou NAO"""
             "automaticamente são relevantes. Responda APENAS 'SIM' ou 'NAO'."
         )
 
+        _llm_start = _time_module.time()
         response = _get_client().chat.completions.create(
             model=LLM_MODEL,
             messages=[
@@ -479,9 +490,14 @@ Responda APENAS: SIM ou NAO"""
             max_tokens=LLM_MAX_TOKENS,
             temperature=LLM_TEMPERATURE,
         )
+        _llm_elapsed = _time_module.time() - _llm_start
 
         llm_response = response.choices[0].message.content.strip().upper()
         should_recover = llm_response == "SIM"
+
+        _decision = "SIM" if should_recover else "NAO"
+        LLM_DURATION.labels(model=LLM_MODEL, decision=_decision).observe(_llm_elapsed)
+        LLM_CALLS.labels(model=LLM_MODEL, decision=_decision, zone="recovery").inc()
 
         # Cache decision
         _arbiter_cache[cache_key] = should_recover
@@ -494,6 +510,7 @@ Responda APENAS: SIM ou NAO"""
         return should_recover
 
     except Exception as e:
+        LLM_CALLS.labels(model=LLM_MODEL, decision="ERROR", zone="recovery").inc()
         logger.error(
             f"LLM recovery FAILED (defaulting to NO RECOVERY): {e} | "
             f"mode={mode} reason={rejection_reason} valor={valor:,.2f}"

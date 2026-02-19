@@ -317,6 +317,12 @@ LLM_ZERO_MATCH_ENABLED: bool = str_to_bool(
 )
 
 # ============================================
+# E-03: Prometheus Metrics
+# ============================================
+METRICS_ENABLED: bool = str_to_bool(os.getenv("METRICS_ENABLED", "true"))
+METRICS_TOKEN: str = os.getenv("METRICS_TOKEN", "")
+
+# ============================================
 # B-01: Background Revalidation
 # ============================================
 # Timeout for background revalidation tasks (seconds). Does not affect active requests.
