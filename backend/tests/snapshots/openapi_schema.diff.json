@@ -1793,6 +1793,16 @@
               "title": "Redis",
               "type": "string"
             },
+            "redis_metrics": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RedisMetrics"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "supabase": {
               "title": "Supabase",
               "type": "string"
@@ -2704,6 +2714,40 @@
             "justificativa"
           ],
           "title": "Recomendacao",
+          "type": "object"
+        },
+        "RedisMetrics": {
+          "description": "Redis health metrics (B-04 AC8).",
+          "properties": {
+            "connected": {
+              "default": false,
+              "title": "Connected",
+              "type": "boolean"
+            },
+            "latency_ms": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Latency Ms"
+            },
+            "memory_used_mb": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Memory Used Mb"
+            }
+          },
+          "title": "RedisMetrics",
           "type": "object"
         },
         "ReplyRequest": {
@@ -9062,6 +9106,30 @@
             "ultima_atualizacao": "2026-02-10T14:30:00Z"
           },
           "properties": {
+            "cache_level": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UX-303 AC2: Which cache level served the data \u2014 'supabase', 'redis', or 'local'",
+              "title": "Cache Level"
+            },
+            "cache_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UX-303 AC5: Cache freshness status \u2014 'fresh' (0-6h) or 'stale' (6-24h)",
+              "title": "Cache Status"
+            },
             "cached": {
               "default": false,
               "description": "True when results are served from cache (STORY-257A AC9)",
@@ -13980,6 +14048,26 @@
           "summary": "Health"
         }
       },
+      "/health/cache": {
+        "get": {
+          "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.",
+          "operationId": "cache_health_health_cache_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Cache Health",
+          "tags": [
+            "health"
+          ]
+        }
+      },
       "/me": {
         "delete": {
           "description": "Delete entire user account and all associated data (LGPD Art. 18 VI).\n\nCascade order:\n1. Cancel active Stripe subscription (if any)\n2. Delete from: search_sessions, monthly_quota, user_subscriptions,\n   user_oauth_tokens, messages, profiles\n3. Delete auth user via Supabase admin API\n4. Log anonymized audit entry",
@@ -16300,6 +16388,26 @@
           "summary": "First Analysis",
           "tags": [
             "onboarding"
+          ]
+        }
+      },
+      "/v1/health/cache": {
+        "get": {
+          "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.",
+          "operationId": "cache_health_v1_health_cache_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Cache Health",
+          "tags": [
+            "health"
           ]
         }
       },

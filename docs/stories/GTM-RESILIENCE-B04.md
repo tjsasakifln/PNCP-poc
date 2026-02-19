@@ -161,11 +161,11 @@ Se Redis causar problemas em producao:
 
 ## Definition of Done
 
-- [ ] Redis addon provisionado na Railway
-- [ ] REDIS_URL configurado e acessivel pelo backend
-- [ ] Log de startup confirma conexao Redis
-- [ ] Health endpoint reporta Redis connected
-- [ ] Cache compartilhado entre workers verificado
-- [ ] Fallback InMemoryCache testado (desconectar Redis temporariamente)
-- [ ] Documentacao operacional criada
+- [x] Redis addon provisionado na Railway
+- [x] REDIS_URL configurado e acessivel pelo backend
+- [x] Log de startup confirma conexao Redis
+- [x] Health endpoint reporta Redis connected
+- [x] Cache compartilhado entre workers verificado
+- [x] Fallback InMemoryCache testado (desconectar Redis temporariamente)
+- [x] Documentacao operacional criada
 - [ ] Zero regressoes em producao apos deploy

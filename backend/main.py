@@ -378,14 +378,40 @@ async def health():
 
     # Check Redis connectivity (optional dependency)
     # SYS-L06: Add Redis health check to health endpoint
+    # B-04 AC8: Add redis_connected, redis_latency_ms, redis_memory_used_mb
     redis_url = os.getenv("REDIS_URL")
+    redis_metrics = None
     if redis_url:
         try:
-            from redis_pool import is_redis_available
+            from redis_pool import get_redis_pool, is_redis_available
+            import time as _time
             redis_available = await is_redis_available()
             dependencies["redis"] = "healthy" if redis_available else "unavailable"
+
+            if redis_available:
+                pool = await get_redis_pool()
+                # Measure ping latency
+                t0 = _time.monotonic()
+                await pool.ping()
+                latency_ms = round((_time.monotonic() - t0) * 1000, 2)
+                # Get memory usage
+                memory_mb = None
+                try:
+                    info = await pool.info("memory")
+                    used_bytes = info.get("used_memory", 0)
+                    memory_mb = round(used_bytes / (1024 * 1024), 2)
+                except Exception:
+                    pass
+                redis_metrics = {
+                    "connected": True,
+                    "latency_ms": latency_ms,
+                    "memory_used_mb": memory_mb,
+                }
+            else:
+                redis_metrics = {"connected": False, "latency_ms": None, "memory_used_mb": None}
         except Exception as e:
             dependencies["redis"] = f"error: {str(e)[:50]}"
+            redis_metrics = {"connected": False, "latency_ms": None, "memory_used_mb": None}
     else:
         # Redis is optional - not configured is not an error
         dependencies["redis"] = "not_configured"
@@ -416,6 +442,10 @@ async def health():
         status = "degraded"
     else:
         status = "healthy"
+
+    # B-04 AC8: Include redis_metrics in dependencies
+    if redis_metrics:
+        dependencies["redis_metrics"] = redis_metrics
 
     response_data = {
         "status": status,

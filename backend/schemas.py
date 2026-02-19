@@ -1358,11 +1358,19 @@ class RootResponse(BaseModel):
     status: str
 
 
+class RedisMetrics(BaseModel):
+    """Redis health metrics (B-04 AC8)."""
+    connected: bool = False
+    latency_ms: Optional[float] = None
+    memory_used_mb: Optional[float] = None
+
+
 class HealthDependencies(BaseModel):
     """Health check dependency statuses."""
     supabase: str
     openai: str
     redis: str
+    redis_metrics: Optional[RedisMetrics] = None
 
 
 class HealthResponse(BaseModel):

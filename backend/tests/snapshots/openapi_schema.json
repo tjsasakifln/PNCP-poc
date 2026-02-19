@@ -1792,6 +1792,16 @@
             "title": "Redis",
             "type": "string"
           },
+          "redis_metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RedisMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "supabase": {
             "title": "Supabase",
             "type": "string"
@@ -2703,6 +2713,40 @@
           "justificativa"
         ],
         "title": "Recomendacao",
+        "type": "object"
+      },
+      "RedisMetrics": {
+        "description": "Redis health metrics (B-04 AC8).",
+        "properties": {
+          "connected": {
+            "default": false,
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "memory_used_mb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Used Mb"
+          }
+        },
+        "title": "RedisMetrics",
         "type": "object"
       },
       "ReplyRequest": {
