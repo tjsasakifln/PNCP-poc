@@ -82,25 +82,25 @@ co_occurrence_rules:
 ## Acceptance Criteria
 
 ### AC1 — Schema de Regras de Co-occurrence
-- [ ] Novo campo `co_occurrence_rules` em `sectors_data.yaml` para cada setor
-- [ ] Cada regra contém: `trigger` (str, regex-safe), `negative_contexts` (list[str]), `positive_signals` (list[str])
-- [ ] Todos os 3 campos obrigatórios por regra (positive_signals pode ser lista vazia, significando que nao ha rescue)
-- [ ] Validação no load: trigger deve ser subset dos keywords do setor (senao WARNING no log)
-- [ ] Setor `vestuario` configurado com pelo menos 5 regras cobrindo os FP conhecidos
+- [x] Novo campo `co_occurrence_rules` em `sectors_data.yaml` para cada setor
+- [x] Cada regra contém: `trigger` (str, regex-safe), `negative_contexts` (list[str]), `positive_signals` (list[str])
+- [x] Todos os 3 campos obrigatórios por regra (positive_signals pode ser lista vazia, significando que nao ha rescue)
+- [x] Validação no load: trigger deve ser subset dos keywords do setor (senao WARNING no log)
+- [x] Setor `vestuario` configurado com pelo menos 5 regras cobrindo os FP conhecidos
 
 ### AC2 — Engine de Co-occurrence no filter.py
-- [ ] Nova função `check_co_occurrence(texto: str, rules: list[CoOccurrenceRule], setor_id: str) -> tuple[bool, str | None]`
-- [ ] Retorna `(True, motivo)` se co-occurrence negativo detectado (bid deve ser rejeitada)
-- [ ] Retorna `(False, None)` se nenhum co-occurrence detectado (bid segue fluxo normal)
-- [ ] Matching usa mesma normalização Unicode existente em filter.py (remove acentos, lowercase)
-- [ ] Matching usa word boundary para triggers e negative_contexts (evitar false match parcial)
-- [ ] Positive signals usam substring match (mais permissivo — qualquer menção salva a bid)
+- [x] Nova função `check_co_occurrence(texto: str, rules: list[CoOccurrenceRule], setor_id: str) -> tuple[bool, str | None]`
+- [x] Retorna `(True, motivo)` se co-occurrence negativo detectado (bid deve ser rejeitada)
+- [x] Retorna `(False, None)` se nenhum co-occurrence detectado (bid segue fluxo normal)
+- [x] Matching usa mesma normalização Unicode existente em filter.py (remove acentos, lowercase)
+- [x] Matching usa word boundary para triggers e negative_contexts (evitar false match parcial)
+- [x] Positive signals usam substring match (mais permissivo — qualquer menção salva a bid)
 
 ### AC3 — Posição no Pipeline
-- [ ] Co-occurrence check executa DEPOIS do keyword match e ANTES da density zone
-- [ ] Se co-occurrence detectado, bid e rejeitada MESMO que density >5% (override do auto-accept)
-- [ ] Bid rejeitada por co-occurrence NAO vai para LLM (economia de custo)
-- [ ] Posição no pipeline de 4 camadas:
+- [x] Co-occurrence check executa DEPOIS do keyword match e ANTES da density zone
+- [x] Se co-occurrence detectado, bid e rejeitada MESMO que density >5% (override do auto-accept)
+- [x] Bid rejeitada por co-occurrence NAO vai para LLM (economia de custo)
+- [x] Posição no pipeline de 4 camadas:
 
 ```
 Camada 0: Pre-Filter (UF, data, status)
@@ -114,48 +114,48 @@ Camada 4: Zero-Match LLM
 ```
 
 ### AC4 — Rejection Tracking
-- [ ] Bids rejeitadas por co-occurrence recebem `rejection_reason="co_occurrence"` e `rejection_detail="trigger:{trigger} + negative:{context_found}"`
-- [ ] Métrica logada por busca: `co_occurrence_rejections` (contagem)
-- [ ] Métrica por setor: `co_occurrence_rejections_by_sector` (para tuning)
-- [ ] Rejeições de co-occurrence incluídas no filter stats existente (`filter_stats_tracker`)
+- [x] Bids rejeitadas por co-occurrence recebem `rejection_reason="co_occurrence"` e `rejection_detail="trigger:{trigger} + negative:{context_found}"`
+- [x] Métrica logada por busca: `co_occurrence_rejections` (contagem)
+- [x] Métrica por setor: `co_occurrence_rejections_by_sector` (para tuning)
+- [x] Rejeições de co-occurrence incluídas no filter stats existente (`filter_stats_tracker`)
 
 ### AC5 — Regras para Setor Vestuário (Piloto)
-- [ ] Regra 1: `uniform*` + `(fachada|pintura|reforma|revestimento)` - `(textil|epi|costura|tecido)`
-- [ ] Regra 2: `uniform*` + `(procedimento|processo|norma|regulamento|protocolo)` - `(vestimenta|roupa|fardamento)`
-- [ ] Regra 3: `uniform*` + `(identidade visual|comunicacao visual|sinalizacao)` - `(camisa|camiseta|jaleco)`
-- [ ] Regra 4: `costura` + `(cortina|estofado|tapecaria|bandeira|toldo)` - `(uniforme|roupa|vestimenta)`
-- [ ] Regra 5: `padronizacao` + `(visual|layout|sistema|software|digital)` - `(vestuario|textil|confeccao)`
-- [ ] Cada regra testada com pelo menos 2 exemplos reais (1 que rejeita, 1 que positive_signal salva)
+- [x] Regra 1: `uniform*` + `(fachada|pintura|reforma|revestimento)` - `(textil|epi|costura|tecido)`
+- [x] Regra 2: `uniform*` + `(procedimento|processo|norma|regulamento|protocolo)` - `(vestimenta|roupa|fardamento)`
+- [x] Regra 3: `uniform*` + `(identidade visual|comunicacao visual|sinalizacao)` - `(camisa|camiseta|jaleco)`
+- [x] Regra 4: `costura` + `(cortina|estofado|tapecaria|bandeira|toldo)` - `(uniforme|roupa|vestimenta)`
+- [x] Regra 5: `padronizacao` + `(visual|layout|sistema|software|digital)` - `(vestuario|textil|confeccao)`
+- [x] Cada regra testada com pelo menos 2 exemplos reais (1 que rejeita, 1 que positive_signal salva)
 
 ### AC6 — Regras para Outros Setores (Estrutura)
-- [ ] Setor `saude` com pelo menos 2 regras (ex: "material + (construção|elétrico) - (hospitalar|cirúrgico)")
-- [ ] Setor `ti` com pelo menos 2 regras (ex: "sistema + (hidráulico|elétrico|incêndio) - (informação|software|digital)")
-- [ ] Demais setores: campo `co_occurrence_rules: []` (vazio) para aceitar regras futuras sem mudança de schema
-- [ ] Documentação inline em sectors_data.yaml explicando como adicionar regras para novos setores
+- [x] Setor `saude` com pelo menos 2 regras (ex: "material + (construção|elétrico) - (hospitalar|cirúrgico)")
+- [x] Setor `ti` com pelo menos 2 regras (ex: "sistema + (hidráulico|elétrico|incêndio) - (informação|software|digital)")
+- [x] Demais setores: campo `co_occurrence_rules: []` (vazio) para aceitar regras futuras sem mudança de schema
+- [x] Documentação inline em sectors_data.yaml explicando como adicionar regras para novos setores
 
 ### AC7 — Zero Custo de LLM
-- [ ] Co-occurrence check e 100% determinístico (regex + set lookup)
-- [ ] Nenhuma chamada de API externa durante co-occurrence evaluation
-- [ ] Performance: check de co-occurrence < 1ms por bid (medido e logado no p95)
-- [ ] Nao altera o budget de LLM calls existente
+- [x] Co-occurrence check e 100% determinístico (regex + set lookup)
+- [x] Nenhuma chamada de API externa durante co-occurrence evaluation
+- [x] Performance: check de co-occurrence < 1ms por bid (medido e logado no p95)
+- [x] Nao altera o budget de LLM calls existente
 
 ### AC8 — Feature Flag
-- [ ] `CO_OCCURRENCE_RULES_ENABLED` env var (default `true`)
-- [ ] Quando `false`, pipeline pula Camada 1B.5 e segue direto para density zone
-- [ ] Flag verificada no runtime (nao na importação)
-- [ ] Adicionada ao `_FEATURE_FLAG_REGISTRY` existente
+- [x] `CO_OCCURRENCE_RULES_ENABLED` env var (default `true`)
+- [x] Quando `false`, pipeline pula Camada 1B.5 e segue direto para density zone
+- [x] Flag verificada no runtime (nao na importação)
+- [x] Adicionada ao `_FEATURE_FLAG_REGISTRY` existente
 
 ### AC9 — Testes
-- [ ] Teste unitário: "Uniformização de fachada" rejeitado por co-occurrence (vestuario)
-- [ ] Teste unitário: "Uniforme escolar de algodão" NAO rejeitado (positive_signal "algodao" salva)
-- [ ] Teste unitário: "Uniformização de procedimentos" rejeitado (vestuario)
-- [ ] Teste unitário: "Costura de cortinas decorativas" rejeitado (vestuario)
-- [ ] Teste unitário: "Costura de uniformes em tecido" NAO rejeitado (positive_signals salvam)
-- [ ] Teste unitário: bid com density >5% MAS co-occurrence negativo e rejeitada (override)
-- [ ] Teste unitário: setor sem regras (lista vazia) nao causa erro
-- [ ] Teste unitário: positive_signals vazio significa que nao ha rescue (sempre rejeita se negative encontrado)
-- [ ] Teste unitário: normalização Unicode funciona (acentos ignorados)
-- [ ] Teste unitário: word boundary impede "uniformização" de ser matched por "forma" (substring)
+- [x] Teste unitário: "Uniformização de fachada" rejeitado por co-occurrence (vestuario)
+- [x] Teste unitário: "Uniforme escolar de algodão" NAO rejeitado (positive_signal "algodao" salva)
+- [x] Teste unitário: "Uniformização de procedimentos" rejeitado (vestuario)
+- [x] Teste unitário: "Costura de cortinas decorativas" rejeitado (vestuario)
+- [x] Teste unitário: "Costura de uniformes em tecido" NAO rejeitado (positive_signals salvam)
+- [x] Teste unitário: bid com density >5% MAS co-occurrence negativo e rejeitada (override)
+- [x] Teste unitário: setor sem regras (lista vazia) nao causa erro
+- [x] Teste unitário: positive_signals vazio significa que nao ha rescue (sempre rejeita se negative encontrado)
+- [x] Teste unitário: normalização Unicode funciona (acentos ignorados)
+- [x] Teste unitário: word boundary impede "uniformização" de ser matched por "forma" (substring)
 
 ---
 
@@ -185,10 +185,10 @@ Camada 4: Zero-Match LLM
 
 ## Definition of Done
 
-- [ ] Todos os 9 ACs verificados e passando
-- [ ] Nenhuma regressão nos testes existentes de filter.py
-- [ ] Pelo menos 5 FP conhecidos de vestuário eliminados pelas regras
-- [ ] Zero custo adicional de LLM confirmado
-- [ ] Performance <1ms/bid no p95 confirmada
-- [ ] Feature flag permite desabilitar sem deploy
+- [x] Todos os 9 ACs verificados e passando
+- [x] Nenhuma regressão nos testes existentes de filter.py
+- [x] Pelo menos 5 FP conhecidos de vestuário eliminados pelas regras
+- [x] Zero custo adicional de LLM confirmado
+- [x] Performance <1ms/bid no p95 confirmada
+- [x] Feature flag permite desabilitar sem deploy
 - [ ] Code review aprovado por @architect

@@ -7,11 +7,31 @@ to identify relevant procurement opportunities in PNCP data.
 Sector data is loaded from sectors_data.yaml at startup.
 """
 
+import logging
 import os
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set
 
 import yaml
+
+
+@dataclass(frozen=True)
+class CoOccurrenceRule:
+    """A co-occurrence rule for detecting false positive keyword matches.
+
+    GTM-RESILIENCE-D03: When a trigger keyword is found together with a
+    negative context term, and no positive signal is present, the bid is
+    rejected as a false positive.
+
+    Attributes:
+        trigger: Keyword prefix to match (regex word-boundary).
+        negative_contexts: Terms whose presence alongside trigger indicates FP.
+        positive_signals: Terms that rescue the bid (substring match, permissive).
+    """
+
+    trigger: str
+    negative_contexts: List[str]
+    positive_signals: List[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -33,6 +53,8 @@ class SectorConfig:
     # projects with tangential mentions of this sector (e.g., R$ 47.6M "melhorias
     # urbanas" with R$ 50K uniformes). None = no limit (e.g., engenharia).
     max_contract_value: Optional[int] = None
+    # GTM-RESILIENCE-D03: Co-occurrence rules for false positive detection
+    co_occurrence_rules: List[CoOccurrenceRule] = field(default_factory=list)
 
 
 def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
@@ -41,6 +63,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
     Returns:
         Dict mapping sector ID to SectorConfig.
     """
+    _logger = logging.getLogger(__name__)
     yaml_path = os.path.join(os.path.dirname(__file__), "sectors_data.yaml")
     with open(yaml_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -57,6 +80,30 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             k: set(v) for k, v in crk_raw.items()
         }
 
+        # GTM-RESILIENCE-D03: Parse co_occurrence_rules
+        co_rules_raw = cfg.get("co_occurrence_rules", [])
+        co_rules: List[CoOccurrenceRule] = []
+        for rule_data in co_rules_raw:
+            trigger = rule_data.get("trigger", "")
+            neg = rule_data.get("negative_contexts", [])
+            pos = rule_data.get("positive_signals", [])
+            co_rules.append(CoOccurrenceRule(
+                trigger=trigger,
+                negative_contexts=neg,
+                positive_signals=pos,
+            ))
+            # AC1: Validate trigger is subset of sector keywords (warning if not)
+            # Check if any keyword starts with the trigger (prefix match)
+            trigger_lower = trigger.lower()
+            has_matching_keyword = any(
+                kw.lower().startswith(trigger_lower) for kw in keywords
+            )
+            if not has_matching_keyword:
+                _logger.warning(
+                    f"Co-occurrence trigger '{trigger}' in sector '{sector_id}' "
+                    f"does not match any keyword prefix — may never fire"
+                )
+
         sectors[sector_id] = SectorConfig(
             id=sector_id,
             name=cfg["name"],
@@ -65,6 +112,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             exclusions=exclusions,
             context_required_keywords=context_required_keywords,
             max_contract_value=cfg.get("max_contract_value"),
+            co_occurrence_rules=co_rules,
         )
 
     return sectors

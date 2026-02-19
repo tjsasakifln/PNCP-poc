@@ -395,6 +395,70 @@ sectors:
         - "identificacao"
         - "refletivo"
 
+    # GTM-RESILIENCE-D03: Co-occurrence rules for false positive detection.
+    # Each rule: trigger keyword + negative_contexts (reject) + positive_signals (rescue).
+    # If trigger matches AND any negative_context matches AND NO positive_signal matches → REJECT.
+    # To add rules for other sectors, copy this structure with sector-specific terms.
+    co_occurrence_rules:
+      # Rule 1: "uniform*" + construction/renovation context
+      - trigger: "uniform"
+        negative_contexts:
+          - "fachada"
+          - "pintura"
+          - "reforma"
+          - "revestimento"
+        positive_signals:
+          - "textil"
+          - "epi"
+          - "costura"
+          - "tecido"
+      # Rule 2: "uniform*" + process/regulation context
+      - trigger: "uniform"
+        negative_contexts:
+          - "procedimento"
+          - "processo"
+          - "norma"
+          - "regulamento"
+          - "protocolo"
+        positive_signals:
+          - "vestimenta"
+          - "roupa"
+          - "fardamento"
+      # Rule 3: "uniform*" + visual identity/branding context
+      - trigger: "uniform"
+        negative_contexts:
+          - "identidade visual"
+          - "comunicacao visual"
+          - "sinalizacao"
+        positive_signals:
+          - "camisa"
+          - "camiseta"
+          - "jaleco"
+      # Rule 4: "costura" + non-clothing items
+      - trigger: "costura"
+        negative_contexts:
+          - "cortina"
+          - "estofado"
+          - "tapecaria"
+          - "bandeira"
+          - "toldo"
+        positive_signals:
+          - "uniforme"
+          - "roupa"
+          - "vestimenta"
+      # Rule 5: "padronizacao" + non-clothing context
+      - trigger: "padronizacao"
+        negative_contexts:
+          - "visual"
+          - "layout"
+          - "sistema"
+          - "software"
+          - "digital"
+        positive_signals:
+          - "vestuario"
+          - "textil"
+          - "confeccao"
+
   alimentos:
     name: "Alimentos e Merenda"
     description: "Gêneros alimentícios, merenda escolar, refeições, rancho"
@@ -895,6 +959,35 @@ sectors:
         - "lumens"
         - "informática"
         - "informatica"
+
+    # GTM-RESILIENCE-D03: Co-occurrence rules for informatica
+    co_occurrence_rules:
+      # Rule 1: "sistema" in non-IT context (hydraulic, electrical, fire)
+      - trigger: "sistema"
+        negative_contexts:
+          - "hidraulico"
+          - "eletrico"
+          - "incendio"
+          - "irrigacao"
+          - "esgoto"
+        positive_signals:
+          - "informacao"
+          - "software"
+          - "digital"
+          - "dados"
+      # Rule 2: "rede" in non-IT context (water, sewer, gas)
+      - trigger: "rede"
+        negative_contexts:
+          - "agua"
+          - "esgoto"
+          - "gas"
+          - "drenagem"
+          - "hidrica"
+        positive_signals:
+          - "ethernet"
+          - "fibra optica"
+          - "cabeamento"
+          - "wifi"
 
   mobiliario:
     name: "Mobiliário"
@@ -2910,6 +3003,35 @@ sectors:
         - "medico"
         - "odontológico"
         - "odontologico"
+
+    # GTM-RESILIENCE-D03: Co-occurrence rules for saude
+    co_occurrence_rules:
+      # Rule 1: "material" in construction/electrical context (not medical material)
+      - trigger: "material"
+        negative_contexts:
+          - "construcao"
+          - "eletrico"
+          - "hidraulico"
+          - "alvenaria"
+          - "concreto"
+        positive_signals:
+          - "hospitalar"
+          - "cirurgico"
+          - "medico"
+          - "laboratorio"
+      # Rule 2: "equipamento" in non-medical context
+      - trigger: "equipamento"
+        negative_contexts:
+          - "ginastica"
+          - "musculacao"
+          - "esportivo"
+          - "playground"
+          - "academia"
+        positive_signals:
+          - "hospitalar"
+          - "medico"
+          - "diagnostico"
+          - "cirurgico"
 
   vigilancia:
     name: "Vigilância e Segurança Patrimonial"

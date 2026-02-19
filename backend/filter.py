@@ -1736,6 +1736,85 @@ def filtrar_por_prazo_aberto(
     return aprovadas, rejeitadas
 
 
+# ============================================================================
+# GTM-RESILIENCE-D03: Co-occurrence Negative Pattern Engine (Camada 1B.5)
+# ============================================================================
+# Deterministic, zero-LLM-cost check that detects false positive keyword
+# matches by evaluating trigger + negative_context combinations.
+# Runs AFTER keyword match, BEFORE density zone.
+# ============================================================================
+
+def check_co_occurrence(
+    texto: str,
+    rules: list,
+    setor_id: str,
+) -> tuple:
+    """Check if a bid text triggers any co-occurrence rejection rule.
+
+    GTM-RESILIENCE-D03 AC2: Evaluates trigger + negative_context + positive_signal
+    combinations to detect false positive keyword matches.
+
+    Args:
+        texto: The bid's objetoCompra text (raw, will be normalized internally).
+        rules: List of CoOccurrenceRule objects for this sector.
+        setor_id: Sector ID (for logging/tracking).
+
+    Returns:
+        Tuple of (should_reject: bool, reason: str | None).
+        If should_reject is True, reason contains the rejection detail.
+    """
+    if not rules or not texto:
+        return (False, None)
+
+    texto_norm = normalize_text(texto)
+
+    for rule in rules:
+        trigger_norm = normalize_text(rule.trigger)
+
+        # AC2: Word boundary match for trigger (prefix matching)
+        trigger_pattern = re.compile(
+            rf'\b{re.escape(trigger_norm)}\w*\b', re.UNICODE
+        )
+        if not trigger_pattern.search(texto_norm):
+            continue
+
+        # Check negative contexts (prefix word-boundary match for singles,
+        # substring for multi-word)
+        matched_negative = None
+        for neg_ctx in rule.negative_contexts:
+            neg_norm = normalize_text(neg_ctx)
+            # Multi-word negative contexts use substring match,
+            # single-word uses prefix word boundary (handles plurals)
+            if " " in neg_norm:
+                if neg_norm in texto_norm:
+                    matched_negative = neg_ctx
+                    break
+            else:
+                neg_pattern = re.compile(
+                    rf'\b{re.escape(neg_norm)}\w*\b', re.UNICODE
+                )
+                if neg_pattern.search(texto_norm):
+                    matched_negative = neg_ctx
+                    break
+
+        if matched_negative is None:
+            continue
+
+        # Check positive signals (substring match — more permissive, AC2)
+        has_positive = False
+        for pos_sig in rule.positive_signals:
+            pos_norm = normalize_text(pos_sig)
+            if pos_norm in texto_norm:
+                has_positive = True
+                break
+
+        if not has_positive:
+            reason = f"trigger:{rule.trigger} + negative:{matched_negative}"
+            return (True, reason)
+
+    return (False, None)
+
+
 def aplicar_todos_filtros(
     licitacoes: List[dict],
     ufs_selecionadas: Set[str],
@@ -2195,6 +2274,66 @@ def aplicar_todos_filtros(
                 )
             except Exception:
                 pass
+
+    # ========================================================================
+    # GTM-RESILIENCE-D03: Camada 1B.5 — Co-occurrence Negative Patterns
+    # ========================================================================
+    # After keyword match, before density zone. Rejects bids where a trigger
+    # keyword co-occurs with a negative context and no positive signal.
+    # Overrides auto-accept: even density >5% bids are rejected.
+    # 100% deterministic, zero LLM cost.
+    from config import get_feature_flag
+
+    stats["co_occurrence_rejections"] = 0
+    stats["co_occurrence_rejections_by_sector"] = {}
+
+    if get_feature_flag("CO_OCCURRENCE_RULES_ENABLED") and setor:
+        from sectors import get_sector as _get_sector_co
+
+        try:
+            setor_config_co = _get_sector_co(setor)
+            co_rules = setor_config_co.co_occurrence_rules
+
+            if co_rules:
+                resultado_after_co: List[dict] = []
+                for lic in resultado_keyword:
+                    objeto = lic.get("objetoCompra", "")
+                    should_reject, rejection_detail = check_co_occurrence(
+                        objeto, co_rules, setor
+                    )
+
+                    if should_reject:
+                        stats["co_occurrence_rejections"] += 1
+                        stats["co_occurrence_rejections_by_sector"][setor] = (
+                            stats["co_occurrence_rejections_by_sector"].get(setor, 0) + 1
+                        )
+                        lic["_rejection_reason"] = "co_occurrence"
+                        lic["_rejection_detail"] = rejection_detail
+                        logger.debug(
+                            f"Camada 1B.5: REJECT (co-occurrence) "
+                            f"detail={rejection_detail} "
+                            f"objeto={objeto[:80]}"
+                        )
+                        # AC4: Record in filter stats tracker
+                        try:
+                            _get_tracker().record_rejection(
+                                "co_occurrence",
+                                sector=setor,
+                                description_preview=objeto[:100],
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        resultado_after_co.append(lic)
+
+                if stats["co_occurrence_rejections"] > 0:
+                    logger.info(
+                        f"Camada 1B.5 (Co-occurrence): rejected "
+                        f"{stats['co_occurrence_rejections']} bids in sector '{setor}'"
+                    )
+                resultado_keyword = resultado_after_co
+        except KeyError:
+            pass  # Sector not found — skip co-occurrence
 
     # ========================================================================
     # GTM-FIX-028: LLM Zero Match Classification
