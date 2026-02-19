@@ -11,9 +11,9 @@ export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { searchId: string } },
+  { params }: { params: Promise<{ searchId: string }> },
 ) {
-  const { searchId } = params;
+  const { searchId } = await params;
 
   if (!searchId) {
     return NextResponse.json(
