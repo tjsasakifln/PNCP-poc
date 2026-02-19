@@ -14,6 +14,7 @@ TTL policy (unchanged from GTM-FIX-010):
   - Expired (>24h): Not served
 """
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -695,3 +696,270 @@ def _track_cache_operation(
         })
     except Exception:
         pass  # Analytics failures are silent
+
+
+# ============================================================================
+# B-01: Background Stale-While-Revalidate
+# ============================================================================
+
+# Module-level state for revalidation budget control (AC4)
+_active_revalidations: int = 0
+_revalidation_lock: Optional[asyncio.Lock] = None
+
+
+def _get_revalidation_lock() -> asyncio.Lock:
+    """Lazy init of revalidation lock (must be created inside event loop)."""
+    global _revalidation_lock
+    if _revalidation_lock is None:
+        _revalidation_lock = asyncio.Lock()
+    return _revalidation_lock
+
+
+async def _is_revalidating(params_hash: str) -> bool:
+    """AC3: Check if a revalidation is already in progress for this key."""
+    from redis_pool import get_redis_pool, get_fallback_cache
+
+    redis_key = f"revalidating:{params_hash}"
+
+    redis = await get_redis_pool()
+    if redis:
+        try:
+            return bool(await redis.exists(redis_key))
+        except Exception:
+            pass
+
+    cache = get_fallback_cache()
+    return cache.get(redis_key) is not None
+
+
+async def _mark_revalidating(params_hash: str, ttl_seconds: int) -> bool:
+    """AC3: Mark a key as being revalidated. Returns False if already marked."""
+    from redis_pool import get_redis_pool, get_fallback_cache
+
+    redis_key = f"revalidating:{params_hash}"
+
+    redis = await get_redis_pool()
+    if redis:
+        try:
+            acquired = await redis.set(redis_key, "1", ex=ttl_seconds, nx=True)
+            return bool(acquired)
+        except Exception:
+            pass
+
+    cache = get_fallback_cache()
+    if cache.get(redis_key) is not None:
+        return False
+    cache.setex(redis_key, ttl_seconds, "1")
+    return True
+
+
+async def _clear_revalidating(params_hash: str) -> None:
+    """Clear the revalidation dedup lock for a key."""
+    from redis_pool import get_redis_pool, get_fallback_cache
+
+    redis_key = f"revalidating:{params_hash}"
+
+    redis = await get_redis_pool()
+    if redis:
+        try:
+            await redis.delete(redis_key)
+            return
+        except Exception:
+            pass
+
+    cache = get_fallback_cache()
+    cache.delete(redis_key)
+
+
+async def trigger_background_revalidation(
+    user_id: str,
+    params: dict,
+    request_data: dict,
+    search_id: Optional[str] = None,
+) -> bool:
+    """B-01 AC1: Dispatch background revalidation after serving stale cache.
+
+    Pre-checks (fast, no I/O beyond Redis):
+      - AC6: PNCP circuit breaker not degraded
+      - AC3: No concurrent revalidation for same params_hash (10min cooldown)
+      - AC4: Worker revalidation budget not exceeded (max 3)
+
+    If all pass, dispatches asyncio.Task for the actual revalidation.
+
+    Args:
+        user_id: Supabase user ID for cache key.
+        params: Normalized search params (same dict used by compute_search_hash).
+        request_data: Full request data for re-fetch (ufs, data_inicial, data_final, etc.).
+        search_id: Optional SSE search_id for AC7 notification.
+
+    Returns:
+        True if background task was dispatched, False if skipped.
+    """
+    global _active_revalidations
+    from config import REVALIDATION_COOLDOWN_S, MAX_CONCURRENT_REVALIDATIONS
+
+    params_hash = compute_search_hash(params)
+
+    # AC6: Check circuit breaker before wasting resources
+    try:
+        from pncp_client import get_circuit_breaker
+        cb = get_circuit_breaker("pncp")
+        if hasattr(cb, "is_degraded") and cb.is_degraded:
+            logger.info(json.dumps({
+                "event": "revalidation_skipped",
+                "params_hash": params_hash[:12],
+                "reason": "circuit_breaker_degraded",
+            }))
+            return False
+    except Exception:
+        pass  # If CB check fails, proceed anyway
+
+    # AC3: Dedup — only one revalidation per key at a time
+    if not await _mark_revalidating(params_hash, REVALIDATION_COOLDOWN_S):
+        logger.info(json.dumps({
+            "event": "revalidation_skipped",
+            "params_hash": params_hash[:12],
+            "reason": "already_revalidating",
+        }))
+        return False
+
+    # AC4: Budget — max N concurrent revalidations per worker
+    lock = _get_revalidation_lock()
+    async with lock:
+        if _active_revalidations >= MAX_CONCURRENT_REVALIDATIONS:
+            await _clear_revalidating(params_hash)
+            logger.info(json.dumps({
+                "event": "revalidation_skipped",
+                "params_hash": params_hash[:12],
+                "reason": "budget_exceeded",
+                "active": _active_revalidations,
+                "max": MAX_CONCURRENT_REVALIDATIONS,
+            }))
+            return False
+        _active_revalidations += 1
+
+    # AC1: Dispatch background task
+    asyncio.create_task(
+        _do_revalidation(user_id, params, params_hash, request_data, search_id),
+        name=f"revalidate:{params_hash[:12]}",
+    )
+
+    logger.info(json.dumps({
+        "event": "revalidation_dispatched",
+        "params_hash": params_hash[:12],
+        "search_id": search_id,
+    }))
+
+    return True
+
+
+async def _do_revalidation(
+    user_id: str,
+    params: dict,
+    params_hash: str,
+    request_data: dict,
+    search_id: Optional[str],
+) -> None:
+    """Execute background revalidation (fire-and-forget task).
+
+    1. Fetch fresh data from PNCP with independent timeout (AC5)
+    2. On success: save_to_cache() resets fail_streak (AC2, AC9)
+    3. On failure: record_cache_fetch_failure() increments fail_streak (AC9)
+    4. If SSE tracker active: emit 'revalidated' event (AC7)
+    5. Log structured JSON result (AC8)
+    """
+    global _active_revalidations
+    from config import REVALIDATION_TIMEOUT
+
+    start = time.monotonic()
+    result_status = "unknown"
+    new_results_count = 0
+
+    try:
+        # AC5: Independent timeout — does not affect active requests
+        async with asyncio.timeout(REVALIDATION_TIMEOUT):
+            import pncp_client as _pncp
+
+            fetch_result = await _pncp.buscar_todas_ufs_paralelo(
+                ufs=request_data["ufs"],
+                data_inicial=request_data["data_inicial"],
+                data_final=request_data["data_final"],
+                modalidades=request_data.get("modalidades"),
+            )
+
+            # Handle ParallelFetchResult or plain list
+            if hasattr(fetch_result, "items"):
+                results = fetch_result.items
+            elif isinstance(fetch_result, list):
+                results = fetch_result
+            else:
+                results = list(fetch_result)
+
+            new_results_count = len(results)
+
+            if results:
+                # AC2: Save to all cache levels
+                sources = ["PNCP"]
+                duration_ms = int((time.monotonic() - start) * 1000)
+                coverage = {
+                    "succeeded_ufs": list(request_data["ufs"]),
+                    "failed_ufs": [],
+                    "total_requested": len(request_data["ufs"]),
+                }
+                # AC9: save_to_cache resets fail_streak=0, last_success_at=now
+                await save_to_cache(
+                    user_id=user_id,
+                    params=params,
+                    results=results,
+                    sources=sources,
+                    fetch_duration_ms=duration_ms,
+                    coverage=coverage,
+                )
+                result_status = "success"
+
+                # AC7: SSE notification if tracker still active
+                if search_id:
+                    try:
+                        from progress import get_tracker
+                        tracker = await get_tracker(search_id)
+                        if tracker and not tracker._is_complete:
+                            await tracker.emit_revalidated(
+                                total_results=new_results_count,
+                                fetched_at=datetime.now(timezone.utc).isoformat(),
+                            )
+                    except Exception:
+                        pass  # SSE notification is best-effort
+            else:
+                result_status = "empty"
+
+    except asyncio.TimeoutError:
+        result_status = "timeout"
+        try:
+            await record_cache_fetch_failure(user_id, params_hash)
+        except Exception:
+            pass
+
+    except Exception as e:
+        result_status = "error"
+        try:
+            await record_cache_fetch_failure(user_id, params_hash)
+        except Exception:
+            pass
+        logger.debug(f"Revalidation fetch failed: {e}")
+
+    finally:
+        # Release budget slot (AC4)
+        lock = _get_revalidation_lock()
+        async with lock:
+            _active_revalidations = max(0, _active_revalidations - 1)
+
+        # AC8: Structured log — 1 JSON line per revalidation
+        duration_ms = int((time.monotonic() - start) * 1000)
+        logger.info(json.dumps({
+            "event": "revalidation_complete",
+            "params_hash": params_hash[:12],
+            "trigger": "stale_served",
+            "duration_ms": duration_ms,
+            "result": result_status,
+            "new_results_count": new_results_count,
+        }))

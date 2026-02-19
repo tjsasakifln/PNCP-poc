@@ -316,6 +316,18 @@ LLM_ZERO_MATCH_ENABLED: bool = str_to_bool(
     os.getenv("LLM_ZERO_MATCH_ENABLED", "true")
 )
 
+# ============================================
+# B-01: Background Revalidation
+# ============================================
+# Timeout for background revalidation tasks (seconds). Does not affect active requests.
+REVALIDATION_TIMEOUT: int = int(os.getenv("REVALIDATION_TIMEOUT", "180"))
+
+# Maximum concurrent background revalidations per worker process.
+MAX_CONCURRENT_REVALIDATIONS: int = int(os.getenv("MAX_CONCURRENT_REVALIDATIONS", "3"))
+
+# Minimum interval between revalidations of the same cache key (seconds). 10 minutes default.
+REVALIDATION_COOLDOWN_S: int = int(os.getenv("REVALIDATION_COOLDOWN_S", "600"))
+
 logger = logging.getLogger(__name__)
 
 

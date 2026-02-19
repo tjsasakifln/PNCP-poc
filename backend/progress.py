@@ -187,6 +187,27 @@ class ProgressTracker:
         )
         await self.queue.put(event)
 
+    async def emit_revalidated(self, total_results: int, fetched_at: str) -> None:
+        """B-01 AC7: Notify connected user that background revalidation completed.
+
+        Emitted when a stale-cache response was served and the background task
+        successfully fetched fresh data. Frontend can optionally show a toast
+        like "Updated data available".
+        """
+        event = ProgressEvent(
+            stage="revalidated",
+            progress=100,
+            message=f"Dados atualizados: {total_results} resultados",
+            detail={
+                "total_results": total_results,
+                "fetched_at": fetched_at,
+            },
+        )
+        await self.queue.put(event)
+
+        if self._use_redis:
+            await self._publish_to_redis(event)
+
     async def emit_error(self, error_message: str) -> None:
         """Signal search error."""
         self._is_complete = True

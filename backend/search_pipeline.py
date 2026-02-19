@@ -289,6 +289,34 @@ def _build_cache_params(request) -> dict:
     }
 
 
+async def _maybe_trigger_revalidation(
+    user_id: str, request, stale_cache: dict | None,
+) -> None:
+    """B-01: Trigger background revalidation after serving stale cache.
+
+    Called from all 5 error handlers that serve stale cache.
+    Non-blocking, non-fatal — failures are silently logged.
+    """
+    if not stale_cache or not stale_cache.get("is_stale"):
+        return
+    try:
+        from search_cache import trigger_background_revalidation
+        await trigger_background_revalidation(
+            user_id=user_id,
+            params=_build_cache_params(request),
+            request_data={
+                "ufs": request.ufs,
+                "data_inicial": request.data_inicial,
+                "data_final": request.data_final,
+                "modalidades": request.modalidades,
+                "setor_id": request.setor_id,
+            },
+            search_id=getattr(request, "search_id", None),
+        )
+    except Exception as e:
+        logger.debug(f"Revalidation trigger failed (non-fatal): {e}")
+
+
 def _build_degraded_detail(ctx: "SearchContext") -> dict:
     """Build SSE degraded event detail dict from SearchContext (A-02 AC6)."""
     detail: dict = {}
@@ -866,6 +894,8 @@ class SearchPipeline:
                     }
                     for src, err in e.source_errors.items()
                 ]
+                # B-01: Background revalidation
+                await _maybe_trigger_revalidation(ctx.user["id"], request, stale_cache)
             else:
                 # AC6/AC17r: No cache — return empty with degradation info
                 logger.warning("No stale cache available — returning empty results")
@@ -935,6 +965,8 @@ class SearchPipeline:
                 ctx.degradation_reason = f"Busca expirou após {fetch_timeout}s. Resultados de cache servidos."
                 ctx.data_sources = []
                 ctx.source_stats_data = []
+                # B-01: Background revalidation
+                await _maybe_trigger_revalidation(ctx.user["id"], request, stale_cache)
             else:
                 # AC3: No cache — emit error and raise 504
                 if ctx.tracker:
@@ -985,6 +1017,8 @@ class SearchPipeline:
                 ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
                 ctx.data_sources = []
                 ctx.source_stats_data = []
+                # B-01: Background revalidation
+                await _maybe_trigger_revalidation(ctx.user["id"], request, stale_cache)
             else:
                 logger.warning(
                     f"No stale cache available after {type(e).__name__} — returning empty"
@@ -1123,6 +1157,8 @@ class SearchPipeline:
                 ctx.data_sources = [
                     DataSourceStatus(source="PNCP", status="error", records=0)
                 ]
+                # B-01: Background revalidation
+                await _maybe_trigger_revalidation(ctx.user["id"], request, stale_cache)
             else:
                 ctx.licitacoes_raw = []
                 ctx.is_partial = True
@@ -1176,6 +1212,8 @@ class SearchPipeline:
                 ctx.data_sources = [
                     DataSourceStatus(source="PNCP", status="timeout", records=0)
                 ]
+                # B-01: Background revalidation
+                await _maybe_trigger_revalidation(ctx.user["id"], request, stale_cache)
             else:
                 # No cache — emit error and raise 504
                 if ctx.tracker:

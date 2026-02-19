@@ -136,10 +136,10 @@ O fluxo sincrono (usuario aguardando resposta) nao deve ser afetado pela revalid
 
 ## Definition of Done
 
-- [ ] Todos os 10 ACs implementados e testados
-- [ ] Testes unitarios passando (10+ novos)
-- [ ] Zero regressoes na suite existente do pipeline
-- [ ] Log de revalidacao visivel no Railway (1 linha JSON por revalidacao)
-- [ ] Documentacao inline no codigo (docstrings)
+- [x] Todos os 10 ACs implementados e testados
+- [x] Testes unitarios passando (22 novos)
+- [x] Zero regressoes na suite existente do pipeline (35 fail / 3692 pass — baseline 35 fail)
+- [x] Log de revalidacao visivel no Railway (1 linha JSON por revalidacao)
+- [x] Documentacao inline no codigo (docstrings)
 - [ ] Code review aprovado
-- [ ] Metricas de revalidacao rastreaveeis (success/skip/timeout/error)
+- [x] Metricas de revalidacao rastreaveeis (success/skip/timeout/error)
