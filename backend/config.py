@@ -317,6 +317,29 @@ LLM_ZERO_MATCH_ENABLED: bool = str_to_bool(
 )
 
 # ============================================
+# D-01: Item Inspection (Gray Zone Enhancement)
+# ============================================
+# Feature flag: enable/disable item-level inspection for gray zone bids (0-5% density)
+ITEM_INSPECTION_ENABLED: bool = str_to_bool(
+    os.getenv("ITEM_INSPECTION_ENABLED", "true")
+)
+
+# Max item-fetch calls per search (budget). Env var can increase but not below 5.
+_MAX_ITEM_RAW = int(os.getenv("MAX_ITEM_INSPECTIONS", "20"))
+MAX_ITEM_INSPECTIONS: int = max(5, _MAX_ITEM_RAW)
+
+# Timeout per individual item-fetch request (seconds)
+ITEM_INSPECTION_TIMEOUT: float = float(os.getenv("ITEM_INSPECTION_TIMEOUT", "5"))
+
+# Global timeout for the entire item inspection phase (seconds)
+ITEM_INSPECTION_PHASE_TIMEOUT: float = float(
+    os.getenv("ITEM_INSPECTION_PHASE_TIMEOUT", "15")
+)
+
+# Max concurrent item-fetch requests (semaphore limit)
+ITEM_INSPECTION_CONCURRENCY: int = int(os.getenv("ITEM_INSPECTION_CONCURRENCY", "5"))
+
+# ============================================
 # E-03: Prometheus Metrics
 # ============================================
 METRICS_ENABLED: bool = str_to_bool(os.getenv("METRICS_ENABLED", "true"))
@@ -357,6 +380,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "LLM_ZERO_MATCH_ENABLED": ("LLM_ZERO_MATCH_ENABLED", "true"),
     "CO_OCCURRENCE_RULES_ENABLED": ("CO_OCCURRENCE_RULES_ENABLED", "true"),
     "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
+    "ITEM_INSPECTION_ENABLED": ("ITEM_INSPECTION_ENABLED", "true"),
 }
 
 

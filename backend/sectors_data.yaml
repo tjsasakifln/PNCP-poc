@@ -458,6 +458,36 @@ sectors:
           - "vestuario"
           - "textil"
           - "confeccao"
+    # GTM-RESILIENCE-D01 AC4: Domain signals for item-level inspection
+    domain_signals:
+      ncm_prefixes:
+        - "61"    # Vestuário e seus acessórios, de malha
+        - "62"    # Vestuário e seus acessórios, exceto de malha
+        - "6505"  # Chapéus e artefatos de uso semelhante, de malha
+        - "6401"  # Calçados impermeáveis (botas)
+        - "6402"  # Calçados com sola/parte superior de borracha/plástico
+        - "6403"  # Calçados com sola de borracha/plástico e parte superior de couro
+        - "6404"  # Calçados com sola de borracha/plástico e parte superior têxtil
+        - "6307"  # Outros artefatos têxteis confeccionados (inclui EPIs têxteis)
+      unit_patterns:
+        - "peca"
+        - "peça"
+        - "kit"
+        - "conjunto"
+        - "par"
+        - "unidade"
+        - "jogo"
+      size_patterns:
+        - "\\bPP\\b"
+        - "\\bP\\b"
+        - "\\bM\\b"
+        - "\\bG\\b"
+        - "\\bGG\\b"
+        - "\\bXG\\b"
+        - "\\bXGG\\b"
+        - "\\b2XG\\b"
+        - "\\b3XG\\b"
+        - "tamanho"
 
   alimentos:
     name: "Alimentos e Merenda"
@@ -988,6 +1018,22 @@ sectors:
           - "fibra optica"
           - "cabeamento"
           - "wifi"
+    # GTM-RESILIENCE-D01 AC4: Domain signals for item-level inspection
+    domain_signals:
+      ncm_prefixes:
+        - "8471"  # Máquinas automáticas para processamento de dados (computadores)
+        - "8473"  # Partes e acessórios de máquinas de processamento de dados
+        - "8528"  # Monitores e projetores
+        - "8443"  # Impressoras, copiadoras
+        - "8517"  # Aparelhos elétricos para telefonia (switches, roteadores)
+        - "8523"  # Discos, fitas e outros suportes para gravação (storage)
+      unit_patterns:
+        - "unidade"
+        - "licenca"
+        - "licença"
+        - "peca"
+        - "peça"
+      size_patterns: []
 
   mobiliario:
     name: "Mobiliário"
@@ -3032,6 +3078,27 @@ sectors:
           - "medico"
           - "diagnostico"
           - "cirurgico"
+    # GTM-RESILIENCE-D01 AC4: Domain signals for item-level inspection
+    domain_signals:
+      ncm_prefixes:
+        - "3004"  # Medicamentos dosados
+        - "3006"  # Preparações e artigos farmacêuticos (suturas, curativos)
+        - "3005"  # Algodão, gaze, ataduras (artigos semelhantes)
+        - "9018"  # Instrumentos e aparelhos para medicina, cirurgia
+        - "9019"  # Aparelhos de mecanoterapia, massagem
+        - "9021"  # Artigos e aparelhos ortopédicos
+        - "9022"  # Aparelhos de raios X
+        - "4015"  # Vestuário e acessórios de borracha vulcanizada (luvas cirúrgicas)
+      unit_patterns:
+        - "ampola"
+        - "frasco"
+        - "cx"
+        - "caixa"
+        - "comprimido"
+        - "unidade"
+        - "ml"
+        - "litro"
+      size_patterns: []
 
   vigilancia:
     name: "Vigilância e Segurança Patrimonial"

@@ -16,6 +16,26 @@ import yaml
 
 
 @dataclass(frozen=True)
+class DomainSignals:
+    """Domain-specific signals for item-level inspection (GTM-RESILIENCE-D01 AC4).
+
+    Used by item_inspector.py to classify individual bid items beyond keyword matching.
+
+    Attributes:
+        ncm_prefixes: NCM code prefixes (e.g., ["61", "62"] for vestuario).
+                      If item's codigoNcm starts with any prefix → full match.
+        unit_patterns: Unit of measure patterns (e.g., ["peça", "kit"]).
+                       If item's unidadeMedida contains pattern → 0.5 boost.
+        size_patterns: Size patterns in descriptions (e.g., ["\\bP\\b", "\\bM\\b", "\\bG\\b"]).
+                       If item's descricao matches pattern → 0.5 boost.
+    """
+
+    ncm_prefixes: List[str] = field(default_factory=list)
+    unit_patterns: List[str] = field(default_factory=list)
+    size_patterns: List[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class CoOccurrenceRule:
     """A co-occurrence rule for detecting false positive keyword matches.
 
@@ -55,6 +75,8 @@ class SectorConfig:
     max_contract_value: Optional[int] = None
     # GTM-RESILIENCE-D03: Co-occurrence rules for false positive detection
     co_occurrence_rules: List[CoOccurrenceRule] = field(default_factory=list)
+    # GTM-RESILIENCE-D01: Domain signals for item-level inspection
+    domain_signals: DomainSignals = field(default_factory=DomainSignals)
 
 
 def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
@@ -104,6 +126,14 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
                     f"does not match any keyword prefix — may never fire"
                 )
 
+        # GTM-RESILIENCE-D01: Parse domain_signals
+        ds_raw = cfg.get("domain_signals", {})
+        domain_signals = DomainSignals(
+            ncm_prefixes=ds_raw.get("ncm_prefixes", []),
+            unit_patterns=ds_raw.get("unit_patterns", []),
+            size_patterns=ds_raw.get("size_patterns", []),
+        )
+
         sectors[sector_id] = SectorConfig(
             id=sector_id,
             name=cfg["name"],
@@ -113,6 +143,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             context_required_keywords=context_required_keywords,
             max_contract_value=cfg.get("max_contract_value"),
             co_occurrence_rules=co_rules,
+            domain_signals=domain_signals,
         )
 
     return sectors

@@ -1345,6 +1345,94 @@ class AsyncPNCPClient:
         )
         return False
 
+    async def fetch_bid_items(
+        self,
+        cnpj: str,
+        ano: str,
+        sequencial: str,
+    ) -> List[Dict[str, Any]]:
+        """Fetch individual items for a bid from PNCP API (GTM-RESILIENCE-D01 AC1).
+
+        Endpoint: GET /v1/orgaos/{cnpj}/compras/{ano}/{sequencial}/itens
+
+        Args:
+            cnpj: CNPJ of the contracting entity (digits only).
+            ano: Year of the procurement (e.g., "2026").
+            sequencial: Sequential number of the procurement.
+
+        Returns:
+            List of item dicts with keys: descricao, codigoNcm, unidadeMedida,
+            quantidade, valorUnitario. Returns empty list on 404 or timeout.
+        """
+        from config import ITEM_INSPECTION_TIMEOUT
+
+        if self._client is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+
+        # Clean CNPJ — digits only
+        cnpj_clean = "".join(c for c in cnpj if c.isdigit())
+        url = f"{self.BASE_URL}/orgaos/{cnpj_clean}/compras/{ano}/{sequencial}/itens"
+
+        for attempt in range(2):  # 1 initial + 1 retry
+            try:
+                response = await asyncio.wait_for(
+                    self._client.get(url),
+                    timeout=ITEM_INSPECTION_TIMEOUT,
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    # API may return list directly or nested
+                    items = data if isinstance(data, list) else data.get("itens", data.get("data", []))
+                    return [
+                        {
+                            "descricao": item.get("descricao", ""),
+                            "codigoNcm": item.get("materialOuServico", {}).get("codigoNcm", "")
+                                if isinstance(item.get("materialOuServico"), dict)
+                                else item.get("codigoNcm", ""),
+                            "unidadeMedida": item.get("unidadeMedida", ""),
+                            "quantidade": item.get("quantidade", 0),
+                            "valorUnitario": item.get("valorUnitarioEstimado", 0)
+                                or item.get("valorUnitario", 0),
+                        }
+                        for item in items
+                    ]
+
+                if response.status_code == 404:
+                    logger.debug(
+                        f"PNCP items 404 for {cnpj_clean}/{ano}/{sequencial} — no items available"
+                    )
+                    return []
+
+                # Retryable: 429/5xx
+                if attempt == 0 and response.status_code in (429, 500, 502, 503, 504):
+                    retry_after = float(response.headers.get("Retry-After", "1"))
+                    logger.debug(
+                        f"PNCP items {response.status_code} — retrying in {retry_after}s"
+                    )
+                    await asyncio.sleep(min(retry_after, 3.0))
+                    continue
+
+                logger.debug(
+                    f"PNCP items unexpected {response.status_code} for "
+                    f"{cnpj_clean}/{ano}/{sequencial}"
+                )
+                return []
+
+            except (asyncio.TimeoutError, httpx.TimeoutException):
+                if attempt == 0:
+                    logger.debug("PNCP items timeout — retrying once")
+                    continue
+                logger.debug(
+                    f"PNCP items timeout (2nd attempt) for {cnpj_clean}/{ano}/{sequencial}"
+                )
+                return []
+            except (httpx.HTTPError, Exception) as exc:
+                logger.debug(f"PNCP items fetch error: {type(exc).__name__}: {exc}")
+                return []
+
+        return []
+
     async def _rate_limit(self) -> None:
         """Enforce rate limiting — shared Redis when available, local fallback.
 

@@ -2432,14 +2432,71 @@ def aplicar_todos_filtros(
                 f"{stats['llm_zero_match_skipped_short']} skipped (short)"
             )
 
-    # STORY-181 AC2: Camada 2A - Calibrated Term Density Decision Thresholds
-    # Using configurable thresholds from config.py (env-var adjustable)
+    # ========================================================================
+    # GTM-RESILIENCE-D01: Camada 1C — Item Inspection for Gray Zone (0-5%)
+    # ========================================================================
+    # Before sending gray-zone bids to LLM, attempt item-level inspection
+    # from PNCP API. Majority rule on items can accept bids directly,
+    # saving LLM calls and improving precision.
     from config import (
         TERM_DENSITY_HIGH_THRESHOLD,
         TERM_DENSITY_MEDIUM_THRESHOLD,
         TERM_DENSITY_LOW_THRESHOLD,
         QA_AUDIT_SAMPLE_RATE,
+        get_feature_flag,
     )
+
+    stats["item_inspections_performed"] = 0
+    stats["item_inspections_accepted"] = 0
+
+    resultado_item_accepted: List[dict] = []
+
+    if setor and get_feature_flag("ITEM_INSPECTION_ENABLED"):
+        # Collect gray zone bids: 0% < density <= 5% (have matched keywords but low density)
+        gray_zone = [
+            lic for lic in resultado_keyword
+            if 0 < lic.get("_term_density", 0) <= TERM_DENSITY_HIGH_THRESHOLD
+        ]
+
+        if gray_zone:
+            try:
+                from item_inspector import inspect_bids_in_filter
+                from sectors import get_sector as _get_sector_insp
+
+                setor_config_insp = _get_sector_insp(setor)
+                ds = setor_config_insp.domain_signals
+
+                item_accepted, item_remaining, item_metrics = inspect_bids_in_filter(
+                    gray_zone_bids=gray_zone,
+                    sector_keywords={kw.lower() for kw in setor_config_insp.keywords},
+                    ncm_prefixes=ds.ncm_prefixes,
+                    unit_patterns=ds.unit_patterns,
+                    size_patterns=ds.size_patterns,
+                )
+
+                stats["item_inspections_performed"] = item_metrics.get(
+                    "item_inspections_performed", 0
+                )
+                stats["item_inspections_accepted"] = item_metrics.get(
+                    "item_inspections_accepted", 0
+                )
+
+                # Accepted bids skip Camada 2A entirely (AC5: weight 3 > keyword weight 2)
+                resultado_item_accepted = item_accepted
+
+                # Replace gray zone in resultado_keyword with remaining (non-accepted)
+                gray_zone_ids = {id(lic) for lic in gray_zone}
+                remaining_ids = {id(lic) for lic in item_remaining}
+                resultado_keyword = [
+                    lic for lic in resultado_keyword
+                    if id(lic) not in gray_zone_ids or id(lic) in remaining_ids
+                ]
+
+            except Exception as e:
+                logger.warning(f"D-01 item inspection failed, continuing with LLM: {e}")
+
+    # STORY-181 AC2: Camada 2A - Calibrated Term Density Decision Thresholds
+    # Using configurable thresholds from config.py (env-var adjustable)
 
     resultado_densidade: List[dict] = []
     resultado_llm_standard: List[dict] = []  # density 2-5%: LLM standard prompt
@@ -2632,6 +2689,14 @@ def aplicar_todos_filtros(
         resultado_keyword.extend(resultado_llm_zero)
         logger.info(
             f"GTM-FIX-028: Merged {len(resultado_llm_zero)} LLM zero-match bids "
+            f"into resultado_keyword (total now: {len(resultado_keyword)})"
+        )
+
+    # GTM-RESILIENCE-D01: Merge item-inspection accepted bids (AC5: highest weight)
+    if resultado_item_accepted:
+        resultado_keyword.extend(resultado_item_accepted)
+        logger.info(
+            f"D-01: Merged {len(resultado_item_accepted)} item-inspection bids "
             f"into resultado_keyword (total now: {len(resultado_keyword)})"
         )
 
