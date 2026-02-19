@@ -34,6 +34,10 @@ export interface EnhancedLoadingProgressProps {
   sseDisconnected?: boolean;
   /** GTM-FIX-035 AC3: Whether all UFs have completed fetching (from useUfProgress) */
   ufAllComplete?: boolean;
+  /** A-02 AC9: Search completed with degraded data (cache/partial) */
+  isDegraded?: boolean;
+  /** A-02 AC9: Human-readable freshness message from SSE degraded event */
+  degradedMessage?: string;
 }
 
 interface Stage {
@@ -114,6 +118,8 @@ export function EnhancedLoadingProgress({
   useRealProgress = false,
   sseDisconnected = false,
   ufAllComplete = false,
+  isDegraded = false,
+  degradedMessage,
 }: EnhancedLoadingProgressProps) {
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
@@ -240,12 +246,25 @@ export function EnhancedLoadingProgress({
   const isOvertime = elapsedTime > estimatedTime;
   const overtimeSeconds = elapsedTime - estimatedTime;
 
+  // A-02 AC9: Amber color scheme for degraded state
+  const progressBarColor = isDegraded
+    ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+    : 'bg-gradient-to-r from-brand-blue to-brand-blue-hover';
+  const accentTextColor = isDegraded ? 'text-amber-600 dark:text-amber-400' : 'text-brand-blue';
+
   return (
     <div
-      className="mt-6 sm:mt-8 p-4 sm:p-6 bg-surface-0 border border-strong rounded-card animate-fade-in-up"
+      className={`mt-6 sm:mt-8 p-4 sm:p-6 rounded-card animate-fade-in-up ${
+        isDegraded
+          ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40'
+          : 'bg-surface-0 border border-strong'
+      }`}
       role="status"
       aria-live="polite"
-      aria-label={`Buscando licitações, ${Math.floor(progressPercentage)}% completo`}
+      aria-label={isDegraded
+        ? `Resultados disponíveis com ressalvas`
+        : `Buscando licitações, ${Math.floor(progressPercentage)}% completo`}
+      data-testid={isDegraded ? 'degraded-progress' : 'loading-progress'}
     >
       {/* Header with spinner */}
       <div className="flex items-center justify-between mb-4">
@@ -281,7 +300,7 @@ export function EnhancedLoadingProgress({
         </div>
 
         <div className="text-right">
-          <p className="text-2xl font-bold font-data tabular-nums text-brand-blue">
+          <p className={`text-2xl font-bold font-data tabular-nums ${accentTextColor}`}>
             {Math.floor(progressPercentage)}%
           </p>
           <p className="text-xs text-ink-muted">
@@ -304,7 +323,7 @@ export function EnhancedLoadingProgress({
       <div className="mb-4">
         <div className="w-full bg-surface-2 rounded-full h-3 overflow-hidden">
           <div
-            className="bg-gradient-to-r from-brand-blue to-brand-blue-hover h-3 rounded-full transition-all duration-500 ease-out"
+            className={`${progressBarColor} h-3 rounded-full transition-all duration-500 ease-out`}
             style={{ width: `${progressPercentage}%` }}
             role="progressbar"
             aria-valuenow={progressPercentage}
@@ -329,8 +348,8 @@ export function EnhancedLoadingProgress({
               <div
                 className={`
                   w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300
-                  ${isCompleted ? 'bg-brand-blue text-white scale-100' : ''}
-                  ${isActive ? 'bg-brand-blue text-white scale-110 ring-2 ring-brand-blue ring-offset-2' : ''}
+                  ${isCompleted ? (isDegraded ? 'bg-amber-500 text-white scale-100' : 'bg-brand-blue text-white scale-100') : ''}
+                  ${isActive ? (isDegraded ? 'bg-amber-500 text-white scale-110 ring-2 ring-amber-500 ring-offset-2' : 'bg-brand-blue text-white scale-110 ring-2 ring-brand-blue ring-offset-2') : ''}
                   ${isPending ? 'bg-surface-2 text-ink-muted scale-90' : ''}
                 `}
                 aria-label={`Stage ${stage.id}: ${isCompleted ? 'Completed' : isActive ? 'In progress' : 'Pending'}`}
@@ -350,7 +369,7 @@ export function EnhancedLoadingProgress({
               <p
                 className={`
                   text-[10px] sm:text-xs text-center mt-1.5 transition-colors duration-300
-                  ${isActive ? 'text-brand-blue font-semibold' : 'text-ink-muted'}
+                  ${isActive ? (isDegraded ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-brand-blue font-semibold') : 'text-ink-muted'}
                 `}
               >
                 {stage.label}
@@ -360,8 +379,21 @@ export function EnhancedLoadingProgress({
         })}
       </div>
 
+      {/* A-02 AC9: Degraded state amber message */}
+      {isDegraded && (
+        <div
+          className="mb-3 p-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/50 rounded-lg text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2"
+          data-testid="degraded-message"
+        >
+          <svg className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {degradedMessage || 'Resultados disponíveis com ressalvas'}
+        </div>
+      )}
+
       {/* Overtime warning message */}
-      {isOvertime && (
+      {isOvertime && !isDegraded && (
         <div className="mb-3 p-3 bg-warning-subtle border border-warning/20 rounded-lg text-sm text-warning-dark">
           {getOvertimeMessage(overtimeSeconds, stateCount, estimatedTime, elapsedTime)}
         </div>

@@ -20,6 +20,13 @@ export interface SearchProgressEvent {
     total_raw?: number;
     total_filtered?: number;
     error?: string;
+    /** A-02 AC6: Degraded event metadata */
+    reason?: string;
+    cache_age_hours?: number;
+    cache_level?: string;
+    sources_failed?: string[];
+    sources_ok?: string[];
+    coverage_pct?: number;
   };
 }
 
@@ -45,6 +52,10 @@ interface UseSearchProgressReturn {
   sseAvailable: boolean;
   /** GTM-FIX-033 AC2: true when SSE disconnected after retry */
   sseDisconnected: boolean;
+  /** A-02 AC8: true when last terminal SSE event was "degraded" */
+  isDegraded: boolean;
+  /** A-02 AC10: metadata from degraded SSE event detail */
+  degradedDetail: SearchProgressEvent['detail'] | null;
 }
 
 export function useSearchProgress({
@@ -59,6 +70,8 @@ export function useSearchProgress({
   const [isConnected, setIsConnected] = useState(false);
   const [sseAvailable, setSseAvailable] = useState(true);
   const [sseDisconnected, setSseDisconnected] = useState(false);
+  const [isDegraded, setIsDegraded] = useState(false);
+  const [degradedDetail, setDegradedDetail] = useState<SearchProgressEvent['detail'] | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryAttemptRef = useRef(0);
   const onEventRef = useRef(onEvent);
@@ -83,6 +96,10 @@ export function useSearchProgress({
       return;
     }
 
+    // Reset degraded state for new search
+    setIsDegraded(false);
+    setDegradedDetail(null);
+
     // Build SSE URL through Next.js proxy
     // Auth token passed as query param since EventSource doesn't support custom headers
     let url = `/api/buscar-progress?search_id=${encodeURIComponent(searchId)}`;
@@ -104,7 +121,12 @@ export function useSearchProgress({
         setCurrentEvent(event);
         onEventRef.current?.(event);
 
-        if (event.stage === 'complete' || event.stage === 'error') {
+        // A-02 AC7: "degraded" is terminal (close SSE) but NOT sseDisconnected
+        if (event.stage === 'degraded') {
+          setIsDegraded(true);
+          setDegradedDetail(event.detail || null);
+          cleanup();
+        } else if (event.stage === 'complete' || event.stage === 'error') {
           cleanup();
         }
       } catch (err) {
@@ -148,7 +170,13 @@ export function useSearchProgress({
                 const event: SearchProgressEvent = JSON.parse(e.data);
                 setCurrentEvent(event);
                 onEventRef.current?.(event);
-                if (event.stage === 'complete' || event.stage === 'error') cleanup();
+                if (event.stage === 'degraded') {
+                  setIsDegraded(true);
+                  setDegradedDetail(event.detail || null);
+                  cleanup();
+                } else if (event.stage === 'complete' || event.stage === 'error') {
+                  cleanup();
+                }
               } catch (err) {
                 console.warn('Failed to parse SSE event on retry:', err);
               }
@@ -186,5 +214,5 @@ export function useSearchProgress({
     };
   }, [searchId, enabled, authToken, cleanup]);
 
-  return { currentEvent, isConnected, sseAvailable, sseDisconnected };
+  return { currentEvent, isConnected, sseAvailable, sseDisconnected, isDegraded, degradedDetail };
 }

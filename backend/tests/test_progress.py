@@ -612,3 +612,88 @@ class TestEdgeCases:
         event = await tracker.queue.get()
         assert "São Paulo" in event.message
         assert event.detail["estado"] == "São Paulo"
+
+
+class TestEmitDegraded:
+    """Tests for emit_degraded() method - degraded state handling."""
+
+    @pytest.mark.asyncio
+    async def test_emit_degraded_sets_complete_and_stage(self, mock_redis):
+        """AC11: emit_degraded() sets stage=degraded, progress=100, _is_complete=True."""
+        tracker = ProgressTracker(search_id="test-degraded", uf_count=3, use_redis=False)
+
+        await tracker.emit_degraded(
+            reason="timeout",
+            detail={"cache_age_hours": 2.3}
+        )
+
+        # Check completion state
+        assert tracker._is_complete is True
+
+        # Check event
+        event = await tracker.queue.get()
+        assert event.stage == "degraded"
+        assert event.progress == 100
+        assert event.detail["reason"] == "timeout"
+        assert event.detail["cache_age_hours"] == 2.3
+
+    @pytest.mark.asyncio
+    async def test_emit_degraded_message_with_cache_age(self, mock_redis):
+        """Test degraded message contains cache age when provided."""
+        tracker = ProgressTracker(search_id="test-cache-age", uf_count=2, use_redis=False)
+
+        await tracker.emit_degraded(
+            reason="timeout",
+            detail={"cache_age_hours": 2.3}
+        )
+
+        event = await tracker.queue.get()
+        assert "2h atrás" in event.message.lower()
+
+    @pytest.mark.asyncio
+    async def test_emit_degraded_message_partial(self, mock_redis):
+        """Test degraded message shows partial coverage when reason=partial."""
+        tracker = ProgressTracker(search_id="test-partial", uf_count=5, use_redis=False)
+
+        await tracker.emit_degraded(
+            reason="partial",
+            detail={"coverage_pct": 78}
+        )
+
+        event = await tracker.queue.get()
+        assert "parciais" in event.message.lower() or "parcial" in event.message.lower()
+        assert "78%" in event.message
+
+    @pytest.mark.asyncio
+    async def test_emit_degraded_publishes_to_redis(self):
+        """Test emit_degraded() publishes to Redis when use_redis=True."""
+        mock_redis_client = AsyncMock()
+        mock_redis_client.publish = AsyncMock()
+
+        with patch("progress.get_redis_pool", new_callable=AsyncMock) as mock_pool:
+            mock_pool.return_value = mock_redis_client
+
+            tracker = ProgressTracker(
+                search_id="test-degraded-redis", uf_count=3, use_redis=True
+            )
+
+            await tracker.emit_degraded(
+                reason="timeout",
+                detail={"cache_age_hours": 1.5}
+            )
+
+            # Check local queue
+            assert tracker.queue.qsize() == 1
+
+            # Check Redis publish was called
+            mock_redis_client.publish.assert_called_once()
+            call_args = mock_redis_client.publish.call_args
+            channel = call_args[0][0]
+            event_json = call_args[0][1]
+
+            assert channel == "bidiq:progress:test-degraded-redis:events"
+            event_data = json.loads(event_json)
+            assert event_data["stage"] == "degraded"
+            assert event_data["progress"] == 100
+            assert event_data["detail"]["reason"] == "timeout"
+            assert event_data["detail"]["cache_age_hours"] == 1.5

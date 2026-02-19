@@ -22,6 +22,13 @@ interface DegradationBannerProps {
   onRetry?: () => void;
   /** Whether a search is currently in progress */
   loading?: boolean;
+  /** A-02 AC10: SSE degraded event metadata */
+  sseDegradedDetail?: {
+    coverage_pct?: number;
+    sources_failed?: string[];
+    cache_age_hours?: number;
+    cache_level?: string;
+  };
 }
 
 /** Human-readable labels for source status */
@@ -62,6 +69,7 @@ export function DegradationBanner({
   showRetry = false,
   onRetry,
   loading = false,
+  sseDegradedDetail,
 }: DegradationBannerProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -128,6 +136,37 @@ export function DegradationBanner({
           {/* Optional detail text */}
           {detail && (
             <p className={`text-sm mt-1 ${detailColor}`}>{detail}</p>
+          )}
+
+          {/* A-02 AC10: SSE degraded event metadata badges */}
+          {sseDegradedDetail && (
+            <div className="flex flex-wrap gap-2 mt-2" data-testid="degraded-metadata">
+              {sseDegradedDetail.coverage_pct !== undefined && (
+                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                  isWarning ? 'bg-yellow-200 dark:bg-yellow-800/40 text-yellow-800 dark:text-yellow-200' : 'bg-red-200 dark:bg-red-800/40 text-red-800 dark:text-red-200'
+                }`}>
+                  Cobertura: {sseDegradedDetail.coverage_pct}%
+                </span>
+              )}
+              {sseDegradedDetail.cache_age_hours !== undefined && (
+                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                  isWarning ? 'bg-yellow-200 dark:bg-yellow-800/40 text-yellow-800 dark:text-yellow-200' : 'bg-red-200 dark:bg-red-800/40 text-red-800 dark:text-red-200'
+                }`}>
+                  Dados de {sseDegradedDetail.cache_age_hours < 1
+                    ? `${Math.round(sseDegradedDetail.cache_age_hours * 60)}min atrás`
+                    : `${sseDegradedDetail.cache_age_hours.toFixed(0)}h atrás`}
+                </span>
+              )}
+              {sseDegradedDetail.sources_failed && sseDegradedDetail.sources_failed.length > 0 && (
+                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                  isWarning ? 'bg-yellow-200 dark:bg-yellow-800/40 text-yellow-800 dark:text-yellow-200' : 'bg-red-200 dark:bg-red-800/40 text-red-800 dark:text-red-200'
+                }`}>
+                  {sseDegradedDetail.sources_failed.length === 1
+                    ? `${sourceDisplayName(sseDegradedDetail.sources_failed[0])} indisponível`
+                    : `${sseDegradedDetail.sources_failed.length} fontes indisponíveis`}
+                </span>
+              )}
+            </div>
           )}
 
           {/* Collapsible data source details (AC21) */}

@@ -289,6 +289,41 @@ def _build_cache_params(request) -> dict:
     }
 
 
+def _build_degraded_detail(ctx: "SearchContext") -> dict:
+    """Build SSE degraded event detail dict from SearchContext (A-02 AC6)."""
+    detail: dict = {}
+    # Cache freshness
+    if ctx.cached_at:
+        try:
+            from datetime import datetime, timezone
+            cached_dt = datetime.fromisoformat(ctx.cached_at.replace("Z", "+00:00"))
+            age_hours = (datetime.now(timezone.utc) - cached_dt).total_seconds() / 3600
+            detail["cache_age_hours"] = round(age_hours, 1)
+        except (ValueError, TypeError):
+            pass
+    if ctx.cache_level:
+        detail["cache_level"] = ctx.cache_level
+
+    # Source failure info
+    sources_failed = []
+    sources_ok = []
+    if ctx.data_sources:
+        for ds in ctx.data_sources:
+            if ds.status in ("error", "timeout"):
+                sources_failed.append(ds.source)
+            elif ds.status == "ok":
+                sources_ok.append(ds.source)
+    detail["sources_failed"] = sources_failed
+    detail["sources_ok"] = sources_ok
+
+    # Coverage
+    total_ufs = len(ctx.request.ufs) if ctx.request else 0
+    succeeded = len(ctx.succeeded_ufs) if ctx.succeeded_ufs else 0
+    detail["coverage_pct"] = int((succeeded / total_ufs * 100) if total_ufs > 0 else 0)
+
+    return detail
+
+
 # ============================================================================
 # SearchPipeline
 # ============================================================================
@@ -854,10 +889,8 @@ class SearchPipeline:
         except asyncio.TimeoutError:
             # GTM-RESILIENCE-A01 AC1-AC3: Try cache before returning 504
             logger.error(f"Multi-source fetch timed out after {fetch_timeout}s")
-            if ctx.tracker:
-                await ctx.tracker.emit_error("Busca expirou por tempo")
-                from progress import remove_tracker
-                await remove_tracker(ctx.request.search_id)
+            # A-02 AC3: Do NOT emit_error here — let wrapper decide terminal SSE event
+            # based on whether cache is found (degraded) or not (error/504)
 
             # A-03 AC5: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
@@ -894,7 +927,11 @@ class SearchPipeline:
                 ctx.data_sources = []
                 ctx.source_stats_data = []
             else:
-                # AC3: No cache — raise 504 with informative body
+                # AC3: No cache — emit error and raise 504
+                if ctx.tracker:
+                    await ctx.tracker.emit_error("Busca expirou por tempo")
+                    from progress import remove_tracker
+                    await remove_tracker(ctx.request.search_id)
                 raise HTTPException(
                     status_code=504,
                     detail=(
@@ -1095,10 +1132,7 @@ class SearchPipeline:
         except asyncio.TimeoutError:
             # GTM-RESILIENCE-A01 AC1-AC3: Try cache before returning 504 (PNCP-only path)
             logger.error(f"PNCP fetch timed out after {fetch_timeout}s for {len(request.ufs)} UFs")
-            if ctx.tracker:
-                await ctx.tracker.emit_error("Busca expirou por tempo")
-                from progress import remove_tracker
-                await remove_tracker(ctx.request.search_id)
+            # A-02 AC3: Do NOT emit_error here — let wrapper decide terminal SSE event
 
             # A-03 AC5: Unified cache cascade (L2 → L1 → L3)
             stale_cache = None
@@ -1134,6 +1168,11 @@ class SearchPipeline:
                     DataSourceStatus(source="PNCP", status="timeout", records=0)
                 ]
             else:
+                # No cache — emit error and raise 504
+                if ctx.tracker:
+                    await ctx.tracker.emit_error("Busca expirou por tempo")
+                    from progress import remove_tracker
+                    await remove_tracker(ctx.request.search_id)
                 raise HTTPException(
                     status_code=504,
                     detail=(
@@ -1308,8 +1347,17 @@ class SearchPipeline:
         # Early return path: no results passed filters
         if not ctx.licitacoes_filtradas:
             logger.info("No bids passed filters — skipping LLM and Excel generation")
+            # A-02 AC3-AC5: Emit degraded or complete based on response_state
+            # (the wrapper in routes/search.py handles the main terminal event,
+            #  but early return bypasses it, so we emit here)
             if ctx.tracker:
-                await ctx.tracker.emit_complete()
+                if ctx.response_state in ("cached", "degraded"):
+                    await ctx.tracker.emit_degraded(
+                        reason="timeout" if "expirou" in (ctx.degradation_reason or "") else "source_failure",
+                        detail=_build_degraded_detail(ctx),
+                    )
+                else:
+                    await ctx.tracker.emit_complete()
                 from progress import remove_tracker
                 await remove_tracker(ctx.request.search_id)
 

@@ -82,6 +82,10 @@ export interface UseSearchReturn {
   sseAvailable: boolean;
   /** GTM-FIX-033 AC2: true when SSE disconnected after retry */
   sseDisconnected: boolean;
+  /** A-02 AC8: true when search completed with degraded data */
+  isDegraded: boolean;
+  /** A-02 AC10: metadata from degraded SSE event */
+  degradedDetail: SearchProgressEvent['detail'] | null;
   downloadLoading: boolean;
   downloadError: string | null;
   searchButtonRef: React.RefObject<HTMLButtonElement>;
@@ -139,7 +143,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   const lastSearchParamsRef = useRef<SearchFiltersSnapshot | null>(null);
 
   // SSE hook — GTM-FIX-033 AC2: sseDisconnected for resilience
-  const { currentEvent: sseEvent, sseAvailable, sseDisconnected } = useSearchProgress({
+  const { currentEvent: sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail } = useSearchProgress({
     searchId,
     enabled: loading && !!searchId,
     authToken: session?.access_token,
@@ -539,7 +543,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   return {
     loading, loadingStep, statesProcessed, error, quotaError,
     result, setResult, rawCount,
-    searchId, useRealProgress, sseEvent, sseAvailable, sseDisconnected,
+    searchId, useRealProgress, sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail,
     downloadLoading, downloadError,
     searchButtonRef: searchButtonRef as React.RefObject<HTMLButtonElement>,
     showSaveDialog, setShowSaveDialog,

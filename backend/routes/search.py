@@ -101,7 +101,7 @@ async def buscar_progress_stream(
                             event_data = _json.loads(message["data"])
                             yield f"data: {_json.dumps(event_data)}\n\n"
 
-                            if event_data.get("stage") in ("complete", "error"):
+                            if event_data.get("stage") in ("complete", "degraded", "error"):
                                 break
 
                     except _asyncio.TimeoutError:
@@ -123,7 +123,7 @@ async def buscar_progress_stream(
                     event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
                     yield f"data: {_json.dumps(event.to_dict())}\n\n"
 
-                    if event.stage in ("complete", "error"):
+                    if event.stage in ("complete", "degraded", "error"):
                         break
 
                 except _asyncio.TimeoutError:
@@ -192,9 +192,23 @@ async def buscar_licitacoes(
     try:
         response = await pipeline.run(ctx)
 
-        # SSE: Search complete
+        # SSE: Emit terminal event based on response_state (A-02 AC3-AC5)
         if tracker:
-            await tracker.emit_complete()
+            if ctx.response_state in ("cached", "degraded") or (ctx.is_partial and ctx.response_state == "live"):
+                from search_pipeline import _build_degraded_detail
+                if ctx.response_state == "cached":
+                    reason = "timeout" if "expirou" in (ctx.degradation_reason or "") else "source_failure"
+                elif ctx.is_partial and ctx.response_state == "live":
+                    reason = "partial"
+                else:
+                    reason = "source_failure"
+                await tracker.emit_degraded(reason, _build_degraded_detail(ctx))
+            elif ctx.response_state == "empty_failure":
+                await tracker.emit_error(
+                    ctx.degradation_guidance or "Fontes temporariamente indisponíveis"
+                )
+            else:
+                await tracker.emit_complete()
             await remove_tracker(request.search_id)
 
         return response

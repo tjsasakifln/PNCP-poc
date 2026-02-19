@@ -33,6 +33,10 @@ export interface SearchResultsProps {
   sseAvailable: boolean;
   /** GTM-FIX-033 AC3: SSE disconnected flag */
   sseDisconnected?: boolean;
+  /** A-02 AC8: search completed with degraded data */
+  isDegraded?: boolean;
+  /** A-02 AC10: metadata from SSE degraded event */
+  degradedDetail?: SearchProgressEvent['detail'] | null;
   onStageChange: (stage: number) => void;
 
   // Error state
@@ -99,7 +103,7 @@ export interface SearchResultsProps {
 
 export default function SearchResults({
   loading, loadingStep, estimatedTime, stateCount, statesProcessed,
-  onCancel, sseEvent, useRealProgress, sseAvailable, sseDisconnected, onStageChange,
+  onCancel, sseEvent, useRealProgress, sseAvailable, sseDisconnected, isDegraded, degradedDetail, onStageChange,
   error, quotaError,
   result, rawCount,
   ufsSelecionadas, sectorName,
@@ -197,6 +201,8 @@ export default function SearchResults({
               sseDisconnected={sseDisconnected}
               onStageChange={onStageChange}
               ufAllComplete={ufAllComplete}
+              isDegraded={isDegraded}
+              degradedMessage={sseEvent?.stage === 'degraded' ? sseEvent.message : undefined}
             />
           </div>
           <LoadingResultsSkeleton count={1} />

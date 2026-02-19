@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProgressEvent:
     """A single progress update event."""
-    stage: str           # "connecting", "fetching", "filtering", "llm", "excel", "complete", "error"
+    stage: str           # "connecting", "fetching", "filtering", "llm", "excel", "complete", "degraded", "error"
     progress: int        # 0-100 (-1 for error)
     message: str         # Human-readable status message
     detail: Dict[str, Any] = field(default_factory=dict)
@@ -139,6 +139,43 @@ class ProgressTracker:
             total_batches=total_batches,
             ufs_in_batch=ufs_in_batch,
         )
+
+    async def emit_degraded(self, reason: str, detail: Optional[Dict[str, Any]] = None) -> None:
+        """Signal search completed with degraded data (cache/partial).
+
+        GTM-RESILIENCE-A02 AC1-AC2: Third terminal state between complete and error.
+        Emits stage="degraded" with metadata about cache freshness and coverage.
+        """
+        self._is_complete = True
+        merged_detail = {"reason": reason}
+        if detail:
+            merged_detail.update(detail)
+
+        # Build human-readable message from metadata
+        cache_age = merged_detail.get("cache_age_hours")
+        if cache_age is not None:
+            if cache_age < 1:
+                age_text = f"{int(cache_age * 60)}min atrás"
+            else:
+                age_text = f"{cache_age:.0f}h atrás"
+            message = f"Resultados disponíveis (dados de {age_text})"
+        elif reason == "partial":
+            coverage = merged_detail.get("coverage_pct", 0)
+            message = f"Resultados parciais disponíveis ({coverage}% de cobertura)"
+        else:
+            message = "Resultados disponíveis com ressalvas"
+
+        event = ProgressEvent(
+            stage="degraded",
+            progress=100,
+            message=message,
+            detail=merged_detail,
+        )
+        await self.queue.put(event)
+
+        # Also publish to Redis if enabled
+        if self._use_redis:
+            await self._publish_to_redis(event)
 
     async def emit_complete(self) -> None:
         """Signal search completion."""
