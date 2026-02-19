@@ -274,13 +274,14 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* STORY-257B AC10: All sources down — friendly fallback (total_raw=0, total_filtrado=0, is_partial=true, no cache) */}
-      {result && result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && !result.cached && (
+      {/* GTM-RESILIENCE-A01 AC7 + STORY-257B AC10: All sources down — friendly fallback */}
+      {result && (result.response_state === "empty_failure" || (result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && !result.cached)) && (
         <SourcesUnavailable
           onRetry={onSearch}
           onLoadLastSearch={onLoadLastSearch || (() => {})}
           hasLastSearch={hasLastSearch}
           retrying={loading}
+          degradationGuidance={result.degradation_guidance}
         />
       )}
 

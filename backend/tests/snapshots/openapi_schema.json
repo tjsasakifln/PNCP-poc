@@ -652,6 +652,18 @@
             "description": "Detailed status breakdown of each data source (None for backward compatibility)",
             "title": "Data Sources"
           },
+          "degradation_guidance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GTM-RESILIENCE-A01: User-facing guidance when response_state is 'empty_failure' or 'degraded'",
+            "title": "Degradation Guidance"
+          },
           "degradation_reason": {
             "anyOf": [
               {
@@ -774,6 +786,18 @@
             "minimum": 0.0,
             "title": "Quota Used",
             "type": "integer"
+          },
+          "response_state": {
+            "default": "live",
+            "description": "Semantic state of the response: 'live' (fresh data), 'cached' (stale cache served), 'degraded' (partial data), 'empty_failure' (all sources failed, no cache)",
+            "enum": [
+              "live",
+              "cached",
+              "degraded",
+              "empty_failure"
+            ],
+            "title": "Response State",
+            "type": "string"
           },
           "resumo": {
             "$ref": "#/components/schemas/ResumoEstrategico",
@@ -1824,9 +1848,7 @@
           "sources": {
             "anyOf": [
               {
-                "additionalProperties": {
-                  "type": "string"
-                },
+                "additionalProperties": true,
                 "type": "object"
               },
               {

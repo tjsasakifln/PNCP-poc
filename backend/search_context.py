@@ -60,6 +60,9 @@ class SearchContext:
     cached_sources: Optional[list] = None  # Source codes in cached data
     cache_status: Optional[str] = None  # UX-303: "fresh" or "stale"
     cache_level: Optional[str] = None  # UX-303: "supabase", "redis", "local"
+    # GTM-RESILIENCE-A01: Semantic response state
+    response_state: str = "live"  # "live" | "cached" | "degraded" | "empty_failure"
+    degradation_guidance: Optional[str] = None
 
     # === Stage 4: FilterResults outputs ===
     licitacoes_filtradas: list = field(default_factory=list)

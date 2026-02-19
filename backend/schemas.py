@@ -951,6 +951,16 @@ class BuscaResponse(BaseModel):
         default=None,
         description="UX-303 AC2: Which cache level served the data — 'supabase', 'redis', or 'local'"
     )
+    # GTM-RESILIENCE-A01: Semantic response state
+    response_state: Literal["live", "cached", "degraded", "empty_failure"] = Field(
+        default="live",
+        description="Semantic state of the response: 'live' (fresh data), 'cached' (stale cache served), "
+                    "'degraded' (partial data), 'empty_failure' (all sources failed, no cache)"
+    )
+    degradation_guidance: Optional[str] = Field(
+        default=None,
+        description="GTM-RESILIENCE-A01: User-facing guidance when response_state is 'empty_failure' or 'degraded'"
+    )
     hidden_by_min_match: Optional[int] = Field(
         default=None,
         description="Number of bids that matched at least 1 term but were below the minimum match floor"

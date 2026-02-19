@@ -15,6 +15,8 @@ interface SourcesUnavailableProps {
   hasLastSearch: boolean;
   /** Whether a retry is currently in progress */
   retrying: boolean;
+  /** GTM-RESILIENCE-A01 AC7: Custom guidance message from backend */
+  degradationGuidance?: string;
 }
 
 export function SourcesUnavailable({
@@ -22,6 +24,7 @@ export function SourcesUnavailable({
   onLoadLastSearch,
   hasLastSearch,
   retrying,
+  degradationGuidance,
 }: SourcesUnavailableProps) {
   const [cooldown, setCooldown] = useState(30);
 
@@ -61,16 +64,14 @@ export function SourcesUnavailable({
         />
       </svg>
 
-      {/* Title */}
+      {/* Title — GTM-RESILIENCE-A01 AC7 */}
       <h2 className="text-xl sm:text-2xl font-display font-semibold text-ink text-center mb-3">
-        Nossas fontes de dados governamentais estão temporariamente
-        indisponíveis
+        Fontes temporariamente indisponíveis
       </h2>
 
       {/* Subtitle */}
       <p className="text-base text-ink-secondary text-center max-w-md mb-8">
-        Isso geralmente se resolve em poucos minutos. Seus resultados anteriores
-        continuam acessíveis.
+        {degradationGuidance || "Isso geralmente se resolve em poucos minutos. Seus resultados anteriores continuam acessíveis."}
       </p>
 
       {/* Action buttons */}

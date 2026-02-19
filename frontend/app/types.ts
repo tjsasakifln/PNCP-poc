@@ -112,6 +112,10 @@ export interface BuscaResult {
   cache_status?: "fresh" | "stale";
   /** UX-303 AC2: Which cache level served the data (supabase/redis/local) */
   cache_level?: string;
+  /** GTM-RESILIENCE-A01 AC4: Semantic response state */
+  response_state?: "live" | "cached" | "degraded" | "empty_failure";
+  /** GTM-RESILIENCE-A01 AC5: User-facing guidance for degraded/failed states */
+  degradation_guidance?: string;
   /** STORY-257B AC10: List of UF codes that failed during search */
   failed_ufs?: string[];
   /** GTM-FIX-004: True when at least one UF hit the max_pages limit */

@@ -760,6 +760,7 @@ class SearchPipeline:
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
                 ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
                 ctx.is_partial = True
+                ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = str(e)
                 ctx.data_sources = [
                     DataSourceStatus(
@@ -784,6 +785,11 @@ class SearchPipeline:
                 logger.warning("No stale cache available — returning empty results")
                 ctx.licitacoes_raw = []
                 ctx.is_partial = True
+                ctx.response_state = "empty_failure"  # GTM-RESILIENCE-A01 AC5
+                ctx.degradation_guidance = (
+                    "Fontes de dados governamentais estão temporariamente indisponíveis. "
+                    "Tente novamente em alguns minutos ou reduza o número de estados."
+                )
                 ctx.degradation_reason = str(e)
                 ctx.data_sources = [
                     DataSourceStatus(
@@ -804,18 +810,80 @@ class SearchPipeline:
                     for src, err in e.source_errors.items()
                 ]
         except asyncio.TimeoutError:
+            # GTM-RESILIENCE-A01 AC1-AC3: Try cache before returning 504
             logger.error(f"Multi-source fetch timed out after {fetch_timeout}s")
             if ctx.tracker:
                 await ctx.tracker.emit_error("Busca expirou por tempo")
                 from progress import remove_tracker
                 await remove_tracker(ctx.request.search_id)
-            raise HTTPException(
-                status_code=504,
-                detail=(
-                    f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos. "
-                    f"Tente com menos estados ou um período menor."
-                ),
-            )
+
+            stale_cache = None
+            cache_level_used = None
+            if ctx.user and ctx.user.get("id"):
+                try:
+                    stale_cache = await _supabase_get_cache(
+                        user_id=ctx.user["id"],
+                        params={
+                            "setor_id": request.setor_id,
+                            "ufs": request.ufs,
+                            "status": request.status.value if request.status else None,
+                            "modalidades": request.modalidades,
+                            "modo_busca": request.modo_busca,
+                        },
+                    )
+                    if stale_cache:
+                        cache_level_used = "supabase"
+                except Exception as cache_err:
+                    logger.warning(f"Cache fallback (supabase) failed after timeout: {cache_err}")
+
+                # AC1: Try in-memory cache if Supabase failed
+                if not stale_cache:
+                    try:
+                        cache_key = _compute_cache_key(request)
+                        mem_data = _read_cache(cache_key)
+                        if mem_data and mem_data.get("results"):
+                            stale_cache = {
+                                "results": mem_data["results"],
+                                "cached_at": mem_data.get("fetched_at"),
+                                "cache_age_hours": 0,
+                                "cached_sources": mem_data.get("sources_json", ["PNCP"]),
+                                "cache_status": "stale",
+                            }
+                            cache_level_used = "memory"
+                    except Exception as mem_err:
+                        logger.warning(f"Cache fallback (memory) failed after timeout: {mem_err}")
+
+            if stale_cache:
+                # AC2: Serve cached data with HTTP 200
+                cache_age = stale_cache.get("cache_age_hours", 0)
+                results_count = len(stale_cache.get("results", []))
+                # AC8: Structured log
+                logger.info(
+                    '{"event": "timeout_cache_fallback", "cache_level": "%s", '
+                    '"cache_age_hours": %.1f, "results_count": %d}',
+                    cache_level_used, cache_age, results_count,
+                )
+                ctx.licitacoes_raw = stale_cache["results"]
+                ctx.cached = True
+                ctx.cached_at = stale_cache.get("cached_at")
+                ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else "stale"
+                ctx.cache_level = cache_level_used or "supabase"
+                ctx.is_partial = True
+                ctx.response_state = "cached"  # AC6
+                ctx.degradation_reason = f"Busca expirou após {fetch_timeout}s. Resultados de cache servidos."
+                ctx.data_sources = []
+                ctx.source_stats_data = []
+            else:
+                # AC3: No cache — raise 504 with informative body
+                raise HTTPException(
+                    status_code=504,
+                    detail=(
+                        f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos "
+                        f"e não há resultados em cache disponíveis. "
+                        f"Tente com menos estados ou um período menor."
+                    ),
+                )
         except Exception as e:
             # GTM-FIX-025 T2: Generic catch — no consolidation exception should
             # result in HTTP 500. Log, send to Sentry, try cache, degrade gracefully.
@@ -854,6 +922,7 @@ class SearchPipeline:
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
                 ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
                 ctx.is_partial = True
+                ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
                 ctx.data_sources = []
                 ctx.source_stats_data = []
@@ -863,6 +932,11 @@ class SearchPipeline:
                 )
                 ctx.licitacoes_raw = []
                 ctx.is_partial = True
+                ctx.response_state = "empty_failure"  # GTM-RESILIENCE-A01 AC5
+                ctx.degradation_guidance = (
+                    "Fontes de dados governamentais estão temporariamente indisponíveis. "
+                    "Tente novamente em alguns minutos ou reduza o número de estados."
+                )
                 ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
                 ctx.data_sources = []
                 ctx.source_stats_data = []
@@ -984,6 +1058,7 @@ class SearchPipeline:
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
                 ctx.cache_level = stale_cache.get("cache_level", "supabase") if isinstance(stale_cache.get("cache_level"), str) else "supabase"
                 ctx.is_partial = True
+                ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = (
                     "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
                     "Mostrando resultados do cache."
@@ -994,6 +1069,11 @@ class SearchPipeline:
             else:
                 ctx.licitacoes_raw = []
                 ctx.is_partial = True
+                ctx.response_state = "empty_failure"  # GTM-RESILIENCE-A01 AC5
+                ctx.degradation_guidance = (
+                    "Fontes de dados governamentais estão temporariamente indisponíveis. "
+                    "Tente novamente em alguns minutos ou reduza o número de estados."
+                )
                 ctx.degradation_reason = (
                     "PNCP ficou indisponivel durante a busca (circuit breaker ativado). "
                     "Tente novamente em alguns minutos."
@@ -1002,18 +1082,75 @@ class SearchPipeline:
                     DataSourceStatus(source="PNCP", status="error", records=0)
                 ]
         except asyncio.TimeoutError:
+            # GTM-RESILIENCE-A01 AC1-AC3: Try cache before returning 504 (PNCP-only path)
             logger.error(f"PNCP fetch timed out after {fetch_timeout}s for {len(request.ufs)} UFs")
             if ctx.tracker:
                 await ctx.tracker.emit_error("Busca expirou por tempo")
                 from progress import remove_tracker
                 await remove_tracker(ctx.request.search_id)
-            raise HTTPException(
-                status_code=504,
-                detail=(
-                    f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos. "
-                    f"Tente com menos estados ou um periodo menor."
-                ),
-            )
+
+            stale_cache = None
+            cache_level_used = None
+            if ctx.user and ctx.user.get("id"):
+                try:
+                    stale_cache = await _supabase_get_cache(
+                        user_id=ctx.user["id"],
+                        params={
+                            "setor_id": request.setor_id,
+                            "ufs": request.ufs,
+                            "status": request.status.value if request.status else None,
+                            "modalidades": request.modalidades,
+                            "modo_busca": request.modo_busca,
+                        },
+                    )
+                    if stale_cache:
+                        cache_level_used = "supabase"
+                except Exception as cache_err:
+                    logger.warning(f"Cache fallback (supabase) failed after PNCP timeout: {cache_err}")
+
+                if not stale_cache:
+                    try:
+                        from search_cache import InMemoryCache
+                        mem_result = InMemoryCache.get(
+                            user_id=ctx.user["id"],
+                            setor_id=request.setor_id,
+                            ufs=request.ufs,
+                        )
+                        if mem_result:
+                            stale_cache = mem_result
+                            cache_level_used = "memory"
+                    except Exception as mem_err:
+                        logger.warning(f"Cache fallback (memory) failed after PNCP timeout: {mem_err}")
+
+            if stale_cache:
+                cache_age = stale_cache.get("cache_age_hours", 0)
+                results_count = len(stale_cache.get("results", []))
+                logger.info(
+                    '{"event": "timeout_cache_fallback", "cache_level": "%s", '
+                    '"cache_age_hours": %.1f, "results_count": %d}',
+                    cache_level_used, cache_age, results_count,
+                )
+                ctx.licitacoes_raw = stale_cache["results"]
+                ctx.cached = True
+                ctx.cached_at = stale_cache.get("cached_at")
+                ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
+                ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else "stale"
+                ctx.cache_level = cache_level_used or "supabase"
+                ctx.is_partial = True
+                ctx.response_state = "cached"
+                ctx.degradation_reason = f"PNCP expirou após {fetch_timeout}s. Resultados de cache servidos."
+                ctx.data_sources = [
+                    DataSourceStatus(source="PNCP", status="timeout", records=0)
+                ]
+            else:
+                raise HTTPException(
+                    status_code=504,
+                    detail=(
+                        f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos "
+                        f"e não há resultados em cache disponíveis. "
+                        f"Tente com menos estados ou um período menor."
+                    ),
+                )
 
     # ------------------------------------------------------------------
     # Stage 4: FilterResults
@@ -1233,6 +1370,8 @@ class SearchPipeline:
                 is_truncated=ctx.is_truncated,
                 truncated_ufs=ctx.truncated_ufs,
                 truncation_details=ctx.truncation_details,
+                response_state=ctx.response_state,
+                degradation_guidance=ctx.degradation_guidance,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1350,6 +1489,8 @@ class SearchPipeline:
             is_truncated=ctx.is_truncated,
             truncated_ufs=ctx.truncated_ufs,
             truncation_details=ctx.truncation_details,
+            response_state=ctx.response_state,
+            degradation_guidance=ctx.degradation_guidance,
         )
 
         logger.info(
