@@ -1,5 +1,13 @@
 """Resilient HTTP client for PNCP API."""
 
+# TIMEOUT CHAIN (strict decreasing, validated at startup):
+# FE Proxy(480s) > Pipeline(360s) > Consolidation(300s) > PerSource(180s)
+#   > PerUF(90s) > PerModality(60s) > HTTP(30s)
+# Invariants:
+#   - Each level must be strictly greater than the next
+#   - PerUF - PerModality >= 30s (margin for parallel modality completion)
+#   - PerSource > 2 * PerUF (margin for multi-UF batches)
+
 import asyncio
 import json
 import logging
@@ -50,9 +58,12 @@ PCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
     os.environ.get("PCP_CIRCUIT_BREAKER_COOLDOWN", "120")
 )
 
-# Per-modality timeout (STORY-252 AC6) — configurable
+# Per-modality timeout (STORY-252 AC6, GTM-RESILIENCE-F03 AC1) — configurable
+# PerModality=60s: max ~120 pages (50 items/page) at ~0.5s/req.
+# Sufficient for 6000 items per modality. Rarely exceeded.
+# Hierarchy: PerModality(60s) < PerUF(90s) — margin 30s.
 PNCP_TIMEOUT_PER_MODALITY: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "120")  # Raised from 15→120: tamanhoPagina=50 needs ~10x more pages
+    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "60")
 )
 
 # Modality retry on timeout (STORY-252 AC9)
@@ -80,6 +91,49 @@ USE_REDIS_CIRCUIT_BREAKER: bool = os.environ.get(
 ).lower() == "true"
 # B-06: Circuit breaker Redis key TTL — auto-expire safety net (AC12)
 CB_REDIS_TTL: int = int(os.environ.get("CB_REDIS_TTL", "300"))  # 5 minutes
+
+# ============================================================================
+# Startup Timeout Chain Validation (GTM-RESILIENCE-F03 AC7-AC12)
+# ============================================================================
+
+_SAFE_PER_MODALITY = 60.0
+_SAFE_PER_UF = 90.0
+
+
+def validate_timeout_chain() -> None:
+    """Validate timeout hierarchy at startup. Prevents misconfigurations.
+
+    If PerModality >= PerUF, logs critical and forces safe defaults.
+    If PerModality > 80% of PerUF, logs warning.
+    Never raises — always falls back to safe values on misconfiguration.
+    """
+    global PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF
+
+    if PNCP_TIMEOUT_PER_MODALITY >= PNCP_TIMEOUT_PER_UF:
+        logger.critical(
+            "TIMEOUT MISCONFIGURATION: PerModality(%.0fs) >= PerUF(%.0fs). "
+            "Modality timeout must be strictly less than UF timeout. "
+            "Falling back to safe defaults: PerModality=%.0fs, PerUF=%.0fs.",
+            PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF,
+            _SAFE_PER_MODALITY, _SAFE_PER_UF,
+        )
+        PNCP_TIMEOUT_PER_MODALITY = _SAFE_PER_MODALITY
+        PNCP_TIMEOUT_PER_UF = _SAFE_PER_UF
+        return
+
+    threshold_80 = PNCP_TIMEOUT_PER_UF * 0.8
+    if PNCP_TIMEOUT_PER_MODALITY > threshold_80:
+        recommended = PNCP_TIMEOUT_PER_UF * 0.67
+        logger.warning(
+            "TIMEOUT NEAR-INVERSION: PerModality(%.0fs) > 80%% of PerUF(%.0fs). "
+            "Recommend PerModality <= %.0fs for safe margin.",
+            PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF, recommended,
+        )
+
+
+# Run validation at import time (AC8)
+validate_timeout_chain()
+
 
 # UFs ordered by population for degraded priority (STORY-257A AC1)
 UFS_BY_POPULATION = ["SP", "RJ", "MG", "BA", "PR", "RS", "PE", "CE", "SC", "GO",

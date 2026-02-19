@@ -74,55 +74,55 @@ Enforce hierarquia estrita onde **PerModality < PerUF** com margem minima de 30s
 
 ### Track 1 --- Recalibracao de Timeouts (P0)
 
-- [ ] **AC1**: `PNCP_TIMEOUT_PER_MODALITY` default alterado de `"120"` para `"60"` em `pncp_client.py` L54
-- [ ] **AC2**: Hierarquia resultante e estritamente decrescente em todos os niveis:
+- [x] **AC1**: `PNCP_TIMEOUT_PER_MODALITY` default alterado de `"120"` para `"60"` em `pncp_client.py` L54
+- [x] **AC2**: Hierarquia resultante e estritamente decrescente em todos os niveis:
   ```
   FE(480s) > Pipeline(360s) > Consolidation(300s) > PerSource(180s) > PerUF(90s) > PerModality(60s) > HTTP(30s)
   ```
-- [ ] **AC3**: Margem entre PerUF e PerModality e >= 30s em modo normal (90 - 60 = 30s)
-- [ ] **AC4**: Em modo degradado: PerUF=120s, PerModality=60s --- margem de 60s (confortavel)
-- [ ] **AC5**: Comentario atualizado em `pncp_client.py` explicando calculo:
+- [x] **AC3**: Margem entre PerUF e PerModality e >= 30s em modo normal (90 - 60 = 30s)
+- [x] **AC4**: Em modo degradado: PerUF=120s, PerModality=60s --- margem de 60s (confortavel)
+- [x] **AC5**: Comentario atualizado em `pncp_client.py` explicando calculo:
   ```
   # PerModality=60s: max ~120 paginas (50 items/page) a ~0.5s/req.
   # Suficiente para 6000 items por modalidade. Raro exceder.
   # Hierarquia: PerModality(60s) < PerUF(90s) --- margem 30s.
   ```
-- [ ] **AC6**: Env var `PNCP_TIMEOUT_PER_MODALITY` continua funcional para override manual
+- [x] **AC6**: Env var `PNCP_TIMEOUT_PER_MODALITY` continua funcional para override manual
 
 ### Track 2 --- Validacao no Startup (P0)
 
-- [ ] **AC7**: Funcao `validate_timeout_chain()` criada em `pncp_client.py` (ou `config.py`)
-- [ ] **AC8**: `validate_timeout_chain()` chamada durante import do modulo `pncp_client` (module-level validation)
-- [ ] **AC9**: Se `PNCP_TIMEOUT_PER_MODALITY >= PNCP_TIMEOUT_PER_UF`, logar `logger.critical()` com mensagem:
+- [x] **AC7**: Funcao `validate_timeout_chain()` criada em `pncp_client.py` (ou `config.py`)
+- [x] **AC8**: `validate_timeout_chain()` chamada durante import do modulo `pncp_client` (module-level validation)
+- [x] **AC9**: Se `PNCP_TIMEOUT_PER_MODALITY >= PNCP_TIMEOUT_PER_UF`, logar `logger.critical()` com mensagem:
   ```
   "TIMEOUT MISCONFIGURATION: PerModality({X}s) >= PerUF({Y}s).
    Modality timeout must be strictly less than UF timeout.
    Falling back to safe defaults: PerModality=60s, PerUF=90s."
   ```
-- [ ] **AC10**: Apos log critico, forcar valores seguros: PerModality=60s, PerUF=90s (nao crashar o server)
-- [ ] **AC11**: Se `PNCP_TIMEOUT_PER_MODALITY > PNCP_TIMEOUT_PER_UF * 0.8` (near-inversion), logar `logger.warning()`:
+- [x] **AC10**: Apos log critico, forcar valores seguros: PerModality=60s, PerUF=90s (nao crashar o server)
+- [x] **AC11**: Se `PNCP_TIMEOUT_PER_MODALITY > PNCP_TIMEOUT_PER_UF * 0.8` (near-inversion), logar `logger.warning()`:
   ```
   "TIMEOUT NEAR-INVERSION: PerModality({X}s) > 80% of PerUF({Y}s).
    Recommend PerModality <= {Y*0.67:.0f}s for safe margin."
   ```
-- [ ] **AC12**: Validacao tambem verifica `PNCP_TIMEOUT_PER_UF > PNCP_TIMEOUT_PER_MODALITY * 0.5` (minimo 50% headroom) --- redundante com AC9 mas explicita a intencao
+- [x] **AC12**: Validacao tambem verifica `PNCP_TIMEOUT_PER_UF > PNCP_TIMEOUT_PER_MODALITY * 0.5` (minimo 50% headroom) --- redundante com AC9 mas explicita a intencao
 
 ### Track 3 --- Atualizacao de Testes (P0)
 
-- [ ] **AC13**: `test_timeout_chain.py::test_per_modality_fits_within_per_uf` atualizado:
+- [x] **AC13**: `test_timeout_chain.py::test_per_modality_fits_within_per_uf` atualizado:
   - **Antes**: `assert PNCP_TIMEOUT_PER_UF >= PNCP_TIMEOUT_PER_MODALITY * 0.5` (fraco)
   - **Depois**: `assert PNCP_TIMEOUT_PER_MODALITY < PNCP_TIMEOUT_PER_UF` (estrito)
-- [ ] **AC14**: Novo teste: `test_per_modality_default_60s` --- valida que default mudou para 60s
-- [ ] **AC15**: Novo teste: `test_per_modality_margin_30s` --- valida `PNCP_TIMEOUT_PER_UF - PNCP_TIMEOUT_PER_MODALITY >= 30`
-- [ ] **AC16**: Novo teste: `test_startup_validation_rejects_inversion` --- simula `PerModality=100, PerUF=90`, verifica log critico e fallback
-- [ ] **AC17**: Novo teste: `test_startup_validation_warns_near_inversion` --- simula `PerModality=80, PerUF=90`, verifica log warning
-- [ ] **AC18**: Novo teste: `test_startup_validation_passes_healthy` --- simula `PerModality=60, PerUF=90`, verifica nenhum warning
-- [ ] **AC19**: Testes existentes em `test_pncp_hardening.py` que patcheiam `PNCP_TIMEOUT_PER_MODALITY` atualizados para valores compativeis com nova validacao
-- [ ] **AC20**: Zero near-inversion warnings nos logs quando rodando com defaults (confirmar via caplog nos testes)
+- [x] **AC14**: Novo teste: `test_per_modality_default_60s` --- valida que default mudou para 60s
+- [x] **AC15**: Novo teste: `test_per_modality_margin_30s` --- valida `PNCP_TIMEOUT_PER_UF - PNCP_TIMEOUT_PER_MODALITY >= 30`
+- [x] **AC16**: Novo teste: `test_startup_validation_rejects_inversion` --- simula `PerModality=100, PerUF=90`, verifica log critico e fallback
+- [x] **AC17**: Novo teste: `test_startup_validation_warns_near_inversion` --- simula `PerModality=80, PerUF=90`, verifica log warning
+- [x] **AC18**: Novo teste: `test_startup_validation_passes_healthy` --- simula `PerModality=60, PerUF=90`, verifica nenhum warning
+- [x] **AC19**: Testes existentes em `test_pncp_hardening.py` que patcheiam `PNCP_TIMEOUT_PER_MODALITY` atualizados para valores compativeis com nova validacao
+- [x] **AC20**: Zero near-inversion warnings nos logs quando rodando com defaults (confirmar via caplog nos testes)
 
 ### Track 4 --- Documentacao e Env Vars (P1)
 
-- [ ] **AC21**: Cadeia completa documentada em comentario no topo de `pncp_client.py` (ou `config.py`):
+- [x] **AC21**: Cadeia completa documentada em comentario no topo de `pncp_client.py` (ou `config.py`):
   ```
   # TIMEOUT CHAIN (strict decreasing, validated at startup):
   # FE Proxy(480s) > Pipeline(360s) > Consolidation(300s) > PerSource(180s)
@@ -132,7 +132,7 @@ Enforce hierarquia estrita onde **PerModality < PerUF** com margem minima de 30s
   #   - PerUF - PerModality >= 30s (margin for parallel modality completion)
   #   - PerSource > 2 * PerUF (margin for multi-UF batches)
   ```
-- [ ] **AC22**: Env var `PNCP_TIMEOUT_PER_MODALITY` documentada em `.env.example` com default 60 e nota sobre hierarquia
+- [x] **AC22**: Env var `PNCP_TIMEOUT_PER_MODALITY` documentada em `.env.example` com default 60 e nota sobre hierarquia
 - [ ] **AC23**: Se Railway env vars existirem para `PNCP_TIMEOUT_PER_MODALITY`, atualizar para 60 (ou remover para usar default)
 
 ---
@@ -161,15 +161,15 @@ Enforce hierarquia estrita onde **PerModality < PerUF** com margem minima de 30s
 
 ## Definition of Done
 
-- [ ] `PNCP_TIMEOUT_PER_MODALITY` default e 60s
-- [ ] Hierarquia estrita: PerModality(60s) < PerUF(90s) confirmada por testes
-- [ ] Startup validation previne inversao e loga critico + fallback
-- [ ] Startup validation detecta near-inversion e loga warning
-- [ ] Zero warnings nos logs com configuracao default
-- [ ] 6 novos testes passando
-- [ ] Todos os testes existentes passam sem regressao (baseline: ~3400 pass)
-- [ ] Cadeia documentada em comentarios do codigo
-- [ ] Env var documentada em .env.example
+- [x] `PNCP_TIMEOUT_PER_MODALITY` default e 60s
+- [x] Hierarquia estrita: PerModality(60s) < PerUF(90s) confirmada por testes
+- [x] Startup validation previne inversao e loga critico + fallback
+- [x] Startup validation detecta near-inversion e loga warning
+- [x] Zero warnings nos logs com configuracao default
+- [x] 6 novos testes passando
+- [x] Todos os testes existentes passam sem regressao (baseline: 33 fail / 3774 pass)
+- [x] Cadeia documentada em comentarios do codigo
+- [x] Env var documentada em .env.example
 
 ---
 

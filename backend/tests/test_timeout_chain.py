@@ -67,17 +67,12 @@ class TestTimeoutChainInvariant:
         )
 
     def test_per_modality_fits_within_per_uf(self):
-        """AC4: Per-modality timeout (120s) should not exceed per-UF (90s) by too much.
-
-        Note: Per-modality > Per-UF is intentional (4 mods run in parallel within 1 UF).
-        But the UF timeout should give at least 1 modality a fair chance to complete.
-        """
+        """F03-AC13: PerModality must be strictly less than PerUF (hierarchy enforced)."""
         from pncp_client import PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF
 
-        # Per-UF should be at least 50% of per-modality to allow completion
-        assert PNCP_TIMEOUT_PER_UF >= PNCP_TIMEOUT_PER_MODALITY * 0.5, (
-            f"Per-UF ({PNCP_TIMEOUT_PER_UF}) should be >= 50% of per-modality "
-            f"({PNCP_TIMEOUT_PER_MODALITY}) to allow at least 1 modality to complete"
+        assert PNCP_TIMEOUT_PER_MODALITY < PNCP_TIMEOUT_PER_UF, (
+            f"PerModality ({PNCP_TIMEOUT_PER_MODALITY}s) must be strictly < "
+            f"PerUF ({PNCP_TIMEOUT_PER_UF}s) — hierarchy inversion!"
         )
 
 
@@ -295,4 +290,91 @@ class TestCalculationComment:
         )
         assert "margin" in src.lower(), (
             "Should mention safety margin in timeout calculation comment"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Test 9 — GTM-RESILIENCE-F03: PerModality recalibration & validation
+# ---------------------------------------------------------------------------
+
+class TestPerModalityRecalibration:
+    """GTM-RESILIENCE-F03 AC1-AC6, AC13-AC20: PerModality timeout hierarchy."""
+
+    def test_per_modality_default_60s(self):
+        """F03-AC14: Default PerModality is 60s."""
+        from pncp_client import PNCP_TIMEOUT_PER_MODALITY
+        assert PNCP_TIMEOUT_PER_MODALITY == 60.0
+
+    def test_per_modality_margin_30s(self):
+        """F03-AC15: Margin between PerUF and PerModality >= 30s."""
+        from pncp_client import PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF
+        margin = PNCP_TIMEOUT_PER_UF - PNCP_TIMEOUT_PER_MODALITY
+        assert margin >= 30, (
+            f"Margin ({margin}s) must be >= 30s. "
+            f"PerUF={PNCP_TIMEOUT_PER_UF}, PerModality={PNCP_TIMEOUT_PER_MODALITY}"
+        )
+
+    def test_startup_validation_rejects_inversion(self, caplog):
+        """F03-AC16: validate_timeout_chain() rejects PerModality >= PerUF with critical log."""
+        import logging
+
+        with caplog.at_level(logging.CRITICAL, logger="pncp_client"):
+            with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 100.0), \
+                 patch("pncp_client.PNCP_TIMEOUT_PER_UF", 90.0):
+                from pncp_client import validate_timeout_chain
+                validate_timeout_chain()
+
+        assert any("TIMEOUT MISCONFIGURATION" in r.message for r in caplog.records), (
+            "Expected CRITICAL log with 'TIMEOUT MISCONFIGURATION'"
+        )
+        # Verify fallback to safe defaults
+        import pncp_client
+        assert pncp_client.PNCP_TIMEOUT_PER_MODALITY == 60.0
+        assert pncp_client.PNCP_TIMEOUT_PER_UF == 90.0
+
+    def test_startup_validation_warns_near_inversion(self, caplog):
+        """F03-AC17: validate_timeout_chain() warns when PerModality > 80% of PerUF."""
+        import logging
+
+        with caplog.at_level(logging.WARNING, logger="pncp_client"):
+            with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 80.0), \
+                 patch("pncp_client.PNCP_TIMEOUT_PER_UF", 90.0):
+                from pncp_client import validate_timeout_chain
+                validate_timeout_chain()
+
+        assert any("TIMEOUT NEAR-INVERSION" in r.message for r in caplog.records), (
+            "Expected WARNING log with 'TIMEOUT NEAR-INVERSION'"
+        )
+
+    def test_startup_validation_passes_healthy(self, caplog):
+        """F03-AC18: No warnings with healthy defaults (60/90)."""
+        import logging
+
+        with caplog.at_level(logging.WARNING, logger="pncp_client"):
+            with patch("pncp_client.PNCP_TIMEOUT_PER_MODALITY", 60.0), \
+                 patch("pncp_client.PNCP_TIMEOUT_PER_UF", 90.0):
+                from pncp_client import validate_timeout_chain
+                validate_timeout_chain()
+
+        timeout_warnings = [
+            r for r in caplog.records
+            if "TIMEOUT" in r.message and r.levelno >= logging.WARNING
+        ]
+        assert len(timeout_warnings) == 0, (
+            f"Expected no timeout warnings with healthy config, got: "
+            f"{[r.message for r in timeout_warnings]}"
+        )
+
+    def test_no_near_inversion_with_defaults(self, caplog):
+        """F03-AC20: Zero near-inversion warnings with default config."""
+        import logging
+
+        with caplog.at_level(logging.WARNING, logger="pncp_client"):
+            from pncp_client import validate_timeout_chain
+            validate_timeout_chain()
+
+        near_inv = [r for r in caplog.records if "NEAR-INVERSION" in r.message]
+        assert len(near_inv) == 0, (
+            f"Default config should produce zero near-inversion warnings, got: "
+            f"{[r.message for r in near_inv]}"
         )

@@ -777,8 +777,8 @@ class TestEnvironmentConfiguration:
     """Test that module-level constants read from environment variables."""
 
     def test_default_per_modality_timeout(self):
-        """Default per-modality timeout is 15s."""
-        assert PNCP_TIMEOUT_PER_MODALITY == 15.0
+        """Default per-modality timeout is 60s (GTM-RESILIENCE-F03)."""
+        assert PNCP_TIMEOUT_PER_MODALITY == 60.0
 
     def test_default_modality_retry_backoff(self):
         """Default modality retry backoff is 3s."""
