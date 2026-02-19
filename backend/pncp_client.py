@@ -73,6 +73,13 @@ PNCP_TIMEOUT_PER_UF_DEGRADED: float = float(
 PNCP_BATCH_SIZE: int = int(os.environ.get("PNCP_BATCH_SIZE", "5"))
 PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "2.0"))
 
+# B-06: Redis-backed circuit breaker toggle (rollback: set to "false")
+USE_REDIS_CIRCUIT_BREAKER: bool = os.environ.get(
+    "USE_REDIS_CIRCUIT_BREAKER", "true"
+).lower() == "true"
+# B-06: Circuit breaker Redis key TTL — auto-expire safety net (AC12)
+CB_REDIS_TTL: int = int(os.environ.get("CB_REDIS_TTL", "300"))  # 5 minutes
+
 # UFs ordered by population for degraded priority (STORY-257A AC1)
 UFS_BY_POPULATION = ["SP", "RJ", "MG", "BA", "PR", "RS", "PE", "CE", "SC", "GO",
                       "PA", "MA", "AM", "ES", "PB", "RN", "MT", "AL", "PI", "DF",
@@ -187,13 +194,212 @@ class PNCPCircuitBreaker:
         self.degraded_until = None
 
 
+class RedisCircuitBreaker(PNCPCircuitBreaker):
+    """Circuit breaker with Redis-backed shared state (B-06).
+
+    Extends PNCPCircuitBreaker to share state across Gunicorn workers via Redis.
+    Falls back to per-worker local state when Redis is unavailable.
+
+    All public methods and properties remain backward-compatible with
+    PNCPCircuitBreaker — callers don't need any changes (AC11).
+
+    Redis keys (per source):
+        circuit_breaker:{name}:failures       → INT  (INCR atomic)
+        circuit_breaker:{name}:degraded_until → STRING (unix timestamp)
+    """
+
+    # Lua script for atomic record_failure (AC3)
+    # Keys: [1] failures, [2] degraded_until
+    # Args: [1] threshold, [2] cooldown, [3] now (timestamp), [4] key TTL
+    _FAILURE_SCRIPT = """
+local failures = redis.call('INCR', KEYS[1])
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[4]))
+if failures >= tonumber(ARGV[1]) then
+    local existing = redis.call('GET', KEYS[2])
+    if not existing then
+        local until_ts = tonumber(ARGV[3]) + tonumber(ARGV[2])
+        redis.call('SET', KEYS[2], tostring(until_ts))
+        redis.call('EXPIRE', KEYS[2], tonumber(ARGV[2]))
+        return {failures, 1}
+    end
+end
+return {failures, 0}
+"""
+
+    def __init__(
+        self,
+        name: str = "pncp",
+        threshold: int = PNCP_CIRCUIT_BREAKER_THRESHOLD,
+        cooldown_seconds: int = PNCP_CIRCUIT_BREAKER_COOLDOWN,
+    ):
+        super().__init__(name, threshold, cooldown_seconds)
+        self._key_failures = f"circuit_breaker:{name}:failures"
+        self._key_degraded = f"circuit_breaker:{name}:degraded_until"
+        self._ttl = CB_REDIS_TTL
+
+    async def _get_redis(self):
+        """Get Redis pool (delegates to redis_pool module caching)."""
+        from redis_pool import get_redis_pool
+        return await get_redis_pool()
+
+    async def record_failure(self) -> None:
+        """Record failure atomically via Redis Lua script (AC3).
+
+        Falls back to local state if Redis is unavailable.
+        """
+        redis = await self._get_redis()
+        if redis:
+            try:
+                result = await redis.eval(
+                    self._FAILURE_SCRIPT,
+                    2,
+                    self._key_failures,
+                    self._key_degraded,
+                    str(self.threshold),
+                    str(self.cooldown_seconds),
+                    str(time.time()),
+                    str(self._ttl),
+                )
+                # Sync local state for sync property access
+                self.consecutive_failures = int(result[0])
+                if int(result[1]) == 1:
+                    self.degraded_until = time.time() + self.cooldown_seconds
+                    logger.warning(
+                        f"Circuit breaker [{self.name}] TRIPPED after "
+                        f"{self.consecutive_failures} consecutive failures "
+                        f"— degraded for {self.cooldown_seconds}s"
+                    )
+                return
+            except Exception as e:
+                logger.debug(f"Redis CB record_failure fallback: {e}")
+        await super().record_failure()
+
+    async def record_success(self) -> None:
+        """Reset failure counter in Redis (AC4).
+
+        Falls back to local state if Redis is unavailable.
+        """
+        redis = await self._get_redis()
+        if redis:
+            try:
+                pipe = redis.pipeline()
+                pipe.set(self._key_failures, 0)
+                pipe.expire(self._key_failures, self._ttl)
+                pipe.delete(self._key_degraded)
+                await pipe.execute()
+                self.consecutive_failures = 0
+                self.degraded_until = None
+                return
+            except Exception as e:
+                logger.debug(f"Redis CB record_success fallback: {e}")
+        await super().record_success()
+
+    async def try_recover(self) -> bool:
+        """Check Redis for cooldown expiry and reset if expired (AC5).
+
+        Falls back to local state if Redis is unavailable.
+        """
+        redis = await self._get_redis()
+        if redis:
+            try:
+                val = await redis.get(self._key_degraded)
+                if val is None:
+                    self.degraded_until = None
+                    self.consecutive_failures = 0
+                    return True
+                degraded_until = float(val)
+                if time.time() >= degraded_until:
+                    pipe = redis.pipeline()
+                    pipe.delete(self._key_degraded)
+                    pipe.set(self._key_failures, 0)
+                    pipe.expire(self._key_failures, self._ttl)
+                    await pipe.execute()
+                    self.degraded_until = None
+                    self.consecutive_failures = 0
+                    logger.info(
+                        f"Circuit breaker [{self.name}] cooldown expired "
+                        f"— resetting to healthy"
+                    )
+                    return True
+                self.degraded_until = degraded_until
+                return False
+            except Exception as e:
+                logger.debug(f"Redis CB try_recover fallback: {e}")
+        return await super().try_recover()
+
+    async def is_degraded_async(self) -> bool:
+        """Async check of degraded state from Redis (AC2, AC9).
+
+        Unlike the sync ``is_degraded`` property (which reads local state),
+        this method queries Redis for the authoritative cross-worker state.
+        """
+        redis = await self._get_redis()
+        if redis:
+            try:
+                val = await redis.get(self._key_degraded)
+                if val is None:
+                    return False
+                return time.time() < float(val)
+            except Exception:
+                pass
+        return self.is_degraded
+
+    async def get_state(self) -> dict:
+        """Get full circuit breaker state for health endpoint (AC9)."""
+        redis = await self._get_redis()
+        if redis:
+            try:
+                pipe = redis.pipeline()
+                pipe.get(self._key_failures)
+                pipe.get(self._key_degraded)
+                results = await pipe.execute()
+                failures = int(results[0]) if results[0] else 0
+                degraded_until = float(results[1]) if results[1] else None
+                is_degraded = (
+                    degraded_until is not None and time.time() < degraded_until
+                )
+                return {
+                    "status": "degraded" if is_degraded else "healthy",
+                    "failures": failures,
+                    "degraded": is_degraded,
+                    "degraded_until": degraded_until,
+                    "backend": "redis",
+                }
+            except Exception:
+                pass
+        return {
+            "status": "degraded" if self.is_degraded else "healthy",
+            "failures": self.consecutive_failures,
+            "degraded": self.is_degraded,
+            "degraded_until": self.degraded_until,
+            "backend": "local",
+        }
+
+    async def reset_async(self) -> None:
+        """Reset both local and Redis state."""
+        super().reset()
+        redis = await self._get_redis()
+        if redis:
+            try:
+                pipe = redis.pipeline()
+                pipe.delete(self._key_failures)
+                pipe.delete(self._key_degraded)
+                await pipe.execute()
+            except Exception:
+                pass
+
+
 # Module-level singletons — one per data source (GTM-FIX-005 AC9)
-_circuit_breaker = PNCPCircuitBreaker(
+# B-06: Use RedisCircuitBreaker for shared state across workers when enabled.
+# Fallback to PNCPCircuitBreaker (per-worker) when USE_REDIS_CIRCUIT_BREAKER=false
+# or when Redis is unavailable at runtime.
+_CBClass = RedisCircuitBreaker if USE_REDIS_CIRCUIT_BREAKER else PNCPCircuitBreaker
+_circuit_breaker = _CBClass(
     name="pncp",
     threshold=PNCP_CIRCUIT_BREAKER_THRESHOLD,
     cooldown_seconds=PNCP_CIRCUIT_BREAKER_COOLDOWN,
 )
-_pcp_circuit_breaker = PNCPCircuitBreaker(
+_pcp_circuit_breaker = _CBClass(
     name="pcp",
     threshold=PCP_CIRCUIT_BREAKER_THRESHOLD,
     cooldown_seconds=PCP_CIRCUIT_BREAKER_COOLDOWN,
@@ -1081,12 +1287,16 @@ class AsyncPNCPClient:
         return False
 
     async def _rate_limit(self) -> None:
-        """
-        Enforce rate limiting: minimum 100ms between requests.
+        """Enforce rate limiting — shared Redis when available, local fallback.
 
-        This is applied per-request, not per-UF, to respect PNCP's rate limits
-        even when making parallel requests.
+        B-06 AC7: Uses RedisRateLimiter for cross-worker coordination.
+        Local sleep-based limiter always runs as baseline.
         """
+        # Shared rate limiter (Redis-backed, cross-worker) — AC7
+        from rate_limiter import pncp_rate_limiter
+        await pncp_rate_limiter.acquire(timeout=5.0)
+
+        # Local rate limiter (per-worker baseline, always active)
         MIN_INTERVAL = 0.1  # 100ms
 
         current_time = asyncio.get_running_loop().time()

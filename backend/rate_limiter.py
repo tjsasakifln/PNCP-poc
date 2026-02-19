@@ -2,9 +2,12 @@
 
 STORY-203 SYS-M03: In-memory rate limiter with max size limit
 STORY-217: Uses unified redis_pool for Redis connections
+B-06: RedisRateLimiter — shared token bucket for PNCP/PCP API requests
 """
 
+import asyncio
 import logging
+import time as _time
 from datetime import datetime, timezone
 
 from redis_pool import get_redis_pool
@@ -93,3 +96,137 @@ class RateLimiter:
 
 # Global instance
 rate_limiter = RateLimiter()
+
+
+# ============================================================================
+# B-06: Shared Token Bucket Rate Limiter (PNCP/PCP API requests)
+# ============================================================================
+
+class RedisRateLimiter:
+    """Shared token bucket rate limiter via Redis (B-06 AC6).
+
+    Ensures total request rate across all Gunicorn workers stays within limits.
+    Uses atomic Lua script for token bucket implementation.
+
+    Fallback: returns True (allows request) when Redis is unavailable,
+    letting the per-worker local rate limiter handle it.
+
+    Redis keys:
+        rate_limiter:{name}:bucket          → HASH {tokens, last_refill}
+        rate_limiter:{name}:requests_count  → INT (requests in current minute)
+    """
+
+    _BUCKET_SCRIPT = """
+local key = KEYS[1]
+local max_tokens = tonumber(ARGV[1])
+local refill_rate = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+
+local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+local tokens = tonumber(bucket[1]) or max_tokens
+local last_refill = tonumber(bucket[2]) or now
+
+local elapsed = now - last_refill
+local new_tokens = math.min(max_tokens, tokens + elapsed * refill_rate)
+
+if new_tokens >= 1 then
+    redis.call('HMSET', key, 'tokens', new_tokens - 1, 'last_refill', now)
+    redis.call('EXPIRE', key, 60)
+    return 1
+else
+    redis.call('HMSET', key, 'tokens', new_tokens, 'last_refill', now)
+    redis.call('EXPIRE', key, 60)
+    return 0
+end
+"""
+
+    def __init__(
+        self,
+        name: str = "pncp",
+        max_tokens: int = 10,
+        refill_rate: float = 10.0,
+    ):
+        self.name = name
+        self.max_tokens = max_tokens
+        self.refill_rate = refill_rate
+        self._key = f"rate_limiter:{name}:bucket"
+        self._requests_key = f"rate_limiter:{name}:requests_count"
+
+    async def acquire(self, timeout: float = 5.0) -> bool:
+        """Acquire a token from the shared bucket.
+
+        Returns True if token acquired or Redis unavailable (fail-open).
+        Waits with exponential backoff up to ``timeout`` seconds if rate limited.
+        """
+        redis = await get_redis_pool()
+        if not redis:
+            return True  # Fail open — per-worker limiter handles it
+
+        start = _time.time()
+        backoff = 0.05  # 50ms initial
+
+        while True:
+            try:
+                now = _time.time()
+                result = await redis.eval(
+                    self._BUCKET_SCRIPT,
+                    1,
+                    self._key,
+                    str(self.max_tokens),
+                    str(self.refill_rate),
+                    str(now),
+                )
+
+                if int(result) == 1:
+                    # Token acquired — track request count for metrics
+                    try:
+                        pipe = redis.pipeline()
+                        pipe.incr(self._requests_key)
+                        pipe.expire(self._requests_key, 60)
+                        await pipe.execute()
+                    except Exception:
+                        pass
+                    return True
+
+                # Rate limited — check timeout
+                elapsed = _time.time() - start
+                if elapsed >= timeout:
+                    return False
+
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 0.5)
+
+            except Exception as e:
+                logger.debug(f"Redis rate limiter error: {e} — allowing request")
+                return True  # Fail open
+
+    async def get_stats(self) -> dict:
+        """Get rate limiter statistics for health endpoint (AC10)."""
+        redis = await get_redis_pool()
+        if not redis:
+            return {
+                "backend": "local",
+                "tokens_available": None,
+                "requests_last_minute": None,
+            }
+
+        try:
+            bucket = await redis.hmget(self._key, "tokens", "last_refill")
+            tokens = float(bucket[0]) if bucket[0] else float(self.max_tokens)
+            requests = await redis.get(self._requests_key)
+            return {
+                "backend": "redis",
+                "tokens_available": round(tokens, 1),
+                "requests_last_minute": int(requests) if requests else 0,
+            }
+        except Exception:
+            return {
+                "backend": "error",
+                "tokens_available": None,
+                "requests_last_minute": None,
+            }
+
+
+# Global shared rate limiter instances (B-06)
+pncp_rate_limiter = RedisRateLimiter(name="pncp", max_tokens=10, refill_rate=10.0)
+pcp_rate_limiter = RedisRateLimiter(name="pcp", max_tokens=5, refill_rate=5.0)

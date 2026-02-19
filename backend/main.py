@@ -461,11 +461,32 @@ async def health():
     for source_name in source_names:
         sources[source_name] = source_health_registry.get_status(source_name)
 
-    # Include per-source circuit breaker status (GTM-FIX-005)
+    # B-06 AC9: Circuit breaker shared state (replaces simple string status)
     pncp_cb = get_circuit_breaker("pncp")
-    sources["PNCP_circuit_breaker"] = "degraded" if pncp_cb.is_degraded else "healthy"
     pcp_cb = get_circuit_breaker("pcp")
-    sources["PCP_circuit_breaker"] = "degraded" if pcp_cb.is_degraded else "healthy"
+    if hasattr(pncp_cb, "get_state"):
+        sources["PNCP_circuit_breaker"] = await pncp_cb.get_state()
+        sources["PCP_circuit_breaker"] = await pcp_cb.get_state()
+    else:
+        sources["PNCP_circuit_breaker"] = {
+            "status": "degraded" if pncp_cb.is_degraded else "healthy",
+            "failures": pncp_cb.consecutive_failures,
+            "degraded": pncp_cb.is_degraded,
+            "backend": "local",
+        }
+        sources["PCP_circuit_breaker"] = {
+            "status": "degraded" if pcp_cb.is_degraded else "healthy",
+            "failures": pcp_cb.consecutive_failures,
+            "degraded": pcp_cb.is_degraded,
+            "backend": "local",
+        }
+
+    # B-06 AC10: Rate limiter metrics
+    from rate_limiter import pncp_rate_limiter, pcp_rate_limiter
+    sources["rate_limiter"] = {
+        "pncp": await pncp_rate_limiter.get_stats(),
+        "pcp": await pcp_rate_limiter.get_stats(),
+    }
 
     # Determine overall health status
     # Supabase is critical, Redis is optional

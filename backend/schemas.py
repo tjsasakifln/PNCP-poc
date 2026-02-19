@@ -1379,7 +1379,7 @@ class HealthResponse(BaseModel):
     timestamp: str
     version: str
     dependencies: HealthDependencies
-    sources: Optional[Dict[str, str]] = None  # AC27: Per-source health status
+    sources: Optional[Dict[str, Any]] = None  # AC27 + B-06: Per-source health status (str or dict)
 
 
 class SourceInfo(BaseModel):
