@@ -72,73 +72,73 @@ Permitir que o usuario ordene resultados por confidence (high > medium > low) co
 ### Backend
 
 ### AC1: Campo confidence no schema LicitacaoItem
-- [ ] `LicitacaoItem` (backend schemas.py ou equivalente) inclui campo `confidence: Optional[Literal["high", "medium", "low"]] = None`
-- [ ] Campo e do tipo `Optional` para backward compatibility (resultados antigos sem confidence)
-- [ ] OpenAPI schema atualizado automaticamente via Pydantic
+- [x] `LicitacaoItem` (backend schemas.py ou equivalente) inclui campo `confidence: Optional[Literal["high", "medium", "low"]] = None`
+- [x] Campo e do tipo `Optional` para backward compatibility (resultados antigos sem confidence)
+- [x] OpenAPI schema atualizado automaticamente via Pydantic
 
 ### AC2: filter.py popula confidence baseado em term density zone
-- [ ] Resultados com `relevance_source == "keyword"` recebem `confidence = "high"`
-- [ ] Resultados com `relevance_source == "llm_standard"` recebem `confidence = "medium"`
-- [ ] Resultados com `relevance_source == "llm_conservative"` recebem `confidence = "low"`
-- [ ] Resultados com `relevance_source == "llm_zero_match"` recebem `confidence = "low"`
-- [ ] Resultados sem relevance_source (legacy) recebem `confidence = None`
+- [x] Resultados com `relevance_source == "keyword"` recebem `confidence = "high"`
+- [x] Resultados com `relevance_source == "llm_standard"` recebem `confidence = "medium"`
+- [x] Resultados com `relevance_source == "llm_conservative"` recebem `confidence = "low"`
+- [x] Resultados com `relevance_source == "llm_zero_match"` recebem `confidence = "low"`
+- [x] Resultados sem relevance_source (legacy) recebem `confidence = None`
 
 ### AC3: Testes backend para mapeamento confidence
-- [ ] Teste unitario: keyword -> high
-- [ ] Teste unitario: llm_standard -> medium
-- [ ] Teste unitario: llm_conservative -> low
-- [ ] Teste unitario: llm_zero_match -> low
-- [ ] Teste unitario: None -> None (backward compat)
-- [ ] Todos os testes passam sem regressao vs baseline (~45 pre-existentes)
+- [x] Teste unitario: keyword -> high
+- [x] Teste unitario: llm_standard -> medium
+- [x] Teste unitario: llm_conservative -> low
+- [x] Teste unitario: llm_zero_match -> low
+- [x] Teste unitario: None -> None (backward compat)
+- [x] Todos os testes passam sem regressao vs baseline (~45 pre-existentes)
 
 ### Frontend
 
 ### AC4: Tipo LicitacaoItem atualizado
-- [ ] `frontend/app/types.ts` LicitacaoItem inclui `confidence?: "high" | "medium" | "low" | null`
-- [ ] `npx tsc --noEmit --pretty` passa limpo
+- [x] `frontend/app/types.ts` LicitacaoItem inclui `confidence?: "high" | "medium" | "low" | null`
+- [x] `npx tsc --noEmit --pretty` passa limpo
 
 ### AC5: Badge de confianca por resultado
-- [ ] Cada resultado exibe badge de confianca ao lado dos badges existentes (relevance_source + data source)
-- [ ] **Alta confianca**: badge verde com icone de escudo, texto "Alta confianca"
-- [ ] **Confianca media**: badge amarelo/amber com icone de escudo parcial, texto "Confianca media"
-- [ ] **Confianca baixa**: badge cinza com icone de interrogacao, texto "Avaliado por IA"
-- [ ] Quando `confidence == null` (legacy), nenhum badge de confianca e exibido (graceful degradation)
+- [x] Cada resultado exibe badge de confianca ao lado dos badges existentes (relevance_source + data source)
+- [x] **Alta confianca**: badge verde com icone de escudo, texto "Alta confianca"
+- [x] **Confianca media**: badge amarelo/amber com icone de escudo parcial, texto "Confianca media"
+- [x] **Confianca baixa**: badge cinza com icone de interrogacao, texto "Avaliado por IA"
+- [x] Quando `confidence == null` (legacy), nenhum badge de confianca e exibido (graceful degradation)
 
 ### AC6: Tooltip explicativo por nivel
-- [ ] Badge de confianca tem `title` (tooltip nativo) com explicacao:
+- [x] Badge de confianca tem `title` (tooltip nativo) com explicacao:
   - High: "Alta densidade de termos relevantes para o setor selecionado"
   - Medium: "Relevancia confirmada por avaliacao de inteligencia artificial"
   - Low: "Resultado com relevancia possivel, verificado por IA. Recomendamos revisar manualmente"
 
 ### AC7: Diferenciacao visual clara entre 3 niveis
-- [ ] Os 3 niveis sao visualmente distinguiveis por cor E icone (nao depender apenas de cor para acessibilidade)
-- [ ] Contraste adequado em light mode e dark mode
-- [ ] Badge de confianca nao conflita visualmente com badges existentes (relevance_source, data source, UF)
+- [x] Os 3 niveis sao visualmente distinguiveis por cor E icone (nao depender apenas de cor para acessibilidade)
+- [x] Contraste adequado em light mode e dark mode
+- [x] Badge de confianca nao conflita visualmente com badges existentes (relevance_source, data source, UF)
 
 ### AC8: Ordenacao por confianca
-- [ ] Seletor de ordenacao de resultados inclui opcao "Confianca" (ou "Mais confiaveis primeiro")
-- [ ] Ordenacao: high > medium > low > null
-- [ ] Dentro do mesmo nivel de confianca, manter ordenacao anterior (por valor ou relevance_score)
+- [x] Seletor de ordenacao de resultados inclui opcao "Confianca" (ou "Mais confiaveis primeiro")
+- [x] Ordenacao: high > medium > low > null
+- [x] Dentro do mesmo nivel de confianca, manter ordenacao anterior (por valor ou relevance_score)
 
 ### AC9: Contagem por nivel no header
-- [ ] Header de resultados mostra contagem por nivel: ex. "42 resultados: 28 alta, 10 media, 4 baixa"
-- [ ] Contagem so aparece quando ha pelo menos 1 resultado com confidence != null
-- [ ] Quando todos sao null (backend antigo), contagem nao aparece (backward compat)
+- [x] Header de resultados mostra contagem por nivel: ex. "42 resultados: 28 alta, 10 media, 4 baixa"
+- [x] Contagem so aparece quando ha pelo menos 1 resultado com confidence != null
+- [x] Quando todos sao null (backend antigo), contagem nao aparece (backward compat)
 
 ### AC10: Testes frontend
-- [ ] Teste: badge "Alta confianca" renderizado quando confidence="high"
-- [ ] Teste: badge "Confianca media" renderizado quando confidence="medium"
-- [ ] Teste: badge "Avaliado por IA" renderizado quando confidence="low"
-- [ ] Teste: nenhum badge quando confidence=null
-- [ ] Teste: tooltip correto por nivel
-- [ ] Teste: ordenacao por confianca funciona corretamente
-- [ ] Teste: contagem no header reflete distribuicao real
-- [ ] Nenhum novo teste failure vs baseline (33 frontend pre-existentes)
+- [x] Teste: badge "Alta confianca" renderizado quando confidence="high"
+- [x] Teste: badge "Confianca media" renderizado quando confidence="medium"
+- [x] Teste: badge "Avaliado por IA" renderizado quando confidence="low"
+- [x] Teste: nenhum badge quando confidence=null
+- [x] Teste: tooltip correto por nivel
+- [x] Teste: ordenacao por confianca funciona corretamente
+- [x] Teste: contagem no header reflete distribuicao real
+- [x] Nenhum novo teste failure vs baseline (33 frontend pre-existentes)
 
 ### AC11: Acessibilidade
-- [ ] Badges tem `aria-label` descritivo (ex: "Confianca alta na relevancia deste resultado")
-- [ ] Tooltips acessiveis via teclado (focusable)
-- [ ] Cores nao sao unico diferenciador (icones distintos por nivel)
+- [x] Badges tem `aria-label` descritivo (ex: "Confianca alta na relevancia deste resultado")
+- [x] Tooltips acessiveis via teclado (focusable)
+- [x] Cores nao sao unico diferenciador (icones distintos por nivel)
 
 ---
 
@@ -186,12 +186,12 @@ Permitir que o usuario ordene resultados por confidence (high > medium > low) co
 
 ## Definition of Done
 
-- [ ] Campo `confidence` presente na resposta da API `/buscar`
-- [ ] Badge de confianca visivel em cada resultado (3 niveis visuais)
-- [ ] Tooltip explicativo por nivel
-- [ ] Ordenacao por confianca funcional
-- [ ] Contagem por nivel no header de resultados
-- [ ] `npm run build` e `pytest` passam sem novos failures
-- [ ] `npx tsc --noEmit --pretty` limpo
-- [ ] Dark mode funcional em badges de confianca
-- [ ] Backward compatible: resultados sem confidence (legacy) funcionam normalmente
+- [x] Campo `confidence` presente na resposta da API `/buscar`
+- [x] Badge de confianca visivel em cada resultado (3 niveis visuais)
+- [x] Tooltip explicativo por nivel
+- [x] Ordenacao por confianca funcional
+- [x] Contagem por nivel no header de resultados
+- [x] `npm run build` e `pytest` passam sem novos failures
+- [x] `npx tsc --noEmit --pretty` limpo
+- [x] Dark mode funcional em badges de confianca
+- [x] Backward compatible: resultados sem confidence (legacy) funcionam normalmente

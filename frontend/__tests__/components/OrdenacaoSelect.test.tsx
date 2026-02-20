@@ -291,7 +291,7 @@ describe('OrdenacaoSelect', () => {
 
 describe('ORDENACAO_OPTIONS', () => {
   it('exports correct options', () => {
-    expect(ORDENACAO_OPTIONS).toHaveLength(6);
+    expect(ORDENACAO_OPTIONS).toHaveLength(7);
     expect(ORDENACAO_OPTIONS.map(o => o.value)).toEqual([
       'data_desc',
       'data_asc',
@@ -299,6 +299,7 @@ describe('ORDENACAO_OPTIONS', () => {
       'valor_asc',
       'prazo_asc',
       'relevancia',
+      'confianca',
     ]);
   });
 

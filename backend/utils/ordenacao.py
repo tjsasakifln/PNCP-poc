@@ -313,6 +313,22 @@ def ordenar_licitacoes(
         """Calculate relevance score for licitacao."""
         return calcular_relevancia(lic, termos_busca or [])
 
+    def get_confianca(lic: dict) -> Tuple[int, int, float]:
+        """C-02 AC8: Sort by confidence level (high > medium > low > null)."""
+        conf = lic.get("_confidence_score", -1)
+        source = lic.get("_relevance_source")
+        # Map to priority: 0=high (keyword), 1=medium (llm_standard), 2=low (conservative/zero), 3=null
+        if source == "keyword":
+            priority = 0
+        elif source == "llm_standard":
+            priority = 1
+        elif source in ("llm_conservative", "llm_zero_match"):
+            priority = 2
+        else:
+            priority = 3
+        valor = get_valor(lic)
+        return (priority, -conf, -valor)
+
     # Define sort functions: (key_function, reverse)
     sort_functions: dict[str, Tuple[Callable[[dict], Any], bool]] = {
         'data_desc': (get_data_publicacao, True),   # Most recent first
@@ -322,6 +338,10 @@ def ordenar_licitacoes(
         'prazo_asc': (get_data_abertura, False),    # Nearest deadline first
         'relevancia': (get_relevancia, True),       # Most relevant first
     }
+
+    # C-02 AC8: Confidence sort uses compound key (priority, -score, -valor)
+    if ordenacao == 'confianca':
+        return sorted(licitacoes, key=get_confianca)
 
     # Get sort function, default to data_desc
     key_func, reverse = sort_functions.get(

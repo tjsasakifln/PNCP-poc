@@ -532,7 +532,8 @@ class BuscaRequest(BaseModel):
         valid_options = {
             'data_desc', 'data_asc',
             'valor_desc', 'valor_asc',
-            'prazo_asc', 'relevancia'
+            'prazo_asc', 'relevancia',
+            'confianca',
         }
         if v not in valid_options:
             raise ValueError(
@@ -795,6 +796,11 @@ class LicitacaoItem(BaseModel):
     llm_evidence: Optional[List[str]] = Field(
         default=None,
         description="Literal text excerpts from procurement description that support the classification (max 3)"
+    )
+    # C-02 AC1: Categorical confidence level for frontend badge display
+    confidence: Optional[Literal["high", "medium", "low"]] = Field(
+        default=None,
+        description="Confidence level derived from relevance_source: keyword=high, llm_standard=medium, llm_conservative/llm_zero_match=low"
     )
 
     class Config:

@@ -416,6 +416,22 @@ export default function SearchResults({
               {rawCount > 0 && (
                 <p className="text-sm text-ink-secondary mt-0.5">
                   {rawCount.toLocaleString("pt-BR")} analisadas, {result.resumo.total_oportunidades} relevantes{searchMode === "setor" && sectorName ? ` para ${sectorName.toLowerCase()}` : ""}
+                  {/* C-02 AC9: Confidence distribution counts */}
+                  {(() => {
+                    const counts = { high: 0, medium: 0, low: 0 };
+                    let hasAny = false;
+                    result.licitacoes.forEach(l => {
+                      if (l.confidence === "high") { counts.high++; hasAny = true; }
+                      else if (l.confidence === "medium") { counts.medium++; hasAny = true; }
+                      else if (l.confidence === "low") { counts.low++; hasAny = true; }
+                    });
+                    if (!hasAny) return null;
+                    const parts: string[] = [];
+                    if (counts.high > 0) parts.push(`${counts.high} alta`);
+                    if (counts.medium > 0) parts.push(`${counts.medium} media`);
+                    if (counts.low > 0) parts.push(`${counts.low} baixa`);
+                    return <span className="text-ink-muted"> ({parts.join(", ")})</span>;
+                  })()}
                 </p>
               )}
             </div>

@@ -84,6 +84,69 @@ export function LicitacoesPreview({
     );
   };
 
+  /** C-02 AC5-AC7, AC11: Confidence badge with 3 visual levels + tooltip + accessibility */
+  const getConfidenceBadge = (confidence?: "high" | "medium" | "low" | null) => {
+    if (!confidence) return null;
+
+    const config: Record<string, {
+      label: string;
+      tooltip: string;
+      ariaLabel: string;
+      bg: string;
+      icon: React.ReactNode;
+    }> = {
+      high: {
+        label: "Alta confianca",
+        tooltip: "Alta densidade de termos relevantes para o setor selecionado",
+        ariaLabel: "Confianca alta na relevancia deste resultado",
+        bg: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300",
+        icon: (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        ),
+      },
+      medium: {
+        label: "Confianca media",
+        tooltip: "Relevancia confirmada por avaliacao de inteligencia artificial",
+        ariaLabel: "Confianca media na relevancia deste resultado",
+        bg: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300",
+        icon: (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        ),
+      },
+      low: {
+        label: "Avaliado por IA",
+        tooltip: "Resultado com relevancia possivel, verificado por IA. Recomendamos revisar manualmente",
+        ariaLabel: "Confianca baixa na relevancia deste resultado",
+        bg: "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400",
+        icon: (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+    };
+
+    const c = config[confidence];
+    if (!c) return null;
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${c.bg}`}
+        title={c.tooltip}
+        aria-label={c.ariaLabel}
+        tabIndex={0}
+        role="img"
+      >
+        {c.icon}
+        {c.label}
+      </span>
+    );
+  };
+
   /** GTM-FIX-028 AC12: Badge based on relevance_source */
   const getRelevanceSourceBadge = (source?: string | null) => {
     if (!source) return null;
@@ -198,6 +261,7 @@ export function LicitacoesPreview({
                 <div className="flex flex-wrap gap-2 mt-2">
                   {getRelevanceBadge(item.relevance_score)}
                   {getRelevanceSourceBadge(item.relevance_source)}
+                  {getConfidenceBadge(item.confidence)}
                   {getSourceBadge(item._source ?? undefined)}
                   <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                     {item.uf}
@@ -326,6 +390,7 @@ export function LicitacoesPreview({
                   <div className="flex flex-wrap gap-2 mt-2">
                     {getRelevanceBadge(item.relevance_score)}
                     {getRelevanceSourceBadge(item.relevance_source)}
+                    {getConfidenceBadge(item.confidence)}
                     {getSourceBadge(item._source ?? undefined)}
                     <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                       {item.uf}

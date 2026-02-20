@@ -238,6 +238,22 @@ def _build_coverage_metadata(ctx: "SearchContext") -> "CoverageMetadata":
     )
 
 
+def _map_confidence(relevance_source: str | None) -> str | None:
+    """C-02 AC2: Map relevance_source to categorical confidence level.
+
+    Returns 'high', 'medium', 'low', or None (for legacy results).
+    """
+    if not relevance_source:
+        return None
+    mapping = {
+        "keyword": "high",
+        "llm_standard": "medium",
+        "llm_conservative": "low",
+        "llm_zero_match": "low",
+    }
+    return mapping.get(relevance_source)
+
+
 def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
     """Convert raw bid dictionaries to LicitacaoItem objects for frontend display."""
     items = []
@@ -266,6 +282,8 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 # D-02 AC7: Confidence score and LLM evidence for frontend
                 confidence_score=lic.get("_confidence_score"),
                 llm_evidence=lic.get("_llm_evidence"),
+                # C-02 AC2: Map relevance_source to categorical confidence
+                confidence=_map_confidence(lic.get("_relevance_source")),
             )
             items.append(item)
         except Exception as e:

@@ -43,6 +43,8 @@ export type LicitacaoItem = components["schemas"]["LicitacaoItem"] & {
   supplier_sanctions?: SanctionsSummary | null;
   /** GTM-FIX-028 AC8: How relevance was determined */
   relevance_source?: "keyword" | "llm_standard" | "llm_conservative" | "llm_zero_match" | null;
+  /** C-02 AC4: Categorical confidence level for badge display */
+  confidence?: "high" | "medium" | "low" | null;
 };
 
 /** InMail message response */
