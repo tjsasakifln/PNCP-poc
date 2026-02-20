@@ -46,8 +46,12 @@ from search_cache import save_to_cache as _supabase_save_cache, get_from_cache a
 from fastapi import HTTPException
 from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS
 from viability import assess_batch as viability_assess_batch
+from telemetry import get_tracer, optional_span, get_trace_id
 
 logger = logging.getLogger(__name__)
+
+# F-02 AC10: Tracer for pipeline spans
+_tracer = get_tracer("search_pipeline")
 
 
 # ============================================================================
@@ -462,21 +466,33 @@ class SearchPipeline:
             },
         )
 
+        # F-02 AC10: Root span for the entire pipeline
+        with optional_span(_tracer, "search_pipeline", {
+            "search.id": getattr(ctx.request, "search_id", None) or "",
+            "search.sector": ctx.request.setor_id or "",
+            "search.ufs": ",".join(ctx.request.ufs),
+            "search.user_id": ctx.user.get("id", "") if ctx.user else "",
+        }) as root_span:
+            return await self._run_stages(ctx, root_span)
+
+    async def _run_stages(self, ctx: SearchContext, root_span) -> BuscaResponse:
+        """Internal: execute pipeline stages under the root span."""
+
         # Stages 1-3: Critical — exceptions propagate to wrapper
-        await self.stage_validate(ctx)
-        await self.stage_prepare(ctx)
-        await self.stage_execute(ctx)
+        await self._traced_stage(ctx, "pipeline.validate", self.stage_validate)
+        await self._traced_stage(ctx, "pipeline.prepare", self.stage_prepare)
+        await self._traced_stage(ctx, "pipeline.fetch", self.stage_execute)
 
         # Stages 4-5: Filter and enrich
-        await self.stage_filter(ctx)
-        await self.stage_enrich(ctx)
+        await self._traced_stage(ctx, "pipeline.filter", self.stage_filter)
+        await self._traced_stage(ctx, "pipeline.enrich", self.stage_enrich)
 
         # Stage 6: Generate output (has internal error boundaries)
-        await self.stage_generate(ctx)
+        await self._traced_stage(ctx, "pipeline.generate", self.stage_generate)
 
         # Stage 7: Persist and build response
         try:
-            return await self.stage_persist(ctx)
+            return await self._traced_stage(ctx, "pipeline.persist", self.stage_persist)
         finally:
             ACTIVE_SEARCHES.dec()
             elapsed_s = sync_time_module.time() - ctx.start_time
@@ -495,6 +511,44 @@ class SearchPipeline:
                 sector=ctx.request.setor_id or "unknown",
                 result_status=result_status,
             ).inc()
+            # F-02 AC12: Record final status on root span
+            root_span.set_attribute("search.result_status", result_status)
+            root_span.set_attribute("search.duration_ms", int(elapsed_s * 1000))
+            root_span.set_attribute("search.total_raw", len(ctx.licitacoes_raw))
+            root_span.set_attribute("search.total_filtered", len(ctx.licitacoes_filtradas))
+
+    async def _traced_stage(self, ctx: SearchContext, span_name: str, stage_fn):
+        """AC11-AC12: Run a pipeline stage wrapped in a child span with timing and counts."""
+        stage_start = sync_time_module.time()
+        items_in = len(ctx.licitacoes_raw) if hasattr(ctx, "licitacoes_raw") and ctx.licitacoes_raw else 0
+
+        with optional_span(_tracer, span_name) as span:
+            try:
+                result = await stage_fn(ctx)
+                duration_ms = int((sync_time_module.time() - stage_start) * 1000)
+                span.set_attribute("duration_ms", duration_ms)
+                span.set_attribute("status", "ok")
+
+                # AC12: items_in / items_out where applicable
+                if span_name == "pipeline.fetch":
+                    span.set_attribute("items_out", len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0)
+                elif span_name == "pipeline.filter":
+                    span.set_attribute("items_in", items_in)
+                    span.set_attribute("items_out", len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0)
+
+                return result
+            except Exception as e:
+                duration_ms = int((sync_time_module.time() - stage_start) * 1000)
+                span.set_attribute("duration_ms", duration_ms)
+                span.set_attribute("status", "error")
+                # AC16: Record exception on span
+                span.record_exception(e)
+                try:
+                    from opentelemetry.trace import StatusCode
+                    span.set_status(StatusCode.ERROR, str(e))
+                except ImportError:
+                    pass
+                raise
 
     # ------------------------------------------------------------------
     # Stage 1: ValidateRequest
@@ -1681,17 +1735,23 @@ class SearchPipeline:
             if ctx.tracker:
                 await ctx.tracker.emit("llm", 75, "Avaliando oportunidades com IA...")
 
-            # LLM summary (with fallback)
+            # AC15: Sub-span for LLM summary generation
             logger.debug("Generating executive summary")
-            try:
-                ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
-                logger.debug("LLM summary generated successfully")
-            except Exception as e:
-                logger.warning(
-                    f"LLM generation failed, using fallback mechanism: {type(e).__name__}: {e}",
-                )
-                ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
-                logger.debug("Fallback summary generated successfully")
+            with optional_span(_tracer, "generate.llm_summary", {
+                "llm.input_count": len(ctx.licitacoes_filtradas),
+            }) as llm_span:
+                try:
+                    ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
+                    llm_span.set_attribute("llm.status", "success")
+                    logger.debug("LLM summary generated successfully")
+                except Exception as e:
+                    llm_span.set_attribute("llm.status", "fallback")
+                    llm_span.record_exception(e)
+                    logger.warning(
+                        f"LLM generation failed, using fallback mechanism: {type(e).__name__}: {e}",
+                    )
+                    ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
+                    logger.debug("Fallback summary generated successfully")
 
             # Override LLM-generated counts with actual values
             actual_total = len(ctx.licitacoes_filtradas)
@@ -1711,34 +1771,40 @@ class SearchPipeline:
             if ctx.tracker:
                 await ctx.tracker.emit("excel", 92, "Gerando planilha Excel...")
 
-            # Excel generation (conditional on plan)
+            # AC15: Sub-span for Excel generation + upload
             if ctx.excel_available:
-                logger.debug("Generating Excel report")
-                excel_buffer = deps.create_excel(ctx.licitacoes_filtradas)
-                excel_bytes = excel_buffer.read()
+                with optional_span(_tracer, "generate.excel", {
+                    "excel.input_count": len(ctx.licitacoes_filtradas),
+                }) as excel_span:
+                    logger.debug("Generating Excel report")
+                    excel_buffer = deps.create_excel(ctx.licitacoes_filtradas)
+                    excel_bytes = excel_buffer.read()
 
-                storage_result = upload_excel(excel_bytes, ctx.request.search_id)
+                    with optional_span(_tracer, "generate.upload") as upload_span:
+                        storage_result = upload_excel(excel_bytes, ctx.request.search_id)
 
-                if storage_result:
-                    ctx.download_url = storage_result["signed_url"]
-                    logger.debug(
-                        f"Excel uploaded to storage: {storage_result['file_path']} "
-                        f"(signed URL valid for {storage_result['expires_in']}s)"
-                    )
-                    ctx.excel_base64 = None
-                    ctx.excel_status = "ready"
-                else:
-                    logger.error(
-                        "Excel storage upload failed — no fallback. "
-                        "Excel will be unavailable for this search."
-                    )
-                    ctx.excel_base64 = None
-                    ctx.download_url = None
-                    ctx.excel_available = False
-                    ctx.excel_status = "failed"
-                    ctx.upgrade_message = (
-                        "Erro temporário ao gerar Excel. Tente novamente em alguns instantes."
-                    )
+                    if storage_result:
+                        ctx.download_url = storage_result["signed_url"]
+                        logger.debug(
+                            f"Excel uploaded to storage: {storage_result['file_path']} "
+                            f"(signed URL valid for {storage_result['expires_in']}s)"
+                        )
+                        ctx.excel_base64 = None
+                        ctx.excel_status = "ready"
+                        excel_span.set_attribute("excel.status", "ready")
+                    else:
+                        logger.error(
+                            "Excel storage upload failed — no fallback. "
+                            "Excel will be unavailable for this search."
+                        )
+                        ctx.excel_base64 = None
+                        ctx.download_url = None
+                        ctx.excel_available = False
+                        ctx.excel_status = "failed"
+                        excel_span.set_attribute("excel.status", "failed")
+                        ctx.upgrade_message = (
+                            "Erro temporário ao gerar Excel. Tente novamente em alguns instantes."
+                        )
             else:
                 logger.debug("Excel generation skipped (not allowed for user's plan)")
                 ctx.excel_status = "skipped"

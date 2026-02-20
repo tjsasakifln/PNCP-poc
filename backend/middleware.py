@@ -15,14 +15,24 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
 class RequestIDFilter(logging.Filter):
     """
-    Inject request_id into all log records.
+    Inject request_id, trace_id, and span_id into all log records.
 
     SYS-L04: Ensures all log records have a request_id field for correlation.
+    F-02 AC20: Also injects trace_id and span_id for log-trace correlation.
     Falls back to "-" if no request context exists (e.g., startup logs).
     """
     def filter(self, record):
         if not hasattr(record, 'request_id'):
             record.request_id = request_id_var.get("-")
+        # F-02 AC20: trace_id and span_id for log-trace correlation
+        if not hasattr(record, 'trace_id'):
+            try:
+                from telemetry import get_trace_id, get_span_id
+                record.trace_id = get_trace_id() or "-"
+                record.span_id = get_span_id() or "-"
+            except Exception:
+                record.trace_id = "-"
+                record.span_id = "-"
         return True
 
 
@@ -39,6 +49,15 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         # Use incoming X-Request-ID or generate new
         req_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         request_id_var.set(req_id)
+
+        # F-02 AC19: Link X-Request-ID to active OpenTelemetry span
+        try:
+            from telemetry import get_current_span
+            span = get_current_span()
+            if span and span.is_recording():
+                span.set_attribute("http.request_id", req_id)
+        except Exception:
+            pass
 
         # Store in request state for access in route handlers
         request.state.request_id = req_id

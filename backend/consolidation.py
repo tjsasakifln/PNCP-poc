@@ -16,8 +16,12 @@ from utils.error_reporting import report_error  # GTM-RESILIENCE-E02: centralize
 from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement, SourceError
 from source_config.sources import source_health_registry
 from metrics import FETCH_DURATION, API_ERRORS
+from telemetry import get_tracer, optional_span
 
 logger = logging.getLogger(__name__)
+
+# F-02 AC13: Tracer for per-source fetch spans
+_tracer = get_tracer("consolidation")
 
 
 @dataclass
@@ -435,6 +439,18 @@ class ConsolidationService:
         # Shared list: records accumulate here as the generator yields them.
         # On timeout we can still read whatever was collected.
         partial_records: List[UnifiedProcurement] = []
+        # F-02 AC13: Sub-span per source (fetch.pncp, fetch.pcp, etc.)
+        source_span_name = f"fetch.{code.lower()}"
+        with optional_span(_tracer, source_span_name, {"source.code": code}) as src_span:
+            return await self._wrap_source_inner(
+                code, adapter, data_inicial, data_final, ufs,
+                effective_timeout, start, partial_records, src_span,
+            )
+
+    async def _wrap_source_inner(
+        self, code, adapter, data_inicial, data_final, ufs,
+        effective_timeout, start, partial_records, src_span,
+    ):
         try:
             await asyncio.wait_for(
                 self._fetch_source(
@@ -445,6 +461,9 @@ class ConsolidationService:
             )
             duration = int((time.time() - start) * 1000)
             FETCH_DURATION.labels(source=code).observe(duration / 1000.0)
+            src_span.set_attribute("duration_ms", duration)
+            src_span.set_attribute("items_out", len(partial_records))
+            src_span.set_attribute("status", "success")
             logger.debug(
                 f"[CONSOLIDATION] {code}: {len(partial_records)} records in {duration}ms"
             )

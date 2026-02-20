@@ -222,6 +222,10 @@ async def lifespan(app_instance: FastAPI):
         - Close Redis pool gracefully
     """
     # === STARTUP ===
+    # GTM-RESILIENCE-F02: Initialize OpenTelemetry tracing (before anything else)
+    from telemetry import init_tracing, shutdown_tracing
+    init_tracing()
+
     # AC12-AC14: Validate environment variables
     validate_env_vars()
 
@@ -252,6 +256,9 @@ async def lifespan(app_instance: FastAPI):
     # GTM-RESILIENCE-F01: Close ARQ pool
     from job_queue import close_arq_pool
     await close_arq_pool()
+
+    # GTM-RESILIENCE-F02: Flush and shut down tracing
+    shutdown_tracing()
 
     # STORY-217: Close Redis pool
     await shutdown_redis()
@@ -549,6 +556,10 @@ async def health():
         dependencies["queue"] = await get_queue_health()
     except Exception:
         dependencies["queue"] = "unavailable"
+
+    # F-02 AC21: Report tracing status
+    from telemetry import is_tracing_enabled
+    dependencies["tracing"] = "enabled" if is_tracing_enabled() else "disabled"
 
     response_data = {
         "status": status,

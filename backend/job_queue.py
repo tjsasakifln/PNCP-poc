@@ -133,6 +133,17 @@ async def enqueue_job(
         logger.warning(f"Queue unavailable — cannot enqueue {function_name}")
         return None
 
+    # F-02 AC18: Propagate trace context to background jobs
+    try:
+        from telemetry import get_trace_id, get_span_id
+        trace_id = get_trace_id()
+        span_id = get_span_id()
+        if trace_id:
+            kwargs["_trace_id"] = trace_id
+            kwargs["_span_id"] = span_id
+    except Exception:
+        pass
+
     try:
         job = await pool.enqueue_job(
             function_name,

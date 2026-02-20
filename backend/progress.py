@@ -31,12 +31,18 @@ class ProgressEvent:
     timestamp: float = field(default_factory=time.time)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d = {
             "stage": self.stage,
             "progress": self.progress,
             "message": self.message,
             "detail": self.detail,
         }
+        # F-02 AC17: Include trace_id in SSE events when tracing is active
+        from telemetry import get_trace_id
+        trace_id = get_trace_id()
+        if trace_id:
+            d["trace_id"] = trace_id
+        return d
 
 
 class ProgressTracker:
