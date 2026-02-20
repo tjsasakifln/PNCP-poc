@@ -45,6 +45,21 @@ export type LicitacaoItem = components["schemas"]["LicitacaoItem"] & {
   relevance_source?: "keyword" | "llm_standard" | "llm_conservative" | "llm_zero_match" | null;
   /** C-02 AC4: Categorical confidence level for badge display */
   confidence?: "high" | "medium" | "low" | null;
+  /** D-04 AC1: Viability score 0-100 */
+  viability_score?: number | null;
+  /** D-04 AC1: Viability level */
+  viability_level?: "alta" | "media" | "baixa" | null;
+  /** D-04 AC1: Viability factor breakdown */
+  viability_factors?: {
+    modalidade: number;
+    modalidade_label: string;
+    timeline: number;
+    timeline_label: string;
+    value_fit: number;
+    value_fit_label: string;
+    geography: number;
+    geography_label: string;
+  } | null;
 };
 
 /** InMail message response */

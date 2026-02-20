@@ -45,6 +45,7 @@ from redis_pool import get_fallback_cache
 from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache, get_from_cache_cascade
 from fastapi import HTTPException
 from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS
+from viability import assess_batch as viability_assess_batch
 
 logger = logging.getLogger(__name__)
 
@@ -284,6 +285,10 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 llm_evidence=lic.get("_llm_evidence"),
                 # C-02 AC2: Map relevance_source to categorical confidence
                 confidence=_map_confidence(lic.get("_relevance_source")),
+                # D-04 AC1: Viability assessment (orthogonal to relevance)
+                viability_score=lic.get("_viability_score"),
+                viability_level=lic.get("_viability_level"),
+                viability_factors=lic.get("_viability_factors"),
             )
             items.append(item)
         except Exception as e:
@@ -1438,7 +1443,23 @@ class SearchPipeline:
     # Stage 5: EnrichResults
     # ------------------------------------------------------------------
     async def stage_enrich(self, ctx: SearchContext) -> None:
-        """Compute relevance scores, confidence-based re-ranking, and apply sorting."""
+        """Compute relevance scores, viability assessment, confidence-based re-ranking, and sorting."""
+
+        # D-04 AC7: Viability assessment (Stage 4.5 — post-filter, pre-ranking)
+        from config import get_feature_flag
+        if get_feature_flag("VIABILITY_ASSESSMENT_ENABLED") and ctx.licitacoes_filtradas:
+            # Get sector-specific value range
+            vr = None
+            if ctx.sector and hasattr(ctx.sector, "viability_value_range"):
+                vr = ctx.sector.viability_value_range
+            ufs_busca = set(ctx.request.ufs) if ctx.request.ufs else set()
+            viability_assess_batch(ctx.licitacoes_filtradas, ufs_busca, vr)
+            logger.debug(
+                f"D-04: Viability assessed for {len(ctx.licitacoes_filtradas)} bids. "
+                f"Alta: {sum(1 for l in ctx.licitacoes_filtradas if l.get('_viability_level') == 'alta')}, "
+                f"Media: {sum(1 for l in ctx.licitacoes_filtradas if l.get('_viability_level') == 'media')}, "
+                f"Baixa: {sum(1 for l in ctx.licitacoes_filtradas if l.get('_viability_level') == 'baixa')}"
+            )
 
         # Relevance scoring (STORY-178)
         if ctx.custom_terms and ctx.licitacoes_filtradas:
@@ -1449,12 +1470,24 @@ class SearchPipeline:
                     len(matched_terms), len(ctx.custom_terms), phrase_count
                 )
 
-        # D-02 AC5: Re-ranking by confidence_score DESC, then value DESC
-        # Procurements with confidence >= 80 first, 50-79 next, <50 last
-        # Within each band, sort by estimated value DESC
+        # D-02 AC5 + D-04 AC9: Re-ranking by combined score when viability active
+        # Falls back to confidence-only when viability is disabled
         if ctx.licitacoes_filtradas:
+            viability_active = get_feature_flag("VIABILITY_ASSESSMENT_ENABLED") and any(
+                l.get("_viability_score") is not None for l in ctx.licitacoes_filtradas
+            )
+
             def _confidence_sort_key(lic: dict) -> tuple:
                 conf = lic.get("_confidence_score", 50)
+                valor = float(lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0)
+
+                if viability_active:
+                    # D-04 AC9: combined_score = confidence * 0.6 + viability * 0.4
+                    viab = lic.get("_viability_score", 50)
+                    combined = conf * 0.6 + viab * 0.4
+                    lic["_combined_score"] = round(combined)
+                    return (-combined, -valor)
+
                 # Band: 0=high(>=80), 1=medium(50-79), 2=low(<50)
                 if conf >= 80:
                     band = 0
@@ -1462,7 +1495,6 @@ class SearchPipeline:
                     band = 1
                 else:
                     band = 2
-                valor = float(lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0)
                 return (band, -conf, -valor)
 
             ctx.licitacoes_filtradas.sort(key=_confidence_sort_key)

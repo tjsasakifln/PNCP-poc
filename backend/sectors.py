@@ -77,6 +77,8 @@ class SectorConfig:
     co_occurrence_rules: List[CoOccurrenceRule] = field(default_factory=list)
     # GTM-RESILIENCE-D01: Domain signals for item-level inspection
     domain_signals: DomainSignals = field(default_factory=DomainSignals)
+    # GTM-RESILIENCE-D04: Viability value range (min, max) in BRL for value_fit scoring
+    viability_value_range: Optional[tuple] = None
 
 
 def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
@@ -134,6 +136,10 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             size_patterns=ds_raw.get("size_patterns", []),
         )
 
+        # D-04: Parse viability_value_range [min, max] → tuple
+        vvr_raw = cfg.get("viability_value_range")
+        viability_vr = tuple(vvr_raw) if vvr_raw and len(vvr_raw) == 2 else None
+
         sectors[sector_id] = SectorConfig(
             id=sector_id,
             name=cfg["name"],
@@ -144,6 +150,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             max_contract_value=cfg.get("max_contract_value"),
             co_occurrence_rules=co_rules,
             domain_signals=domain_signals,
+            viability_value_range=viability_vr,
         )
 
     return sectors

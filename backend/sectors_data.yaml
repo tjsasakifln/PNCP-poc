@@ -13,6 +13,7 @@ sectors:
     name: "Vestuário e Uniformes"
     description: "Uniformes, fardamentos, roupas profissionais, EPIs de vestuário"
     max_contract_value: 5000000  # R$ 5M
+    viability_value_range: [50000, 2000000]  # D-04: ideal R$50k-R$2M
     keywords:
       # Primary terms (high precision)
       - "uniforme"
@@ -493,6 +494,7 @@ sectors:
     name: "Alimentos e Merenda"
     description: "Gêneros alimentícios, merenda escolar, refeições, rancho"
     max_contract_value: 10000000  # R$ 10M
+    viability_value_range: [50000, 5000000]  # D-04: ideal R$50k-R$5M
     keywords:
       # High precision compound terms
       - "genero alimenticio"
@@ -758,6 +760,7 @@ sectors:
     name: "Hardware e Equipamentos de TI"
     description: "Computadores, servidores, periféricos, redes, equipamentos de informática, impressoras, switches, storage"
     max_contract_value: 20000000  # R$ 20M
+    viability_value_range: [30000, 3000000]  # D-04: ideal R$30k-R$3M
     keywords:
       - "computador"
       - "computadores"
@@ -1039,6 +1042,7 @@ sectors:
     name: "Mobiliário"
     description: "Mesas, cadeiras, armários, estantes, móveis de escritório"
     max_contract_value: 8000000  # R$ 8M
+    viability_value_range: [20000, 2000000]  # D-04: ideal R$20k-R$2M
     keywords:
       - "mobiliário"
       - "mobiliario"
@@ -1428,6 +1432,7 @@ sectors:
     name: "Papelaria e Material de Escritório"
     description: "Papel, canetas, material de escritório, suprimentos administrativos"
     max_contract_value: 5000000  # R$ 5M
+    viability_value_range: [10000, 500000]  # D-04: ideal R$10k-R$500k
     keywords:
       - "papelaria"
       - "material de escritório"
@@ -1667,6 +1672,7 @@ sectors:
     name: "Engenharia, Projetos e Obras"
     description: "Obras, reformas, construção civil, pavimentação, infraestrutura, escritórios de projeto, consultorias de engenharia, fiscalização, topografia"
     max_contract_value: null  # No limit - civil works can be billions
+    viability_value_range: [100000, 10000000]  # D-04: ideal R$100k-R$10M
     keywords:
       # High precision compound terms
       - "construção civil"
@@ -1953,6 +1959,7 @@ sectors:
     name: "Software e Sistemas"
     description: "Licenças de software, SaaS, desenvolvimento de sistemas, consultoria de TI"
     max_contract_value: 20000000  # R$ 20M
+    viability_value_range: [50000, 5000000]  # D-04: ideal R$50k-R$5M
     keywords:
       # Software licenses (high precision)
       - "licença de software"
@@ -2277,6 +2284,7 @@ sectors:
     name: "Facilities e Manutenção"
     description: "Limpeza predial, produtos de limpeza, conservação, copa/cozinha, portaria, recepção, zeladoria, jardinagem, manutenção predial"
     max_contract_value: 30000000  # R$ 30M
+    viability_value_range: [100000, 10000000]  # D-04: ideal R$100k-R$10M
     keywords:
       # Core facilities management (English + Portuguese)
       - "facilities"
@@ -2599,6 +2607,7 @@ sectors:
     name: "Saúde"
     description: "Medicamentos, equipamentos hospitalares, insumos médicos, materiais de laboratório, órteses e próteses"
     max_contract_value: 50000000  # R$ 50M
+    viability_value_range: [30000, 5000000]  # D-04: ideal R$30k-R$5M
     keywords:
       # High precision compound terms
       - "medicamento"
@@ -3104,6 +3113,7 @@ sectors:
     name: "Vigilância e Segurança Patrimonial"
     description: "Vigilância patrimonial, segurança eletrônica, CFTV, alarmes, controle de acesso, portaria armada/desarmada"
     max_contract_value: 40000000  # R$ 40M
+    viability_value_range: [100000, 10000000]  # D-04: ideal R$100k-R$10M
     keywords:
       # Core security services
       - "vigilância"
@@ -3300,6 +3310,7 @@ sectors:
     name: "Transporte e Veículos"
     description: "Aquisição/locação de veículos, combustíveis, manutenção de frota, pneus, peças automotivas, gerenciamento de frota"
     max_contract_value: 100000000  # R$ 100M
+    viability_value_range: [50000, 5000000]  # D-04: ideal R$50k-R$5M
     keywords:
       # Vehicle acquisition
       - "veículo"
@@ -3560,6 +3571,7 @@ sectors:
     name: "Manutenção e Conservação Predial"
     description: "Manutenção preventiva/corretiva de edificações, PMOC, ar condicionado, elevadores, instalações elétricas/hidráulicas, pintura predial, impermeabilização"
     max_contract_value: 30000000  # R$ 30M
+    viability_value_range: [30000, 3000000]  # D-04: ideal R$30k-R$3M
     keywords:
       # Building maintenance (HIGH PRECISION)
       - "manutenção predial"
@@ -3736,6 +3748,7 @@ sectors:
     name: "Engenharia Rodoviária e Infraestrutura Viária"
     description: "Pavimentação, rodovias, pontes, viadutos, sinalização viária, conservação rodoviária"
     max_contract_value: null
+    viability_value_range: [200000, 20000000]  # D-04: ideal R$200k-R$20M
     keywords:
       # High precision compounds
       - "pavimentação asfáltica"
@@ -3860,6 +3873,7 @@ sectors:
     name: "Materiais Elétricos e Instalações"
     description: "Fios, cabos, disjuntores, quadros elétricos, iluminação pública, subestações"
     max_contract_value: 20000000
+    viability_value_range: [10000, 2000000]  # D-04: ideal R$10k-R$2M
     keywords:
       # Core materials
       - "material elétrico"
@@ -4020,6 +4034,7 @@ sectors:
     name: "Materiais Hidráulicos e Saneamento"
     description: "Tubos, conexões, bombas, tratamento de água, esgoto, redes de distribuição"
     max_contract_value: 30000000
+    viability_value_range: [10000, 2000000]  # D-04: ideal R$10k-R$2M
     keywords:
       # Core materials
       - "material hidráulico"

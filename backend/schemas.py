@@ -802,6 +802,21 @@ class LicitacaoItem(BaseModel):
         default=None,
         description="Confidence level derived from relevance_source: keyword=high, llm_standard=medium, llm_conservative/llm_zero_match=low"
     )
+    # D-04 AC1: Viability assessment — orthogonal to relevance
+    viability_score: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Viability score 0-100 based on modalidade, timeline, value fit, and geography"
+    )
+    viability_level: Optional[Literal["alta", "media", "baixa"]] = Field(
+        default=None,
+        description="Viability level: alta (>70), media (40-70), baixa (<40)"
+    )
+    viability_factors: Optional[dict] = Field(
+        default=None,
+        description="Breakdown of viability factors: modalidade, timeline, value_fit, geography (each 0-100 with label)"
+    )
 
     class Config:
         populate_by_name = True

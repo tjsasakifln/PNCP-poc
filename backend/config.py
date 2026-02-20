@@ -349,6 +349,14 @@ ITEM_INSPECTION_PHASE_TIMEOUT: float = float(
 ITEM_INSPECTION_CONCURRENCY: int = int(os.getenv("ITEM_INSPECTION_CONCURRENCY", "5"))
 
 # ============================================
+# D-04: Viability Assessment
+# ============================================
+VIABILITY_WEIGHT_MODALITY: float = float(os.getenv("VIABILITY_WEIGHT_MODALITY", "0.30"))
+VIABILITY_WEIGHT_TIMELINE: float = float(os.getenv("VIABILITY_WEIGHT_TIMELINE", "0.25"))
+VIABILITY_WEIGHT_VALUE_FIT: float = float(os.getenv("VIABILITY_WEIGHT_VALUE_FIT", "0.25"))
+VIABILITY_WEIGHT_GEOGRAPHY: float = float(os.getenv("VIABILITY_WEIGHT_GEOGRAPHY", "0.20"))
+
+# ============================================
 # E-03: Prometheus Metrics
 # ============================================
 METRICS_ENABLED: bool = str_to_bool(os.getenv("METRICS_ENABLED", "true"))
@@ -391,6 +399,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
     "ITEM_INSPECTION_ENABLED": ("ITEM_INSPECTION_ENABLED", "true"),
     "LLM_STRUCTURED_OUTPUT_ENABLED": ("LLM_STRUCTURED_OUTPUT_ENABLED", "true"),
+    "VIABILITY_ASSESSMENT_ENABLED": ("VIABILITY_ASSESSMENT_ENABLED", "false"),
 }
 
 
