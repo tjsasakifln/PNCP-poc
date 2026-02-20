@@ -38,6 +38,12 @@ export interface SearchProgressEvent {
     new_count?: number;
     updated_count?: number;
     removed_count?: number;
+    /** F-01 AC19: LLM summary data from background job */
+    resumo?: Record<string, unknown>;
+    /** F-01 AC20: Excel download URL from background job */
+    download_url?: string;
+    /** F-01 AC20: Excel status from background job */
+    excel_status?: string;
   };
 }
 

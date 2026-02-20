@@ -50,3 +50,6 @@ sentry-sdk[fastapi]>=2.0.0
 
 # Prometheus metrics exporter (GTM-RESILIENCE-E03)
 prometheus_client>=0.20.0
+
+# Async job queue for background LLM + Excel processing (GTM-RESILIENCE-F01)
+arq>=0.26,<1.0

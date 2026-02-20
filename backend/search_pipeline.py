@@ -1617,79 +1617,132 @@ class SearchPipeline:
                 ufs_status_detail=_ufs_detail,
                 coverage_metadata=_build_coverage_metadata(ctx),
                 live_fetch_in_progress=ctx.live_fetch_in_progress,
+                llm_status=None,
+                excel_status=None,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
-        # SSE: Starting LLM
-        if ctx.tracker:
-            await ctx.tracker.emit("llm", 75, "Avaliando oportunidades com IA...")
+        # ---------------------------------------------------------------
+        # GTM-RESILIENCE-F01: Queue-first LLM + Excel (AC17, AC22)
+        # If ARQ queue is available, dispatch jobs and return immediately.
+        # Otherwise, execute inline (zero regression).
+        # ---------------------------------------------------------------
+        from job_queue import is_queue_available, enqueue_job
 
-        # LLM summary (with fallback)
-        logger.debug("Generating executive summary")
-        try:
-            ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
-            logger.debug("LLM summary generated successfully")
-        except Exception as e:
-            logger.warning(
-                f"LLM generation failed, using fallback mechanism: {type(e).__name__}: {e}",
-            )
-            ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
-            logger.debug("Fallback summary generated successfully")
+        queue_available = await is_queue_available()
+        search_id = ctx.request.search_id
 
-        # Override LLM-generated counts with actual values
-        actual_total = len(ctx.licitacoes_filtradas)
-        actual_valor = sum(
-            lic.get("valorTotalEstimado", 0) or 0 for lic in ctx.licitacoes_filtradas
-        )
-        if ctx.resumo.total_oportunidades != actual_total:
-            logger.warning(
-                f"LLM returned total_oportunidades={ctx.resumo.total_oportunidades}, "
-                f"overriding with actual count={actual_total}"
-            )
-        ctx.resumo.total_oportunidades = actual_total
-        ctx.resumo.valor_total = actual_valor
-
-        # SSE: Starting Excel
-        if ctx.tracker:
-            await ctx.tracker.emit("excel", 92, "Gerando planilha Excel...")
-
-        # Excel generation (conditional on plan)
         ctx.excel_base64 = None
         ctx.download_url = None
         ctx.excel_available = ctx.quota_info.capabilities["allow_excel"] if ctx.quota_info else False
         ctx.upgrade_message = None
 
-        if ctx.excel_available:
-            logger.debug("Generating Excel report")
-            excel_buffer = deps.create_excel(ctx.licitacoes_filtradas)
-            excel_bytes = excel_buffer.read()
+        if queue_available and search_id:
+            # === QUEUE MODE: Dispatch to background, return fast ===
+            logger.info(f"Queue mode: dispatching LLM + Excel jobs for search_id={search_id}")
+            ctx.queue_mode = True
 
-            storage_result = upload_excel(excel_bytes, ctx.request.search_id)
+            # Immediate fallback summary (pure Python, <1ms)
+            ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
+            ctx.llm_status = "processing"
 
-            if storage_result:
-                ctx.download_url = storage_result["signed_url"]
-                logger.debug(
-                    f"Excel uploaded to storage: {storage_result['file_path']} "
-                    f"(signed URL valid for {storage_result['expires_in']}s)"
+            # Enqueue LLM job
+            await enqueue_job(
+                "llm_summary_job",
+                search_id,
+                ctx.licitacoes_filtradas,
+                ctx.sector.name,
+                _job_id=f"llm:{search_id}",
+            )
+
+            # Enqueue Excel job (or skip if plan doesn't allow)
+            if ctx.excel_available:
+                ctx.excel_status = "processing"
+                await enqueue_job(
+                    "excel_generation_job",
+                    search_id,
+                    ctx.licitacoes_filtradas,
+                    ctx.excel_available,
+                    _job_id=f"excel:{search_id}",
                 )
-                ctx.excel_base64 = None
             else:
-                # STORY-226 AC15: Removed filesystem/base64 fallback.
-                # Rely exclusively on object storage. If upload fails,
-                # report Excel as temporarily unavailable.
-                logger.error(
-                    "Excel storage upload failed — no fallback. "
-                    "Excel will be unavailable for this search."
-                )
-                ctx.excel_base64 = None
-                ctx.download_url = None
-                ctx.excel_available = False
-                ctx.upgrade_message = (
-                    "Erro temporário ao gerar Excel. Tente novamente em alguns instantes."
-                )
+                ctx.excel_status = "skipped"
+                ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
+
+            # SSE: Notify frontend that results are ready (LLM/Excel arriving later)
+            if ctx.tracker:
+                await ctx.tracker.emit("filtering_complete", 70, "Resultados prontos! Gerando resumo e planilha em segundo plano...")
+
         else:
-            logger.debug("Excel generation skipped (not allowed for user's plan)")
-            ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
+            # === INLINE MODE: Current behavior (AC22 fallback) ===
+            ctx.queue_mode = False
+
+            # SSE: Starting LLM
+            if ctx.tracker:
+                await ctx.tracker.emit("llm", 75, "Avaliando oportunidades com IA...")
+
+            # LLM summary (with fallback)
+            logger.debug("Generating executive summary")
+            try:
+                ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
+                logger.debug("LLM summary generated successfully")
+            except Exception as e:
+                logger.warning(
+                    f"LLM generation failed, using fallback mechanism: {type(e).__name__}: {e}",
+                )
+                ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
+                logger.debug("Fallback summary generated successfully")
+
+            # Override LLM-generated counts with actual values
+            actual_total = len(ctx.licitacoes_filtradas)
+            actual_valor = sum(
+                lic.get("valorTotalEstimado", 0) or 0 for lic in ctx.licitacoes_filtradas
+            )
+            if ctx.resumo.total_oportunidades != actual_total:
+                logger.warning(
+                    f"LLM returned total_oportunidades={ctx.resumo.total_oportunidades}, "
+                    f"overriding with actual count={actual_total}"
+                )
+            ctx.resumo.total_oportunidades = actual_total
+            ctx.resumo.valor_total = actual_valor
+            ctx.llm_status = "ready"
+
+            # SSE: Starting Excel
+            if ctx.tracker:
+                await ctx.tracker.emit("excel", 92, "Gerando planilha Excel...")
+
+            # Excel generation (conditional on plan)
+            if ctx.excel_available:
+                logger.debug("Generating Excel report")
+                excel_buffer = deps.create_excel(ctx.licitacoes_filtradas)
+                excel_bytes = excel_buffer.read()
+
+                storage_result = upload_excel(excel_bytes, ctx.request.search_id)
+
+                if storage_result:
+                    ctx.download_url = storage_result["signed_url"]
+                    logger.debug(
+                        f"Excel uploaded to storage: {storage_result['file_path']} "
+                        f"(signed URL valid for {storage_result['expires_in']}s)"
+                    )
+                    ctx.excel_base64 = None
+                    ctx.excel_status = "ready"
+                else:
+                    logger.error(
+                        "Excel storage upload failed — no fallback. "
+                        "Excel will be unavailable for this search."
+                    )
+                    ctx.excel_base64 = None
+                    ctx.download_url = None
+                    ctx.excel_available = False
+                    ctx.excel_status = "failed"
+                    ctx.upgrade_message = (
+                        "Erro temporário ao gerar Excel. Tente novamente em alguns instantes."
+                    )
+            else:
+                logger.debug("Excel generation skipped (not allowed for user's plan)")
+                ctx.excel_status = "skipped"
+                ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
 
         # Convert to LicitacaoItems
         ctx.licitacao_items = _convert_to_licitacao_items(ctx.licitacoes_filtradas)
@@ -1743,6 +1796,9 @@ class SearchPipeline:
             ufs_status_detail=_ufs_detail,
             coverage_metadata=_build_coverage_metadata(ctx),
             live_fetch_in_progress=ctx.live_fetch_in_progress,
+            # GTM-RESILIENCE-F01 AC18: Background job status
+            llm_status=ctx.llm_status,
+            excel_status=ctx.excel_status,
         )
 
         logger.info(
@@ -1751,6 +1807,9 @@ class SearchPipeline:
                 "total_raw": ctx.response.total_raw,
                 "total_filtrado": ctx.response.total_filtrado,
                 "valor_total": ctx.resumo.valor_total,
+                "queue_mode": ctx.queue_mode,
+                "llm_status": ctx.llm_status,
+                "excel_status": ctx.excel_status,
             },
         )
 

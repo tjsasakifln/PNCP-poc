@@ -1043,6 +1043,16 @@ class BuscaResponse(BaseModel):
         default=None,
         description="ISO timestamp of when search results were generated"
     )
+    # GTM-RESILIENCE-F01: Background job status fields
+    llm_status: Optional[str] = Field(
+        default=None,
+        description="LLM summary status: 'ready' (inline), 'processing' (background job running), None (legacy)"
+    )
+    excel_status: Optional[str] = Field(
+        default=None,
+        description="Excel generation status: 'ready' (inline), 'processing' (background job running), "
+                    "'skipped' (plan does not allow), 'failed' (job failed), None (legacy)"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -1451,6 +1461,10 @@ class HealthDependencies(BaseModel):
     openai: str
     redis: str
     redis_metrics: Optional[RedisMetrics] = None
+    queue: Optional[str] = Field(
+        default=None,
+        description="GTM-RESILIENCE-F01 AC4: ARQ job queue status — 'healthy' or 'unavailable'"
+    )
 
 
 class HealthResponse(BaseModel):

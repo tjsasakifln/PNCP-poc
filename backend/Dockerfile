@@ -7,9 +7,9 @@
 FROM python:3.11-slim
 
 # CACHE BUST - This label forces Railway to rebuild when changed
-# Update timestamp to invalidate all cached layers: 2026-01-28T12:50:00
-LABEL build.timestamp="2026-01-28T22:00:00"
-ARG CACHEBUST=20260128v6
+# Update timestamp to invalidate all cached layers: 2026-02-20T12:00:00
+LABEL build.timestamp="2026-02-20T12:00:00"
+ARG CACHEBUST=20260220v1
 
 # Set working directory
 WORKDIR /app
@@ -36,8 +36,12 @@ EXPOSE 8000
 # NOTE: Railway handles healthcheck via railway.toml (healthcheckPath = "/health")
 # Do NOT add HEALTHCHECK instruction here - it conflicts with Railway's system
 
-# Run with gunicorn + uvicorn workers for production concurrency (GTM-FIX-020)
-# WEB_CONCURRENCY: Railway can override; default 2 workers (GTM-FIX-030 AC9)
-# GUNICORN_TIMEOUT: Must exceed SEARCH_FETCH_TIMEOUT (360s) to avoid silent worker kills
+# GTM-RESILIENCE-F01 AC6: Entrypoint script supports both web and worker modes
+# Usage:
+#   Web process (default):  CMD (below) or PROCESS_TYPE=web
+#   ARQ worker:             PROCESS_TYPE=worker
 # Using shell form for guaranteed variable expansion
-CMD gunicorn main:app -k uvicorn.workers.UvicornWorker -w ${WEB_CONCURRENCY:-2} --bind 0.0.0.0:${PORT:-8000} --timeout ${GUNICORN_TIMEOUT:-600} --graceful-timeout ${GUNICORN_GRACEFUL_TIMEOUT:-60}
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]

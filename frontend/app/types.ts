@@ -149,6 +149,10 @@ export interface BuscaResult {
   truncation_details?: Record<string, boolean>;
   /** GTM-RESILIENCE-A04 AC1: True when cache-first response with live fetch running in background */
   live_fetch_in_progress?: boolean;
+  /** GTM-RESILIENCE-F01 AC18: LLM summary status — 'ready', 'processing', or null */
+  llm_status?: "ready" | "processing" | null;
+  /** GTM-RESILIENCE-F01 AC18: Excel generation status — 'ready', 'processing', 'skipped', 'failed', or null */
+  excel_status?: "ready" | "processing" | "skipped" | "failed" | null;
 }
 
 // ============================================================================

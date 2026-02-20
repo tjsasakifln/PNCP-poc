@@ -228,6 +228,10 @@ async def lifespan(app_instance: FastAPI):
     # STORY-217: Initialize Redis pool
     await startup_redis()
 
+    # GTM-RESILIENCE-F01: Initialize ARQ job queue pool
+    from job_queue import get_arq_pool
+    await get_arq_pool()
+
     # UX-303 AC8: Start periodic cache cleanup
     from cron_jobs import start_cache_cleanup_task
     cleanup_task = await start_cache_cleanup_task()
@@ -244,6 +248,10 @@ async def lifespan(app_instance: FastAPI):
         await cleanup_task
     except Exception:
         pass
+
+    # GTM-RESILIENCE-F01: Close ARQ pool
+    from job_queue import close_arq_pool
+    await close_arq_pool()
 
     # STORY-217: Close Redis pool
     await shutdown_redis()
@@ -534,6 +542,13 @@ async def health():
     # B-04 AC8: Include redis_metrics in dependencies
     if redis_metrics:
         dependencies["redis_metrics"] = redis_metrics
+
+    # GTM-RESILIENCE-F01 AC4: ARQ job queue health
+    try:
+        from job_queue import get_queue_health
+        dependencies["queue"] = await get_queue_health()
+    except Exception:
+        dependencies["queue"] = "unavailable"
 
     response_data = {
         "status": status,

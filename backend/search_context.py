@@ -82,6 +82,11 @@ class SearchContext:
     upgrade_message: Optional[str] = None
     licitacao_items: list = field(default_factory=list)
 
+    # === Stage 6b: Queue mode flag (GTM-RESILIENCE-F01) ===
+    queue_mode: bool = False  # True when LLM/Excel dispatched to background jobs
+    llm_status: Optional[str] = None  # "ready" | "processing" | None
+    excel_status: Optional[str] = None  # "ready" | "processing" | "skipped" | "failed" | None
+
     # === Stage 7: Persist outputs ===
     session_id: Optional[str] = None
     response: Any = None  # schemas.BuscaResponse

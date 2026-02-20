@@ -155,12 +155,34 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   // A-04: Keep searchId alive for SSE after cache-first
   const liveFetchSearchIdRef = useRef<string | null>(null);
 
+  // F-01 AC21: Handle background job completion via SSE
+  const handleSseEvent = (event: SearchProgressEvent) => {
+    if (event.stage === 'llm_ready' && event.detail.resumo) {
+      // Update the result's resumo with the AI-generated summary
+      setResult(prev => prev ? {
+        ...prev,
+        resumo: event.detail.resumo as BuscaResult['resumo'],
+        llm_status: 'ready' as const,
+      } : prev);
+    } else if (event.stage === 'excel_ready') {
+      // Update the result's download_url when Excel is ready
+      setResult(prev => prev ? {
+        ...prev,
+        download_url: event.detail.download_url || null,
+        excel_status: (event.detail.excel_status === 'failed' ? 'failed' : 'ready') as BuscaResult['excel_status'],
+      } : prev);
+    }
+  };
+
   // SSE hook — GTM-FIX-033 AC2: sseDisconnected for resilience
   // A-04: Keep SSE open during background fetch (enabled when loading OR liveFetchInProgress)
+  // F-01: Keep SSE open when llm_status/excel_status is "processing" (background jobs running)
+  const hasProcessingJobs = !!(result?.llm_status === 'processing' || result?.excel_status === 'processing');
   const { currentEvent: sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail, partialProgress, refreshAvailable } = useSearchProgress({
     searchId: liveFetchInProgress ? liveFetchSearchIdRef.current : searchId,
-    enabled: (loading && !!searchId) || liveFetchInProgress,
+    enabled: (loading && !!searchId) || liveFetchInProgress || hasProcessingJobs,
     authToken: session?.access_token,
+    onEvent: handleSseEvent,
     onError: () => setUseRealProgress(false),
   });
 
@@ -258,6 +280,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       termos_count: filters.termosArray.length,
     });
 
+    // F-01: Declared outside try so finally block can check llm_status/excel_status
+    let data: BuscaResult | null = null;
+
     try {
       // STORY-226 AC24: Attach session correlation ID for distributed tracing
       const correlationId = getCorrelationId();
@@ -269,7 +294,6 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
       const MAX_CLIENT_RETRIES = 2;
       const CLIENT_RETRY_DELAYS = [3000, 8000];
-      let data: BuscaResult | null = null;
 
       for (let clientAttempt = 0; clientAttempt <= MAX_CLIENT_RETRIES; clientAttempt++) {
         if (clientAttempt > 0) {
@@ -402,7 +426,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       setLoadingStep(1);
       setStatesProcessed(0);
       // A-04: Don't kill searchId when live fetch is running in background
-      if (!liveFetchInProgress && !liveFetchSearchIdRef.current) {
+      // F-01: Don't kill searchId when background jobs are still processing
+      const hasJobsRunning = data?.llm_status === 'processing' || data?.excel_status === 'processing';
+      if (!liveFetchInProgress && !liveFetchSearchIdRef.current && !hasJobsRunning) {
         setSearchId(null);
       }
       setUseRealProgress(false);
