@@ -637,6 +637,25 @@
             "description": "GTM-FIX-010 AC5r: Source codes that contributed to cached data (e.g. ['PNCP','PORTAL_COMPRAS'])",
             "title": "Cached Sources"
           },
+          "coverage_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GTM-RESILIENCE-C03: Consolidated coverage metadata for frontend display"
+          },
+          "coverage_pct": {
+            "default": 100,
+            "description": "GTM-RESILIENCE-A05 AC1: Coverage percentage (succeeded_ufs / total_ufs_requested * 100)",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Coverage Pct",
+            "type": "integer"
+          },
           "data_sources": {
             "anyOf": [
               {
@@ -774,6 +793,12 @@
             },
             "title": "Licitacoes",
             "type": "array"
+          },
+          "live_fetch_in_progress": {
+            "default": false,
+            "description": "A-04 AC1: True when cache-first response returned and live fetch is running in background",
+            "title": "Live Fetch In Progress",
+            "type": "boolean"
           },
           "quota_remaining": {
             "description": "Monthly searches remaining",
@@ -932,6 +957,21 @@
             ],
             "description": "Per-source truncation flags, e.g. {'pncp': true, 'portal_compras': false}. None when no truncation occurred (backward compatible).",
             "title": "Truncation Details"
+          },
+          "ufs_status_detail": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/UfStatusDetail"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GTM-RESILIENCE-A05 AC2: Per-UF status breakdown with results count",
+            "title": "Ufs Status Detail"
           },
           "ultima_atualizacao": {
             "anyOf": [
@@ -1172,6 +1212,66 @@
           "total"
         ],
         "title": "ConversationsListResponse",
+        "type": "object"
+      },
+      "CoverageMetadata": {
+        "description": "GTM-RESILIENCE-C03 AC1: Consolidated coverage metadata.",
+        "properties": {
+          "coverage_pct": {
+            "description": "Porcentagem de cobertura (1 decimal)",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Coverage Pct",
+            "type": "number"
+          },
+          "data_timestamp": {
+            "description": "ISO timestamp de quando dados foram obtidos",
+            "title": "Data Timestamp",
+            "type": "string"
+          },
+          "freshness": {
+            "description": "Indicador de freshness",
+            "enum": [
+              "live",
+              "cached_fresh",
+              "cached_stale"
+            ],
+            "title": "Freshness",
+            "type": "string"
+          },
+          "ufs_failed": {
+            "description": "UFs que falharam (timeout/erro)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ufs Failed",
+            "type": "array"
+          },
+          "ufs_processed": {
+            "description": "UFs que retornaram dados com sucesso",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ufs Processed",
+            "type": "array"
+          },
+          "ufs_requested": {
+            "description": "UFs solicitadas pelo usuario",
+            "items": {
+              "type": "string"
+            },
+            "title": "Ufs Requested",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ufs_requested",
+          "ufs_processed",
+          "coverage_pct",
+          "data_timestamp",
+          "freshness"
+        ],
+        "title": "CoverageMetadata",
         "type": "object"
       },
       "CreateConversationRequest": {
@@ -1906,6 +2006,20 @@
             "description": "Source that provided this record",
             "title": "Source"
           },
+          "confidence_score": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Classification confidence 0-100%. keyword=95, llm=varies, item_inspection=85, zero_match<=70",
+            "title": "Confidence Score"
+          },
           "data_abertura": {
             "anyOf": [
               {
@@ -1958,6 +2072,21 @@
             "description": "Direct link to PNCP portal",
             "title": "Link",
             "type": "string"
+          },
+          "llm_evidence": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Literal text excerpts from procurement description that support the classification (max 3)",
+            "title": "Llm Evidence"
           },
           "matched_terms": {
             "anyOf": [
@@ -3454,6 +3583,40 @@
           "avg_opportunity_value"
         ],
         "title": "TrialValueResponse",
+        "type": "object"
+      },
+      "UfStatusDetail": {
+        "description": "Per-UF status detail for coverage indicators (GTM-RESILIENCE-A05 AC2).",
+        "properties": {
+          "results_count": {
+            "default": 0,
+            "description": "Number of results from this UF",
+            "minimum": 0.0,
+            "title": "Results Count",
+            "type": "integer"
+          },
+          "status": {
+            "description": "UF fetch status",
+            "enum": [
+              "ok",
+              "timeout",
+              "error",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "uf": {
+            "description": "State code (e.g., 'SP')",
+            "title": "Uf",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uf",
+          "status"
+        ],
+        "title": "UfStatusDetail",
         "type": "object"
       },
       "UnreadCountResponse": {
@@ -5239,7 +5402,7 @@
     },
     "/buscar": {
       "post": {
-        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nSTORY-216 AC5: buscar_licitacoes() is a thin wrapper that creates\nSearchPipeline and runs stages. All business logic lives in search_pipeline.py.\n\nThe wrapper handles:\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)",
+        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)",
         "operationId": "buscar_licitacoes_buscar_post",
         "requestBody": {
           "content": {
@@ -5286,7 +5449,7 @@
     },
     "/buscar-progress/{search_id}": {
       "get": {
-        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - error: Search failed",
+        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
         "operationId": "buscar_progress_stream_buscar_progress__search_id__get",
         "parameters": [
           {
@@ -5325,6 +5488,52 @@
           }
         ],
         "summary": "Buscar Progress Stream",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/buscar-results/{search_id}": {
+      "get": {
+        "description": "Return results of a background fetch for cache-first progressive delivery.\n\nA-04 AC5: Called by frontend when user clicks \"Atualizar resultados\" banner.\nReturns 404 if search_id not found or expired (10min TTL).",
+        "operationId": "get_search_results_buscar_results__search_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "search_id",
+            "required": true,
+            "schema": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Search Results",
         "tags": [
           "search"
         ]
@@ -5590,7 +5799,7 @@
     },
     "/health/cache": {
       "get": {
-        "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.",
+        "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.\nB-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.",
         "operationId": "cache_health_health_cache_get",
         "responses": {
           "200": {
@@ -7625,7 +7834,7 @@
     },
     "/v1/buscar": {
       "post": {
-        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nSTORY-216 AC5: buscar_licitacoes() is a thin wrapper that creates\nSearchPipeline and runs stages. All business logic lives in search_pipeline.py.\n\nThe wrapper handles:\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)",
+        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)",
         "operationId": "buscar_licitacoes_v1_buscar_post",
         "requestBody": {
           "content": {
@@ -7672,7 +7881,7 @@
     },
     "/v1/buscar-progress/{search_id}": {
       "get": {
-        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - error: Search failed",
+        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
         "operationId": "buscar_progress_stream_v1_buscar_progress__search_id__get",
         "parameters": [
           {
@@ -7711,6 +7920,52 @@
           }
         ],
         "summary": "Buscar Progress Stream",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/v1/buscar-results/{search_id}": {
+      "get": {
+        "description": "Return results of a background fetch for cache-first progressive delivery.\n\nA-04 AC5: Called by frontend when user clicks \"Atualizar resultados\" banner.\nReturns 404 if search_id not found or expired (10min TTL).",
+        "operationId": "get_search_results_v1_buscar_results__search_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "search_id",
+            "required": true,
+            "schema": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Search Results",
         "tags": [
           "search"
         ]
@@ -7933,7 +8188,7 @@
     },
     "/v1/health/cache": {
       "get": {
-        "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.",
+        "description": "AC7: Health check for all cache levels.\n\nReturns status of Supabase, Redis/InMemory, and Local file caches\nwith latency measurements and error details.\nB-03 AC9: Includes degraded_keys_count and avg_fail_streak from health metadata.",
         "operationId": "cache_health_v1_health_cache_get",
         "responses": {
           "200": {

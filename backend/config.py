@@ -317,6 +317,15 @@ LLM_ZERO_MATCH_ENABLED: bool = str_to_bool(
 )
 
 # ============================================
+# D-02: LLM Structured Output with Evidence
+# ============================================
+# When enabled, LLM arbiter returns JSON with confidence, evidence, rejection reason
+# instead of binary SIM/NAO. Allows re-ranking by confidence and audit trail.
+LLM_STRUCTURED_OUTPUT_ENABLED: bool = str_to_bool(
+    os.getenv("LLM_STRUCTURED_OUTPUT_ENABLED", "true")
+)
+
+# ============================================
 # D-01: Item Inspection (Gray Zone Enhancement)
 # ============================================
 # Feature flag: enable/disable item-level inspection for gray zone bids (0-5% density)
@@ -381,6 +390,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "CO_OCCURRENCE_RULES_ENABLED": ("CO_OCCURRENCE_RULES_ENABLED", "true"),
     "FILTER_DEBUG_MODE": ("FILTER_DEBUG_MODE", "false"),
     "ITEM_INSPECTION_ENABLED": ("ITEM_INSPECTION_ENABLED", "true"),
+    "LLM_STRUCTURED_OUTPUT_ENABLED": ("LLM_STRUCTURED_OUTPUT_ENABLED", "true"),
 }
 
 

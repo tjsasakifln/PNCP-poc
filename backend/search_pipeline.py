@@ -263,6 +263,9 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 relevance_score=lic.get("_relevance_score"),
                 matched_terms=lic.get("_matched_terms"),
                 relevance_source=lic.get("_relevance_source"),
+                # D-02 AC7: Confidence score and LLM evidence for frontend
+                confidence_score=lic.get("_confidence_score"),
+                llm_evidence=lic.get("_llm_evidence"),
             )
             items.append(item)
         except Exception as e:
@@ -1417,7 +1420,7 @@ class SearchPipeline:
     # Stage 5: EnrichResults
     # ------------------------------------------------------------------
     async def stage_enrich(self, ctx: SearchContext) -> None:
-        """Compute relevance scores and apply sorting."""
+        """Compute relevance scores, confidence-based re-ranking, and apply sorting."""
 
         # Relevance scoring (STORY-178)
         if ctx.custom_terms and ctx.licitacoes_filtradas:
@@ -1428,15 +1431,40 @@ class SearchPipeline:
                     len(matched_terms), len(ctx.custom_terms), phrase_count
                 )
 
-        # Sorting
+        # D-02 AC5: Re-ranking by confidence_score DESC, then value DESC
+        # Procurements with confidence >= 80 first, 50-79 next, <50 last
+        # Within each band, sort by estimated value DESC
         if ctx.licitacoes_filtradas:
-            logger.debug(f"Applying sorting: ordenacao='{ctx.request.ordenacao}'")
+            def _confidence_sort_key(lic: dict) -> tuple:
+                conf = lic.get("_confidence_score", 50)
+                # Band: 0=high(>=80), 1=medium(50-79), 2=low(<50)
+                if conf >= 80:
+                    band = 0
+                elif conf >= 50:
+                    band = 1
+                else:
+                    band = 2
+                valor = float(lic.get("valorTotalEstimado") or lic.get("valorEstimado") or 0)
+                return (band, -conf, -valor)
+
+            ctx.licitacoes_filtradas.sort(key=_confidence_sort_key)
+            logger.debug(
+                f"D-02 AC5: Re-ranked {len(ctx.licitacoes_filtradas)} results by confidence. "
+                f"High(>=80): {sum(1 for l in ctx.licitacoes_filtradas if l.get('_confidence_score', 50) >= 80)}, "
+                f"Medium(50-79): {sum(1 for l in ctx.licitacoes_filtradas if 50 <= l.get('_confidence_score', 50) < 80)}, "
+                f"Low(<50): {sum(1 for l in ctx.licitacoes_filtradas if l.get('_confidence_score', 50) < 50)}"
+            )
+
+        # User-requested sorting (applied AFTER confidence re-ranking for non-default)
+        if ctx.licitacoes_filtradas and ctx.request.ordenacao != "data_desc":
+            logger.debug(f"Applying user sorting: ordenacao='{ctx.request.ordenacao}'")
             ctx.licitacoes_filtradas = ordenar_licitacoes(
                 ctx.licitacoes_filtradas,
                 ordenacao=ctx.request.ordenacao,
                 termos_busca=ctx.custom_terms if ctx.custom_terms else list(ctx.active_keywords)[:10],
             )
 
+        if ctx.licitacoes_filtradas:
             filter_elapsed = sync_time_module.time() - ctx.start_time
             logger.debug(
                 f"Filtering and sorting complete in {filter_elapsed:.2f}s: "

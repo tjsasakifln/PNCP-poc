@@ -146,6 +146,13 @@ SEARCHES = _create_counter(
     labelnames=["sector", "result_status"],
 )
 
+# D-02 AC9: LLM token usage tracking
+LLM_TOKENS = _create_counter(
+    "smartlic_llm_tokens_total",
+    "LLM token usage by direction",
+    labelnames=["direction"],  # "input" or "output"
+)
+
 # ============================================================================
 # Gauges
 # ============================================================================

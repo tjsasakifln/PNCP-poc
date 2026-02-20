@@ -785,6 +785,17 @@ class LicitacaoItem(BaseModel):
         default=None,
         description="How relevance was determined: 'keyword' (density >5%), 'llm_standard' (2-5%), 'llm_conservative' (1-2%), 'llm_zero_match' (0% keyword match, LLM classified)"
     )
+    # D-02 AC7: Confidence score and LLM evidence for frontend display
+    confidence_score: Optional[int] = Field(
+        default=None,
+        ge=0,
+        le=100,
+        description="Classification confidence 0-100%. keyword=95, llm=varies, item_inspection=85, zero_match<=70"
+    )
+    llm_evidence: Optional[List[str]] = Field(
+        default=None,
+        description="Literal text excerpts from procurement description that support the classification (max 3)"
+    )
 
     class Config:
         populate_by_name = True

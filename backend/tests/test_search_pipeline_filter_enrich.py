@@ -303,8 +303,8 @@ class TestStageEnrich:
     @patch("search_pipeline.sync_time_module")
     @patch("search_pipeline.ordenar_licitacoes")
     async def test_sorting_applied(self, mock_ordenar, mock_time_module):
-        """When licitacoes_filtradas is non-empty, ordenar_licitacoes is called
-        with the correct params (ordenacao and termos_busca)."""
+        """When ordenacao != 'data_desc', ordenar_licitacoes is called
+        after D-02 confidence re-ranking."""
         items = [
             {"objetoCompra": "Uniforme A", "_matched_terms": ["uniforme"]},
             {"objetoCompra": "Uniforme B", "_matched_terms": ["uniforme"]},
@@ -318,7 +318,7 @@ class TestStageEnrich:
             licitacoes_filtradas=items,
             custom_terms=[],
             active_keywords={"uniforme", "jaleco"},
-            request_overrides={"ordenacao": "data_desc"},
+            request_overrides={"ordenacao": "relevancia"},
         )
         pipeline = SearchPipeline(deps)
 
@@ -326,8 +326,8 @@ class TestStageEnrich:
 
         mock_ordenar.assert_called_once()
         call_kwargs = mock_ordenar.call_args
-        assert call_kwargs.kwargs.get("ordenacao") == "data_desc" or \
-            call_kwargs[1].get("ordenacao") == "data_desc"
+        assert call_kwargs.kwargs.get("ordenacao") == "relevancia" or \
+            call_kwargs[1].get("ordenacao") == "relevancia"
 
         # Since custom_terms is empty, termos_busca should be from active_keywords (up to 10)
         termos_arg = call_kwargs.kwargs.get("termos_busca") or call_kwargs[1].get("termos_busca")
@@ -337,3 +337,32 @@ class TestStageEnrich:
 
         # ctx.licitacoes_filtradas should be the sorted result
         assert ctx.licitacoes_filtradas is sorted_items
+
+    @pytest.mark.asyncio
+    @patch("search_pipeline.sync_time_module")
+    @patch("search_pipeline.ordenar_licitacoes")
+    async def test_data_desc_uses_confidence_reranking(self, mock_ordenar, mock_time_module):
+        """D-02: When ordenacao='data_desc', confidence re-ranking is applied
+        instead of ordenar_licitacoes."""
+        items = [
+            {"objetoCompra": "Low conf", "_matched_terms": ["uniforme"], "_confidence_score": 30, "valorTotalEstimado": 100_000},
+            {"objetoCompra": "High conf", "_matched_terms": ["uniforme"], "_confidence_score": 95, "valorTotalEstimado": 100_000},
+        ]
+        mock_time_module.time.return_value = 100.0
+
+        deps = make_deps()
+        ctx = make_ctx(
+            licitacoes_filtradas=items,
+            custom_terms=[],
+            request_overrides={"ordenacao": "data_desc"},
+        )
+        pipeline = SearchPipeline(deps)
+
+        await pipeline.stage_enrich(ctx)
+
+        # ordenar_licitacoes should NOT be called for data_desc
+        mock_ordenar.assert_not_called()
+
+        # Confidence re-ranking: High(95) before Low(30)
+        assert ctx.licitacoes_filtradas[0]["objetoCompra"] == "High conf"
+        assert ctx.licitacoes_filtradas[1]["objetoCompra"] == "Low conf"

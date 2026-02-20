@@ -359,6 +359,9 @@ def inspect_bids_in_filter(
             bid["_item_inspection_detail"] = (
                 f"{matching}/{total} items matching ({ratio:.0%})"
             )
+            # D-02 AC4: Item inspection gets confidence_score=85
+            bid["_confidence_score"] = 85
+            bid["_llm_evidence"] = []
             logger.debug(
                 f"Item inspection ACCEPT: {matching}/{total} ({ratio:.0%}) "
                 f"for {cnpj}/{ano}/{sequencial}"

@@ -2376,7 +2376,7 @@ def aplicar_todos_filtros(
                 setor_name_zm = setor
 
             # AC6: Concurrent LLM calls with max 10 threads (equivalent to Semaphore(10))
-            def _classify_one(lic_item: dict) -> tuple[dict, bool]:
+            def _classify_one(lic_item: dict) -> tuple[dict, dict]:
                 obj = lic_item.get("objetoCompra", "")
                 val = lic_item.get("valorTotalEstimado") or lic_item.get("valorEstimado") or 0
                 if isinstance(val, str):
@@ -2403,19 +2403,32 @@ def aplicar_todos_filtros(
                 for future in as_completed(futures):
                     stats["llm_zero_match_calls"] += 1
                     try:
-                        lic_item, is_relevant = future.result()
+                        lic_item, llm_result = future.result()
+                        is_relevant = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
                         if is_relevant:
                             stats["llm_zero_match_aprovadas"] += 1
                             # AC8: Tag relevance source
                             lic_item["_relevance_source"] = "llm_zero_match"
                             lic_item["_term_density"] = 0.0
                             lic_item["_matched_terms"] = []
+                            # D-02 AC4: Confidence capped at 70 for zero-match
+                            if isinstance(llm_result, dict):
+                                raw_conf = llm_result.get("confidence", 60)
+                                lic_item["_confidence_score"] = min(raw_conf, 70)
+                                lic_item["_llm_evidence"] = llm_result.get("evidence", [])
+                            else:
+                                lic_item["_confidence_score"] = 60
+                                lic_item["_llm_evidence"] = []
                             resultado_llm_zero.append(lic_item)
                             logger.debug(
-                                f"LLM zero_match: ACCEPT objeto={lic_item.get('objetoCompra', '')[:80]}"
+                                f"LLM zero_match: ACCEPT conf={lic_item.get('_confidence_score')} "
+                                f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                             )
                         else:
                             stats["llm_zero_match_rejeitadas"] += 1
+                            # D-02 AC6: Store rejection reason for audit
+                            if isinstance(llm_result, dict):
+                                lic_item["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
                             logger.debug(
                                 f"LLM zero_match: REJECT objeto={lic_item.get('objetoCompra', '')[:80]}"
                             )
@@ -2514,6 +2527,9 @@ def aplicar_todos_filtros(
             stats["aprovadas_alta_densidade"] += 1
             # GTM-FIX-028 AC8: Tag relevance source
             lic["_relevance_source"] = "keyword"
+            # D-02 AC4: Keyword-accepted bids get confidence_score=95
+            lic["_confidence_score"] = 95
+            lic["_llm_evidence"] = []
             logger.debug(
                 f"[{trace_id}] Camada 2A: ACCEPT (alta densidade) "
                 f"density={density:.1%} objeto={objeto_preview}"
@@ -2626,8 +2642,9 @@ def aplicar_todos_filtros(
                 termos = lic.get("_matched_terms", [])
 
             # STORY-181 AC3 + STORY-251 AC2: Call LLM arbiter with prompt level and setor_id
+            # D-02: Now returns dict with is_primary, confidence, evidence, rejection_reason
             stats["llm_arbiter_calls"] += 1
-            is_primary = classify_contract_primary_match(
+            llm_result = classify_contract_primary_match(
                 objeto=objeto,
                 valor=valor,
                 setor_name=setor_name,
@@ -2635,19 +2652,31 @@ def aplicar_todos_filtros(
                 prompt_level=prompt_level,
                 setor_id=setor if setor_name else None,
             )
+            is_primary = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
 
             if is_primary:
                 stats["aprovadas_llm_arbiter"] += 1
                 # GTM-FIX-028 AC8: Tag relevance source based on prompt level
                 lic["_relevance_source"] = f"llm_{prompt_level}"
+                # D-02 AC4: Confidence from LLM structured output
+                if isinstance(llm_result, dict):
+                    lic["_confidence_score"] = llm_result.get("confidence", 70)
+                    lic["_llm_evidence"] = llm_result.get("evidence", [])
+                else:
+                    lic["_confidence_score"] = 70
+                    lic["_llm_evidence"] = []
                 resultado_densidade.append(lic)
                 logger.debug(
                     f"[{trace_id}] Camada 3A: ACCEPT (LLM={prompt_level}) "
+                    f"conf={lic.get('_confidence_score')} "
                     f"density={lic.get('_term_density', 0):.1%} "
                     f"objeto={objeto[:80]}"
                 )
             else:
                 stats["rejeitadas_llm_arbiter"] += 1
+                # D-02 AC6: Store rejection reason for audit
+                if isinstance(llm_result, dict):
+                    lic["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
                 logger.debug(
                     f"[{trace_id}] Camada 3A: REJECT (LLM={prompt_level}) "
                     f"density={lic.get('_term_density', 0):.1%} "
@@ -2664,6 +2693,7 @@ def aplicar_todos_filtros(
                     pass
 
             # STORY-181 AC7: QA Audit sampling
+            # D-02 AC6: Now includes evidence and confidence in audit log
             if random.random() < QA_AUDIT_SAMPLE_RATE:
                 lic["_qa_audit"] = True
                 lic["_qa_audit_decision"] = {
@@ -2673,6 +2703,9 @@ def aplicar_todos_filtros(
                     "density": lic.get("_term_density", 0),
                     "matched_terms": lic.get("_matched_terms", []),
                     "valor": valor,
+                    "confidence": llm_result.get("confidence") if isinstance(llm_result, dict) else None,
+                    "evidence": llm_result.get("evidence") if isinstance(llm_result, dict) else None,
+                    "rejection_reason": llm_result.get("rejection_reason") if isinstance(llm_result, dict) else None,
                 }
 
         logger.info(
