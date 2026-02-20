@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const backendUrl = process.env.BACKEND_URL;
   if (!backendUrl) {
     console.error("BACKEND_URL environment variable is not configured");
@@ -10,9 +10,15 @@ export async function GET() {
     );
   }
 
-  try {
+  // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+  const headers: Record<string, string> = {};
+  if (correlationId) {
+    headers["X-Correlation-ID"] = correlationId;
+  }
 
-    const response = await fetch(`${backendUrl}/v1/setores`);
+  try {
+    const response = await fetch(`${backendUrl}/v1/setores`, { headers });
 
     if (!response.ok) {
       return NextResponse.json(

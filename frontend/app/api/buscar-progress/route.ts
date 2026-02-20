@@ -24,11 +24,16 @@ export async function GET(request: NextRequest) {
     return new Response("Server not configured", { status: 503 });
   }
 
+  // CRIT-004 AC2: Forward Authorization + X-Correlation-ID
+  const correlationId = request.headers.get("X-Correlation-ID");
   const headers: Record<string, string> = {
     "Accept": "text/event-stream",
   };
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (correlationId) {
+    headers["X-Correlation-ID"] = correlationId;
   }
 
   try {

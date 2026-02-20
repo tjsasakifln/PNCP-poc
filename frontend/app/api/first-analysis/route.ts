@@ -13,14 +13,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
   }
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+  const headers: Record<string, string> = {
+    Authorization: authHeader,
+    "Content-Type": "application/json",
+  };
+  if (correlationId) {
+    headers["X-Correlation-ID"] = correlationId;
+  }
+
   try {
     const body = await request.json();
     const response = await fetch(`${backendUrl}/v1/first-analysis`, {
       method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(body),
     });
 

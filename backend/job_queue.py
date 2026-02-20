@@ -228,7 +228,7 @@ async def get_job_result(search_id: str, field: str) -> Optional[Any]:
 # Job Functions (Track 2 + Track 3)
 # ==========================================================================
 
-async def llm_summary_job(ctx: dict, search_id: str, licitacoes: list, sector_name: str) -> dict:
+async def llm_summary_job(ctx: dict, search_id: str, licitacoes: list, sector_name: str, **kwargs) -> dict:
     """Background job: Generate LLM summary and notify via SSE.
 
     AC7: Registered in WorkerSettings.
@@ -237,6 +237,11 @@ async def llm_summary_job(ctx: dict, search_id: str, licitacoes: list, sector_na
     AC10: After max_tries exhausted, ARQ persists fallback (never None).
     AC11: Timeout enforced by ARQ job_timeout setting (30s).
     """
+    # CRIT-004 AC16-AC17: Restore trace context from parent span
+    from middleware import search_id_var, request_id_var
+    search_id_var.set(search_id)
+    request_id_var.set(kwargs.get("_trace_id", search_id))
+
     from llm import gerar_resumo, gerar_resumo_fallback
     from progress import get_tracker
 
@@ -275,6 +280,7 @@ async def excel_generation_job(
     search_id: str,
     licitacoes: list,
     allow_excel: bool,
+    **kwargs,
 ) -> dict:
     """Background job: Generate Excel report and upload to storage.
 
@@ -284,6 +290,11 @@ async def excel_generation_job(
     AC15: On failure after retries, returns excel_status="failed".
     AC16: Timeout enforced by ARQ job_timeout setting (60s).
     """
+    # CRIT-004 AC16-AC17: Restore trace context from parent span
+    from middleware import search_id_var, request_id_var
+    search_id_var.set(search_id)
+    request_id_var.set(kwargs.get("_trace_id", search_id))
+
     from excel import create_excel
     from storage import upload_excel
     from progress import get_tracker

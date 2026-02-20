@@ -1,3 +1,5 @@
+-- SUPERSEDED by 033_fix_missing_cache_columns.sql
+
 -- GTM-FIX-010: Add sources_json and fetched_at to search_results_cache
 -- sources_json tracks which data sources contributed to cached results
 -- fetched_at records when the live fetch occurred (vs created_at = row creation)

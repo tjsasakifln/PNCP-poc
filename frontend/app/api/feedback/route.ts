@@ -14,12 +14,19 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const authHeader = request.headers.get("authorization") || "";
 
+    // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+    const correlationId = request.headers.get("X-Correlation-ID");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: authHeader,
+    };
+    if (correlationId) {
+      headers["X-Correlation-ID"] = correlationId;
+    }
+
     const res = await fetch(`${BACKEND_URL}/v1/feedback`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
@@ -45,11 +52,18 @@ export async function DELETE(request: NextRequest) {
 
     const authHeader = request.headers.get("authorization") || "";
 
+    // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+    const correlationId = request.headers.get("X-Correlation-ID");
+    const headers: Record<string, string> = {
+      Authorization: authHeader,
+    };
+    if (correlationId) {
+      headers["X-Correlation-ID"] = correlationId;
+    }
+
     const res = await fetch(`${BACKEND_URL}/v1/feedback/${feedbackId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: authHeader,
-      },
+      headers,
     });
 
     const data = await res.json();

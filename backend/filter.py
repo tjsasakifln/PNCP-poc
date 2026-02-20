@@ -2518,7 +2518,10 @@ def aplicar_todos_filtros(
 
     for lic in resultado_keyword:
         density = lic.get("_term_density", 0)
-        trace_id = str(uuid.uuid4())[:8]
+        # CRIT-004 AC11: Use search_id from ContextVar instead of independent trace_id
+        from middleware import search_id_var
+        _search_id = search_id_var.get("-")
+        trace_id = _search_id[:8] if _search_id != "-" else str(uuid.uuid4())[:8]
         lic["_trace_id"] = trace_id
         objeto_preview = lic.get("objetoCompra", "")[:100]
 

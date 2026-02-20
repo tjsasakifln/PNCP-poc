@@ -538,18 +538,29 @@ Legacy values `('free', 'avulso', 'pack', 'monthly', 'annual')` were removed by 
 
 ### 14. search_results_cache
 
-**Purpose:** Persistent cache of last 5 search results per user. Serves cached data when all sources fail ("Never Empty-Handed" principle).
-**Migration:** 026 (STORY-257A)
+**Purpose:** Cache for search results with health monitoring and priority management. Serves cached data when all sources fail ("Never Empty-Handed" principle).
+**Migrations:** 026 (STORY-257A — base), 027 (sources_json + fetched_at), 031 (health fields), 032 (priority + access tracking), 033 (fetched_at index)
 
-| Column | Type | Nullable | Default | Constraints / Notes |
-|--------|------|----------|---------|---------------------|
-| `id` | `uuid` | NO | `gen_random_uuid()` | **PK** |
-| `user_id` | `uuid` | NO | - | FK -> `auth.users(id) ON DELETE CASCADE` (**inconsistent: should be profiles(id)**) |
-| `params_hash` | `text` | NO | - | Hash of search parameters |
-| `search_params` | `jsonb` | NO | - | Full search parameters snapshot |
-| `results` | `jsonb` | NO | - | Cached search results |
-| `total_results` | `integer` | NO | `0` | |
-| `created_at` | `timestamptz` | NO | `now()` | |
+| # | Column | Type | Nullable | Default | Migration |
+|---|--------|------|----------|---------|-----------|
+| 1 | id | UUID | NO | gen_random_uuid() | 026 |
+| 2 | user_id | UUID | NO | - | 026 |
+| 3 | params_hash | TEXT | NO | - | 026 |
+| 4 | search_params | JSONB | NO | - | 026 |
+| 5 | results | JSONB | NO | - | 026 |
+| 6 | total_results | INTEGER | NO | - | 026 |
+| 7 | created_at | TIMESTAMPTZ | NO | now() | 026 |
+| 8 | sources_json | JSONB | NO | '["pncp"]' | 027 |
+| 9 | fetched_at | TIMESTAMPTZ | NO | now() | 027 |
+| 10 | last_success_at | TIMESTAMPTZ | YES | NULL | 031 |
+| 11 | last_attempt_at | TIMESTAMPTZ | YES | NULL | 031 |
+| 12 | fail_streak | INTEGER | NO | 0 | 031 |
+| 13 | degraded_until | TIMESTAMPTZ | YES | NULL | 031 |
+| 14 | coverage | JSONB | YES | NULL | 031 |
+| 15 | fetch_duration_ms | INTEGER | YES | NULL | 031 |
+| 16 | priority | TEXT | NO | 'cold' | 032 |
+| 17 | access_count | INTEGER | NO | 0 | 032 |
+| 18 | last_accessed_at | TIMESTAMPTZ | YES | NULL | 032 |
 
 **Constraints:**
 - UNIQUE(`user_id`, `params_hash`) -- one cache entry per user per unique search
@@ -560,8 +571,13 @@ Legacy values `('free', 'avulso', 'pack', 'monthly', 'annual')` were removed by 
 | `search_results_cache_pkey` | `id` | B-tree (PK) |
 | `idx_search_cache_user` | `user_id, created_at DESC` | B-tree |
 | `idx_search_cache_params_hash` | `params_hash` | B-tree |
+| `idx_search_cache_fetched_at` | `fetched_at` | B-tree (migration 033) |
 
 **Auto-cleanup:** Trigger `trg_cleanup_search_cache` fires AFTER INSERT and invokes `cleanup_search_cache_per_user()` to keep max 5 entries per user (oldest beyond 5 are deleted).
+
+**Foreign Key NOTE:** `user_id` references `auth.users(id)` (not standardized to `profiles(id)` yet).
+
+**SSOT Model:** `backend/models/cache.py:SearchResultsCacheRow`
 
 ---
 

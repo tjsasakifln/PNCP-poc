@@ -25,13 +25,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+    const correlationId = request.headers.get("X-Correlation-ID");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: authHeader,
+    };
+    if (correlationId) {
+      headers["X-Correlation-ID"] = correlationId;
+    }
+
     // Call backend billing portal endpoint
     const response = await fetch(`${backendUrl}/v1/billing-portal`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-      },
+      headers,
     });
 
     if (!response.ok) {

@@ -10,7 +10,8 @@ Original models:
 - user_subscription: User subscriptions and credits
 """
 
+from .cache import SearchResultsCacheRow
 from .stripe_webhook_event import StripeWebhookEvent
 from .user_subscription import UserSubscription
 
-__all__ = ["StripeWebhookEvent", "UserSubscription"]
+__all__ = ["SearchResultsCacheRow", "StripeWebhookEvent", "UserSubscription"]

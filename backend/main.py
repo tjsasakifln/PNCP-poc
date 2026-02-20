@@ -67,6 +67,7 @@ from routes.onboarding import router as onboarding_router  # GTM-004: First anal
 from routes.auth_email import router as auth_email_router  # GTM-FIX-009: Email confirmation recovery
 from routes.health import router as cache_health_router  # UX-303: Cache health endpoint
 from routes.feedback import router as feedback_router  # GTM-RESILIENCE-D05: User feedback loop
+from routes.admin_trace import router as admin_trace_router  # CRIT-004 AC21: Search trace endpoint
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -180,6 +181,58 @@ else:
 # STORY-221: Lifespan Context Manager (replaces deprecated @app.on_event)
 # ============================================================================
 
+async def _check_cache_schema() -> None:
+    """CRIT-001 AC4: Validate search_results_cache schema on startup.
+
+    Compares actual DB columns against SearchResultsCacheRow model.
+    Logs CRITICAL for missing columns, WARNING for extras, INFO on success.
+    Never crashes — graceful degradation if DB is unavailable.
+    """
+    try:
+        from models.cache import SearchResultsCacheRow
+        from supabase_client import get_supabase
+
+        db = get_supabase()
+        # Use PostgREST RPC to query information_schema
+        # This avoids needing direct DB access — works with Supabase client
+        try:
+            result = db.rpc(
+                "get_table_columns_simple",
+                {"p_table_name": "search_results_cache"},
+            ).execute()
+            actual_columns = {row["column_name"] for row in result.data} if result.data else set()
+        except Exception:
+            # RPC function may not exist — skip check gracefully
+            logger.warning(
+                "CRIT-001: Schema health check skipped — "
+                "RPC function not available (non-blocking)"
+            )
+            return
+
+        expected_columns = SearchResultsCacheRow.expected_columns()
+
+        missing = expected_columns - actual_columns
+        extra = actual_columns - expected_columns
+
+        if missing:
+            logger.critical(
+                f"CRIT-001: search_results_cache MISSING columns: {sorted(missing)}. "
+                f"Run migration 033_fix_missing_cache_columns.sql"
+            )
+        if extra:
+            logger.warning(
+                f"CRIT-001: search_results_cache has EXTRA columns not in model: {sorted(extra)}"
+            )
+        if not missing and not extra:
+            logger.info(
+                f"CRIT-001: Schema validation passed for search_results_cache "
+                f"({len(expected_columns)} columns)"
+            )
+    except Exception as e:
+        # Never crash on health check failure
+        logger.warning(f"CRIT-001: Schema health check failed (non-fatal): {type(e).__name__}: {e}")
+
+
 def _log_registered_routes(app_instance: FastAPI) -> None:
     """Diagnostic logging for route registration (HOTFIX STORY-183).
 
@@ -239,6 +292,9 @@ async def lifespan(app_instance: FastAPI):
     # UX-303 AC8: Start periodic cache cleanup
     from cron_jobs import start_cache_cleanup_task
     cleanup_task = await start_cache_cleanup_task()
+
+    # CRIT-001 AC4: Schema health check for search_results_cache
+    await _check_cache_schema()
 
     # HOTFIX STORY-183: Diagnostic route logging
     _log_registered_routes(app_instance)
@@ -325,6 +381,7 @@ app.include_router(onboarding_router, prefix="/v1")  # GTM-004: First analysis
 app.include_router(auth_email_router, prefix="/v1")  # GTM-FIX-009: Email confirmation recovery
 app.include_router(cache_health_router, prefix="/v1")  # UX-303: Cache health
 app.include_router(feedback_router, prefix="/v1")  # GTM-RESILIENCE-D05: User feedback loop
+app.include_router(admin_trace_router)  # CRIT-004 AC21: Search trace (already has /v1/admin prefix)
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix

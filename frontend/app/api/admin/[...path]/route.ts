@@ -62,13 +62,20 @@ async function handleAdminRequest(
   const { searchParams } = new URL(request.url);
   const queryString = searchParams.toString();
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+  const headers: Record<string, string> = {
+    "Authorization": authHeader,
+    "Content-Type": "application/json",
+  };
+  if (correlationId) {
+    headers["X-Correlation-ID"] = correlationId;
+  }
+
   try {
     const fetchOptions: RequestInit = {
       method,
-      headers: {
-        "Authorization": authHeader,
-        "Content-Type": "application/json",
-      },
+      headers,
     };
 
     // Add body for POST/PUT requests

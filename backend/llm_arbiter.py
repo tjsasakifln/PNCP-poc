@@ -391,6 +391,10 @@ def classify_contract_primary_match(
     """
     from config import get_feature_flag
 
+    # CRIT-004 AC13: Include search_id in classification logs for correlation
+    from middleware import search_id_var
+    _search_id = search_id_var.get("-")
+
     structured_enabled = get_feature_flag("LLM_STRUCTURED_OUTPUT_ENABLED")
 
     # Feature flag check
@@ -538,7 +542,7 @@ Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secun
 
         logger.info(
             f"LLM arbiter decision: {_decision} conf={result['confidence']}% | "
-            f"mode={mode} prompt_level={prompt_level} structured={structured_enabled} "
+            f"search={_search_id} mode={mode} prompt_level={prompt_level} structured={structured_enabled} "
             f"context={context[:50]}... valor=R${valor:,.2f}"
         )
 
@@ -548,7 +552,7 @@ Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secun
         LLM_CALLS.labels(model=LLM_MODEL, decision="ERROR", zone=prompt_level).inc()
         logger.error(
             f"LLM arbiter FAILED (defaulting to REJECT): {e} | "
-            f"mode={mode} context={context[:50]}... valor={valor:,.2f}"
+            f"search={_search_id} mode={mode} context={context[:50]}... valor={valor:,.2f}"
         )
         # AC3: Conservative fallback on error — REJECT with confidence 0
         result = {

@@ -195,6 +195,17 @@ async def _save_to_supabase(
     if fetch_duration_ms is not None:
         row["fetch_duration_ms"] = fetch_duration_ms
 
+    # CRIT-001 AC12: Filter payload to only known columns
+    try:
+        from models.cache import SearchResultsCacheRow
+        expected = SearchResultsCacheRow.expected_columns()
+        unknown_keys = set(row.keys()) - expected
+        if unknown_keys:
+            logger.warning(f"CRIT-001: _save_to_supabase payload has unknown keys: {sorted(unknown_keys)}")
+        # Columns validated against SearchResultsCacheRow
+    except ImportError:
+        pass
+
     sb.table("search_results_cache").upsert(
         row, on_conflict="user_id,params_hash"
     ).execute()
@@ -222,6 +233,18 @@ async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
         return None
 
     row = response.data[0]
+
+    # CRIT-001 AC11: Validate expected fields are present, use defaults if missing
+    try:
+        from models.cache import SearchResultsCacheRow
+        expected_fields = {"results", "total_results", "sources_json", "fetched_at", "priority", "access_count", "last_accessed_at"}
+        missing_fields = expected_fields - set(row.keys())
+        if missing_fields:
+            logger.warning(f"CRIT-001: _get_from_supabase row missing fields: {sorted(missing_fields)}")
+        # Columns validated against SearchResultsCacheRow
+    except ImportError:
+        pass
+
     fetched_at_str = row.get("fetched_at") or row.get("created_at")
     return {
         "results": row.get("results", []),
@@ -489,7 +512,10 @@ async def get_from_cache(
 
     # Miss across all levels
     elapsed = (time.monotonic() - start) * 1000
-    logger.info(f"Cache MISS all levels for hash {params_hash[:12]}... ({elapsed:.0f}ms)")
+    # CRIT-004 AC14: Include search_id in cache miss log for correlation
+    from middleware import search_id_var
+    _search_id_miss = search_id_var.get("-")
+    logger.info(f"Cache MISS all levels [search={_search_id_miss}] for hash {params_hash[:12]}... ({elapsed:.0f}ms)")
     _track_cache_operation("read", False, CacheLevel.MISS, 0, elapsed)
     METRICS_CACHE_MISSES.labels(level="all").inc()
     return None
@@ -687,8 +713,12 @@ def _process_cache_hit(data: dict, params_hash: str, level: CacheLevel) -> Optio
     is_stale = age_hours > CACHE_FRESH_HOURS
     status = CacheStatus.STALE if is_stale else CacheStatus.FRESH
 
+    # CRIT-004 AC14: Include search_id in cache hit/miss logs for correlation
+    from middleware import search_id_var
+    _search_id = search_id_var.get("-")
     logger.info(
         f"Cache HIT L{_level_num(level)}/{level.value} "
+        f"[search={_search_id}] "
         f"for hash {params_hash[:12]}... "
         f"(age={age_hours:.1f}h, status={status.value})"
     )

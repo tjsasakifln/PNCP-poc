@@ -42,6 +42,14 @@ class ProgressEvent:
         trace_id = get_trace_id()
         if trace_id:
             d["trace_id"] = trace_id
+        # CRIT-004 AC19-AC20: Include search_id and request_id for correlation
+        from middleware import search_id_var, request_id_var
+        search_id = search_id_var.get("-")
+        request_id = request_id_var.get("-")
+        if search_id != "-":
+            d["search_id"] = search_id
+        if request_id != "-":
+            d["request_id"] = request_id
         return d
 
 

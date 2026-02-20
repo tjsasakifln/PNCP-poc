@@ -159,6 +159,11 @@ class ConsolidationService:
         """
         start_time = time.time()
 
+        # CRIT-004 AC12: Log search_id from ContextVar for correlation
+        from middleware import search_id_var
+        _search_id = search_id_var.get("-")
+        logger.info(f"Consolidation started [search={_search_id}] sources={list(self._adapters.keys())}")
+
         if not self._adapters:
             return ConsolidationResult(
                 records=[],

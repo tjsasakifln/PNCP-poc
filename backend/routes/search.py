@@ -346,8 +346,11 @@ async def buscar_licitacoes(
     - Dependency injection (passing module-level names for test mock compatibility)
     """
     # SSE Progress Tracking
+    # CRIT-004 AC7: Set search_id in ContextVar for end-to-end log correlation
     tracker = None
     if request.search_id:
+        from middleware import search_id_var
+        search_id_var.set(request.search_id)
         tracker = await create_tracker(request.search_id, len(request.ufs))
         await tracker.emit("connecting", 3, "Iniciando busca...")
 

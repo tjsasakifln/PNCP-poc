@@ -40,12 +40,19 @@ export async function GET(request: NextRequest) {
       url.searchParams.set("setor_id", setor_id);
     }
 
+    // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+    const correlationId = request.headers.get("X-Correlation-ID");
+    const headers: Record<string, string> = {
+      "Authorization": authHeader,
+    };
+    if (correlationId) {
+      headers["X-Correlation-ID"] = correlationId;
+    }
+
     // Fetch from backend
     const response = await fetch(url.toString(), {
       method: "GET",
-      headers: {
-        "Authorization": authHeader,
-      },
+      headers,
     });
 
     // If backend doesn't have this endpoint yet, return 404

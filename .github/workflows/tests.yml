@@ -37,6 +37,10 @@ jobs:
           fi
           pip install pytest pytest-cov pytest-asyncio httpx
 
+      # CRIT-001 AC5: Validate migration prefixes
+      - name: Validate migration prefixes
+        run: python backend/scripts/validate_migrations.py
+
       - name: Run tests
         run: |
           cd backend

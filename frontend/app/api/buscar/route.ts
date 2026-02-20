@@ -65,12 +65,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward auth header to backend (already validated above)
-    // STORY-202 SYS-M01: Add correlation ID for distributed tracing
+    // CRIT-004 AC1: Forward X-Correlation-ID from browser + generate X-Request-ID
+    const correlationId = request.headers.get("X-Correlation-ID");
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Authorization": authHeader,
       "X-Request-ID": randomUUID(),
     };
+    if (correlationId) {
+      headers["X-Correlation-ID"] = correlationId;
+    }
 
     const MAX_RETRIES = 2;
     const RETRY_DELAYS = [0, 3000]; // ms delay before each attempt

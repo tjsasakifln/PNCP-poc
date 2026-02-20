@@ -22,10 +22,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // STORY-202 SYS-M01: Forward X-Request-ID if present for tracing
+  // CRIT-004 AC3: Forward X-Request-ID and X-Correlation-ID for tracing
   const requestId = request.headers.get("X-Request-ID");
+  const correlationId = request.headers.get("X-Correlation-ID");
   if (requestId) {
     console.log(`[download] Request ID: ${requestId}`);
+  }
+  if (correlationId) {
+    console.log(`[download] Correlation ID: ${correlationId}`);
   }
 
   const searchParams = request.nextUrl.searchParams;

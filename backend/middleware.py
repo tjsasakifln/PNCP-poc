@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 # Context variable for request ID (accessible from any async context)
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
+# CRIT-004 AC5: search_id for end-to-end search journey correlation
+search_id_var: ContextVar[str] = ContextVar("search_id", default="-")
+# CRIT-004 AC6: correlation_id from browser (per-tab session)
+correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="-")
 
 
 class RequestIDFilter(logging.Filter):
@@ -24,6 +28,12 @@ class RequestIDFilter(logging.Filter):
     def filter(self, record):
         if not hasattr(record, 'request_id'):
             record.request_id = request_id_var.get("-")
+        # CRIT-004 AC8: search_id for end-to-end correlation
+        if not hasattr(record, 'search_id'):
+            record.search_id = search_id_var.get("-")
+        # CRIT-004 AC8: correlation_id from browser session
+        if not hasattr(record, 'correlation_id'):
+            record.correlation_id = correlation_id_var.get("-")
         # F-02 AC20: trace_id and span_id for log-trace correlation
         if not hasattr(record, 'trace_id'):
             try:
@@ -49,6 +59,11 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         # Use incoming X-Request-ID or generate new
         req_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
         request_id_var.set(req_id)
+
+        # CRIT-004 AC6: Read and store X-Correlation-ID from browser
+        corr_id = request.headers.get("X-Correlation-ID") or "-"
+        correlation_id_var.set(corr_id)
+        request.state.correlation_id = corr_id
 
         # F-02 AC19: Link X-Request-ID to active OpenTelemetry span
         try:

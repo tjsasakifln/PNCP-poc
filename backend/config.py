@@ -120,7 +120,7 @@ def setup_logging(level: str = "INFO") -> None:
         # STORY-220 AC2/AC3: JSON structured logging with all required fields
         from pythonjsonlogger import jsonlogger
         formatter = jsonlogger.JsonFormatter(
-            fmt="%(asctime)s %(levelname)s %(name)s %(message)s %(module)s %(funcName)s %(lineno)d %(request_id)s",
+            fmt="%(asctime)s %(levelname)s %(name)s %(message)s %(module)s %(funcName)s %(lineno)d %(request_id)s %(search_id)s %(correlation_id)s",
             datefmt="%Y-%m-%dT%H:%M:%S",
             rename_fields={
                 "asctime": "timestamp",
@@ -130,8 +130,9 @@ def setup_logging(level: str = "INFO") -> None:
         )
     else:
         # Human-readable pipe-delimited format for development
+        # CRIT-004 AC9: Include search_id in log format
         formatter = logging.Formatter(
-            fmt="%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s | %(message)s",
+            fmt="%(asctime)s | %(levelname)-8s | req=%(request_id)s | search=%(search_id)s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 

@@ -15,10 +15,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for distributed tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+  const headers: Record<string, string> = {
+    Authorization: authHeader,
+  };
+  if (correlationId) {
+    headers["X-Correlation-ID"] = correlationId;
+  }
+
   try {
-    const res = await fetch(`${backendUrl}/v1/trial-status`, {
-      headers: { Authorization: authHeader },
-    });
+    const res = await fetch(`${backendUrl}/v1/trial-status`, { headers });
 
     if (!res.ok) {
       const errorText = await res.text();
