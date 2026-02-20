@@ -81,6 +81,8 @@ class SearchContext:
     excel_available: bool = False
     upgrade_message: Optional[str] = None
     licitacao_items: list = field(default_factory=list)
+    # CRIT-005 AC13: LLM summary provenance tracking
+    llm_source: Optional[str] = None  # "ai" | "fallback" | "processing"
 
     # === Stage 6b: Queue mode flag (GTM-RESILIENCE-F01) ===
     queue_mode: bool = False  # True when LLM/Excel dispatched to background jobs

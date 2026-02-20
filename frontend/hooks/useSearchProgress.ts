@@ -4,6 +4,9 @@
  * Opens an EventSource connection to /api/buscar-progress to receive
  * real-time progress events from the backend during PNCP searches.
  * Falls back gracefully when SSE is unavailable.
+ *
+ * @deprecated Use useSearchSSE instead (CRIT-006 AC9).
+ * This hook is kept for backward compatibility during migration.
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';

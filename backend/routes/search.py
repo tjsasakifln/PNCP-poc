@@ -19,7 +19,7 @@ import time as sync_time
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Response
 from starlette.responses import StreamingResponse
 
 # === Module-level imports preserved for test mock compatibility (AC11) ===
@@ -164,34 +164,41 @@ async def buscar_progress_stream(
     import asyncio as _asyncio
     import json as _json
 
-    async def event_generator():
-        # Wait up to 30s for the tracker to be created by POST /buscar
-        tracker = None
-        for _ in range(60):  # 60 * 0.5s = 30s
-            tracker = await get_tracker(search_id)
-            if tracker:
-                break
-            await _asyncio.sleep(0.5)
+    # CRIT-005 AC28-29: Wait for tracker, then check DB — return 404 before SSE if not found
+    tracker = None
+    for _ in range(60):  # 60 * 0.5s = 30s
+        tracker = await get_tracker(search_id)
+        if tracker:
+            break
+        await _asyncio.sleep(0.5)
 
-        if not tracker:
-            # AC9: On reconnection, try to get current state from DB
-            try:
-                db_state = await get_current_state(search_id)
-                if db_state:
-                    state_val = db_state.get("to_state", "error")
-                    from search_state_manager import _estimate_progress
-                    progress = _estimate_progress(state_val)
-                    yield f"data: {_json.dumps({'stage': state_val, 'progress': progress, 'message': f'Estado atual: {state_val}'})}\n\n"
-                    # If terminal, we're done
-                    if state_val in ("completed", "failed", "timed_out", "rate_limited"):
-                        return
-                    # Otherwise fall through to wait for more events
-                else:
-                    yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
-                    return
-            except Exception:
-                yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
+    db_state = None
+    if not tracker:
+        # AC9: On reconnection, try to get current state from DB
+        try:
+            db_state = await get_current_state(search_id)
+        except Exception:
+            db_state = None
+
+        if not db_state:
+            # CRIT-005 AC28: Return 404 when search_id doesn't exist at all
+            raise HTTPException(status_code=404, detail="Search not found")
+
+    async def event_generator():
+        nonlocal tracker, db_state
+
+        if not tracker and db_state:
+            # AC9: Emit current state from DB for reconnection
+            state_val = db_state.get("to_state", "error")
+            from search_state_manager import _estimate_progress
+            progress = _estimate_progress(state_val)
+            yield f"data: {_json.dumps({'stage': state_val, 'progress': progress, 'message': f'Estado atual: {state_val}'})}\n\n"
+            # If terminal, we're done
+            if state_val in ("completed", "failed", "timed_out", "rate_limited"):
                 return
+            # Otherwise fall through to wait for more events — but we have no tracker
+            # so we can't stream further. Just return.
+            return
 
         # Try Redis pub/sub first, fallback to in-memory queue
         pubsub = await subscribe_to_events(search_id)
@@ -419,6 +426,7 @@ async def _execute_background_fetch(
 @router.post("/buscar", response_model=BuscaResponse)
 async def buscar_licitacoes(
     request: BuscaRequest,
+    http_response: Response,  # CRIT-005 AC1-2: Injected for response headers
     user: dict = Depends(require_auth),
 ):
     """
@@ -554,6 +562,9 @@ async def buscar_licitacoes(
                         await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
                         await remove_tracker(request.search_id)
 
+                # CRIT-005 AC1-2: Observability headers (cache-first path)
+                http_response.headers["X-Response-State"] = ctx.response_state or "live"
+                http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
                 return response
 
         except Exception as cache_err:
@@ -597,6 +608,9 @@ async def buscar_licitacoes(
         if state_machine:
             remove_state_machine(request.search_id)
 
+        # CRIT-005 AC1-2: Observability headers (synchronous path)
+        http_response.headers["X-Response-State"] = ctx.response_state or "live"
+        http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
         return response
 
     except PNCPRateLimitError as e:
@@ -708,3 +722,87 @@ async def buscar_licitacoes(
             status_code=500,
             detail="Erro interno do servidor. Tente novamente em alguns instantes.",
         )
+
+
+
+# ---------------------------------------------------------------------------
+# CRIT-006 AC4-5: Retry search with only missing/failed UFs
+# ---------------------------------------------------------------------------
+
+@router.post("/v1/search/{search_id}/retry")
+async def retry_search(
+    search_id: str,
+    user: dict = Depends(require_auth),
+):
+    """CRIT-006 AC4-5: Retry search with only missing/failed UFs."""
+    from database import get_db as _get_db
+
+    db = _get_db()
+    try:
+        session_result = (
+            db.table("search_sessions")
+            .select("failed_ufs, ufs, status")
+            .eq("id", search_id)
+            .eq("user_id", user["id"])
+            .single()
+            .execute()
+        )
+    except Exception:
+        raise HTTPException(status_code=404, detail="Search session not found")
+
+    session_data = session_result.data if session_result and session_result.data else None
+    if not session_data:
+        raise HTTPException(status_code=404, detail="Search session not found")
+
+    failed_ufs = session_data.get("failed_ufs") or []
+    all_ufs = session_data.get("ufs") or []
+    succeeded_ufs = [uf for uf in all_ufs if uf not in failed_ufs]
+
+    return {
+        "search_id": search_id,
+        "retry_ufs": failed_ufs,
+        "preserved_ufs": succeeded_ufs,
+        "status": "retry_available" if failed_ufs else "no_retry_needed",
+    }
+
+
+# ---------------------------------------------------------------------------
+# CRIT-006 AC16-17: Cancel an in-progress search
+# ---------------------------------------------------------------------------
+
+@router.post("/v1/search/{search_id}/cancel")
+async def cancel_search(
+    search_id: str,
+    user: dict = Depends(require_auth),
+):
+    """CRIT-006 AC16-17: Cancel an in-progress search."""
+    # Try to update state machine
+    try:
+        machine = get_state_machine(search_id)
+        if machine and not machine.is_terminal:
+            await machine.fail("Cancelled by user", error_code="cancelled")
+            remove_state_machine(search_id)
+    except Exception as e:
+        logger.warning(f"Failed to update state machine on cancel: {e}")
+
+    # Remove tracker to stop SSE
+    tracker = await get_tracker(search_id)
+    if tracker:
+        await tracker.emit_error("Busca cancelada pelo usuario")
+        await remove_tracker(search_id)
+
+    # Update session in DB
+    try:
+        from datetime import datetime, timezone
+        from quota import update_search_session_status
+        await update_search_session_status(
+            search_id,
+            status="cancelled",
+            error_code="cancelled",
+            error_message="Cancelled by user",
+            completed_at=datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update session on cancel: {e}")
+
+    return {"status": "cancelled", "search_id": search_id}

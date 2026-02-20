@@ -44,7 +44,7 @@ from log_sanitizer import mask_user_id
 from redis_pool import get_fallback_cache
 from search_cache import save_to_cache as _supabase_save_cache, get_from_cache as _supabase_get_cache, get_from_cache_cascade
 from fastapi import HTTPException
-from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS
+from metrics import SEARCH_DURATION, FETCH_DURATION, CACHE_HITS, CACHE_MISSES, ACTIVE_SEARCHES, SEARCHES, FILTER_DECISIONS, SEARCH_RESPONSE_STATE, SEARCH_ERROR_TYPE
 from viability import assess_batch as viability_assess_batch
 from telemetry import get_tracer, optional_span, get_trace_id
 
@@ -1819,6 +1819,7 @@ class SearchPipeline:
                 live_fetch_in_progress=ctx.live_fetch_in_progress,
                 llm_status=None,
                 excel_status=None,
+                llm_source=None,  # CRIT-005 AC13: No LLM for empty results
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -1845,6 +1846,7 @@ class SearchPipeline:
             # Immediate fallback summary (pure Python, <1ms)
             ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
             ctx.llm_status = "processing"
+            ctx.llm_source = "processing"  # CRIT-005 AC13: LLM queued for background
 
             # Enqueue LLM job
             await enqueue_job(
@@ -1890,6 +1892,7 @@ class SearchPipeline:
                     ctx.resumo = gerar_resumo(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
                     llm_span.set_attribute("llm.status", "success")
                     logger.debug("LLM summary generated successfully")
+                    ctx.llm_source = "ai"  # CRIT-005 AC13
                 except Exception as e:
                     llm_span.set_attribute("llm.status", "fallback")
                     llm_span.record_exception(e)
@@ -1898,6 +1901,7 @@ class SearchPipeline:
                     )
                     ctx.resumo = gerar_resumo_fallback(ctx.licitacoes_filtradas, sector_name=ctx.sector.name)
                     logger.debug("Fallback summary generated successfully")
+                    ctx.llm_source = "fallback"  # CRIT-005 AC13
 
             # Override LLM-generated counts with actual values
             actual_total = len(ctx.licitacoes_filtradas)
@@ -2011,6 +2015,8 @@ class SearchPipeline:
             # GTM-RESILIENCE-F01 AC18: Background job status
             llm_status=ctx.llm_status,
             excel_status=ctx.excel_status,
+            # CRIT-005 AC13: LLM summary provenance
+            llm_source=ctx.llm_source,
         )
 
         logger.info(
@@ -2104,6 +2110,8 @@ class SearchPipeline:
         """
         # AC26: Emit structured log per search completion
         elapsed_ms = int((sync_time_module.time() - ctx.start_time) * 1000)
+        # CRIT-005 AC3: Increment response state counter
+        SEARCH_RESPONSE_STATE.labels(state=ctx.response_state).inc()
 
         # Determine which sources were attempted, succeeded, and failed
         sources_attempted = []

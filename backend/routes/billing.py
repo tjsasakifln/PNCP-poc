@@ -156,16 +156,21 @@ async def get_subscription_status(
 
     user_id = user["id"]
 
-    # Check DB first (webhook already processed?)
-    sub_result = (
-        db.table("user_subscriptions")
-        .select("plan_id, subscription_status, stripe_subscription_id, created_at")
-        .eq("user_id", user_id)
-        .eq("is_active", True)
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
+    # CRIT-005 AC25: Surface DB errors instead of silently returning defaults
+    try:
+        # Check DB first (webhook already processed?)
+        sub_result = (
+            db.table("user_subscriptions")
+            .select("plan_id, subscription_status, stripe_subscription_id, created_at")
+            .eq("user_id", user_id)
+            .eq("is_active", True)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+    except Exception as e:
+        logger.error(f"Failed to check subscription status: {e}")
+        raise HTTPException(status_code=503, detail="Status de assinatura temporariamente indisponivel")
 
     if sub_result.data and sub_result.data[0].get("subscription_status") == "active":
         sub = sub_result.data[0]
@@ -176,13 +181,17 @@ async def get_subscription_status(
         }
 
     # Check profile plan_type as secondary source
-    profile_result = (
-        db.table("profiles")
-        .select("plan_type")
-        .eq("id", user_id)
-        .single()
-        .execute()
-    )
+    try:
+        profile_result = (
+            db.table("profiles")
+            .select("plan_type")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+    except Exception as e:
+        logger.error(f"Failed to check profile plan_type: {e}")
+        raise HTTPException(status_code=503, detail="Status de assinatura temporariamente indisponivel")
 
     if profile_result.data and profile_result.data.get("plan_type") not in (None, "free_trial"):
         return {
@@ -207,7 +216,9 @@ async def get_subscription_status(
                         "activated_at": None,
                     }
             except Exception as e:
+                # CRIT-005 AC25: Surface Stripe errors instead of swallowing
                 logger.warning(f"Stripe subscription check failed: {e}")
+                raise HTTPException(status_code=503, detail="Status de assinatura temporariamente indisponivel")
 
     return {
         "status": "pending",

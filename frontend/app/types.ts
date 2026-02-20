@@ -153,6 +153,8 @@ export interface BuscaResult {
   llm_status?: "ready" | "processing" | null;
   /** GTM-RESILIENCE-F01 AC18: Excel generation status — 'ready', 'processing', 'skipped', 'failed', or null */
   excel_status?: "ready" | "processing" | "skipped" | "failed" | null;
+  /** CRIT-005 AC13: LLM summary provenance */
+  llm_source?: "ai" | "fallback" | "processing" | null;
 }
 
 // ============================================================================

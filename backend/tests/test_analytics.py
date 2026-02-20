@@ -1,7 +1,7 @@
 """Tests for analytics endpoints."""
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 
@@ -21,12 +21,15 @@ def client():
 
 
 @pytest.fixture
-def mock_supabase():
-    """Mock supabase client for analytics queries."""
-    with patch("routes.analytics._get_sb") as mock:
-        sb = MagicMock()
-        mock.return_value = sb
-        yield sb
+def mock_supabase(client):
+    """Mock supabase client for analytics queries via get_db DI override."""
+    from main import app
+    from database import get_db
+    sb = MagicMock()
+    app.dependency_overrides[get_db] = lambda: sb
+    yield sb
+    # client fixture handles final clear; just remove our key
+    app.dependency_overrides.pop(get_db, None)
 
 
 class TestAnalyticsSummary:

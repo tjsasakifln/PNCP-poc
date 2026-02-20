@@ -167,14 +167,11 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
     try:
         quota_info = check_quota(user_id)
     except Exception as e:
+        # CRIT-005 AC24: Surface error instead of swallowing with defaults
         logger.error(f"Failed to check quota for trial status: {e}")
-        return TrialStatusResponse(
-            plan="free_trial",
-            days_remaining=0,
-            searches_used=0,
-            searches_limit=3,
-            expires_at=None,
-            is_expired=True,
+        raise HTTPException(
+            status_code=503,
+            detail="Informacao de trial temporariamente indisponivel"
         )
 
     plan_id = quota_info.plan_id

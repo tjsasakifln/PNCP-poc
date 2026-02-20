@@ -327,12 +327,10 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
         )
 
     except Exception as e:
+        # CRIT-005 AC26: Surface error instead of swallowing with zero defaults
         logger.error(f"Error fetching trial value for {mask_user_id(user_id)}: {e}")
-        # Return zeros on error (not 500) — conversion screen should still render
-        return TrialValueResponse(
-            total_opportunities=0,
-            total_value=0.0,
-            searches_executed=0,
-            avg_opportunity_value=0.0,
-            top_opportunity=None,
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(
+            status_code=503,
+            detail="Informacao de valor do trial temporariamente indisponivel"
         )

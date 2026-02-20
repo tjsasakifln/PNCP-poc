@@ -18,7 +18,7 @@ const ERROR_MAP: Record<string, string> = {
   // HTTP status errors (TD-006 AC2: all 10 codes mapped)
   "400": "Requisição inválida. Verifique os dados e tente novamente.",
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
-  "502": "O portal PNCP está temporariamente indisponível. Tente novamente em instantes.",
+  "502": "O servidor está temporariamente indisponível. Tente novamente em instantes.",
   "504": "A busca demorou demais. Tente com menos estados ou um período menor.",
   "500": "Erro interno do servidor. Tente novamente.",
   "429": "Muitas requisições. Aguarde um momento e tente novamente.",
@@ -46,6 +46,11 @@ const ERROR_MAP: Record<string, string> = {
   "período de busca não pode exceder": "keep_original", // Let the full message through
   "excede o limite de": "keep_original", // Let the full message through
   "Período de": "keep_original", // Let the full message through
+
+  // CRIT-005 AC19: Response state mappings
+  "empty_failure": "As fontes de dados estão temporariamente indisponíveis. Tente novamente em alguns minutos.",
+  "degraded": "Alguns resultados podem estar incompletos. Fontes parcialmente disponíveis.",
+  "sources_unavailable": "Não foi possível acessar as fontes de dados. Tente novamente em instantes.",
 };
 
 /**

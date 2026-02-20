@@ -114,6 +114,8 @@ export interface UseSearchReturn {
   handleRefresh: () => Promise<void>;
   estimateSearchTime: (ufCount: number, dateRangeDays: number) => number;
   restoreSearchStateOnMount: () => void;
+  /** CRIT-006 AC18: Retry cooldown scaling by error type */
+  getRetryCooldown: (errorMessage: string | null, httpStatus?: number) => number;
 }
 
 export function useSearch(filters: UseSearchParams): UseSearchReturn {
@@ -219,9 +221,24 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   const cancelSearch = () => {
     abortControllerRef.current?.abort();
+    // CRIT-006 AC16: Notify backend of cancellation
+    if (searchId && session?.access_token) {
+      fetch(`/api/v1/search/${encodeURIComponent(searchId)}/cancel`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      }).catch(() => {}); // Fire-and-forget
+    }
     setLoading(false);
     setSearchId(null);
     setUseRealProgress(false);
+  };
+
+  // CRIT-006 AC18: Retry cooldown scaling by error type
+  const getRetryCooldown = (errorMessage: string | null, httpStatus?: number): number => {
+    if (httpStatus === 429) return 30; // Rate limit
+    if (httpStatus === 500) return 20; // Server error
+    if (errorMessage?.includes('demorou demais') || errorMessage?.includes('timeout') || httpStatus === 504) return 15; // Timeout
+    return 10; // Network error default
   };
 
   const buscar = async (options?: { forceFresh?: boolean }) => {
@@ -252,8 +269,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     setStatesProcessed(0);
     setError(null);
     setQuotaError(null);
+    // CRIT-005 AC23: Preserve previous result as visual fallback
+    // Don't clear immediately — only replace when new data arrives or on non-recoverable error
+    const previousResultFallback = result;
     if (!forceFresh) {
-      setResult(null);
+      // Don't setResult(null) here — keep previous results visible during loading
       setRawCount(0);
     }
 
@@ -359,7 +379,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
               });
             }
             window.location.href = "/login";
-            throw new Error("Faça login para continuar");
+            throw new Error("Faca login para continuar");
           }
 
           if (response.status === 403) {
@@ -370,15 +390,15 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
           if (err.error_code === 'DATE_RANGE_EXCEEDED') {
             const { requested_days, max_allowed_days, plan_name } = err.data || {};
             throw new Error(
-              `O período de busca não pode exceder ${max_allowed_days} dias (seu plano: ${plan_name}). Você tentou buscar ${requested_days} dias. Reduza o período e tente novamente.`
+              `O periodo de busca nao pode exceder ${max_allowed_days} dias (seu plano: ${plan_name}). Voce tentou buscar ${requested_days} dias. Reduza o periodo e tente novamente.`
             );
           }
 
           if (err.error_code === 'RATE_LIMIT') {
-            throw new Error(`Limite de requisições excedido (2/min). Aguarde ${err.data?.wait_seconds || 60} segundos e tente novamente.`);
+            throw new Error(`Limite de requisicoes excedido (2/min). Aguarde ${err.data?.wait_seconds || 60} segundos e tente novamente.`);
           }
 
-          throw new Error(err.message || "Erro ao buscar licitações");
+          throw new Error(err.message || "Erro ao buscar licitacoes");
         }
 
         const parsed = await response.json().catch(() => null);
@@ -391,7 +411,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         break;
       }
 
-      if (!data) throw new Error("Não foi possível obter os resultados. Tente novamente.");
+      if (!data) throw new Error("Nao foi possivel obter os resultados. Tente novamente.");
 
       setResult(data);
       setRawCount(data.total_raw || 0);
@@ -433,9 +453,16 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         // AC9: Keep cached data visible, show toast instead of error
         setResult(previousResult);
         setError(null);
-        toast.info("Não foi possível atualizar os dados. Mostrando resultados anteriores.");
+        toast.info("Nao foi possivel atualizar os dados. Mostrando resultados anteriores.");
       } else {
-        setError(errorMessage);
+        // CRIT-005 AC23: On error, if we have previous results, show them with error toast
+        if (previousResultFallback && previousResultFallback.licitacoes?.length > 0) {
+          setResult(previousResultFallback);
+          setError(null);
+          toast.error(errorMessage);
+        } else {
+          setError(errorMessage);
+        }
       }
       trackEvent('search_failed', { error_message: errorMessage, search_mode: filters.searchMode, force_fresh: forceFresh });
     } finally {
@@ -481,9 +508,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       const response = await fetch(downloadEndpoint, { headers: downloadHeaders });
 
       if (!response.ok) {
-        if (response.status === 401) { window.location.href = "/login"; throw new Error('Faça login para continuar'); }
-        if (response.status === 404) throw new Error('Arquivo expirado. Faça uma nova busca para gerar o Excel.');
-        throw new Error('Não foi possível baixar o arquivo. Tente novamente.');
+        if (response.status === 401) { window.location.href = "/login"; throw new Error('Faca login para continuar'); }
+        if (response.status === 404) throw new Error('Arquivo expirado. Faca uma nova busca para gerar o Excel.');
+        throw new Error('Nao foi possivel baixar o arquivo. Tente novamente.');
       }
 
       const blob = await response.blob();
@@ -514,7 +541,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         source: result.download_url ? 'object_storage' : 'filesystem'
       });
     } catch (e) {
-      setDownloadError(getUserFriendlyError(e instanceof Error ? e : 'Não foi possível baixar o arquivo.'));
+      setDownloadError(getUserFriendlyError(e instanceof Error ? e : 'Nao foi possivel baixar o arquivo.'));
     } finally {
       setDownloadLoading(false);
     }
@@ -600,7 +627,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       if (formState.endDate) filters.setDataFinal(formState.endDate);
       if (formState.setor) { filters.setSearchMode('setor'); filters.setSetorId(formState.setor); }
       if (formState.includeKeywords?.length) { filters.setSearchMode('termos'); filters.setTermosArray(formState.includeKeywords); }
-      toast.success('Resultados da busca restaurados! Você pode fazer o download agora.');
+      toast.success('Resultados da busca restaurados! Voce pode fazer o download agora.');
       trackEvent('search_state_auto_restored', { download_id: restored.downloadId });
     }
   };
@@ -617,7 +644,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       const response = await fetch(`/api/buscar-results/${encodeURIComponent(sid)}`, { headers });
       if (!response.ok) {
         console.warn(`[A-04] Failed to fetch live results: ${response.status}`);
-        toast.info("Não foi possível carregar os dados atualizados. Tente uma nova busca.");
+        toast.info("Nao foi possivel carregar os dados atualizados. Tente uma nova busca.");
         return;
       }
 
@@ -653,5 +680,6 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     buscar, buscarForceFresh, cancelSearch, handleDownload,
     handleSaveSearch, confirmSaveSearch, handleLoadSearch, handleRefresh,
     estimateSearchTime, restoreSearchStateOnMount,
+    getRetryCooldown,
   };
 }

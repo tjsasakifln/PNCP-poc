@@ -20,6 +20,9 @@ import { QuotaCounter } from "../../components/QuotaCounter";
 import { LicitacoesPreview } from "../../components/LicitacoesPreview";
 import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/OrdenacaoSelect";
 import GoogleSheetsExportButton from "../../../components/GoogleSheetsExportButton";
+import { LlmSourceBadge } from "./LlmSourceBadge";
+import { ErrorDetail } from "./ErrorDetail";
+import { PartialTimeoutBanner } from "./PartialTimeoutBanner";
 
 export interface SearchResultsProps {
   // Loading state
@@ -188,6 +191,12 @@ export default function SearchResults({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // CRIT-006 AC22-24: Derive succeeded UFs from coverage_metadata or failed_ufs
+  const succeededUfs: string[] = result?.coverage_metadata?.ufs_processed
+    ?? (result?.failed_ufs
+      ? Array.from(ufsSelecionadas).filter(uf => !result.failed_ufs!.includes(uf))
+      : []);
+
   return (
     <>
       {/* STORY-257B AC1-3: UF Progress Grid (shown during loading) */}
@@ -236,14 +245,15 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Error Display with Retry */}
+      {/* Error Display with Retry — CRIT-005 AC20: includes ErrorDetail with search_id */}
       {error && !quotaError && (
         <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
           <p className="text-sm sm:text-base font-medium text-error mb-3">{error}</p>
+          <ErrorDetail searchId={searchId} errorMessage={error} timestamp={new Date().toISOString()} />
           <button
             onClick={onSearch}
             disabled={loading || retryCooldown > 0}
-            className="px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+            className="mt-3 px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? (
               <>
@@ -284,7 +294,7 @@ export default function SearchResults({
                 className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded-button text-sm font-medium
                            hover:bg-brand-blue-hover transition-colors"
               >
-                <svg role="img" aria-label="Ícone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg role="img" aria-label="Icone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
@@ -295,8 +305,19 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* GTM-RESILIENCE-A01 AC7 + STORY-257B AC10: All sources down — friendly fallback */}
-      {result && (result.response_state === "empty_failure" || (result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && !result.cached)) && (
+      {/* CRIT-005 AC5-7: Route by response_state — empty_failure gets SourcesUnavailable */}
+      {result && result.response_state === "empty_failure" && (
+        <SourcesUnavailable
+          onRetry={onSearch}
+          onLoadLastSearch={onLoadLastSearch || (() => {})}
+          hasLastSearch={hasLastSearch}
+          retrying={loading}
+          degradationGuidance={result.degradation_guidance}
+        />
+      )}
+
+      {/* GTM-RESILIENCE-A01 AC7 + STORY-257B AC10: All sources down (partial with zero results, not empty_failure) */}
+      {result && result.response_state !== "empty_failure" && result.is_partial && (result.total_raw || 0) === 0 && result.resumo.total_oportunidades === 0 && !result.cached && (
         <SourcesUnavailable
           onRetry={onSearch}
           onLoadLastSearch={onLoadLastSearch || (() => {})}
@@ -329,7 +350,7 @@ export default function SearchResults({
       )}
 
       {/* Empty State — legitimate zero results (not caused by API failure) */}
-      {result && !result.is_partial && result.resumo.total_oportunidades === 0 && (
+      {result && !result.is_partial && result.response_state !== "empty_failure" && result.resumo.total_oportunidades === 0 && (
         <EmptyState
           onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           rawCount={rawCount}
@@ -370,6 +391,18 @@ export default function SearchResults({
           cacheStatus={result.cache_status}
           cacheLevel={result.cache_level}
         />
+      )}
+
+      {/* CRIT-006 AC22-24: PartialTimeoutBanner — shown when result has failed UFs */}
+      {result && result.failed_ufs && result.failed_ufs.length > 0 && succeededUfs.length > 0 && (
+        <div className="mt-4">
+          <PartialTimeoutBanner
+            succeededUfs={succeededUfs}
+            failedUfs={result.failed_ufs}
+            onRetryFailed={onRetryForceFresh || (() => {})}
+            searchId={searchId}
+          />
+        </div>
       )}
 
       {/* Result Display */}
@@ -455,7 +488,7 @@ export default function SearchResults({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <span>
-                IA analisou {result.filter_stats.llm_zero_match_calls} licitações adicionais para identificar oportunidades relevantes
+                IA analisou {result.filter_stats.llm_zero_match_calls} licitacoes adicionais para identificar oportunidades relevantes
                 {(result.filter_stats.llm_zero_match_aprovadas ?? 0) > 0 && (
                   <> — {result.filter_stats.llm_zero_match_aprovadas} aprovadas</>
                 )}
@@ -474,7 +507,7 @@ export default function SearchResults({
             </span>
             <span className="text-ink-faint">•</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-brand-blue-subtle text-brand-navy text-xs font-medium">
-              Licitações abertas
+              Licitacoes abertas
             </span>
             {searchMode === 'setor' && (
               <>
@@ -515,7 +548,7 @@ export default function SearchResults({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                         <span className="font-medium">
-                          {result.metadata.termos_ignorados.length} termo{result.metadata.termos_ignorados.length > 1 ? 's' : ''} não utilizado{result.metadata.termos_ignorados.length > 1 ? 's' : ''}
+                          {result.metadata.termos_ignorados.length} termo{result.metadata.termos_ignorados.length > 1 ? 's' : ''} nao utilizado{result.metadata.termos_ignorados.length > 1 ? 's' : ''}
                         </span>
                       </summary>
                       <div className="mt-2 pl-6 space-y-1">
@@ -545,7 +578,7 @@ export default function SearchResults({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
-                Nenhum resultado atendeu todos os critérios de relevância. Os filtros foram flexibilizados para exibir resultados parciais.
+                Nenhum resultado atendeu todos os criterios de relevancia. Os filtros foram flexibilizados para exibir resultados parciais.
               </span>
             </div>
           )}
@@ -554,7 +587,7 @@ export default function SearchResults({
           {result.hidden_by_min_match != null && result.hidden_by_min_match > 0 && (
             <div className="px-4 py-3 bg-surface-2 border border-border rounded-card text-sm text-ink-secondary flex items-center justify-between">
               <span>
-                {result.hidden_by_min_match} resultado{result.hidden_by_min_match > 1 ? "s" : ""} com correspondência parcial {result.hidden_by_min_match > 1 ? "foram ocultados" : "foi ocultado"}.
+                {result.hidden_by_min_match} resultado{result.hidden_by_min_match > 1 ? "s" : ""} com correspondencia parcial {result.hidden_by_min_match > 1 ? "foram ocultados" : "foi ocultado"}.
               </span>
               <button
                 onClick={() => {
@@ -571,6 +604,11 @@ export default function SearchResults({
 
           {/* Summary Card */}
           <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card">
+            {/* CRIT-005 AC16: LLM source badge near the summary */}
+            <div className="flex items-center gap-2 mb-3">
+              <LlmSourceBadge llmSource={result.llm_source} />
+            </div>
+
             <p className="text-base sm:text-lg leading-relaxed text-ink">
               {result.resumo.resumo_executivo}
             </p>
@@ -580,7 +618,7 @@ export default function SearchResults({
                 <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
                   {result.resumo.total_oportunidades}
                 </span>
-                <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}</span>
+                <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.total_oportunidades === 1 ? 'licitacao' : 'licitacoes'}</span>
               </div>
               <div>
                 <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
@@ -612,7 +650,7 @@ export default function SearchResults({
             ) : result.resumo.alerta_urgencia ? (
               <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-warning-subtle border border-warning/20 rounded-card" role="alert">
                 <p className="text-sm sm:text-base font-medium text-warning">
-                  <span aria-hidden="true">Atenção: </span>
+                  <span aria-hidden="true">Atencao: </span>
                   {result.resumo.alerta_urgencia}
                 </p>
               </div>
@@ -621,7 +659,7 @@ export default function SearchResults({
             {/* AC10: Recommendation Cards */}
             {result.resumo.recomendacoes && result.resumo.recomendacoes.length > 0 && (
               <div className="mt-4 sm:mt-6">
-                <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-3 sm:mb-4">Recomendações do Consultor:</h4>
+                <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-3 sm:mb-4">Recomendacoes do Consultor:</h4>
                 <div className="space-y-3">
                   {result.resumo.recomendacoes.map((rec, i) => (
                     <div
@@ -637,7 +675,7 @@ export default function SearchResults({
                             ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                             : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                         }`}>
-                          {rec.urgencia === "alta" ? "Urgente" : rec.urgencia === "media" ? "Atenção" : "Normal"}
+                          {rec.urgencia === "alta" ? "Urgente" : rec.urgencia === "media" ? "Atencao" : "Normal"}
                         </span>
                         <span className="text-sm font-semibold text-brand-navy dark:text-brand-blue">
                           R$ {rec.valor.toLocaleString("pt-BR")}
@@ -693,35 +731,62 @@ export default function SearchResults({
             />
           )}
 
-          {/* Download Button */}
+          {/* Download Button — CRIT-005 AC9-12 */}
           {planInfo?.capabilities.allow_excel ? (
-            <button
-              onClick={onDownload}
-              disabled={downloadLoading}
-              aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} ${result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}`}
-              className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
-                         hover:bg-brand-blue-hover active:bg-brand-blue
-                         disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
-                         transition-all duration-200
-                         flex items-center justify-center gap-3"
-            >
-              {downloadLoading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Preparando download...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Baixar Excel ({result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'})
-                </>
-              )}
-            </button>
+            result.excel_status === 'failed' ? (
+              <button
+                disabled
+                className="w-full bg-ink-faint text-ink-muted py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                           cursor-not-allowed flex items-center justify-center gap-3"
+                data-testid="excel-failed-button"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Excel indisponivel — tente nova busca
+              </button>
+            ) : result.excel_status === 'processing' ? (
+              <button
+                disabled
+                className="w-full bg-brand-navy/70 text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                           cursor-wait flex items-center justify-center gap-3"
+                data-testid="excel-processing-button"
+              >
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Gerando Excel" role="img">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Gerando Excel...
+              </button>
+            ) : (
+              <button
+                onClick={onDownload}
+                disabled={downloadLoading}
+                aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} ${result.resumo.total_oportunidades === 1 ? 'licitacao' : 'licitacoes'}`}
+                className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                           hover:bg-brand-blue-hover active:bg-brand-blue
+                           disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                           transition-all duration-200
+                           flex items-center justify-center gap-3"
+              >
+                {downloadLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Preparando download...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Baixar Excel ({result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'licitacao' : 'licitacoes'})
+                  </>
+                )}
+              </button>
+            )
           ) : (
             <Link
               href="/planos"
@@ -758,8 +823,8 @@ export default function SearchResults({
           <div className="text-xs sm:text-sm text-ink-muted text-center space-y-1">
             {rawCount > 0 && (
               <p>
-                {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitação compatível' : 'licitações compatíveis'} com os filtros selecionados nesta busca
-                {searchMode === "setor" && sectorName !== "Licitações" ? ` para o setor ${sectorName.toLowerCase()}` : ''}
+                {result.resumo.total_oportunidades} de {rawCount.toLocaleString("pt-BR")} {rawCount === 1 ? 'licitacao compativel' : 'licitacoes compativeis'} com os filtros selecionados nesta busca
+                {searchMode === "setor" && sectorName !== "Licitacoes" ? ` para o setor ${sectorName.toLowerCase()}` : ''}
                 {/* AC19: Source count summary with tooltip */}
                 {result.sources_used && result.sources_used.length > 1 && (
                   <span
@@ -769,7 +834,7 @@ export default function SearchResults({
                       .map((s: { source_code: string; record_count: number }) => `${s.source_code}: ${s.record_count} registros`)
                       .join('\n') || ''}
                   >
-                    (dados de múltiplas fontes)
+                    (dados de multiplas fontes)
                   </span>
                 )}
               </p>
@@ -777,7 +842,7 @@ export default function SearchResults({
             {/* AC21: Partial failure — simple message without technical source names */}
             {result.is_partial && !result.cached && result.sources_used && result.sources_used.length > 0 && (
               <p className="text-amber-600 dark:text-amber-400">
-                Busca concluída | Fonte temporariamente indisponível (dados podem estar incompletos)
+                Busca concluida | Fonte temporariamente indisponivel (dados podem estar incompletos)
               </p>
             )}
             {/* AC22: Source badges — hidden by default, toggle for power users */}
@@ -820,7 +885,7 @@ export default function SearchResults({
                 <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Última atualização: {new Date(result.ultima_atualizacao).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                Ultima atualizacao: {new Date(result.ultima_atualizacao).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
               </p>
             )}
           </div>

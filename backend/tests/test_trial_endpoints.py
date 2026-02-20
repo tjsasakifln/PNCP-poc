@@ -131,29 +131,23 @@ def test_trial_value_no_sessions(client, mock_db):
 
 
 def test_trial_value_db_error(client, mock_db):
-    """Test trial value endpoint handles database errors gracefully."""
+    """Test trial value endpoint surfaces DB errors as 503 (CRIT-005 AC26)."""
     mock_db.table.return_value.select.return_value.eq.return_value.single.return_value.execute.side_effect = Exception(
         "Database connection error"
     )
 
     response = client.get("/v1/analytics/trial-value")
 
-    # Should return zeros instead of 500 error
-    assert response.status_code == 200
-    data = response.json()
-
-    assert data["total_opportunities"] == 0
-    assert data["total_value"] == 0.0
-    assert data["searches_executed"] == 0
-    assert data["avg_opportunity_value"] == 0.0
-    assert data["top_opportunity"] is None
+    # CRIT-005 AC26: Surface error instead of swallowing with zero defaults
+    assert response.status_code == 503
+    assert "indisponivel" in response.json()["detail"].lower()
 
 
 # ============================================================================
 # Trial Status Endpoint Tests
 # ============================================================================
 
-def test_trial_status_active_trial(client):
+def test_trial_status_active_trial(client, mock_db):
     """Test trial status endpoint with active trial."""
     future_date = datetime.now(timezone.utc) + timedelta(days=5)
 
@@ -183,7 +177,7 @@ def test_trial_status_active_trial(client):
     assert data["is_expired"] is False
 
 
-def test_trial_status_expired_trial(client):
+def test_trial_status_expired_trial(client, mock_db):
     """Test trial status endpoint with expired trial."""
     past_date = datetime.now(timezone.utc) - timedelta(days=1)
 
@@ -212,7 +206,7 @@ def test_trial_status_expired_trial(client):
     assert data["is_expired"] is True
 
 
-def test_trial_status_paid_user(client):
+def test_trial_status_paid_user(client, mock_db):
     """Test trial status endpoint for paid user (not on trial)."""
     mock_quota = QuotaInfo(
         allowed=True,
@@ -243,6 +237,16 @@ def test_trial_status_paid_user(client):
 # ============================================================================
 # Quota Error Message Test
 # ============================================================================
+
+def test_trial_status_db_error(client, mock_db):
+    """Test trial status surfaces quota check errors as 503 (CRIT-005 AC24)."""
+    with patch("quota.check_quota", side_effect=Exception("Database connection error")):
+        response = client.get("/v1/trial-status")
+
+    # CRIT-005 AC24: Surface error instead of swallowing with defaults
+    assert response.status_code == 503
+    assert "indisponivel" in response.json()["detail"].lower()
+
 
 def test_trial_expired_message_updated():
     """Test that trial expiration error message matches GTM-010 spec."""

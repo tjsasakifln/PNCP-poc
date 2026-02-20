@@ -57,62 +57,62 @@ O sistema pratica "Success Theater" — retorna HTTP 200 em 14 locais onde o pro
 ## Criterios de Aceite
 
 ### Observabilidade de Response State
-- [ ] AC1: Adicionar header `X-Response-State` em toda resposta `/buscar` espelhando `response_state`
-- [ ] AC2: Adicionar header `X-Cache-Level` espelhando `cache_level` (fresh/stale/none)
-- [ ] AC3: Criar Prometheus counter `search_response_state_total{state="live|cached|degraded|empty_failure"}`
-- [ ] AC4: Criar Prometheus counter `search_error_type_total{type="sources_down|timeout|filter_error|llm_error|db_error"}`
+- [x] AC1: Adicionar header `X-Response-State` em toda resposta `/buscar` espelhando `response_state`
+- [x] AC2: Adicionar header `X-Cache-Level` espelhando `cache_level` (fresh/stale/none)
+- [x] AC3: Criar Prometheus counter `search_response_state_total{state="live|cached|degraded|empty_failure"}`
+- [x] AC4: Criar Prometheus counter `search_error_type_total{type="sources_down|timeout|filter_error|llm_error|db_error"}`
 
 ### Frontend — Diferenciar "Sem Resultados" de "Fontes Indisponiveis"
-- [ ] AC5: Quando `response_state="empty_failure"`, exibir componente `SourcesUnavailable` com `degradation_guidance` do backend (NAO lista vazia)
-- [ ] AC6: Quando `response_state="empty_failure"` E `degradation_guidance` esta presente, exibir o texto do guidance
-- [ ] AC7: Quando resultados sao REALMENTE zero (response_state="live", licitacoes=[]), exibir `EmptyState` com "Nenhuma licitacao encontrada" + sugestoes de filtro
-- [ ] AC8: Nunca mostrar lista vazia sem contexto — sempre ter componente informativo
+- [x] AC5: Quando `response_state="empty_failure"`, exibir componente `SourcesUnavailable` com `degradation_guidance` do backend (NAO lista vazia)
+- [x] AC6: Quando `response_state="empty_failure"` E `degradation_guidance` esta presente, exibir o texto do guidance
+- [x] AC7: Quando resultados sao REALMENTE zero (response_state="live", licitacoes=[]), exibir `EmptyState` com "Nenhuma licitacao encontrada" + sugestoes de filtro
+- [x] AC8: Nunca mostrar lista vazia sem contexto — sempre ter componente informativo
 
 ### Excel Status
-- [ ] AC9: Quando `excel_status="failed"`, desabilitar botao de download e mostrar "Excel indisponivel — tente nova busca"
-- [ ] AC10: Quando `excel_status="processing"`, mostrar spinner no botao com "Gerando Excel..."
-- [ ] AC11: Se `excel_status` fica "processing" por mais de 90s sem SSE update, mostrar "Excel indisponivel"
-- [ ] AC12: Adicionar polling para `excel_status` via endpoint de status (CRIT-003 AC11) quando SSE indisponivel
+- [x] AC9: Quando `excel_status="failed"`, desabilitar botao de download e mostrar "Excel indisponivel — tente nova busca"
+- [x] AC10: Quando `excel_status="processing"`, mostrar spinner no botao com "Gerando Excel..."
+- [x] AC11: Se `excel_status` fica "processing" por mais de 90s sem SSE update, mostrar "Excel indisponivel"
+- [x] AC12: Adicionar polling para `excel_status` via endpoint de status (CRIT-003 AC11) quando SSE indisponivel
 
 ### LLM Summary Provenance
-- [ ] AC13: Adicionar campo `llm_source` no response: `"ai"` | `"fallback"` | `"processing"`
-- [ ] AC14: Backend `gerar_resumo_fallback()` deve setar `llm_source="fallback"` no response
-- [ ] AC15: Backend `gerar_resumo()` (real) deve setar `llm_source="ai"` no response
-- [ ] AC16: Frontend exibir badge discreto: "Resumo por IA" (azul) vs "Resumo automatico" (cinza)
-- [ ] AC17: Quando `llm_status="processing"`, mostrar "Resumo por IA sendo preparado..." com eventual replacement
+- [x] AC13: Adicionar campo `llm_source` no response: `"ai"` | `"fallback"` | `"processing"`
+- [x] AC14: Backend `gerar_resumo_fallback()` deve setar `llm_source="fallback"` no response
+- [x] AC15: Backend `gerar_resumo()` (real) deve setar `llm_source="ai"` no response
+- [x] AC16: Frontend exibir badge discreto: "Resumo por IA" (azul) vs "Resumo automatico" (cinza)
+- [x] AC17: Quando `llm_status="processing"`, mostrar "Resumo por IA sendo preparado..." com eventual replacement
 
 ### Error Message Accuracy
-- [ ] AC18: Corrigir mapeamento 502 em `error-messages.ts`: mensagem neutra "O servidor esta temporariamente indisponivel" (nao culpar PNCP especificamente)
-- [ ] AC19: Adicionar mapeamentos para `response_state` no frontend (nao so HTTP status codes)
-- [ ] AC20: Mensagens de erro devem incluir `search_id` para referencia de suporte (collapsible "Detalhes tecnicos")
+- [x] AC18: Corrigir mapeamento 502 em `error-messages.ts`: mensagem neutra "O servidor esta temporariamente indisponivel" (nao culpar PNCP especificamente)
+- [x] AC19: Adicionar mapeamentos para `response_state` no frontend (nao so HTTP status codes)
+- [x] AC20: Mensagens de erro devem incluir `search_id` para referencia de suporte (collapsible "Detalhes tecnicos")
 
 ### Progress-to-Error Transition
-- [ ] AC21: Quando timeout ocorre mas UFs ja retornaram dados (`succeeded_ufs` nao vazio), mostrar resultados parciais com banner "Busca incompleta" em vez de erro
-- [ ] AC22: Na transicao progresso->erro por timeout, preservar barra de progresso por 3s com overlay "Busca expirou" antes de mostrar erro
-- [ ] AC23: Nunca chamar `setResult(null)` quando `forceFresh=false` e resultado anterior existe — manter resultado anterior como fallback visual
+- [x] AC21: Quando timeout ocorre mas UFs ja retornaram dados (`succeeded_ufs` nao vazio), mostrar resultados parciais com banner "Busca incompleta" em vez de erro
+- [x] AC22: Na transicao progresso->erro por timeout, preservar barra de progresso por 3s com overlay "Busca expirou" antes de mostrar erro
+- [x] AC23: Nunca chamar `setResult(null)` quando `forceFresh=false` e resultado anterior existe — manter resultado anterior como fallback visual
 
 ### Swallowed Error Audit
-- [ ] AC24: `routes/user.py` `get_trial_status()`: retornar HTTP 503 quando Supabase falha (nao 200 com defaults enganosos)
-- [ ] AC25: `routes/billing.py` `get_subscription_status()`: retornar HTTP 503 quando Stripe falha (nao 200 com "pending")
-- [ ] AC26: `routes/analytics.py` `get_trial_value()`: retornar HTTP 503 quando Supabase falha (nao 200 com zeros)
-- [ ] AC27: Para cada endpoint acima, frontend deve tratar 503 gracefully com mensagem "Informacao temporariamente indisponivel"
+- [x] AC24: `routes/user.py` `get_trial_status()`: retornar HTTP 503 quando Supabase falha (nao 200 com defaults enganosos)
+- [x] AC25: `routes/billing.py` `get_subscription_status()`: retornar HTTP 503 quando Stripe falha (nao 200 com "pending")
+- [x] AC26: `routes/analytics.py` `get_trial_value()`: retornar HTTP 503 quando Supabase falha (nao 200 com zeros)
+- [x] AC27: Para cada endpoint acima, frontend deve tratar 503 gracefully com mensagem "Informacao temporariamente indisponivel"
 
 ### buscar-progress Endpoint
-- [ ] AC28: Quando `search_id` nao existe, retornar HTTP 404 (nao SSE 200 com "Search not found" embutido)
-- [ ] AC29: Quando tracker existe mas busca ja falhou, retornar SSE event `error` com `error_message` estruturado
+- [x] AC28: Quando `search_id` nao existe, retornar HTTP 404 (nao SSE 200 com "Search not found" embutido)
+- [x] AC29: Quando tracker existe mas busca ja falhou, retornar SSE event `error` com `error_message` estruturado
 
 ## Testes Obrigatorios
 
-- [ ] `response_state="empty_failure"` mostra SourcesUnavailable (nao lista vazia)
-- [ ] `excel_status="failed"` desabilita botao download
-- [ ] `llm_source="fallback"` mostra badge "Resumo automatico"
-- [ ] 502 error message nao menciona PNCP especificamente
-- [ ] Timeout com UFs parciais mostra resultados parciais (nao erro)
-- [ ] trial-status retorna 503 em vez de 200 com defaults quando DB falha
-- [ ] subscription-status retorna 503 quando Stripe falha
-- [ ] buscar-progress retorna 404 para search_id inexistente
-- [ ] Header X-Response-State presente em toda resposta /buscar
-- [ ] Prometheus counter incrementado por response_state
+- [x] `response_state="empty_failure"` mostra SourcesUnavailable (nao lista vazia)
+- [x] `excel_status="failed"` desabilita botao download
+- [x] `llm_source="fallback"` mostra badge "Resumo automatico"
+- [x] 502 error message nao menciona PNCP especificamente
+- [x] Timeout com UFs parciais mostra resultados parciais (nao erro)
+- [x] trial-status retorna 503 em vez de 200 com defaults quando DB falha
+- [x] subscription-status retorna 503 quando Stripe falha
+- [x] buscar-progress retorna 404 para search_id inexistente
+- [x] Header X-Response-State presente em toda resposta /buscar
+- [x] Prometheus counter incrementado por response_state
 
 ## Definicao de Pronto
 

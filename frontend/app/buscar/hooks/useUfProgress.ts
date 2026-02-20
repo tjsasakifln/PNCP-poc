@@ -1,8 +1,11 @@
 /**
  * useUfProgress - React hook for tracking per-UF search progress via SSE.
  *
- * Maintains a Map of UF statuses (pending → fetching → retrying → success/failed/recovered)
+ * Maintains a Map of UF statuses (pending -> fetching -> retrying -> success/failed/recovered)
  * and computes aggregated metrics (total found, all complete).
+ *
+ * @deprecated Use useSearchSSE instead (CRIT-006 AC9).
+ * This hook is kept for backward compatibility during migration.
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';

@@ -1053,6 +1053,11 @@ class BuscaResponse(BaseModel):
         description="Excel generation status: 'ready' (inline), 'processing' (background job running), "
                     "'skipped' (plan does not allow), 'failed' (job failed), None (legacy)"
     )
+    # CRIT-005 AC13: LLM summary provenance
+    llm_source: Optional[Literal["ai", "fallback", "processing"]] = Field(
+        default=None,
+        description="CRIT-005 AC13: Source of the summary — 'ai' (GPT-generated), 'fallback' (heuristic), 'processing' (in progress)"
+    )
 
     class Config:
         """Pydantic configuration."""

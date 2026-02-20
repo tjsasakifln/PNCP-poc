@@ -168,6 +168,20 @@ LLM_TOKENS = _create_counter(
     labelnames=["direction"],  # "input" or "output"
 )
 
+# CRIT-005 AC3: Response state counter
+SEARCH_RESPONSE_STATE = _create_counter(
+    "smartlic_search_response_state_total",
+    "Total search responses by semantic state",
+    labelnames=["state"],
+)
+
+# CRIT-005 AC4: Error type counter
+SEARCH_ERROR_TYPE = _create_counter(
+    "smartlic_search_error_type_total",
+    "Total search errors by type",
+    labelnames=["type"],
+)
+
 # ============================================================================
 # Gauges
 # ============================================================================

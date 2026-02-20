@@ -66,68 +66,68 @@ User clica "Buscar" -> Progresso comeca (0%)
 ## Criterios de Aceite
 
 ### Backend Timeout Control
-- [ ] AC1: Quando Pipeline FETCH_TIMEOUT dispara, marcar busca como `status='timed_out'` em `search_sessions` (CRIT-002)
-- [ ] AC2: Persistir `error_message` com detalhes: elapsed time, UFs completados, UFs pendentes
-- [ ] AC3: Se UFs ja retornaram dados quando timeout ocorre, salvar resultados parciais em `search_sessions`
-- [ ] AC4: Criar endpoint `POST /v1/search/{search_id}/retry` que reprocessa apenas UFs faltantes (nao todo o search)
-- [ ] AC5: Retry endpoint deve reaproveitar dados ja coletados do cache/session (nao refetch tudo)
+- [x] AC1: Quando Pipeline FETCH_TIMEOUT dispara, marcar busca como `status='timed_out'` em `search_sessions` (CRIT-002)
+- [x] AC2: Persistir `error_message` com detalhes: elapsed time, UFs completados, UFs pendentes
+- [x] AC3: Se UFs ja retornaram dados quando timeout ocorre, salvar resultados parciais em `search_sessions`
+- [x] AC4: Criar endpoint `POST /v1/search/{search_id}/retry` que reprocessa apenas UFs faltantes (nao todo o search)
+- [x] AC5: Retry endpoint deve reaproveitar dados ja coletados do cache/session (nao refetch tudo)
 
 ### Tracker TTL Alignment
-- [ ] AC6: `_TRACKER_TTL` em `progress.py` DEVE ser >= `SEARCH_FETCH_TIMEOUT` + 60s margem: `300 -> 420`
-- [ ] AC7: `_cleanup_stale()` NAO deve remover trackers cuja busca tem `status='processing'` no banco
-- [ ] AC8: Adicionar teste que verifica `_TRACKER_TTL >= SEARCH_FETCH_TIMEOUT`
+- [x] AC6: `_TRACKER_TTL` em `progress.py` DEVE ser >= `SEARCH_FETCH_TIMEOUT` + 60s margem: `300 -> 420`
+- [x] AC7: `_cleanup_stale()` NAO deve remover trackers cuja busca tem `status='processing'` no banco
+- [x] AC8: Adicionar teste que verifica `_TRACKER_TTL >= SEARCH_FETCH_TIMEOUT`
 
 ### SSE Consolidation
-- [ ] AC9: Consolidar `useSearchProgress` + `useUfProgress` em hook unico `useSearchSSE`
-- [ ] AC10: Unica instancia de EventSource gerencia todos os event types
-- [ ] AC11: Dispatch de eventos para consumers separados via callback pattern
-- [ ] AC12: Retry coordenado: se conexao cai, um unico retry para a conexao consolidada
+- [x] AC9: Consolidar `useSearchProgress` + `useUfProgress` em hook unico `useSearchSSE`
+- [x] AC10: Unica instancia de EventSource gerencia todos os event types
+- [x] AC11: Dispatch de eventos para consumers separados via callback pattern
+- [x] AC12: Retry coordenado: se conexao cai, um unico retry para a conexao consolidada
 
 ### SSE Disconnect Message
-- [ ] AC13: Mudar "Finalizando busca..." para "O progresso em tempo real foi interrompido. A busca continua no servidor e os resultados serao exibidos quando prontos."
-- [ ] AC14: Mostrar estimativa baseada em UFs completados vs total (se disponivel)
+- [x] AC13: Mudar "Finalizando busca..." para "O progresso em tempo real foi interrompido. A busca continua no servidor e os resultados serao exibidos quando prontos."
+- [x] AC14: Mostrar estimativa baseada em UFs completados vs total (se disponivel)
 
 ### Cancel Button
-- [ ] AC15: Cancel button DEVE aparecer desde o inicio do loading (nao apos 10s)
-- [ ] AC16: Cancel deve enviar signal ao backend (`POST /v1/search/{search_id}/cancel` ou via header)
-- [ ] AC17: Backend ao receber cancel: marcar busca como `status='cancelled'`, parar pipeline
+- [x] AC15: Cancel button DEVE aparecer desde o inicio do loading (nao apos 10s)
+- [x] AC16: Cancel deve enviar signal ao backend (`POST /v1/search/{search_id}/cancel` ou via header)
+- [x] AC17: Backend ao receber cancel: marcar busca como `status='cancelled'`, parar pipeline
 
 ### Retry Cooldown Scaling
-- [ ] AC18: Cooldown escalado por tipo de erro:
+- [x] AC18: Cooldown escalado por tipo de erro:
   - Network error: 10s
   - Timeout: 15s
   - Rate limit (429): 30s
   - Server error (500): 20s
-- [ ] AC19: Retry button deve mostrar countdown (ja existe, manter)
+- [x] AC19: Retry button deve mostrar countdown (ja existe, manter)
 
 ### Overtime Messages
-- [ ] AC20: Vincular overtime messages ao progresso REAL (nao so tempo):
+- [x] AC20: Vincular overtime messages ao progresso REAL (nao so tempo):
   - Progresso > 80%: "Quase pronto, finalizando..."
   - Progresso 50-80%: "Processando resultados..."
   - Progresso < 50% + overtime: "Esta busca esta demorando mais que o normal"
-- [ ] AC21: Se progress stale (nao muda por 30s): "Aguardando resposta das fontes..."
+- [x] AC21: Se progress stale (nao muda por 30s): "Aguardando resposta das fontes..."
 
 ### Partial Results on Timeout
-- [ ] AC22: Quando timeout ocorre mas `succeeded_ufs` nao vazio, mostrar resultados parciais com `PartialTimeoutBanner`
-- [ ] AC23: `PartialTimeoutBanner` deve mostrar: UFs completos, UFs faltantes, botao "Buscar estados restantes"
-- [ ] AC24: Botao "Buscar estados restantes" deve usar endpoint de retry (AC4) com apenas UFs faltantes
+- [x] AC22: Quando timeout ocorre mas `succeeded_ufs` nao vazio, mostrar resultados parciais com `PartialTimeoutBanner`
+- [x] AC23: `PartialTimeoutBanner` deve mostrar: UFs completos, UFs faltantes, botao "Buscar estados restantes"
+- [x] AC24: Botao "Buscar estados restantes" deve usar endpoint de retry (AC4) com apenas UFs faltantes
 
 ### Error Detail Section
-- [ ] AC25: Adicionar secao collapsible "Detalhes tecnicos" em todo card de erro com: search_id, timestamp, erro tecnico original
-- [ ] AC26: Incluir botao "Copiar detalhes" para facilitar report de problemas
+- [x] AC25: Adicionar secao collapsible "Detalhes tecnicos" em todo card de erro com: search_id, timestamp, erro tecnico original
+- [x] AC26: Incluir botao "Copiar detalhes" para facilitar report de problemas
 
 ## Testes Obrigatorios
 
-- [ ] Timeout marca busca como timed_out (nao failed ou empty)
-- [ ] Partial results mostrados em vez de erro quando UFs parciais disponiveis
-- [ ] Tracker TTL >= FETCH_TIMEOUT (assertion no test_timeout_chain.py)
-- [ ] Cancel button aparece imediatamente no loading
-- [ ] Retry cooldown varia por tipo de erro
-- [ ] Dual EventSource consolidado em conexao unica
-- [ ] Overtime messages baseadas em progresso real
-- [ ] Retry endpoint reprocessa apenas UFs faltantes
-- [ ] SSE disconnect message nao diz "Finalizando"
-- [ ] Erro tecnico detail mostra search_id
+- [x] Timeout marca busca como timed_out (nao failed ou empty)
+- [x] Partial results mostrados em vez de erro quando UFs parciais disponiveis
+- [x] Tracker TTL >= FETCH_TIMEOUT (assertion no test_timeout_chain.py)
+- [x] Cancel button aparece imediatamente no loading
+- [x] Retry cooldown varia por tipo de erro
+- [x] Dual EventSource consolidado em conexao unica
+- [x] Overtime messages baseadas em progresso real
+- [x] Retry endpoint reprocessa apenas UFs faltantes
+- [x] SSE disconnect message nao diz "Finalizando"
+- [x] Erro tecnico detail mostra search_id
 
 ## Definicao de Pronto
 

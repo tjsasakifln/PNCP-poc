@@ -30,7 +30,7 @@ export interface EnhancedLoadingProgressProps {
   sseEvent?: SearchProgressEvent | null;
   /** Whether to use real SSE data vs simulated progress */
   useRealProgress?: boolean;
-  /** GTM-FIX-033 AC3: SSE disconnected — show "Finalizando busca..." */
+  /** GTM-FIX-033 AC3: SSE disconnected — show informative message */
   sseDisconnected?: boolean;
   /** GTM-FIX-035 AC3: Whether all UFs have completed fetching (from useUfProgress) */
   ufAllComplete?: boolean;
@@ -38,6 +38,8 @@ export interface EnhancedLoadingProgressProps {
   isDegraded?: boolean;
   /** A-02 AC9: Human-readable freshness message from SSE degraded event */
   degradedMessage?: string;
+  /** CRIT-005 AC22: Show timeout overlay before switching to error */
+  showTimeoutOverlay?: boolean;
 }
 
 interface Stage {
@@ -52,25 +54,25 @@ const STAGES: Stage[] = [
     id: 1,
     label: 'Consultando fontes oficiais',
     progressTarget: 10,
-    description: 'Consultando fontes oficiais de contratações públicas',
+    description: 'Consultando fontes oficiais de contratacoes publicas',
   },
   {
     id: 2,
     label: 'Buscando dados',
     progressTarget: 10,
-    description: 'Coletando licitações dos estados selecionados',
+    description: 'Coletando licitacoes dos estados selecionados',
   },
   {
     id: 3,
     label: 'Filtrando resultados',
     progressTarget: 70,
-    description: 'Aplicando filtros de setor, valor e relevância',
+    description: 'Aplicando filtros de setor, valor e relevancia',
   },
   {
     id: 4,
     label: 'Avaliando oportunidades',
     progressTarget: 90,
-    description: 'Gerando avaliação estratégica por IA',
+    description: 'Gerando avaliacao estrategica por IA',
   },
   {
     id: 5,
@@ -90,21 +92,28 @@ const SSE_STAGE_MAP: Record<string, number> = {
   complete: 5,
 };
 
-/** GTM-FIX-035 AC5: Graduated honest overtime messages with 2x overrun detection */
-function getOvertimeMessage(overBySeconds: number, stateCount: number, estimatedTime: number, elapsedTime: number): string {
-  // AC5: If elapsed > 2x estimate, show specific reassurance message
+/** CRIT-006 AC20-21: Graduated honest overtime messages with SSE progress awareness */
+function getOvertimeMessage(overBySeconds: number, stateCount: number, estimatedTime: number, elapsedTime: number, sseProgress?: number): string {
+  // CRIT-006 AC20: Messages tied to REAL progress, not just time
+  if (sseProgress !== undefined && sseProgress >= 0) {
+    if (sseProgress > 80) return 'Quase pronto, finalizando...';
+    if (sseProgress >= 50) return 'Processando resultados...';
+    // CRIT-006 AC21: If progress stale (overtime but < 50%), different message
+    return 'Aguardando resposta das fontes...';
+  }
+
+  // Fallback for no SSE
   if (elapsedTime > estimatedTime * 2) {
-    return 'Esta busca está demorando mais que o normal. Pode ficar nesta página — os resultados serão exibidos automaticamente.';
+    return 'Esta busca esta demorando mais que o normal. Pode ficar nesta pagina — os resultados serao exibidos automaticamente.';
   }
   if (overBySeconds < 15) return 'Quase pronto, finalizando...';
-  if (overBySeconds < 45) return 'Estamos trabalhando nisso, só mais um instante!';
+  if (overBySeconds < 45) return 'Estamos trabalhando nisso, so mais um instante!';
   if (overBySeconds < 90) {
-    // GTM-FIX-027 T4 AC22: Only mention "muitos estados" if >10 states
     return stateCount > 10
       ? 'Ainda processando. Buscas com muitos estados demoram mais.'
       : 'Processando, aguarde mais um momento.';
   }
-  return 'Esta busca está demorando mais que o normal. Pode ficar nesta página — os resultados serão exibidos automaticamente.';
+  return 'Esta busca esta demorando mais que o normal. Pode ficar nesta pagina — os resultados serao exibidos automaticamente.';
 }
 
 export function EnhancedLoadingProgress({
@@ -120,6 +129,7 @@ export function EnhancedLoadingProgress({
   ufAllComplete = false,
   isDegraded = false,
   degradedMessage,
+  showTimeoutOverlay = false,
 }: EnhancedLoadingProgressProps) {
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(1);
@@ -246,6 +256,11 @@ export function EnhancedLoadingProgress({
   const isOvertime = elapsedTime > estimatedTime;
   const overtimeSeconds = elapsedTime - estimatedTime;
 
+  // CRIT-006 AC20: Get current SSE progress for overtime message
+  const currentSseProgress = useRealProgress && sseEvent && sseEvent.progress >= 0
+    ? sseEvent.progress
+    : undefined;
+
   // A-02 AC9: Amber color scheme for degraded state
   const progressBarColor = isDegraded
     ? 'bg-gradient-to-r from-amber-500 to-amber-600'
@@ -254,7 +269,7 @@ export function EnhancedLoadingProgress({
 
   return (
     <div
-      className={`mt-6 sm:mt-8 p-4 sm:p-6 rounded-card animate-fade-in-up ${
+      className={`relative mt-6 sm:mt-8 p-4 sm:p-6 rounded-card animate-fade-in-up ${
         isDegraded
           ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/40'
           : 'bg-surface-0 border border-strong'
@@ -262,10 +277,19 @@ export function EnhancedLoadingProgress({
       role="status"
       aria-live="polite"
       aria-label={isDegraded
-        ? `Resultados disponíveis com ressalvas`
-        : `Buscando licitações, ${Math.floor(progressPercentage)}% completo`}
+        ? `Resultados disponiveis com ressalvas`
+        : `Buscando licitacoes, ${Math.floor(progressPercentage)}% completo`}
       data-testid={isDegraded ? 'degraded-progress' : 'loading-progress'}
     >
+      {/* CRIT-005 AC22: Timeout overlay */}
+      {showTimeoutOverlay && (
+        <div className="absolute inset-0 bg-amber-50/80 dark:bg-amber-900/40 rounded-card flex items-center justify-center z-10 animate-fade-in">
+          <p className="text-amber-700 dark:text-amber-300 font-medium text-sm">
+            Busca expirou — preparando resultados...
+          </p>
+        </div>
+      )}
+
       {/* Header with spinner */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -388,14 +412,14 @@ export function EnhancedLoadingProgress({
           <svg className="w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          {degradedMessage || 'Resultados disponíveis com ressalvas'}
+          {degradedMessage || 'Resultados disponiveis com ressalvas'}
         </div>
       )}
 
-      {/* Overtime warning message */}
+      {/* Overtime warning message — CRIT-006 AC20-21: uses SSE progress */}
       {isOvertime && !isDegraded && (
         <div className="mb-3 p-3 bg-warning-subtle border border-warning/20 rounded-lg text-sm text-warning-dark">
-          {getOvertimeMessage(overtimeSeconds, stateCount, estimatedTime, elapsedTime)}
+          {getOvertimeMessage(overtimeSeconds, stateCount, estimatedTime, elapsedTime, currentSseProgress)}
         </div>
       )}
 
@@ -427,8 +451,8 @@ export function EnhancedLoadingProgress({
               : ''}
           </span>
 
-          {/* Cancel button - shown after 10s */}
-          {onCancel && elapsedTime > 10 && (
+          {/* CRIT-006 AC15: Cancel button visible from start (no delay) */}
+          {onCancel && (
             <button
               onClick={onCancel}
               className="text-xs text-ink-muted hover:text-error transition-colors underline underline-offset-2"
@@ -440,11 +464,11 @@ export function EnhancedLoadingProgress({
         </div>
       </div>
 
-      {/* GTM-FIX-033 AC3: "Finalizando busca..." when SSE disconnected */}
+      {/* CRIT-006 AC13-14: SSE disconnect message — informative, not misleading */}
       {sseDisconnected && (
         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-lg text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-          Finalizando busca... O progresso em tempo real foi interrompido, mas a busca continua sendo processada.
+          O progresso em tempo real foi interrompido. A busca continua no servidor e os resultados serao exibidos quando prontos.
         </div>
       )}
 
