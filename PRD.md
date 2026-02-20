@@ -1,14 +1,16 @@
-# PRD Técnico: BidIQ Uniformes — POC v0.2
+# PRD Técnico: SmartLic — v0.5
 
-**Versão:** 0.2
-**Data:** Janeiro 2026
+**Versão:** 0.5
+**Data:** Fevereiro 2026
 **Tipo:** Especificação técnica de implementação
-**Status:** ✅ **DEPLOYED TO PRODUCTION** (2026-01-28)
+**Status:** ✅ **PRODUCTION** — GTM Resilience Complete (2026-02-20)
 
-**Production URLs:**
-- Frontend: https://bidiq-uniformes.vercel.app ✅ LIVE
-- Backend API: https://bidiq-backend-production.up.railway.app ✅ LIVE
-- API Docs: https://bidiq-backend-production.up.railway.app/docs ✅ LIVE
+**Production:** https://smartlic.tech
+
+> **Nota:** Este PRD cobre a arquitetura original do POC (v0.1-v0.2). Para mudanças posteriores, consulte:
+> - `docs/gtm-resilience-summary.md` — 25 stories de resiliência (cache, observabilidade, classificação)
+> - `docs/gtm-fixes-summary.md` — 37 fixes de produção
+> - `CHANGELOG.md` — Histórico completo de versões
 
 ---
 

@@ -172,10 +172,35 @@ Para o Sprint 3, metricas sao baseadas em contadores simples (Redis INCR ou Supa
 
 ## Definition of Done
 
-- [ ] Todos os 10 ACs implementados e testados
-- [ ] `analytics_events.py` funcional e importado sem erro
-- [ ] Endpoints admin protegidos e funcionais
-- [ ] Pagina admin renderizavel com dados reais
-- [ ] Invalidacao funciona em todos os 3 niveis de cache
-- [ ] Zero regressoes na suite de testes existente
-- [ ] Documentacao inline dos endpoints (docstrings com exemplos de response)
+- [x] Todos os 10 ACs implementados e testados
+- [x] `analytics_events.py` funcional e importado sem erro
+- [x] Endpoints admin protegidos e funcionais
+- [x] Pagina admin renderizavel com dados reais
+- [x] Invalidacao funciona em todos os 3 niveis de cache
+- [x] Zero regressoes na suite de testes existente
+- [x] Documentacao inline dos endpoints (docstrings com exemplos de response)
+
+## Implementation Notes (2026-02-19)
+
+**Commit:** `7dff141` — 8 files changed, 1929+/1-
+
+**Files Created/Modified:**
+| File | Change |
+|------|--------|
+| `backend/analytics_events.py` | **NEW**: Mixpanel + logger.debug fallback, fire-and-forget |
+| `backend/admin.py` | 4 new endpoints under `/admin/cache/*` |
+| `backend/search_cache.py` | `get_cache_metrics()`, `invalidate_cache_entry()`, `invalidate_all_cache()`, `inspect_cache_entry()` + counter tracking |
+| `backend/redis_pool.py` | `InMemoryCache.incr()` + `keys_by_prefix()` methods |
+| `frontend/app/admin/cache/page.tsx` | **NEW**: Admin cache dashboard page |
+| `backend/tests/test_analytics_events.py` | **NEW**: 11 tests |
+| `backend/tests/test_admin_cache.py` | **NEW**: 15 tests |
+| `frontend/__tests__/admin-cache.test.tsx` | **NEW**: 15 tests |
+
+**Key Design Decisions:**
+- Counter-based hit/miss tracking via `InMemoryCache.incr()` (per-worker, resets on restart)
+- Supabase queries for persistent metrics (total entries, priority distribution, age distribution)
+- No new frontend API proxy needed — existing `app/api/admin/[...path]/route.ts` handles all admin routes
+- `.gitignore` has `cache/` pattern — used `git add -f` for `frontend/app/admin/cache/page.tsx`
+- Admin auth reuses existing `require_admin` dependency from admin.py
+
+**Test Results:** 26 backend + 15 frontend = 41 new tests, zero regressions

@@ -175,10 +175,10 @@ A proxima migration disponivel deve ser verificada no momento da implementacao. 
 
 ## Definition of Done
 
-- [ ] Todos os 10 ACs implementados e testados
+- [x] Todos os 10 ACs implementados e testados
 - [ ] Migration aplicada no Supabase (staging e producao)
-- [ ] Backward compatibility verificada com dados existentes
-- [ ] Zero regressoes na suite de testes de cache
+- [x] Backward compatibility verificada com dados existentes
+- [x] Zero regressoes na suite de testes de cache
 - [ ] Indice de degradacao validado com EXPLAIN ANALYZE
-- [ ] Health endpoint atualizado e verificavel em producao
-- [ ] Documentacao inline com descricao de cada campo e seu proposito
+- [x] Health endpoint atualizado e verificavel em producao
+- [x] Documentacao inline com descricao de cada campo e seu proposito

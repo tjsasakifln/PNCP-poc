@@ -151,10 +151,17 @@ Endpoint `GET /v1/health/cache` inclui `priority_distribution: {hot: N, warm: N,
 
 ## Definition of Done
 
-- [ ] Todos os 10 ACs implementados e testados
-- [ ] Migration aplicada sem erro no Supabase
-- [ ] TTL diferenciado verificavel no Redis (quando provisionado)
-- [ ] Trigger de evicao atualizado e testado com 11+ entries
-- [ ] Zero regressoes na suite de testes existente
-- [ ] Health endpoint mostrando distribuicao de prioridade
+- [x] Todos os 10 ACs implementados e testados
+- [x] Migration aplicada sem erro no Supabase
+- [x] TTL diferenciado verificavel no Redis (quando provisionado)
+- [x] Trigger de evicao atualizado e testado com 11+ entries
+- [x] Zero regressoes na suite de testes existente
+- [x] Health endpoint mostrando distribuicao de prioridade
+- [x] Documentacao inline com exemplos de classificacao
+
+### Implementation Notes (2026-02-19)
+- **Commit**: `377ff76` — 5 files changed, 999+/9-
+- **Tests**: 39 new (test_cache_priority.py) + 2 pre-existing fixed
+- **Baseline**: 33 fail / 3733 pass (was 35/3692) — zero regressions
+- **Files**: search_cache.py, routes/health.py, test_cache_priority.py, test_cache_health_metadata.py, 032_cache_priority_fields.sql
 - [ ] Documentacao inline com exemplos de classificacao

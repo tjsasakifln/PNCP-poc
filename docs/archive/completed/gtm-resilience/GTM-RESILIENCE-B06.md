@@ -218,12 +218,12 @@ rate_limiter:pcp                       → HASH {tokens, last_refill}
 
 ## Definition of Done
 
-- [ ] Todos os 12 ACs implementados e testados
+- [x] Todos os 12 ACs implementados e testados
 - [ ] Circuit breaker compartilhado entre workers verificado em producao
 - [ ] Rate limiter compartilhado verificado em producao
-- [ ] Fallback per-worker testado (desconectar Redis)
-- [ ] Zero breaking changes nos callers existentes
-- [ ] Suite de testes existente passa sem regressoes
-- [ ] Health endpoint mostrando estado compartilhado
-- [ ] Scripts Lua para rate limiter revisados por seguranca
-- [ ] Documentacao inline completa
+- [x] Fallback per-worker testado (desconectar Redis)
+- [x] Zero breaking changes nos callers existentes
+- [x] Suite de testes existente passa sem regressoes
+- [x] Health endpoint mostrando estado compartilhado
+- [x] Scripts Lua para rate limiter revisados por seguranca
+- [x] Documentacao inline completa

@@ -1,147 +1,113 @@
-# ROADMAP — SmartLic POC
+# ROADMAP — SmartLic
 
-**Versao:** 2.0 | **Atualizado:** 2026-02-04 | **Status:** POC DEPLOYED + Technical Debt Phase
+**Versao:** 3.0 | **Atualizado:** 2026-02-20 | **Status:** GTM Resilience Complete, Active Backlog
 
 ---
 
 ## Status Atual
 
 ```
-POC CORE:        [####################] 100% (34/34) DEPLOYED
-CLOSED TOTAL:    119 issues (incl. 24 duplicates)
-OPEN TOTAL:      133 issues (technical debt backlog)
+POC CORE:            [####################] 100% DEPLOYED
+GTM LAUNCH:          [####################] 100% (10/10 stories)
+GTM FIXES:           [####################] 100% (37 fixes)
+GTM RESILIENCE:      [####################] 100% (25/25 stories)
+TECH DEBT (TD):      [####................] ~20% (19 stories)
+UX PREMIUM:          [##..................] ~6% (2/36 stories)
 ```
 
-**Production URLs:**
-- Frontend: https://bidiq-frontend-production.up.railway.app
-- Backend: https://bidiq-uniformes-production.up.railway.app
-- API Docs: https://bidiq-uniformes-production.up.railway.app/docs
+**Production:** https://smartlic.tech
 
 ---
 
-## Epics Concluidos (POC Core)
+## Fases Concluidas
 
-| EPIC | Issues | Status |
-|------|--------|--------|
-| EPIC 1: Setup e Infraestrutura | #2, #3, #4, #5, #32 | CLOSED |
-| EPIC 2: Cliente PNCP | #6, #7, #8, #28 | CLOSED |
-| EPIC 3: Motor de Filtragem | #9, #10, #11, #30 | CLOSED |
-| EPIC 4: Geracao de Saidas | #12, #13, #14, #15 | CLOSED |
-| EPIC 5: API Backend | #16, #17, #18, #19, #29 | CLOSED |
-| EPIC 6: Frontend | #20, #21, #22, #23, #24, #56, #57 | CLOSED |
-| EPIC 7: Deploy | #25, #26, #27, #31, #61, #65, #66, #71, #73, #74, #75 | CLOSED |
-| EPIC 8: Design System | #83-#94 (exceto #89) | CLOSED |
+### Fase 1 — POC Core (Jan 2026)
+PNCP client, filtering engine, Excel export, LLM summaries, Next.js frontend. Deployed Jan 28.
 
----
+### Fase 2 — Multi-Sector + GTM Launch (Feb 1-14)
+15 sectors, Stripe billing, onboarding wizard, trial conversion, SSE progress, PCP integration, pipeline management. 10 GTM stories + 37 production fixes.
 
-## Backlog Priorizado (133 Open Issues)
+### Fase 3 — GTM Resilience (Feb 17-20)
+25 stories across 6 tracks. See `docs/gtm-resilience-summary.md` for details.
 
-### P0 - CRITICO (Seguranca/Estabilidade)
-
-| # | Issue | Categoria |
-|---|-------|-----------|
-| 156 | CORS allows all origins - CRITICAL for GTM | SEC |
-| 205 | SQL Injection Risk in Quota Upsert | SEC |
-| 168 | Sensitive data in logs (potential PII exposure) | SEC |
-| 203 | Unsafe Admin User ID Parsing | SEC |
-| 189 | Race Condition in Quota Check/Increment | HP |
-
-### P1 - ALTA (Funcionalidade Core)
-
-| # | Issue | Categoria |
-|---|-------|-----------|
-| 150 | Configure Stripe products and webhook | SETUP |
-| 199 | Jest Coverage Below 60% Target (44%) | TEST |
-| 164 | Frontend test coverage at 49% | TEST |
-| 163 | Main page component too large (1467 lines) | FE |
-| 178 | LLM Fallback Chain May Still Fail Silently | HP |
-
-### P2 - MEDIA (Qualidade/UX)
-
-| # | Issue | Categoria |
-|---|-------|-----------|
-| 194 | Missing ARIA Labels on Interactive Elements | UX |
-| 195 | Keyboard Navigation Incomplete | UX |
-| 197 | Color Contrast Issues May Fail WCAG AA | UX |
-| 179 | Excel Generation Buffer Resource Leak | HP |
-| 171 | No error boundaries in React components | FE |
-
-### P3 - BAIXA (Escalabilidade/Nice-to-Have)
-
-| # | Issue | Categoria |
-|---|-------|-----------|
-| 157-162 | TD-SCALE-001 to 006 | SCALE |
-| 165-167 | TD-SCALE-007 to 009 | SCALE |
-| 172, 177 | TD-SCALE-010, 011 | SCALE |
-| 220 | No Canary or Blue-Green Deployment | OPS |
-| 222 | No Observability/Monitoring | OPS |
-| 166 | No observability (APM, metrics, tracing) | SCALE |
+| Track | Stories | Key Deliverables |
+|-------|---------|------------------|
+| A — Never Empty | 5 | Fallback cascade, partial results, coverage bar |
+| B — Smart Cache | 6 | Two-level cache, SWR, hot/warm/cold priority, admin dashboard |
+| C — Coverage UX | 3 | Confidence indicator, freshness, reliability badges |
+| D — Classification | 5 | Zero-match LLM, viability assessment, feedback loop |
+| E — Observability | 3 | Structured logging, Prometheus metrics, Sentry |
+| F — Infrastructure | 3 | ARQ job queue, OpenTelemetry tracing, schema validation |
 
 ---
 
-## Technical Debt Summary
+## Backlog Ativo
 
-```
-CATEGORIA          OPEN   EXEMPLOS
------------------ ------ ----------------------------------
-TD-SEC (Security)     4   #156, #168, #205, #203
-TD-BE (Backend)      18   #243-#255 (after duplicates removed)
-TD-FE (Frontend)     40   #163-#282 (after duplicates removed)
-TD-TEST (Testing)    22   #199-#311 (after duplicates removed)
-TD-OPS (DevOps)      12   #215-#289 (after duplicates removed)
-TD-HP (Happy Path)    9   #178-#189 (after duplicates removed)
-TD-GTM (Go-to-Mkt)    3   #190-#193 (after duplicates removed)
-TD-UX (User Exp)      4   #194-#197
-TD-SCALE             11   #157-#177
-TD-PERF               2   #169, #176
-TD-DX                 1   #175
-TD-INFRA              1   #173
-OUTROS               2   #89, #150
-DUPLICATES CLOSED   24   (consolidated into main issues)
-```
+### Technical Debt (TD-001 to TD-019)
+
+Source: `docs/stories/epic-technical-debt.md`
+
+| Sprint | Stories | Focus |
+|--------|---------|-------|
+| Sprint 0 | TD-001, TD-002, TD-003 | Security (CORS, SQL injection, PII) |
+| Sprint 1 | TD-006, TD-007, TD-008 | Architecture (god function, Redis, frontend CI) |
+| Sprint 2 | TD-009 to TD-014 | Testing, logging, analytics |
+| Sprint 3 | TD-015 to TD-019 | Email, API contracts, polish |
+
+### UX Premium (UX-301 to UX-335)
+
+Source: `docs/stories/EPIC-UX-PREMIUM-2026-02.md` (35 problems from production audit)
+
+| Priority | Stories | Examples |
+|----------|---------|----------|
+| P0 Critical | UX-301, UX-302, UX-304 | Timeout, progress, filter issues |
+| P1 High | UX-305 to UX-318 | Landing, navigation, validation, confirmations |
+| P2 Medium | UX-319 to UX-331 | Heartbeat, dark mode, skeletons, keyboard nav |
+| P3 Low | UX-332 to UX-335 | Sound feedback, SEO, accessibility |
+
+### Active Feature Stories (STORY-240+)
+
+| Story | Title |
+|-------|-------|
+| STORY-240 | Buscar licitacoes abertas |
+| STORY-241 | Excluir inexigibilidade, ampliar modalidades |
+| STORY-242 | Novos setores (rodoviaria, eletricos, hidraulicos) |
+| STORY-243 | Renomear setores inclusividade |
+| STORY-244 | Copy estrategica landing page |
+| STORY-245 | Curadoria acionavel LLM consultor |
+| STORY-246 | Experiencia one-click |
+| STORY-247 | Onboarding profundo perfil contextualizacao |
+| STORY-248 | Precisao absoluta filtros |
+| STORY-249 | Sync setores backend/frontend/signup |
+| STORY-250 | Gestao pipeline oportunidades |
+| STORY-251 | LLM arbiter sector-aware prompts |
+| STORY-252 | PNCP API mass timeout/zero results |
+| STORY-253 | JWT token refresh fix |
+| STORY-254 | Portal transparencia adapter |
+| STORY-255 | Querido diario adapter |
+| STORY-256 | Sanctions check integration |
+| STORY-257A | Backend busca inquebravel |
+| STORY-257B | Frontend UX transparente |
+
+### GTM Remaining (GTM-001, GTM-002)
+
+| Story | Title | Status |
+|-------|-------|--------|
+| GTM-001 | Reescrita copy landing | In progress |
+| GTM-002 | Modelo assinatura unico | In progress |
 
 ---
 
-## Proximas Acoes Recomendadas
+## Archived Documentation
 
-### Sprint 1: Seguranca (P0)
-1. [ ] #156 - Fix CORS configuration
-2. [ ] #205 - Fix SQL injection risk
-3. [ ] #168 - Remove PII from logs
-4. [ ] #203 - Fix admin ID parsing
-5. [ ] #189 - Fix race condition in quota
-
-### Sprint 2: Cobertura de Testes (P1)
-1. [ ] #199 - Aumentar Jest coverage para 60%
-2. [ ] #164 - Frontend coverage enforcement
-
-### Sprint 3: Refactoring (P1)
-1. [ ] #163 - Quebrar page.tsx monolitico
-2. [ ] #178 - Melhorar error handling LLM
-
-### Futuro: Escalabilidade (P3)
-- Circuit breaker, caching, observability
-- Blue-green deployment
-- Horizontal scaling
-
----
-
-## Notas da Auditoria (2026-02-04)
-
-**Drift Detectado:**
-- ROADMAP anterior: 132 issues documentadas
-- Realidade tracker: 252 issues
-- Drift: +120 issues (90.9%)
-
-**Issues Duplicadas Fechadas (24 total):**
-- #300, #283 (duplicates de coverage)
-- #198, #256 (duplicates de monolithic)
-- #185, #277 (duplicates de error boundary)
-- #268, #269, #271 (duplicates de UX/accessibility)
-- #240, #241, #239, #245, #244 (duplicates de backend)
-- #208, #274, #273, #275, #262, #281, #280, #224, #279, #237
-
-**Resultado:** Backlog reduzido de 157 para 133 issues abertas.
+Obsolete stories and docs moved to `docs/archive/` (Feb 20, 2026):
+- `completed/gtm-resilience/` — 25 GTM-RESILIENCE stories
+- `completed/gtm-fixes/` — GTM-FIX production fixes
+- `completed/gtm-core/` — GTM-003 to GTM-010
+- `completed/features/` — STORY-165 to STORY-185
+- `completed/ux/` — UX-303, UX-336
+- `superseded/` — STORY-156-164, STORY-200-229 (replaced by TD series)
+- Sprint, session, review, ceremony, and investigation artifacts
 
 ---
 
@@ -149,10 +115,15 @@ DUPLICATES CLOSED   24   (consolidated into main issues)
 
 | Data | Evento |
 |------|--------|
-| 2026-01-28 | POC deployed to production |
-| 2026-01-31 | Design System EPIC 8 91.7% complete |
-| 2026-02-04 | Roadmap audit: 24 duplicates closed, 133 open issues |
+| 2026-01-24 | Project initialized |
+| 2026-01-25 | MVP v0.1 complete |
+| 2026-01-28 | Production deployment v0.2 |
+| 2026-02-03 | Multi-sector expansion v0.3 |
+| 2026-02-14 | GTM launch phase v0.4 |
+| 2026-02-17 | GTM production fixes (37 fixes) |
+| 2026-02-20 | GTM Resilience complete v0.5 (25 stories) |
+| 2026-02-20 | Documentation cleanup (180+ files archived) |
 
 ---
 
-*Ultima auditoria: 2026-02-04 | Proximo review: Sprint planning*
+*Ultima atualizacao: 2026-02-20*

@@ -133,11 +133,11 @@ Teste de componente que verifica que `response_state === "empty_failure"` render
 
 ## Definition of Done
 
-- [ ] Todos os 12 ACs verificados e passing
-- [ ] Testes unitarios backend: 4 novos, zero regressoes
-- [ ] Testes frontend: 1 novo, zero regressoes
-- [ ] TypeScript check (`npx tsc --noEmit`) passing
+- [x] Todos os 12 ACs verificados e passing
+- [x] Testes unitarios backend: 15 novos (AC9: 3, AC10: 3, AC11: 4, AC4: 5), zero regressoes
+- [x] Testes frontend: 7 novos (AC12), zero regressoes
+- [x] TypeScript check (`npx tsc --noEmit`) passing
 - [ ] Pipeline de busca executado em producao com 5 UFs — verificar que timeout NAO retorna 504 quando cache existe
 - [ ] Log de timeout_cache_fallback visivel no Railway
 - [ ] Code review aprovado
-- [ ] Commit convencional: `feat(backend+frontend): GTM-RESILIENCE-A01 — timeout cache fallback + empty_failure state`
+- [x] Commit convencional: `feat(backend+frontend): GTM-RESILIENCE-A01 — timeout cache fallback + empty_failure state`
