@@ -1,30 +1,27 @@
-# SmartLic - POC v0.3
+# SmartLic — Inteligencia em Licitacoes Publicas
 
 [![Backend Tests](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml)
 [![CodeQL](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml/badge.svg)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/codeql.yml)
-[![Frontend Tests](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml/badge.svg?event=push)](https://github.com/tjsasakifln/PNCP-poc/actions/workflows/tests.yml)
-[![Coverage](https://img.shields.io/badge/Backend_Coverage-80.8%25-brightgreen)](./backend/htmlcov/index.html)
-[![Coverage](https://img.shields.io/badge/Frontend_Coverage-91.5%25-brightgreen)](./frontend/coverage/index.html)
 
-White-label platform for intelligent procurement opportunity discovery from Brazil's PNCP (Portal Nacional de Contratações Públicas).
+**SmartLic** e uma plataforma de inteligencia em licitacoes publicas que automatiza a descoberta, analise e qualificacao de oportunidades para empresas B2G (Business-to-Government).
 
-> **Rebranding Note:** Formerly known as "BidIQ Uniformes", "Descomplicita POC", and "Smart PNCP". Rebranded to SmartLic in February 2026 for white-label multi-tenant deployment (smartlic.tech).
+**Production:** https://smartlic.tech | **Estagio:** POC avancado (v0.5) | **Backend:** 65+ modulos | **Frontend:** 22 paginas
 
-## 📋 Sobre o Projeto
-
-**SmartLic** é um POC (Proof of Concept) que automatiza a descoberta de oportunidades de licitações em **9 setores** (vestuário, alimentos, informática, limpeza, mobiliário, papelaria, engenharia, software, e **facilities**) através da API do PNCP.
+## Sobre o Projeto
 
 ### Funcionalidades Principais
 
-- ✅ **Multi-setor** - 9 setores configurados (vestuário, alimentos, informática, limpeza, mobiliário, papelaria, engenharia, software, facilities)
-- ✅ **White Label** - Branding configurável via environment variables (app name, logo)
-- ✅ **Filtragem inteligente** por setor, estado, valor e keywords (500+ termos)
-- ✅ **Geração automática de planilhas Excel** com formatação profissional
-- ✅ **Resumo executivo via GPT-4.1-nano** com análise e destaques
-- ✅ **Interface web responsiva** para seleção de parâmetros
-- ✅ **Resiliência** - Retry logic com exponential backoff para API instável
-- ✅ **Fallback offline** - Sistema funciona mesmo sem OpenAI API
-- ✅ **Testes automatizados** - 80.8% coverage backend, 91.5% frontend, 60 E2E tests
+- **Busca multi-fonte** — Agrega PNCP + PCP v2 + ComprasGov v3 com deduplicacao inteligente
+- **15 setores** — Vestuario, alimentos, informatica, engenharia, saude, vigilancia, transporte, e 8 outros
+- **Classificacao IA** — GPT-4.1-nano classifica relevancia setorial (keyword + zero-match)
+- **Analise de viabilidade** — 4 fatores: modalidade (30%), timeline (25%), valor (25%), geografia (20%)
+- **Pipeline de oportunidades** — Kanban com drag-and-drop para gerenciar editais
+- **Relatorios** — Excel estilizado + resumo executivo com IA
+- **Historico + Analytics** — Buscas salvas, sessoes, dashboard com metricas
+- **Resiliencia** — Circuit breakers, two-level cache (SWR), fallback cascade
+- **Billing** — Stripe subscriptions (SmartLic Pro R$1.999/mes + trial 7 dias)
+- **Observabilidade** — Prometheus metrics, OpenTelemetry tracing, Sentry errors
+- **304+ testes automatizados** — 169 backend + 135 frontend + E2E (Playwright)
 
 ## 🚀 Quick Start
 
@@ -60,25 +57,18 @@ docker-compose up
 
 **📖 Guia completo de integração:** [docs/INTEGRATION.md](docs/INTEGRATION.md)
 
-#### Testando a Aplicação
+#### Testando a Aplicacao
 
-**Opção 1: Production (Recommended)**
-1. Abra https://bidiq-uniformes.vercel.app no navegador
-2. Selecione 3 estados (ex: SC, PR, RS)
-3. Use o período padrão (últimos 7 dias)
-4. Clique em "🔍 Buscar Licitações de Uniformes"
-5. Aguarde os resultados (5-30s)
-6. Faça download do Excel gerado
+**Production:**
+1. Acesse https://smartlic.tech
+2. Crie conta ou faca login
+3. Complete o onboarding (CNAE + UFs + objetivo)
+4. Busque licitacoes (setor + UFs + periodo)
+5. Analise resultados com badges de relevancia e viabilidade
 
-**Opção 2: Local Development**
-1. Abra http://localhost:3000 no navegador
-2. Selecione 3 estados (ex: SC, PR, RS)
-3. Use o período padrão (últimos 7 dias)
-4. Clique em "🔍 Buscar Licitações de Uniformes"
-5. Aguarde os resultados (5-30s)
-6. Faça download do Excel gerado
-
-**Detalhes completos:** Veja [Manual de Validação E2E](docs/INTEGRATION.md#manual-end-to-end-testing)
+**Local Development:**
+1. Acesse http://localhost:3000
+2. Mesmos passos acima
 
 #### Comandos Docker Úteis
 
@@ -110,9 +100,11 @@ docker-compose exec backend python -c "print('Hello from container')"
 ### Opção 2: Instalação Manual
 
 #### Pré-requisitos
-- Python 3.11+
+- Python 3.12+
 - Node.js 18+
 - OpenAI API key
+- Supabase project (URL + keys)
+- Redis (optional, has fallback)
 
 #### Instalação
 
@@ -146,97 +138,76 @@ npm run dev
 
 5. Acesse: http://localhost:3000
 
-## 📁 Estrutura de Diretórios
+## Estrutura de Diretorios
 
 ```
 pncp-poc/
-├── backend/                    # API Backend (FastAPI)
-│   ├── main.py                # Entrypoint da aplicação FastAPI
-│   ├── config.py              # Configurações e variáveis de ambiente
-│   ├── pncp_client.py         # Cliente HTTP resiliente para API PNCP
-│   ├── filter.py              # Motor de filtragem com keywords
-│   ├── excel.py               # Gerador de planilhas Excel formatadas
-│   ├── llm.py                 # Integração com GPT-4.1-nano
-│   ├── schemas.py             # Modelos Pydantic para validação
-│   ├── exceptions.py          # Exceções customizadas
-│   ├── requirements.txt       # Dependências Python
-│   ├── pyproject.toml         # Configuração pytest + coverage (70% threshold)
-│   └── tests/                 # Testes automatizados (226 tests, 99.2% coverage)
-│       ├── test_pncp_client.py   # 32 tests - retry, rate limiting, pagination
-│       ├── test_filter.py        # 48 tests - keyword matching, normalization
-│       ├── test_excel.py         # 20 tests - formatting, data integrity
-│       ├── test_llm.py           # 15 tests - GPT integration, fallback
-│       ├── test_main.py          # 14 tests - API endpoints
-│       └── test_schemas.py       # 25 tests - Pydantic validation
+├── backend/                    # API Backend (FastAPI 0.129, Python 3.12)
+│   ├── main.py                # Entrypoint FastAPI
+│   ├── config.py              # 70+ env vars
+│   ├── search_pipeline.py     # Pipeline multi-fonte
+│   ├── consolidation.py       # Agregacao + dedup
+│   ├── pncp_client.py         # PNCP API client (circuit breaker)
+│   ├── filter.py              # Keyword density scoring
+│   ├── llm_arbiter.py         # LLM zero-match classification
+│   ├── viability.py           # Viability assessment (4 fatores)
+│   ├── search_cache.py        # Two-level cache + SWR
+│   ├── job_queue.py           # ARQ background jobs
+│   ├── metrics.py             # Prometheus exporter
+│   ├── telemetry.py           # OpenTelemetry tracing
+│   ├── sectors_data.yaml      # 15 setores (keywords, exclusoes)
+│   ├── routes/                # 19 route modules (49 endpoints)
+│   ├── clients/               # PCP, ComprasGov, etc.
+│   ├── services/              # Billing, sanctions
+│   ├── models/                # Cache, search state, stripe
+│   ├── migrations/            # 7 backend migrations
+│   ├── tests/                 # 169 test files
+│   │   ├── integration/       # 10 integration test files
+│   │   └── snapshots/         # OpenAPI schema drift detection
+│   └── requirements.txt       # 32 production packages
 │
-├── frontend/                   # Interface Web (Next.js 16 + React 18)
-│   ├── app/
-│   │   ├── page.tsx           # Página principal (busca + resultados)
-│   │   ├── layout.tsx         # Layout base da aplicação
-│   │   ├── error.tsx          # Error boundary com fallback UI
-│   │   ├── types.ts           # TypeScript interfaces
-│   │   └── api/               # API Routes (proxy para backend)
-│   │       ├── buscar/route.ts    # POST /api/buscar (search orchestration)
-│   │       └── download/route.ts  # GET /api/download (Excel streaming)
-│   ├── __tests__/             # Testes automatizados (94 tests, 91.5% coverage)
-│   │   ├── page.test.tsx      # 44 tests - UI components, user interactions
-│   │   ├── error.test.tsx     # 27 tests - error boundary, reset button
-│   │   └── api/               # 23 tests - API routes, validation
-│   ├── package.json           # Dependências Node.js
-│   ├── jest.config.js         # Configuração Jest (60% threshold)
-│   ├── tailwind.config.js     # Configuração Tailwind CSS
-│   ├── tsconfig.json          # TypeScript strict mode
-│   └── playwright.config.ts   # E2E testing configuration
+├── frontend/                   # Next.js 16, React 18, TypeScript 5.9
+│   ├── app/                   # 22 pages (App Router)
+│   │   ├── buscar/            # Main search page + 18 components
+│   │   ├── dashboard/         # Analytics dashboard
+│   │   ├── pipeline/          # Opportunity pipeline (kanban)
+│   │   ├── admin/             # Admin + cache dashboards
+│   │   ├── onboarding/        # 3-step wizard
+│   │   └── api/               # API proxy routes
+│   ├── components/            # 15 shared components
+│   ├── hooks/                 # Custom hooks (useSearch, useSearchSSE)
+│   ├── __tests__/             # 135 test files
+│   ├── e2e-tests/             # Playwright E2E tests
+│   └── package.json           # 46 packages (22 prod + 24 dev)
 │
-├── docs/                       # Documentação
-│   ├── framework/
-│   │   ├── tech-stack.md      # Stack tecnológico e justificativas
-│   │   ├── source-tree.md     # Estrutura de arquivos detalhada
-│   │   └── coding-standards.md # Padrões de código Python/TypeScript
-│   ├── INTEGRATION.md         # Guia de integração E2E (680 linhas)
-│   ├── architecture/          # Decisões arquiteturais (ADRs)
-│   ├── stories/               # Stories de desenvolvimento (AIOS)
-│   │   └── backlog/           # Backlog gerenciado por @pm agent
-│   └── qa/                    # QA reports e test plans
+├── supabase/
+│   └── migrations/            # 35 Supabase migrations
 │
-├── scripts/                   # Scripts de automação
-│   └── verify-integration.sh  # Health check automatizado (238 linhas)
+├── docs/                       # Documentacao
+│   ├── summaries/             # gtm-resilience-summary, gtm-fixes-summary
+│   ├── framework/             # tech-stack, coding-standards
+│   ├── stories/               # Development stories
+│   └── guides/                # Setup guides
 │
-├── .aios-core/                # Framework AIOS (AI-Orchestrated Development)
-│   ├── core-config.yaml       # Configuração do AIOS
-│   ├── user-guide.md          # Comandos disponíveis
-│   └── development/           # Agentes, tasks, workflows
-│       ├── agents/            # 11 agentes (@dev, @qa, @architect, etc.)
-│       ├── tasks/             # 115+ task definitions
-│       └── workflows/         # 7 multi-step workflows
+├── .aios-core/                # AIOS Framework
+│   └── development/           # Agents, tasks, workflows
 │
-├── .claude/                   # Configurações Claude Code
-│   ├── commands/              # Slash commands customizados
-│   └── rules/                 # Regras de MCP usage
-│
-├── .github/                   # CI/CD Workflows
-│   └── workflows/
-│       ├── tests.yml          # Backend + Frontend + E2E tests
-│       └── codeql.yml         # Security scanning + secret detection
-│
-├── PRD.md                     # Product Requirements Document (1900+ linhas)
-├── ROADMAP.md                 # Roadmap do projeto (70.6% completo - 24/34 issues)
-├── ISSUES-ROADMAP.md          # Breakdown estruturado de issues
-├── CLAUDE.md                  # Instruções para Claude Code
-├── .env.example               # Template de variáveis de ambiente
-├── .gitignore                 # Arquivos ignorados pelo git
-├── docker-compose.yml         # Orquestração de serviços (backend + frontend)
+├── PRD.md                     # Product Requirements Document
+├── CLAUDE.md                  # Claude Code instructions
+├── ROADMAP.md                 # Roadmap + backlog
+├── CHANGELOG.md               # Detailed changelog
 └── README.md                  # Este arquivo
 ```
 
-## 📚 Documentação
+## Documentacao
 
-- [PRD Técnico](./PRD.md) - Especificação completa (1900+ linhas)
-- [Integration Guide](./docs/INTEGRATION.md) - Guia E2E de integração
-- [Tech Stack](./docs/framework/tech-stack.md) - Tecnologias utilizadas
-- [Source Tree](./docs/framework/source-tree.md) - Estrutura de arquivos
-- [Coding Standards](./docs/framework/coding-standards.md) - Padrões de código
-- [Roadmap](./ROADMAP.md) - Status do projeto e próximas issues
+- [PRD Tecnico](./PRD.md) — Especificacao tecnica
+- [Tech Stack](./docs/framework/tech-stack.md) — Tecnologias e versoes
+- [Coding Standards](./docs/framework/coding-standards.md) — Padroes de codigo
+- [Roadmap](./ROADMAP.md) — Status e backlog
+- [CHANGELOG](./CHANGELOG.md) — Historico de versoes
+- [GTM Resilience Summary](./docs/summaries/gtm-resilience-summary.md) — Arquitetura de resiliencia
+- [GTM Fixes Summary](./docs/summaries/gtm-fixes-summary.md) — Fixes de producao
 
 ## 🤖 AIOS Framework
 
@@ -264,43 +235,47 @@ Este projeto utiliza o [AIOS Framework](https://github.com/tjsasakifln/aios-core
 
 Ver [User Guide](./.aios-core/user-guide.md) para lista completa de comandos.
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ```
-┌─────────────┐
-│   Next.js   │  Frontend (React + Tailwind)
-└──────┬──────┘
-       │ HTTP
-┌──────▼──────┐
-│   FastAPI   │  Backend (Python)
-└──────┬──────┘
+┌──────────────┐
+│   Next.js    │  Frontend (22 paginas, React + Tailwind)
+└──────┬───────┘
+       │ API Proxy
+┌──────▼───────┐
+│   FastAPI    │  Backend (65+ modulos, 49 endpoints)
+└──────┬───────┘
        │
-       ├─────► PNCP API (Licitações)
-       └─────► OpenAI API (Resumos)
+       ├─────► PNCP API (prioridade 1)
+       ├─────► PCP v2 API (prioridade 2)
+       ├─────► ComprasGov v3 (prioridade 3)
+       ├─────► OpenAI API (classificacao + resumos)
+       ├─────► Stripe API (billing)
+       ├─────► Supabase (database + auth)
+       └─────► Redis (cache + jobs)
 ```
 
-## 📊 Fluxo de Dados
+## Fluxo de Dados
 
-1. Usuário seleciona UFs e período
-2. Backend consulta API PNCP com retry logic
-3. Motor de filtragem aplica regras:
-   - UF válida
-   - R$ 50k - R$ 5M
-   - Keywords de uniformes
-   - Status aberto
-4. GPT-4.1-nano gera resumo executivo
-5. Excel formatado + resumo retornados
+1. Usuario seleciona setor, UFs e periodo
+2. Backend consulta 3 fontes em paralelo (PNCP + PCP + ComprasGov)
+3. Consolidacao + deduplicacao por prioridade
+4. Filtragem: UF, valor, keywords, LLM zero-match, status
+5. Viability assessment (4 fatores)
+6. LLM summary + Excel (ARQ background jobs)
+7. Resultados via SSE em tempo real
 
-## 🧪 Testes
+## Testes
 
 ```bash
-# Backend
-cd backend
-pytest
+# Backend (169 test files, ~3966 passing)
+cd backend && pytest
 
-# Frontend
-cd frontend
-npm test
+# Frontend (135 test files, ~1921 passing)
+cd frontend && npm test
+
+# E2E (Playwright, 60 critical flows)
+cd frontend && npm run test:e2e
 ```
 
 ## 🚢 Deploy
@@ -331,34 +306,26 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-### Deploy em Produção
+### Deploy em Producao
 
-**🌐 Production URLs:**
-- **Frontend:** https://bidiq-frontend-production.up.railway.app ✅ **LIVE**
-- **Backend API:** https://bidiq-uniformes-production.up.railway.app ✅ **LIVE**
-- **API Docs:** https://bidiq-uniformes-production.up.railway.app/docs ✅ **LIVE**
-
-**Deployment Status:** ✅ **DEPLOYED TO PRODUCTION** (2026-01-28)
+**Production:**
+- **Frontend:** https://smartlic.tech
+- **Backend API:** Railway (web + worker processes)
+- **Database:** Supabase Cloud (PostgreSQL + Auth)
+- **Cache:** Redis (Upstash ou Railway addon)
 
 **Plataformas:**
-- **Frontend:** Vercel (Next.js otimizado)
-- **Backend:** Railway (FastAPI containerizado)
-
-**📖 Guia Completo:** Ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) para instruções passo a passo de deployment.
+- **Frontend + Backend + Worker:** Railway (tudo em um)
+- **Database + Auth:** Supabase Cloud
+- **Payments:** Stripe
 
 **Quick Deploy:**
 ```bash
-# 1. Backend (Railway)
+# Railway (backend + frontend)
 npm install -g @railway/cli
 railway login
-cd backend && railway up
-
-# 2. Frontend (Vercel)
-npm install -g vercel
-cd frontend && vercel --prod
+railway up
 ```
-
-**💰 Custo Estimado:** $5-10/mês (Railway Hobby + Vercel Free tier)
 
 ## 📝 Variáveis de Ambiente
 
@@ -388,16 +355,8 @@ LLM_MAX_TOKENS=500                 # Máximo de tokens na resposta (default: 500
 
 ### Production Environment
 
-Production environment variables are configured in:
-- **Railway (Backend):** Set in Railway dashboard under project settings
-  - `OPENAI_API_KEY` (required)
-  - `PORT` (auto-injected by Railway)
-  - Optional: `LOG_LEVEL`, `PNCP_TIMEOUT`, `PNCP_MAX_RETRIES`, `LLM_MODEL`
-
-- **Railway (Frontend):** Set in Railway dashboard under project settings → Environment Variables
-  - `BACKEND_URL=https://bidiq-uniformes-production.up.railway.app`
-
-**Detalhes completos:** Ver [.env.example](.env.example) com documentação inline de todas as 15+ variáveis disponíveis.
+Production environment variables are configured in Railway dashboard.
+See [.env.example](.env.example) for the full list of 70+ environment variables with documentation.
 
 ---
 
@@ -412,13 +371,13 @@ Production environment variables are configured in:
 **Solução:**
 1. Verifique se backend está online:
    ```bash
-   curl https://bidiq-uniformes-production.up.railway.app/health
+   curl https://smartlic.tech/health
    # Deve retornar: {"status":"healthy"}
    ```
 
 2. Verifique variável de ambiente no Railway:
    - Acesse Railway dashboard → Project Settings → Environment Variables
-   - Confirme: `BACKEND_URL=https://bidiq-uniformes-production.up.railway.app`
+   - Confirme: `BACKEND_URL=https://smartlic.tech`
 
 3. Verifique CORS no backend:
    - Backend deve permitir origem do Railway frontend
@@ -446,7 +405,7 @@ Atualizar lista de origens permitidas em `backend/main.py`:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://bidiq-uniformes.vercel.app",  # Production frontend
+        "https://smartlic.tech",  # Production frontend
         "http://localhost:3000"  # Local development
     ],
     allow_methods=["*"],
@@ -716,13 +675,22 @@ docker-compose exec backend env | grep -E "OPENAI|PNCP|LLM"
 3. Push: `git push origin feature/nova-feature`
 4. Abra um Pull Request
 
-## 📄 Licença
+## Licenca e Propriedade
 
-MIT
+Este software e de propriedade exclusiva da **CONFENGE AVALIACOES E INTELIGENCIA ARTIFICIAL LTDA**.
 
-## 🔗 Links Úteis
+**Todos os direitos reservados.** Este codigo-fonte, incluindo mas nao se limitando a algoritmos, arquitetura, documentacao, configuracoes, e quaisquer materiais relacionados, e propriedade intelectual da CONFENGE. E estritamente proibido o uso, copia, modificacao, distribuicao, sublicenciamento ou qualquer forma de reproducao deste software, no todo ou em parte, sem consentimento previo por escrito da CONFENGE.
 
-- [API PNCP](https://pncp.gov.br/api/consulta/swagger-ui/index.html)
-- [AIOS Framework](https://github.com/tjsasakifln/aios-core)
+**Contato para licenciamento:**
+- **Nome:** Tiago Sasaki
+- **Telefone:** +55 (48) 9 8834-4559
+- **Empresa:** CONFENGE Avaliacoes e Inteligencia Artificial LTDA
+
+## Links Uteis
+
+- [PNCP API](https://pncp.gov.br/api/consulta/swagger-ui/index.html)
+- [PCP v2 API](https://compras.api.portaldecompraspublicas.com.br)
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
 - [Next.js Docs](https://nextjs.org/docs)
+- [Supabase Docs](https://supabase.com/docs)
+- [Stripe Docs](https://stripe.com/docs)

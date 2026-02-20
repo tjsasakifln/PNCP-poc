@@ -1,97 +1,169 @@
-# PRD Técnico: SmartLic — v0.5
+# PRD Tecnico: SmartLic — v0.5
 
-**Versão:** 0.5
+**Versao:** 0.5
 **Data:** Fevereiro 2026
-**Tipo:** Especificação técnica de implementação
-**Status:** ✅ **PRODUCTION** — GTM Resilience Complete (2026-02-20)
-
+**Tipo:** Especificacao tecnica de implementacao
+**Status:** PRODUCTION — GTM Resilience Complete (2026-02-20)
+**Produto:** SmartLic — Plataforma de inteligencia em licitacoes publicas
+**Empresa:** CONFENGE Avaliacoes e Inteligencia Artificial LTDA
 **Production:** https://smartlic.tech
 
-> **Nota:** Este PRD cobre a arquitetura original do POC (v0.1-v0.2). Para mudanças posteriores, consulte:
-> - `docs/gtm-resilience-summary.md` — 25 stories de resiliência (cache, observabilidade, classificação)
-> - `docs/gtm-fixes-summary.md` — 37 fixes de produção
-> - `CHANGELOG.md` — Histórico completo de versões
+> **Nota de evolucao:** Este PRD foi originalmente escrito para o POC v0.1-v0.2 (busca PNCP para vestuario).
+> O sistema evoluiu significativamente. As secoes abaixo foram atualizadas para refletir o estado atual.
+> Para historico detalhado de mudancas, consulte:
+> - `docs/summaries/gtm-resilience-summary.md` — 25 stories de resiliencia
+> - `docs/summaries/gtm-fixes-summary.md` — 37 fixes de producao
+> - `CHANGELOG.md` — Historico completo de versoes
+
+---
+
+## 0. VISAO GERAL DO SISTEMA (v0.5)
+
+### 0.1 O que e o SmartLic
+
+Plataforma de inteligencia em licitacoes publicas que automatiza a descoberta, analise e qualificacao de oportunidades para empresas B2G (Business-to-Government) e consultorias de licitacao.
+
+**Diferenciais:**
+- IA de classificacao setorial (GPT-4.1-nano) com zero-match classification
+- Analise de viabilidade com 4 fatores (modalidade, timeline, valor, geografia)
+- Busca multi-fonte consolidada (PNCP + PCP + ComprasGov)
+
+### 0.2 Arquitetura atual
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                     FRONTEND (Next.js 16 — 22 paginas)               │
+│  Buscar | Dashboard | Pipeline | Historico | Onboarding | Admin      │
+│  SSE Progress | localStorage cache | Supabase Auth                   │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │ API Proxy (route handlers)
+┌───────────────────────────────▼──────────────────────────────────────┐
+│                     BACKEND (FastAPI 0.129 — 65+ modulos)            │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────┐ │
+│  │ INGESTAO MULTI-FONTE                                            │ │
+│  │  PNCP (prio 1) + PCP v2 (prio 2) + ComprasGov v3 (prio 3)     │ │
+│  │  Per-source circuit breakers | Phased UF batching               │ │
+│  │  Consolidation + priority-based dedup                           │ │
+│  └──────────────────────────────┬──────────────────────────────────┘ │
+│                                 │                                    │
+│  ┌──────────────────────────────▼──────────────────────────────────┐ │
+│  │ FILTRAGEM + CLASSIFICACAO                                       │ │
+│  │  1. UF check | 2. Value range | 3. Keyword density scoring     │ │
+│  │  4. LLM zero-match (GPT-4.1-nano YES/NO) | 5. Status/date     │ │
+│  │  6. Viability assessment (4 fatores, 100-point scale)           │ │
+│  └──────────────────────────────┬──────────────────────────────────┘ │
+│                                 │                                    │
+│  ┌──────────────────────────────▼──────────────────────────────────┐ │
+│  │ SAIDA                                                           │ │
+│  │  LLM Summary (ARQ job) | Excel (ARQ job) | Pipeline (Supabase) │ │
+│  │  SSE events: llm_ready, excel_ready | Immediate fallback       │ │
+│  └─────────────────────────────────────────────────────────────────┘ │
+│                                                                      │
+│  CACHE: InMemory(4h) + Supabase(24h) | SWR background refresh       │
+│  BILLING: Stripe (SmartLic Pro R$1.999) | Quota enforcement          │
+│  OBSERVABILITY: Prometheus /metrics | OpenTelemetry | Sentry         │
+│  AUTH: Supabase (email + Google OAuth) | RLS | JWT                   │
+└──────────────────────────────────────────────────────────────────────┘
+
+INFRA: Railway (web + worker + frontend) | Supabase Cloud | Redis
+```
+
+### 0.3 15 Setores
+
+| ID | Nome | Viability Value Range |
+|----|------|-----------------------|
+| vestuario | Vestuario e Uniformes | Definido em sectors_data.yaml |
+| alimentos | Alimentos e Merenda | " |
+| informatica | Hardware e Equipamentos de TI | " |
+| mobiliario | Mobiliario | " |
+| papelaria | Papelaria e Material de Escritorio | " |
+| engenharia | Engenharia, Projetos e Obras | " |
+| software | Software e Sistemas | " |
+| facilities | Facilities e Manutencao | " |
+| saude | Saude | " |
+| vigilancia | Vigilancia e Seguranca Patrimonial | " |
+| transporte | Transporte e Veiculos | " |
+| manutencao_predial | Manutencao e Conservacao Predial | " |
+| engenharia_rodoviaria | Engenharia Rodoviaria e Infraestrutura Viaria | " |
+| materiais_eletricos | Materiais Eletricos e Instalacoes | " |
+| materiais_hidraulicos | Materiais Hidraulicos e Saneamento | " |
+
+Cada setor tem keywords, exclusoes, e viability_value_range definidos em `backend/sectors_data.yaml`.
+
+### 0.4 Parametros do sistema (ATUALIZADOS)
+
+| Parametro | Valor Atual | Nota |
+|-----------|-------------|------|
+| `MAX_DIAS_BUSCA` | **10 dias** | Era 180, depois 15. Reduzido para performance |
+| `PAGE_SIZE` (PNCP) | **50** | PNCP reduziu silenciosamente de 500 para 50 (fev/2026) |
+| `PNCP_BATCH_SIZE` | 5 UFs | UFs processadas em lotes de 5 |
+| `PNCP_BATCH_DELAY_S` | 2.0s | Delay entre batches |
+| `TIMEOUT_PIPELINE` | 360s | Timeout global do pipeline |
+| `TIMEOUT_CONSOLIDATION` | 300s | Timeout da consolidacao multi-fonte |
+| `TIMEOUT_PER_SOURCE` | 180s | Timeout por fonte (PNCP, PCP, ComprasGov) |
+| `TIMEOUT_PER_UF` | 90s (normal), 120s (degraded) | Timeout por UF |
+| `TIMEOUT_FRONTEND_PROXY` | 480s (8 min) | Timeout do proxy Next.js |
+| `LLM_ARBITER_MODEL` | gpt-4.1-nano | Modelo para classificacao |
+| `MAX_CONCURRENT_REVALIDATIONS` | 3 | Background cache refresh |
 
 ---
 
 ## 1. ESCOPO FUNCIONAL
 
-### 1.1 Fluxo de execução
+### 1.1 Fluxo de execucao (v0.5 — multi-fonte)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        INTERFACE WEB                            │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Seleção de UFs (multi-select)                            │  │
-│  │  [SC] [PR] [RS] [SP] [RJ] [MG] ... [Todos]               │  │
-│  │                                                           │  │
-│  │  Período: [Data Inicial] — [Data Final]                   │  │
-│  │                                                           │  │
-│  │  [🔍 Buscar Licitações]                                   │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+│                        INTERFACE WEB (22 paginas)                │
+│  Buscar: Setor + UFs + Periodo + Filtros avancados               │
+│  SSE progress tracking | Resilience banners | Cache indicators   │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     CAMADA DE INGESTÃO                          │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  PNCP API Client                                          │  │
-│  │  - Retry com exponential backoff                          │  │
-│  │  - Circuit breaker                                        │  │
-│  │  - Paginação automática                                   │  │
-│  │  - Rate limiting (respeitar 429)                          │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+│                   INGESTAO MULTI-FONTE                           │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────┐                  │
+│  │ PNCP     │  │ PCP v2   │  │ ComprasGov   │                  │
+│  │ prio 1   │  │ prio 2   │  │ v3 prio 3    │                  │
+│  │ 50/page  │  │ 10/page  │  │ dual-endpoint│                  │
+│  └────┬─────┘  └────┬─────┘  └──────┬───────┘                  │
+│       └──────────────┼───────────────┘                          │
+│              Consolidation + Dedup (cnpj:edital:ano)            │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     CAMADA DE FILTRAGEM                         │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  Filtros sequenciais (fail-fast):                         │  │
-│  │  1. UF ∈ UFs selecionadas                                 │  │
-│  │  2. R$ 50.000 ≤ valor ≤ R$ 5.000.000                      │  │
-│  │  3. match_keywords(objeto, KEYWORDS_UNIFORMES)            │  │
-│  │  4. status = aberta (data_abertura > now)                 │  │
-│  └───────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+│                   FILTRAGEM + IA                                 │
+│  1. UF check  2. Value range  3. Keyword density                │
+│  4. LLM zero-match (GPT-4.1-nano)  5. Status/date              │
+│  6. Viability assessment (modalidade+timeline+valor+geografia)  │
+│  Relevance sources: keyword|llm_standard|llm_conservative|      │
+│                      llm_zero_match                             │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     CAMADA DE SAÍDA                             │
-│  ┌────────────────────┐    ┌────────────────────────────────┐  │
-│  │  Excel Generator   │    │  LLM Summary (GPT-4.1-nano)    │  │
-│  │  - openpyxl        │    │  - Structured output           │  │
-│  │  - Formatação      │    │  - Resumo executivo            │  │
-│  │  - Auto-width      │    │  - Destaques por categoria     │  │
-│  └────────────────────┘    └────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        INTERFACE WEB                            │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │  📊 Resumo (GPT-4.1-nano)                                 │  │
-│  │  "Encontradas 23 licitações de uniformes totalizando      │  │
-│  │   R$ 4.2M. Destaque: Prefeitura de Joinville com edital   │  │
-│  │   de R$ 850k para uniformes escolares..."                 │  │
-│  │                                                           │  │
-│  │  [📥 Download Excel (23 licitações)]                      │  │
-│  └───────────────────────────────────────────────────────────┘  │
+│                   SAIDA                                          │
+│  LLM Summary (ARQ background job, immediate fallback)           │
+│  Excel (ARQ background job, SSE excel_ready event)              │
+│  Pipeline (Supabase, kanban drag-and-drop)                      │
+│  Cache (InMemory 4h + Supabase 24h, SWR pattern)               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Parâmetros do sistema
+### 1.2 Parametros do sistema
 
-| Parâmetro | Valor | Justificativa |
+| Parametro | Valor | Justificativa |
 |-----------|-------|---------------|
 | `VALOR_MIN` | R$ 50.000,00 | Eliminar micro-compras com baixo ROI |
-| `VALOR_MAX` | R$ 5.000.000,00 | Limite operacional típico de PMEs |
-| `MAX_DIAS_BUSCA` | 30 | Limitar carga na API |
-| `TIMEOUT_REQUEST` | 30s | Tolerância para API lenta |
+| `VALOR_MAX` | R$ 5.000.000,00 | Limite operacional tipico de PMEs |
+| `MAX_DIAS_BUSCA` | **10** | Performance + relevancia (era 30, reduzido progressivamente) |
+| `TIMEOUT_REQUEST` | 30s | Tolerancia para API lenta |
 | `MAX_RETRIES` | 5 | Tentativas antes de falha definitiva |
 | `BACKOFF_BASE` | 2s | Base do exponential backoff |
 | `BACKOFF_MAX` | 60s | Teto do backoff |
-| `PAGE_SIZE` | 500 | Máximo permitido pela API PNCP |
+| `PAGE_SIZE` | **50** | Maximo permitido pela API PNCP (era 500, reduzido em fev/2026) |
 
 ---
 
