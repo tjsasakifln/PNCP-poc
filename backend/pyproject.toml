@@ -46,6 +46,7 @@ filterwarnings = [
     "error",                 # Turn warnings into errors
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    "ignore::pytest.PytestUnraisableExceptionWarning",  # Sync TestClient + async pipeline fire-and-forget tasks
 ]
 
 [tool.coverage.run]
