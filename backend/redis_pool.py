@@ -102,6 +102,35 @@ class InMemoryCache:
         while len(self._store) > self._max_entries:
             self._store.popitem(last=False)  # Remove oldest (front of OrderedDict)
 
+    def incr(self, key: str) -> int:
+        """Increment value by 1 (returns new value). Creates key with value 1 if missing.
+
+        B-05 AC4: Used for cache hit/miss counters.
+        """
+        if key in self._store:
+            value, expiry = self._store[key]
+            if expiry and datetime.now(timezone.utc) > expiry:
+                del self._store[key]
+                self._evict_if_needed()
+                self._store[key] = ("1", None)
+                return 1
+            new_val = int(value or "0") + 1
+            self._store[key] = (str(new_val), expiry)
+            self._store.move_to_end(key)
+            return new_val
+        else:
+            self._evict_if_needed()
+            self._store[key] = ("1", None)
+            return 1
+
+    def keys_by_prefix(self, prefix: str) -> list[str]:
+        """Return all keys matching a prefix (for metrics aggregation)."""
+        now = datetime.now(timezone.utc)
+        return [
+            k for k, (_, expiry) in self._store.items()
+            if k.startswith(prefix) and (expiry is None or expiry > now)
+        ]
+
     def __len__(self) -> int:
         return len(self._store)
 

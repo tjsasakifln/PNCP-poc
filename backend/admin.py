@@ -688,6 +688,128 @@ async def get_filter_stats(
     }
 
 
+# ============================================================================
+# B-05: Admin Cache Dashboard Endpoints
+# ============================================================================
+
+
+@router.get("/cache/metrics")
+async def get_cache_metrics_endpoint(
+    admin: dict = Depends(require_admin),
+):
+    """B-05 AC3: Return aggregated cache metrics for admin dashboard.
+
+    Response includes hit_rate_24h, miss_rate_24h, stale_served_24h,
+    total_entries, priority_distribution, age_distribution, degraded_keys,
+    avg_fetch_duration_ms, and top_keys.
+    """
+    from search_cache import get_cache_metrics
+
+    metrics = await get_cache_metrics()
+
+    log_admin_action(
+        logger,
+        admin_id=admin["id"],
+        action="view-cache-metrics",
+        target_user_id=admin["id"],
+        details={"total_entries": metrics.get("total_entries", 0)},
+    )
+
+    return metrics
+
+
+@router.get("/cache/{params_hash}")
+async def inspect_cache_entry_endpoint(
+    params_hash: str = Path(..., min_length=8, max_length=128, description="Cache entry hash"),
+    admin: dict = Depends(require_admin),
+):
+    """B-05 AC7: Return full details of a specific cache entry.
+
+    Response includes search_params, results_count, sources, fetched_at,
+    priority, fail_streak, degraded_until, coverage, access_count,
+    last_accessed_at, age_hours, cache_status.
+    """
+    from search_cache import inspect_cache_entry
+
+    # Validate hash is hex
+    if not re.match(r"^[a-f0-9]+$", params_hash):
+        raise HTTPException(status_code=400, detail="Invalid params_hash format (hex only)")
+
+    entry = await inspect_cache_entry(params_hash)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Cache entry not found")
+
+    log_admin_action(
+        logger,
+        admin_id=admin["id"],
+        action="inspect-cache-entry",
+        target_user_id=admin["id"],
+        details={"params_hash": params_hash[:12]},
+    )
+
+    return entry
+
+
+@router.delete("/cache/{params_hash}")
+async def delete_cache_entry_endpoint(
+    params_hash: str = Path(..., min_length=8, max_length=128, description="Cache entry hash"),
+    admin: dict = Depends(require_admin),
+):
+    """B-05 AC5: Invalidate a specific cache entry across all levels.
+
+    Deletes from Supabase, Redis/InMemory, and local file.
+    Returns {"deleted_levels": ["supabase", "redis", "local"]}.
+    """
+    from search_cache import invalidate_cache_entry
+
+    if not re.match(r"^[a-f0-9]+$", params_hash):
+        raise HTTPException(status_code=400, detail="Invalid params_hash format (hex only)")
+
+    result = await invalidate_cache_entry(params_hash)
+
+    log_admin_action(
+        logger,
+        admin_id=admin["id"],
+        action="invalidate-cache-entry",
+        target_user_id=admin["id"],
+        details={"params_hash": params_hash[:12], "deleted_levels": result["deleted_levels"]},
+    )
+
+    return result
+
+
+@router.delete("/cache")
+async def delete_all_cache_endpoint(
+    request: Request,
+    admin: dict = Depends(require_admin),
+):
+    """B-05 AC6: Invalidate ALL cache entries (nuclear option).
+
+    Requires X-Confirm: delete-all header for safety.
+    Without header, returns 400 Bad Request.
+    """
+    from search_cache import invalidate_all_cache
+
+    confirm = request.headers.get("x-confirm", "")
+    if confirm != "delete-all":
+        raise HTTPException(
+            status_code=400,
+            detail="Header 'X-Confirm: delete-all' required for bulk invalidation",
+        )
+
+    result = await invalidate_all_cache()
+
+    log_admin_action(
+        logger,
+        admin_id=admin["id"],
+        action="invalidate-all-cache",
+        target_user_id=admin["id"],
+        details=result["deleted_counts"],
+    )
+
+    return result
+
+
 def _assign_plan(sb, user_id: str, plan_id: str):
     """Internal: assign plan creating subscription record."""
     from datetime import datetime, timezone, timedelta
