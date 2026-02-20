@@ -330,8 +330,11 @@ async def lifespan(app_instance: FastAPI):
     await get_arq_pool()
 
     # UX-303 AC8: Start periodic cache cleanup
-    from cron_jobs import start_cache_cleanup_task
+    from cron_jobs import start_cache_cleanup_task, start_session_cleanup_task
     cleanup_task = await start_cache_cleanup_task()
+
+    # CRIT-011 AC7: Start periodic session cleanup (stale + old sessions)
+    session_cleanup_task = await start_session_cleanup_task()
 
     # CRIT-001 AC4: Schema health check for search_results_cache
     await _check_cache_schema()
@@ -353,6 +356,13 @@ async def lifespan(app_instance: FastAPI):
     cleanup_task.cancel()
     try:
         await cleanup_task
+    except Exception:
+        pass
+
+    # CRIT-011: Cancel session cleanup
+    session_cleanup_task.cancel()
+    try:
+        await session_cleanup_task
     except Exception:
         pass
 

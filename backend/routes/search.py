@@ -445,16 +445,20 @@ async def buscar_licitacoes(
     - Dependency injection (passing module-level names for test mock compatibility)
     """
     # SSE Progress Tracking
+    # CRIT-011 AC4: Auto-generate search_id if not provided by client
+    if not request.search_id:
+        import uuid
+        request.search_id = str(uuid.uuid4())
+
     # CRIT-004 AC7: Set search_id in ContextVar for end-to-end log correlation
     tracker = None
     state_machine = None
-    if request.search_id:
-        from middleware import search_id_var
-        search_id_var.set(request.search_id)
-        tracker = await create_tracker(request.search_id, len(request.ufs))
-        await tracker.emit("connecting", 3, "Iniciando busca...")
-        # CRIT-003 AC2: Create state machine for deterministic lifecycle tracking
-        state_machine = await create_state_machine(request.search_id)
+    from middleware import search_id_var
+    search_id_var.set(request.search_id)
+    tracker = await create_tracker(request.search_id, len(request.ufs))
+    await tracker.emit("connecting", 3, "Iniciando busca...")
+    # CRIT-003 AC2: Create state machine for deterministic lifecycle tracking
+    state_machine = await create_state_machine(request.search_id)
 
     # Build deps namespace from module-level imports (preserves test mock paths)
     deps = SimpleNamespace(

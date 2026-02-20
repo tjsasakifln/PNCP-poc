@@ -352,6 +352,8 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
     - Searches processing > max_age_minutes: mark as timed_out (AC17)
     - Searches processing < max_age_minutes: mark as failed with retry message (AC18)
 
+    CRIT-011 AC6: Handles missing search_id column gracefully (backward compat).
+
     Returns number of recovered sessions.
     """
     try:
@@ -362,16 +364,35 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(minutes=max_age_minutes)
 
-        # Get all in-flight sessions
-        result = (
-            sb.table("search_sessions")
-            .select("id, search_id, status, started_at")
-            .in_("status", ["created", "processing"])
-            .execute()
-        )
+        # CRIT-011 AC6: Try with search_id first, fall back without it
+        has_search_id_column = True
+        try:
+            result = (
+                sb.table("search_sessions")
+                .select("id, search_id, status, started_at")
+                .in_("status", ["created", "processing"])
+                .execute()
+            )
+        except Exception as col_err:
+            err_str = str(col_err)
+            if "42703" in err_str or "search_id" in err_str:
+                # Column doesn't exist yet — query without it
+                logger.warning(
+                    "Startup recovery: search_id column not found, "
+                    "running recovery without correlation (apply CRIT-011 migration)"
+                )
+                has_search_id_column = False
+                result = (
+                    sb.table("search_sessions")
+                    .select("id, status, started_at")
+                    .in_("status", ["created", "processing"])
+                    .execute()
+                )
+            else:
+                raise
 
         if not result.data:
-            logger.info("CRIT-003: No stale searches to recover on startup")
+            logger.info("Startup recovery: no stale searches found")
             return 0
 
         timed_out_count = 0
@@ -401,11 +422,12 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                 }).eq("id", session_id).execute()
                 timed_out_count += 1
 
-                # Also record transition
-                if session.get("search_id"):
+                # Also record transition (only if search_id available)
+                sid = session.get("search_id") if has_search_id_column else None
+                if sid:
                     await _persist_transition(StateTransition(
-                        search_id=session["search_id"],
-                        from_state=SearchState.FETCHING,  # Assume fetching (most likely)
+                        search_id=sid,
+                        from_state=SearchState.FETCHING,
                         to_state=SearchState.TIMED_OUT,
                         stage="recovery",
                         details={"reason": "Server restart during processing"},
@@ -420,9 +442,10 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                 }).eq("id", session_id).execute()
                 failed_count += 1
 
-                if session.get("search_id"):
+                sid = session.get("search_id") if has_search_id_column else None
+                if sid:
                     await _persist_transition(StateTransition(
-                        search_id=session["search_id"],
+                        search_id=sid,
                         from_state=SearchState.FETCHING,
                         to_state=SearchState.FAILED,
                         stage="recovery",
@@ -430,14 +453,17 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                     ))
 
         total = timed_out_count + failed_count
-        logger.critical(
-            f"CRIT-003: Startup recovery: {total} stale searches "
-            f"({timed_out_count} timed_out, {failed_count} failed)"
-        )
+        if total > 0:
+            logger.info(
+                f"Startup recovery: marked {total} stale sessions "
+                f"({timed_out_count} timed_out, {failed_count} failed)"
+            )
+        else:
+            logger.info("Startup recovery: no stale searches found")
         return total
 
     except Exception as e:
-        logger.error(f"CRIT-003: Startup recovery failed: {e}")
+        logger.error(f"Startup recovery failed: {e}")
         return 0
 
 
