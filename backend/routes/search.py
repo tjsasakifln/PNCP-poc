@@ -50,6 +50,38 @@ logger = get_sanitized_logger(__name__)
 router = APIRouter(tags=["search"])
 
 
+async def _update_session_on_error(
+    session_id: str,
+    start_time: float,
+    status: str,
+    error_code: str,
+    error_message: str,
+    pipeline_stage: str | None = None,
+    response_state: str | None = None,
+) -> None:
+    """CRIT-002 AC12: Fire-and-forget session status update on error.
+
+    Called via asyncio.create_task() from exception handlers.
+    Never raises — logs errors silently.
+    """
+    try:
+        from datetime import datetime, timezone
+        from quota import update_search_session_status
+        elapsed_ms = int((sync_time.time() - start_time) * 1000)
+        await update_search_session_status(
+            session_id,
+            status=status,
+            error_code=error_code,
+            error_message=error_message,
+            pipeline_stage=pipeline_stage,
+            response_state=response_state,
+            completed_at=datetime.now(timezone.utc).isoformat(),
+            duration_ms=elapsed_ms,
+        )
+    except Exception as e:
+        logger.error(f"CRIT-002: Failed to update session on error: {e}")
+
+
 # Helper functions moved to search_pipeline.py (STORY-216 AC6)
 # Re-exported for any external callers (backward compat)
 from search_pipeline import _build_pncp_link, _calcular_urgencia, _calcular_dias_restantes, _convert_to_licitacao_items  # noqa: F401, E402
@@ -502,6 +534,18 @@ async def buscar_licitacoes(
         return response
 
     except PNCPRateLimitError as e:
+        # CRIT-002 AC12: Update session status on error
+        if ctx.session_id:
+            retry_after = getattr(e, "retry_after", 60)
+            import asyncio as _aio
+            _aio.create_task(
+                _update_session_on_error(
+                    ctx.session_id, ctx.start_time,
+                    status="failed", error_code="sources_unavailable",
+                    error_message=f"PNCP rate limit: retry after {retry_after}s",
+                    pipeline_stage=None, response_state=None,
+                )
+            )
         if tracker:
             await tracker.emit_error(f"PNCP rate limit: {e}")
             await remove_tracker(request.search_id)
@@ -517,6 +561,17 @@ async def buscar_licitacoes(
         )
 
     except PNCPAPIError as e:
+        # CRIT-002 AC12: Update session status on error
+        if ctx.session_id:
+            import asyncio as _aio
+            _aio.create_task(
+                _update_session_on_error(
+                    ctx.session_id, ctx.start_time,
+                    status="failed", error_code="sources_unavailable",
+                    error_message=str(e)[:500],
+                    pipeline_stage=None, response_state=None,
+                )
+            )
         if tracker:
             await tracker.emit_error(f"PNCP API error: {e}")
             await remove_tracker(request.search_id)
@@ -530,13 +585,36 @@ async def buscar_licitacoes(
             ),
         )
 
-    except HTTPException:
+    except HTTPException as exc:
+        # CRIT-002 AC12: Update session status on error
+        if ctx.session_id:
+            import asyncio as _aio
+            _aio.create_task(
+                _update_session_on_error(
+                    ctx.session_id, ctx.start_time,
+                    status="failed" if exc.status_code != 504 else "timed_out",
+                    error_code="timeout" if exc.status_code == 504 else "unknown",
+                    error_message=f"HTTP {exc.status_code}: {exc.detail}"[:500],
+                    pipeline_stage=None, response_state=None,
+                )
+            )
         if tracker:
             await tracker.emit_error("Erro no processamento")
             await remove_tracker(request.search_id)
         raise
 
-    except Exception:
+    except Exception as e:
+        # CRIT-002 AC12: Update session status on error
+        if ctx.session_id:
+            import asyncio as _aio
+            _aio.create_task(
+                _update_session_on_error(
+                    ctx.session_id, ctx.start_time,
+                    status="failed", error_code="unknown",
+                    error_message=f"{type(e).__name__}: {str(e)[:300]}",
+                    pipeline_stage=None, response_state=None,
+                )
+            )
         if tracker:
             await tracker.emit_error("Erro interno do servidor")
             await remove_tracker(request.search_id)

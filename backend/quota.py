@@ -858,6 +858,178 @@ def create_legacy_quota_info() -> "QuotaInfo":
     )
 
 
+async def register_search_session(
+    user_id: str,
+    sectors: list[str],
+    ufs: list[str],
+    data_inicial: str,
+    data_final: str,
+    custom_keywords: Optional[list[str]],
+    search_id: Optional[str] = None,
+) -> Optional[str]:
+    """Register a search session BEFORE quota consumption.
+
+    CRIT-002 AC4: Creates a session record with status='created' as the
+    FIRST operation after authentication, ensuring every quota-consuming
+    search has a corresponding record in the user's history.
+
+    Returns session_id (str) on success, None on failure.
+    Retry: 1 attempt after 0.3s on transient errors.
+    """
+    import json as _json
+    from supabase_client import get_supabase
+
+    sb = get_supabase()
+
+    if not _ensure_profile_exists(user_id, sb):
+        logger.error(f"Cannot register session: profile missing for user {mask_user_id(user_id)}")
+        return None
+
+    for attempt in range(2):
+        try:
+            data = {
+                "user_id": user_id,
+                "sectors": sectors,
+                "ufs": ufs,
+                "data_inicial": data_inicial,
+                "data_final": data_final,
+                "custom_keywords": custom_keywords,
+                "status": "created",
+                "total_raw": 0,
+                "total_filtered": 0,
+                "valor_total": 0.0,
+            }
+            if search_id:
+                data["search_id"] = search_id
+
+            result = sb.table("search_sessions").insert(data).execute()
+
+            if not result.data or len(result.data) == 0:
+                raise RuntimeError("Insert returned empty result")
+
+            session_id = result.data[0]["id"]
+
+            # AC21: Prometheus counter
+            try:
+                from metrics import SESSION_STATUS
+                SESSION_STATUS.labels(status="created").inc()
+            except Exception:
+                pass
+
+            # AC22: Structured logging
+            logger.info(_json.dumps({
+                "event": "search_session_status_change",
+                "session_id": session_id[:8] + "***",
+                "search_id": search_id or "no_id",
+                "old_status": None,
+                "new_status": "created",
+                "pipeline_stage": None,
+                "elapsed_ms": 0,
+                "user_id": mask_user_id(user_id),
+            }))
+
+            return session_id
+        except Exception as e:
+            if attempt == 0:
+                logger.warning(
+                    f"Transient error registering session for user "
+                    f"{mask_user_id(user_id)}, retrying: {e}"
+                )
+                await asyncio.sleep(0.3)
+                continue
+            logger.error(
+                f"Failed to register search session after retry "
+                f"for user {mask_user_id(user_id)}: {e}"
+            )
+            return None
+
+
+async def update_search_session_status(
+    session_id: str,
+    status: Optional[str] = None,
+    pipeline_stage: Optional[str] = None,
+    error_message: Optional[str] = None,
+    error_code: Optional[str] = None,
+    raw_count: Optional[int] = None,
+    response_state: Optional[str] = None,
+    completed_at: Optional[str] = None,
+    duration_ms: Optional[int] = None,
+    total_filtered: Optional[int] = None,
+    valor_total: Optional[float] = None,
+    resumo_executivo: Optional[str] = None,
+    destaques: Optional[list[str]] = None,
+) -> None:
+    """Update search session status (fire-and-forget, non-blocking).
+
+    CRIT-002 AC6: Dynamic UPDATE — only sets non-None fields.
+    Logs errors but NEVER propagates exceptions (AC24).
+    Retry: 1 attempt after 0.3s on transient errors.
+    """
+    import json as _json
+    from supabase_client import get_supabase
+
+    update_data = {}
+    if status is not None:
+        update_data["status"] = status
+    if pipeline_stage is not None:
+        update_data["pipeline_stage"] = pipeline_stage
+    if error_message is not None:
+        update_data["error_message"] = error_message[:500]
+    if error_code is not None:
+        update_data["error_code"] = error_code
+    if raw_count is not None:
+        update_data["raw_count"] = raw_count
+    if response_state is not None:
+        update_data["response_state"] = response_state
+    if completed_at is not None:
+        update_data["completed_at"] = completed_at
+    if duration_ms is not None:
+        update_data["duration_ms"] = duration_ms
+    if total_filtered is not None:
+        update_data["total_filtered"] = total_filtered
+    if valor_total is not None:
+        update_data["valor_total"] = float(valor_total)
+    if resumo_executivo is not None:
+        update_data["resumo_executivo"] = resumo_executivo
+    if destaques is not None:
+        update_data["destaques"] = destaques
+
+    if not update_data:
+        return
+
+    for attempt in range(2):
+        try:
+            sb = get_supabase()
+            sb.table("search_sessions").update(update_data).eq("id", session_id).execute()
+
+            # AC21: Prometheus counter
+            if status:
+                try:
+                    from metrics import SESSION_STATUS
+                    SESSION_STATUS.labels(status=status).inc()
+                except Exception:
+                    pass
+
+            # AC22: Structured logging
+            logger.info(_json.dumps({
+                "event": "search_session_status_change",
+                "session_id": session_id[:8] + "***",
+                "new_status": status,
+                "pipeline_stage": pipeline_stage,
+                "error_code": error_code,
+            }))
+
+            return
+        except Exception as e:
+            if attempt == 0:
+                logger.warning(
+                    f"Transient error updating session {session_id[:8]}***, retrying: {e}"
+                )
+                await asyncio.sleep(0.3)
+                continue
+            logger.error(f"Failed to update session {session_id[:8]}*** after retry: {e}")
+
+
 async def save_search_session(
     user_id: str,
     sectors: list[str],

@@ -146,6 +146,13 @@ SEARCHES = _create_counter(
     labelnames=["sector", "result_status"],
 )
 
+# CRIT-002 AC21: Search session status transitions
+SESSION_STATUS = _create_counter(
+    "smartlic_search_session_status_total",
+    "Search session status transitions",
+    labelnames=["status"],
+)
+
 # D-02 AC9: LLM token usage tracking
 LLM_TOKENS = _create_counter(
     "smartlic_llm_tokens_total",

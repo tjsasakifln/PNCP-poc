@@ -21,7 +21,7 @@ import json
 import logging
 import os
 import time as sync_time_module
-from datetime import datetime
+from datetime import datetime, timezone as _tz
 from types import SimpleNamespace
 
 import sentry_sdk  # GTM-FIX-002 AC9: Tag errors with data source
@@ -590,6 +590,29 @@ class SearchPipeline:
 
             logger.debug(f"Rate limit check passed for user {mask_user_id(ctx.user['id'])}: {max_rpm} req/min")
 
+        # CRIT-002 AC5: Register session BEFORE quota consumption
+        try:
+            ctx.session_id = await quota.register_search_session(
+                user_id=ctx.user["id"],
+                sectors=[ctx.request.setor_id],
+                ufs=ctx.request.ufs,
+                data_inicial=ctx.request.data_inicial,
+                data_final=ctx.request.data_final,
+                custom_keywords=ctx.request.termos_busca.split(",") if ctx.request.termos_busca else None,
+                search_id=ctx.request.search_id,
+            )
+            if ctx.session_id is None:
+                # AC23: Graceful degradation — continue without session tracking
+                logger.critical(
+                    "Failed to register search session — continuing without session tracking"
+                )
+        except Exception as reg_err:
+            # AC23: Registration failure does NOT block search
+            logger.critical(
+                f"Failed to register search session — continuing without session tracking: {reg_err}"
+            )
+            ctx.session_id = None
+
         # Quota resolution
         if ctx.is_admin or ctx.is_master:
             role = "ADMIN" if ctx.is_admin else "MASTER"
@@ -621,9 +644,30 @@ class SearchPipeline:
                 ctx.quota_info.quota_used = new_quota_used
                 ctx.quota_info.quota_remaining = quota_remaining_after
 
+                # CRIT-002 AC7: Set status='processing' after quota passes
+                if ctx.session_id:
+                    asyncio.create_task(
+                        quota.update_search_session_status(
+                            ctx.session_id, status="processing", pipeline_stage="validate"
+                        )
+                    )
+
                 # STORY-225 AC10/AC11: Quota email notifications (fire-and-forget)
                 _maybe_send_quota_email(ctx.user["id"], new_quota_used, ctx.quota_info)
-            except HTTPException:
+            except HTTPException as http_exc:
+                # CRIT-002 AC5: If quota fails after registration, mark session as failed
+                if ctx.session_id:
+                    asyncio.create_task(
+                        quota.update_search_session_status(
+                            ctx.session_id,
+                            status="failed",
+                            error_code="quota_exceeded",
+                            error_message=str(http_exc.detail)[:500],
+                            pipeline_stage="validate",
+                            completed_at=datetime.now(_tz.utc).isoformat(),
+                            duration_ms=int((sync_time_module.time() - ctx.start_time) * 1000),
+                        )
+                    )
                 raise
             except RuntimeError as e:
                 logger.error(f"Supabase configuration error: {e}")
@@ -733,6 +777,12 @@ class SearchPipeline:
     # ------------------------------------------------------------------
     async def stage_execute(self, ctx: SearchContext) -> None:
         """Fetch procurement data from PNCP API (and optionally other sources)."""
+        # CRIT-002 AC8: Track pipeline stage
+        if ctx.session_id:
+            asyncio.create_task(
+                quota.update_search_session_status(ctx.session_id, pipeline_stage="execute")
+            )
+
         deps = self.deps
         request = ctx.request
 
@@ -800,6 +850,14 @@ class SearchPipeline:
         fetch_elapsed = sync_time_module.time() - ctx.start_time
         logger.info(f"Fetched {len(ctx.licitacoes_raw)} raw bids in {fetch_elapsed:.2f}s")
         FETCH_DURATION.labels(source="pipeline").observe(fetch_elapsed)
+
+        # CRIT-002 AC8: Update raw_count after fetch
+        if ctx.session_id and ctx.licitacoes_raw:
+            asyncio.create_task(
+                quota.update_search_session_status(
+                    ctx.session_id, raw_count=len(ctx.licitacoes_raw)
+                )
+            )
 
         # SSE: Fetch complete
         if ctx.tracker:
@@ -981,6 +1039,15 @@ class SearchPipeline:
                 f"{' [PARTIAL]' if ctx.is_partial else ''}"
             )
         except AllSourcesFailedError as e:
+            # CRIT-002 AC13: Update session on AllSourcesFailedError
+            if ctx.session_id:
+                asyncio.create_task(
+                    quota.update_search_session_status(
+                        ctx.session_id, pipeline_stage="execute",
+                        response_state="empty_failure",
+                    )
+                )
+
             # GTM-FIX-010 AC4/AC16r/AC17r: All sources failed — try Supabase cache fallback
             # GTM-RESILIENCE-E02: centralized reporting (no double stdout+Sentry)
             report_error(
@@ -1064,6 +1131,20 @@ class SearchPipeline:
                     for src, err in e.source_errors.items()
                 ]
         except asyncio.TimeoutError:
+            # CRIT-002 AC13/AC14: Update session on timeout
+            if ctx.session_id:
+                elapsed_ms = int((sync_time_module.time() - ctx.start_time) * 1000)
+                asyncio.create_task(
+                    quota.update_search_session_status(
+                        ctx.session_id, status="timed_out",
+                        pipeline_stage="execute", response_state="degraded",
+                        error_code="timeout",
+                        error_message=f"Pipeline timeout after {elapsed_ms}ms (limit: {fetch_timeout * 1000}ms)",
+                        completed_at=datetime.now(_tz.utc).isoformat(),
+                        duration_ms=elapsed_ms,
+                    )
+                )
+
             # GTM-RESILIENCE-A01 AC1-AC3: Try cache before returning 504
             logger.error(f"Multi-source fetch timed out after {fetch_timeout}s")
             # A-02 AC3: Do NOT emit_error here — let wrapper decide terminal SSE event
@@ -1120,6 +1201,15 @@ class SearchPipeline:
                     ),
                 )
         except Exception as e:
+            # CRIT-002 AC13: Update session on unexpected error
+            if ctx.session_id:
+                asyncio.create_task(
+                    quota.update_search_session_status(
+                        ctx.session_id, pipeline_stage="execute",
+                        response_state="empty_failure",
+                    )
+                )
+
             # GTM-FIX-025 T2: Generic catch — no consolidation exception should
             # result in HTTP 500. Log, send to Sentry, try cache, degrade gracefully.
             # GTM-RESILIENCE-E02: centralized reporting (unexpected = full traceback)
@@ -1257,6 +1347,15 @@ class SearchPipeline:
             if ctx.failed_ufs:
                 ctx.is_partial = True
         except PNCPDegradedError as e:
+            # CRIT-002 AC13: Update session on PNCP degradation
+            if ctx.session_id:
+                asyncio.create_task(
+                    quota.update_search_session_status(
+                        ctx.session_id, pipeline_stage="execute",
+                        response_state="degraded",
+                    )
+                )
+
             # GTM-FIX-010 AC4/AC17r: PNCP circuit breaker tripped — try stale cache
             # GTM-RESILIENCE-E02: centralized reporting (no double stdout+Sentry)
             report_error(
@@ -1313,6 +1412,20 @@ class SearchPipeline:
                     DataSourceStatus(source="PNCP", status="error", records=0)
                 ]
         except asyncio.TimeoutError:
+            # CRIT-002 AC13/AC14: Update session on PNCP timeout
+            if ctx.session_id:
+                elapsed_ms = int((sync_time_module.time() - ctx.start_time) * 1000)
+                asyncio.create_task(
+                    quota.update_search_session_status(
+                        ctx.session_id, status="timed_out",
+                        pipeline_stage="execute", response_state="degraded",
+                        error_code="timeout",
+                        error_message=f"PNCP timeout after {elapsed_ms}ms (limit: {fetch_timeout * 1000}ms)",
+                        completed_at=datetime.now(_tz.utc).isoformat(),
+                        duration_ms=elapsed_ms,
+                    )
+                )
+
             # GTM-RESILIENCE-A01 AC1-AC3: Try cache before returning 504 (PNCP-only path)
             logger.error(f"PNCP fetch timed out after {fetch_timeout}s for {len(request.ufs)} UFs")
             # A-02 AC3: Do NOT emit_error here — let wrapper decide terminal SSE event
@@ -1372,6 +1485,12 @@ class SearchPipeline:
     # ------------------------------------------------------------------
     async def stage_filter(self, ctx: SearchContext) -> None:
         """Apply all filters (UF, status, esfera, modalidade, municipio, valor, keyword)."""
+        # CRIT-002 AC9: Track pipeline stage
+        if ctx.session_id:
+            asyncio.create_task(
+                quota.update_search_session_status(ctx.session_id, pipeline_stage="filter")
+            )
+
         deps = self.deps
         request = ctx.request
 
@@ -1580,6 +1699,12 @@ class SearchPipeline:
     # ------------------------------------------------------------------
     async def stage_generate(self, ctx: SearchContext) -> None:
         """Generate LLM summary, Excel report, and convert to LicitacaoItems."""
+        # CRIT-002 AC10: Track pipeline stage
+        if ctx.session_id:
+            asyncio.create_task(
+                quota.update_search_session_status(ctx.session_id, pipeline_stage="generate")
+            )
+
         deps = self.deps
 
         # Build filter stats for frontend
@@ -2003,10 +2128,41 @@ class SearchPipeline:
             "latency_ms": elapsed_ms,
         }))
 
-        # If response was already built (e.g., empty results early return in stage_generate)
-        if ctx.response is not None and not ctx.licitacoes_filtradas:
-            # Save session even for zero results
-            if ctx.user:
+        # CRIT-002 AC11: Update existing session OR fallback to full INSERT
+        if ctx.user:
+            total_filtered = len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0
+            valor_total = ctx.resumo.valor_total if ctx.resumo else 0.0
+            resumo_exec = ctx.resumo.resumo_executivo if ctx.resumo else None
+            destaques_val = ctx.resumo.destaques if ctx.resumo else None
+
+            if ctx.session_id:
+                # AC11: Session was pre-registered — UPDATE with results
+                try:
+                    await quota.update_search_session_status(
+                        ctx.session_id,
+                        status="completed",
+                        pipeline_stage="persist",
+                        completed_at=datetime.now(_tz.utc).isoformat(),
+                        duration_ms=elapsed_ms,
+                        raw_count=len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
+                        total_filtered=total_filtered,
+                        valor_total=valor_total,
+                        resumo_executivo=resumo_exec,
+                        destaques=destaques_val,
+                        response_state=ctx.response_state,
+                    )
+                    logger.debug(
+                        f"Search session updated to completed: {ctx.session_id[:8]}*** "
+                        f"for user {mask_user_id(ctx.user['id'])}"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to update session {ctx.session_id[:8]}***: "
+                        f"{type(e).__name__}: {e}",
+                        exc_info=True,
+                    )
+            else:
+                # AC23: Fallback — no pre-registered session (graceful degradation)
                 try:
                     ctx.session_id = await quota.save_search_session(
                         user_id=ctx.user["id"],
@@ -2015,41 +2171,25 @@ class SearchPipeline:
                         data_inicial=ctx.request.data_inicial,
                         data_final=ctx.request.data_final,
                         custom_keywords=ctx.custom_terms if ctx.custom_terms else None,
-                        total_raw=len(ctx.licitacoes_raw),
-                        total_filtered=0,
-                        valor_total=0.0,
-                        resumo_executivo=ctx.resumo.resumo_executivo if ctx.resumo else None,
-                        destaques=[],
+                        total_raw=len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
+                        total_filtered=total_filtered,
+                        valor_total=valor_total,
+                        resumo_executivo=resumo_exec,
+                        destaques=destaques_val,
                     )
-                    logger.debug(f"Search session saved (0 results): {ctx.session_id[:8]}*** for user {mask_user_id(ctx.user['id'])}")
+                    logger.debug(
+                        f"Search session saved (fallback): {ctx.session_id[:8] if ctx.session_id else 'None'}*** "
+                        f"for user {mask_user_id(ctx.user['id'])}"
+                    )
                 except Exception as e:
                     logger.error(
-                        f"Failed to save search session for user {mask_user_id(ctx.user['id'])}: {type(e).__name__}: {e}",
+                        f"Failed to save search session for user "
+                        f"{mask_user_id(ctx.user['id'])}: {type(e).__name__}: {e}",
                         exc_info=True,
                     )
-            return ctx.response
 
-        # Save session for non-empty results
-        if ctx.user:
-            try:
-                ctx.session_id = await quota.save_search_session(
-                    user_id=ctx.user["id"],
-                    sectors=[ctx.request.setor_id],
-                    ufs=ctx.request.ufs,
-                    data_inicial=ctx.request.data_inicial,
-                    data_final=ctx.request.data_final,
-                    custom_keywords=ctx.custom_terms if ctx.custom_terms else None,
-                    total_raw=len(ctx.licitacoes_raw),
-                    total_filtered=len(ctx.licitacoes_filtradas),
-                    valor_total=ctx.resumo.valor_total if ctx.resumo else 0.0,
-                    resumo_executivo=ctx.resumo.resumo_executivo if ctx.resumo else None,
-                    destaques=ctx.resumo.destaques if ctx.resumo else None,
-                )
-                logger.debug(f"Search session saved: {ctx.session_id[:8]}*** for user {mask_user_id(ctx.user['id'])}")
-            except Exception as e:
-                logger.error(
-                    f"Failed to save search session for user {mask_user_id(ctx.user['id'])}: {type(e).__name__}: {e}",
-                    exc_info=True,
-                )
+        # If response was already built (e.g., empty results early return in stage_generate)
+        if ctx.response is not None and not ctx.licitacoes_filtradas:
+            return ctx.response
 
         return ctx.response

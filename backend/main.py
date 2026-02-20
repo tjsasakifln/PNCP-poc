@@ -259,6 +259,46 @@ def _log_registered_routes(app_instance: FastAPI) -> None:
     logger.info("=" * 60)
 
 
+async def _mark_inflight_sessions_timed_out() -> None:
+    """CRIT-002 AC15: Mark in-flight sessions as timed_out on server shutdown.
+
+    Called during SIGTERM/shutdown. Updates any sessions with status 'created'
+    or 'processing' to 'timed_out' so users see what happened in their history.
+    Timeout: 5s max to avoid blocking shutdown.
+    """
+    import asyncio
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+
+        async def _do_update():
+            from datetime import datetime, timezone
+            result = (
+                sb.table("search_sessions")
+                .update({
+                    "status": "timed_out",
+                    "error_message": "Server shutdown (SIGTERM)",
+                    "error_code": "timeout",
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                })
+                .in_("status", ["created", "processing"])
+                .execute()
+            )
+            n = len(result.data) if result.data else 0
+            if n > 0:
+                logger.critical(
+                    f"CRIT-002 AC15: Marked {n} in-flight sessions as timed_out due to shutdown"
+                )
+            else:
+                logger.info("CRIT-002 AC15: No in-flight sessions to mark on shutdown")
+
+        await asyncio.wait_for(_do_update(), timeout=5.0)
+    except asyncio.TimeoutError:
+        logger.error("CRIT-002 AC15: Timeout marking in-flight sessions (5s limit)")
+    except Exception as e:
+        logger.error(f"CRIT-002 AC15: Failed to mark in-flight sessions: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
     """Application lifespan context manager.
@@ -302,6 +342,9 @@ async def lifespan(app_instance: FastAPI):
     yield
 
     # === SHUTDOWN ===
+    # CRIT-002 AC15: Mark in-flight sessions as timed_out on shutdown
+    await _mark_inflight_sessions_timed_out()
+
     # UX-303: Cancel cache cleanup
     cleanup_task.cancel()
     try:
