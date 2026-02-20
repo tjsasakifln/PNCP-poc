@@ -105,6 +105,10 @@ export interface SearchResultsProps {
   liveFetchInProgress?: boolean;
   refreshAvailable?: RefreshAvailableInfo | null;
   onRefreshResults?: () => void;
+
+  // D-05: Feedback loop
+  searchId?: string;
+  setorId?: string;
 }
 
 export default function SearchResults({
@@ -123,6 +127,8 @@ export default function SearchResults({
   hasLastSearch = false, onLoadLastSearch,
   // A-04
   liveFetchInProgress, refreshAvailable, onRefreshResults,
+  // D-05
+  searchId, setorId,
 }: SearchResultsProps) {
   // STORY-257B AC4: Track transition from grid to results
   const [showGrid, setShowGrid] = useState(false);
@@ -681,6 +687,9 @@ export default function SearchResults({
               onUpgradeClick={() => {
                 onShowUpgradeModal("smartlic_pro", "licitacoes_preview");
               }}
+              searchId={searchId}
+              setorId={setorId}
+              accessToken={session?.access_token}
             />
           )}
 

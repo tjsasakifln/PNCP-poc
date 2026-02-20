@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import type { LicitacaoItem } from "../types";
 import ViabilityBadge from "../buscar/components/ViabilityBadge";
+import FeedbackButtons from "../buscar/components/FeedbackButtons";
 
 interface LicitacoesPreviewProps {
   /** List of bid items to display */
@@ -16,6 +17,12 @@ interface LicitacoesPreviewProps {
   onUpgradeClick?: () => void;
   /** Active search terms for highlighting in bid descriptions */
   searchTerms?: string[];
+  /** D-05: Search ID for feedback association */
+  searchId?: string;
+  /** D-05: Sector ID for feedback context */
+  setorId?: string;
+  /** D-05: Access token for authenticated feedback */
+  accessToken?: string | null;
 }
 
 /**
@@ -30,6 +37,9 @@ export function LicitacoesPreview({
   excelAvailable,
   onUpgradeClick,
   searchTerms = [],
+  searchId,
+  setorId,
+  accessToken,
 }: LicitacoesPreviewProps) {
   /** AC5.4: Relevance badge based on score */
   const getRelevanceBadge = (score?: number | null) => {
@@ -287,21 +297,36 @@ export function LicitacoesPreview({
                 <span className="text-lg font-bold font-data text-brand-navy">
                   {formatCurrency(item.valor)}
                 </span>
-                {item.link && (
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Ver na fonte (abre em nova janela)"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
-                  >
-                    Ver na fonte
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                )}
+                <div className="flex items-center gap-2">
+                  {item.link && (
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Ver na fonte (abre em nova janela)"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
+                    >
+                      Ver na fonte
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  )}
+                  {searchId && (
+                    <FeedbackButtons
+                      searchId={searchId}
+                      bidId={item.pncp_id || `bid-${index}`}
+                      setorId={setorId}
+                      bidObjeto={item.objeto}
+                      bidValor={item.valor}
+                      bidUf={item.uf}
+                      confidenceScore={typeof item.confidence === "string" ? (item.confidence === "high" ? 90 : item.confidence === "medium" ? 60 : 30) : undefined}
+                      relevanceSource={item.relevance_source || undefined}
+                      accessToken={accessToken}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -416,21 +441,36 @@ export function LicitacoesPreview({
                   <span className="text-lg font-bold font-data text-brand-navy">
                     {formatCurrency(item.valor)}
                   </span>
-                  {item.link && (
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Ver na fonte (abre em nova janela)"
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
-                    >
-                      Ver na fonte
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {item.link && (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Ver na fonte (abre em nova janela)"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-navy text-white text-sm font-medium rounded-button hover:bg-brand-blue-hover transition-colors"
+                      >
+                        Ver na fonte
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    )}
+                    {searchId && (
+                      <FeedbackButtons
+                        searchId={searchId}
+                        bidId={item.pncp_id || `extra-${index}`}
+                        setorId={setorId}
+                        bidObjeto={item.objeto}
+                        bidValor={item.valor}
+                        bidUf={item.uf}
+                        confidenceScore={typeof item.confidence === "string" ? (item.confidence === "high" ? 90 : item.confidence === "medium" ? 60 : 30) : undefined}
+                        relevanceSource={item.relevance_source || undefined}
+                        accessToken={accessToken}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

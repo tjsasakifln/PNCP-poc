@@ -460,6 +460,9 @@ function HomePageContent() {
               liveFetchInProgress={search.liveFetchInProgress}
               refreshAvailable={search.refreshAvailable}
               onRefreshResults={search.handleRefreshResults}
+              // D-05: Feedback loop
+              searchId={search.searchId || undefined}
+              setorId={filters.setorId}
             />
           </div>
         </PullToRefresh>

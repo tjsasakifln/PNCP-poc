@@ -66,6 +66,7 @@ from routes.pipeline import router as pipeline_router  # STORY-250: Pipeline de 
 from routes.onboarding import router as onboarding_router  # GTM-004: First analysis after onboarding
 from routes.auth_email import router as auth_email_router  # GTM-FIX-009: Email confirmation recovery
 from routes.health import router as cache_health_router  # UX-303: Cache health endpoint
+from routes.feedback import router as feedback_router  # GTM-RESILIENCE-D05: User feedback loop
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -308,6 +309,7 @@ app.include_router(pipeline_router, prefix="/v1")  # STORY-250: Pipeline
 app.include_router(onboarding_router, prefix="/v1")  # GTM-004: First analysis
 app.include_router(auth_email_router, prefix="/v1")  # GTM-FIX-009: Email confirmation recovery
 app.include_router(cache_health_router, prefix="/v1")  # UX-303: Cache health
+app.include_router(feedback_router, prefix="/v1")  # GTM-RESILIENCE-D05: User feedback loop
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -331,6 +333,7 @@ app.include_router(pipeline_router)  # STORY-250: Pipeline
 app.include_router(onboarding_router)  # GTM-004: First analysis
 app.include_router(auth_email_router)  # GTM-FIX-009: Email confirmation recovery
 app.include_router(cache_health_router)  # UX-303: Cache health
+app.include_router(feedback_router)  # GTM-RESILIENCE-D05: User feedback loop
 
 # ============================================================================
 # GTM-RESILIENCE-E03: Prometheus /metrics endpoint

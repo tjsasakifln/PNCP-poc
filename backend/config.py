@@ -400,7 +400,14 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "ITEM_INSPECTION_ENABLED": ("ITEM_INSPECTION_ENABLED", "true"),
     "LLM_STRUCTURED_OUTPUT_ENABLED": ("LLM_STRUCTURED_OUTPUT_ENABLED", "true"),
     "VIABILITY_ASSESSMENT_ENABLED": ("VIABILITY_ASSESSMENT_ENABLED", "false"),
+    "USER_FEEDBACK_ENABLED": ("USER_FEEDBACK_ENABLED", "true"),
 }
+
+# ============================================
+# D-05: User Feedback Loop
+# ============================================
+USER_FEEDBACK_ENABLED: bool = str_to_bool(os.getenv("USER_FEEDBACK_ENABLED", "true"))
+USER_FEEDBACK_RATE_LIMIT: int = int(os.getenv("USER_FEEDBACK_RATE_LIMIT", "50"))  # per user per hour
 
 
 def get_feature_flag(name: str, default: bool | None = None) -> bool:
