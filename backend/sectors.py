@@ -79,6 +79,8 @@ class SectorConfig:
     domain_signals: DomainSignals = field(default_factory=DomainSignals)
     # GTM-RESILIENCE-D04: Viability value range (min, max) in BRL for value_fit scoring
     viability_value_range: Optional[tuple] = None
+    # SECTOR-PROX: Signature terms for proximity context cross-sector disambiguation
+    signature_terms: Set[str] = field(default_factory=set)
 
 
 def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
@@ -140,6 +142,9 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
         vvr_raw = cfg.get("viability_value_range")
         viability_vr = tuple(vvr_raw) if vvr_raw and len(vvr_raw) == 2 else None
 
+        # SECTOR-PROX: Parse signature_terms list → set
+        signature_terms = set(cfg.get("signature_terms", []))
+
         sectors[sector_id] = SectorConfig(
             id=sector_id,
             name=cfg["name"],
@@ -151,6 +156,7 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
             co_occurrence_rules=co_rules,
             domain_signals=domain_signals,
             viability_value_range=viability_vr,
+            signature_terms=signature_terms,
         )
 
     return sectors

@@ -1737,6 +1737,90 @@ def filtrar_por_prazo_aberto(
 
 
 # ============================================================================
+# ============================================================================
+# SECTOR-PROX: Proximity Context Filter (Camada 1B.3)
+# ============================================================================
+# Deterministic, zero-LLM-cost check that detects cross-sector false positives
+# by examining the context window around matched keywords. When a keyword matches
+# but signature terms of ANOTHER sector appear nearby, the bid is rejected.
+# Runs AFTER keyword match, BEFORE co-occurrence (1B.5).
+# ============================================================================
+
+
+def check_proximity_context(
+    texto: str,
+    matched_terms: list,
+    current_sector: str,
+    other_sectors_signatures: Dict[str, set],
+    window_size: int = 8,
+) -> Tuple[bool, Optional[str]]:
+    """Check if matched keywords appear near signature terms of other sectors.
+
+    When a keyword from the current sector matches, extracts a window of N words
+    around each match position. If the window contains signature terms of ANOTHER
+    sector, the bid is rejected as a cross-sector false positive.
+
+    Args:
+        texto: The bid's objetoCompra text (raw, will be normalized).
+        matched_terms: List of keywords that matched in this bid.
+        current_sector: The sector ID being evaluated.
+        other_sectors_signatures: Dict mapping other sector IDs to their signature terms.
+        window_size: Number of words before/after match to examine (default 8).
+
+    Returns:
+        Tuple of (should_reject: bool, reason: str | None).
+        If should_reject is True, reason contains the rejection detail
+        (e.g., "keyword:confeccao near alimentos:merenda").
+    """
+    if not texto or not matched_terms or window_size <= 0:
+        return (False, None)
+
+    texto_norm = normalize_text(texto)
+    words = texto_norm.split()
+
+    if not words:
+        return (False, None)
+
+    for term in matched_terms:
+        term_norm = normalize_text(term)
+        term_words = term_norm.split()
+        term_len = len(term_words)
+
+        # Find all positions where this term starts in the word array
+        positions = []
+        for i in range(len(words) - term_len + 1):
+            if words[i:i + term_len] == term_words:
+                positions.append(i)
+
+        for pos in positions:
+            # Extract window around the matched term
+            win_start = max(0, pos - window_size)
+            win_end = min(len(words), pos + term_len + window_size)
+            window_words = words[win_start:win_end]
+            window_text = " ".join(window_words)
+
+            # Check signature terms of each OTHER sector
+            for other_sector, sigs in other_sectors_signatures.items():
+                for sig in sigs:
+                    sig_norm = normalize_text(sig)
+                    # Multi-word signature: check substring in window text
+                    if " " in sig_norm:
+                        if sig_norm in window_text:
+                            return (
+                                True,
+                                f"keyword:{term} near {other_sector}:{sig}",
+                            )
+                    else:
+                        # Single-word signature: check membership in window words
+                        if sig_norm in window_words:
+                            return (
+                                True,
+                                f"keyword:{term} near {other_sector}:{sig}",
+                            )
+
+    return (False, None)
+
+
 # GTM-RESILIENCE-D03: Co-occurrence Negative Pattern Engine (Camada 1B.5)
 # ============================================================================
 # Deterministic, zero-LLM-cost check that detects false positive keyword
@@ -2276,13 +2360,71 @@ def aplicar_todos_filtros(
                 pass
 
     # ========================================================================
+    # SECTOR-PROX: Camada 1B.3 — Proximity Context Filter
+    # ========================================================================
+    # After keyword match, before co-occurrence. Rejects bids where a matched
+    # keyword appears near signature terms of ANOTHER sector (cross-sector FP).
+    # 100% deterministic, zero LLM cost.
+    from config import get_feature_flag, PROXIMITY_WINDOW_SIZE
+
+    stats["proximity_rejections"] = 0
+
+    if get_feature_flag("PROXIMITY_CONTEXT_ENABLED") and setor:
+        from sectors import SECTORS as _SECTORS_PROX
+
+        # Build other_sectors_signatures: all sectors except current
+        other_sigs: Dict[str, set] = {}
+        for sid, scfg in _SECTORS_PROX.items():
+            if sid != setor and scfg.signature_terms:
+                other_sigs[sid] = scfg.signature_terms
+
+        if other_sigs:
+            resultado_after_prox: List[dict] = []
+            for lic in resultado_keyword:
+                matched = lic.get("_matched_terms", [])
+                if not matched:
+                    resultado_after_prox.append(lic)
+                    continue
+
+                objeto = lic.get("objetoCompra", "")
+                should_reject, rejection_detail = check_proximity_context(
+                    objeto, matched, setor, other_sigs, PROXIMITY_WINDOW_SIZE
+                )
+
+                if should_reject:
+                    stats["proximity_rejections"] += 1
+                    lic["_rejection_reason"] = "proximity_context"
+                    lic["_rejection_detail"] = rejection_detail
+                    logger.debug(
+                        f"Camada 1B.3: REJECT (proximity) "
+                        f"detail={rejection_detail} "
+                        f"objeto={objeto[:80]}"
+                    )
+                    try:
+                        _get_tracker().record_rejection(
+                            "proximity_context",
+                            sector=setor,
+                            description_preview=objeto[:100],
+                        )
+                    except Exception:
+                        pass
+                else:
+                    resultado_after_prox.append(lic)
+
+            if stats["proximity_rejections"] > 0:
+                logger.info(
+                    f"Camada 1B.3 (Proximity): rejected "
+                    f"{stats['proximity_rejections']} bids in sector '{setor}'"
+                )
+            resultado_keyword = resultado_after_prox
+
+    # ========================================================================
     # GTM-RESILIENCE-D03: Camada 1B.5 — Co-occurrence Negative Patterns
     # ========================================================================
     # After keyword match, before density zone. Rejects bids where a trigger
     # keyword co-occurs with a negative context and no positive signal.
     # Overrides auto-accept: even density >5% bids are rejected.
     # 100% deterministic, zero LLM cost.
-    from config import get_feature_flag
 
     stats["co_occurrence_rejections"] = 0
     stats["co_occurrence_rejections_by_sector"] = {}

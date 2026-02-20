@@ -489,6 +489,14 @@ sectors:
         - "\\b2XG\\b"
         - "\\b3XG\\b"
         - "tamanho"
+    signature_terms:
+      - "uniforme"
+      - "fardamento"
+      - "jaleco"
+      - "vestimenta"
+      - "camiseta"
+      - "gandola"
+      - "farda"
 
   alimentos:
     name: "Alimentos e Merenda"
@@ -755,6 +763,14 @@ sectors:
         - "panificacao"
         - "gênero alimentício"
         - "genero alimenticio"
+    signature_terms:
+      - "merenda"
+      - "alimenticio"
+      - "refeicao"
+      - "hortifruti"
+      - "cesta basica"
+      - "rancho"
+      - "genero alimenticio"
 
   informatica:
     name: "Hardware e Equipamentos de TI"
@@ -1037,6 +1053,14 @@ sectors:
         - "peca"
         - "peça"
       size_patterns: []
+    signature_terms:
+      - "computador"
+      - "notebook"
+      - "impressora"
+      - "servidor"
+      - "monitor"
+      - "switch"
+      - "roteador"
 
   mobiliario:
     name: "Mobiliário"
@@ -1427,6 +1451,14 @@ sectors:
         - "escritório"
         - "escritorio"
         - "cozinha"
+    signature_terms:
+      - "movel"
+      - "mobiliario"
+      - "estante"
+      - "armario"
+      - "biro"
+      - "cadeira giratoria"
+      - "mesa de escritorio"
 
   papelaria:
     name: "Papelaria e Material de Escritório"
@@ -1667,6 +1699,14 @@ sectors:
         - "papelaria"
         - "escolar"
         - "material"
+    signature_terms:
+      - "resma"
+      - "toner"
+      - "cartucho"
+      - "papel a4"
+      - "caneta"
+      - "grampeador"
+      - "material de escritorio"
 
   engenharia:
     name: "Engenharia, Projetos e Obras"
@@ -1954,6 +1994,14 @@ sectors:
         - "laudo"
         - "técnico"
         - "tecnico"
+    signature_terms:
+      - "pavimentacao"
+      - "terraplanagem"
+      - "drenagem"
+      - "concreto armado"
+      - "laje"
+      - "fundacao"
+      - "edificacao"
 
   software:
     name: "Software e Sistemas"
@@ -2279,6 +2327,14 @@ sectors:
         - "app"
         - "celular"
         - "software"
+    signature_terms:
+      - "licenca de software"
+      - "sistema de gestao"
+      - "erp"
+      - "saas"
+      - "cloud computing"
+      - "plataforma digital"
+      - "desenvolvimento de sistema"
 
   facilities:
     name: "Facilities e Manutenção"
@@ -2602,6 +2658,14 @@ sectors:
         - "desinfeccao"
         - "higienização"
         - "higienizacao"
+    signature_terms:
+      - "limpeza predial"
+      - "jardinagem"
+      - "copeiragem"
+      - "portaria"
+      - "recepcionista"
+      - "zeladoria"
+      - "conservacao predial"
 
   saude:
     name: "Saúde"
@@ -3108,6 +3172,14 @@ sectors:
         - "ml"
         - "litro"
       size_patterns: []
+    signature_terms:
+      - "medicamento"
+      - "farmaceutico"
+      - "cirurgico"
+      - "ambulatorial"
+      - "hospitalar"
+      - "protese dentaria"
+      - "hemoderivado"
 
   vigilancia:
     name: "Vigilância e Segurança Patrimonial"
@@ -3305,6 +3377,14 @@ sectors:
         - "veicular"
         - "segurança"
         - "seguranca"
+    signature_terms:
+      - "vigilante"
+      - "cftv"
+      - "monitoramento eletronico"
+      - "ronda"
+      - "escolta"
+      - "alarme"
+      - "cerca eletrica"
 
   transporte:
     name: "Transporte e Veículos"
@@ -3566,6 +3646,14 @@ sectors:
         - "troca"
         - "veículo"
         - "veiculo"
+    signature_terms:
+      - "veiculo"
+      - "automotivo"
+      - "pneu"
+      - "mecanica automotiva"
+      - "frete"
+      - "combustivel"
+      - "frota"
 
   manutencao_predial:
     name: "Manutenção e Conservação Predial"
@@ -3743,6 +3831,14 @@ sectors:
         - "instalação"
         - "instalacao"
         - "passageiro"
+    signature_terms:
+      - "predial"
+      - "dedetizacao"
+      - "ar condicionado split"
+      - "elevador"
+      - "impermeabilizacao"
+      - "pintura predial"
+      - "pmoc"
 
   engenharia_rodoviaria:
     name: "Engenharia Rodoviária e Infraestrutura Viária"
@@ -3868,6 +3964,14 @@ sectors:
         - "manutenção"
         - "manutencao"
         - "viaduto"
+    signature_terms:
+      - "asfalto"
+      - "pavimento"
+      - "sinalizacao viaria"
+      - "rodovia"
+      - "acostamento"
+      - "meio-fio"
+      - "guia e sarjeta"
 
   materiais_eletricos:
     name: "Materiais Elétricos e Instalações"
@@ -4029,6 +4133,14 @@ sectors:
         - "kva"
         - "distribuição"
         - "distribuicao"
+    signature_terms:
+      - "disjuntor"
+      - "luminaria"
+      - "quadro eletrico"
+      - "fiacao"
+      - "condulete"
+      - "poste de luz"
+      - "lampada led"
 
   materiais_hidraulicos:
     name: "Materiais Hidráulicos e Saneamento"
@@ -4188,3 +4300,11 @@ sectors:
         - "conexão"
         - "conexao"
         - "encanamento"
+    signature_terms:
+      - "encanamento"
+      - "sifao"
+      - "torneira"
+      - "tubo pvc"
+      - "esgoto"
+      - "caixa d agua"
+      - "cisterna"

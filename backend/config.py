@@ -402,6 +402,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "LLM_STRUCTURED_OUTPUT_ENABLED": ("LLM_STRUCTURED_OUTPUT_ENABLED", "true"),
     "VIABILITY_ASSESSMENT_ENABLED": ("VIABILITY_ASSESSMENT_ENABLED", "false"),
     "USER_FEEDBACK_ENABLED": ("USER_FEEDBACK_ENABLED", "true"),
+    "PROXIMITY_CONTEXT_ENABLED": ("PROXIMITY_CONTEXT_ENABLED", "true"),
 }
 
 # ============================================
@@ -409,6 +410,12 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
 # ============================================
 USER_FEEDBACK_ENABLED: bool = str_to_bool(os.getenv("USER_FEEDBACK_ENABLED", "true"))
 USER_FEEDBACK_RATE_LIMIT: int = int(os.getenv("USER_FEEDBACK_RATE_LIMIT", "50"))  # per user per hour
+
+# ============================================
+# SECTOR-PROX: Proximity Context Filter
+# ============================================
+PROXIMITY_CONTEXT_ENABLED: bool = str_to_bool(os.getenv("PROXIMITY_CONTEXT_ENABLED", "true"))
+PROXIMITY_WINDOW_SIZE: int = int(os.getenv("PROXIMITY_WINDOW_SIZE", "8"))
 
 
 def get_feature_flag(name: str, default: bool | None = None) -> bool:
