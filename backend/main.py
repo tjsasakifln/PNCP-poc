@@ -336,6 +336,10 @@ async def lifespan(app_instance: FastAPI):
     # CRIT-001 AC4: Schema health check for search_results_cache
     await _check_cache_schema()
 
+    # CRIT-003 AC16-AC18: Recover stale searches from previous server instance
+    from search_state_manager import recover_stale_searches
+    await recover_stale_searches(max_age_minutes=10)
+
     # HOTFIX STORY-183: Diagnostic route logging
     _log_registered_routes(app_instance)
 

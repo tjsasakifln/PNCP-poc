@@ -11,7 +11,15 @@ Original models:
 """
 
 from .cache import SearchResultsCacheRow
-from .stripe_webhook_event import StripeWebhookEvent
-from .user_subscription import UserSubscription
+
+try:
+    from .stripe_webhook_event import StripeWebhookEvent
+except ImportError:
+    StripeWebhookEvent = None  # type: ignore
+
+try:
+    from .user_subscription import UserSubscription
+except ImportError:
+    UserSubscription = None  # type: ignore
 
 __all__ = ["SearchResultsCacheRow", "StripeWebhookEvent", "UserSubscription"]

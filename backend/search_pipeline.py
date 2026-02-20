@@ -477,22 +477,43 @@ class SearchPipeline:
 
     async def _run_stages(self, ctx: SearchContext, root_span) -> BuscaResponse:
         """Internal: execute pipeline stages under the root span."""
+        # CRIT-003: Get state machine for this search (if available)
+        from search_state_manager import get_state_machine
+        from models.search_state import SearchState
+        sm = get_state_machine(getattr(ctx.request, "search_id", None) or "")
 
         # Stages 1-3: Critical — exceptions propagate to wrapper
+        if sm:
+            await sm.transition_to(SearchState.VALIDATING, stage="validate")
         await self._traced_stage(ctx, "pipeline.validate", self.stage_validate)
         await self._traced_stage(ctx, "pipeline.prepare", self.stage_prepare)
+
+        if sm:
+            await sm.transition_to(SearchState.FETCHING, stage="execute")
         await self._traced_stage(ctx, "pipeline.fetch", self.stage_execute)
 
         # Stages 4-5: Filter and enrich
+        if sm:
+            await sm.transition_to(SearchState.FILTERING, stage="filter")
         await self._traced_stage(ctx, "pipeline.filter", self.stage_filter)
+
+        if sm:
+            await sm.transition_to(SearchState.ENRICHING, stage="enrich")
         await self._traced_stage(ctx, "pipeline.enrich", self.stage_enrich)
 
         # Stage 6: Generate output (has internal error boundaries)
+        if sm:
+            await sm.transition_to(SearchState.GENERATING, stage="generate")
         await self._traced_stage(ctx, "pipeline.generate", self.stage_generate)
 
         # Stage 7: Persist and build response
+        if sm:
+            await sm.transition_to(SearchState.PERSISTING, stage="persist")
         try:
-            return await self._traced_stage(ctx, "pipeline.persist", self.stage_persist)
+            result = await self._traced_stage(ctx, "pipeline.persist", self.stage_persist)
+            if sm:
+                await sm.transition_to(SearchState.COMPLETED, stage="persist")
+            return result
         finally:
             ACTIVE_SEARCHES.dec()
             elapsed_s = sync_time_module.time() - ctx.start_time
@@ -2133,7 +2154,7 @@ class SearchPipeline:
             total_filtered = len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0
             valor_total = ctx.resumo.valor_total if ctx.resumo else 0.0
             resumo_exec = ctx.resumo.resumo_executivo if ctx.resumo else None
-            destaques_val = ctx.resumo.destaques if ctx.resumo else None
+            destaques_val = (ctx.resumo.destaques if ctx.licitacoes_filtradas else []) if ctx.resumo else None
 
             if ctx.session_id:
                 # AC11: Session was pre-registered — UPDATE with results

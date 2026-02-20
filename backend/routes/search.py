@@ -44,6 +44,15 @@ from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_e
 from log_sanitizer import get_sanitized_logger
 from search_pipeline import SearchPipeline
 from search_context import SearchContext
+from search_state_manager import (
+    create_state_machine,
+    get_state_machine,
+    remove_state_machine,
+    get_search_status,
+    get_timeline,
+    get_current_state,
+)
+from models.search_state import SearchState
 
 logger = get_sanitized_logger(__name__)
 
@@ -165,8 +174,24 @@ async def buscar_progress_stream(
             await _asyncio.sleep(0.5)
 
         if not tracker:
-            yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
-            return
+            # AC9: On reconnection, try to get current state from DB
+            try:
+                db_state = await get_current_state(search_id)
+                if db_state:
+                    state_val = db_state.get("to_state", "error")
+                    from search_state_manager import _estimate_progress
+                    progress = _estimate_progress(state_val)
+                    yield f"data: {_json.dumps({'stage': state_val, 'progress': progress, 'message': f'Estado atual: {state_val}'})}\n\n"
+                    # If terminal, we're done
+                    if state_val in ("completed", "failed", "timed_out", "rate_limited"):
+                        return
+                    # Otherwise fall through to wait for more events
+                else:
+                    yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
+                    return
+            except Exception:
+                yield f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Search not found'})}\n\n"
+                return
 
         # Try Redis pub/sub first, fallback to in-memory queue
         pubsub = await subscribe_to_events(search_id)
@@ -224,6 +249,40 @@ async def buscar_progress_stream(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# CRIT-003 AC11: Search status polling endpoint
+# ---------------------------------------------------------------------------
+
+@router.get("/v1/search/{search_id}/status")
+async def search_status_endpoint(
+    search_id: str,
+    user: dict = Depends(require_auth),
+):
+    """AC11: Return current search state for polling fallback.
+
+    Called by frontend when SSE disconnects (AC12).
+    Response format matches AC11 specification.
+    """
+    status = await get_search_status(search_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail="Search not found")
+    return status
+
+
+# ---------------------------------------------------------------------------
+# CRIT-003 AC7: Search timeline endpoint
+# ---------------------------------------------------------------------------
+
+@router.get("/v1/search/{search_id}/timeline")
+async def search_timeline_endpoint(
+    search_id: str,
+    user: dict = Depends(require_auth),
+):
+    """AC7: Return all state transitions for audit trail."""
+    timeline = await get_timeline(search_id)
+    return {"search_id": search_id, "transitions": timeline}
 
 
 # ---------------------------------------------------------------------------
@@ -380,11 +439,14 @@ async def buscar_licitacoes(
     # SSE Progress Tracking
     # CRIT-004 AC7: Set search_id in ContextVar for end-to-end log correlation
     tracker = None
+    state_machine = None
     if request.search_id:
         from middleware import search_id_var
         search_id_var.set(request.search_id)
         tracker = await create_tracker(request.search_id, len(request.ufs))
         await tracker.emit("connecting", 3, "Iniciando busca...")
+        # CRIT-003 AC2: Create state machine for deterministic lifecycle tracking
+        state_machine = await create_state_machine(request.search_id)
 
     # Build deps namespace from module-level imports (preserves test mock paths)
     deps = SimpleNamespace(
@@ -531,9 +593,17 @@ async def buscar_licitacoes(
                 await tracker.emit_complete()
             await remove_tracker(request.search_id)
 
+        # CRIT-003: Clean up state machine on success (state already set to COMPLETED by pipeline)
+        if state_machine:
+            remove_state_machine(request.search_id)
+
         return response
 
     except PNCPRateLimitError as e:
+        # CRIT-003: Transition state machine on rate limit
+        if state_machine:
+            await state_machine.rate_limited(retry_after=getattr(e, "retry_after", 60))
+            remove_state_machine(request.search_id)
         # CRIT-002 AC12: Update session status on error
         if ctx.session_id:
             retry_after = getattr(e, "retry_after", 60)
@@ -561,6 +631,10 @@ async def buscar_licitacoes(
         )
 
     except PNCPAPIError as e:
+        # CRIT-003: Transition state machine on API error
+        if state_machine:
+            await state_machine.fail(str(e)[:300], error_code="sources_unavailable")
+            remove_state_machine(request.search_id)
         # CRIT-002 AC12: Update session status on error
         if ctx.session_id:
             import asyncio as _aio
@@ -586,6 +660,13 @@ async def buscar_licitacoes(
         )
 
     except HTTPException as exc:
+        # CRIT-003: Transition state machine on HTTP error
+        if state_machine:
+            if exc.status_code == 504:
+                await state_machine.timeout()
+            else:
+                await state_machine.fail(f"HTTP {exc.status_code}: {exc.detail}"[:300])
+            remove_state_machine(request.search_id)
         # CRIT-002 AC12: Update session status on error
         if ctx.session_id:
             import asyncio as _aio
@@ -604,6 +685,10 @@ async def buscar_licitacoes(
         raise
 
     except Exception as e:
+        # CRIT-003: Transition state machine on unexpected error
+        if state_machine:
+            await state_machine.fail(f"{type(e).__name__}: {str(e)[:200]}", error_code="unknown")
+            remove_state_machine(request.search_id)
         # CRIT-002 AC12: Update session status on error
         if ctx.session_id:
             import asyncio as _aio

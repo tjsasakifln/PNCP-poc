@@ -11,6 +11,7 @@ import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useAuth } from "../../components/AuthProvider";
 import { useQuota } from "../../../hooks/useQuota";
 import { useSearchProgress, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
+import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
 import { getUserFriendlyError } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
@@ -185,6 +186,23 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     onEvent: handleSseEvent,
     onError: () => setUseRealProgress(false),
   });
+
+  // CRIT-003 AC12-AC13, AC21: Polling fallback when SSE disconnects
+  const activeSearchId = liveFetchInProgress ? liveFetchSearchIdRef.current : searchId;
+  const { asProgressEvent: pollingEvent } = useSearchPolling({
+    searchId: activeSearchId,
+    enabled: sseDisconnected && loading && !!activeSearchId,
+    authToken: session?.access_token,
+    onStatusUpdate: (status) => {
+      // Update loading step based on polled state
+      if (status.status === 'completed' || status.status === 'failed' || status.status === 'timed_out') {
+        setUseRealProgress(false);
+      }
+    },
+  });
+
+  // AC21: Use polling event when SSE is disconnected
+  const effectiveEvent = sseDisconnected && pollingEvent ? pollingEvent : sseEvent;
 
   const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
@@ -625,7 +643,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   return {
     loading, loadingStep, statesProcessed, error, quotaError,
     result, setResult, rawCount,
-    searchId, useRealProgress, sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail,
+    searchId, useRealProgress, sseEvent: effectiveEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail,
     partialProgress, refreshAvailable, liveFetchInProgress, handleRefreshResults,
     downloadLoading, downloadError,
     searchButtonRef: searchButtonRef as React.RefObject<HTMLButtonElement>,

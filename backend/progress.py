@@ -293,7 +293,7 @@ class ProgressTracker:
 
 # Global registry of active progress trackers (in-memory mode only)
 _active_trackers: Dict[str, ProgressTracker] = {}
-_TRACKER_TTL = 300  # 5 minutes
+_TRACKER_TTL = 420  # 7 minutes (AC14: >= FETCH_TIMEOUT 360s + margin)
 
 
 async def create_tracker(search_id: str, uf_count: int) -> ProgressTracker:
@@ -368,9 +368,29 @@ async def remove_tracker(search_id: str) -> None:
 
 
 def _cleanup_stale() -> None:
-    """Remove trackers older than TTL (in-memory only)."""
+    """Remove trackers older than TTL (in-memory only).
+
+    AC15: Don't remove trackers with active searches still processing in DB.
+    """
     now = time.time()
-    stale = [sid for sid, t in _active_trackers.items() if now - t.created_at > _TRACKER_TTL]
+    stale_candidates = [sid for sid, t in _active_trackers.items() if now - t.created_at > _TRACKER_TTL]
+
+    # AC15: Check if any stale candidates are still actively processing
+    stale = []
+    for sid in stale_candidates:
+        tracker = _active_trackers.get(sid)
+        if tracker and not tracker._is_complete:
+            # Check if search is still processing in DB before removing
+            try:
+                from search_state_manager import get_state_machine
+                machine = get_state_machine(sid)
+                if machine and not machine.is_terminal:
+                    logger.debug(f"Skipping cleanup of tracker {sid} — search still processing")
+                    continue
+            except Exception:
+                pass
+        stale.append(sid)
+
     for sid in stale:
         _active_trackers.pop(sid, None)
     if stale:

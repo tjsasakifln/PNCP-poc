@@ -106,6 +106,14 @@ LLM_DURATION = _create_histogram(
     buckets=[0.1, 0.25, 0.5, 1, 2, 5],
 )
 
+# CRIT-003 AC22: Time spent in each pipeline state
+STATE_DURATION = _create_histogram(
+    "smartlic_search_state_duration_seconds",
+    "Time spent in each search state",
+    labelnames=["state"],
+    buckets=[0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300],
+)
+
 # ============================================================================
 # Counters
 # ============================================================================
