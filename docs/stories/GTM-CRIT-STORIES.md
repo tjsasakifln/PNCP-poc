@@ -93,9 +93,46 @@ $ curl -sS https://bidiq-uniformes-production.up.railway.app/health
   - Timeline do incidente
   - O que fazer se acontecer de novo
 
+**Verificação de consistência e independência (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC8 — Verificação de consistência temporal:** Executar 3 probes espaçados (imediato, +1h, +6h) em `smartlic.tech` e registrar para cada:
+  - HTTP status code
+  - Header `Server` (deve ser `next` ou equivalente, NÃO `railway-edge`)
+  - Header `X-Railway-Fallback` (deve estar AUSENTE)
+  - Primeiros 100 bytes do body (deve ser HTML, não JSON 404)
+
+  **Os 3 probes devem retornar HTML consistentemente.** Se qualquer um retornar JSON 404, a resolução não é estável e o AC falha.
+
+  ```bash
+  # Probe script (rodar 3x com intervalo):
+  curl -sI https://smartlic.tech/ | grep -E "HTTP/|Server:|X-Railway"
+  curl -sS https://smartlic.tech/ | head -c 100
+  ```
+
+- [ ] **AC9 — Independência do backend:** Com backend deliberadamente parado (`railway service down bidiq-backend` ou equivalente), confirmar que as seguintes rotas servem HTML:
+
+  | Rota | Esperado |
+  |------|----------|
+  | `/` | HTTP 200, HTML (landing page — conteúdo estático) |
+  | `/login` | HTTP 200, HTML (formulário renderiza) |
+  | `/buscar` | HTTP 200, HTML (formulário renderiza, resultados podem estar vazios) |
+  | `/planos` | HTTP 200, HTML (página de pricing) |
+
+  **Evidência:** `curl -sI https://smartlic.tech/{rota}` mostrando `HTTP/2 200` + `content-type: text/html` para cada rota com backend offline.
+
+  **Razão:** O frontend é Next.js SSR/SSG — páginas devem renderizar o shell HTML mesmo sem backend. Se alguma rota depende de backend para renderizar HTML (não apenas para dados), isso é um defeito arquitetural que deve ser documentado e tratado.
+
+- [ ] **AC10 — Inspeção de headers de serviço:** Toda resposta de `smartlic.tech` deve confirmar que está sendo servida pelo frontend Next.js (não pelo Railway edge fallback):
+  - Header `Server` NÃO deve ser `railway-edge`
+  - Header `X-Railway-Fallback` NÃO deve estar presente
+  - Se o response vier de Cloudflare (`Server: cloudflare`), isso é aceitável — desde que o body seja HTML do app, não erro 404
+
 ### Definition of Done
 
-`curl -sS https://smartlic.tech/` retorna HTML (não JSON 404). Todos os 4 domínios respondem.
+1. `curl -sS https://smartlic.tech/` retorna HTML (não JSON 404). Todos os 4 domínios respondem.
+2. **3 probes temporais** (AC8) retornam HTML consistentemente.
+3. **4 rotas internas** (AC9) servem HTML com backend offline.
+4. **Nenhum probe** retorna `X-Railway-Fallback: true` (AC10).
 
 ### Notas para o Dev
 
@@ -248,6 +285,35 @@ healthcheckTimeout = 120
 - [ ] **AC15:** Frontend: health retorna 200 + `backend: "unreachable"` quando fetch falha.
 - [ ] **AC16:** Frontend: health retorna 200 + `backend: "healthy"` quando backend responde ready: true.
 
+**Verificação de evidência operacional (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC17 — Prova de não-404 durante deploy:** Após deploy em Railway, executar `curl -sI https://{backend-url}/health/ready` e registrar HTTP status. Deve ser 200 (`ready: true`) ou 503 (`ready: false`) — **NUNCA 404**. Repetir 3x em intervalos de 30s durante o período de startup para provar que a rota está registrada desde o primeiro momento em que o processo aceita conexões.
+
+  ```bash
+  # Executar durante deploy (3x com 30s intervalo):
+  for i in 1 2 3; do
+    echo "--- Probe $i ---"
+    curl -sS https://bidiq-uniformes-production.up.railway.app/health/ready
+    echo ""
+    sleep 30
+  done
+  ```
+
+  **Evidência:** Output dos 3 probes colado no PR description.
+
+- [ ] **AC18 — Evidência de separação liveness vs readiness:** Documentar no PR description a prova de que os dois conceitos são independentes:
+
+  1. `/health/ready` responde em <50ms **mesmo quando** as dependências estão lentas — prova: executar com Supabase lento (simular timeout no startup gate) e medir latência do `/health/ready`.
+  2. `/health` (deep) reflete o estado real das dependências — prova: comparar output de `/health` com Supabase healthy vs unhealthy.
+  3. Railway usa **apenas** `/health/ready` — prova: `railway.toml` com `healthcheckPath="/health/ready"`.
+
+  **Formato da evidência:**
+  | Cenário | `/health/ready` latência | `/health/ready` status | `/health` status |
+  |---------|--------------------------|------------------------|-----------------|
+  | Tudo saudável | <50ms | `ready: true` | `healthy` |
+  | Supabase lento | <50ms | `ready: true` (já passou startup) | `degraded` ou timeout |
+  | Antes do startup gate | <50ms | `ready: false` | N/A |
+
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
@@ -265,7 +331,9 @@ healthcheckTimeout = 120
 2. `GET /health/ready` responde em <50ms.
 3. Frontend com `BACKEND_URL` vazio: Railway detecta 503, não marca como healthy.
 4. Frontend com backend reiniciando: Railway vê 200 (não mata frontend).
-5. Todos os testes passam sem regressão no baseline (~35 BE / ~42 FE).
+5. **3 probes durante deploy** (AC17) retornam 200 ou 503 (nunca 404).
+6. **Tabela de evidência liveness vs readiness** (AC18) documentada no PR.
+7. Todos os testes passam sem regressão no baseline (~35 BE / ~42 FE).
 
 ---
 
@@ -359,6 +427,33 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
 - [ ] **AC11:** Teste: proxy retorna mensagem com ação sugerida para HTTP 502 (não "Erro no backend").
 - [ ] **AC12:** Teste: todas as mensagens de erro incluem `request_id`.
 
+**Verificação com simulação de falhas reais (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC13 — Simulação de falhas reais com evidência visual:** Antes de merge, o dev deve produzir evidência (screenshot ou output de curl) de 4 cenários simulados:
+
+  | # | Cenário | Como simular | O que o usuário DEVE ver |
+  |---|---------|-------------|-------------------------|
+  | 1 | Backend 500 | Mock backend retornando 500 sem `error_code` | Mensagem com ação sugerida + `(Ref: xxx-xxx)` |
+  | 2 | Backend timeout | Mock backend com `sleep(600)` | Mensagem de timeout + sugestão de reduzir UFs |
+  | 3 | Componente crash | Injetar `throw new Error("test")` em `SearchResults` | Error boundary com botão "Tentar novamente" (NÃO tela branca) |
+  | 4 | Backend offline | Backend parado | Mensagem de indisponibilidade + visual de auto-retry (CRIT-008) |
+
+  **Formato:** 4 screenshots ou 4 outputs de curl colados no PR description. Se qualquer cenário mostrar tela branca, "Erro no backend" genérico, ou mensagem sem `request_id`, o AC falha.
+
+- [ ] **AC14 — Classificação visível ao usuário:** O componente `ErrorDetail.tsx` (CRIT-009) deve renderizar o **tipo** do erro de forma visível ao usuário, não apenas a mensagem. Mapear `error_code` para label em português:
+
+  | `error_code` | Label visível ao usuário |
+  |-------------|--------------------------|
+  | `TIMEOUT` | "Tempo esgotado" |
+  | `RATE_LIMITED` | "Muitas consultas" |
+  | `INTERNAL_ERROR` | "Erro interno" |
+  | `SOURCE_UNAVAILABLE` | "Fonte indisponível" |
+  | `AUTH_REQUIRED` | "Sessão expirada" |
+  | `VALIDATION_ERROR` | "Dados inválidos" |
+  | `QUOTA_EXCEEDED` | "Limite atingido" |
+
+  O label deve aparecer como badge ou tag acima da mensagem descritiva. Sem isso, "vocês só trocaram a frase por outra frase" — o usuário precisa saber a **natureza** do problema, não apenas receber uma frase diferente.
+
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
@@ -366,6 +461,7 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
 | `frontend/app/buscar/components/SearchErrorBoundary.tsx` | NOVO (~60 linhas) |
 | `frontend/app/buscar/page.tsx` | Envolver resultados com `<SearchErrorBoundary>` (~5 linhas) |
 | `frontend/app/api/buscar/route.ts:165,187,200` | Substituir "Erro no backend" por mensagens contextuais (~20 linhas) |
+| `frontend/app/buscar/components/ErrorDetail.tsx` | Adicionar badge de classificação do erro (~15 linhas) |
 | `frontend/__tests__/buscar/SearchErrorBoundary.test.tsx` | NOVO — 3 testes |
 | `frontend/__tests__/api/buscar.test.ts` | Adicionar/atualizar 3 testes |
 
@@ -374,7 +470,9 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
 1. Forçar exceção em componente de resultado → usuário vê UI de erro com botão "Tentar novamente" (não tela branca).
 2. Backend retorna 500 sem error_code → usuário vê "Ocorreu um erro interno. Tente novamente em alguns segundos." (não "Erro no backend").
 3. `grep "Erro no backend" frontend/app/api/buscar/route.ts` retorna 0 resultados.
-4. Todos os testes passam sem regressão no baseline.
+4. **4 cenários de falha simulados** (AC13) com evidência visual no PR.
+5. **Classificação do erro visível** (AC14) como badge/tag no ErrorDetail.tsx.
+6. Todos os testes passam sem regressão no baseline.
 
 ---
 
@@ -434,16 +532,57 @@ Mas 500 cai no handler genérico de erro.
 - [ ] **AC4:** Teste: quando `_resolve_signing_key()` levanta, response é 401 com header `WWW-Authenticate: Bearer`.
 - [ ] **AC5:** Teste: `logger.error` é chamado (a causa raiz é logada para o time, mesmo que o user veja 401).
 
+**Verificação de isolamento e evidência (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC6 — Teste de integração com env real:** Rodar o backend com `SUPABASE_JWT_SECRET=""` e JWKS indisponível (mock ou `SUPABASE_URL` inválido). Registrar evidência dos 3 comportamentos:
+
+  1. **Request autenticado falha com 401:**
+     ```bash
+     curl -sS -H "Authorization: Bearer fake-token" http://localhost:8000/buscar \
+       -X POST -H "Content-Type: application/json" -d '{"ufs":["SP"]}' \
+       -w "\nHTTP Status: %{http_code}\n"
+     # Esperado: HTTP 401, body contém "Autenticação indisponível", SEM stack trace
+     ```
+
+  2. **Health check NÃO é afetado:**
+     ```bash
+     curl -sS http://localhost:8000/health/ready
+     # Esperado: HTTP 200, {"ready": true} — auth quebrada NÃO derruba readiness
+     ```
+
+  3. **Log do backend contém causa explícita:**
+     ```
+     ERROR — SUPABASE_JWT_SECRET not configured and no JWKS URL available!
+     ```
+
+  **Evidência:** Output dos 3 comandos colado no PR description.
+
+- [ ] **AC7 — Ausência de stack trace no response:** O response body de qualquer endpoint protegido por auth, quando auth está misconfigured, **nunca** contém:
+  - `Traceback` (Python stack trace)
+  - `File "` (path de arquivo interno)
+  - Nomes de módulos internos (`auth.py`, `main.py`, etc.)
+
+  Validar com:
+  ```bash
+  curl -sS -H "Authorization: Bearer fake" http://localhost:8000/buscar \
+    -X POST -H "Content-Type: application/json" -d '{"ufs":["SP"]}' | \
+    grep -cE "Traceback|File \"|auth\.py|main\.py"
+  # Deve retornar 0
+  ```
+
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
 |---------|---------|
 | `backend/auth.py:152` | `status_code=500` → `status_code=401`, adicionar `headers`, atualizar detail |
-| `backend/tests/test_auth_401.py` | NOVO ou adicionar ao existente — 2 testes |
+| `backend/tests/test_auth_401.py` | NOVO ou adicionar ao existente — 4 testes (AC4, AC5 + AC7 stack trace check) |
 
 ### Definition of Done
 
-Com JWT config completamente quebrada (`SUPABASE_JWT_SECRET` vazio + JWKS indisponível), o frontend redireciona o usuário para login (não mostra "Erro no backend").
+1. Com JWT config completamente quebrada (`SUPABASE_JWT_SECRET` vazio + JWKS indisponível), o frontend redireciona o usuário para login (não mostra "Erro no backend").
+2. **Auth quebrada NÃO afeta** `/health/ready` — prova no PR (AC6).
+3. **Zero stack trace** no response body — prova no PR (AC7).
+4. Todos os testes passam sem regressão no baseline.
 
 ---
 
@@ -533,9 +672,41 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 
 - [ ] **AC5:** Verificar que ambas migrations são idempotentes (safe to run multiple times).
 
-**Parte C — Melhorar fallback no startup:**
+**Parte C — Contrato de schema e startup gate (REVISADO pela auditoria PM 2026-02-21):**
 
-- [ ] **AC6:** Em `main.py:_check_cache_schema()` (linhas 203-215), melhorar fallback quando RPC falha:
+> **Princípio PM:** "Depois do deploy, não pode existir código esperando colunas que não existem e 'caindo para fallback'. A aplicação se recusa a operar em estado divergente de forma barulhenta para o time (falha controlada) em vez de silenciosa para o usuário (bug fantasma)."
+
+- [ ] **AC6a — Tabelas CRÍTICAS (must fail startup):** Criar `backend/schema_contract.py` com a lista explícita de tabelas e colunas obrigatórias para o sistema operar:
+
+  ```python
+  CRITICAL_SCHEMA = {
+      "search_sessions": ["id", "user_id", "search_id", "status", "started_at", "completed_at", "created_at"],
+      "search_results_cache": ["id", "params_hash", "results_json", "created_at"],
+      "profiles": ["id", "user_id", "plan_type", "email"],
+  }
+  ```
+
+  No startup (`_check_cache_schema()` ou novo `_validate_schema_contract()`), verificar estas tabelas/colunas. Se qualquer coluna crítica estiver faltando:
+  ```python
+  logger.critical(
+      f"SCHEMA CONTRACT VIOLATED: {table} missing columns {missing}. "
+      f"Run migrations before deploying. Refusing to start."
+  )
+  raise SystemExit(1)  # Railway will retry with backoff
+  ```
+
+  **Razão:** Operar sem `search_sessions.status` gera "bug fantasma" — sistema parece funcionar mas lifecycle tracking é mudo. É preferível que Railway reinicie e o time receba alerta, a que o sistema rode em estado quebrado por horas sem ninguém perceber.
+
+- [ ] **AC6b — RPCs e tabelas auxiliares (degrade com warning recorrente):** Se `get_table_columns_simple` ou RPCs de analytics falharem, degradar com:
+  ```python
+  logger.warning(
+      f"CRIT-004: RPC {rpc_name} unavailable — operating in degraded mode. "
+      f"This warning will repeat every 5 minutes until resolved."
+  )
+  ```
+  Usar flag `_schema_warnings_emitted` para re-emitir o warning a cada 5min (via cron ou health check), NÃO one-shot silencioso. O time deve perceber que o sistema está degradado mesmo que ninguém olhe os logs do startup.
+
+  Para RPC indisponível no `_check_cache_schema()`, usar fallback com direct query:
   ```python
   except Exception as rpc_err:
       logger.warning(f"CRIT-004: RPC get_table_columns_simple failed ({rpc_err}) — trying direct query")
@@ -547,7 +718,8 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
           logger.critical(
               f"CRIT-004: Schema validation FAILED — RPC: {rpc_err}, Fallback: {fallback_err}"
           )
-          return  # Non-blocking
+          # Non-blocking para RPCs auxiliares — mas warning recorrente ativo
+          return
   ```
 
 **Parte D — Graceful degradation em endpoints:**
@@ -581,26 +753,54 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 - [ ] **AC14:** Teste: `_check_cache_schema()` faz fallback quando RPC levanta Exception.
 - [ ] **AC15:** Teste: endpoint analytics retorna resposta degradada (não 500) quando RPC falha.
 
+**Contrato de ambiente e evidência (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC16 — Contrato de ambiente documentado:** O arquivo `backend/schema_contract.py` deve conter:
+  1. `CRITICAL_SCHEMA: dict[str, list[str]]` — tabelas e colunas que impedem startup se ausentes
+  2. `OPTIONAL_RPCS: list[str]` — RPCs que degradam (não crasham) se ausentes
+  3. Função `validate_schema_contract(db) -> tuple[bool, list[str]]` que retorna `(passed, missing_items)`
+
+  O dev deve provar que o contrato funciona rodando com uma coluna crítica removida:
+  ```bash
+  # Simular coluna ausente (em ambiente de teste, não produção!):
+  # 1. Remover 'status' do mock de schema
+  # 2. Startup deve falhar com SystemExit(1)
+  # 3. Log deve conter "SCHEMA CONTRACT VIOLATED"
+  ```
+
+  **Evidência:** Log do startup falhando quando contrato é violado, colado no PR description.
+
+- [ ] **AC17 — Verificação real de estrutura pós-deploy:** Após `npx supabase db push`, executar verificação real da estrutura:
+  ```bash
+  # Via Supabase CLI ou SQL direto:
+  npx supabase db execute "SELECT column_name FROM information_schema.columns WHERE table_name = 'search_sessions' ORDER BY ordinal_position;"
+  ```
+  Colar output no PR mostrando que `status`, `started_at`, `completed_at`, `failed_ufs`, etc. existem de fato.
+
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
 |---------|---------|
 | `supabase/migrations/20260221100000_search_session_lifecycle.sql` | NOVO — sync de backend/migrations/007 + failed_ufs |
 | `supabase/migrations/20260221100001_create_get_table_columns_simple.sql` | NOVO — RPC function |
-| `backend/main.py:203-215` | Melhorar fallback em `_check_cache_schema()` |
+| `backend/schema_contract.py` | NOVO — contrato de schema (~40 linhas) |
+| `backend/main.py:203-215` | Usar `schema_contract.validate_schema_contract()` no startup |
 | `backend/routes/analytics.py` | Adicionar try/except com resposta degradada |
 | `backend/routes/messages.py` | Adicionar try/except se usa RPC sem migration |
-| `backend/tests/test_schema_validation.py` | NOVO — 3 testes |
+| `backend/tests/test_schema_validation.py` | NOVO — 5 testes (AC13-15 + contrato violado + contrato OK) |
 
 ### Definition of Done
 
 1. **Sentry limpo:** Erros S1, S2, S3 não recorrem após deploy.
-2. Startup: log `"CRIT-001: Schema validated"` (não `"Schema health check skipped"`).
-3. `cron_jobs.py` cleanup executa sem error 42703.
-4. `search_state_manager.py` recover encontra sessions por `status` e `started_at`.
-5. Endpoint retry (`/v1/search/{id}/retry`) pode ler `failed_ufs`.
-6. Analytics com RPC ausente: retorna 200 degradado (não 500).
-7. Todos os testes passam sem regressão.
+2. Startup com schema divergente em tabela CRÍTICA: **app recusa subir** + log `"SCHEMA CONTRACT VIOLATED"` (AC6a).
+3. Startup com RPC auxiliar indisponível: **app sobe degradado** + warning recorrente (AC6b).
+4. `cron_jobs.py` cleanup executa sem error 42703.
+5. `search_state_manager.py` recover encontra sessions por `status` e `started_at`.
+6. Endpoint retry (`/v1/search/{id}/retry`) pode ler `failed_ufs`.
+7. Analytics com RPC ausente: retorna 200 degradado (não 500).
+8. **Contrato de schema** documentado e testado (AC16).
+9. **Estrutura real** verificada pós-deploy (AC17).
+10. Todos os testes passam sem regressão.
 
 ---
 
@@ -631,7 +831,23 @@ O health endpoint já tem `get_state()` para Redis (main.py:643-644), mas o esta
 
 ### Acceptance Criteria
 
-**Persistência no Redis:**
+**DESCOBERTA DA AUDITORIA PM (2026-02-21):** O codebase JÁ possui `RedisCircuitBreaker` em `pncp_client.py` que estende `PNCPCircuitBreaker` com persistência em Redis (Lua scripts atômicos, keys `circuit_breaker:{name}:failures` e `circuit_breaker:{name}:degraded_until`, TTL 300s). O flag `USE_REDIS_CIRCUIT_BREAKER` (default `true`) ativa esta funcionalidade. **O AC0 abaixo é pré-requisito para decidir o escopo real do trabalho.**
+
+**Pré-requisito — Auditoria do estado atual:**
+
+- [ ] **AC0 — Levantamento do estado atual do `RedisCircuitBreaker`:** Antes de implementar QUALQUER AC abaixo, o dev deve auditar e documentar:
+
+  1. **Estado é restaurado após restart?** Verificar se `RedisCircuitBreaker.__init__()` ou `initialize()` lê estado do Redis na inicialização. Se sim, documentar o mecanismo. Se não, este é o gap real.
+  2. **Existe "lazy restore"?** O estado é lido na primeira chamada a `record_failure()`/`is_degraded` ou precisa de restore explícito?
+  3. **TTL de 300s é suficiente?** O cooldown é 120s. Se o Redis TTL for menor que o cooldown restante, o estado pode expirar antes da recuperação.
+  4. **O `_FAILURE_SCRIPT` (Lua) preserva `degraded_until`?** Ou só persiste `failures` count?
+
+  **Resultado:** Documentar no PR qual dos cenários abaixo se aplica:
+  - **Cenário A:** `RedisCircuitBreaker` já resolve tudo → ACs 1-5 são desnecessários, mover para AC11-12 (evidência).
+  - **Cenário B:** `RedisCircuitBreaker` persiste mas NÃO restaura no startup → AC5 (initialize) é o único trabalho real.
+  - **Cenário C:** `RedisCircuitBreaker` não persiste `degraded_until` → ACs 1-3 necessários com ajuste.
+
+**Persistência no Redis (contingente no resultado do AC0):**
 
 - [ ] **AC1:** Em `PNCPCircuitBreaker.__init__()`, se Redis estiver disponível, ler estado salvo:
   ```python
@@ -690,20 +906,47 @@ O health endpoint já tem `get_state()` para Redis (main.py:643-644), mas o esta
 - [ ] **AC9:** Teste: CB funciona normalmente quando Redis indisponível (in-memory fallback).
 - [ ] **AC10:** Teste: Múltiplas instâncias de CB (pncp, pcp) usam keys diferentes.
 
+**Demonstração prática e visibilidade operacional (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC11 — Demonstração de degradação com evidência:** Simular PNCP indisponível (mock retornando 503 para todas as UFs, ou firewall block) e registrar evidência de 5 comportamentos em sequência:
+
+  | # | Momento | Evidência esperada |
+  |---|---------|-------------------|
+  | 1 | PNCP começa a falhar | Log: `"Circuit breaker [pncp] TRIPPED after {N} consecutive failures"` |
+  | 2 | Durante degradação | Prometheus: `circuit_breaker_degraded{source="pncp"} = 1` |
+  | 3 | Busca durante degradação | Resultado parcial (PCP + ComprasGov), `DegradationBanner` visível ao usuário |
+  | 4 | Após cooldown (120s) | Log: `"cooldown expired — resetting to healthy"` |
+  | 5 | Busca após recovery | Resultado completo (PNCP + PCP + ComprasGov) |
+
+  **Formato:** Logs + screenshots (ou curl outputs) para cada momento, colados no PR description.
+
+  **Razão:** "Se não houver visibilidade do estado do breaker, é só magia." A demonstração prova que o sistema se comporta de forma previsível e observável, não apenas que o código existe.
+
+- [ ] **AC12 — Visibilidade operacional confirmada:** Provar que o estado do breaker é consultável por 3 canais independentes:
+
+  1. **API Health:** `GET /health` → campo `circuit_breakers.pncp.status` mostrando `"degraded"` ou `"healthy"` com `failures` count
+  2. **Prometheus:** Metric `smartlic_circuit_breaker_degraded{source="pncp"}` com valor 0 ou 1
+  3. **Logs:** Mensagens com nível `WARNING` no trip e `INFO` no recover, contendo nome do breaker e timestamp
+
+  **Evidência:** Print/output de cada um dos 3 canais durante um cenário de degradação simulada. Se qualquer canal não existir ou não refletir o estado real, documentar e criar sub-task.
+
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `backend/pncp_client.py:153-230` | Adicionar `_restore_from_redis()`, `_persist_to_redis()`, `initialize()` |
-| `backend/main.py:340-357` | Adicionar `await cb.initialize()` antes de `_startup_time` |
+| `backend/pncp_client.py:153-230` | Conforme resultado do AC0: restore no startup e/ou ajustes no `RedisCircuitBreaker` |
+| `backend/main.py:340-357` | Adicionar `await cb.initialize()` antes de `_startup_time` (se AC0 indicar necessidade) |
 | `backend/tests/test_circuit_breaker_redis.py` | NOVO — 5 testes |
 
 ### Definition of Done
 
-1. Restart durante degradação PNCP: backend inicia já em estado degradado, usa fontes alternativas (não bombardeia PNCP).
-2. Restart após cooldown expirado: backend inicia healthy, retoma requisições.
-3. Sem Redis configurado: comportamento idêntico ao atual (zero regressão).
-4. Todos os testes passam sem regressão.
+1. **AC0 documentado:** Estado atual do `RedisCircuitBreaker` auditado e cenário (A/B/C) identificado.
+2. Restart durante degradação PNCP: backend inicia já em estado degradado, usa fontes alternativas (não bombardeia PNCP).
+3. Restart após cooldown expirado: backend inicia healthy, retoma requisições.
+4. Sem Redis configurado: comportamento idêntico ao atual (zero regressão).
+5. **Demonstração de degradação** (AC11) com evidência de 5 momentos no PR.
+6. **Visibilidade operacional** (AC12) confirmada por 3 canais com evidência no PR.
+7. Todos os testes passam sem regressão.
 
 ---
 
@@ -771,18 +1014,62 @@ if (!backendUrl) {
 - [ ] **AC6:** Teste: timeout → `backend_url_valid: true` + log WARNING.
 - [ ] **AC7:** Teste: backend healthy → `backend_url_valid` não presente (ou true).
 
+**Detecção no boot e evidência (adicionados pela auditoria PM 2026-02-21):**
+
+- [ ] **AC8 — Validação no startup do Next.js:** Adicionar validação em `frontend/instrumentation.ts` (Next.js instrumentation hook — roda UMA VEZ no boot do servidor, não por request):
+
+  ```typescript
+  export async function register() {
+    const backendUrl = process.env.BACKEND_URL;
+    if (!backendUrl) {
+      console.error(
+        "[STARTUP] CRITICAL: BACKEND_URL not configured — " +
+        "frontend cannot proxy API requests to backend. " +
+        "All /api/buscar requests will fail with 503."
+      );
+    } else {
+      try {
+        new URL(backendUrl); // Valida formato da URL
+        console.log(`[STARTUP] BACKEND_URL validated: ${backendUrl}`);
+      } catch {
+        console.error(
+          `[STARTUP] CRITICAL: BACKEND_URL is not a valid URL: '${backendUrl}'. ` +
+          `All /api/buscar requests will fail.`
+        );
+      }
+    }
+  }
+  ```
+
+  **Nota:** NÃO crashar o frontend (Railway mataria o serviço). Mas logar `CRITICAL` para que o time veja no log de deploy. O objetivo é "falhar cedo e de forma explícita para o time", não "impedir o frontend de subir" (o que causaria deadlock de deploy).
+
+- [ ] **AC9 — Evidência de detecção com 3 cenários:** Rodar o frontend com 3 configurações diferentes de `BACKEND_URL` e registrar exatamente o que acontece:
+
+  | # | `BACKEND_URL` | Log esperado no startup | Health probe (`/api/health`) |
+  |---|---------------|------------------------|------------------------------|
+  | 1 | `""` (vazio) | `CRITICAL: BACKEND_URL not configured` | 503 + `status: "misconfigured"` (CRIT-001 AC8) |
+  | 2 | `"not-a-url"` | `CRITICAL: not a valid URL: 'not-a-url'` | 503 + `status: "misconfigured"` |
+  | 3 | `"https://naoexiste.invalid"` | `BACKEND_URL validated: https://naoexiste.invalid` (formato OK) | 200 + `backend_url_valid: false` (DNS fail) |
+
+  **Evidência:** Output de `railway logs` ou `npm run dev` mostrando a linha de log para cada cenário, + output de `curl localhost:3000/api/health` correspondente. Colar no PR description.
+
+  **Razão:** "Se a URL do backend estiver faltando ou errada, o sistema não pode 'subir bonito e falhar na hora do clique'. Tem que falhar cedo, de forma explícita para o time."
+
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
 |---------|---------|
 | `frontend/app/api/health/route.ts:69-84` | Adicionar `backend_url_valid` flag + error type detection |
+| `frontend/instrumentation.ts` | NOVO ou modificar (~15 linhas) — validação de BACKEND_URL no boot |
 | `frontend/__tests__/api/health.test.ts` | Adicionar 3 testes |
 
 ### Definition of Done
 
 1. Deploy com `BACKEND_URL` apontando para host inexistente: log `CRITICAL` no console, `backend_url_valid: false` no health.
 2. Deploy com backend reiniciando (timeout): log `WARNING`, `backend_url_valid: true`.
-3. Todos os testes passam sem regressão.
+3. **Startup do frontend** com `BACKEND_URL` vazio ou inválido: log `CRITICAL` visível no deploy log (AC8).
+4. **3 cenários de detecção** (AC9) com evidência de log + health probe no PR.
+5. Todos os testes passam sem regressão.
 
 ---
 
@@ -856,9 +1143,37 @@ FAILED download.test.tsx, buscar.test.tsx, signup.test.tsx (vários)
 
 - [ ] **AC10:** Atualizar `MEMORY.md` com o novo baseline.
 
+**Fase 5 — Radar de regressão para princípios críticos (adicionados pela auditoria PM 2026-02-21):**
+
+> **Princípio PM:** "A verificação não é 'aumentou cobertura'. É: os testes passaram a ser um radar confiável de regressão para os pontos críticos. Se o time não conseguir apontar quais testes 'protegem' cada princípio, vocês continuam com testes de vaidade."
+
+- [ ] **AC11 — Matriz de cobertura de princípios críticos:** Entregar tabela no PR mapeando testes existentes (pós-sanitização) a cada princípio GTM-CRIT:
+
+  | Princípio | Story | Testes que protegem | Cobertura |
+  |-----------|-------|--------------------|-----------|
+  | **Routing/Health** | CRIT-001 | `test_health_ready.py::test_ready_true`, `test_health_ready.py::test_ready_false`, `test_health_ready.py::test_latency`, `health.test.ts::503_when_unconfigured`, `health.test.ts::200_when_unreachable`, `health.test.ts::200_when_healthy` | Adequada / Gap |
+  | **Auth misconfig** | CRIT-003 | `test_auth_401.py::test_401_on_config_failure`, `test_auth_401.py::test_logger_called` | Adequada / Gap |
+  | **Schema drift** | CRIT-004 | `test_schema_validation.py::test_rpc_works`, `test_schema_validation.py::test_rpc_fallback`, `test_schema_validation.py::test_contract_violated` | Adequada / Gap |
+  | **Error boundary/mensagens** | CRIT-002 | `SearchErrorBoundary.test.tsx::renders_fallback`, `SearchErrorBoundary.test.tsx::calls_onReset`, `buscar.test.ts::500_contextual_message`, `buscar.test.ts::502_contextual_message` | Adequada / Gap |
+  | **Circuit breaker** | CRIT-005 | `test_circuit_breaker_redis.py::test_persist`, `test_circuit_breaker_redis.py::test_restore`, `test_circuit_breaker_redis.py::test_cooldown_expired`, `test_circuit_breaker_redis.py::test_no_redis` | Adequada / Gap |
+  | **URL validation** | CRIT-006 | `health.test.ts::dns_failure_invalid`, `health.test.ts::timeout_valid` | Adequada / Gap |
+  | **Degradation/fallback** | Transversal | (listar testes de `search-resilience.test.tsx`, `error-observability.test.tsx`) | Adequada / Gap |
+
+  **Para cada linha marcada "Gap":** descrever o que falta e se será coberto por outra story ou precisa de teste novo.
+
+- [ ] **AC12 — Testes sentinela para princípios descobertos:** Para cada princípio que ficou com "Gap" na matriz acima, criar **pelo menos 1 teste sentinela** que:
+  1. **Falha se o comportamento crítico regredir** (não é teste de happy-path, é teste do cenário de falha)
+  2. **Tem nome descritivo:** `test_PRINCIPLE_regression_SCENARIO` (ex: `test_health_ready_never_returns_404`, `test_auth_misconfig_returns_401_not_500`, `test_schema_drift_blocks_startup`)
+  3. **Está tagueado** para execução rápida: `@pytest.mark.critical` (backend) ou grupo `describe("CRITICAL REGRESSION")` (frontend)
+  4. **Documenta o princípio que protege** no docstring/comment
+
+  O objetivo não é cobertura percentual — é que para cada princípio da lista acima, exista pelo menos 1 teste que o time possa apontar e dizer: "se isso regredir, ESTE teste vai falhar".
+
 ### Arquivos Afetados
 
-Múltiplos arquivos de teste — lista exata será determinada na Fase 1.
+Múltiplos arquivos de teste — lista exata será determinada na Fase 1. Testes sentinela (AC12) podem ser criados em:
+- `backend/tests/test_critical_regression.py` (NOVO — agrupa sentinelas backend)
+- `frontend/__tests__/critical-regression.test.tsx` (NOVO — agrupa sentinelas frontend)
 
 ### Definition of Done
 
@@ -867,6 +1182,9 @@ Múltiplos arquivos de teste — lista exata será determinada na Fase 1.
 3. Falhas de "teste obsoleto" deletadas com justificativa.
 4. Novo baseline < 20 falhas, cada uma justificada.
 5. Zero regressões em testes que passavam antes.
+6. **Matriz de cobertura** (AC11) entregue no PR com status de cada princípio.
+7. **Testes sentinela** (AC12) criados para cada princípio com "Gap" na matriz.
+8. O time consegue apontar, para cada princípio GTM-CRIT, pelo menos 1 teste que o protege.
 
 ---
 
@@ -919,11 +1237,28 @@ SPRINT 3 — "Qualidade Baseline" (3-5 dias)
 
 - Cada story é um PR independente
 - Cada PR deve: testes passando, zero regressão vs baseline, PR description com ACs checados
+- **NOVO (auditoria PM):** Cada PR deve incluir **evidência operacional** quando o AC exigir (screenshots, curl outputs, logs). ACs de evidência NÃO são opcionais — sem evidência, o AC não está completo.
 - Stories que modificam os mesmos arquivos devem ser mergeadas em sequência (001 antes de 006)
 - Commit message format: `fix(scope): GTM-CRIT-NNN — descrição` ou `feat(scope): GTM-CRIT-NNN — descrição`
+
+### Auditoria PM — ACs Adicionados (2026-02-21)
+
+| Story | ACs adicionados | Natureza |
+|-------|----------------|----------|
+| **CRIT-000** | AC8 (consistência temporal), AC9 (independência backend), AC10 (headers) | Evidência operacional |
+| **CRIT-001** | AC17 (não-404 durante deploy), AC18 (separação liveness/readiness) | Evidência operacional |
+| **CRIT-002** | AC13 (simulação 4 falhas com evidência), AC14 (classificação visível) | Evidência + feature |
+| **CRIT-003** | AC6 (teste integração env real), AC7 (ausência stack trace) | Evidência operacional |
+| **CRIT-004** | AC6a/AC6b (split: crítico=crash, auxiliar=degrade), AC16 (contrato schema), AC17 (verificação pós-deploy) | Redesign + evidência |
+| **CRIT-005** | AC0 (auditoria RedisCircuitBreaker existente), AC11 (demonstração degradação), AC12 (visibilidade 3 canais) | Auditoria + evidência |
+| **CRIT-006** | AC8 (validação startup Next.js), AC9 (3 cenários com evidência) | Feature + evidência |
+| **CRIT-007** | AC11 (matriz cobertura princípios), AC12 (testes sentinela) | Qualidade estrutural |
+
+**Princípio dos novos ACs:** "A prova não é 'o código existe'. A prova é 'o sistema se comporta como esperado em cenários de falha, de forma observável e documentada.'"
 
 ---
 
 *Revisado em 2026-02-20 pelo PM.*
+*Auditoria de verificação rigorosa aplicada em 2026-02-21 pelo PM.*
 *Incorpora trabalho já concluído em CRIT-008, CRIT-009, CRIT-010, CRIT-011.*
 *Codebase: branch main, commit 5194593.*
