@@ -92,18 +92,18 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Migration corretiva (AC1-AC2)
 
-- [ ] **AC1:** Criar migration idempotente `033_fix_missing_cache_columns.sql` com:
+- [x] **AC1:** Criar migration idempotente `033_fix_missing_cache_columns.sql` com:
   - `ALTER TABLE search_results_cache ADD COLUMN IF NOT EXISTS sources_json JSONB NOT NULL DEFAULT '["pncp"]'::jsonb;`
   - `ALTER TABLE search_results_cache ADD COLUMN IF NOT EXISTS fetched_at TIMESTAMPTZ DEFAULT now() NOT NULL;`
   - `CREATE INDEX IF NOT EXISTS idx_search_cache_fetched_at ON search_results_cache(fetched_at);`
   - Incluir `SET statement_timeout = '30s';` como guardrail contra timeout em tabelas grandes
   - Comentario no topo explicando que esta migration corrige drift do prefixo `027_` duplicado
 
-- [ ] **AC2:** Renomear `027_search_cache_add_sources_and_fetched_at.sql` para `027b_search_cache_add_sources_and_fetched_at.sql` com header `-- SUPERSEDED by 033_fix_missing_cache_columns.sql` e manter como registro historico (nao deletar)
+- [x] **AC2:** Renomear `027_search_cache_add_sources_and_fetched_at.sql` para `027b_search_cache_add_sources_and_fetched_at.sql` com header `-- SUPERSEDED by 033_fix_missing_cache_columns.sql` e manter como registro historico (nao deletar)
 
 ### Modelo Pydantic como Single Source of Truth (AC3)
 
-- [ ] **AC3:** Criar `backend/models/cache.py` com classe `SearchResultsCacheRow(BaseModel)` contendo todos os 18 campos da tabela como single source of truth:
+- [x] **AC3:** Criar `backend/models/cache.py` com classe `SearchResultsCacheRow(BaseModel)` contendo todos os 18 campos da tabela como single source of truth:
   - Campos obrigatorios: `id` (UUID), `user_id` (UUID), `params_hash` (str), `search_params` (dict), `results` (list), `total_results` (int), `created_at` (datetime), `sources_json` (list), `fetched_at` (datetime)
   - Campos opcionais (nullable): `last_success_at`, `last_attempt_at`, `degraded_until`, `coverage`, `last_accessed_at`
   - Campos com default: `fail_streak` (int, default=0), `fetch_duration_ms` (int | None), `priority` (str, default="cold"), `access_count` (int, default=0)
@@ -112,7 +112,7 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Health check de startup (AC4)
 
-- [ ] **AC4:** Adicionar health check de schema em `main.py` no evento `startup` que:
+- [x] **AC4:** Adicionar health check de schema em `main.py` no evento `startup` que:
   - Executa `SELECT column_name FROM information_schema.columns WHERE table_name = 'search_results_cache'`
   - Compara resultado contra `SearchResultsCacheRow.expected_columns()`
   - Se colunas faltantes: loga `CRITICAL` com lista de colunas faltantes, mas NAO crasha (graceful degradation)
@@ -122,7 +122,7 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Validacao CI contra migrations duplicadas (AC5)
 
-- [ ] **AC5:** Criar `backend/scripts/validate_migrations.py` que:
+- [x] **AC5:** Criar `backend/scripts/validate_migrations.py` que:
   - Lista todos os arquivos em `supabase/migrations/` que matcham `\d{3}_.*\.sql`
   - Extrai prefixo numerico de cada um
   - Falha com exit code 1 se qualquer prefixo aparece mais de uma vez
@@ -132,21 +132,21 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Backfill de dados existentes (AC6-AC8)
 
-- [ ] **AC6:** Na migration 033, incluir backfill de `sources_json`:
+- [x] **AC6:** Na migration 033, incluir backfill de `sources_json`:
   ```sql
   UPDATE search_results_cache
   SET sources_json = '["pncp"]'::jsonb
   WHERE sources_json IS NULL;
   ```
 
-- [ ] **AC7:** Na migration 033, incluir backfill de `fetched_at`:
+- [x] **AC7:** Na migration 033, incluir backfill de `fetched_at`:
   ```sql
   UPDATE search_results_cache
   SET fetched_at = created_at
   WHERE fetched_at IS NULL;
   ```
 
-- [ ] **AC8:** Na migration 033, re-executar backfills das migrations 031 e 032 que podem ter falhado:
+- [x] **AC8:** Na migration 033, re-executar backfills das migrations 031 e 032 que podem ter falhado:
   ```sql
   -- Re-run 031 backfill (may have failed if fetched_at didn't exist)
   UPDATE search_results_cache
@@ -162,25 +162,25 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Documentacao (AC9)
 
-- [ ] **AC9:** Atualizar `supabase/docs/SCHEMA.md` para incluir tabela `search_results_cache` com todas as 18 colunas, suas types, defaults, e migration de origem
+- [x] **AC9:** Atualizar `supabase/docs/SCHEMA.md` para incluir tabela `search_results_cache` com todas as 18 colunas, suas types, defaults, e migration de origem
 
 ### Validacao runtime em queries (AC10-AC12)
 
-- [ ] **AC10:** Todas as queries Supabase em `search_cache.py` que fazem `.select(...)` devem referenciar apenas colunas presentes em `SearchResultsCacheRow.expected_columns()`. Adicionar comentario `# Columns validated against SearchResultsCacheRow` em cada query.
+- [x] **AC10:** Todas as queries Supabase em `search_cache.py` que fazem `.select(...)` devem referenciar apenas colunas presentes em `SearchResultsCacheRow.expected_columns()`. Adicionar comentario `# Columns validated against SearchResultsCacheRow` em cada query.
 
-- [ ] **AC11:** Adicionar validacao em `_get_from_supabase()` (search_cache.py) que:
+- [x] **AC11:** Adicionar validacao em `_get_from_supabase()` (search_cache.py) que:
   - Apos receber row do Supabase, verifica se campos esperados estao presentes
   - Se campo faltante: loga `WARNING` com nome do campo e usa default do modelo Pydantic
   - Nunca crasha -- fallback gracioso para cada campo
 
-- [ ] **AC12:** Adicionar validacao em `_save_to_supabase()` (search_cache.py) que:
+- [x] **AC12:** Adicionar validacao em `_save_to_supabase()` (search_cache.py) que:
   - Antes do upsert, filtra o dict de payload para conter apenas keys presentes em `SearchResultsCacheRow.expected_columns()`
   - Loga `WARNING` se alguma key do payload nao esta no modelo (indica drift no codigo)
   - Loga `WARNING` se o modelo espera keys que nao estao no payload (indica campo faltante)
 
 ### Script de validacao standalone (AC13)
 
-- [ ] **AC13:** Criar `backend/scripts/validate_schema.py` que pode ser executado contra qualquer ambiente:
+- [x] **AC13:** Criar `backend/scripts/validate_schema.py` que pode ser executado contra qualquer ambiente:
   - Aceita parametro `--database-url` ou usa `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` do .env
   - Executa `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name = 'search_results_cache'`
   - Compara contra `SearchResultsCacheRow` modelo
@@ -190,7 +190,7 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Idempotencia da migration (AC14)
 
-- [ ] **AC14:** Migration 033 deve ser segura para executar multiplas vezes:
+- [x] **AC14:** Migration 033 deve ser segura para executar multiplas vezes:
   - Todos os `ALTER TABLE` usam `ADD COLUMN IF NOT EXISTS`
   - Todos os `CREATE INDEX` usam `IF NOT EXISTS`
   - UPDATEs de backfill usam `WHERE ... IS NULL` (nao sobrescrevem dados validos)
@@ -198,11 +198,11 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ### Zero regressoes (AC15)
 
-- [ ] **AC15:** Todos os testes existentes em `test_search_cache.py` devem passar apos as mudancas, sem alteracao nos mocks ou assertions existentes. Baseline: verificar count atual antes de comecar.
+- [x] **AC15:** Todos os testes existentes em `test_search_cache.py` devem passar apos as mudancas, sem alteracao nos mocks ou assertions existentes. Baseline: verificar count atual antes de comecar.
 
 ### Integridade do modelo (AC16)
 
-- [ ] **AC16:** `SearchResultsCacheRow` deve ter 100% de cobertura de teste:
+- [x] **AC16:** `SearchResultsCacheRow` deve ter 100% de cobertura de teste:
   - Teste de instanciacao com todos os campos
   - Teste de instanciacao com apenas campos obrigatorios (opcionais como None)
   - Teste de `expected_columns()` retorna exatamente 18 nomes
@@ -232,14 +232,14 @@ O problema e mais profundo do que colunas faltantes: nao existe um modelo Pydant
 
 ## Definicao de Pronto
 
-- [ ] Migration 033 criada, testada localmente, e aplicada em producao via `npx supabase db push`
-- [ ] `SearchResultsCacheRow` existe em `backend/models/cache.py` com 18 campos
-- [ ] Health check de startup logando resultado em producao (verificar logs Railway)
-- [ ] `validate_migrations.py` executando no CI e detectando o prefixo `027_` duplicado (ou duplicata ja resolvida)
-- [ ] `validate_schema.py` executado contra producao com exit code 0
-- [ ] `SCHEMA.md` atualizado com tabela `search_results_cache` completa
-- [ ] Todos os 17 testes obrigatorios passando
-- [ ] Zero regressoes em `test_search_cache.py`
+- [x] Migration 033 criada, testada localmente, e aplicada em producao via `npx supabase db push`
+- [x] `SearchResultsCacheRow` existe em `backend/models/cache.py` com 18 campos
+- [x] Health check de startup logando resultado em producao (verificar logs Railway)
+- [x] `validate_migrations.py` executando no CI e detectando o prefixo `027_` duplicado (ou duplicata ja resolvida)
+- [x] `validate_schema.py` executado contra producao com exit code 0
+- [x] `SCHEMA.md` atualizado com tabela `search_results_cache` completa
+- [x] Todos os 17 testes obrigatorios passando
+- [x] Zero regressoes em `test_search_cache.py`
 - [ ] PR aprovado e merged
 
 ## Riscos e Mitigacoes
