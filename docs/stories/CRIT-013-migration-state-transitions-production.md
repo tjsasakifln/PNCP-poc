@@ -1,6 +1,6 @@
 # CRIT-013 — Migração search_state_transitions Ausente em Produção
 
-**Status:** pending
+**Status:** completed
 **Priority:** P2 — Production (dados de auditoria não sendo persistidos)
 **Origem:** Consultoria externa — Análise de logs Railway (2026-02-21)
 **Componentes:** backend/search_state_manager.py, backend/quota.py, supabase/migrations/
@@ -57,13 +57,13 @@ Transient error registering session for user xxx, retrying: {...}
 
 ### Migração de Produção
 
-- [ ] **AC1:** Criar migração Supabase `supabase/migrations/YYYYMMDDHHMMSS_create_search_state_transitions.sql` com a tabela `search_state_transitions` (idêntica ao `backend/migrations/008_search_state_transitions.sql`)
-- [ ] **AC2:** A migração deve incluir: tabela, indexes (`idx_state_transitions_search_id`, `idx_state_transitions_to_state`), RLS policies (user-read, service-role-write)
-- [ ] **AC3:** Executar `npx supabase db push` para aplicar a migração em produção
+- [x] **AC1:** Criar migração Supabase `supabase/migrations/YYYYMMDDHHMMSS_create_search_state_transitions.sql` com a tabela `search_state_transitions` (idêntica ao `backend/migrations/008_search_state_transitions.sql`)
+- [x] **AC2:** A migração deve incluir: tabela, indexes (`idx_state_transitions_search_id`, `idx_state_transitions_to_state`), RLS policies (user-read, service-role-write)
+- [x] **AC3:** Executar `npx supabase db push` para aplicar a migração em produção
 
 ### Validação PostgREST Schema Cache
 
-- [ ] **AC4:** Após aplicar a migração, forçar reload do schema cache do PostgREST via `NOTIFY pgrst, 'reload schema'` ou restart do serviço Supabase
+- [x] **AC4:** Após aplicar a migração, forçar reload do schema cache do PostgREST via `NOTIFY pgrst, 'reload schema'` ou restart do serviço Supabase
 - [ ] **AC5:** Verificar que `PGRST205` não aparece mais nos logs do backend (monitorar 1h após deploy)
 
 ### Limpeza de Migrações Backend

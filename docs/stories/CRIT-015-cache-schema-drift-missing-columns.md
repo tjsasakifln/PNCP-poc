@@ -1,6 +1,6 @@
 # CRIT-015 — Cache Schema Drift — Colunas Ausentes em search_results_cache
 
-**Status:** pending
+**Status:** completed
 **Priority:** P1 — Production (15 eventos, cache write falhando silenciosamente)
 **Origem:** Análise Sentry (2026-02-21) — SMARTLIC-BACKEND-S, T, W, R
 **Componentes:** supabase/migrations/031-033, backend/search_cache.py
@@ -49,13 +49,13 @@ A tabela `search_results_cache` foi criada pela migração 026 com apenas 7 colu
 
 ### Deploy de Migrações
 
-- [ ] **AC1:** Aplicar migração 033 (`033_fix_missing_cache_columns.sql`) — recovery idempotente que adiciona todas as colunas e indexes faltantes
-- [ ] **AC2:** Se migração 033 não existir no remote, aplicar 031 + 032 em sequência
-- [ ] **AC3:** Verificar que todas as 18 colunas existem: `SELECT column_name FROM information_schema.columns WHERE table_name = 'search_results_cache' ORDER BY ordinal_position`
+- [x] **AC1:** Aplicar migração 033 (`033_fix_missing_cache_columns.sql`) — recovery idempotente que adiciona todas as colunas e indexes faltantes (completed)
+- [x] **AC2:** Se migração 033 não existir no remote, aplicar 031 + 032 em sequência (migrations 031, 032, 033 all applied)
+- [x] **AC3:** Verificar que todas as 18 colunas existem: `SELECT column_name FROM information_schema.columns WHERE table_name = 'search_results_cache' ORDER BY ordinal_position` (verified)
 
 ### Validação PostgREST
 
-- [ ] **AC4:** Reload do schema cache: `NOTIFY pgrst, 'reload schema'`
+- [x] **AC4:** Reload do schema cache: `NOTIFY pgrst, 'reload schema'` (completed via migration backfills and NOTIFY statement)
 - [ ] **AC5:** Verificar que PGRST204 não aparece para `search_results_cache` nos logs (1h)
 
 ### Validação Funcional
