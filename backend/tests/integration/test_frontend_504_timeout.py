@@ -114,7 +114,9 @@ class TestFrontend504Timeout:
             resp = integration_app.post("/buscar", json=payload)
 
         body = resp.json()
-        detail = body["detail"]
+        raw_detail = body["detail"]
+        # CRIT-009: detail may be a structured dict with inner "detail" key
+        detail = raw_detail["detail"] if isinstance(raw_detail, dict) else raw_detail
         assert len(detail) > 20, (
             "Error detail must be a meaningful message, not a short code"
         )

@@ -218,8 +218,11 @@ def test_filter_stage_crash_returns_500(
     )
     body = response.json()
     assert "detail" in body
+    # CRIT-009: detail may be a structured dict with inner "detail" key
+    raw_detail = body["detail"]
+    detail_msg = raw_detail["detail"] if isinstance(raw_detail, dict) else raw_detail
     # Verify the error message is user-friendly (not a raw traceback)
-    assert "Erro interno" in body["detail"] or "erro" in body["detail"].lower()
+    assert "Erro interno" in detail_msg or "erro" in detail_msg.lower()
 
 
 # ===========================================================================
