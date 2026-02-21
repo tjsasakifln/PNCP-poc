@@ -74,9 +74,19 @@ Garantir que qualquer indisponibilidade do backend ou frontend seja **detectada 
 - [ ] AC6: Destinatário dos alerts configurado como `tiago.sasaki@gmail.com`
   - **Evidência:** Email de alerta Sentry recebido (induzido por teste — ver T2)
 
+### Documentação Operacional
+
+- [ ] AC7: `docs/operations/monitoring.md` criado ou atualizado com:
+  - Lista de monitors ativos (URL, serviço, intervalo, destinatário)
+  - Lista de alert rules Sentry (nome, condição, destinatário)
+  - Procedimento para adicionar/remover monitors
+  - Link para dashboards (UptimeRobot, Sentry)
+  - **Evidência:** Arquivo commitado com todas as seções preenchidas
+  - **Aceite:** Qualquer membro do time consegue verificar status dos monitors usando apenas este doc
+
 ### Prova de Funcionamento
 
-- [ ] AC7: Arquivo `docs/evidence/GTM-GO-001-alertas.md` criado contendo:
+- [ ] AC8: Arquivo `docs/evidence/GTM-GO-001-alertas.md` criado contendo:
   - Screenshot de cada monitor UptimeRobot (2 monitors ativos)
   - Screenshot de cada alert rule Sentry (2 rules ativas)
   - Email de teste UptimeRobot recebido (header completo)
@@ -111,6 +121,15 @@ Garantir que qualquer indisponibilidade do backend ou frontend seja **detectada 
 | Alert rules Sentry | 0 | 2 (error rate + new issue) | Dashboard Sentry |
 | Cobertura de notificação | 0% | 100% (email confirmado) | Emails de teste recebidos |
 
+## Critério de Conclusão Real
+
+Esta story **NÃO é considerada concluída** até que:
+1. Um alerta real de indisponibilidade (UptimeRobot) tenha sido **disparado e recebido** via email
+2. Um alerta real de erro (Sentry) tenha sido **disparado e recebido** via email
+3. Ambos os emails estejam **anexados como evidência** em `docs/evidence/GTM-GO-001-alertas.md`
+
+Configurar monitors e rules sem prova de disparo = story aberta.
+
 ## Rollback
 
 1. **UptimeRobot:** Pausar monitors (1 clique no dashboard). Monitors pausados não geram alertas nem consomem cota.
@@ -137,5 +156,6 @@ Garantir que qualquer indisponibilidade do backend ou frontend seja **detectada 
 
 | Arquivo | Tipo |
 |---------|------|
+| `docs/operations/monitoring.md` | Criado — referência operacional de monitors e alertas |
 | `docs/evidence/GTM-GO-001-alertas.md` | Criado — evidências de ativação |
 | `docs/runbooks/monitoring-alerting-setup.md` | Modificado — marcar passos executados como [x] |

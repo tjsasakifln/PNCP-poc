@@ -67,20 +67,28 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
   - **Evidência:** Seção existe no documento
   - **Nota:** NÃO documentar as credenciais em si — apenas onde encontrá-las
 
+### Matriz RACI
+
+- [ ] AC3: Matriz RACI documentada em `docs/operations/access-matrix.md` com responsabilidades por operação crítica:
+  | Operação | Responsible | Accountable | Consulted | Informed |
+  - Operações obrigatórias: Deploy produção, Rollback, Resposta a incidente P0, Rotação de segredos, Migração de banco, Monitoramento pós-deploy
+  - **Evidência:** Tabela RACI preenchida com nomes reais (não aliases)
+  - **Aceite:** Para cada operação crítica, há pelo menos 1 Responsible e 1 Accountable
+
 ### Contatos Preenchidos
 
-- [ ] AC3: `docs/runbooks/rollback-procedure.md` linhas 548-566 — todos os 4 campos de contato preenchidos com dados reais (nome + email + telefone)
+- [ ] AC4: `docs/runbooks/rollback-procedure.md` linhas 548-566 — todos os 4 campos de contato preenchidos com dados reais (nome + email + telefone)
   - **Evidência:** Diff mostrando substituição de "____________" por dados reais
   - **Aceite:** Zero campos vazios no documento
 
-- [ ] AC4: Mapeamento de aliases para pessoas reais adicionado como seção no access-matrix.md:
+- [ ] AC5: Mapeamento de aliases para pessoas reais adicionado como seção no access-matrix.md:
   | Alias | Pessoa | Contato |
   | @oncall-dev | Nome Real | email + telefone |
   - **Evidência:** Todos os aliases usados nos runbooks têm mapeamento
 
 ### Runbook de Outage Genérico
 
-- [ ] AC5: `docs/runbooks/general-outage.md` criado com fluxo decisório:
+- [ ] AC6: `docs/runbooks/general-outage.md` criado com fluxo decisório:
   1. **Verificar:** É o sistema ou é o usuário? (check de device/rede/DNS)
   2. **Classificar:** Backend down / Frontend down / Ambos / Parcial
   3. **Diagnosticar:** Railway logs, Sentry, UptimeRobot (com comandos exatos)
@@ -89,7 +97,7 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
   - **Evidência:** Arquivo commitado com fluxo completo
   - **Aceite:** Uma pessoa que nunca operou o sistema consegue seguir o fluxo apenas com o doc
 
-- [ ] AC6: Seção "Primeiros 5 minutos" com checklist numerado de ações imediatas:
+- [ ] AC7: Seção "Primeiros 5 minutos" com checklist numerado de ações imediatas:
   1. `railway logs --tail` (ou URL do Railway dashboard)
   2. Verificar UptimeRobot status
   3. Verificar Sentry para erros recentes
@@ -99,7 +107,7 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
 
 ### Runbook de Third-Party Failures
 
-- [ ] AC7: Seção em general-outage.md (ou doc separado) com procedimentos para:
+- [ ] AC8: Seção em general-outage.md (ou doc separado) com procedimentos para:
   - **Supabase down:** Sintomas, verificação (`npx supabase status`), impacto (auth + data), mitigação (cache serve stale)
   - **OpenAI down:** Sintomas, verificação, impacto (LLM classification falha), mitigação (fallback REJECT, feature flag `LLM_ARBITER_ENABLED=false`)
   - **Redis down:** Sintomas, verificação, impacto (cache + rate limit + CB state), mitigação (InMemory fallback automático)
@@ -128,6 +136,7 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
 | Métrica | Antes | Depois | Verificação |
 |---------|-------|--------|-------------|
 | Serviços na access matrix | 0 | 8 | Linhas no documento |
+| Operações na RACI matrix | 0 | 6 | Linhas no documento |
 | Contatos placeholder | 4 | 0 | Grep "___" em rollback-procedure.md |
 | Runbook de outage genérico | 0 | 1 | Arquivo existe |
 | Third-party failure procedures | 0 | 4 (Supabase, OpenAI, Redis, Stripe) | Seções no documento |

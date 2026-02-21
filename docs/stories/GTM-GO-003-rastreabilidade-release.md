@@ -113,6 +113,16 @@ Garantir que em qualquer momento seja possível identificar exatamente qual vers
 - **Procedimento:** Grep no rollback-procedure.md por "vercel" ou "Vercel" (case-insensitive)
 - **Resultado esperado:** Zero matches
 
+### T5: Rollback simulado end-to-end
+- **Procedimento:** Em staging/produção, executar o procedimento de rollback documentado:
+  1. Identificar SHA do deploy anterior via `git log --oneline -2`
+  2. Executar comando de rollback Railway conforme documentado no runbook
+  3. Verificar `/health` retorna 200 com `version` do deploy anterior
+  4. Medir tempo total do procedimento
+- **Resultado esperado:** Rollback completo (backend + frontend) em ≤ 5 minutos
+- **Evidência:** Log com timestamps de início e fim + curl /health pós-rollback
+- **Restauração:** Re-deploy da versão atual via CI
+
 ## Métricas de Sucesso
 
 | Métrica | Antes | Depois | Verificação |

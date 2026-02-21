@@ -100,12 +100,23 @@ Impedir que um único usuário ou IP consiga degradar o serviço para outros usu
 - [ ] AC10: Configuração via env vars: `SEARCH_RATE_LIMIT_PER_MINUTE=10`, `AUTH_RATE_LIMIT_PER_5MIN=5`, `SSE_MAX_CONNECTIONS=3`
   - **Evidência:** Vars documentadas no `.env.example`
 
+### Isolamento do Circuit Breaker
+
+- [ ] AC11: Abuso de um único usuário (burst de 50 requests) **NÃO ativa o circuit breaker global** do PNCP
+  - **Evidência:** Teste T16 confirma que CB permanece CLOSED durante e após o burst
+  - **Métrica:** CB state = CLOSED após 50 requests de 1 user (rate limited impede que requests cheguem ao PNCP)
+  - **Aceite:** Requests de outros usuários continuam funcionando normalmente durante o abuso
+
+- [ ] AC12: Taxa de erro global (5xx) permanece estável (< 1%) durante abuso individual de até 50 req/min
+  - **Evidência:** Teste mede taxa de erro antes, durante e depois do burst
+  - **Métrica:** Delta da taxa de erro < 0.5% entre estado normal e durante abuso
+
 ### Logging e Observabilidade
 
-- [ ] AC11: Todo 429 logado como WARNING com: `user_id`/`ip`, `endpoint`, `current_count`, `limit`, `correlation_id`
+- [ ] AC13: Todo 429 logado como WARNING com: `user_id`/`ip`, `endpoint`, `current_count`, `limit`, `correlation_id`
   - **Evidência:** Teste verifica log output
 
-- [ ] AC12: Prometheus counter `smartlic_rate_limit_exceeded_total` com labels `endpoint`, `limit_type` (user/ip)
+- [ ] AC14: Prometheus counter `smartlic_rate_limit_exceeded_total` com labels `endpoint`, `limit_type` (user/ip)
   - **Evidência:** Teste verifica incremento do counter
 
 ## Testes
@@ -131,10 +142,17 @@ Impedir que um único usuário ou IP consiga degradar o serviço para outros usu
 - [ ] T14: Proxy `/api/auth/signup` retorna 429 com mensagem PT-BR
 - [ ] T15: Busca recebe 429 → useSearch exibe mensagem "Muitas consultas. Aguarde X segundos."
 
-### Teste de Falha
+### Teste de Falha e Isolamento
 
-- [ ] T16: Simular burst de 50 requests em 10s para `/buscar` → sistema responde 429 para excedentes, requests legítimos de outros users não são afetados
+- [ ] T16: Simular burst de 50 requests em 10s para `/buscar` com 1 user → sistema responde 429 para excedentes, requests legítimos de outros users não são afetados
   - **Evidência:** Locust scenario ou script pytest que valida isolamento
+
+- [ ] T17: Durante T16, verificar que circuit breaker global permanece CLOSED (nenhum request abusivo chega ao PNCP porque 429 é retornado antes da pipeline)
+  - **Evidência:** Assertion no teste que CB state == CLOSED após burst
+  - **Aceite:** Rate limit intercepta ANTES do pipeline — abuso nunca toca PNCP
+
+- [ ] T18: Durante T16, user B faz 1 busca legítima → recebe 200 (não 429, não timeout, não degraded)
+  - **Evidência:** Response status + body verificados no teste
 
 ## Métricas de Sucesso
 
@@ -145,6 +163,9 @@ Impedir que um único usuário ou IP consiga degradar o serviço para outros usu
 | SSE connections per-user | ∞ | 3 simultâneas | Teste T7 |
 | Endpoints críticos sem rate limit | 5 | 0 | Contagem de endpoints |
 | Abuso detectável via logs | Não | Sim (WARNING + counter) | Teste T8-T9 |
+| CB ativado por abuso individual | Possível | Impossível (429 antes da pipeline) | Teste T17 |
+| Impacto sistêmico sob abuso | Indefinido (degrada todos) | 0 (isolamento per-user) | Teste T18 |
+| Taxa de erro global durante abuso | Pode subir | Estável (< 1%) | Teste AC12 |
 
 ## Rollback
 

@@ -79,15 +79,24 @@ Produzir uma estimativa documentada, verificável e versionada do custo operacio
 
 ### Modelo de Projeção
 
-- [ ] AC4: Cenários documentados para 10, 50, 100 assinantes ativos (buscas/mês projetadas, custo total, margem)
-  - **Evidência:** Tabela no documento com cálculos explícitos
+- [ ] AC4: Cálculo de custo variável por volume de buscas: **100, 1.000 e 10.000 buscas/mês**
+  - **Evidência:** Tabela com 3 linhas (100/1000/10k), colunas: LLM, Redis, Supabase I/O, Railway compute, total
+  - **Aceite:** Custo por busca individual e custo total por faixa
 
-- [ ] AC5: Drivers de custo ranqueados (top 3 maiores custos por busca)
+- [ ] AC5: Projeção de margem por plano: SmartLic Pro (R$1.999/mês, 1.000 buscas) com margem bruta calculada
+  - **Evidência:** `Margem = (Receita - Custo fixo - Custo variável) / Receita × 100`
+  - **Aceite:** Margem bruta expressa em percentual com breakdown
+
+- [ ] AC6: Cenários de escala: 10, 50, 100 assinantes ativos (custo infra total, receita, margem operacional)
+  - **Evidência:** Tabela no documento com cálculos explícitos
+  - **Aceite:** Break-even identificado (quantos assinantes cobrem infraestrutura)
+
+- [ ] AC7: Drivers de custo ranqueados (top 3 maiores custos por busca)
   - **Evidência:** Lista ordenada com percentual do custo total
 
 ### Alertas de Custo
 
-- [ ] AC6: Thresholds de alerta documentados: "Se custo Railway ultrapassa $X/mês, investigar"
+- [ ] AC8: Thresholds de alerta documentados: "Se custo Railway ultrapassa $X/mês, investigar"
   - **Evidência:** Seção no documento com valores definidos
 
 ## Testes de Validação
@@ -112,9 +121,11 @@ Produzir uma estimativa documentada, verificável e versionada do custo operacio
 | Métrica | Antes | Depois | Verificação |
 |---------|-------|--------|-------------|
 | Custo por busca documentado | Não | Sim (R$ X.XX) | docs/operations/cost-analysis.md |
-| Break-even calculado | Não | Sim (N assinantes) | Documento |
-| Top drivers identificados | Não | Sim (top 3) | Documento |
-| Projeção para 100 assinantes | Não | Sim (R$ X/mês) | Documento |
+| Custo por 1.000 buscas | Desconhecido | Conhecido (R$ X) | Tabela AC4 |
+| Margem bruta SmartLic Pro | Desconhecida | Calculada (X%) | AC5 |
+| Break-even calculado | Não | Sim (N assinantes) | AC6 |
+| Top drivers identificados | Não | Sim (top 3) | AC7 |
+| Projeção para 100 assinantes | Não | Sim (R$ X/mês) | AC6 |
 
 ## Rollback
 
