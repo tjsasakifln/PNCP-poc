@@ -17,7 +17,13 @@ CREATE INDEX IF NOT EXISTS idx_search_cache_degraded
     WHERE degraded_until IS NOT NULL;
 
 -- Backfill existing rows: set last_success_at = fetched_at for rows that have data
-UPDATE search_results_cache
-SET last_success_at = fetched_at,
-    last_attempt_at = fetched_at
-WHERE last_success_at IS NULL AND fetched_at IS NOT NULL;
+-- Note: fetched_at may not exist yet (027b skipped), migration 033 re-runs this backfill
+DO $$
+BEGIN
+    UPDATE search_results_cache
+    SET last_success_at = fetched_at,
+        last_attempt_at = fetched_at
+    WHERE last_success_at IS NULL AND fetched_at IS NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+    RAISE NOTICE 'Column fetched_at not yet available, migration 033 will handle backfill';
+END $$;

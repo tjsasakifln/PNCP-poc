@@ -49,6 +49,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Backfill: set last_accessed_at for existing rows that don't have it
-UPDATE search_results_cache
-SET last_accessed_at = COALESCE(last_success_at, fetched_at, created_at)
-WHERE last_accessed_at IS NULL;
+-- Note: fetched_at may not exist yet (027b skipped), migration 033 re-runs this backfill
+DO $$
+BEGIN
+    UPDATE search_results_cache
+    SET last_accessed_at = COALESCE(last_success_at, fetched_at, created_at)
+    WHERE last_accessed_at IS NULL;
+EXCEPTION WHEN undefined_column THEN
+    RAISE NOTICE 'Column fetched_at not yet available, migration 033 will handle backfill';
+END $$;
