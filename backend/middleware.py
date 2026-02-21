@@ -166,7 +166,7 @@ class DeprecationMiddleware(BaseHTTPMiddleware):
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
-    STORY-210 AC10: Add standard security headers to all responses.
+    STORY-210 AC10 + GTM-GO-006 AC5: Add standard security headers to all responses.
 
     Headers applied:
     - X-Content-Type-Options: nosniff — prevent MIME type sniffing
@@ -174,6 +174,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     - X-XSS-Protection: 1; mode=block — legacy XSS protection
     - Referrer-Policy: strict-origin-when-cross-origin — control referrer leakage
     - Permissions-Policy: camera=(), microphone=(), geolocation=() — disable unused APIs
+    - Strict-Transport-Security: max-age=31536000; includeSubDomains — enforce HTTPS via HSTS
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -183,4 +184,5 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response

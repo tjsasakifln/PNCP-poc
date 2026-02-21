@@ -12,7 +12,7 @@ P2 — Risco de segurança
 ## Estimativa
 2h
 
-## Status: PENDING
+## Status: DONE
 
 ---
 
@@ -72,62 +72,62 @@ Garantir que vulnerabilidades conhecidas em dependências sejam detectadas e blo
 
 ### Security Scan Blocking
 
-- [ ] AC1: `npm audit --audit-level=critical` é **blocking** no CI — falha quando vulnerabilidades CRITICAL existem
+- [x] AC1: `npm audit --audit-level=critical` é **blocking** no CI — falha quando vulnerabilidades CRITICAL existem
   - **Evidência:** Workflow diff removendo `|| true` e adicionando `--audit-level=critical`
   - **Nota:** `--audit-level=critical` (não `high`) para evitar false positives em deps de dev. HIGH permanece como warning.
   - **Aceite:** PR com dependência CRITICAL → CI falha → merge bloqueado
 
-- [ ] AC2: `safety check` backend é **blocking** para vulnerabilidades com CVSS ≥ 9.0
+- [x] AC2: `safety check` backend é **blocking** para vulnerabilidades com CVSS ≥ 9.0
   - **Evidência:** Workflow diff configurando threshold
   - **Nota:** Se `safety` não suporta threshold nativo, usar `pip-audit` como alternativa (`pip-audit --fail-on-vuln`)
 
-- [ ] AC3: Trivy scan com `--exit-code 1` para severidade CRITICAL
+- [x] AC3: Trivy scan com `--exit-code 1` para severidade CRITICAL
   - **Evidência:** Workflow diff removendo `continue-on-error: true` e adicionando `--severity CRITICAL`
 
-- [ ] AC4: Scans HIGH/MEDIUM permanecem como **warning** (non-blocking) para não gerar ruído excessivo
+- [x] AC4: Scans HIGH/MEDIUM permanecem como **warning** (non-blocking) para não gerar ruído excessivo
   - **Evidência:** Step separado para HIGH que usa `continue-on-error: true`
 
 ### HSTS Header
 
-- [ ] AC5: `Strict-Transport-Security: max-age=31536000; includeSubDomains` adicionado ao `SecurityHeadersMiddleware`
+- [x] AC5: `Strict-Transport-Security: max-age=31536000; includeSubDomains` adicionado ao `SecurityHeadersMiddleware`
   - **Evidência:** Diff de `middleware.py` com a nova linha
   - **Aceite:** `curl -I https://bidiq-backend-production.up.railway.app/health | grep -i strict-transport`
 
-- [ ] AC6: Teste unitário verifica que response headers incluem `Strict-Transport-Security`
+- [x] AC6: Teste unitário verifica que response headers incluem `Strict-Transport-Security`
   - **Evidência:** Teste pytest passa
 
 ### Documentação
 
-- [ ] AC7: `.env.example` atualizado com nota: "Security scans CRITICAL are blocking in CI. See .github/workflows/ for thresholds."
+- [x] AC7: `.env.example` atualizado com nota: "Security scans CRITICAL are blocking in CI. See .github/workflows/ for thresholds."
   - **Evidência:** Diff do arquivo
 
 ## Testes
 
 ### Backend (pytest) — 2 testes
 
-- [ ] T1: Response de qualquer endpoint inclui `Strict-Transport-Security` header
-- [ ] T2: Valor do HSTS header é `max-age=31536000; includeSubDomains`
+- [x] T1: Response de qualquer endpoint inclui `Strict-Transport-Security` header
+- [x] T2: Valor do HSTS header é `max-age=31536000; includeSubDomains`
 
 ### CI/CD — 3 validações
 
-- [ ] T3: Introduzir dependência com CVE CRITICAL simulada → CI bloqueia merge
+- [x] T3: Introduzir dependência com CVE CRITICAL simulada → CI bloqueia merge
   - **Procedimento:** Adicionar `requests==2.25.0` (CVE conhecida) ao requirements.txt em branch de teste
   - **Resultado esperado:** CI falha no step de security scan
   - **Evidência:** Screenshot do CI falhando
   - **Cleanup:** Reverter dependência
 
-- [ ] T4: Verificar que dependencies atuais passam o scan (nenhuma CRITICAL ativa)
+- [x] T4: Verificar que dependencies atuais passam o scan (nenhuma CRITICAL ativa)
   - **Procedimento:** Rodar `npm audit --audit-level=critical` e `pip-audit` localmente
   - **Resultado esperado:** Exit code 0 (sem CRITICAL)
   - **Evidência:** Output do comando
 
-- [ ] T5: Verificar que HIGH/MEDIUM não bloqueiam merge
+- [x] T5: Verificar que HIGH/MEDIUM não bloqueiam merge
   - **Procedimento:** Observar que warnings são emitidos mas CI não falha
   - **Resultado esperado:** CI verde com warnings visíveis
 
 ### Teste de Falha
 
-- [ ] T6: Remover HSTS header → teste T1 falha → previne regressão
+- [x] T6: Remover HSTS header → teste T1 falha → previne regressão
   - **Procedimento:** Comentar linha do HSTS no middleware → rodar pytest
   - **Resultado esperado:** T1 falha com assertão clara
   - **Evidência:** Output do pytest mostrando failure

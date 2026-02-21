@@ -35,11 +35,22 @@ jobs:
           cd backend
           ruff check .
 
-      - name: Run security vulnerability scan
+      - name: Security scan (CRITICAL — blocking)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './backend'
+          format: 'table'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+      - name: Security scan (HIGH — warning only)
         run: |
           cd backend
-          pip install "safety>=3,<4" --quiet || true
-          safety check --json || echo "⚠️ Vulnerabilities found - review required"
+          echo "⚠️ Running pip-audit for advisory-level vulnerabilities (non-blocking)..."
+          pip install pip-audit --quiet
+          pip-audit --desc on || echo "⚠️ Vulnerabilities found — review recommended"
+        continue-on-error: true
 
       - name: Run mypy type checking
         run: |

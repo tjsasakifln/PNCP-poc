@@ -123,15 +123,18 @@ jobs:
             npm ci || npm install
           fi
 
-      - name: Run security vulnerability audit
+      - name: Security audit (CRITICAL — blocking)
         run: |
           cd frontend
-          if [ -f package.json ]; then
-            # Run npm audit (allow to fail for now, just report)
-            npm audit --audit-level=moderate --json > audit-report.json || echo "⚠️ Vulnerabilities found - review required"
-            # Show summary
-            npm audit || true
-          fi
+          echo "🔒 Checking for CRITICAL vulnerabilities (blocking)..."
+          npm audit --audit-level=critical
+
+      - name: Security audit (HIGH — warning only)
+        run: |
+          cd frontend
+          echo "⚠️ Checking for HIGH vulnerabilities (non-blocking)..."
+          npm audit --audit-level=high || echo "⚠️ HIGH vulnerabilities found — review recommended"
+        continue-on-error: true
 
       - name: Clear all caches
         run: |

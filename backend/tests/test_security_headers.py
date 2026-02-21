@@ -1,12 +1,13 @@
-"""Tests for STORY-224 Track 3: SecurityHeadersMiddleware tests.
+"""Tests for SecurityHeadersMiddleware.
 
 Tests that all security headers are properly set on HTTP responses.
 
 Covers:
-- STORY-210 AC10: All 5 security headers are present and correct
+- STORY-210 AC10: 5 original security headers are present and correct
+- GTM-GO-006 AC5/AC6: HSTS header (Strict-Transport-Security) present with correct value
 
 Related Files:
-- backend/middleware.py: SecurityHeadersMiddleware (lines 73-93)
+- backend/middleware.py: SecurityHeadersMiddleware
 """
 
 import pytest
@@ -32,17 +33,18 @@ class TestSecurityHeadersMiddleware:
 
     @pytest.mark.anyio
     async def test_all_security_headers_present(self, app_with_security_headers):
-        """All 5 security headers are present in response."""
+        """All 6 security headers are present in response."""
         transport = ASGITransport(app=app_with_security_headers)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/test")
 
-        # All 5 headers must be present
+        # All 6 headers must be present
         assert "x-content-type-options" in response.headers
         assert "x-frame-options" in response.headers
         assert "x-xss-protection" in response.headers
         assert "referrer-policy" in response.headers
         assert "permissions-policy" in response.headers
+        assert "strict-transport-security" in response.headers
 
     @pytest.mark.anyio
     async def test_x_content_type_options_nosniff(self, app_with_security_headers):
@@ -164,17 +166,17 @@ class TestSecurityHeadersMiddleware:
 
     @pytest.mark.anyio
     async def test_all_headers_correct_values(self, app_with_security_headers):
-        """All headers have the exact expected values from STORY-210 AC10."""
+        """All 6 headers have the exact expected values (STORY-210 AC10 + GTM-GO-006 AC5)."""
         transport = ASGITransport(app=app_with_security_headers)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.get("/test")
 
-        # Exact values from middleware.py lines 87-91
         assert response.headers["x-content-type-options"] == "nosniff"
         assert response.headers["x-frame-options"] == "DENY"
         assert response.headers["x-xss-protection"] == "1; mode=block"
         assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
         assert response.headers["permissions-policy"] == "camera=(), microphone=(), geolocation=()"
+        assert response.headers["strict-transport-security"] == "max-age=31536000; includeSubDomains"
 
     @pytest.mark.anyio
     async def test_middleware_order_independence(self):
@@ -197,6 +199,27 @@ class TestSecurityHeadersMiddleware:
         # Both middlewares should function
         assert "x-request-id" in response.headers  # From CorrelationIDMiddleware
         assert "x-content-type-options" in response.headers  # From SecurityHeadersMiddleware
+
+    @pytest.mark.anyio
+    async def test_hsts_header_present(self, app_with_security_headers):
+        """GTM-GO-006 T1: Response includes Strict-Transport-Security header."""
+        transport = ASGITransport(app=app_with_security_headers)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/test")
+
+        assert "strict-transport-security" in response.headers, (
+            "Strict-Transport-Security header is missing from response. "
+            "Ensure SecurityHeadersMiddleware sets HSTS header."
+        )
+
+    @pytest.mark.anyio
+    async def test_hsts_header_value(self, app_with_security_headers):
+        """GTM-GO-006 T2: HSTS header has correct max-age and includeSubDomains."""
+        transport = ASGITransport(app=app_with_security_headers)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/test")
+
+        assert response.headers["strict-transport-security"] == "max-age=31536000; includeSubDomains"
 
     @pytest.mark.anyio
     async def test_headers_on_post_requests(self, app_with_security_headers):

@@ -243,14 +243,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Run Trivy vulnerability scanner
+      - name: Trivy scan (CRITICAL — blocking)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL'
+          exit-code: '1'
+
+      - name: Trivy scan (HIGH — warning only)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          severity: 'HIGH'
         continue-on-error: true
 
       - name: Check for secrets
