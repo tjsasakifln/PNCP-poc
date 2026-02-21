@@ -160,6 +160,31 @@ export const DEFAULT_ERROR_MESSAGE = "Ocorreu um erro inesperado. Tente novament
 
 
 /**
+ * CRIT-008 AC4: HTTP status codes that indicate transient (recoverable) errors.
+ * These trigger auto-retry with countdown in the frontend.
+ */
+export const TRANSIENT_HTTP_CODES = new Set([502, 503, 504]);
+
+/**
+ * CRIT-008 AC4: Classify whether an error is transient (server restart, network blip)
+ * vs permanent (bad request, auth failure). Only transient errors get auto-retry.
+ */
+export function isTransientError(httpStatus: number | null, message?: string): boolean {
+  if (httpStatus && TRANSIENT_HTTP_CODES.has(httpStatus)) return true;
+  if (!message) return false;
+  const msg = message.toLowerCase();
+  return (
+    msg.includes('fetch failed') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network error') ||
+    msg.includes('load failed') ||
+    msg.includes('econnrefused') ||
+    msg.includes('err_connection_refused')
+  );
+}
+
+/**
  * CRIT-009 AC11: Maps backend SearchErrorCode values to user-friendly Portuguese messages.
  * These are more specific than getUserFriendlyError() and take precedence when error_code is present.
  */

@@ -113,6 +113,11 @@ export interface SearchResultsProps {
   // D-05: Feedback loop
   searchId?: string;
   setorId?: string;
+
+  // CRIT-008 AC5: Auto-retry for transient errors
+  retryCountdown?: number | null;
+  onRetryNow?: () => void;
+  onCancelRetry?: () => void;
 }
 
 export default function SearchResults({
@@ -133,6 +138,8 @@ export default function SearchResults({
   liveFetchInProgress, refreshAvailable, onRefreshResults,
   // D-05
   searchId, setorId,
+  // CRIT-008
+  retryCountdown, onRetryNow, onCancelRetry,
 }: SearchResultsProps) {
   // STORY-257B AC4: Track transition from grid to results
   const [showGrid, setShowGrid] = useState(false);
@@ -246,8 +253,56 @@ export default function SearchResults({
         </div>
       )}
 
+      {/* CRIT-008 AC5: Transient error with auto-retry countdown */}
+      {error && !quotaError && retryCountdown != null && retryCountdown > 0 && (
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-card animate-fade-in-up" role="alert">
+          <div className="flex items-center gap-3 mb-3">
+            {/* Circular countdown */}
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+                <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-200 dark:text-blue-800" />
+                <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  className="text-blue-500"
+                  strokeDasharray="94.25"
+                  strokeDashoffset={94.25 * (1 - retryCountdown / 30)}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 1s linear' }}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-300">
+                {retryCountdown}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300">
+                O servidor está reiniciando
+              </p>
+              <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-0.5">
+                Tentando novamente em {retryCountdown}s...
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onRetryNow}
+              className="px-4 py-2 bg-blue-600 text-white rounded-button text-sm font-medium hover:bg-blue-700 transition-colors"
+              type="button"
+            >
+              Tentar agora
+            </button>
+            <button
+              onClick={onCancelRetry}
+              className="px-4 py-2 bg-transparent text-blue-600 dark:text-blue-300 border border-blue-300 dark:border-blue-700 rounded-button text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              type="button"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Error Display with Retry — CRIT-009 AC7-AC8: structured SearchError with ErrorDetail */}
-      {error && !quotaError && (
+      {error && !quotaError && (retryCountdown == null || retryCountdown <= 0) && (
         <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
           <p className="text-sm sm:text-base font-medium text-error mb-3">{error.message}</p>
           <ErrorDetail error={error} />

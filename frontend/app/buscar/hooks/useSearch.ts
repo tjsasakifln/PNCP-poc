@@ -13,7 +13,7 @@ import { useQuota } from "../../../hooks/useQuota";
 import { useSearchProgress, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
 import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
-import { getUserFriendlyError, getMessageFromErrorCode } from "../../../lib/error-messages";
+import { getUserFriendlyError, getMessageFromErrorCode, isTransientError } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
 import { toast } from "sonner";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
@@ -130,6 +130,12 @@ export interface UseSearchReturn {
   restoreSearchStateOnMount: () => void;
   /** CRIT-006 AC18: Retry cooldown scaling by error type */
   getRetryCooldown: (errorMessage: string | null, httpStatus?: number) => number;
+  /** CRIT-008 AC5: Auto-retry countdown (seconds remaining, null when inactive) */
+  retryCountdown: number | null;
+  /** CRIT-008 AC5: Trigger immediate retry during countdown */
+  retryNow: () => void;
+  /** CRIT-008 AC5: Cancel auto-retry countdown */
+  cancelRetry: () => void;
 }
 
 export function useSearch(filters: UseSearchParams): UseSearchReturn {
@@ -144,6 +150,13 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   const [statesProcessed, setStatesProcessed] = useState(0);
   const [error, setError] = useState<SearchError | null>(null);
   const [quotaError, setQuotaError] = useState<string | null>(null);
+
+  // CRIT-008 AC5: Auto-retry for transient errors
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
+  const retryAttemptRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const buscarRef = useRef<((options?: { forceFresh?: boolean }) => Promise<void>) | null>(null);
+  const autoRetryInProgressRef = useRef(false);
 
   // SSE progress
   const [searchId, setSearchId] = useState<string | null>(null);
@@ -257,6 +270,17 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   const buscar = async (options?: { forceFresh?: boolean }) => {
     if (!filters.canSearch) return;
+
+    // CRIT-008 AC5: Reset retry state on new user-initiated search (not auto-retry)
+    if (!autoRetryInProgressRef.current) {
+      retryAttemptRef.current = 0;
+      if (retryTimerRef.current) {
+        clearInterval(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+      setRetryCountdown(null);
+    }
+    autoRetryInProgressRef.current = false;
 
     const forceFresh = options?.forceFresh ?? false;
     const previousResult = forceFresh ? result : null;
@@ -507,6 +531,30 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
           toast.error(friendlyMessage);
         } else {
           setError(searchError);
+
+          // CRIT-008 AC4-AC5: Start auto-retry countdown for transient errors
+          if (isTransientError(searchError.httpStatus, searchError.rawMessage) && retryAttemptRef.current < 3) {
+            const RETRY_DELAYS = [10, 20, 30];
+            const delaySeconds = RETRY_DELAYS[retryAttemptRef.current] ?? 30;
+            let remaining = delaySeconds;
+            setRetryCountdown(remaining);
+
+            if (retryTimerRef.current) clearInterval(retryTimerRef.current);
+            retryTimerRef.current = setInterval(() => {
+              remaining--;
+              if (remaining <= 0) {
+                if (retryTimerRef.current) clearInterval(retryTimerRef.current);
+                retryTimerRef.current = null;
+                setRetryCountdown(null);
+                retryAttemptRef.current++;
+                autoRetryInProgressRef.current = true;
+                setError(null);
+                buscarRef.current?.();
+              } else {
+                setRetryCountdown(remaining);
+              }
+            }, 1000);
+          }
         }
       }
       trackEvent('search_failed', { error_message: friendlyMessage, error_code: errorCode, search_mode: filters.searchMode, force_fresh: forceFresh });
@@ -524,6 +572,32 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       setUseRealProgress(false);
       abortControllerRef.current = null;
     }
+  };
+
+  // Keep buscarRef current for auto-retry interval callbacks
+  buscarRef.current = buscar;
+
+  // CRIT-008 AC5: Immediate retry during countdown
+  const retryNow = () => {
+    if (retryTimerRef.current) {
+      clearInterval(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    setRetryCountdown(null);
+    retryAttemptRef.current++;
+    autoRetryInProgressRef.current = true;
+    setError(null);
+    buscarRef.current?.();
+  };
+
+  // CRIT-008 AC5: Cancel auto-retry countdown
+  const cancelRetry = () => {
+    if (retryTimerRef.current) {
+      clearInterval(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    setRetryCountdown(null);
+    // Keep the error displayed — user chose to stop retrying
   };
 
   const handleDownload = async () => {
@@ -726,5 +800,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     handleSaveSearch, confirmSaveSearch, handleLoadSearch, handleRefresh,
     estimateSearchTime, restoreSearchStateOnMount,
     getRetryCooldown,
+    retryCountdown,
+    retryNow,
+    cancelRetry,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Setor, ValidationErrors } from "../../types";
 import { useAnalytics } from "../../../hooks/useAnalytics";
@@ -85,6 +85,8 @@ export interface SearchFiltersState {
   setoresLoading: boolean;
   setoresError: boolean;
   setoresUsingFallback: boolean;
+  setoresUsingStaleCache: boolean;
+  staleCacheAge: number | null;
   setoresRetryCount: number;
   setorId: string;
   setSetorId: (id: string) => void;
@@ -173,6 +175,8 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   const [setoresLoading, setSetoresLoading] = useState(true);
   const [setoresError, setSetoresError] = useState(false);
   const [setoresUsingFallback, setSetoresUsingFallback] = useState(false);
+  const [setoresUsingStaleCache, setSetoresUsingStaleCache] = useState(false);
+  const [staleCacheAge, setStaleCacheAge] = useState<number | null>(null);
   const [setoresRetryCount, setSetoresRetryCount] = useState(0);
   const [setorId, setSetorId] = useState("vestuario");
   const [searchMode, setSearchMode] = useState<"setor" | "termos">("setor");
@@ -324,7 +328,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     timestamp: number;
   }
 
-  // Check if cache is valid
+  // Check if cache is valid (fresh only)
   const getCachedSectors = (): Setor[] | null => {
     if (typeof window === 'undefined') return null;
     try {
@@ -335,12 +339,25 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
       const age = Date.now() - timestamp;
 
       if (age > SECTOR_CACHE_TTL) {
-        // Cache expired
-        localStorage.removeItem(SECTOR_CACHE_KEY);
+        // AC1: Don't delete expired cache — needed for stale fallback
         return null;
       }
 
       return data;
+    } catch {
+      return null;
+    }
+  };
+
+  // AC1: Get stale cache data regardless of TTL
+  const getStaleCachedSectors = (): { data: Setor[]; ageMs: number } | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cached = localStorage.getItem(SECTOR_CACHE_KEY);
+      if (!cached) return null;
+      const { data, timestamp }: SectorCache = JSON.parse(cached);
+      if (!data || data.length === 0) return null;
+      return { data, ageMs: Date.now() - timestamp };
     } catch {
       return null;
     }
@@ -361,12 +378,14 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
   };
 
   // Fetch sectors with caching
-  const fetchSetores = async (attempt = 0) => {
-    // Try cache first
+  const fetchSetores = useCallback(async (attempt = 0) => {
+    // Try fresh cache first
     const cachedSectors = getCachedSectors();
     if (cachedSectors && cachedSectors.length > 0) {
       setSetores(cachedSectors);
       setSetoresUsingFallback(false);
+      setSetoresUsingStaleCache(false);
+      setStaleCacheAge(null);
       setSetoresLoading(false);
       return;
     }
@@ -380,7 +399,9 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
       if (data.setores && data.setores.length > 0) {
         setSetores(data.setores);
         setSetoresUsingFallback(false);
-        cacheSectors(data.setores); // Cache successful response
+        setSetoresUsingStaleCache(false);
+        setStaleCacheAge(null);
+        cacheSectors(data.setores);
       } else {
         throw new Error("Empty response");
       }
@@ -389,8 +410,19 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
         setTimeout(() => fetchSetores(attempt + 1), Math.pow(2, attempt) * 1000);
         return;
       }
-      setSetores(SETORES_FALLBACK);
-      setSetoresUsingFallback(true);
+      // AC1: Try stale cache before hardcoded fallback
+      const stale = getStaleCachedSectors();
+      if (stale) {
+        setSetores(stale.data);
+        setSetoresUsingStaleCache(true);
+        setStaleCacheAge(stale.ageMs);
+        setSetoresUsingFallback(false);
+      } else {
+        setSetores(SETORES_FALLBACK);
+        setSetoresUsingFallback(true);
+        setSetoresUsingStaleCache(false);
+        setStaleCacheAge(null);
+      }
       setSetoresError(true);
     } finally {
       if (attempt >= 2 || !setoresError) {
@@ -398,9 +430,45 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
       }
       setSetoresRetryCount(attempt);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchSetores(); }, []);
+  useEffect(() => { fetchSetores(); }, [fetchSetores]);
+
+  // AC2: Background revalidation when using stale cache
+  const revalidationAttemptRef = useRef(0);
+  useEffect(() => {
+    if (!setoresUsingStaleCache) {
+      revalidationAttemptRef.current = 0;
+      return;
+    }
+
+    const MAX_REVALIDATION_ATTEMPTS = 5;
+    const REVALIDATION_INTERVAL_MS = 30_000;
+
+    const intervalId = setInterval(async () => {
+      if (revalidationAttemptRef.current >= MAX_REVALIDATION_ATTEMPTS) {
+        clearInterval(intervalId);
+        return;
+      }
+      revalidationAttemptRef.current++;
+      try {
+        const res = await fetch("/api/setores");
+        const data = await res.json();
+        if (data.setores && data.setores.length > 0) {
+          setSetores(data.setores);
+          setSetoresUsingStaleCache(false);
+          setStaleCacheAge(null);
+          setSetoresError(false);
+          cacheSectors(data.setores);
+          clearInterval(intervalId);
+        }
+      } catch {
+        // Continue trying on next interval
+      }
+    }, REVALIDATION_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [setoresUsingStaleCache]);
 
   // Validation
   function validateForm(): ValidationErrors {
@@ -491,7 +559,7 @@ export function useSearchFilters(clearResult: () => void): SearchFiltersState {
     modalidades.includes(7);
 
   return {
-    setores, setoresLoading, setoresError, setoresUsingFallback, setoresRetryCount,
+    setores, setoresLoading, setoresError, setoresUsingFallback, setoresUsingStaleCache, staleCacheAge, setoresRetryCount,
     setorId, setSetorId: (id: string) => { setSetorId(id); clearResult(); },
     fetchSetores,
     searchMode, setSearchMode: (mode: "setor" | "termos") => { setSearchMode(mode); clearResult(); },

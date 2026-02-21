@@ -26,8 +26,10 @@ import { useUfProgress } from "./hooks/useUfProgress";
 import { useNavigationGuard } from "../../hooks/useNavigationGuard";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
+import BackendStatusIndicator, { useBackendStatus } from "../../components/BackendStatusIndicator";
 
 import { dateDiffInDays } from "../../lib/utils/dateDiffInDays";
+import { toast } from "sonner";
 
 // White label branding configuration
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
@@ -169,6 +171,10 @@ function HomePageContent() {
     }
   }, [isTrialExpired, fetchTrialValue]);
 
+  // CRIT-008 AC9-AC10: Backend connectivity status
+  const backendStatus = useBackendStatus();
+  const queuedSearchRef = useRef<(() => void) | null>(null);
+
   // GTM-004: Auto-search from onboarding
   const searchParamsRaw = useSearchParams();
   const isAutoSearch = searchParamsRaw?.get('auto') === 'true';
@@ -212,13 +218,35 @@ function HomePageContent() {
   // GTM-FIX-035 AC1: Auto-collapse filters + scroll to progress when search starts
   const originalBuscar = search.buscar;
   const buscarWithCollapse = useCallback(() => {
+    // CRIT-008 AC10: Queue search if backend is offline
+    if (backendStatus.status === "offline") {
+      toast.info("Servidor indisponível no momento. A busca será iniciada quando o servidor estiver disponível.");
+      queuedSearchRef.current = () => {
+        setCustomizeOpen(false);
+        originalBuscar();
+        setTimeout(() => {
+          progressAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      };
+      return;
+    }
     setCustomizeOpen(false);
     originalBuscar();
     // Smooth-scroll to progress area after a tick (let state update + render)
     setTimeout(() => {
       progressAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
-  }, [originalBuscar]);
+  }, [originalBuscar, backendStatus.status]);
+
+  // CRIT-008 AC10: Execute queued search when backend recovers
+  useEffect(() => {
+    if ((backendStatus.status === "online" || backendStatus.status === "recovering") && queuedSearchRef.current) {
+      const queuedFn = queuedSearchRef.current;
+      queuedSearchRef.current = null;
+      toast.success("Servidor disponível. Executando busca...");
+      queuedFn();
+    }
+  }, [backendStatus.status]);
 
   // TD-006 AC9-15: Navigation guard — warn before leaving with active results
   const [hasDownloaded, setHasDownloaded] = useState(false);
@@ -311,6 +339,7 @@ function HomePageContent() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <BackendStatusIndicator />
             <SavedSearchesDropdown onLoadSearch={search.handleLoadSearch} onAnalyticsEvent={trackEvent} />
             <ThemeToggle />
             <MessageBadge />
@@ -463,6 +492,10 @@ function HomePageContent() {
               // D-05: Feedback loop
               searchId={search.searchId || undefined}
               setorId={filters.setorId}
+              // CRIT-008: Auto-retry
+              retryCountdown={search.retryCountdown}
+              onRetryNow={search.retryNow}
+              onCancelRetry={search.cancelRetry}
             />
           </div>
         </PullToRefresh>
