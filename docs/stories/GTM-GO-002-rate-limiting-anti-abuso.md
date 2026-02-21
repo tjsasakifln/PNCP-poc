@@ -12,7 +12,7 @@ P1 — Risco financeiro + reputacional
 ## Estimativa
 4h
 
-## Status: PENDING
+## Status: DONE
 
 ---
 
@@ -60,98 +60,98 @@ Impedir que um único usuário ou IP consiga degradar o serviço para outros usu
 
 ### Rate Limit na Busca
 
-- [ ] AC1: `POST /buscar` retorna HTTP 429 quando usuário autenticado excede **10 buscas por minuto**
+- [x] AC1: `POST /buscar` retorna HTTP 429 quando usuário autenticado excede **10 buscas por minuto**
   - **Evidência:** Teste automatizado que faz 11 requests em sequência e verifica 429 na 11ª
   - **Métrica:** 10 req/min per-user (configurável via `SEARCH_RATE_LIMIT_PER_MINUTE`, default 10)
 
-- [ ] AC2: Resposta 429 inclui body JSON com `detail`, `retry_after_seconds`, e `correlation_id`
+- [x] AC2: Resposta 429 inclui body JSON com `detail`, `retry_after_seconds`, e `correlation_id`
   - **Evidência:** Teste verifica schema da resposta 429
 
-- [ ] AC3: Header `Retry-After` presente na resposta 429 com valor em segundos
+- [x] AC3: Header `Retry-After` presente na resposta 429 com valor em segundos
   - **Evidência:** Teste verifica header
 
 ### Rate Limit na Autenticação
 
-- [ ] AC4: `POST /api/auth/login` (proxy Next.js) retorna 429 quando **mesmo IP** excede **5 tentativas em 5 minutos**
+- [x] AC4: `POST /api/auth/login` (proxy Next.js) retorna 429 quando **mesmo IP** excede **5 tentativas em 5 minutos**
   - **Evidência:** Teste automatizado no proxy
   - **Métrica:** 5 tentativas / 5 min per-IP
 
-- [ ] AC5: `POST /api/auth/signup` retorna 429 quando **mesmo IP** excede **3 registros em 10 minutos**
+- [x] AC5: `POST /api/auth/signup` retorna 429 quando **mesmo IP** excede **3 registros em 10 minutos**
   - **Evidência:** Teste automatizado no proxy
   - **Métrica:** 3 registros / 10 min per-IP
 
 ### Rate Limit no SSE
 
-- [ ] AC6: Máximo de **3 conexões SSE simultâneas** por usuário autenticado em `/buscar-progress/{id}`
+- [x] AC6: Máximo de **3 conexões SSE simultâneas** por usuário autenticado em `/buscar-progress/{id}`
   - **Evidência:** Teste que abre 4 conexões e verifica que a 4ª é rejeitada (429 ou connection close)
   - **Métrica:** 3 conexões simultâneas per-user
 
 ### Implementação Backend
 
-- [ ] AC7: Dependency `require_rate_limit(max_requests, window_seconds)` criada como FastAPI Depends reutilizável
+- [x] AC7: Dependency `require_rate_limit(max_requests, window_seconds)` criada como FastAPI Depends reutilizável
   - **Evidência:** Código da dependency + docstring com exemplos de uso
 
-- [ ] AC8: Rate limit usa Redis quando disponível, fallback para InMemory (mesma lógica do `RateLimiter` existente)
+- [x] AC8: Rate limit usa Redis quando disponível, fallback para InMemory (mesma lógica do `RateLimiter` existente)
   - **Evidência:** Teste com Redis mock indisponível → fallback funciona
 
-- [ ] AC9: Rate limit por user_id (autenticado) ou por IP (não autenticado), nunca por ambos simultaneamente
+- [x] AC9: Rate limit por user_id (autenticado) ou por IP (não autenticado), nunca por ambos simultaneamente
   - **Evidência:** Teste verifica isolamento — usuário A no limite não bloqueia usuário B
 
-- [ ] AC10: Configuração via env vars: `SEARCH_RATE_LIMIT_PER_MINUTE=10`, `AUTH_RATE_LIMIT_PER_5MIN=5`, `SSE_MAX_CONNECTIONS=3`
+- [x] AC10: Configuração via env vars: `SEARCH_RATE_LIMIT_PER_MINUTE=10`, `AUTH_RATE_LIMIT_PER_5MIN=5`, `SSE_MAX_CONNECTIONS=3`
   - **Evidência:** Vars documentadas no `.env.example`
 
 ### Isolamento do Circuit Breaker
 
-- [ ] AC11: Abuso de um único usuário (burst de 50 requests) **NÃO ativa o circuit breaker global** do PNCP
+- [x] AC11: Abuso de um único usuário (burst de 50 requests) **NÃO ativa o circuit breaker global** do PNCP
   - **Evidência:** Teste T16 confirma que CB permanece CLOSED durante e após o burst
   - **Métrica:** CB state = CLOSED após 50 requests de 1 user (rate limited impede que requests cheguem ao PNCP)
   - **Aceite:** Requests de outros usuários continuam funcionando normalmente durante o abuso
 
-- [ ] AC12: Taxa de erro global (5xx) permanece estável (< 1%) durante abuso individual de até 50 req/min
+- [x] AC12: Taxa de erro global (5xx) permanece estável (< 1%) durante abuso individual de até 50 req/min
   - **Evidência:** Teste mede taxa de erro antes, durante e depois do burst
   - **Métrica:** Delta da taxa de erro < 0.5% entre estado normal e durante abuso
 
 ### Logging e Observabilidade
 
-- [ ] AC13: Todo 429 logado como WARNING com: `user_id`/`ip`, `endpoint`, `current_count`, `limit`, `correlation_id`
+- [x] AC13: Todo 429 logado como WARNING com: `user_id`/`ip`, `endpoint`, `current_count`, `limit`, `correlation_id`
   - **Evidência:** Teste verifica log output
 
-- [ ] AC14: Prometheus counter `smartlic_rate_limit_exceeded_total` com labels `endpoint`, `limit_type` (user/ip)
+- [x] AC14: Prometheus counter `smartlic_rate_limit_exceeded_total` com labels `endpoint`, `limit_type` (user/ip)
   - **Evidência:** Teste verifica incremento do counter
 
 ## Testes
 
 ### Backend (pytest) — mínimo 12 testes
 
-- [ ] T1: `POST /buscar` com 10 requests → todas 200. 11ª → 429
-- [ ] T2: Resposta 429 tem `detail`, `retry_after_seconds`, `correlation_id`
-- [ ] T3: Header `Retry-After` presente e numérico
-- [ ] T4: Rate limit isolado por user_id — user A no limite, user B faz request normalmente
-- [ ] T5: Redis indisponível → fallback InMemory funciona
-- [ ] T6: Window expira → requests liberados novamente
-- [ ] T7: SSE 3 conexões → ok. 4ª → rejeitada
-- [ ] T8: Counter Prometheus incrementa em 429
-- [ ] T9: Log WARNING emitido com campos corretos
-- [ ] T10: Config via env var override funciona
-- [ ] T11: Endpoint não autenticado (login) usa IP como chave
-- [ ] T12: IPs distintos têm contadores independentes
+- [x] T1: `POST /buscar` com 10 requests → todas 200. 11ª → 429
+- [x] T2: Resposta 429 tem `detail`, `retry_after_seconds`, `correlation_id`
+- [x] T3: Header `Retry-After` presente e numérico
+- [x] T4: Rate limit isolado por user_id — user A no limite, user B faz request normalmente
+- [x] T5: Redis indisponível → fallback InMemory funciona
+- [x] T6: Window expira → requests liberados novamente
+- [x] T7: SSE 3 conexões → ok. 4ª → rejeitada
+- [x] T8: Counter Prometheus incrementa em 429
+- [x] T9: Log WARNING emitido com campos corretos
+- [x] T10: Config via env var override funciona
+- [x] T11: Endpoint não autenticado (login) usa IP como chave
+- [x] T12: IPs distintos têm contadores independentes
 
 ### Frontend (jest) — mínimo 3 testes
 
-- [ ] T13: Proxy `/api/auth/login` retorna 429 com mensagem PT-BR após exceder limite
-- [ ] T14: Proxy `/api/auth/signup` retorna 429 com mensagem PT-BR
-- [ ] T15: Busca recebe 429 → useSearch exibe mensagem "Muitas consultas. Aguarde X segundos."
+- [x] T13: Proxy `/api/auth/login` retorna 429 com mensagem PT-BR após exceder limite
+- [x] T14: Proxy `/api/auth/signup` retorna 429 com mensagem PT-BR
+- [x] T15: Busca recebe 429 → useSearch exibe mensagem "Muitas consultas. Aguarde X segundos."
 
 ### Teste de Falha e Isolamento
 
-- [ ] T16: Simular burst de 50 requests em 10s para `/buscar` com 1 user → sistema responde 429 para excedentes, requests legítimos de outros users não são afetados
+- [x] T16: Simular burst de 50 requests em 10s para `/buscar` com 1 user → sistema responde 429 para excedentes, requests legítimos de outros users não são afetados
   - **Evidência:** Locust scenario ou script pytest que valida isolamento
 
-- [ ] T17: Durante T16, verificar que circuit breaker global permanece CLOSED (nenhum request abusivo chega ao PNCP porque 429 é retornado antes da pipeline)
+- [x] T17: Durante T16, verificar que circuit breaker global permanece CLOSED (nenhum request abusivo chega ao PNCP porque 429 é retornado antes da pipeline)
   - **Evidência:** Assertion no teste que CB state == CLOSED após burst
   - **Aceite:** Rate limit intercepta ANTES do pipeline — abuso nunca toca PNCP
 
-- [ ] T18: Durante T16, user B faz 1 busca legítima → recebe 200 (não 429, não timeout, não degraded)
+- [x] T18: Durante T16, user B faz 1 busca legítima → recebe 200 (não 429, não timeout, não degraded)
   - **Evidência:** Response status + body verificados no teste
 
 ## Métricas de Sucesso

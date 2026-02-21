@@ -151,3 +151,19 @@ def setup_test_env(monkeypatch):
     monkeypatch.setenv("ENCRYPTION_KEY", "bzc732A921Puw9JN4lrzMo1nw0EjlcUdAyR6Z6N7Sqc=")  # Valid Fernet key for testing
     monkeypatch.setenv("SUPABASE_URL", "https://test.supabase.co")
     monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key")
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter_state():
+    """GTM-GO-002: Reset FlexibleRateLimiter + SSE connection state between tests.
+
+    Prevents state contamination when multiple tests hit rate-limited endpoints
+    from the same IP in the same process.
+    """
+    from rate_limiter import _flexible_limiter, _sse_connections
+
+    _flexible_limiter._memory_store.clear()
+    _sse_connections.clear()
+    yield
+    _flexible_limiter._memory_store.clear()
+    _sse_connections.clear()

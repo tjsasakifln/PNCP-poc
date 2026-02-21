@@ -182,6 +182,13 @@ SEARCH_ERROR_TYPE = _create_counter(
     labelnames=["type"],
 )
 
+# GTM-GO-002: Rate limit exceeded counter
+RATE_LIMIT_EXCEEDED = _create_counter(
+    "smartlic_rate_limit_exceeded_total",
+    "Rate limit exceeded events",
+    labelnames=["endpoint", "limit_type"],
+)
+
 # ============================================================================
 # Gauges
 # ============================================================================

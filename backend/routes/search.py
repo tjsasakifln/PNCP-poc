@@ -15,6 +15,7 @@ When cache exists, returns immediately and spawns background live fetch.
 
 import asyncio
 import time as sync_time
+import uuid as _uuid
 
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
@@ -39,7 +40,13 @@ from filter import (
 from excel import create_excel
 from auth import require_auth
 from authorization import check_user_roles
-from rate_limiter import rate_limiter
+from rate_limiter import (
+    rate_limiter,
+    require_rate_limit,
+    acquire_sse_connection,
+    release_sse_connection,
+    SEARCH_RATE_LIMIT_PER_MINUTE,
+)
 from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_events
 from log_sanitizer import get_sanitized_logger
 from search_pipeline import SearchPipeline
@@ -171,6 +178,8 @@ async def buscar_progress_stream(
     The client opens this connection simultaneously with POST /buscar,
     using the same search_id to correlate progress events.
 
+    GTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.
+
     Events:
         - connecting (5%): Initial setup
         - fetching (10-55%): Per-UF progress with uf_index/uf_total
@@ -184,6 +193,19 @@ async def buscar_progress_stream(
     """
     import asyncio as _asyncio
     import json as _json
+
+    # GTM-GO-002 AC6: Enforce SSE connection limit per user
+    user_id = user.get("id", "unknown")
+    if not await acquire_sse_connection(user_id):
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "detail": "Limite de conexões SSE excedido. Feche outras abas antes de abrir uma nova.",
+                "retry_after_seconds": 5,
+                "correlation_id": str(_uuid.uuid4()),
+            },
+            headers={"Retry-After": "5"},
+        )
 
     # CRIT-005 AC28-29: Wait for tracker, then check DB — return 404 before SSE if not found
     tracker = None
@@ -202,42 +224,68 @@ async def buscar_progress_stream(
             db_state = None
 
         if not db_state:
+            # GTM-GO-002: Release SSE slot before returning 404
+            await release_sse_connection(user_id)
             # CRIT-005 AC28: Return 404 when search_id doesn't exist at all
             raise HTTPException(status_code=404, detail="Search not found")
 
     async def event_generator():
         nonlocal tracker, db_state
 
-        if not tracker and db_state:
-            # AC9: Emit current state from DB for reconnection
-            state_val = db_state.get("to_state", "error")
-            from search_state_manager import _estimate_progress
-            progress = _estimate_progress(state_val)
-            yield f"data: {_json.dumps({'stage': state_val, 'progress': progress, 'message': f'Estado atual: {state_val}'})}\n\n"
-            # If terminal, we're done
-            if state_val in ("completed", "failed", "timed_out", "rate_limited"):
+        # GTM-GO-002 AC6: Release SSE slot when generator finishes
+        try:
+            if not tracker and db_state:
+                # AC9: Emit current state from DB for reconnection
+                state_val = db_state.get("to_state", "error")
+                from search_state_manager import _estimate_progress
+                progress = _estimate_progress(state_val)
+                yield f"data: {_json.dumps({'stage': state_val, 'progress': progress, 'message': f'Estado atual: {state_val}'})}\n\n"
+                # If terminal, we're done
+                if state_val in ("completed", "failed", "timed_out", "rate_limited"):
+                    return
+                # Otherwise fall through to wait for more events — but we have no tracker
+                # so we can't stream further. Just return.
                 return
-            # Otherwise fall through to wait for more events — but we have no tracker
-            # so we can't stream further. Just return.
-            return
 
-        # Try Redis pub/sub first, fallback to in-memory queue
-        pubsub = await subscribe_to_events(search_id)
+            # Try Redis pub/sub first, fallback to in-memory queue
+            pubsub = await subscribe_to_events(search_id)
 
-        if pubsub:
-            # Redis mode: Stream from pub/sub channel
-            logger.debug(f"SSE using Redis pub/sub for {search_id}")
-            try:
+            if pubsub:
+                # Redis mode: Stream from pub/sub channel
+                logger.debug(f"SSE using Redis pub/sub for {search_id}")
+                try:
+                    while True:
+                        try:
+                            message = await _asyncio.wait_for(pubsub.get_message(ignore_subscribe_messages=True), timeout=30.0)
+                            if message and message["type"] == "message":
+                                # Redis returns JSON string, parse it
+                                event_data = _json.loads(message["data"])
+                                yield f"data: {_json.dumps(event_data)}\n\n"
+
+                                if event_data.get("stage") in ("complete", "degraded", "error", "refresh_available"):
+                                    break
+
+                        except _asyncio.TimeoutError:
+                            # Heartbeat to keep connection alive
+                            yield ": heartbeat\n\n"
+
+                        except _asyncio.CancelledError:
+                            break
+
+                finally:
+                    await pubsub.unsubscribe()
+                    await pubsub.close()
+
+            else:
+                # In-memory mode: Stream from local queue
+                logger.debug(f"SSE using in-memory queue for {search_id}")
                 while True:
                     try:
-                        message = await _asyncio.wait_for(pubsub.get_message(ignore_subscribe_messages=True), timeout=30.0)
-                        if message and message["type"] == "message":
-                            # Redis returns JSON string, parse it
-                            event_data = _json.loads(message["data"])
-                            yield f"data: {_json.dumps(event_data)}\n\n"
+                        event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
+                        yield f"data: {_json.dumps(event.to_dict())}\n\n"
 
-                            if event_data.get("stage") in ("complete", "degraded", "error", "refresh_available"):
-                                break
+                        if event.stage in ("complete", "degraded", "error", "refresh_available"):
+                            break
 
                     except _asyncio.TimeoutError:
                         # Heartbeat to keep connection alive
@@ -245,28 +293,8 @@ async def buscar_progress_stream(
 
                     except _asyncio.CancelledError:
                         break
-
-            finally:
-                await pubsub.unsubscribe()
-                await pubsub.close()
-
-        else:
-            # In-memory mode: Stream from local queue
-            logger.debug(f"SSE using in-memory queue for {search_id}")
-            while True:
-                try:
-                    event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
-                    yield f"data: {_json.dumps(event.to_dict())}\n\n"
-
-                    if event.stage in ("complete", "degraded", "error", "refresh_available"):
-                        break
-
-                except _asyncio.TimeoutError:
-                    # Heartbeat to keep connection alive
-                    yield ": heartbeat\n\n"
-
-                except _asyncio.CancelledError:
-                    break
+        finally:
+            await release_sse_connection(user_id)
 
     return StreamingResponse(
         event_generator(),
@@ -449,6 +477,7 @@ async def buscar_licitacoes(
     request: BuscaRequest,
     http_response: Response,  # CRIT-005 AC1-2: Injected for response headers
     user: dict = Depends(require_auth),
+    _rl=Depends(require_rate_limit(SEARCH_RATE_LIMIT_PER_MINUTE, 60)),  # GTM-GO-002 AC1
 ):
     """
     Main search endpoint — thin wrapper that delegates to SearchPipeline.
