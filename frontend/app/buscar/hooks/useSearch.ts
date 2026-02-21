@@ -90,6 +90,7 @@ export interface UseSearchReturn {
   quotaError: string | null;
   result: BuscaResult | null;
   setResult: (r: BuscaResult | null) => void;
+  setError: (e: SearchError | null) => void;
   rawCount: number;
   searchId: string | null;
   useRealProgress: boolean;
@@ -788,7 +789,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   return {
     loading, loadingStep, statesProcessed, error, quotaError,
-    result, setResult, rawCount,
+    result, setResult, setError, rawCount,
     searchId, useRealProgress, sseEvent: effectiveEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail,
     partialProgress, refreshAvailable, liveFetchInProgress, handleRefreshResults,
     downloadLoading, downloadError,
