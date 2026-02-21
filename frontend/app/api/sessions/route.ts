@@ -28,11 +28,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const queryString = searchParams.toString();
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+
   try {
     const response = await fetch(`${backendUrl}/v1/sessions${queryString ? `?${queryString}` : ""}`, {
       headers: {
         "Authorization": authHeader,
         "Content-Type": "application/json",
+        ...(correlationId && { "X-Correlation-ID": correlationId }),
       },
     });
 

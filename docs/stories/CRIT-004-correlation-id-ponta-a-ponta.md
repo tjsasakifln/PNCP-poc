@@ -55,42 +55,42 @@ Resultado: e impossivel reconstruir a jornada completa de uma busca a partir dos
 ## Criterios de Aceite
 
 ### Proxy Header Forwarding
-- [ ] AC1: `frontend/app/api/buscar/route.ts` deve forwardar `X-Correlation-ID` do browser alem do `X-Request-ID` que ja gera
-- [ ] AC2: `frontend/app/api/buscar-progress/route.ts` deve forwardar `Authorization` + `X-Correlation-ID`
-- [ ] AC3: `frontend/app/api/download/route.ts` deve forwardar `X-Request-ID` e `X-Correlation-ID`
-- [ ] AC4: Todos os proxies em `frontend/app/api/` devem seguir o mesmo padrao de header forwarding
+- [x] AC1: `frontend/app/api/buscar/route.ts` deve forwardar `X-Correlation-ID` do browser alem do `X-Request-ID` que ja gera
+- [x] AC2: `frontend/app/api/buscar-progress/route.ts` deve forwardar `Authorization` + `X-Correlation-ID`
+- [x] AC3: `frontend/app/api/download/route.ts` deve forwardar `X-Request-ID` e `X-Correlation-ID`
+- [x] AC4: Todos os proxies em `frontend/app/api/` devem seguir o mesmo padrao de header forwarding
 
 ### Backend ContextVar
-- [ ] AC5: Criar `search_id_var = ContextVar("search_id", default="-")` em `middleware.py`
-- [ ] AC6: `CorrelationIDMiddleware` deve ler `X-Correlation-ID` do request e armazenar (alem de `X-Request-ID`)
-- [ ] AC7: No handler `/buscar`, setar `search_id_var` com o `search_id` do body antes de chamar pipeline
-- [ ] AC8: `RequestIDFilter` em middleware.py deve injetar `search_id` (alem de `request_id`, `trace_id`, `span_id`) em todo log record
+- [x] AC5: Criar `search_id_var = ContextVar("search_id", default="-")` em `middleware.py`
+- [x] AC6: `CorrelationIDMiddleware` deve ler `X-Correlation-ID` do request e armazenar (alem de `X-Request-ID`)
+- [x] AC7: No handler `/buscar`, setar `search_id_var` com o `search_id` do body antes de chamar pipeline
+- [x] AC8: `RequestIDFilter` em middleware.py deve injetar `search_id` (alem de `request_id`, `trace_id`, `span_id`) em todo log record
 
 ### Log Format
-- [ ] AC9: Log format de producao deve incluir `search_id`:
+- [x] AC9: Log format de producao deve incluir `search_id`:
   ```
   %(asctime)s | %(levelname)s | req=%(request_id)s | search=%(search_id)s | trace=%(trace_id)s | %(name)s | %(message)s
   ```
-- [ ] AC10: JSON log format (producao) deve incluir campo `search_id`
+- [x] AC10: JSON log format (producao) deve incluir campo `search_id`
 
 ### Module Propagation
-- [ ] AC11: `filter.py` deve usar `search_id_var.get()` em vez de gerar `_trace_id` proprio (L2521-2522)
-- [ ] AC12: `consolidation.py` deve receber `search_id` como parametro ou ler de ContextVar
-- [ ] AC13: `llm_arbiter.py` deve incluir `search_id` em logs (ja recebe como arg, garantir uso)
-- [ ] AC14: `search_cache.py` deve incluir `search_id` em logs de cache hit/miss
+- [x] AC11: `filter.py` deve usar `search_id_var.get()` em vez de gerar `_trace_id` proprio (L2521-2522)
+- [x] AC12: `consolidation.py` deve receber `search_id` como parametro ou ler de ContextVar
+- [x] AC13: `llm_arbiter.py` deve incluir `search_id` em logs (ja recebe como arg, garantir uso)
+- [x] AC14: `search_cache.py` deve incluir `search_id` em logs de cache hit/miss
 
 ### ARQ Job Tracing
-- [ ] AC15: `llm_summary_job()` e `excel_generation_job()` devem aceitar `**kwargs` ou parametros explícitos para `_trace_id`/`_span_id`
-- [ ] AC16: Jobs devem restaurar tracing context: criar child span linkado ao parent trace
-- [ ] AC17: Jobs devem setar `request_id_var` com `search_id` no inicio (para que logs de jobs tenham correlacao)
-- [ ] AC18: Job logs devem incluir `search_id` em structured logging
+- [x] AC15: `llm_summary_job()` e `excel_generation_job()` devem aceitar `**kwargs` ou parametros explícitos para `_trace_id`/`_span_id`
+- [x] AC16: Jobs devem restaurar tracing context: criar child span linkado ao parent trace
+- [x] AC17: Jobs devem setar `request_id_var` com `search_id` no inicio (para que logs de jobs tenham correlacao)
+- [x] AC18: Job logs devem incluir `search_id` em structured logging
 
 ### SSE Event Correlation
-- [ ] AC19: `ProgressEvent.to_dict()` deve incluir `search_id` explicitamente (alem de `trace_id`)
-- [ ] AC20: SSE events devem incluir `request_id` para correlacao com HTTP request logs
+- [x] AC19: `ProgressEvent.to_dict()` deve incluir `search_id` explicitamente (alem de `trace_id`)
+- [x] AC20: SSE events devem incluir `request_id` para correlacao com HTTP request logs
 
 ### Observability Endpoint
-- [ ] AC21: Criar endpoint `GET /v1/admin/search-trace/{search_id}` que agrega:
+- [x] AC21: Criar endpoint `GET /v1/admin/search-trace/{search_id}` que agrega:
   - Status da busca (from search_sessions)
   - Timeline de transicoes de estado
   - Cache hits/misses
@@ -98,19 +98,19 @@ Resultado: e impossivel reconstruir a jornada completa de uma busca a partir dos
   - Retorna JSON com jornada completa reconstruida
 
 ### Validation
-- [ ] AC22: Criar teste que verifica: dado um search_id, pode-se encontrar em logs: o request_id correspondente, o trace_id OTel, os logs de filter decisions, os logs de PNCP fetch, e o status do ARQ job
-- [ ] AC23: Teste automatizado que uma busca completa produz log lines com search_id em todos os modulos: search_pipeline, consolidation, filter, llm, search_cache, progress
+- [x] AC22: Criar teste que verifica: dado um search_id, pode-se encontrar em logs: o request_id correspondente, o trace_id OTel, os logs de filter decisions, os logs de PNCP fetch, e o status do ARQ job
+- [x] AC23: Teste automatizado que uma busca completa produz log lines com search_id em todos os modulos: search_pipeline, consolidation, filter, llm, search_cache, progress
 
 ## Testes Obrigatorios
 
-- [ ] Proxy forwards X-Correlation-ID to backend
-- [ ] search_id_var is set in /buscar handler
-- [ ] All log lines during search include search_id
-- [ ] filter.py no longer generates independent trace_id
-- [ ] ARQ jobs restore trace context and set search_id in logs
-- [ ] SSE events include search_id
-- [ ] Admin trace endpoint returns complete journey
-- [ ] Regression: existing logging tests pass
+- [x] Proxy forwards X-Correlation-ID to backend
+- [x] search_id_var is set in /buscar handler
+- [x] All log lines during search include search_id
+- [x] filter.py no longer generates independent trace_id
+- [x] ARQ jobs restore trace context and set search_id in logs
+- [x] SSE events include search_id
+- [x] Admin trace endpoint returns complete journey
+- [x] Regression: existing logging tests pass
 
 ## Definicao de Pronto
 

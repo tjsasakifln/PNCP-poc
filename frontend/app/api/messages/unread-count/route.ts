@@ -16,9 +16,12 @@ export async function GET(request: NextRequest) {
   if (!authHeader)
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+
   try {
     const res = await fetch(`${backendUrl}/v1/api/messages/unread-count`, {
-      headers: { Authorization: authHeader, "Content-Type": "application/json" },
+      headers: { Authorization: authHeader, "Content-Type": "application/json", ...(correlationId && { "X-Correlation-ID": correlationId }) },
     });
 
     // If 401 even after refresh, signal session expired

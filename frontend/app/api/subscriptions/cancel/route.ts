@@ -15,12 +15,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+    const correlationId = request.headers.get("X-Correlation-ID");
+
     const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
     const res = await fetch(`${backendUrl}/v1/api/subscriptions/cancel`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
         "Content-Type": "application/json",
+        ...(correlationId && { "X-Correlation-ID": correlationId }),
       },
     });
 

@@ -15,10 +15,13 @@ export async function GET(
 
   const { id } = await params;
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+
   try {
     const res = await fetch(
       `${backendUrl}/v1/api/messages/conversations/${id}`,
-      { headers: { Authorization: authHeader, "Content-Type": "application/json" } },
+      { headers: { Authorization: authHeader, "Content-Type": "application/json", ...(correlationId && { "X-Correlation-ID": correlationId }) } },
     );
     const data = await res.json().catch(() => ({}));
     return NextResponse.json(data, { status: res.status });

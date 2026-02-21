@@ -31,11 +31,16 @@ export async function GET(
   }
 
   const authHeader = request.headers.get("Authorization");
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   if (authHeader) {
     headers["Authorization"] = authHeader;
+  }
+  if (correlationId) {
+    headers["X-Correlation-ID"] = correlationId;
   }
 
   try {

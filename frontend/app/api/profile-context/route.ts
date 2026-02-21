@@ -13,9 +13,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
   }
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+
   try {
     const response = await fetch(`${backendUrl}/v1/profile/context`, {
-      headers: { Authorization: authHeader, "Content-Type": "application/json" },
+      headers: { Authorization: authHeader, "Content-Type": "application/json", ...(correlationId && { "X-Correlation-ID": correlationId }) },
     });
 
     if (!response.ok) {
@@ -45,11 +48,14 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ message: "Autenticacao necessaria" }, { status: 401 });
   }
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationIdPut = request.headers.get("X-Correlation-ID");
+
   try {
     const body = await request.json();
     const response = await fetch(`${backendUrl}/v1/profile/context`, {
       method: "PUT",
-      headers: { Authorization: authHeader, "Content-Type": "application/json" },
+      headers: { Authorization: authHeader, "Content-Type": "application/json", ...(correlationIdPut && { "X-Correlation-ID": correlationIdPut }) },
       body: JSON.stringify(body),
     });
 

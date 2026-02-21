@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+
   try {
     const body = await request.json();
 
@@ -27,6 +30,7 @@ export async function POST(request: NextRequest) {
       headers: {
         "Authorization": authHeader,
         "Content-Type": "application/json",
+        ...(correlationId && { "X-Correlation-ID": correlationId }),
       },
       body: JSON.stringify(body),
     });

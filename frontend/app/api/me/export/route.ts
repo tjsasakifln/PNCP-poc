@@ -17,10 +17,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
+  const correlationId = request.headers.get("X-Correlation-ID");
+
   try {
     const response = await fetch(`${backendUrl}/v1/me/export`, {
       headers: {
         "Authorization": authHeader,
+        ...(correlationId && { "X-Correlation-ID": correlationId }),
       },
     });
 
