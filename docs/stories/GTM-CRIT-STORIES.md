@@ -53,34 +53,34 @@ $ curl -sS https://bidiq-uniformes-production.up.railway.app/health
 
 ### Acceptance Criteria
 
-- [ ] **AC1 — Diagnosticar causa raiz:**
+- [x] **AC1 — Diagnosticar causa raiz:**
   ```bash
   railway logs --service bidiq-frontend --limit 200
   railway status
   ```
   Documentar o que aparece: crash loop? build failure? health timeout? serviço pausado?
 
-- [ ] **AC2 — Se build falhou:** Identificar erro exato no log. Verificar:
+- [x] **AC2 — Se build falhou:** Identificar erro exato no log. Verificar:
   - `frontend/Dockerfile` existe e faz `npm run build` com sucesso
   - Todas env vars obrigatórias estão setadas no Railway (`BACKEND_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
   - O standalone output do Next.js inclui `/api/health` (pode ser omitido se build tiver warnings)
 
-- [ ] **AC3 — Se container crashou (OOM/port/env):** Verificar:
+- [x] **AC3 — Se container crashou (OOM/port/env):** Verificar:
   - Memória alocada ao serviço (Next.js standalone precisa de ~256MB mínimo)
   - Variável `PORT` está sendo respeitada (Railway injeta, `standalone/server.js` deve ler)
   - Nenhum `process.exit()` não-intencional no startup
 
-- [ ] **AC4 — Se health check falhou persistentemente:** `frontend/railway.toml:14` aponta para `/api/health` com timeout 120s. Verificar:
+- [x] **AC4 — Se health check falhou persistentemente:** `frontend/railway.toml:14` aponta para `/api/health` com timeout 120s. Verificar:
   - A rota existe no build: `ls .next/standalone/.next/server/app/api/health/`
   - A rota responde localmente: `npm run build && PORT=3000 node .next/standalone/server.js`, depois `curl localhost:3000/api/health`
 
-- [ ] **AC5 — Redeploy:** `railway up` ou trigger manual. Confirmar:
+- [x] **AC5 — Redeploy:** `railway up` ou trigger manual. Confirmar:
   ```bash
   curl -sS https://smartlic.tech/ | head -c 100
   # Deve retornar HTML, não JSON 404
   ```
 
-- [ ] **AC6 — Validar todos os domínios:**
+- [x] **AC6 — Validar todos os domínios:**
   | Domínio | Esperado |
   |---------|----------|
   | `https://smartlic.tech` | HTTP 200, HTML |
@@ -88,7 +88,7 @@ $ curl -sS https://bidiq-uniformes-production.up.railway.app/health
   | `https://bidiq-frontend-production.up.railway.app` | HTTP 200, HTML |
   | `https://www.smartlic.tech` | Redirect para `smartlic.tech` OU certificado SSL válido |
 
-- [ ] **AC7 — Documentar causa raiz:** Criar `docs/sessions/2026-02/postmortem-frontend-down.md` com:
+- [x] **AC7 — Documentar causa raiz:** Criar `docs/sessions/2026-02/postmortem-frontend-down.md` com:
   - Causa raiz identificada
   - Timeline do incidente
   - O que fazer se acontecer de novo
@@ -122,7 +122,7 @@ $ curl -sS https://bidiq-uniformes-production.up.railway.app/health
 
   **Razão:** O frontend é Next.js SSR/SSG — páginas devem renderizar o shell HTML mesmo sem backend. Se alguma rota depende de backend para renderizar HTML (não apenas para dados), isso é um defeito arquitetural que deve ser documentado e tratado.
 
-- [ ] **AC10 — Inspeção de headers de serviço:** Toda resposta de `smartlic.tech` deve confirmar que está sendo servida pelo frontend Next.js (não pelo Railway edge fallback):
+- [x] **AC10 — Inspeção de headers de serviço:** Toda resposta de `smartlic.tech` deve confirmar que está sendo servida pelo frontend Next.js (não pelo Railway edge fallback):
   - Header `Server` NÃO deve ser `railway-edge`
   - Header `X-Railway-Fallback` NÃO deve estar presente
   - Se o response vier de Cloudflare (`Server: cloudflare`), isso é aceitável — desde que o body seja HTML do app, não erro 404
@@ -197,7 +197,7 @@ healthcheckTimeout = 120
 
 **Backend — Novo endpoint `/health/ready` (lightweight):**
 
-- [ ] **AC1:** Criar `GET /health/ready` em `main.py` — retorna JSON em <50ms:
+- [x] **AC1:** Criar `GET /health/ready` em `main.py` — retorna JSON em <50ms:
   ```python
   @app.get("/health/ready")
   async def health_ready():
@@ -207,9 +207,9 @@ healthcheckTimeout = 120
   ```
   **Restrições:** Zero I/O. Zero imports dinâmicos. Zero checks de dependência. Apenas lê `_startup_time`.
 
-- [ ] **AC2:** O endpoint `GET /health` (deep) continua existindo sem mudança funcional. É usado por dashboards, Prometheus, debugging — NÃO por Railway.
+- [x] **AC2:** O endpoint `GET /health` (deep) continua existindo sem mudança funcional. É usado por dashboards, Prometheus, debugging — NÃO por Railway.
 
-- [ ] **AC3:** Alterar `backend/railway.toml`:
+- [x] **AC3:** Alterar `backend/railway.toml`:
   ```toml
   healthcheckPath = "/health/ready"
   healthcheckTimeout = 30
@@ -217,7 +217,7 @@ healthcheckTimeout = 120
 
 **Backend — Startup gate com verificação real de dependências:**
 
-- [ ] **AC4:** ANTES de setar `_startup_time` (main.py:354-357), verificar conectividade Supabase:
+- [x] **AC4:** ANTES de setar `_startup_time` (main.py:354-357), verificar conectividade Supabase:
   ```python
   # Probe Supabase — must succeed before accepting traffic
   try:
@@ -230,7 +230,7 @@ healthcheckTimeout = 120
       raise  # Crash on startup = Railway will retry
   ```
 
-- [ ] **AC5:** Se `REDIS_URL` estiver configurado, verificar conectividade Redis antes de setar `_startup_time`:
+- [x] **AC5:** Se `REDIS_URL` estiver configurado, verificar conectividade Redis antes de setar `_startup_time`:
   ```python
   if os.getenv("REDIS_URL"):
       from redis_pool import is_redis_available
@@ -241,9 +241,9 @@ healthcheckTimeout = 120
           # NÃO bloquear — Redis é optional
   ```
 
-- [ ] **AC6:** `_check_cache_schema()` e `recover_stale_searches()` continuam non-blocking (comportamento atual mantido). Apenas Supabase é gate obrigatório.
+- [x] **AC6:** `_check_cache_schema()` e `recover_stale_searches()` continuam non-blocking (comportamento atual mantido). Apenas Supabase é gate obrigatório.
 
-- [ ] **AC7:** Log de startup consolidado:
+- [x] **AC7:** Log de startup consolidado:
   ```
   STARTUP GATE: Supabase OK, Redis OK — setting ready=true
   APPLICATION READY — all routes registered, accepting traffic
@@ -251,7 +251,7 @@ healthcheckTimeout = 120
 
 **Frontend — Health reflete estado real:**
 
-- [ ] **AC8:** Quando `BACKEND_URL` NÃO está definido, retornar HTTP 503 (não 200):
+- [x] **AC8:** Quando `BACKEND_URL` NÃO está definido, retornar HTTP 503 (não 200):
   ```typescript
   if (!backendUrl) {
     console.error("[HEALTH] CRITICAL: BACKEND_URL not configured");
@@ -263,7 +263,7 @@ healthcheckTimeout = 120
   ```
   **Razão:** `BACKEND_URL` ausente é erro de configuração DEFINITIVO (não transiente). Railway deve marcar como unhealthy.
 
-- [ ] **AC9:** Quando backend é unreachable ou unhealthy, MANTER HTTP 200 (comportamento atual):
+- [x] **AC9:** Quando backend é unreachable ou unhealthy, MANTER HTTP 200 (comportamento atual):
   ```typescript
   // Backend unreachable → 200 + backend: "unreachable" (pode ser temporário durante deploy)
   // Backend ready: false → 200 + backend: "starting" (esperado durante startup)
@@ -271,19 +271,19 @@ healthcheckTimeout = 120
   ```
   **Razão:** Se frontend retornar 503 quando backend está reiniciando, Railway mata o frontend também → deadlock de deploy.
 
-- [ ] **AC10:** Alterar `frontend/railway.toml`:
+- [x] **AC10:** Alterar `frontend/railway.toml`:
   ```toml
   healthcheckTimeout = 30
   ```
 
 **Testes:**
 
-- [ ] **AC11:** Backend: `/health/ready` retorna `{"ready": true}` quando `_startup_time` setado.
-- [ ] **AC12:** Backend: `/health/ready` retorna `{"ready": false}` quando `_startup_time` é None.
-- [ ] **AC13:** Backend: `/health/ready` retorna em <50ms (sem I/O).
-- [ ] **AC14:** Frontend: health retorna 503 quando `BACKEND_URL` undefined.
-- [ ] **AC15:** Frontend: health retorna 200 + `backend: "unreachable"` quando fetch falha.
-- [ ] **AC16:** Frontend: health retorna 200 + `backend: "healthy"` quando backend responde ready: true.
+- [x] **AC11:** Backend: `/health/ready` retorna `{"ready": true}` quando `_startup_time` setado.
+- [x] **AC12:** Backend: `/health/ready` retorna `{"ready": false}` quando `_startup_time` é None.
+- [x] **AC13:** Backend: `/health/ready` retorna em <50ms (sem I/O).
+- [x] **AC14:** Frontend: health retorna 503 quando `BACKEND_URL` undefined.
+- [x] **AC15:** Frontend: health retorna 200 + `backend: "unreachable"` quando fetch falha.
+- [x] **AC16:** Frontend: health retorna 200 + `backend: "healthy"` quando backend responde ready: true.
 
 **Verificação de evidência operacional (adicionados pela auditoria PM 2026-02-21):**
 
@@ -372,7 +372,7 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
 
 **Error Boundary:**
 
-- [ ] **AC1:** Criar `frontend/app/buscar/components/SearchErrorBoundary.tsx` — class component React que:
+- [x] **AC1:** Criar `frontend/app/buscar/components/SearchErrorBoundary.tsx` — class component React que:
   - Captura erros de render em componentes filhos via `componentDidCatch`
   - Exibe UI em português: título "Algo deu errado ao exibir os resultados"
   - Botão "Tentar novamente" → `window.location.reload()`
@@ -381,7 +381,7 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
   - Chama `Sentry.captureException(error)` se Sentry estiver disponível (import dinâmico, não quebra se Sentry não configurado)
   - Estilo consistente com o design system existente (Tailwind classes do projeto)
 
-- [ ] **AC2:** Em `buscar/page.tsx`, envolver a área de **resultados** com `<SearchErrorBoundary>`. O formulário (`SearchForm`) fica **FORA** do boundary:
+- [x] **AC2:** Em `buscar/page.tsx`, envolver a área de **resultados** com `<SearchErrorBoundary>`. O formulário (`SearchForm`) fica **FORA** do boundary:
   ```tsx
   <SearchForm ... />           {/* FORA — sempre funcional */}
   <SearchErrorBoundary onReset={handleReset}>
@@ -392,11 +392,11 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
   ```
   **Razão:** Se o resultado crashar, o formulário continua acessível para nova busca.
 
-- [ ] **AC3:** `onReset` limpa o estado de resultado/erro em `page.tsx` (seta `result` para null, `error` para null) para que o usuário volte ao estado inicial de formulário limpo.
+- [x] **AC3:** `onReset` limpa o estado de resultado/erro em `page.tsx` (seta `result` para null, `error` para null) para que o usuário volte ao estado inicial de formulário limpo.
 
 **Eliminação de mensagens genéricas:**
 
-- [ ] **AC4:** Em `frontend/app/api/buscar/route.ts`, substituir TODA ocorrência de `"Erro no backend"` por mensagens contextuais com ação sugerida. Mapear pelo status HTTP da resposta do backend:
+- [x] **AC4:** Em `frontend/app/api/buscar/route.ts`, substituir TODA ocorrência de `"Erro no backend"` por mensagens contextuais com ação sugerida. Mapear pelo status HTTP da resposta do backend:
 
   | Status backend | Mensagem para o usuário |
   |----------------|-------------------------|
@@ -406,14 +406,14 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
   | 503 | `"O servidor está temporariamente indisponível. Tente novamente em 1 minuto."` |
   | Outro / desconhecido | `"Erro inesperado. Tente novamente ou reduza o número de UFs selecionadas."` |
 
-- [ ] **AC5:** Para erros de conexão (fetch throws), substituir mensagem de fallback em `route.ts:200-213`:
+- [x] **AC5:** Para erros de conexão (fetch throws), substituir mensagem de fallback em `route.ts:200-213`:
   - Connection refused: `"O servidor está temporariamente indisponível. Tente novamente em 1 minuto."`
   - Timeout (AbortError): já tem mensagem boa (manter `"Busca demorou mais que o esperado..."`)
   - DNS error: `"Erro de configuração do servidor. Contate o suporte."`
 
-- [ ] **AC6:** Incluir `request_id` em TODAS as mensagens de erro: formato `(Ref: {request_id})` em texto secundário. Permite que suporte rastreie o erro nos logs.
+- [x] **AC6:** Incluir `request_id` em TODAS as mensagens de erro: formato `(Ref: {request_id})` em texto secundário. Permite que suporte rastreie o erro nos logs.
 
-- [ ] **AC7:** Verificar que NENHUMA ocorrência de `"Erro no backend"` literal permanece em `route.ts` ao final. Validar com:
+- [x] **AC7:** Verificar que NENHUMA ocorrência de `"Erro no backend"` literal permanece em `route.ts` ao final. Validar com:
   ```bash
   grep -n "Erro no backend" frontend/app/api/buscar/route.ts
   # Deve retornar 0 resultados
@@ -421,11 +421,11 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
 
 **Testes:**
 
-- [ ] **AC8:** Teste: `SearchErrorBoundary` renderiza fallback UI quando componente filho lança `throw new Error("test")`.
-- [ ] **AC9:** Teste: `SearchErrorBoundary` chama `onReset` quando botão "Nova busca" é clicado.
-- [ ] **AC10:** Teste: proxy retorna mensagem com ação sugerida para HTTP 500 (não "Erro no backend").
-- [ ] **AC11:** Teste: proxy retorna mensagem com ação sugerida para HTTP 502 (não "Erro no backend").
-- [ ] **AC12:** Teste: todas as mensagens de erro incluem `request_id`.
+- [x] **AC8:** Teste: `SearchErrorBoundary` renderiza fallback UI quando componente filho lança `throw new Error("test")`.
+- [x] **AC9:** Teste: `SearchErrorBoundary` chama `onReset` quando botão "Nova busca" é clicado.
+- [x] **AC10:** Teste: proxy retorna mensagem com ação sugerida para HTTP 500 (não "Erro no backend").
+- [x] **AC11:** Teste: proxy retorna mensagem com ação sugerida para HTTP 502 (não "Erro no backend").
+- [x] **AC12:** Teste: todas as mensagens de erro incluem `request_id`.
 
 **Verificação com simulação de falhas reais (adicionados pela auditoria PM 2026-02-21):**
 
@@ -440,7 +440,7 @@ message: isStructured ? detail.detail : (typeof detail === "string" ? detail : e
 
   **Formato:** 4 screenshots ou 4 outputs de curl colados no PR description. Se qualquer cenário mostrar tela branca, "Erro no backend" genérico, ou mensagem sem `request_id`, o AC falha.
 
-- [ ] **AC14 — Classificação visível ao usuário:** O componente `ErrorDetail.tsx` (CRIT-009) deve renderizar o **tipo** do erro de forma visível ao usuário, não apenas a mensagem. Mapear `error_code` para label em português:
+- [x] **AC14 — Classificação visível ao usuário:** O componente `ErrorDetail.tsx` (CRIT-009) deve renderizar o **tipo** do erro de forma visível ao usuário, não apenas a mensagem. Mapear `error_code` para label em português:
 
   | `error_code` | Label visível ao usuário |
   |-------------|--------------------------|
@@ -507,7 +507,7 @@ Mas 500 cai no handler genérico de erro.
 
 ### Acceptance Criteria
 
-- [ ] **AC1:** Em `backend/auth.py:152`, alterar:
+- [x] **AC1:** Em `backend/auth.py:152`, alterar:
   ```python
   # ANTES:
   raise HTTPException(status_code=500, detail="Auth not configured")
@@ -520,17 +520,17 @@ Mas 500 cai no handler genérico de erro.
   )
   ```
 
-- [ ] **AC2:** Manter o `logger.error()` na linha 151 inalterado — a causa raiz é config, mas o **efeito** para o usuário deve ser "faça login de novo".
+- [x] **AC2:** Manter o `logger.error()` na linha 151 inalterado — a causa raiz é config, mas o **efeito** para o usuário deve ser "faça login de novo".
 
-- [ ] **AC3:** Auditar `auth.py` inteiro para verificar se existem OUTROS `status_code=500` que deveriam ser 401. Checar:
+- [x] **AC3:** Auditar `auth.py` inteiro para verificar se existem OUTROS `status_code=500` que deveriam ser 401. Checar:
   - `require_auth()` — quando token é inválido/expirado
   - `require_admin()` — quando user não é admin (este deve ser 403, não 401)
   - `_decode_with_fallback()` — quando decode falha
 
   Listar resultado da auditoria no PR description.
 
-- [ ] **AC4:** Teste: quando `_resolve_signing_key()` levanta, response é 401 com header `WWW-Authenticate: Bearer`.
-- [ ] **AC5:** Teste: `logger.error` é chamado (a causa raiz é logada para o time, mesmo que o user veja 401).
+- [x] **AC4:** Teste: quando `_resolve_signing_key()` levanta, response é 401 com header `WWW-Authenticate: Bearer`.
+- [x] **AC5:** Teste: `logger.error` é chamado (a causa raiz é logada para o time, mesmo que o user veja 401).
 
 **Verificação de isolamento e evidência (adicionados pela auditoria PM 2026-02-21):**
 
@@ -557,7 +557,7 @@ Mas 500 cai no handler genérico de erro.
 
   **Evidência:** Output dos 3 comandos colado no PR description.
 
-- [ ] **AC7 — Ausência de stack trace no response:** O response body de qualquer endpoint protegido por auth, quando auth está misconfigured, **nunca** contém:
+- [x] **AC7 — Ausência de stack trace no response:** O response body de qualquer endpoint protegido por auth, quando auth está misconfigured, **nunca** contém:
   - `Traceback` (Python stack trace)
   - `File "` (path de arquivo interno)
   - Nomes de módulos internos (`auth.py`, `main.py`, etc.)
@@ -627,7 +627,7 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 
 **Parte A — Sincronizar migration 007 (search_sessions lifecycle):**
 
-- [ ] **AC1:** Copiar `backend/migrations/007_search_session_lifecycle.sql` para `supabase/migrations/` com timestamp adequado (ex: `20260221100000_search_session_lifecycle.sql`). O conteúdo é idempotente (`ADD COLUMN IF NOT EXISTS`):
+- [x] **AC1:** Copiar `backend/migrations/007_search_session_lifecycle.sql` para `supabase/migrations/` com timestamp adequado (ex: `20260221100000_search_session_lifecycle.sql`). O conteúdo é idempotente (`ADD COLUMN IF NOT EXISTS`):
   ```sql
   ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'created'
       CHECK (status IN ('created', 'processing', 'completed', 'failed', 'timed_out', 'cancelled'));
@@ -643,16 +643,16 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
   -- Backfill + indexes incluídos
   ```
 
-- [ ] **AC2:** **NÃO duplicar** a adição de `search_id` — essa coluna já existe via `20260220120000_add_search_id_to_search_sessions.sql`. Remover a linha `ADD COLUMN IF NOT EXISTS search_id` da cópia (é safe por ser IF NOT EXISTS, mas evita confusão).
+- [x] **AC2:** **NÃO duplicar** a adição de `search_id` — essa coluna já existe via `20260220120000_add_search_id_to_search_sessions.sql`. Remover a linha `ADD COLUMN IF NOT EXISTS search_id` da cópia (é safe por ser IF NOT EXISTS, mas evita confusão).
 
-- [ ] **AC3:** Adicionar coluna `failed_ufs` que é usada no endpoint de retry:
+- [x] **AC3:** Adicionar coluna `failed_ufs` que é usada no endpoint de retry:
   ```sql
   ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS failed_ufs TEXT[];
   ```
 
 **Parte B — Criar RPC get_table_columns_simple:**
 
-- [ ] **AC4:** Criar `supabase/migrations/20260221100001_create_get_table_columns_simple.sql`:
+- [x] **AC4:** Criar `supabase/migrations/20260221100001_create_get_table_columns_simple.sql`:
   ```sql
   CREATE OR REPLACE FUNCTION get_table_columns_simple(p_table_name TEXT)
   RETURNS TABLE(column_name TEXT)
@@ -670,13 +670,13 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
   GRANT EXECUTE ON FUNCTION get_table_columns_simple(TEXT) TO authenticated, service_role;
   ```
 
-- [ ] **AC5:** Verificar que ambas migrations são idempotentes (safe to run multiple times).
+- [x] **AC5:** Verificar que ambas migrations são idempotentes (safe to run multiple times).
 
 **Parte C — Contrato de schema e startup gate (REVISADO pela auditoria PM 2026-02-21):**
 
 > **Princípio PM:** "Depois do deploy, não pode existir código esperando colunas que não existem e 'caindo para fallback'. A aplicação se recusa a operar em estado divergente de forma barulhenta para o time (falha controlada) em vez de silenciosa para o usuário (bug fantasma)."
 
-- [ ] **AC6a — Tabelas CRÍTICAS (must fail startup):** Criar `backend/schema_contract.py` com a lista explícita de tabelas e colunas obrigatórias para o sistema operar:
+- [x] **AC6a — Tabelas CRÍTICAS (must fail startup):** Criar `backend/schema_contract.py` com a lista explícita de tabelas e colunas obrigatórias para o sistema operar:
 
   ```python
   CRITICAL_SCHEMA = {
@@ -697,7 +697,7 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 
   **Razão:** Operar sem `search_sessions.status` gera "bug fantasma" — sistema parece funcionar mas lifecycle tracking é mudo. É preferível que Railway reinicie e o time receba alerta, a que o sistema rode em estado quebrado por horas sem ninguém perceber.
 
-- [ ] **AC6b — RPCs e tabelas auxiliares (degrade com warning recorrente):** Se `get_table_columns_simple` ou RPCs de analytics falharem, degradar com:
+- [x] **AC6b — RPCs e tabelas auxiliares (degrade com warning recorrente):** Se `get_table_columns_simple` ou RPCs de analytics falharem, degradar com:
   ```python
   logger.warning(
       f"CRIT-004: RPC {rpc_name} unavailable — operating in degraded mode. "
@@ -749,13 +749,13 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 
 **Testes:**
 
-- [ ] **AC13:** Teste: `_check_cache_schema()` funciona quando RPC existe e retorna colunas.
-- [ ] **AC14:** Teste: `_check_cache_schema()` faz fallback quando RPC levanta Exception.
+- [x] **AC13:** Teste: `_check_cache_schema()` funciona quando RPC existe e retorna colunas.
+- [x] **AC14:** Teste: `_check_cache_schema()` faz fallback quando RPC levanta Exception.
 - [ ] **AC15:** Teste: endpoint analytics retorna resposta degradada (não 500) quando RPC falha.
 
 **Contrato de ambiente e evidência (adicionados pela auditoria PM 2026-02-21):**
 
-- [ ] **AC16 — Contrato de ambiente documentado:** O arquivo `backend/schema_contract.py` deve conter:
+- [x] **AC16 — Contrato de ambiente documentado:** O arquivo `backend/schema_contract.py` deve conter:
   1. `CRITICAL_SCHEMA: dict[str, list[str]]` — tabelas e colunas que impedem startup se ausentes
   2. `OPTIONAL_RPCS: list[str]` — RPCs que degradam (não crasham) se ausentes
   3. Função `validate_schema_contract(db) -> tuple[bool, list[str]]` que retorna `(passed, missing_items)`
@@ -835,7 +835,7 @@ O health endpoint já tem `get_state()` para Redis (main.py:643-644), mas o esta
 
 **Pré-requisito — Auditoria do estado atual:**
 
-- [ ] **AC0 — Levantamento do estado atual do `RedisCircuitBreaker`:** Antes de implementar QUALQUER AC abaixo, o dev deve auditar e documentar:
+- [x] **AC0 — Levantamento do estado atual do `RedisCircuitBreaker`:** Antes de implementar QUALQUER AC abaixo, o dev deve auditar e documentar:
 
   1. **Estado é restaurado após restart?** Verificar se `RedisCircuitBreaker.__init__()` ou `initialize()` lê estado do Redis na inicialização. Se sim, documentar o mecanismo. Se não, este é o gap real.
   2. **Existe "lazy restore"?** O estado é lido na primeira chamada a `record_failure()`/`is_degraded` ou precisa de restore explícito?
@@ -849,7 +849,7 @@ O health endpoint já tem `get_state()` para Redis (main.py:643-644), mas o esta
 
 **Persistência no Redis (contingente no resultado do AC0):**
 
-- [ ] **AC1:** Em `PNCPCircuitBreaker.__init__()`, se Redis estiver disponível, ler estado salvo:
+- [x] **AC1:** Em `PNCPCircuitBreaker.__init__()`, se Redis estiver disponível, ler estado salvo:
   ```python
   async def _restore_from_redis(self) -> None:
       """Restore circuit breaker state from Redis if available."""
@@ -884,7 +884,7 @@ O health endpoint já tem `get_state()` para Redis (main.py:643-644), mas o esta
   ```
   **Nota:** `__init__` é sync, então `_restore_from_redis()` deve ser chamado na primeira operação async OU via um método explícito `await cb.initialize()` no startup.
 
-- [ ] **AC2:** Em `record_failure()`, se Redis disponível, persistir estado:
+- [x] **AC2:** Em `record_failure()`, se Redis disponível, persistir estado:
   ```python
   # Após atualizar self.consecutive_failures e self.degraded_until
   await self._persist_to_redis()
@@ -892,19 +892,19 @@ O health endpoint já tem `get_state()` para Redis (main.py:643-644), mas o esta
   Formato: `{"failures": N, "degraded_until": float|null, "updated_at": "ISO-8601"}`
   TTL: `cooldown_seconds + 300` (cooldown + 5min margem).
 
-- [ ] **AC3:** Em `record_success()`, se Redis disponível, persistir estado limpo (failures=0, degraded_until=null).
+- [x] **AC3:** Em `record_success()`, se Redis disponível, persistir estado limpo (failures=0, degraded_until=null).
 
-- [ ] **AC4:** Se Redis **NÃO** estiver disponível, comportamento é IDÊNTICO ao atual (in-memory only). Zero regressão. O Redis persist é fire-and-forget com try/except.
+- [x] **AC4:** Se Redis **NÃO** estiver disponível, comportamento é IDÊNTICO ao atual (in-memory only). Zero regressão. O Redis persist é fire-and-forget com try/except.
 
-- [ ] **AC5:** Adicionar chamada `await pncp_cb.initialize()` e `await pcp_cb.initialize()` no lifespan startup (main.py), ANTES de `_startup_time`.
+- [x] **AC5:** Adicionar chamada `await pncp_cb.initialize()` e `await pcp_cb.initialize()` no lifespan startup (main.py), ANTES de `_startup_time`.
 
 **Testes:**
 
-- [ ] **AC6:** Teste: CB persiste estado no Redis mock após `record_failure()`.
-- [ ] **AC7:** Teste: CB restaura estado degradado do Redis no `initialize()`.
-- [ ] **AC8:** Teste: CB com cooldown expirado no Redis reseta para healthy.
-- [ ] **AC9:** Teste: CB funciona normalmente quando Redis indisponível (in-memory fallback).
-- [ ] **AC10:** Teste: Múltiplas instâncias de CB (pncp, pcp) usam keys diferentes.
+- [x] **AC6:** Teste: CB persiste estado no Redis mock após `record_failure()`.
+- [x] **AC7:** Teste: CB restaura estado degradado do Redis no `initialize()`.
+- [x] **AC8:** Teste: CB com cooldown expirado no Redis reseta para healthy.
+- [x] **AC9:** Teste: CB funciona normalmente quando Redis indisponível (in-memory fallback).
+- [x] **AC10:** Teste: Múltiplas instâncias de CB (pncp, pcp) usam keys diferentes.
 
 **Demonstração prática e visibilidade operacional (adicionados pela auditoria PM 2026-02-21):**
 
@@ -978,7 +978,7 @@ if (!backendUrl) {
 
 ### Acceptance Criteria
 
-- [ ] **AC1:** Em `frontend/app/api/health/route.ts`, quando `BACKEND_URL` está definido mas o probe falha com **DNS resolution error** ou **connection refused** (não timeout):
+- [x] **AC1:** Em `frontend/app/api/health/route.ts`, quando `BACKEND_URL` está definido mas o probe falha com **DNS resolution error** ou **connection refused** (não timeout):
   ```typescript
   console.error(
     `[HEALTH] WARNING: BACKEND_URL '${backendUrl}' unreachable — ` +
@@ -986,7 +986,7 @@ if (!backendUrl) {
   );
   ```
 
-- [ ] **AC2:** Incluir `backend_url_valid: false` no response body quando o probe falha com DNS/connection error:
+- [x] **AC2:** Incluir `backend_url_valid: false` no response body quando o probe falha com DNS/connection error:
   ```typescript
   return NextResponse.json({
     status: "healthy",
@@ -998,7 +998,7 @@ if (!backendUrl) {
   ```
   **Nota:** Mantém HTTP 200 (pode ser temporário durante deploy), mas inclui `backend_url_valid: false` para monitoramento.
 
-- [ ] **AC3:** Distinguir tipos de falha de conexão:
+- [x] **AC3:** Distinguir tipos de falha de conexão:
   | Tipo de erro | `backend_url_valid` | Interpretação |
   |-------------|---------------------|---------------|
   | DNS resolution failure | `false` | Provavelmente misconfiguration |
@@ -1006,17 +1006,17 @@ if (!backendUrl) {
   | Timeout (5s) | `true` | Serviço existe mas lento (temporário) |
   | HTTP error (4xx/5xx) | `true` | Serviço existe mas com problema (temporário) |
 
-- [ ] **AC4:** Log `CRITICAL` apenas para DNS resolution failure (quase certamente config errada). Connection refused e timeout são `WARNING`.
+- [x] **AC4:** Log `CRITICAL` apenas para DNS resolution failure (quase certamente config errada). Connection refused e timeout são `WARNING`.
 
 **Testes:**
 
-- [ ] **AC5:** Teste: DNS failure → `backend_url_valid: false` + log CRITICAL.
-- [ ] **AC6:** Teste: timeout → `backend_url_valid: true` + log WARNING.
-- [ ] **AC7:** Teste: backend healthy → `backend_url_valid` não presente (ou true).
+- [x] **AC5:** Teste: DNS failure → `backend_url_valid: false` + log CRITICAL.
+- [x] **AC6:** Teste: timeout → `backend_url_valid: true` + log WARNING.
+- [x] **AC7:** Teste: backend healthy → `backend_url_valid` não presente (ou true).
 
 **Detecção no boot e evidência (adicionados pela auditoria PM 2026-02-21):**
 
-- [ ] **AC8 — Validação no startup do Next.js:** Adicionar validação em `frontend/instrumentation.ts` (Next.js instrumentation hook — roda UMA VEZ no boot do servidor, não por request):
+- [x] **AC8 — Validação no startup do Next.js:** Adicionar validação em `frontend/instrumentation.ts` (Next.js instrumentation hook — roda UMA VEZ no boot do servidor, não por request):
 
   ```typescript
   export async function register() {
