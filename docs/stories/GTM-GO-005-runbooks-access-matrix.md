@@ -12,7 +12,7 @@ P2 — Risco operacional
 ## Estimativa
 2h
 
-## Status: PENDING
+## Status: DONE
 
 ---
 
@@ -57,19 +57,19 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
 
 ### Access Matrix
 
-- [ ] AC1: `docs/operations/access-matrix.md` criado com tabela:
+- [x] AC1: `docs/operations/access-matrix.md` criado com tabela:
   | Serviço | URL Console | Quem tem acesso | Tipo de acesso | Como revogar |
   - Serviços obrigatórios: Railway, Supabase, Stripe, Sentry, GitHub, OpenAI, UptimeRobot, domínio (smartlic.tech)
   - **Evidência:** Arquivo commitado, cada linha preenchida (sem placeholders)
   - **Aceite:** Para cada serviço, "Como revogar" tem instrução executável (ex: "Settings → Team → Remove member")
 
-- [ ] AC2: Seção "Credenciais Emergenciais" com instruções de onde encontrar credenciais de backup (ex: 1Password vault, Bitwarden, ou outro gerenciador usado)
+- [x] AC2: Seção "Credenciais Emergenciais" com instruções de onde encontrar credenciais de backup (ex: 1Password vault, Bitwarden, ou outro gerenciador usado)
   - **Evidência:** Seção existe no documento
   - **Nota:** NÃO documentar as credenciais em si — apenas onde encontrá-las
 
 ### Matriz RACI
 
-- [ ] AC3: Matriz RACI documentada em `docs/operations/access-matrix.md` com responsabilidades por operação crítica:
+- [x] AC3: Matriz RACI documentada em `docs/operations/access-matrix.md` com responsabilidades por operação crítica:
   | Operação | Responsible | Accountable | Consulted | Informed |
   - Operações obrigatórias: Deploy produção, Rollback, Resposta a incidente P0, Rotação de segredos, Migração de banco, Monitoramento pós-deploy
   - **Evidência:** Tabela RACI preenchida com nomes reais (não aliases)
@@ -77,18 +77,18 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
 
 ### Contatos Preenchidos
 
-- [ ] AC4: `docs/runbooks/rollback-procedure.md` linhas 548-566 — todos os 4 campos de contato preenchidos com dados reais (nome + email + telefone)
+- [x] AC4: `docs/runbooks/rollback-procedure.md` linhas 548-566 — todos os 4 campos de contato preenchidos com dados reais (nome + email + telefone)
   - **Evidência:** Diff mostrando substituição de "____________" por dados reais
   - **Aceite:** Zero campos vazios no documento
 
-- [ ] AC5: Mapeamento de aliases para pessoas reais adicionado como seção no access-matrix.md:
+- [x] AC5: Mapeamento de aliases para pessoas reais adicionado como seção no access-matrix.md:
   | Alias | Pessoa | Contato |
   | @oncall-dev | Nome Real | email + telefone |
   - **Evidência:** Todos os aliases usados nos runbooks têm mapeamento
 
 ### Runbook de Outage Genérico
 
-- [ ] AC6: `docs/runbooks/general-outage.md` criado com fluxo decisório:
+- [x] AC6: `docs/runbooks/general-outage.md` criado com fluxo decisório:
   1. **Verificar:** É o sistema ou é o usuário? (check de device/rede/DNS)
   2. **Classificar:** Backend down / Frontend down / Ambos / Parcial
   3. **Diagnosticar:** Railway logs, Sentry, UptimeRobot (com comandos exatos)
@@ -97,7 +97,7 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
   - **Evidência:** Arquivo commitado com fluxo completo
   - **Aceite:** Uma pessoa que nunca operou o sistema consegue seguir o fluxo apenas com o doc
 
-- [ ] AC7: Seção "Primeiros 5 minutos" com checklist numerado de ações imediatas:
+- [x] AC7: Seção "Primeiros 5 minutos" com checklist numerado de ações imediatas:
   1. `railway logs --tail` (ou URL do Railway dashboard)
   2. Verificar UptimeRobot status
   3. Verificar Sentry para erros recentes
@@ -107,7 +107,7 @@ Garantir que qualquer membro do time (atual ou futuro) consiga responder a um in
 
 ### Runbook de Third-Party Failures
 
-- [ ] AC8: Seção em general-outage.md (ou doc separado) com procedimentos para:
+- [x] AC8: Seção em general-outage.md (ou doc separado) com procedimentos para:
   - **Supabase down:** Sintomas, verificação (`npx supabase status`), impacto (auth + data), mitigação (cache serve stale)
   - **OpenAI down:** Sintomas, verificação, impacto (LLM classification falha), mitigação (fallback REJECT, feature flag `LLM_ARBITER_ENABLED=false`)
   - **Redis down:** Sintomas, verificação, impacto (cache + rate limit + CB state), mitigação (InMemory fallback automático)

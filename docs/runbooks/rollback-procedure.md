@@ -592,10 +592,10 @@ curl -s https://bidiq-backend-production.up.railway.app/health | python3 -m json
 
 | Role | Name | Contact | Availability |
 |------|------|---------|--------------|
-| DevOps Lead | @devops | ____________ | 24/7 |
-| Project Manager | @pm | ____________ | Business hours |
-| Architect | @architect | ____________ | On-call rotation |
-| QA Lead | @qa | ____________ | Business hours |
+| DevOps Lead | Tiago Sasaki (@devops) | tiago.sasaki@gmail.com | 24/7 |
+| Project Manager | Tiago Sasaki (@pm) | tiago.sasaki@gmail.com | Business hours |
+| Architect | Tiago Sasaki (@architect) | tiago.sasaki@gmail.com | Business hours |
+| QA Lead | Tiago Sasaki (@qa) | tiago.sasaki@gmail.com | Business hours |
 
 **Railway Support:** https://railway.app/help
 
