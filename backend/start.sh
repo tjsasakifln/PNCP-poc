@@ -16,12 +16,23 @@ PROCESS_TYPE="${PROCESS_TYPE:-web}"
 case "$PROCESS_TYPE" in
   web)
     echo "Starting web process (gunicorn + uvicorn)..."
+
+    # CRIT-010 AC1+AC3: --preload loads the ASGI app in master BEFORE forking workers.
+    # This ensures all imports are resolved and routes registered before any worker
+    # accepts traffic — eliminating 404s during startup.
+    PRELOAD_FLAG=""
+    if [ "${GUNICORN_PRELOAD:-true}" = "true" ]; then
+      PRELOAD_FLAG="--preload"
+      echo "  --preload enabled: app loaded in master before forking workers"
+    fi
+
     exec gunicorn main:app \
       -k uvicorn.workers.UvicornWorker \
       -w "${WEB_CONCURRENCY:-2}" \
       --bind "0.0.0.0:${PORT:-8000}" \
       --timeout "${GUNICORN_TIMEOUT:-600}" \
-      --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT:-60}"
+      --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT:-60}" \
+      $PRELOAD_FLAG
     ;;
   worker)
     echo "Starting ARQ worker process..."

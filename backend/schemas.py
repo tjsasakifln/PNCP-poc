@@ -1475,6 +1475,8 @@ class HealthDependencies(BaseModel):
 class HealthResponse(BaseModel):
     """Response for GET /health endpoint."""
     status: str
+    ready: bool = True  # CRIT-010 AC5: False until lifespan startup completes
+    uptime_seconds: float = 0.0  # CRIT-010 AC5: Seconds since application became ready
     timestamp: str
     version: str
     dependencies: HealthDependencies

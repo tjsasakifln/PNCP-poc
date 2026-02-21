@@ -6,6 +6,8 @@ import { NextResponse } from "next/server";
  * Backend connectivity is reported as informational metadata but does NOT
  * block the healthcheck. This prevents Railway deployment failures caused
  * by the backend starting slower than the frontend.
+ *
+ * CRIT-010 AC8: Checks backend `ready` field to distinguish "starting" from "healthy".
  */
 export async function GET() {
   const backendUrl = process.env.BACKEND_URL;
@@ -36,8 +38,12 @@ export async function GET() {
       );
     }
 
+    // CRIT-010 AC8: Parse ready field — backend may be up but not yet ready
+    const body = await response.json();
+    const backendStatus = body.ready === false ? "starting" : "healthy";
+
     return NextResponse.json(
-      { status: "healthy", backend: "healthy" },
+      { status: "healthy", backend: backendStatus },
       { status: 200 }
     );
   } catch (error) {

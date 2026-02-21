@@ -20,6 +20,8 @@ STORY-202: Monolith decomposition — routes extracted to:
 
 import logging
 import os
+import signal
+import time
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
@@ -75,6 +77,9 @@ logger = logging.getLogger(__name__)
 
 # STORY-220 AC6: Log feature flags AFTER setup_logging() (not at import time)
 log_feature_flags()
+
+# CRIT-010 AC5: Startup readiness tracking
+_startup_time: float | None = None  # Set when lifespan startup completes
 
 # STORY-210 AC8: Disable API docs in production to prevent reconnaissance
 _env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
@@ -345,6 +350,17 @@ async def lifespan(app_instance: FastAPI):
 
     # HOTFIX STORY-183: Diagnostic route logging
     _log_registered_routes(app_instance)
+
+    # CRIT-010 AC4+AC5: Mark application as ready for traffic
+    global _startup_time
+    _startup_time = time.monotonic()
+    logger.info("APPLICATION READY — all routes registered, accepting traffic")
+
+    # CRIT-010 AC7: SIGTERM handler for graceful shutdown logging
+    def _sigterm_handler(signum, frame):
+        logger.info("SIGTERM received — starting graceful shutdown")
+
+    signal.signal(signal.SIGTERM, _sigterm_handler)
 
     yield
 
@@ -675,8 +691,14 @@ async def health():
     from telemetry import is_tracing_enabled
     dependencies["tracing"] = "enabled" if is_tracing_enabled() else "disabled"
 
+    # CRIT-010 AC5: Startup readiness signal
+    is_ready = _startup_time is not None
+    uptime = round(time.monotonic() - _startup_time, 3) if is_ready else 0.0
+
     response_data = {
         "status": status,
+        "ready": is_ready,
+        "uptime_seconds": uptime,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "version": app.version,
         "dependencies": dependencies,

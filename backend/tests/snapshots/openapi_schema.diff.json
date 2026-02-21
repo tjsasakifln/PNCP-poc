@@ -2269,6 +2269,11 @@
             "dependencies": {
               "$ref": "#/components/schemas/HealthDependencies"
             },
+            "ready": {
+              "default": true,
+              "title": "Ready",
+              "type": "boolean"
+            },
             "sources": {
               "anyOf": [
                 {
@@ -2288,6 +2293,11 @@
             "timestamp": {
               "title": "Timestamp",
               "type": "string"
+            },
+            "uptime_seconds": {
+              "default": 0.0,
+              "title": "Uptime Seconds",
+              "type": "number"
             },
             "version": {
               "title": "Version",
@@ -4257,6 +4267,13 @@
         },
         "ValidationError": {
           "properties": {
+            "ctx": {
+              "title": "Context",
+              "type": "object"
+            },
+            "input": {
+              "title": "Input"
+            },
             "loc": {
               "items": {
                 "anyOf": [

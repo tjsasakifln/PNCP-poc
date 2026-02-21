@@ -13,12 +13,12 @@ describe('GET /api/health', () => {
   });
 
   describe('Backend connectivity checks', () => {
-    it('should return healthy status when backend is reachable', async () => {
+    it('should return healthy status when backend is reachable and ready', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: async () => ({ status: 'ok' }),
+        json: async () => ({ status: 'healthy', ready: true, uptime_seconds: 42.5 }),
       });
 
       const response = await GET();
@@ -26,6 +26,7 @@ describe('GET /api/health', () => {
 
       expect(response.status).toBe(200);
       expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('healthy');
       expect(global.fetch).toHaveBeenCalledWith(
         'http://test-backend:8000/health',
         expect.objectContaining({
@@ -34,7 +35,7 @@ describe('GET /api/health', () => {
       );
     });
 
-    it('should return degraded status when backend returns non-200', async () => {
+    it('should return unhealthy backend when backend returns non-200', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
       (global.fetch as jest.Mock).mockResolvedValue({
@@ -45,12 +46,12 @@ describe('GET /api/health', () => {
       const response = await GET();
       const data = await response.json();
 
-      expect(response.status).toBe(503);
-      expect(data.status).toBe('degraded');
-      expect(data.details).toEqual({ backend: 'unhealthy' });
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('unhealthy');
     });
 
-    it('should return degraded status when backend is unreachable (network error)', async () => {
+    it('should return unreachable when backend has network error', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
@@ -58,15 +59,14 @@ describe('GET /api/health', () => {
       const response = await GET();
       const data = await response.json();
 
-      expect(response.status).toBe(503);
-      expect(data.status).toBe('degraded');
-      expect(data.details).toEqual({ backend: 'unreachable' });
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('unreachable');
     });
 
-    it('should return degraded status when fetch times out', async () => {
+    it('should return unreachable when fetch times out', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
-      // Mock a timeout error (AbortError)
       const abortError = new Error('The operation was aborted');
       abortError.name = 'AbortError';
       (global.fetch as jest.Mock).mockRejectedValue(abortError);
@@ -74,20 +74,18 @@ describe('GET /api/health', () => {
       const response = await GET();
       const data = await response.json();
 
-      expect(response.status).toBe(503);
-      expect(data.status).toBe('degraded');
-      expect(data.details).toEqual({ backend: 'unreachable' });
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('unreachable');
     });
 
-    it('should return degraded status when BACKEND_URL is not configured', async () => {
-      // BACKEND_URL is not set
-
+    it('should return not configured when BACKEND_URL is missing', async () => {
       const response = await GET();
       const data = await response.json();
 
-      expect(response.status).toBe(503);
-      expect(data.status).toBe('degraded');
-      expect(data.details).toEqual({ backend: 'not configured' });
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('not configured');
       expect(global.fetch).not.toHaveBeenCalled();
     });
   });
@@ -102,7 +100,7 @@ describe('GET /api/health', () => {
         capturedSignal = options.signal;
         return Promise.resolve({
           ok: true,
-          json: async () => ({ status: 'ok' }),
+          json: async () => ({ status: 'healthy', ready: true }),
         });
       });
 
@@ -122,9 +120,44 @@ describe('GET /api/health', () => {
       const response = await GET();
       const data = await response.json();
 
-      expect(response.status).toBe(503);
-      expect(data.status).toBe('degraded');
-      expect(data.details).toEqual({ backend: 'unreachable' });
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('unreachable');
+    });
+  });
+
+  // CRIT-010 T5-T6: Startup readiness detection
+  describe('CRIT-010: Startup readiness', () => {
+    it('T5: should return backend "starting" when ready is false', async () => {
+      process.env.BACKEND_URL = 'http://test-backend:8000';
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: 'healthy', ready: false, uptime_seconds: 0 }),
+      });
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('starting');
+    });
+
+    it('T6: should return backend "healthy" when ready is true', async () => {
+      process.env.BACKEND_URL = 'http://test-backend:8000';
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({ status: 'healthy', ready: true, uptime_seconds: 15.3 }),
+      });
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.status).toBe('healthy');
+      expect(data.backend).toBe('healthy');
     });
   });
 });
