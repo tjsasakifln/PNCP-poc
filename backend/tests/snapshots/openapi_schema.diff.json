@@ -4334,7 +4334,7 @@
     "info": {
       "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relat\u00f3rios Excel e avalia\u00e7\u00e3o estrat\u00e9gica via IA.",
       "title": "BidIQ Uniformes API",
-      "version": "0.2.0"
+      "version": "dev"
     },
     "openapi": "3.1.0",
     "paths": {
@@ -14593,7 +14593,7 @@
     "info": {
       "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relat\u00f3rios Excel e avalia\u00e7\u00e3o estrat\u00e9gica via IA.",
       "title": "BidIQ Uniformes API",
-      "version": "0.2.0"
+      "version": "dev"
     },
     "openapi": "3.1.0",
     "paths": {

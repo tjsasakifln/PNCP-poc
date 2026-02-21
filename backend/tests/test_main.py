@@ -28,7 +28,7 @@ class TestApplicationSetup:
 
     def test_app_version(self):
         """Verify app version matches expected."""
-        assert app.version == "0.2.0"
+        assert app.version  # GTM-GO-003: env-driven (defaults to "dev" locally)
 
     def test_app_has_docs_endpoint(self):
         """Verify OpenAPI documentation is configured."""
@@ -67,7 +67,7 @@ class TestRootEndpoint:
         """Root endpoint version should match app version."""
         response = client.get("/")
         data = response.json()
-        assert data["version"] == "0.2.0"
+        assert data["version"] == app.version
 
     def test_root_endpoints_links(self, client):
         """Root endpoint should include documentation links."""
@@ -146,7 +146,7 @@ class TestHealthEndpoint:
         """Health endpoint version should match app version."""
         response = client.get("/health")
         data = response.json()
-        assert data["version"] == "0.2.0"
+        assert data["version"] == app.version
 
     def test_health_response_time(self, client):
         """Health endpoint should respond quickly (< 100ms)."""
@@ -314,7 +314,7 @@ class TestOpenAPIDocumentation:
 
         info = schema["info"]
         assert info["title"] == "BidIQ Uniformes API"
-        assert info["version"] == "0.2.0"
+        assert info["version"] == app.version
 
     def test_openapi_has_health_endpoint(self, client):
         """OpenAPI schema should document /health endpoint."""

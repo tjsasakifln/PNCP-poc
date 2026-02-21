@@ -86,7 +86,8 @@ _env = os.getenv("ENVIRONMENT", os.getenv("ENV", "development")).lower()
 _is_production = _env in ("production", "prod")
 
 # STORY-211: Sentry Error Tracking — must init BEFORE app creation (AC2)
-APP_VERSION = "0.2.0"
+# GTM-GO-003 AC4: Read version from env var (injected by CI/CD), default "dev" for local
+APP_VERSION = os.getenv("APP_VERSION", "dev")
 
 
 def scrub_pii(event, hint):
@@ -584,7 +585,7 @@ async def root():
     """
     return {
         "name": "BidIQ Uniformes API",
-        "version": "0.2.0",
+        "version": APP_VERSION,
         "api_version": "v1",  # SYS-M08: Current API version
         "description": "API para busca de licitações de uniformes no PNCP",
         "endpoints": {

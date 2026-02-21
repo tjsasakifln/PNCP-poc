@@ -1,8 +1,8 @@
 # Production Rollback Procedure
 
 **Project:** BidIQ Uniformes
-**Version:** 1.0
-**Last Updated:** 2026-01-30
+**Version:** 2.0
+**Last Updated:** 2026-02-21
 **Owner:** @devops
 
 ---
@@ -11,7 +11,7 @@
 
 This runbook provides step-by-step instructions for rolling back the BidIQ Uniformes application to a previous stable version in case of critical issues during or after deployment.
 
-**Estimated Rollback Time:** <5 minutes (both platforms)
+**Estimated Rollback Time:** < 5 min (backend + frontend, both on Railway)
 
 **Rollback Authority:**
 - Primary: @devops
@@ -169,20 +169,20 @@ Before rollback, notify:
 
 ---
 
-### Phase 2: Frontend Rollback (Vercel)
+### Phase 2: Frontend Rollback (Railway)
 
 **Estimated Time:** 2 minutes
 
-#### Option A: Vercel Dashboard (Recommended)
+#### Option A: Railway Dashboard (Recommended)
 
-1. **Open Vercel Dashboard:**
+1. **Open Railway Dashboard:**
    ```
-   https://vercel.com/dashboard
+   https://railway.app/dashboard
    ```
 
 2. **Select Project:**
-   - Navigate to `bidiq-uniformes` project
-   - Click on the project name
+   - Navigate to the `bidiq-frontend` service
+   - Click on the service name
 
 3. **Access Deployments:**
    - Click "Deployments" tab
@@ -191,51 +191,55 @@ Before rollback, notify:
 4. **Identify Last Stable Deployment:**
    - Look for the deployment **before** the current one
    - Check deployment time and commit SHA
-   - Verify it has **"Ready"** status
+   - Verify it has a **green checkmark** (successful)
 
 5. **Execute Rollback:**
    - Click "•••" (three dots) on the stable deployment
-   - Select "Promote to Production"
-   - Confirm: "Yes, promote this deployment"
+   - Select "Redeploy"
+   - Confirm: "Yes, redeploy this version"
 
-6. **Verify Deployment:**
-   - Status changes to "Production"
-   - Green checkmark appears
-   - Expected time: ~30 seconds
+6. **Monitor Redeployment:**
+   - Watch logs in real-time
+   - Wait for: `Listening on 0.0.0.0:3000`
+   - Expected time: ~90 seconds
 
 7. **Verify Health:**
    ```bash
-   curl https://bidiq-uniformes.vercel.app
+   curl https://smartlic.tech
    # Expected: HTML content (200 OK)
    ```
 
-#### Option B: Vercel CLI (If Dashboard Unavailable)
+#### Option B: Railway CLI (If Dashboard Unavailable)
 
-1. **Login to Vercel:**
+1. **Login to Railway:**
    ```bash
-   vercel login
+   railway login
    ```
 
-2. **Navigate to Frontend:**
+2. **Identify Previous Commit SHA:**
    ```bash
-   cd D:\pncp-poc\frontend
+   # Find the last known good commit
+   git log --oneline -10
+   # Note the SHA of the previous stable version
    ```
 
-3. **List Deployments:**
+3. **Execute Rollback:**
    ```bash
-   vercel ls
-   # Identify the previous stable deployment URL
+   railway redeploy --service bidiq-frontend -y
+   # Or redeploy a specific commit:
+   # railway service bidiq-frontend redeploy --commit <sha>
    ```
 
-4. **Execute Rollback:**
+4. **Monitor Logs:**
    ```bash
-   vercel rollback
-   # Select: Previous deployment from list
+   railway logs --service bidiq-frontend --tail
+   # Wait for: Listening on 0.0.0.0:3000
    ```
 
 5. **Verify Health:**
    ```bash
-   curl https://bidiq-uniformes.vercel.app
+   curl https://smartlic.tech
+   # Expected: HTML content (200 OK)
    ```
 
 **Frontend Rollback Status:** ✅ Complete | ⏳ In Progress | ❌ Failed
@@ -271,7 +275,7 @@ curl -X POST https://bidiq-backend-production.up.railway.app/api/buscar \
 #### 3.2 Frontend Verification
 
 1. **Manual Browser Test:**
-   - Open: https://bidiq-uniformes.vercel.app
+   - Open: https://smartlic.tech
    - ✅ Page loads in <2s
    - ✅ No JavaScript errors in console
    - ✅ All UI components render
@@ -285,13 +289,13 @@ curl -X POST https://bidiq-backend-production.up.railway.app/api/buscar \
 
 #### 3.3 Error Rate Verification
 
-**Railway Dashboard:**
+**Railway Dashboard (Backend):**
 - Navigate to: Observability → Metrics
 - Check: Error rate <1% over last 5 minutes
 - Check: Response time <5s (95th percentile)
 
-**Vercel Dashboard:**
-- Navigate to: Analytics → Errors
+**Railway Dashboard (Frontend):**
+- Navigate to: Observability → Metrics
 - Check: Error rate <1% over last 5 minutes
 - Check: No new error types
 
@@ -378,7 +382,7 @@ Next steps: [plan]
 Within 24 hours, conduct RCA:
 
 1. **Gather Data:**
-   - Deployment logs (Railway + Vercel)
+   - Deployment logs (Railway backend + frontend)
    - Error logs (backend + frontend)
    - Monitoring metrics (before/during/after)
    - User reports (if any)
@@ -415,7 +419,7 @@ Within 24 hours, conduct RCA:
 
 ## Emergency Localhost Fallback
 
-**Use Case:** Both Railway AND Vercel are down (extremely rare)
+**Use Case:** Railway platform is completely down (extremely rare)
 
 ### Step 1: Run Backend Locally
 
@@ -432,16 +436,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 # Expected: Server running on http://0.0.0.0:8000
 ```
 
-### Step 2: Update Frontend Environment
-
-```bash
-# In Vercel Dashboard
-# Settings → Environment Variables
-# Set: NEXT_PUBLIC_BACKEND_URL=http://<your-ip>:8000
-# Redeploy Vercel
-```
-
-**OR** Run frontend locally too:
+### Step 2: Run Frontend Locally
 
 ```bash
 cd D:\pncp-poc\frontend
@@ -453,10 +448,10 @@ npm run dev
 
 ```
 ⚠️ EMERGENCY FALLBACK ACTIVATED ⚠️
-Both cloud platforms unavailable. Running on local infrastructure.
+Railway platform unavailable. Running on local infrastructure.
 Access: http://<your-ip>:3000
-Status: Investigating cloud platform issues
-ETA: Unknown (dependent on Railway/Vercel)
+Status: Investigating Railway platform issues
+ETA: Unknown (dependent on Railway)
 ```
 
 ---
@@ -471,7 +466,7 @@ ETA: Unknown (dependent on Railway/Vercel)
 
 ### During Rollback
 - [ ] Backend rolled back (Railway)
-- [ ] Frontend rolled back (Vercel)
+- [ ] Frontend rolled back (Railway)
 - [ ] Health checks passing
 - [ ] Smoke tests passing
 - [ ] Error rate <1%
@@ -497,15 +492,15 @@ ETA: Unknown (dependent on Railway/Vercel)
 3. Try dashboard rollback instead of CLI
 4. Contact Railway support if platform issue
 
-### Issue: Vercel Rollback Fails
+### Issue: Frontend (Railway) Rollback Fails
 
-**Symptom:** "Promote to Production" fails or deployment errors
+**Symptom:** Redeploy fails or deployment errors
 
 **Solution:**
-1. Check Vercel status: https://www.vercel-status.com/
-2. Verify deployment exists: `vercel ls`
-3. Try CLI rollback instead of dashboard
-4. Contact Vercel support if platform issue
+1. Check Railway status: https://railway.app/status
+2. Verify service exists: `railway status`
+3. Try dashboard rollback instead of CLI
+4. Contact Railway support if platform issue
 
 ### Issue: Health Checks Still Failing After Rollback
 
@@ -527,7 +522,7 @@ ETA: Unknown (dependent on Railway/Vercel)
 2. Clear browser cache
 3. Verify NEXT_PUBLIC_BACKEND_URL points to Railway URL
 4. Check CORS configuration in backend
-5. Review Vercel logs for errors
+5. Review Railway frontend logs for errors
 
 ---
 
@@ -545,6 +540,54 @@ Track these metrics for each rollback:
 
 ---
 
+## Release Checklist
+
+Follow these steps for every production release:
+
+### 1. Update CHANGELOG.md
+
+```bash
+# Add new version entry at top of CHANGELOG.md
+# Follow Keep a Changelog format
+```
+
+### 2. Create Git Tag
+
+```bash
+bash scripts/create-release.sh vX.Y.Z
+# Idempotent: exits gracefully if tag exists
+```
+
+### 3. Verify Tag on GitHub
+
+```bash
+# Verify locally
+git describe --tags HEAD
+
+# Verify on GitHub
+gh release list
+# Or visit: https://github.com/tjsasakifln/PNCP-poc/tags
+```
+
+### 4. Deploy via CI
+
+```bash
+# Push to main triggers deploy.yml
+git push origin main
+
+# Or manual dispatch
+gh workflow run deploy.yml
+```
+
+### 5. Verify /health
+
+```bash
+curl -s https://bidiq-backend-production.up.railway.app/health | python3 -m json.tool | grep version
+# Expected: "version": "vX.Y.Z"
+```
+
+---
+
 ## Appendix: Contact Information
 
 | Role | Name | Contact | Availability |
@@ -555,12 +598,11 @@ Track these metrics for each rollback:
 | QA Lead | @qa | ____________ | Business hours |
 
 **Railway Support:** https://railway.app/help
-**Vercel Support:** https://vercel.com/support
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Created:** 2026-01-30
-**Last Updated:** 2026-01-30
+**Last Updated:** 2026-02-21
 **Owner:** @devops
-**Next Review:** After first production deployment or rollback event
+**Next Review:** After next production rollback event

@@ -86,7 +86,7 @@ class TestStartupReadiness:
             "ready": True,
             "uptime_seconds": 42.5,
             "timestamp": "2026-02-20T00:00:00Z",
-            "version": "0.2.0",
+            "version": "dev",
             "dependencies": {
                 "supabase": "healthy",
                 "openai": "configured",
@@ -104,7 +104,7 @@ class TestStartupReadiness:
         data = {
             "status": "healthy",
             "timestamp": "2026-02-20T00:00:00Z",
-            "version": "0.2.0",
+            "version": "dev",
             "dependencies": {
                 "supabase": "healthy",
                 "openai": "configured",

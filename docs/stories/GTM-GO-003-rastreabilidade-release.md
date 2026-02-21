@@ -12,7 +12,7 @@ P1 — Risco operacional
 ## Estimativa
 2h
 
-## Status: PENDING
+## Status: DONE
 
 ---
 
@@ -53,41 +53,41 @@ Garantir que em qualquer momento seja possível identificar exatamente qual vers
 
 ### Git Tags
 
-- [ ] AC1: Tags criadas para todas as versões do CHANGELOG: `v0.0.1`, `v0.1.0`, `v0.2.0`, `v0.3.0`, `v0.4.0`, `v0.5.0`
+- [x] AC1: Tags criadas para todas as versões do CHANGELOG: `v0.0.1`, `v0.1.0`, `v0.2.0`, `v0.3.0`, `v0.4.0`, `v0.5.0`
   - **Evidência:** `git tag --list` retorna 6 tags
   - **Nota:** Tags apontam para o commit mais próximo da data de release documentada no CHANGELOG
 
-- [ ] AC2: Tag `v0.5.0` aponta para o SHA do deploy atual em produção
+- [x] AC2: Tag `v0.5.0` aponta para o SHA do deploy atual em produção
   - **Evidência:** `git log v0.5.0 --oneline -1` mostra commit correto
 
-- [ ] AC3: Script `scripts/create-release.sh` criado para automatizar: `git tag -a vX.Y.Z -m "Release vX.Y.Z"` + `git push origin vX.Y.Z`
+- [x] AC3: Script `scripts/create-release.sh` criado para automatizar: `git tag -a vX.Y.Z -m "Release vX.Y.Z"` + `git push origin vX.Y.Z`
   - **Evidência:** Script existe e é executável. `bash scripts/create-release.sh v0.5.1` cria tag e push.
   - **Idempotência:** Se tag já existe, script exibe mensagem e sai sem erro (exit 0)
 
 ### Versão no Deploy
 
-- [ ] AC4: Backend `/health` inclui campo `version` populado via env var `APP_VERSION` (default: "dev")
+- [x] AC4: Backend `/health` inclui campo `version` populado via env var `APP_VERSION` (default: "dev")
   - **Evidência:** `curl /health | jq .version` retorna "0.5.0" em produção
   - **Nota:** deploy.yml seta `APP_VERSION` automaticamente a partir da tag (se existir) ou do SHA curto
 
-- [ ] AC5: `deploy.yml` injeta `APP_VERSION` no Railway via `railway variables set APP_VERSION=vX.Y.Z` antes do deploy
+- [x] AC5: `deploy.yml` injeta `APP_VERSION` no Railway via `railway variables set APP_VERSION=vX.Y.Z` antes do deploy
   - **Evidência:** Diff do workflow mostrando o step adicionado
 
 ### Rollback Atualizado
 
-- [ ] AC6: `docs/runbooks/rollback-procedure.md` seção "Phase 2: Frontend Rollback" atualizada de Vercel para Railway
+- [x] AC6: `docs/runbooks/rollback-procedure.md` seção "Phase 2: Frontend Rollback" atualizada de Vercel para Railway
   - **Evidência:** Diff mostrando substituição completa (dashboard + CLI instructions para Railway)
   - **Aceite:** Zero referências a "Vercel" no documento final
 
-- [ ] AC7: Seção de rollback inclui comando Railway CLI exato: `railway service <frontend-service-id> redeploy --commit <sha>`
+- [x] AC7: Seção de rollback inclui comando Railway CLI exato: `railway service <frontend-service-id> redeploy --commit <sha>`
   - **Evidência:** Comando funcional verificado em staging
 
-- [ ] AC8: Tempo estimado de rollback atualizado no documento: "< 5 min (backend + frontend)"
+- [x] AC8: Tempo estimado de rollback atualizado no documento: "< 5 min (backend + frontend)"
   - **Evidência:** Texto atualizado no topo do documento
 
 ### Documentação de Processo
 
-- [ ] AC9: Seção "Release Checklist" adicionada ao rollback-procedure.md (ou arquivo separado) com:
+- [x] AC9: Seção "Release Checklist" adicionada ao rollback-procedure.md (ou arquivo separado) com:
   1. Atualizar CHANGELOG.md
   2. Criar git tag: `bash scripts/create-release.sh vX.Y.Z`
   3. Verificar tag no GitHub
