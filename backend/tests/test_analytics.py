@@ -62,28 +62,20 @@ class TestAnalyticsSummary:
         assert "member_since" in data
         assert len(data["member_since"]) > 0
 
-    @pytest.mark.skip(reason="Stale mock — analytics now uses RPC get_analytics_summary instead of table queries — STORY-224")
     def test_summary_with_sessions(self, client, mock_supabase):
-        """User with search sessions."""
-        sessions_chain = MagicMock()
-        sessions_chain.select.return_value = sessions_chain
-        sessions_chain.eq.return_value = sessions_chain
-        sessions_result = MagicMock()
-        sessions_result.data = [
-            {"id": "s1", "total_raw": 100, "total_filtered": 15, "valor_total": 500000, "created_at": "2026-02-01"},
-            {"id": "s2", "total_raw": 200, "total_filtered": 0, "valor_total": 0, "created_at": "2026-02-02"},
-            {"id": "s3", "total_raw": 50, "total_filtered": 8, "valor_total": 250000, "created_at": "2026-02-03"},
-        ]
-        sessions_chain.execute.return_value = sessions_result
-
-        profile_chain = MagicMock()
-        profile_chain.select.return_value = profile_chain
-        profile_chain.eq.return_value = profile_chain
-        profile_result = MagicMock()
-        profile_result.data = [{"created_at": "2026-01-10T00:00:00Z"}]
-        profile_chain.execute.return_value = profile_result
-
-        mock_supabase.table.side_effect = lambda t: sessions_chain if t == "search_sessions" else profile_chain
+        """User with search sessions (via RPC get_analytics_summary)."""
+        # Mock the RPC call that returns aggregated analytics
+        rpc_chain = MagicMock()
+        rpc_result = MagicMock()
+        rpc_result.data = [{
+            "total_searches": 3,
+            "total_downloads": 2,  # s1 and s3 have filtered > 0
+            "total_opportunities": 23,  # 15 + 0 + 8
+            "total_value_discovered": 750000.0,
+            "member_since": "2026-01-10T00:00:00Z",
+        }]
+        rpc_chain.execute.return_value = rpc_result
+        mock_supabase.rpc.return_value = rpc_chain
 
         res = client.get("/analytics/summary", headers={"Authorization": "Bearer fake"})
         assert res.status_code == 200
@@ -94,6 +86,7 @@ class TestAnalyticsSummary:
         assert data["total_value_discovered"] == 750000.0
         assert data["estimated_hours_saved"] == 6.0  # 3 * 2
         assert data["success_rate"] == 66.7  # 2/3 * 100 rounded
+        assert data["member_since"] == "2026-01-10T00:00:00Z"
 
 
 class TestAnalyticsSummaryRPCDegradation:

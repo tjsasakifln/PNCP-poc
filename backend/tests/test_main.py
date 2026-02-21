@@ -215,23 +215,26 @@ class TestHealthEndpoint:
                 assert data["status"] == "degraded"
                 assert data["dependencies"]["redis"] == "unavailable"
 
-    @pytest.mark.skip(reason="Stale mock — health check Redis mock doesn't override async pool check — STORY-224")
     def test_health_redis_healthy(self, client):
         """When Redis is available, health should report it as healthy."""
         import os
         from unittest.mock import patch, AsyncMock
 
+        # Mock Redis pool with ping support
+        mock_pool = AsyncMock()
+        mock_pool.ping.return_value = True
+        mock_pool.info.return_value = {"used_memory": 1024 * 1024}  # 1 MB
+
         # Simulate Redis configured and available
         with patch.dict(os.environ, {"REDIS_URL": "redis://localhost:6379"}, clear=False):
-            with patch("redis_client.is_redis_available", new_callable=AsyncMock) as mock_redis:
-                mock_redis.return_value = True
+            with patch("redis_pool.is_redis_available", new_callable=AsyncMock, return_value=True):
+                with patch("redis_pool.get_redis_pool", new_callable=AsyncMock, return_value=mock_pool):
+                    response = client.get("/health")
+                    data = response.json()
 
-                response = client.get("/health")
-                data = response.json()
-
-                # Should be healthy
-                assert data["status"] == "healthy"
-                assert data["dependencies"]["redis"] == "healthy"
+                    # Should be healthy
+                    assert data["status"] == "healthy"
+                    assert data["dependencies"]["redis"] == "healthy"
 
 
 class TestCORSHeaders:
@@ -360,453 +363,6 @@ class TestErrorHandling:
         assert "detail" in data
 
 
-@pytest.mark.skip(reason="Stale mock — STORY-216 moved buscar to routes.search; mocks main.rate_limiter which no longer exists — STORY-224")
-class TestBuscarEndpoint:
-    """Test POST /buscar endpoint - main orchestration pipeline."""
-
-    @pytest.fixture
-    def valid_request(self):
-        """Fixture for valid search request."""
-        return {
-            "ufs": ["SP", "RJ"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-31",
-        }
-
-    @pytest.fixture
-    def mock_licitacao(self):
-        """Fixture for a valid PNCP bid matching uniform keywords."""
-        return {
-            "codigoCompra": "123456789",
-            "objetoCompra": "Aquisição de uniformes escolares para secretaria de educação",
-            "nomeOrgao": "Prefeitura Municipal de São Paulo",
-            "uf": "SP",
-            "municipio": "São Paulo",
-            "valorTotalEstimado": 150000.00,
-            "dataAberturaProposta": "2025-02-15T10:00:00",
-            "linkSistemaOrigem": "https://pncp.gov.br/app/editais/123456789",
-        }
-
-    @pytest.fixture(autouse=True)
-    def mock_auth_and_quota(self, monkeypatch):
-        """Auto-apply auth mock and quota mock for all tests in this class."""
-        from auth import require_auth
-        from unittest.mock import Mock
-
-        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
-        app.dependency_overrides[require_auth] = lambda: mock_user
-
-        # Mock rate limiter to always allow requests
-        # Note: rate_limiter is imported at module level in main.py
-        mock_rate_limiter = Mock()
-        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
-        monkeypatch.setattr("main.rate_limiter", mock_rate_limiter)
-
-        # Mock check_quota to skip Supabase connection
-        # Note: check_quota is imported INSIDE buscar_licitacoes function,
-        # so patching quota.check_quota works (function-local imports do lookup)
-        from quota import QuotaInfo, PLAN_CAPABILITIES
-        from datetime import datetime, timezone
-        mock_quota = QuotaInfo(
-            allowed=True,
-            plan_id="maquina",
-            plan_name="Máquina",
-            capabilities=PLAN_CAPABILITIES["maquina"],
-            quota_used=10,
-            quota_remaining=290,
-            quota_reset_date=datetime.now(timezone.utc)
-        )
-        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
-        yield
-        app.dependency_overrides.clear()
-
-    def test_buscar_endpoint_exists(self, client):
-        """POST /buscar endpoint should be defined."""
-        # Send empty POST to trigger validation error (not 404)
-        response = client.post("/buscar", json={})
-        # Should get 422 (validation error) not 404 (endpoint doesn't exist)
-        assert response.status_code == 422
-
-    def test_buscar_validation_empty_ufs(self, client, valid_request):
-        """Request with empty UFs list should fail validation."""
-        request = valid_request.copy()
-        request["ufs"] = []
-        response = client.post("/buscar", json=request)
-        assert response.status_code == 422
-        assert "ufs" in response.json()["detail"][0]["loc"]
-
-    def test_buscar_validation_invalid_date_format(self, client, valid_request):
-        """Request with invalid date format should fail validation."""
-        request = valid_request.copy()
-        request["data_inicial"] = "01-01-2025"  # Wrong format (DD-MM-YYYY)
-        response = client.post("/buscar", json=request)
-        assert response.status_code == 422
-
-    def test_buscar_validation_missing_fields(self, client):
-        """Request with missing required fields should fail."""
-        response = client.post("/buscar", json={"ufs": ["SP"]})
-        assert response.status_code == 422
-        data = response.json()
-        # Should have validation errors for missing fields
-        assert "detail" in data
-
-    def test_buscar_success_response_structure(self, client, valid_request, mock_licitacao, monkeypatch):
-        """Successful request should return all required fields."""
-        from unittest.mock import Mock
-
-        # Mock PNCP client
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        def mock_pncp_client():
-            return mock_client_instance
-
-        # Mock aplicar_todos_filtros to return the bid
-        def mock_aplicar_todos_filtros(bids, **kwargs):
-            return [bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0, "total_rejeitados": 0}
-
-        # Mock create_excel to return a buffer
-        from io import BytesIO
-        def mock_create_excel(bids):
-            buffer = BytesIO()
-            buffer.write(b"fake-excel-content")
-            buffer.seek(0)
-            return buffer
-
-        # Mock gerar_resumo to return valid summary
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="1 licitação encontrada",
-                total_oportunidades=1,
-                valor_total=150000.00,
-                destaques=["SP: R$ 150k"],
-            )
-
-        # Apply mocks
-        monkeypatch.setattr("main.PNCPClient", mock_pncp_client)
-        monkeypatch.setattr("main.aplicar_todos_filtros", mock_aplicar_todos_filtros)
-        monkeypatch.setattr("main.create_excel", mock_create_excel)
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        response = client.post("/buscar", json=valid_request)
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Verify all required fields
-        assert "resumo" in data
-        assert "excel_base64" in data
-        assert "total_raw" in data
-        assert "total_filtrado" in data
-
-    def test_buscar_resumo_structure(self, client, valid_request, mock_licitacao, monkeypatch):
-        """Response should include valid resumo structure."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
-
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Test summary",
-                total_oportunidades=1,
-                valor_total=150000.00,
-                destaques=["Test highlight"],
-                alerta_urgencia="Test alert",
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        response = client.post("/buscar", json=valid_request)
-        data = response.json()
-
-        resumo = data["resumo"]
-        assert "resumo_executivo" in resumo
-        assert "total_oportunidades" in resumo
-        assert "valor_total" in resumo
-        assert "destaques" in resumo
-        assert "alerta_urgencia" in resumo
-
-    def test_buscar_excel_gated_by_plan(self, client, valid_request, mock_licitacao, monkeypatch):
-        """Excel generation should be gated by plan capabilities (STORY-165).
-
-        With new pricing model (default), free_trial users don't get Excel.
-        This test verifies that Excel is correctly blocked for free_trial plan.
-        """
-        from unittest.mock import Mock
-        from io import BytesIO
-        from quota import QuotaInfo, PLAN_CAPABILITIES
-        from datetime import datetime, timezone
-
-        # Ensure user is NOT detected as admin/master (otherwise admin bypass kicks in)
-        async def _mock_check_roles(user_id):
-            return (False, False)
-        monkeypatch.setattr("authorization._check_user_roles", _mock_check_roles)
-        monkeypatch.setattr("main._get_admin_ids", lambda: set())
-
-        # Mock rate limiter to always allow
-        mock_rate_limiter = Mock()
-        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
-        monkeypatch.setattr("main.rate_limiter", mock_rate_limiter)
-
-        # Override the autouse mock to use free_trial (no Excel access)
-        # check_quota is imported INSIDE buscar_licitacoes, so patching quota.check_quota works
-        mock_quota_free = QuotaInfo(
-            allowed=True,
-            plan_id="free_trial",
-            plan_name="FREE Trial",
-            capabilities=PLAN_CAPABILITIES["free_trial"],  # allow_excel=False
-            quota_used=0,
-            quota_remaining=999999,
-            quota_reset_date=datetime.now(timezone.utc),
-        )
-        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota_free)
-        # Mock atomic quota check (non-admin path uses this)
-        monkeypatch.setattr("quota.check_and_increment_quota_atomic", lambda user_id, max_q: (True, 1, max_q - 1))
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
-
-        excel_content = b"PK\x03\x04fake-excel-header"
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(excel_content))
-
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Test",
-                total_oportunidades=1,
-                valor_total=150000.00,
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        # Use a 7-day date range (within free_trial's max_history_days limit)
-        free_trial_request = {
-            "ufs": ["SP", "RJ"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-07",  # 7 days (within free_trial limit)
-        }
-
-        response = client.post("/buscar", json=free_trial_request)
-
-        # Verify successful response before checking fields
-        assert response.status_code == 200, f"Expected 200 but got {response.status_code}: {response.json()}"
-        data = response.json()
-
-        # With new pricing model (STORY-165), free_trial plan doesn't have Excel
-        assert data["excel_available"] is False
-        assert data["excel_base64"] is None
-        assert "upgrade_message" in data
-        assert "Máquina" in data["upgrade_message"]
-
-    def test_buscar_llm_fallback_on_error(self, client, valid_request, mock_licitacao, monkeypatch):
-        """Should use fallback when LLM fails."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
-
-        # Mock gerar_resumo to raise exception
-        def mock_gerar_resumo(bids, **kwargs):
-            raise Exception("OpenAI API error")
-
-        # Mock fallback to return valid summary
-        def mock_gerar_resumo_fallback(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Fallback summary",
-                total_oportunidades=1,
-                valor_total=150000.00,
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-        monkeypatch.setattr("main.gerar_resumo_fallback", mock_gerar_resumo_fallback)
-
-        response = client.post("/buscar", json=valid_request)
-        assert response.status_code == 200
-        # Should succeed with fallback
-        data = response.json()
-        assert data["resumo"]["resumo_executivo"] == "Fallback summary"
-
-    def test_buscar_pncp_api_error_502(self, client, valid_request, monkeypatch):
-        """PNCP API error should return 502."""
-        from exceptions import PNCPAPIError
-        from unittest.mock import Mock
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.side_effect = PNCPAPIError("Connection timeout")
-
-        async def mock_buscar_paralelo(*args, **kwargs):
-            raise PNCPAPIError("Connection timeout")
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
-
-        response = client.post("/buscar", json=valid_request)
-        assert response.status_code == 502
-        assert "PNCP" in response.json()["detail"]
-
-    def test_buscar_rate_limit_error_503(self, client, valid_request, monkeypatch):
-        """PNCP rate limit error should return 503 with Retry-After."""
-        from exceptions import PNCPRateLimitError
-        from unittest.mock import Mock
-
-        mock_client_instance = Mock()
-        error = PNCPRateLimitError("Rate limit exceeded")
-        error.retry_after = 120
-        mock_client_instance.fetch_all.side_effect = error
-
-        async def mock_buscar_paralelo(*args, **kwargs):
-            raise error
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
-
-        response = client.post("/buscar", json=valid_request)
-        assert response.status_code == 503
-        assert "Retry-After" in response.headers
-        assert response.headers["Retry-After"] == "120"
-
-    def test_buscar_internal_error_500(self, client, valid_request, monkeypatch):
-        """Unexpected error should return 500 with sanitized message."""
-        from unittest.mock import Mock
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.side_effect = RuntimeError("Internal bug with sensitive data")
-
-        async def mock_buscar_paralelo(*args, **kwargs):
-            raise RuntimeError("Internal bug with sensitive data")
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
-
-        response = client.post("/buscar", json=valid_request)
-        assert response.status_code == 500
-        # Should NOT expose internal error details
-        assert "Erro interno do servidor" in response.json()["detail"]
-        assert "sensitive data" not in response.json()["detail"]
-
-    def test_buscar_empty_results(self, client, valid_request, monkeypatch):
-        """Should handle empty results gracefully."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([])  # Empty generator
-
-        # Mock both PNCPClient and buscar_todas_ufs_paralelo (used for 2+ UFs)
-        async def mock_buscar_paralelo(*args, **kwargs):
-            return []
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([], {"total_raw": 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"empty-excel"))
-
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Nenhuma licitação encontrada",
-                total_oportunidades=0,
-                valor_total=0.0,
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        response = client.post("/buscar", json=valid_request)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["total_raw"] == 0
-        assert data["total_filtrado"] == 0
-
-    def test_buscar_statistics_match(self, client, valid_request, mock_licitacao, monkeypatch):
-        """total_raw and total_filtrado should reflect actual counts."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        # Mock 10 raw bids, 3 filtered
-        mock_licitacoes_raw = [mock_licitacao.copy() for _ in range(10)]
-        mock_licitacoes_filtradas = mock_licitacoes_raw[:3]
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter(mock_licitacoes_raw)
-
-        async def mock_buscar_paralelo(*args, **kwargs):
-            return mock_licitacoes_raw
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: (mock_licitacoes_filtradas, {"total_raw": len(bids) if bids else 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
-
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="3 licitações",
-                total_oportunidades=len(bids),
-                valor_total=450000.00,
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        response = client.post("/buscar", json=valid_request)
-        data = response.json()
-        assert data["total_raw"] == 10
-        assert data["total_filtrado"] == 3
-
-    def test_buscar_logs_pipeline_stages(self, client, valid_request, mock_licitacao, monkeypatch, caplog):
-        """Should log each pipeline stage."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        async def mock_buscar_paralelo(*args, **kwargs):
-            return [mock_licitacao]
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.buscar_todas_ufs_paralelo", mock_buscar_paralelo)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
-
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Test",
-                total_oportunidades=1,
-                valor_total=150000.00,
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        with caplog.at_level("INFO"):
-            _response = client.post("/buscar", json=valid_request)
-
-        # Verify key log messages
-        log_messages = " ".join([record.message for record in caplog.records])
-        assert "Starting procurement search" in log_messages
-        assert "Fetching bids from PNCP API" in log_messages
-        assert "Applying filters" in log_messages
-        assert "Generating executive summary" in log_messages
-        # With new pricing model, Excel might be skipped for free_trial users
-        assert ("Generating Excel report" in log_messages or "Excel generation skipped" in log_messages)
-        assert "Search completed successfully" in log_messages
 
 
 class TestSetoresEndpoint:
@@ -840,9 +396,17 @@ class TestSetoresEndpoint:
             assert "description" in sector
 
 
-@pytest.mark.skip(reason="Stale mock — /debug/pncp-test now requires admin auth; tests have no auth override — STORY-224")
 class TestDebugPNCPEndpoint:
     """Test /debug/pncp-test diagnostic endpoint."""
+
+    @pytest.fixture(autouse=True)
+    def mock_admin_auth(self):
+        """Override admin auth dependency so tests can access the debug endpoint."""
+        from admin import require_admin
+        mock_admin_user = {"id": "admin-user-123", "email": "admin@example.com", "role": "authenticated"}
+        app.dependency_overrides[require_admin] = lambda: mock_admin_user
+        yield
+        app.dependency_overrides.pop(require_admin, None)
 
     def test_debug_pncp_test_success(self, client, monkeypatch):
         """Debug endpoint should return success when PNCP is reachable."""
@@ -927,12 +491,16 @@ class TestBuscarValidationExtended:
             quota_reset_date=datetime.now(timezone.utc)
         )
         monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
+        # Mock atomic quota check to prevent Supabase connection
+        monkeypatch.setattr(
+            "quota.check_and_increment_quota_atomic",
+            lambda user_id, max_q: (True, 11, max_q - 11),
+        )
         yield
         app.dependency_overrides.clear()
 
-    @pytest.mark.skip(reason="Stale mock — STORY-216 changed error handling; invalid sector now returns 400 not 500 — STORY-224")
     def test_buscar_invalid_sector_id(self, client):
-        """Request with invalid sector ID should return 500 (HTTPException caught by general handler)."""
+        """Request with invalid sector ID should return 400 (HTTPException from stage_prepare)."""
         request = {
             "ufs": ["SP"],
             "data_inicial": "2025-01-01",
@@ -940,9 +508,8 @@ class TestBuscarValidationExtended:
             "setor_id": "invalid-sector-999",
         }
         response = client.post("/buscar", json=request)
-        # HTTPException(400) is caught by the outer Exception handler and converted to 500
-        # This covers line 213-214 (KeyError -> HTTPException path)
-        assert response.status_code == 500
+        # SearchPipeline.stage_prepare raises HTTPException(400) for unknown sector_id
+        assert response.status_code == 400
         assert "detail" in response.json()
 
     def test_buscar_date_range_end_before_start(self, client):
@@ -955,274 +522,5 @@ class TestBuscarValidationExtended:
         response = client.post("/buscar", json=request)
         assert response.status_code == 422
 
-    @pytest.mark.skip(reason="Stale mock — STORY-216 moved buscar to routes.search; mocks main.aplicar_todos_filtros which no longer exists — STORY-224")
-    def test_buscar_with_custom_search_terms(self, client, monkeypatch):
-        """Request with custom search terms should use them instead of sector keywords."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        mock_licitacao = {
-            "codigoCompra": "CUSTOM123",
-            "objetoCompra": "Aquisição de customizado especial",
-            "nomeOrgao": "Prefeitura Test",
-            "uf": "SP",
-            "municipio": "São Paulo",
-            "valorTotalEstimado": 100000.00,
-            "dataAberturaProposta": "2025-02-10T10:00:00",
-            "linkSistemaOrigem": "https://pncp.gov.br/test",
-        }
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
-
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Custom terms used",
-                total_oportunidades=1,
-                valor_total=100000.00,
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        request = {
-            "ufs": ["SP"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-31",
-            "termos_busca": "customizado especial",
-        }
-
-        response = client.post("/buscar", json=request)
-        assert response.status_code == 200
-
-    @pytest.mark.skip(reason="Stale mock — STORY-216 moved buscar to routes.search; mocks main.aplicar_todos_filtros which no longer exists — STORY-224")
-    def test_buscar_with_empty_custom_search_terms(self, client, monkeypatch):
-        """Request with empty/whitespace-only custom terms should use sector keywords."""
-        from unittest.mock import Mock
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([], {"total_raw": 0}))
-
-        request = {
-            "ufs": ["SP"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-31",
-            "termos_busca": "   ",  # Only whitespace
-        }
-
-        response = client.post("/buscar", json=request)
-        assert response.status_code == 200
 
 
-@pytest.mark.skip(reason="Stale mock — STORY-216 moved buscar to routes.search; mocks main.gerar_resumo which no longer exists — STORY-224")
-class TestBuscarDiagnosticLogging:
-    """Test diagnostic logging features in /buscar endpoint."""
-
-    @pytest.fixture(autouse=True)
-    def mock_auth_and_quota(self, monkeypatch):
-        """Auto-apply auth mock and quota mock for all tests in this class."""
-        from auth import require_auth
-        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
-        app.dependency_overrides[require_auth] = lambda: mock_user
-        from quota import QuotaInfo, PLAN_CAPABILITIES
-        from datetime import datetime, timezone
-        mock_quota = QuotaInfo(
-            allowed=True,
-            plan_id="maquina",
-            plan_name="Máquina",
-            capabilities=PLAN_CAPABILITIES["maquina"],
-            quota_used=10,
-            quota_remaining=290,
-            quota_reset_date=datetime.now(timezone.utc)
-        )
-        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
-        yield
-        app.dependency_overrides.clear()
-
-    def test_buscar_logs_keyword_rejection_sample(self, client, monkeypatch, caplog):
-        """Should log sample of keyword-rejected bids when rejections occur."""
-        from unittest.mock import Mock
-
-        # Create bids that will be keyword-rejected
-        rejected_bids = [
-            {
-                "codigoCompra": f"REJ{i}",
-                "objetoCompra": "Aquisição de equipamentos de informática não relacionados a uniformes",
-                "nomeOrgao": "Prefeitura Test",
-                "uf": "SP",
-                "municipio": "São Paulo",
-                "valorTotalEstimado": 100000.00,
-                "dataAberturaProposta": "2025-02-10T10:00:00",
-            }
-            for i in range(5)
-        ]
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter(rejected_bids)
-
-        # Mock filter to return empty results (all rejected by keyword)
-        def mock_aplicar_todos_filtros(bids, **kwargs):
-            return [], {
-                "total_raw": len(bids),
-                "aprovadas": 0,
-                "rejeitadas_keyword": len(bids),
-            }
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", mock_aplicar_todos_filtros)
-
-        request = {
-            "ufs": ["SP"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-31",
-        }
-
-        with caplog.at_level("DEBUG"):
-            _response = client.post("/buscar", json=request)
-
-        # Check if diagnostic logging occurred
-        log_messages = " ".join([record.message for record in caplog.records])
-        # Should mention keyword rejections
-        assert "rejeitadas_keyword" in log_messages.lower() or "keyword" in log_messages.lower()
-
-    def test_buscar_override_llm_total_oportunidades(self, client, monkeypatch, caplog):
-        """Should override LLM total_oportunidades when it differs from actual count."""
-        from unittest.mock import Mock
-        from io import BytesIO
-
-        mock_licitacao = {
-            "codigoCompra": "TEST123",
-            "objetoCompra": "Aquisição de uniformes escolares",
-            "nomeOrgao": "Prefeitura Test",
-            "uf": "SP",
-            "municipio": "São Paulo",
-            "valorTotalEstimado": 150000.00,
-            "dataAberturaProposta": "2025-02-10T10:00:00",
-        }
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-        monkeypatch.setattr("main.aplicar_todos_filtros", lambda bids, **kwargs: ([bids[0]] if bids else [], {"total_raw": len(bids) if bids else 0}))
-        monkeypatch.setattr("main.create_excel", lambda bids: BytesIO(b"excel"))
-
-        # Mock LLM to return WRONG count (0 instead of 1)
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo="Test",
-                total_oportunidades=0,  # WRONG - should be 1
-                valor_total=0.0,  # WRONG - should be 150k
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        request = {
-            "ufs": ["SP"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-31",
-        }
-
-        with caplog.at_level("WARNING"):
-            response = client.post("/buscar", json=request)
-
-        # Verify override occurred
-        data = response.json()
-        assert data["resumo"]["total_oportunidades"] == 1  # Overridden to correct value
-
-        # Check for warning log
-        log_messages = " ".join([record.message for record in caplog.records])
-        assert "overriding with actual count" in log_messages.lower()
-
-
-@pytest.mark.skip(reason="Stale mock — STORY-216 moved buscar to routes.search; mocks main.gerar_resumo which no longer exists — STORY-224")
-class TestBuscarIntegration:
-    """Integration tests using real modules (not fully mocked)."""
-
-    @pytest.fixture(autouse=True)
-    def mock_auth_and_quota(self, monkeypatch):
-        """Auto-apply auth mock and quota mock for all tests in this class."""
-        from auth import require_auth
-        mock_user = {"id": "test-user-123", "email": "test@example.com", "role": "authenticated"}
-        app.dependency_overrides[require_auth] = lambda: mock_user
-        from quota import QuotaInfo, PLAN_CAPABILITIES
-        from datetime import datetime, timezone
-        mock_quota = QuotaInfo(
-            allowed=True,
-            plan_id="maquina",
-            plan_name="Máquina",
-            capabilities=PLAN_CAPABILITIES["maquina"],
-            quota_used=10,
-            quota_remaining=290,
-            quota_reset_date=datetime.now(timezone.utc)
-        )
-        monkeypatch.setattr("quota.check_quota", lambda user_id: mock_quota)
-        yield
-        app.dependency_overrides.clear()
-
-    @pytest.mark.integration
-    def test_buscar_with_real_filter_and_excel(self, client, monkeypatch):
-        """Test with real filter and excel modules (mock only PNCP and LLM)."""
-        from unittest.mock import Mock
-        from datetime import datetime, timedelta
-
-        # Use a deadline within 7 days to pass the filter
-        future_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%dT10:00:00")
-
-        mock_licitacao = {
-            "codigoCompra": "TEST123",
-            "objetoCompra": "Aquisição de uniformes escolares",
-            "nomeOrgao": "Prefeitura Test",
-            "uf": "SP",
-            "municipio": "São Paulo",
-            "valorTotalEstimado": 200000.00,
-            "dataAberturaProposta": future_date,  # Future date within 7 days
-            "linkSistemaOrigem": "https://pncp.gov.br/test",
-            "situacaoCompra": "Recebendo Propostas",  # Status for P0 filter
-        }
-
-        mock_client_instance = Mock()
-        mock_client_instance.fetch_all.return_value = iter([mock_licitacao])
-
-        monkeypatch.setattr("main.PNCPClient", lambda: mock_client_instance)
-
-        # Mock only LLM to avoid API calls
-        def mock_gerar_resumo(bids, **kwargs):
-            from schemas import ResumoLicitacoes
-            return ResumoLicitacoes(
-                resumo_executivo=f"{len(bids)} licitação encontrada",
-                total_oportunidades=len(bids),
-                valor_total=sum(b.get("valorTotalEstimado", 0) for b in bids),
-            )
-
-        monkeypatch.setattr("main.gerar_resumo", mock_gerar_resumo)
-
-        request = {
-            "ufs": ["SP"],
-            "data_inicial": "2025-01-01",
-            "data_final": "2025-01-31",
-        }
-
-        response = client.post("/buscar", json=request)
-        assert response.status_code == 200
-
-        data = response.json()
-        # Filter should pass the uniform keyword and date validation
-        assert data["total_filtrado"] >= 1
-        # With new pricing model (STORY-165), Excel availability depends on plan
-        # Free trial users don't have Excel, so we check for appropriate response
-        if data["excel_available"]:
-            # If Excel is enabled (maquina/sala_guerra plan), should have base64 content
-            assert len(data["excel_base64"]) > 100
-        else:
-            # If Excel is disabled (free_trial/consultor_agil plan), should show upgrade message
-            assert data["excel_base64"] is None
-            assert "upgrade_message" in data

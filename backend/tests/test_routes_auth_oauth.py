@@ -4,9 +4,11 @@ Tests OAuth flow endpoints: initiate, callback, and revoke.
 Uses mocked authentication and external APIs.
 
 STORY-180: Google Sheets Export - OAuth Routes Tests
+STORY-224: Fixed 4 skipped tests — OAuth state now uses cryptographic nonces (STORY-210 AC13)
 """
 
 import pytest
+import time
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
@@ -66,9 +68,10 @@ class TestGoogleOAuthInitiate:
             assert response.status_code == 307  # Redirect
             assert "https://accounts.google.com/o/oauth2/auth" in response.headers["location"]
 
-    @pytest.mark.skip(reason="Stale mock — OAuth state now uses cryptographic nonce (STORY-210 AC13), not base64 — STORY-224")
-    def test_encodes_user_id_and_redirect_in_state(self, client):
-        """Should encode user_id and redirect_path in state parameter."""
+    def test_stores_nonce_with_user_id_and_redirect_in_state(self, client):
+        """Should use cryptographic nonce as state and store user_id + redirect."""
+        from routes.auth_oauth import _oauth_nonce_store
+
         with patch("routes.auth_oauth.get_authorization_url") as mock_get_url:
             # Capture the state parameter passed to get_authorization_url
             captured_state = None
@@ -82,11 +85,18 @@ class TestGoogleOAuthInitiate:
 
             client.get("/api/auth/google?redirect=/buscar", follow_redirects=False)
 
-            # Decode state and verify it contains user_id
+            # State should be an opaque nonce, not base64-encoded
             assert captured_state is not None
-            decoded_state = base64.urlsafe_b64decode(captured_state.encode()).decode()
-            assert "user-123-uuid" in decoded_state
-            assert "/buscar" in decoded_state
+            assert len(captured_state) > 20  # cryptographic nonce is long
+
+            # Nonce should be stored with correct user_id and redirect_path
+            assert captured_state in _oauth_nonce_store
+            user_id, redirect_path, _ = _oauth_nonce_store[captured_state]
+            assert user_id == "user-123-uuid"
+            assert redirect_path == "/buscar"
+
+            # Clean up nonce store
+            _oauth_nonce_store.pop(captured_state, None)
 
     def test_uses_default_redirect_when_not_provided(self, client):
         """Should use default redirect path when not provided."""
@@ -102,44 +112,56 @@ class TestGoogleOAuthInitiate:
 class TestGoogleOAuthCallback:
     """Test suite for GET /api/auth/google/callback endpoint."""
 
-    @pytest.mark.skip(reason="Stale mock — OAuth state now uses cryptographic nonce (STORY-210 AC13), not base64 — STORY-224")
     @pytest.mark.asyncio
     async def test_exchanges_code_for_tokens(self, client):
         """Should exchange authorization code for access/refresh tokens."""
-        state = base64.urlsafe_b64encode(b"user-123-uuid:/buscar").decode()
+        from routes.auth_oauth import _oauth_nonce_store
+
+        # Pre-populate nonce store with a valid nonce
+        test_nonce = "test-nonce-exchange"
+        _oauth_nonce_store[test_nonce] = ("user-123-uuid", "/buscar", time.time())
         mock_token_response = _make_mock_token_response()
 
-        with patch("routes.auth_oauth.exchange_code_for_tokens", new_callable=AsyncMock) as mock_exchange:
-            mock_exchange.return_value = mock_token_response
+        try:
+            with patch("routes.auth_oauth.exchange_code_for_tokens", new_callable=AsyncMock) as mock_exchange:
+                mock_exchange.return_value = mock_token_response
 
-            with patch("routes.auth_oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
-                client.get(f"/api/auth/google/callback?code=auth_code_123&state={state}")
+                with patch("routes.auth_oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
+                    client.get(f"/api/auth/google/callback?code=auth_code_123&state={test_nonce}")
 
-                # Should have called exchange_code_for_tokens
-                mock_exchange.assert_called_once()
+                    # Should have called exchange_code_for_tokens
+                    mock_exchange.assert_called_once()
 
-                # Should have saved tokens
-                mock_save.assert_called_once()
+                    # Should have saved tokens
+                    mock_save.assert_called_once()
+        finally:
+            _oauth_nonce_store.pop(test_nonce, None)
 
-    @pytest.mark.skip(reason="Stale mock — OAuth state now uses cryptographic nonce (STORY-210 AC13), not base64 — STORY-224")
     @pytest.mark.asyncio
     async def test_saves_encrypted_tokens_to_database(self, client):
         """Should save encrypted tokens to database."""
-        state = base64.urlsafe_b64encode(b"user-123-uuid:/buscar").decode()
+        from routes.auth_oauth import _oauth_nonce_store
+
+        # Pre-populate nonce store with a valid nonce
+        test_nonce = "test-nonce-save-tokens"
+        _oauth_nonce_store[test_nonce] = ("user-123-uuid", "/buscar", time.time())
         mock_token_response = _make_mock_token_response()
 
-        with patch("routes.auth_oauth.exchange_code_for_tokens", new_callable=AsyncMock) as mock_exchange:
-            mock_exchange.return_value = mock_token_response
+        try:
+            with patch("routes.auth_oauth.exchange_code_for_tokens", new_callable=AsyncMock) as mock_exchange:
+                mock_exchange.return_value = mock_token_response
 
-            with patch("routes.auth_oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
-                client.get(f"/api/auth/google/callback?code=auth_code_123&state={state}")
+                with patch("routes.auth_oauth.save_user_tokens", new_callable=AsyncMock) as mock_save:
+                    client.get(f"/api/auth/google/callback?code=auth_code_123&state={test_nonce}")
 
-                # Verify save_user_tokens was called with correct params
-                call_args = mock_save.call_args
-                assert call_args[1]["user_id"] == "user-123-uuid"
-                assert call_args[1]["access_token"] == "ya29.test_token"
-                assert call_args[1]["refresh_token"] == "1//refresh_token"
-                assert call_args[1]["scope"] == "https://www.googleapis.com/auth/spreadsheets"
+                    # Verify save_user_tokens was called with correct params
+                    call_args = mock_save.call_args
+                    assert call_args[1]["user_id"] == "user-123-uuid"
+                    assert call_args[1]["access_token"] == "ya29.test_token"
+                    assert call_args[1]["refresh_token"] == "1//refresh_token"
+                    assert call_args[1]["scope"] == "https://www.googleapis.com/auth/spreadsheets"
+        finally:
+            _oauth_nonce_store.pop(test_nonce, None)
 
     @pytest.mark.asyncio
     async def test_redirects_to_original_path_on_success(self, client):
@@ -186,24 +208,30 @@ class TestGoogleOAuthCallback:
         assert response.status_code == 307
         assert "error=oauth_denied" in response.headers["location"]
 
-    @pytest.mark.skip(reason="Stale mock — OAuth state now uses cryptographic nonce (STORY-210 AC13), not base64 — STORY-224")
     @pytest.mark.asyncio
     async def test_handles_token_exchange_failure(self, client):
         """Should handle token exchange failure gracefully."""
-        state = base64.urlsafe_b64encode(b"user-123-uuid:/buscar").decode()
+        from routes.auth_oauth import _oauth_nonce_store
 
-        with patch("routes.auth_oauth.exchange_code_for_tokens", new_callable=AsyncMock) as mock_exchange:
-            from fastapi import HTTPException
-            mock_exchange.side_effect = HTTPException(status_code=400, detail="Invalid code")
+        # Pre-populate nonce store with a valid nonce
+        test_nonce = "test-nonce-exchange-failure"
+        _oauth_nonce_store[test_nonce] = ("user-123-uuid", "/buscar", time.time())
 
-            response = client.get(
-                f"/api/auth/google/callback?code=invalid_code&state={state}",
-                follow_redirects=False
-            )
+        try:
+            with patch("routes.auth_oauth.exchange_code_for_tokens", new_callable=AsyncMock) as mock_exchange:
+                from fastapi import HTTPException
+                mock_exchange.side_effect = HTTPException(status_code=400, detail="Invalid code")
 
-            # Route catches HTTPException and redirects with error
-            assert response.status_code == 307
-            assert "error=oauth_failed" in response.headers["location"]
+                response = client.get(
+                    f"/api/auth/google/callback?code=invalid_code&state={test_nonce}",
+                    follow_redirects=False
+                )
+
+                # Route catches HTTPException and redirects with error
+                assert response.status_code == 307
+                assert "error=oauth_failed" in response.headers["location"]
+        finally:
+            _oauth_nonce_store.pop(test_nonce, None)
 
 
 class TestRevokeGoogleToken:

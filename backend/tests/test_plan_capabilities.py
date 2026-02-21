@@ -137,12 +137,13 @@ class TestMonthlyQuotaHelpers:
         # Should be in the future
         assert reset_date > datetime.now(timezone.utc)
 
-    @pytest.mark.skip(reason="Stale mock — get_quota_reset_date uses datetime.now(timezone.utc) not datetime.utcnow() — STORY-224")
     def test_get_quota_reset_date_handles_december(self):
         """Reset date should roll over to next year if current month is December."""
         with patch("quota.datetime") as mock_datetime:
             # Mock current date as December 15, 2025
-            mock_datetime.utcnow.return_value = datetime(2025, 12, 15)
+            # get_quota_reset_date() uses datetime.now(timezone.utc)
+            mock_datetime.now.return_value = datetime(2025, 12, 15, tzinfo=timezone.utc)
+            # Allow datetime(...) constructor calls to work normally
             mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
 
             reset_date = get_quota_reset_date()
@@ -310,10 +311,10 @@ class TestCheckQuota:
         assert result.allowed is False
         assert "trial expirou" in result.error_message.lower()
 
-    @pytest.mark.skip(reason="Stale mock — check_quota now uses RPC-based subscription lookup with different mock chain — STORY-224")
+    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
-    def test_consultor_agil_within_quota(self, mock_get_used, mock_get_supabase):
+    def test_consultor_agil_within_quota(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """Consultor Ágil user within quota should be allowed."""
         mock_get_used.return_value = 23  # Under 50 limit
         mock_sb = MagicMock()
@@ -334,10 +335,10 @@ class TestCheckQuota:
         assert result.quota_used == 23
         assert result.quota_remaining == 27  # 50 - 23
 
-    @pytest.mark.skip(reason="Stale mock — error_message format changed to include reset date and upgrade text — STORY-224")
+    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
-    def test_quota_exhausted_blocks_user(self, mock_get_used, mock_get_supabase):
+    def test_quota_exhausted_blocks_user(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """User who exhausted monthly quota should be blocked."""
         mock_get_used.return_value = 50  # At limit
         mock_sb = MagicMock()
@@ -357,10 +358,10 @@ class TestCheckQuota:
         assert "Limite de 50 buscas mensais atingido" in result.error_message
         assert result.quota_remaining == 0
 
-    @pytest.mark.skip(reason="Stale mock — check_quota now uses RPC-based subscription lookup with different mock chain — STORY-224")
+    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
-    def test_maquina_plan_has_excel_enabled(self, mock_get_used, mock_get_supabase):
+    def test_maquina_plan_has_excel_enabled(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """Máquina plan should have allow_excel=True."""
         mock_get_used.return_value = 100
         mock_sb = MagicMock()
@@ -380,10 +381,10 @@ class TestCheckQuota:
         assert result.capabilities["allow_excel"] is True
         assert result.capabilities["max_history_days"] == 365
 
-    @pytest.mark.skip(reason="Stale mock — check_quota now uses RPC-based subscription lookup with different mock chain — STORY-224")
+    @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)
     @patch("supabase_client.get_supabase")
     @patch("quota.get_monthly_quota_used")
-    def test_sala_guerra_highest_limits(self, mock_get_used, mock_get_supabase):
+    def test_sala_guerra_highest_limits(self, mock_get_used, mock_get_supabase, mock_get_caps):
         """Sala de Guerra should have highest limits."""
         mock_get_used.return_value = 500
         mock_sb = MagicMock()

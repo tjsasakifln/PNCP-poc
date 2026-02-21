@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timezone, timedelta
 from main import app
 from auth import require_auth
+from database import get_db
 
 
 client = TestClient(app)
@@ -30,37 +31,49 @@ def setup_auth_override(user_id="user-123"):
 class TestMeEndpoint:
     """Test /api/me endpoint."""
 
-    @pytest.mark.skip(reason="Stale mock — /me endpoint subscription lookup chain changed — STORY-224")
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
+    @patch("quota.get_plan_capabilities")
     @patch("quota.get_monthly_quota_used")
+    @patch("supabase_client.get_supabase")
     def test_returns_user_profile_with_capabilities(
-        self, mock_get_used, mock_get_supabase, mock_check_roles
+        self, mock_get_supabase, mock_get_used, mock_get_plan_caps, mock_check_roles
     ):
         """Should return complete user profile with plan capabilities."""
         cleanup = setup_auth_override("user-123")
         try:
+            # Mock plan capabilities to use hardcoded values
+            from quota import PLAN_CAPABILITIES
+            mock_get_plan_caps.return_value = PLAN_CAPABILITIES
+
             # Mock quota
             mock_get_used.return_value = 23
 
-            # Mock Supabase
+            # Mock Supabase client (used by both quota.check_quota and user.py)
             mock_sb = MagicMock()
             mock_get_supabase.return_value = mock_sb
 
-            # Mock user email
-            mock_user_data = MagicMock()
-            mock_user_data.user.email = "test@example.com"
-            mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
-
-            # Mock subscription
-            mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
+            # Mock subscription lookup chain in check_quota():
+            # sb.table("user_subscriptions").select("id, plan_id, expires_at").eq("user_id", ...).eq("is_active", True).order(...).limit(1).execute()
+            mock_subscription_result = MagicMock()
+            mock_subscription_result.data = [
                 {
                     "id": "sub-123",
                     "plan_id": "consultor_agil",
                     "expires_at": None,
                 }
             ]
+
+            # Mock user email lookup in user.py
+            mock_user_data = MagicMock()
+            mock_user_data.user.email = "test@example.com"
+            mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
+
+            # Setup table().select()... chain to return subscription data
+            mock_sb.table.return_value.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = mock_subscription_result
+
+            # Override get_db to return the same mock
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             response = client.get("/me")
 
@@ -70,7 +83,7 @@ class TestMeEndpoint:
             assert data["user_id"] == "user-123"
             assert data["email"] == "test@example.com"
             assert data["plan_id"] == "consultor_agil"
-            assert data["plan_name"] == "Consultor Ágil"
+            assert data["plan_name"] == "Consultor Ágil (legacy)"
             assert data["quota_used"] == 23
             assert data["quota_remaining"] == 27  # 50 - 23
             assert "capabilities" in data
@@ -300,6 +313,7 @@ class TestBuscarEndpointQuotaValidation:
 class TestBuscarEndpointExcelGating:
     """Test Excel export gating by plan."""
 
+    @patch("search_pipeline.upload_excel")
     @patch("routes.search.ENABLE_NEW_PRICING", True)
     @patch("quota.check_and_increment_quota_atomic")
     @patch("quota.check_quota")
@@ -313,8 +327,13 @@ class TestBuscarEndpointExcelGating:
         mock_increment_quota,
         mock_check_quota,
         mock_atomic_increment,
+        mock_upload_excel,
     ):
-        """Should generate Excel for Máquina plan (allow_excel=True)."""
+        """Should generate Excel for Máquina plan (allow_excel=True).
+
+        Pipeline now uploads Excel to storage (not base64 inline), so
+        excel_base64 is always None. We verify excel_available=True instead.
+        """
         cleanup = setup_auth_override("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
@@ -341,6 +360,14 @@ class TestBuscarEndpointExcelGating:
             mock_excel_buffer = BytesIO(b"fake excel data")
             mock_create_excel.return_value = mock_excel_buffer
 
+            # Mock storage upload (pipeline uploads Excel to Supabase Storage)
+            mock_upload_excel.return_value = {
+                "file_id": "test-file-id",
+                "file_path": "excels/test.xlsx",
+                "signed_url": "https://storage.example.com/test.xlsx",
+                "expires_in": 3600,
+            }
+
             response = client.post(
                 "/buscar",
                 json={
@@ -355,7 +382,7 @@ class TestBuscarEndpointExcelGating:
             data = response.json()
 
             assert data["excel_available"] is True
-            assert data["excel_base64"] is not None
+            # excel_base64 is None (storage-based since F01 ARQ refactor)
             assert data["upgrade_message"] is None
         finally:
             cleanup()
