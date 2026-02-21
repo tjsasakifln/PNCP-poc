@@ -127,9 +127,9 @@ cd backend && python -m pytest tests/test_search_sessions.py -v --no-header
 - [x] Todos os ACs implementados e checkboxes marcados
 - [x] 11 testes novos passando (11 tests covering T1-T7)
 - [x] Zero regressoes no baseline (36 fail / 4211 pass — pre-existing)
-- [ ] Migration aplicada em producao (`npx supabase db push`) — ops task
-- [ ] Log CRIT-003 desaparece apos deploy — verify post-deploy
-- [ ] Startup recovery funcional (verificar nos logs) — verify post-deploy
+- [x] Migration aplicada em producao (via SQL Editor: ALTER TABLE + INDEX + COMMENT applied 2026-02-20)
+- [ ] Log CRIT-003 desaparece apos deploy — verify post-deploy (pending Railway redeploy)
+- [ ] Startup recovery funcional (verificar nos logs) — verify post-deploy (pending Railway redeploy)
 - [x] Story file atualizado com `[x]` em todos os checkboxes
 
 ## Arquivos Afetados
@@ -163,7 +163,7 @@ cd backend && python -m pytest tests/test_search_sessions.py -v --no-header
 
 ### Investigacao Previa
 - [x] Confirmar schema atual da tabela `search_sessions` em producao — search_id column missing, confirmed via CRIT-003 log
-- [x] Verificar se ha outras colunas ausentes mencionadas em erros CRIT-* — only search_id
+- [x] Verificar se ha outras colunas ausentes mencionadas em erros CRIT-* — **DISCOVERY: `status`, `started_at`, `completed_at`, `error_message`, `error_code` columns also missing.** Table only has: id, user_id, sectors, ufs, data_inicial, data_final, custom_keywords, total_raw, total_filtered, valor_total, resumo_executivo, destaques, excel_storage_path, created_at, search_id (after migration). Cleanup and recovery code updated to handle gracefully with 42703 fallback.
 - [x] Verificar se `search_state_manager.py` ja tenta salvar search_id (e falha silenciosamente) — yes, `_update_session_state()` uses `.eq("search_id", ...)` but wrapped in try/except (fire-and-forget)
 
 ## Dependencias
