@@ -120,7 +120,7 @@ def _get_jwt_key_and_algorithms(token: str) -> Tuple[Any, list[str]]:
         algorithm strings to pass to ``jwt.decode``.
 
     Raises:
-        HTTPException 500: if no JWT secret is configured at all.
+        HTTPException 401: if no JWT secret is configured at all.
     """
     jwt_secret = os.getenv("SUPABASE_JWT_SECRET", "")
 
@@ -149,7 +149,11 @@ def _get_jwt_key_and_algorithms(token: str) -> Tuple[Any, list[str]]:
 
     # No key available at all
     logger.error("SUPABASE_JWT_SECRET not configured and no JWKS URL available!")
-    raise HTTPException(status_code=500, detail="Auth not configured")
+    raise HTTPException(
+        status_code=401,
+        detail="Autenticação indisponível. Faça login novamente.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def reset_jwks_client() -> None:
@@ -234,7 +238,7 @@ async def get_current_user(
 
     Returns None if no token provided (allows anonymous access where needed).
     Raises HTTPException 401 if token is invalid.
-    Raises HTTPException 500 if auth is not configured (no key available).
+    Raises HTTPException 401 if auth is not configured (no key available).
     """
     if credentials is None:
         return None
@@ -260,7 +264,7 @@ async def get_current_user(
     logger.debug("Auth cache MISS - validating JWT locally")
     try:
         # Determine key and algorithm(s) based on configuration
-        # (raises HTTPException 500 if completely unconfigured)
+        # (raises HTTPException 401 if completely unconfigured)
         key, algorithms = _get_jwt_key_and_algorithms(token)
 
         try:

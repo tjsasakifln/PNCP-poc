@@ -6526,6 +6526,23 @@
           ]
         }
       },
+      "/health/ready": {
+        "get": {
+          "description": "Lightweight readiness probe for Railway health checks.\n\nCRIT-001 AC1: Zero I/O, zero dependency checks. Just reads _startup_time.\nReturns in <50ms guaranteed.",
+          "operationId": "health_ready_health_ready_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Health Ready"
+        }
+      },
       "/me": {
         "delete": {
           "description": "Delete entire user account and all associated data (LGPD Art. 18 VI).\n\nCascade order:\n1. Cancel active Stripe subscription (if any)\n2. Delete from: search_sessions, monthly_quota, user_subscriptions,\n   user_oauth_tokens, messages, profiles\n3. Delete auth user via Supabase admin API\n4. Log anonymized audit entry",

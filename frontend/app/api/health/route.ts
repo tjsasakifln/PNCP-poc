@@ -9,19 +9,50 @@ import { NextResponse } from "next/server";
  *
  * CRIT-008 AC7-AC8: Structured telemetry + descriptive logging.
  * CRIT-010 AC8: Checks backend `ready` field to distinguish "starting" from "healthy".
+ * CRIT-006 AC4-AC7: Classify connection errors (DNS vs timeout) and set backend_url_valid flag.
  */
 
 // AC7: Rate limit telemetry events to max 1 per minute
 let lastTelemetryTimestamp = 0;
 const TELEMETRY_MIN_INTERVAL_MS = 60_000;
 
+/**
+ * CRIT-006 AC5-AC6: Classify connection errors to distinguish misconfiguration from temporary failures.
+ */
+function classifyConnectionError(error: unknown): {
+  backend_url_valid: boolean;
+  severity: "CRITICAL" | "WARNING";
+  errorType: string;
+} {
+  const msg = error instanceof Error ? error.message : String(error);
+
+  // DNS resolution failure — almost certainly misconfiguration
+  if (msg.includes("ENOTFOUND") || msg.includes("getaddrinfo") || msg.includes("DNS")) {
+    return { backend_url_valid: false, severity: "CRITICAL", errorType: "dns_resolution_failed" };
+  }
+
+  // Connection refused — host exists but port wrong or service down
+  if (msg.includes("ECONNREFUSED") || msg.includes("connect ECONNREFUSED")) {
+    return { backend_url_valid: false, severity: "WARNING", errorType: "connection_refused" };
+  }
+
+  // Timeout — service exists but slow (temporary)
+  if (msg.includes("AbortError") || msg.includes("timeout") || msg.includes("ETIMEDOUT")) {
+    return { backend_url_valid: true, severity: "WARNING", errorType: "timeout" };
+  }
+
+  // Other errors — assume temporary
+  return { backend_url_valid: true, severity: "WARNING", errorType: "unknown" };
+}
+
 export async function GET() {
   const backendUrl = process.env.BACKEND_URL;
 
   if (!backendUrl) {
+    console.error("[HEALTH] CRITICAL: BACKEND_URL not configured");
     return NextResponse.json(
-      { status: "healthy", backend: "not configured" },
-      { status: 200 }
+      { status: "misconfigured", backend: "not configured", error: "BACKEND_URL missing" },
+      { status: 503 }
     );
   }
 
@@ -69,17 +100,27 @@ export async function GET() {
   } catch (error) {
     const latencyMs = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : "unknown error";
+    const { backend_url_valid, severity, errorType } = classifyConnectionError(error);
 
-    // AC8: Descriptive log
-    console.warn(
-      `[HealthCheck] Backend probe failed: GET ${probeUrl} → unreachable (${latencyMs}ms) — ${errorMessage}`
-    );
+    // CRIT-006 AC4: Log severity based on error type
+    const logMsg = `[HEALTH] ${severity}: BACKEND_URL '${backendUrl}' unreachable — ${errorType}: ${errorMessage}`;
+    if (severity === "CRITICAL") {
+      console.error(logMsg);
+    } else {
+      console.warn(logMsg);
+    }
 
     // AC7: Emit rate-limited telemetry event
     emitHealthTelemetry("unreachable", 0, latencyMs, probeUrl);
 
     return NextResponse.json(
-      { status: "healthy", backend: "unreachable", latency_ms: latencyMs },
+      {
+        status: "healthy",
+        backend: "unreachable",
+        backend_url_valid,
+        latency_ms: latencyMs,
+        ...(backend_url_valid === false && { warning: `BACKEND_URL may be misconfigured: ${errorType}` }),
+      },
       { status: 200 }
     );
   }

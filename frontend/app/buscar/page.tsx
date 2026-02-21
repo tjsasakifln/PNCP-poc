@@ -27,6 +27,7 @@ import { useNavigationGuard } from "../../hooks/useNavigationGuard";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
 import BackendStatusIndicator, { useBackendStatus } from "../../components/BackendStatusIndicator";
+import { SearchErrorBoundary } from "./components/SearchErrorBoundary";
 
 import { dateDiffInDays } from "../../lib/utils/dateDiffInDays";
 import { toast } from "sonner";
@@ -263,6 +264,12 @@ function HomePageContent() {
     }
   };
 
+  // CRIT-002 AC2: Reset handler for error boundary
+  const handleErrorBoundaryReset = useCallback(() => {
+    search.setResult(null);
+    search.setError(null);
+  }, [search]);
+
   useNavigationGuard({
     hasResults: !!search.result && (search.result.total_filtrado ?? 0) > 0,
     hasDownloaded,
@@ -439,64 +446,67 @@ function HomePageContent() {
             {/* GTM-FIX-035 AC1: Scroll target for progress area */}
             <div ref={progressAreaRef} />
 
-            <SearchResults
-              loading={search.loading}
-              loadingStep={search.loadingStep}
-              estimatedTime={search.estimateSearchTime(filters.ufsSelecionadas.size, dateDiffInDays(filters.dataInicial, filters.dataFinal))}
-              stateCount={filters.ufsSelecionadas.size}
-              statesProcessed={search.statesProcessed}
-              onCancel={search.cancelSearch}
-              sseEvent={search.sseEvent}
-              useRealProgress={search.useRealProgress}
-              sseAvailable={search.sseAvailable}
-              sseDisconnected={search.sseDisconnected}
-              isDegraded={search.isDegraded}
-              degradedDetail={search.degradedDetail}
-              onStageChange={(stage) => trackEvent('search_progress_stage', { stage, is_sse: search.useRealProgress && search.sseAvailable })}
-              error={search.error}
-              quotaError={search.quotaError}
-              result={search.result}
-              rawCount={search.rawCount}
-              ufsSelecionadas={filters.ufsSelecionadas}
-              sectorName={filters.sectorName}
-              searchMode={filters.searchMode}
-              termosArray={filters.termosArray}
-              ordenacao={filters.ordenacao}
-              onOrdenacaoChange={filters.setOrdenacao}
-              downloadLoading={search.downloadLoading}
-              downloadError={search.downloadError}
-              onDownload={handleDownloadWithGuard}
-              onSearch={search.buscar}
-              planInfo={planInfo}
-              session={session}
-              onShowUpgradeModal={handleShowUpgradeModal}
-              onTrackEvent={trackEvent}
-              // STORY-257B: UF Progress Grid (AC1-4)
-              ufStatuses={ufProgress.ufStatuses}
-              ufTotalFound={ufProgress.totalFound}
-              ufAllComplete={ufProgress.allComplete}
-              // STORY-257B: Partial results (AC5)
-              searchElapsedSeconds={searchElapsed}
-              onViewPartial={search.cancelSearch}
-              partialDismissed={partialDismissed}
-              onDismissPartial={() => setPartialDismissed(true)}
-              // STORY-257B: Cache refresh (AC9)
-              onRetryForceFresh={search.buscarForceFresh}
-              // STORY-257B: Sources unavailable (AC10)
-              hasLastSearch={false}
-              onLoadLastSearch={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              // A-04: Progressive delivery
-              liveFetchInProgress={search.liveFetchInProgress}
-              refreshAvailable={search.refreshAvailable}
-              onRefreshResults={search.handleRefreshResults}
-              // D-05: Feedback loop
-              searchId={search.searchId || undefined}
-              setorId={filters.setorId}
-              // CRIT-008: Auto-retry
-              retryCountdown={search.retryCountdown}
-              onRetryNow={search.retryNow}
-              onCancelRetry={search.cancelRetry}
-            />
+            {/* CRIT-002 AC1: Error boundary wraps results area (NOT SearchForm) */}
+            <SearchErrorBoundary onReset={handleErrorBoundaryReset}>
+              <SearchResults
+                loading={search.loading}
+                loadingStep={search.loadingStep}
+                estimatedTime={search.estimateSearchTime(filters.ufsSelecionadas.size, dateDiffInDays(filters.dataInicial, filters.dataFinal))}
+                stateCount={filters.ufsSelecionadas.size}
+                statesProcessed={search.statesProcessed}
+                onCancel={search.cancelSearch}
+                sseEvent={search.sseEvent}
+                useRealProgress={search.useRealProgress}
+                sseAvailable={search.sseAvailable}
+                sseDisconnected={search.sseDisconnected}
+                isDegraded={search.isDegraded}
+                degradedDetail={search.degradedDetail}
+                onStageChange={(stage) => trackEvent('search_progress_stage', { stage, is_sse: search.useRealProgress && search.sseAvailable })}
+                error={search.error}
+                quotaError={search.quotaError}
+                result={search.result}
+                rawCount={search.rawCount}
+                ufsSelecionadas={filters.ufsSelecionadas}
+                sectorName={filters.sectorName}
+                searchMode={filters.searchMode}
+                termosArray={filters.termosArray}
+                ordenacao={filters.ordenacao}
+                onOrdenacaoChange={filters.setOrdenacao}
+                downloadLoading={search.downloadLoading}
+                downloadError={search.downloadError}
+                onDownload={handleDownloadWithGuard}
+                onSearch={search.buscar}
+                planInfo={planInfo}
+                session={session}
+                onShowUpgradeModal={handleShowUpgradeModal}
+                onTrackEvent={trackEvent}
+                // STORY-257B: UF Progress Grid (AC1-4)
+                ufStatuses={ufProgress.ufStatuses}
+                ufTotalFound={ufProgress.totalFound}
+                ufAllComplete={ufProgress.allComplete}
+                // STORY-257B: Partial results (AC5)
+                searchElapsedSeconds={searchElapsed}
+                onViewPartial={search.cancelSearch}
+                partialDismissed={partialDismissed}
+                onDismissPartial={() => setPartialDismissed(true)}
+                // STORY-257B: Cache refresh (AC9)
+                onRetryForceFresh={search.buscarForceFresh}
+                // STORY-257B: Sources unavailable (AC10)
+                hasLastSearch={false}
+                onLoadLastSearch={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                // A-04: Progressive delivery
+                liveFetchInProgress={search.liveFetchInProgress}
+                refreshAvailable={search.refreshAvailable}
+                onRefreshResults={search.handleRefreshResults}
+                // D-05: Feedback loop
+                searchId={search.searchId || undefined}
+                setorId={filters.setorId}
+                // CRIT-008: Auto-retry
+                retryCountdown={search.retryCountdown}
+                onRetryNow={search.retryNow}
+                onCancelRetry={search.cancelRetry}
+              />
+            </SearchErrorBoundary>
           </div>
         </PullToRefresh>
       </main>

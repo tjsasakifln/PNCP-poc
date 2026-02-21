@@ -1098,8 +1098,9 @@ class TestKeyDetection:
             with pytest.raises(HTTPException) as exc_info:
                 auth._get_jwt_key_and_algorithms("any-token")
 
-        assert exc_info.value.status_code == 500
-        assert exc_info.value.detail == "Auth not configured"
+        assert exc_info.value.status_code == 401
+        assert "Autenticação indisponível" in exc_info.value.detail
+        assert exc_info.value.headers.get("WWW-Authenticate") == "Bearer"
 
     def test_get_jwt_key_priority_order(self, ec_key_pair):
         """Key detection priority: JWKS > PEM > HS256 symmetric."""

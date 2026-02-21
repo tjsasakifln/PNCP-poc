@@ -206,13 +206,17 @@ async def _check_cache_schema() -> None:
                 {"p_table_name": "search_results_cache"},
             ).execute()
             actual_columns = {row["column_name"] for row in result.data} if result.data else set()
-        except Exception:
-            # RPC function may not exist — skip check gracefully
-            logger.warning(
-                "CRIT-001: Schema health check skipped — "
-                "RPC function not available (non-blocking)"
-            )
-            return
+        except Exception as rpc_err:
+            logger.warning(f"CRIT-004: RPC get_table_columns_simple failed ({rpc_err}) — trying direct query")
+            try:
+                result = db.table("search_results_cache").select("*").limit(0).execute()
+                logger.info("CRIT-004: Table search_results_cache exists (column validation skipped)")
+                return
+            except Exception as fallback_err:
+                logger.warning(
+                    f"CRIT-004: Schema validation FAILED — RPC: {rpc_err}, Fallback: {fallback_err}"
+                )
+                return
 
         expected_columns = SearchResultsCacheRow.expected_columns()
 
@@ -344,12 +348,59 @@ async def lifespan(app_instance: FastAPI):
     # CRIT-001 AC4: Schema health check for search_results_cache
     await _check_cache_schema()
 
+    # GTM-CRIT-005 AC5: Initialize circuit breakers from Redis
+    from pncp_client import get_circuit_breaker
+    pncp_cb = get_circuit_breaker("pncp")
+    pcp_cb = get_circuit_breaker("pcp")
+    await pncp_cb.initialize()
+    await pcp_cb.initialize()
+    logger.info("GTM-CRIT-005: Circuit breakers initialized from Redis")
+
+    # CRIT-004: Validate schema contract for critical tables
+    from schema_contract import validate_schema_contract, emit_degradation_warning
+    try:
+        from supabase_client import get_supabase
+        db = get_supabase()
+        passed, missing = validate_schema_contract(db)
+        if not passed:
+            logger.critical(
+                f"SCHEMA CONTRACT VIOLATED: missing {missing}. "
+                f"Run migrations before deploying. Refusing to start."
+            )
+            raise SystemExit(1)
+        logger.info(f"CRIT-004: Schema contract validated — 0 missing columns")
+    except SystemExit:
+        raise  # Re-raise SystemExit
+    except Exception as e:
+        logger.warning(f"CRIT-004: Schema validation could not run ({e}) — proceeding with caution")
+
     # CRIT-003 AC16-AC18: Recover stale searches from previous server instance
     from search_state_manager import recover_stale_searches
     await recover_stale_searches(max_age_minutes=10)
 
     # HOTFIX STORY-183: Diagnostic route logging
     _log_registered_routes(app_instance)
+
+    # CRIT-001 AC4: Probe Supabase connectivity before accepting traffic
+    try:
+        from supabase_client import get_supabase
+        db = get_supabase()
+        db.table("profiles").select("id").limit(1).execute()
+        logger.info("STARTUP GATE: Supabase connectivity confirmed")
+    except Exception as e:
+        logger.critical(f"STARTUP GATE FAILED: Supabase unreachable — {e}")
+        raise  # Crash on startup = Railway will retry
+
+    # CRIT-001 AC5: Redis connectivity check (non-blocking)
+    if os.getenv("REDIS_URL"):
+        from redis_pool import is_redis_available
+        if await is_redis_available():
+            logger.info("STARTUP GATE: Redis connectivity confirmed")
+        else:
+            logger.warning("STARTUP GATE: Redis configured but unavailable — proceeding without Redis")
+
+    logger.info("STARTUP GATE: Supabase OK, Redis %s — setting ready=true",
+                "OK" if os.getenv("REDIS_URL") and await is_redis_available() else "not configured")
 
     # CRIT-010 AC4+AC5: Mark application as ready for traffic
     global _startup_time
@@ -551,6 +602,18 @@ async def root():
         },
         "status": "operational",
     }
+
+
+@app.get("/health/ready")
+async def health_ready():
+    """Lightweight readiness probe for Railway health checks.
+
+    CRIT-001 AC1: Zero I/O, zero dependency checks. Just reads _startup_time.
+    Returns in <50ms guaranteed.
+    """
+    is_ready = _startup_time is not None
+    uptime = round(time.monotonic() - _startup_time, 3) if is_ready else 0.0
+    return {"ready": is_ready, "uptime_seconds": uptime}
 
 
 @app.get("/health", response_model=HealthResponse)

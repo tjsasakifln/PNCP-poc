@@ -170,13 +170,16 @@ class TestGetCurrentUser:
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail == "Token invalido"
 
-    # ── AC5: Missing JWT secret → 500 ─────────────────────────────────────
+    # ── AC5: Missing JWT secret → 401 (GTM-CRIT-003) ──────────────────────
 
     @pytest.mark.asyncio
     @patch.dict(os.environ, {"SUPABASE_URL": TEST_SUPABASE_URL}, clear=False)
-    async def test_raises_500_when_jwt_secret_missing(self, mock_credentials):
-        """AC5: Missing SUPABASE_JWT_SECRET raises 500 'Auth not configured'."""
-        from auth import get_current_user
+    async def test_raises_401_when_jwt_secret_missing(self, mock_credentials):
+        """AC5: Missing SUPABASE_JWT_SECRET raises 401 'Autenticação indisponível' (GTM-CRIT-003)."""
+        from auth import get_current_user, reset_jwks_client
+
+        # Clear JWKS client state to force re-initialization
+        reset_jwks_client()
 
         # Ensure the key is NOT in environment
         env_copy = os.environ.copy()
@@ -186,8 +189,9 @@ class TestGetCurrentUser:
             with pytest.raises(HTTPException) as exc_info:
                 await get_current_user(credentials=mock_credentials)
 
-        assert exc_info.value.status_code == 500
-        assert exc_info.value.detail == "Auth not configured"
+        assert exc_info.value.status_code == 401
+        assert "Autenticação indisponível" in exc_info.value.detail
+        assert exc_info.value.headers.get("WWW-Authenticate") == "Bearer"
 
     # ── AC6: JWT without sub claim → 401 ──────────────────────────────────
 

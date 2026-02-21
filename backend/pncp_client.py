@@ -245,6 +245,14 @@ class PNCPCircuitBreaker:
 
         return not self.is_degraded
 
+    async def initialize(self) -> None:
+        """Initialize circuit breaker (no-op for base class).
+
+        RedisCircuitBreaker overrides this to restore state from Redis.
+        Base class has no persistent state to restore.
+        """
+        pass
+
     def reset(self) -> None:
         """Manually reset the circuit breaker (for testing or admin use)."""
         self.consecutive_failures = 0
@@ -433,6 +441,51 @@ return {failures, 0}
             "degraded_until": self.degraded_until,
             "backend": "local",
         }
+
+    async def initialize(self) -> None:
+        """Initialize circuit breaker by restoring state from Redis (GTM-CRIT-005 AC5).
+
+        Should be called once at application startup to sync local state with
+        the authoritative Redis state. This ensures that after a worker restart,
+        the circuit breaker reflects any degraded state persisted by other workers.
+
+        If Redis is unavailable, local state remains at defaults (healthy).
+        """
+        redis = await self._get_redis()
+        if redis:
+            try:
+                pipe = redis.pipeline()
+                pipe.get(self._key_failures)
+                pipe.get(self._key_degraded)
+                results = await pipe.execute()
+
+                # Restore failure count
+                if results[0]:
+                    self.consecutive_failures = int(results[0])
+                    logger.debug(
+                        f"Circuit breaker [{self.name}] restored {self.consecutive_failures} "
+                        f"failures from Redis"
+                    )
+
+                # Restore degraded state if still active
+                if results[1]:
+                    degraded_until = float(results[1])
+                    if time.time() < degraded_until:
+                        self.degraded_until = degraded_until
+                        CIRCUIT_BREAKER_STATE.labels(source=self.name).set(1)
+                        logger.warning(
+                            f"Circuit breaker [{self.name}] restored DEGRADED state "
+                            f"from Redis — degraded until {degraded_until:.0f}"
+                        )
+                    else:
+                        # Cooldown expired in Redis — clean up
+                        logger.info(
+                            f"Circuit breaker [{self.name}] found expired degraded state "
+                            f"in Redis — resetting to healthy"
+                        )
+                        await self.try_recover()
+            except Exception as e:
+                logger.debug(f"Circuit breaker [{self.name}] initialize fallback: {e}")
 
     async def reset_async(self) -> None:
         """Reset both local and Redis state."""

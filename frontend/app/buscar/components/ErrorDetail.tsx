@@ -13,6 +13,17 @@ interface ErrorDetailProps {
   timestamp?: string;
 }
 
+// CRIT-002 AC4: Error classification labels
+const ERROR_CODE_LABELS: Record<string, string> = {
+  TIMEOUT: "Tempo esgotado",
+  RATE_LIMITED: "Muitas consultas",
+  INTERNAL_ERROR: "Erro interno",
+  SOURCE_UNAVAILABLE: "Fonte indisponível",
+  AUTH_REQUIRED: "Sessão expirada",
+  VALIDATION_ERROR: "Dados inválidos",
+  QUOTA_EXCEEDED: "Limite atingido",
+};
+
 /**
  * CRIT-009 AC8-AC10: Collapsible technical detail section for error cards.
  * Shows structured error metadata (search_id, request_id, correlation_id, error_code, etc.).
@@ -72,6 +83,14 @@ export function ErrorDetail({ error, searchId, errorMessage, timestamp }: ErrorD
 
   return (
     <div className="mt-2" data-testid="error-detail" role="alert" aria-label="Detalhes técnicos do erro">
+      {/* CRIT-002 AC4: Error classification badge */}
+      {errorCode && ERROR_CODE_LABELS[errorCode] && (
+        <div className="mb-2">
+          <span className="inline-flex items-center rounded-md bg-red-100 dark:bg-red-900/30 px-2 py-1 text-xs font-medium text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+            {ERROR_CODE_LABELS[errorCode]}
+          </span>
+        </div>
+      )}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="text-xs text-ink-muted hover:text-ink-secondary transition-colors underline-offset-2 hover:underline flex items-center gap-1"

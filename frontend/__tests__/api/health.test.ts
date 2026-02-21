@@ -13,7 +13,7 @@ describe('GET /api/health', () => {
   });
 
   describe('Backend connectivity checks', () => {
-    it('should return healthy status when backend is reachable and ready', async () => {
+    it('AC16: should return 200 + backend "healthy" when backend responds ready: true', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
       (global.fetch as jest.Mock).mockResolvedValue({
@@ -35,7 +35,7 @@ describe('GET /api/health', () => {
       );
     });
 
-    it('should return unhealthy backend when backend returns non-200', async () => {
+    it('AC15: should return 200 + backend "unhealthy" when backend returns non-200', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
       (global.fetch as jest.Mock).mockResolvedValue({
@@ -51,7 +51,7 @@ describe('GET /api/health', () => {
       expect(data.backend).toBe('unhealthy');
     });
 
-    it('should return unreachable when backend has network error', async () => {
+    it('AC15: should return 200 + backend "unreachable" when fetch fails', async () => {
       process.env.BACKEND_URL = 'http://test-backend:8000';
 
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
@@ -79,13 +79,14 @@ describe('GET /api/health', () => {
       expect(data.backend).toBe('unreachable');
     });
 
-    it('should return not configured when BACKEND_URL is missing', async () => {
+    it('AC14: should return 503 when BACKEND_URL is undefined', async () => {
       const response = await GET();
       const data = await response.json();
 
-      expect(response.status).toBe(200);
-      expect(data.status).toBe('healthy');
+      expect(response.status).toBe(503);
+      expect(data.status).toBe('misconfigured');
       expect(data.backend).toBe('not configured');
+      expect(data.error).toBe('BACKEND_URL missing');
       expect(global.fetch).not.toHaveBeenCalled();
     });
   });

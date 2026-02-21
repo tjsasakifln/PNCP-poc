@@ -347,7 +347,10 @@ async def test_ac15_decode_exception_not_cached(mock_credentials):
 
 @pytest.mark.asyncio
 async def test_ac15_missing_jwt_secret_not_cached(mock_credentials):
-    """AC15: Missing SUPABASE_JWT_SECRET raises 500 and is NOT cached."""
+    """AC15: Missing SUPABASE_JWT_SECRET raises 401 and is NOT cached (GTM-CRIT-003)."""
+    from auth import reset_jwks_client
+    reset_jwks_client()  # Clear JWKS state
+
     env_no_secret = {"SUPABASE_URL": "https://test.supabase.co"}
     with patch.dict(os.environ, env_no_secret, clear=True):
         # Ensure SUPABASE_JWT_SECRET is definitely not set
@@ -356,8 +359,8 @@ async def test_ac15_missing_jwt_secret_not_cached(mock_credentials):
         with pytest.raises(HTTPException) as exc_info:
             await get_current_user(mock_credentials)
 
-        assert exc_info.value.status_code == 500
-        assert "not configured" in exc_info.value.detail.lower()
+        assert exc_info.value.status_code == 401
+        assert "indisponível" in exc_info.value.detail.lower()
         assert len(_token_cache) == 0
 
 

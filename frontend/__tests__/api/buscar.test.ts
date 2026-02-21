@@ -96,6 +96,7 @@ describe("POST /api/buscar", () => {
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      text: async () => JSON.stringify(mockBackendResponse),
       json: async () => mockBackendResponse
     });
 
@@ -272,6 +273,7 @@ describe("POST /api/buscar", () => {
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      text: async () => JSON.stringify(mockBackendResponse),
       json: async () => mockBackendResponse
     });
 
@@ -311,6 +313,7 @@ describe("POST /api/buscar", () => {
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      text: async () => JSON.stringify(mockBackendResponse),
       json: async () => mockBackendResponse
     });
 
@@ -357,6 +360,7 @@ describe("POST /api/buscar", () => {
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      text: async () => JSON.stringify(mockBackendResponse),
       json: async () => mockBackendResponse
     });
 
@@ -401,5 +405,130 @@ describe("POST /api/buscar", () => {
 
     expect(response.status).toBe(400);
     expect(data.message).toBe("Selecione pelo menos um estado");
+  });
+
+  // CRIT-002 AC10: Contextual error message for HTTP 500
+  it("should return contextual message for HTTP 500 (not generic 'Erro no backend')", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ detail: "" }), // Empty detail should trigger contextual message
+      headers: { get: () => null },
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.message).toBe("Ocorreu um erro interno. Tente novamente em alguns segundos.");
+    expect(data.message).not.toContain("Erro no backend");
+  });
+
+  // CRIT-002 AC11: Contextual error message for HTTP 502
+  it("should return contextual message for HTTP 502", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      json: async () => ({}), // No detail
+      headers: { get: () => null },
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(502);
+    expect(data.message).toBe("O servidor está reiniciando. Aguarde ~30 segundos e tente novamente.");
+  });
+
+  // CRIT-002 AC12: All error responses include request_id
+  it("should include request_id in all error responses", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ detail: "Test error" }),
+      headers: { get: () => null },
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(data.request_id).toBeDefined();
+    expect(typeof data.request_id).toBe("string");
+    // Should be UUID format
+    expect(data.request_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    // Should also be in response headers
+    expect(response.headers.get("X-Request-ID")).toBe(data.request_id);
+  });
+
+  it("should include request_id in success responses", async () => {
+    const mockBackendResponse = {
+      resumo: {
+        resumo_executivo: "Test",
+        total_oportunidades: 1,
+        valor_total: 50000,
+        destaques: [],
+        distribuicao_uf: { SC: 1 },
+        alerta_urgencia: null
+      },
+      excel_base64: Buffer.from("test").toString("base64")
+    };
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockBackendResponse,
+      text: async () => JSON.stringify(mockBackendResponse)
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+
+    // Should have X-Request-ID header in success response
+    expect(response.headers.get("X-Request-ID")).toBeDefined();
+    expect(response.headers.get("X-Request-ID")).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  });
+
+  it("should use backend detail message when available (not contextual)", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ detail: "Specific backend error message" }),
+      headers: { get: () => null },
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    // Should use backend's specific message, not generic contextual
+    expect(data.message).toBe("Specific backend error message");
   });
 });

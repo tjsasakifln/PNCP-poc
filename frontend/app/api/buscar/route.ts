@@ -5,6 +5,18 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { getRefreshedToken } from "../../../lib/serverAuth";
 
+// CRIT-002 AC3: Contextual error messages based on HTTP status code
+function getContextualErrorMessage(status: number, detail?: string): string {
+  if (typeof detail === "string" && detail.length > 0) return detail;
+  switch (status) {
+    case 429: return "Muitas consultas simultâneas. Aguarde alguns segundos e tente novamente.";
+    case 500: return "Ocorreu um erro interno. Tente novamente em alguns segundos.";
+    case 502: return "O servidor está reiniciando. Aguarde ~30 segundos e tente novamente.";
+    case 503: return "O servidor está temporariamente indisponível. Tente novamente em 1 minuto.";
+    default: return "Erro inesperado. Tente novamente ou reduza o número de UFs selecionadas.";
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // STORY-253 AC7: Prefer server-side refreshed token, fall back to header
@@ -162,7 +174,7 @@ export async function POST(request: NextRequest) {
         const isStructured = detail && typeof detail === "object" && detail.error_code;
         const errorResponse = NextResponse.json(
           {
-            message: isStructured ? detail.detail : (typeof detail === "string" ? detail : "Erro no backend"),
+            message: isStructured ? detail.detail : getContextualErrorMessage(lastError.status, typeof detail === "string" ? detail : undefined),
             error_code: isStructured ? detail.error_code : null,
             search_id: isStructured ? detail.search_id : null,
             correlation_id: isStructured ? detail.correlation_id : null,
@@ -184,7 +196,7 @@ export async function POST(request: NextRequest) {
         const backendCorrelationId = response.headers.get("X-Correlation-ID");
         const errorResponse = NextResponse.json(
           {
-            message: isStructured ? detail.detail : (typeof detail === "string" ? detail : errorBody.message || "Erro no backend"),
+            message: isStructured ? detail.detail : getContextualErrorMessage(response.status, typeof detail === "string" ? detail : errorBody.message),
             error_code: isStructured ? detail.error_code : (errorBody.error_code || null),
             search_id: isStructured ? detail.search_id : (errorBody.search_id || null),
             correlation_id: isStructured ? detail.correlation_id : (backendCorrelationId || null),
