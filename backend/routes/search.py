@@ -26,7 +26,7 @@ from starlette.responses import StreamingResponse
 # Tests use @patch("routes.search.X") to mock these names.
 # The thin wrapper passes them to SearchPipeline as deps.
 from config import ENABLE_NEW_PRICING
-from schemas import BuscaRequest, BuscaResponse
+from schemas import BuscaRequest, BuscaResponse, SearchErrorCode
 from pncp_client import PNCPClient, buscar_todas_ufs_paralelo
 from exceptions import PNCPAPIError, PNCPRateLimitError
 from filter import (
@@ -57,6 +57,27 @@ from models.search_state import SearchState
 logger = get_sanitized_logger(__name__)
 
 router = APIRouter(tags=["search"])
+
+
+def _build_error_detail(
+    message: str,
+    error_code: SearchErrorCode,
+    search_id: str | None = None,
+    correlation_id: str | None = None,
+) -> dict:
+    """CRIT-009 AC1: Build structured error response body for /buscar errors.
+
+    Returns a dict suitable for HTTPException detail parameter.
+    Never exposes stack traces or internal information.
+    """
+    from datetime import datetime, timezone
+    return {
+        "detail": message,
+        "error_code": error_code.value,
+        "search_id": search_id,
+        "correlation_id": correlation_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 async def _update_session_on_error(
@@ -639,11 +660,21 @@ async def buscar_licitacoes(
             await remove_tracker(request.search_id)
         logger.warning(f"PNCP rate limit exceeded: {type(e).__name__}: {e}")
         retry_after = getattr(e, "retry_after", 60)
+        # CRIT-009 AC3: Structured error response
+        corr_id = getattr(getattr(http_response, '_request', None), 'state', SimpleNamespace()).correlation_id if hasattr(http_response, '_request') else None
+        try:
+            from middleware import correlation_id_var
+            corr_id = correlation_id_var.get("-")
+        except Exception:
+            pass
         raise HTTPException(
             status_code=503,
-            detail=(
+            detail=_build_error_detail(
                 f"As fontes de dados estão temporariamente limitando consultas. "
-                f"Aguarde {retry_after} segundos e tente novamente."
+                f"Aguarde {retry_after} segundos e tente novamente.",
+                SearchErrorCode.RATE_LIMIT,
+                search_id=request.search_id,
+                correlation_id=corr_id if corr_id != "-" else None,
             ),
             headers={"Retry-After": str(retry_after)},
         )
@@ -668,12 +699,24 @@ async def buscar_licitacoes(
             await tracker.emit_error(f"PNCP API error: {e}")
             await remove_tracker(request.search_id)
         logger.error(f"PNCP API error: {e}", exc_info=True)
+        # CRIT-009 AC3: Structured error response
+        corr_id = None
+        try:
+            from middleware import correlation_id_var
+            corr_id = correlation_id_var.get("-")
+            if corr_id == "-":
+                corr_id = None
+        except Exception:
+            pass
         raise HTTPException(
             status_code=502,
-            detail=(
+            detail=_build_error_detail(
                 "Nossas fontes de dados estão temporariamente indisponíveis. "
                 "Tente novamente em alguns instantes ou reduza o número "
-                "de estados selecionados."
+                "de estados selecionados.",
+                SearchErrorCode.SOURCE_UNAVAILABLE,
+                search_id=request.search_id,
+                correlation_id=corr_id,
             ),
         )
 
@@ -700,6 +743,33 @@ async def buscar_licitacoes(
         if tracker:
             await tracker.emit_error("Erro no processamento")
             await remove_tracker(request.search_id)
+        # CRIT-009 AC3: Enrich HTTPException with structured error if not already structured
+        if isinstance(exc.detail, str):
+            corr_id = None
+            try:
+                from middleware import correlation_id_var
+                corr_id = correlation_id_var.get("-")
+                if corr_id == "-":
+                    corr_id = None
+            except Exception:
+                pass
+            # Map HTTP status to error code
+            if exc.status_code == 504:
+                err_code = SearchErrorCode.TIMEOUT
+            elif exc.status_code == 403:
+                err_code = SearchErrorCode.QUOTA_EXCEEDED
+            elif exc.status_code == 429:
+                err_code = SearchErrorCode.RATE_LIMIT
+            elif exc.status_code == 422 or exc.status_code == 400:
+                err_code = SearchErrorCode.VALIDATION_ERROR
+            else:
+                err_code = SearchErrorCode.INTERNAL_ERROR
+            exc.detail = _build_error_detail(
+                exc.detail,
+                err_code,
+                search_id=request.search_id,
+                correlation_id=corr_id,
+            )
         raise
 
     except Exception as e:
@@ -722,9 +792,32 @@ async def buscar_licitacoes(
             await tracker.emit_error("Erro interno do servidor")
             await remove_tracker(request.search_id)
         logger.exception("Internal server error during procurement search")
+        # CRIT-009 AC3: Structured error response — never expose stack traces
+        corr_id = None
+        try:
+            from middleware import correlation_id_var
+            corr_id = correlation_id_var.get("-")
+            if corr_id == "-":
+                corr_id = None
+        except Exception:
+            pass
+        # Determine error_code based on exception type
+        if isinstance(e, asyncio.TimeoutError):
+            err_code = SearchErrorCode.TIMEOUT
+            err_msg = "A busca excedeu o tempo limite. Tente com menos estados ou um período menor."
+            status_code = 504
+        else:
+            err_code = SearchErrorCode.INTERNAL_ERROR
+            err_msg = "Erro interno do servidor. Tente novamente em alguns instantes."
+            status_code = 500
         raise HTTPException(
-            status_code=500,
-            detail="Erro interno do servidor. Tente novamente em alguns instantes.",
+            status_code=status_code,
+            detail=_build_error_detail(
+                err_msg,
+                err_code,
+                search_id=request.search_id,
+                correlation_id=corr_id,
+            ),
         )
 
 

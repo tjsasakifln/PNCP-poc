@@ -136,7 +136,8 @@ describe("POST /api/buscar", () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
       status: 500,
-      json: async () => ({ detail: "Backend error" })
+      json: async () => ({ detail: "Backend error" }),
+      headers: { get: () => null },
     });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
@@ -192,7 +193,8 @@ describe("POST /api/buscar", () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 502,
-        json: async () => ({ detail: "PNCP unavailable" })
+        json: async () => ({ detail: "PNCP unavailable" }),
+        headers: { get: () => null },
       });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
@@ -235,7 +237,8 @@ describe("POST /api/buscar", () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
       status: 400,
-      json: async () => ({ detail: "Bad request" })
+      json: async () => ({ detail: "Bad request" }),
+      headers: { get: () => null },
     });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {

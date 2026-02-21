@@ -22,6 +22,7 @@ import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/Ordenaca
 import GoogleSheetsExportButton from "../../../components/GoogleSheetsExportButton";
 import { LlmSourceBadge } from "./LlmSourceBadge";
 import { ErrorDetail } from "./ErrorDetail";
+import type { SearchError } from "../hooks/useSearch";
 import { PartialTimeoutBanner } from "./PartialTimeoutBanner";
 
 export interface SearchResultsProps {
@@ -43,8 +44,8 @@ export interface SearchResultsProps {
   degradedDetail?: SearchProgressEvent['detail'] | null;
   onStageChange: (stage: number) => void;
 
-  // Error state
-  error: string | null;
+  // Error state — CRIT-009 AC7: structured SearchError
+  error: SearchError | null;
   quotaError: string | null;
 
   // Result
@@ -245,11 +246,11 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Error Display with Retry — CRIT-005 AC20: includes ErrorDetail with search_id */}
+      {/* Error Display with Retry — CRIT-009 AC7-AC8: structured SearchError with ErrorDetail */}
       {error && !quotaError && (
         <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
-          <p className="text-sm sm:text-base font-medium text-error mb-3">{error}</p>
-          <ErrorDetail searchId={searchId} errorMessage={error} timestamp={new Date().toISOString()} />
+          <p className="text-sm sm:text-base font-medium text-error mb-3">{error.message}</p>
+          <ErrorDetail error={error} />
           <button
             onClick={onSearch}
             disabled={loading || retryCooldown > 0}

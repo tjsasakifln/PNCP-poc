@@ -157,3 +157,26 @@ export const getErrorMessage = getUserFriendlyError;
 
 /** Default fallback message for unknown errors (TD-006 AC8). */
 export const DEFAULT_ERROR_MESSAGE = "Ocorreu um erro inesperado. Tente novamente.";
+
+
+/**
+ * CRIT-009 AC11: Maps backend SearchErrorCode values to user-friendly Portuguese messages.
+ * These are more specific than getUserFriendlyError() and take precedence when error_code is present.
+ */
+export const ERROR_CODE_MESSAGES: Record<string, string> = {
+  SOURCE_UNAVAILABLE: "Nossas fontes de dados estão temporariamente indisponíveis.",
+  ALL_SOURCES_FAILED: "Nenhuma fonte de dados respondeu. Tente novamente em alguns minutos.",
+  TIMEOUT: "A busca demorou mais que o esperado. Tente reduzir o número de estados.",
+  RATE_LIMIT: "Limite de requisições atingido. Aguarde alguns minutos.",
+  QUOTA_EXCEEDED: "Você atingiu o limite de buscas do seu plano.",
+  VALIDATION_ERROR: "Parâmetros de busca inválidos. Verifique os filtros.",
+  INTERNAL_ERROR: "Erro interno. Nossa equipe foi notificada.",
+};
+
+/**
+ * CRIT-009 AC11: Get user-friendly message from error_code, with fallback to generic mapping.
+ */
+export function getMessageFromErrorCode(errorCode: string | null | undefined): string | null {
+  if (!errorCode) return null;
+  return ERROR_CODE_MESSAGES[errorCode] || null;
+}

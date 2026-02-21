@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const RETRYABLE_STATUSES = [503];
 
     let response: Response | null = null;
-    let lastError: { detail?: string; status: number } | null = null;
+    let lastError: { detail?: any; status: number } | null = null;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -153,25 +153,64 @@ export async function POST(request: NextRequest) {
     }
 
     // After retry loop - check if we got a successful response
+    // CRIT-009 AC4-AC5: Preserve structured error metadata from backend
     if (!response || !response.ok) {
+      const requestId = headers["X-Request-ID"];
       if (lastError) {
-        return NextResponse.json(
-          { message: lastError.detail || "Erro no backend" },
+        // lastError.detail may be a structured object from CRIT-009 backend
+        const detail = lastError.detail;
+        const isStructured = detail && typeof detail === "object" && detail.error_code;
+        const errorResponse = NextResponse.json(
+          {
+            message: isStructured ? detail.detail : (typeof detail === "string" ? detail : "Erro no backend"),
+            error_code: isStructured ? detail.error_code : null,
+            search_id: isStructured ? detail.search_id : null,
+            correlation_id: isStructured ? detail.correlation_id : null,
+            request_id: requestId,
+            timestamp: new Date().toISOString(),
+            status: lastError.status,
+          },
           { status: lastError.status }
         );
+        errorResponse.headers.set("X-Request-ID", requestId);
+        return errorResponse;
       }
       // Try to extract error from last response
       if (response && !response.ok) {
-        const error = await response.json().catch(() => ({}));
-        return NextResponse.json(
-          { message: error.detail || "Erro no backend" },
+        const errorBody = await response.json().catch(() => ({}));
+        // CRIT-009 AC4: Handle structured detail (object) or legacy detail (string)
+        const detail = errorBody.detail;
+        const isStructured = detail && typeof detail === "object" && detail.error_code;
+        const backendCorrelationId = response.headers.get("X-Correlation-ID");
+        const errorResponse = NextResponse.json(
+          {
+            message: isStructured ? detail.detail : (typeof detail === "string" ? detail : errorBody.message || "Erro no backend"),
+            error_code: isStructured ? detail.error_code : (errorBody.error_code || null),
+            search_id: isStructured ? detail.search_id : (errorBody.search_id || null),
+            correlation_id: isStructured ? detail.correlation_id : (backendCorrelationId || null),
+            request_id: requestId,
+            timestamp: isStructured ? detail.timestamp : new Date().toISOString(),
+            status: response.status,
+          },
           { status: response.status }
         );
+        errorResponse.headers.set("X-Request-ID", requestId);
+        return errorResponse;
       }
-      return NextResponse.json(
-        { message: "Backend indisponível após múltiplas tentativas" },
+      const fallbackResponse = NextResponse.json(
+        {
+          message: "Backend indisponível após múltiplas tentativas",
+          error_code: null,
+          search_id: null,
+          correlation_id: null,
+          request_id: requestId,
+          timestamp: new Date().toISOString(),
+          status: 503,
+        },
         { status: 503 }
       );
+      fallbackResponse.headers.set("X-Request-ID", requestId);
+      return fallbackResponse;
     }
 
     const responseText = await response.text();
@@ -232,7 +271,8 @@ export async function POST(request: NextRequest) {
     // excel_base64 (already consumed above, too large to forward).
     const { excel_base64: _stripped, ...backendFields } = data;
 
-    return NextResponse.json({
+    // CRIT-009 AC5: Include X-Request-ID in success response header
+    const successResponse = NextResponse.json({
       ...backendFields,
       // Proxy-generated fields (override backend values)
       download_id: downloadId,
@@ -243,6 +283,8 @@ export async function POST(request: NextRequest) {
       total_filtrado: data.total_filtrado || 0,
       excel_available: data.excel_available || false,
     });
+    successResponse.headers.set("X-Request-ID", headers["X-Request-ID"]);
+    return successResponse;
 
   } catch (error) {
     console.error("Erro na busca:", error);

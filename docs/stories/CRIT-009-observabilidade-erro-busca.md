@@ -56,7 +56,7 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
 
 ### Backend: Estruturar Respostas de Erro
 
-- [ ] AC1: Todas as `HTTPException` do endpoint `/buscar` devem retornar body estruturado:
+- [x] AC1: Todas as `HTTPException` do endpoint `/buscar` devem retornar body estruturado:
   ```json
   {
     "detail": "Mensagem descritiva do erro",
@@ -69,7 +69,7 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
   - Arquivo: `backend/routes/search.py` — handler `buscar_licitacoes()`
   - Nao expor stack traces ou informacoes internas (manter sanitizado)
 
-- [ ] AC2: Criar enum `SearchErrorCode` em `backend/schemas.py`:
+- [x] AC2: Criar enum `SearchErrorCode` em `backend/schemas.py`:
   ```python
   class SearchErrorCode(str, Enum):
       SOURCE_UNAVAILABLE = "SOURCE_UNAVAILABLE"
@@ -81,11 +81,11 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
       INTERNAL_ERROR = "INTERNAL_ERROR"
   ```
 
-- [ ] AC3: `AllSourcesFailedError`, `PNCPDegradedError`, `asyncio.TimeoutError` e `QuotaExceededError` devem mapear para seus respectivos `error_code` no handler de busca
+- [x] AC3: `AllSourcesFailedError`, `PNCPDegradedError`, `asyncio.TimeoutError` e `QuotaExceededError` devem mapear para seus respectivos `error_code` no handler de busca
 
 ### Proxy: Preservar Metadata de Erro
 
-- [ ] AC4: `frontend/app/api/buscar/route.ts` deve extrair e repassar campos estruturados do backend:
+- [x] AC4: `frontend/app/api/buscar/route.ts` deve extrair e repassar campos estruturados do backend:
   ```typescript
   // Ao receber erro do backend:
   const errorBody = await response.json().catch(() => ({}));
@@ -100,12 +100,12 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
   }, { status: response.status });
   ```
 
-- [ ] AC5: O proxy deve incluir `X-Request-ID` como header NA RESPOSTA ao browser (alem de no request ao backend)
+- [x] AC5: O proxy deve incluir `X-Request-ID` como header NA RESPOSTA ao browser (alem de no request ao backend)
   - Permite ao usuario copiar o Request ID do DevTools Network tab para suporte
 
 ### Frontend Hook: Preservar Erro Estruturado
 
-- [ ] AC6: `useSearch.ts` deve armazenar erro estruturado, nao apenas string:
+- [x] AC6: `useSearch.ts` deve armazenar erro estruturado, nao apenas string:
   ```typescript
   interface SearchError {
     message: string;         // Mensagem amigavel para o usuario
@@ -121,7 +121,7 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
   - Substituir `setError(string)` por `setError(SearchError | null)`
   - `getUserFriendlyError()` popula `message`; campos raw preservados do response JSON
 
-- [ ] AC7: `SearchResults.tsx` deve passar `SearchError` completo para `ErrorDetail`:
+- [x] AC7: `SearchResults.tsx` deve passar `SearchError` completo para `ErrorDetail`:
   ```typescript
   <ErrorDetail error={error} />  // error: SearchError
   ```
@@ -129,7 +129,7 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
 
 ### Componente ErrorDetail: Exibir Informacoes Uteis
 
-- [ ] AC8: `ErrorDetail.tsx` deve exibir secao expansivel "Detalhes tecnicos" com campos disponiveis:
+- [x] AC8: `ErrorDetail.tsx` deve exibir secao expansivel "Detalhes tecnicos" com campos disponiveis:
   ```
   Detalhes tecnicos:
   ├─ ID da busca: {searchId}
@@ -143,7 +143,7 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
   - Campos ausentes (null) nao devem ser exibidos
   - Minimo: pelo menos `timestamp` + `searchId` sempre presentes
 
-- [ ] AC9: Botao "Copiar detalhes" que copia JSON formatado para clipboard:
+- [x] AC9: Botao "Copiar detalhes" que copia JSON formatado para clipboard:
   ```json
   {
     "search_id": "...",
@@ -158,12 +158,12 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
   - Toast de confirmacao: "Detalhes copiados para a area de transferencia"
   - Formato pensado para colar em ticket de suporte ou enviar ao time
 
-- [ ] AC10: ErrorDetail deve ter `aria-label` e `role="alert"` para acessibilidade
+- [x] AC10: ErrorDetail deve ter `aria-label` e `role="alert"` para acessibilidade
   - Botao "Copiar detalhes" com aria-label descritivo
 
 ### Mapeamento de Error Codes para Mensagens
 
-- [ ] AC11: Atualizar `frontend/lib/error-messages.ts` com mapeamento:
+- [x] AC11: Atualizar `frontend/lib/error-messages.ts` com mapeamento:
   ```typescript
   const ERROR_CODE_MESSAGES: Record<string, string> = {
     SOURCE_UNAVAILABLE: "Nossas fontes de dados estao temporariamente indisponiveis.",
@@ -186,11 +186,11 @@ CRIT-004 trata da propagacao de Correlation ID ponta a ponta nos logs do backend
 cd backend && python -m pytest tests/test_search_error_codes.py -v --no-header
 ```
 
-- [ ] T1: `AllSourcesFailedError` retorna `error_code: "ALL_SOURCES_FAILED"` + `correlation_id` + `search_id`
-- [ ] T2: `asyncio.TimeoutError` retorna `error_code: "TIMEOUT"`
-- [ ] T3: `QuotaExceededError` retorna `error_code: "QUOTA_EXCEEDED"`
-- [ ] T4: Erro generico retorna `error_code: "INTERNAL_ERROR"` (nao expoe stack trace)
-- [ ] T5: Validacao de body com campos obrigatorios (detail, error_code, timestamp)
+- [x] T1: `AllSourcesFailedError` retorna `error_code: "ALL_SOURCES_FAILED"` + `correlation_id` + `search_id`
+- [x] T2: `asyncio.TimeoutError` retorna `error_code: "TIMEOUT"`
+- [x] T3: `QuotaExceededError` retorna `error_code: "QUOTA_EXCEEDED"`
+- [x] T4: Erro generico retorna `error_code: "INTERNAL_ERROR"` (nao expoe stack trace)
+- [x] T5: Validacao de body com campos obrigatorios (detail, error_code, timestamp)
 
 ### Frontend (jest)
 
@@ -198,15 +198,15 @@ cd backend && python -m pytest tests/test_search_error_codes.py -v --no-header
 cd frontend && npm test -- --testPathPattern="error-observability|ErrorDetail" --no-coverage
 ```
 
-- [ ] T6: Proxy preserva `error_code` e `correlation_id` do backend
-- [ ] T7: Proxy gera campos quando backend nao os fornece (fallback graceful)
-- [ ] T8: useSearch armazena `SearchError` estruturado (nao string)
-- [ ] T9: ErrorDetail renderiza todos os campos disponiveis
-- [ ] T10: ErrorDetail oculta campos null/undefined
-- [ ] T11: Botao "Copiar detalhes" copia JSON correto para clipboard
-- [ ] T12: Error code mapeado para mensagem amigavel em portugues
-- [ ] T13: Error code desconhecido usa fallback generico
-- [ ] T14: `X-Request-ID` presente no response header do proxy
+- [x] T6: Proxy preserva `error_code` e `correlation_id` do backend
+- [x] T7: Proxy gera campos quando backend nao os fornece (fallback graceful)
+- [x] T8: useSearch armazena `SearchError` estruturado (nao string)
+- [x] T9: ErrorDetail renderiza todos os campos disponiveis
+- [x] T10: ErrorDetail oculta campos null/undefined
+- [x] T11: Botao "Copiar detalhes" copia JSON correto para clipboard
+- [x] T12: Error code mapeado para mensagem amigavel em portugues
+- [x] T13: Error code desconhecido usa fallback generico
+- [x] T14: `X-Request-ID` presente no response header do proxy
 
 ### Pre-existing baselines
 - Backend: ~35 fail / ~3924 pass
@@ -215,13 +215,13 @@ cd frontend && npm test -- --testPathPattern="error-observability|ErrorDetail" -
 
 ## Definicao de Pronto
 
-- [ ] Todos os ACs implementados e checkboxes marcados
-- [ ] 14 testes novos passando
-- [ ] Zero regressoes nos baselines
-- [ ] TypeScript compila sem erros (`npx tsc --noEmit`)
-- [ ] Backend: `SearchErrorCode` enum exportado no OpenAPI schema
-- [ ] Testado manualmente: forcar erro 502 → verificar ErrorDetail mostra campos uteis
-- [ ] Story file atualizado com `[x]` em todos os checkboxes
+- [x] Todos os ACs implementados e checkboxes marcados
+- [x] 14 testes novos passando
+- [x] Zero regressoes nos baselines
+- [x] TypeScript compila sem erros (`npx tsc --noEmit`)
+- [x] Backend: `SearchErrorCode` enum exportado no OpenAPI schema
+- [x] Testado manualmente: forcar erro 502 → verificar ErrorDetail mostra campos uteis
+- [x] Story file atualizado com `[x]` em todos os checkboxes
 
 ## Arquivos Afetados
 

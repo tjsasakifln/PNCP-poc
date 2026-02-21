@@ -13,7 +13,7 @@ import { useQuota } from "../../../hooks/useQuota";
 import { useSearchProgress, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
 import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
-import { getUserFriendlyError } from "../../../lib/error-messages";
+import { getUserFriendlyError, getMessageFromErrorCode } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
 import { toast } from "sonner";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
@@ -68,11 +68,25 @@ interface UseSearchParams {
   setMunicipios: (m: Municipio[]) => void;
 }
 
+/**
+ * CRIT-009 AC6: Structured error object preserving all metadata from backend/proxy.
+ */
+export interface SearchError {
+  message: string;         // User-friendly message (mapped from error_code or getUserFriendlyError)
+  rawMessage: string;      // Original message from backend
+  errorCode: string | null;
+  searchId: string | null;
+  correlationId: string | null;
+  requestId: string | null;
+  httpStatus: number | null;
+  timestamp: string;
+}
+
 export interface UseSearchReturn {
   loading: boolean;
   loadingStep: number;
   statesProcessed: number;
-  error: string | null;
+  error: SearchError | null;
   quotaError: string | null;
   result: BuscaResult | null;
   setResult: (r: BuscaResult | null) => void;
@@ -128,7 +142,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(1);
   const [statesProcessed, setStatesProcessed] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SearchError | null>(null);
   const [quotaError, setQuotaError] = useState<string | null>(null);
 
   // SSE progress
@@ -237,7 +251,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   const getRetryCooldown = (errorMessage: string | null, httpStatus?: number): number => {
     if (httpStatus === 429) return 30; // Rate limit
     if (httpStatus === 500) return 20; // Server error
-    if (errorMessage?.includes('demorou demais') || errorMessage?.includes('timeout') || httpStatus === 504) return 15; // Timeout
+    if (errorMessage?.includes('demorou demais') || errorMessage?.includes('timeout') || errorMessage?.includes('TIMEOUT') || httpStatus === 504) return 15; // Timeout
     return 10; // Network error default
   };
 
@@ -368,6 +382,19 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
           const err = await response.json().catch(() => ({ message: null, error_code: null, data: null }));
 
+          // CRIT-009 AC6: Attach structured metadata to thrown errors
+          const attachMeta = (error: Error) => {
+            (error as any)._searchErrorMeta = {
+              errorCode: err.error_code || null,
+              searchId: err.search_id || newSearchId,
+              correlationId: err.correlation_id || null,
+              requestId: err.request_id || null,
+              httpStatus: response.status,
+              rawMessage: err.message || error.message,
+            };
+            return error;
+          };
+
           if (response.status === 401) {
             if (result && result.download_id) {
               saveSearchState(result, result.download_id, {
@@ -379,26 +406,26 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
               });
             }
             window.location.href = "/login";
-            throw new Error("Faca login para continuar");
+            throw attachMeta(new Error("Faca login para continuar"));
           }
 
           if (response.status === 403) {
             setQuotaError(err.message || "Suas buscas acabaram.");
-            throw new Error(err.message || "Quota excedida");
+            throw attachMeta(new Error(err.message || "Quota excedida"));
           }
 
           if (err.error_code === 'DATE_RANGE_EXCEEDED') {
             const { requested_days, max_allowed_days, plan_name } = err.data || {};
-            throw new Error(
+            throw attachMeta(new Error(
               `O periodo de busca nao pode exceder ${max_allowed_days} dias (seu plano: ${plan_name}). Voce tentou buscar ${requested_days} dias. Reduza o periodo e tente novamente.`
-            );
+            ));
           }
 
           if (err.error_code === 'RATE_LIMIT') {
-            throw new Error(`Limite de requisicoes excedido (2/min). Aguarde ${err.data?.wait_seconds || 60} segundos e tente novamente.`);
+            throw attachMeta(new Error(`Limite de requisicoes excedido (2/min). Aguarde ${err.data?.wait_seconds || 60} segundos e tente novamente.`));
           }
 
-          throw new Error(err.message || "Erro ao buscar licitacoes");
+          throw attachMeta(new Error(err.message || "Erro ao buscar licitacoes"));
         }
 
         const parsed = await response.json().catch(() => null);
@@ -448,7 +475,25 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
-      const errorMessage = getUserFriendlyError(e);
+      // CRIT-009 AC6: Build structured SearchError preserving all metadata
+      const rawMsg = e instanceof Error ? e.message : String(e);
+      const errMeta = (e as any)?._searchErrorMeta as {
+        errorCode?: string; searchId?: string; correlationId?: string;
+        requestId?: string; httpStatus?: number; rawMessage?: string;
+      } | undefined;
+      const errorCode = errMeta?.errorCode || null;
+      const friendlyFromCode = getMessageFromErrorCode(errorCode);
+      const friendlyMessage = friendlyFromCode || getUserFriendlyError(e);
+      const searchError: SearchError = {
+        message: friendlyMessage,
+        rawMessage: errMeta?.rawMessage || rawMsg,
+        errorCode,
+        searchId: errMeta?.searchId || newSearchId,
+        correlationId: errMeta?.correlationId || null,
+        requestId: errMeta?.requestId || null,
+        httpStatus: errMeta?.httpStatus || null,
+        timestamp: new Date().toISOString(),
+      };
       if (forceFresh && previousResult) {
         // AC9: Keep cached data visible, show toast instead of error
         setResult(previousResult);
@@ -459,12 +504,12 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         if (previousResultFallback && previousResultFallback.licitacoes?.length > 0) {
           setResult(previousResultFallback);
           setError(null);
-          toast.error(errorMessage);
+          toast.error(friendlyMessage);
         } else {
-          setError(errorMessage);
+          setError(searchError);
         }
       }
-      trackEvent('search_failed', { error_message: errorMessage, search_mode: filters.searchMode, force_fresh: forceFresh });
+      trackEvent('search_failed', { error_message: friendlyMessage, error_code: errorCode, search_mode: filters.searchMode, force_fresh: forceFresh });
     } finally {
       cleanupInterval();
       setLoading(false);

@@ -26,6 +26,7 @@ jest.mock("sonner", () => ({
 }));
 jest.mock("../../lib/error-messages", () => ({
   getUserFriendlyError: (e: any) => (e instanceof Error ? e.message : String(e)),
+  getMessageFromErrorCode: () => null,
 }));
 jest.mock("../../lib/searchStatePersistence", () => ({
   saveSearchState: jest.fn(),

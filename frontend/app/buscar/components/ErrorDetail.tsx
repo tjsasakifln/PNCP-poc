@@ -1,49 +1,77 @@
 "use client";
 
 import { useState } from "react";
+import type { SearchError } from "../hooks/useSearch";
+import { toast } from "sonner";
 
 interface ErrorDetailProps {
+  /** CRIT-009 AC7: Structured error object from useSearch */
+  error?: SearchError | null;
+  /** Legacy fallback props for backward compatibility */
   searchId?: string | null;
   errorMessage?: string;
   timestamp?: string;
 }
 
 /**
- * CRIT-006 AC25-26: Collapsible technical detail section for error cards.
- * Shows search_id, timestamp, and error details. Includes "Copy details" button.
+ * CRIT-009 AC8-AC10: Collapsible technical detail section for error cards.
+ * Shows structured error metadata (search_id, request_id, correlation_id, error_code, etc.).
+ * Includes "Copiar detalhes" button that copies JSON for support tickets.
  */
-export function ErrorDetail({ searchId, errorMessage, timestamp }: ErrorDetailProps) {
+export function ErrorDetail({ error, searchId, errorMessage, timestamp }: ErrorDetailProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const details = [
-    searchId && `ID da busca: ${searchId}`,
-    timestamp && `Horario: ${timestamp}`,
-    errorMessage && `Detalhes: ${errorMessage}`,
-  ].filter(Boolean).join("\n");
+  // CRIT-009 AC8: Support both structured SearchError and legacy props
+  const effectiveSearchId = error?.searchId || searchId;
+  const effectiveTimestamp = error?.timestamp || timestamp || new Date().toISOString();
+  const effectiveMessage = error?.rawMessage || errorMessage;
+  const errorCode = error?.errorCode;
+  const correlationId = error?.correlationId;
+  const requestId = error?.requestId;
+  const httpStatus = error?.httpStatus;
 
-  if (!searchId && !errorMessage) return null;
+  if (!effectiveSearchId && !effectiveMessage) return null;
+
+  // CRIT-009 AC9: Build JSON for clipboard — formatted for support tickets
+  const clipboardData: Record<string, any> = {};
+  if (effectiveSearchId) clipboardData.search_id = effectiveSearchId;
+  if (requestId) clipboardData.request_id = requestId;
+  if (correlationId) clipboardData.correlation_id = correlationId;
+  if (errorCode) clipboardData.error_code = errorCode;
+  if (httpStatus) clipboardData.http_status = httpStatus;
+  clipboardData.timestamp = effectiveTimestamp;
+  if (effectiveMessage) clipboardData.message = effectiveMessage;
 
   const handleCopy = async () => {
+    const jsonText = JSON.stringify(clipboardData, null, 2);
     try {
-      await navigator.clipboard.writeText(details);
+      await navigator.clipboard.writeText(jsonText);
       setCopied(true);
+      toast.success("Detalhes copiados para a área de transferência");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
-      textarea.value = details;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Fallback for older browsers / non-HTTPS
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = jsonText;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopied(true);
+        toast.success("Detalhes copiados para a área de transferência");
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        toast.error("Não foi possível copiar. Copie manualmente.");
+      }
     }
   };
 
   return (
-    <div className="mt-2" data-testid="error-detail">
+    <div className="mt-2" data-testid="error-detail" role="alert" aria-label="Detalhes técnicos do erro">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="text-xs text-ink-muted hover:text-ink-secondary transition-colors underline-offset-2 hover:underline flex items-center gap-1"
@@ -63,11 +91,16 @@ export function ErrorDetail({ searchId, errorMessage, timestamp }: ErrorDetailPr
 
       {isOpen && (
         <div className="mt-2 p-3 bg-surface-1 rounded-md text-xs text-ink-muted font-mono space-y-1">
-          {searchId && <p>ID: {searchId}</p>}
-          {timestamp && <p>Horario: {timestamp}</p>}
-          {errorMessage && <p>Erro: {errorMessage}</p>}
+          {effectiveSearchId && <p>ID da busca: {effectiveSearchId}</p>}
+          {requestId && <p>ID da requisicao: {requestId}</p>}
+          {correlationId && <p>ID de correlacao: {correlationId}</p>}
+          {errorCode && <p>Codigo do erro: {errorCode}</p>}
+          {httpStatus && <p>Status HTTP: {httpStatus}</p>}
+          <p>Horario: {effectiveTimestamp}</p>
+          {effectiveMessage && <p>Mensagem original: {effectiveMessage}</p>}
           <button
             onClick={handleCopy}
+            aria-label="Copiar detalhes técnicos do erro para a área de transferência"
             className="mt-2 inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-surface-2 hover:bg-surface-3 text-ink-secondary transition-colors"
           >
             {copied ? (

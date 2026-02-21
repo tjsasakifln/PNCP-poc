@@ -243,6 +243,21 @@ ERROR_CODES = {
 }
 
 
+class SearchErrorCode(str, Enum):
+    """CRIT-009 AC2: Standardized error codes for search endpoint.
+
+    Semantic error codes — orthogonal to HTTP status codes.
+    Used in structured error responses from POST /buscar.
+    """
+    SOURCE_UNAVAILABLE = "SOURCE_UNAVAILABLE"
+    ALL_SOURCES_FAILED = "ALL_SOURCES_FAILED"
+    TIMEOUT = "TIMEOUT"
+    RATE_LIMIT = "RATE_LIMIT"
+    QUOTA_EXCEEDED = "QUOTA_EXCEEDED"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
 class BuscaRequest(BaseModel):
     """
     Request schema for /buscar endpoint.

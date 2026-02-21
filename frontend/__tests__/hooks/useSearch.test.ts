@@ -62,6 +62,7 @@ jest.mock("../../hooks/useSavedSearches", () => ({
 jest.mock("../../lib/error-messages", () => ({
   getUserFriendlyError: (e: unknown) =>
     e instanceof Error ? e.message : String(e),
+  getMessageFromErrorCode: () => null,
 }));
 
 jest.mock("../../lib/searchStatePersistence", () => ({
