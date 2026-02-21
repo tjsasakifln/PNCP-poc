@@ -91,7 +91,7 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Schema Changes
 
-- [ ] **AC1: Migration `007_search_session_lifecycle.sql`** — Adicionar colunas a `search_sessions`:
+- [x] **AC1: Migration `007_search_session_lifecycle.sql`** — Adicionar colunas a `search_sessions`:
   - `status TEXT NOT NULL DEFAULT 'created' CHECK (status IN ('created', 'processing', 'completed', 'failed', 'timed_out', 'cancelled'))`
   - `error_message TEXT` (nullable — descricao estruturada do erro)
   - `error_code TEXT` (nullable — machine-readable: `'sources_unavailable'`, `'timeout'`, `'filter_error'`, `'llm_error'`, `'db_error'`, `'quota_exceeded'`, `'unknown'`)
@@ -103,9 +103,9 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
   - `raw_count INTEGER DEFAULT 0` (itens buscados antes de filtragem)
   - `response_state TEXT` (nullable: `'live'`, `'cached'`, `'degraded'`, `'empty_failure'`)
 
-- [ ] **AC2: Migration idempotente** — Usar `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` para cada coluna. A migration deve ser segura para rodar multiplas vezes.
+- [x] **AC2: Migration idempotente** — Usar `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` para cada coluna. A migration deve ser segura para rodar multiplas vezes.
 
-- [ ] **AC3: Backfill de dados existentes** — Ao final da migration:
+- [x] **AC3: Backfill de dados existentes** — Ao final da migration:
   ```sql
   UPDATE search_sessions
   SET status = 'completed',
@@ -118,13 +118,13 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Pre-registration Flow
 
-- [ ] **AC4: Criar `register_search_session()`** em `quota.py` — nova funcao que performa INSERT com `status='created'` ANTES da quota ser consumida.
+- [x] **AC4: Criar `register_search_session()`** em `quota.py` — nova funcao que performa INSERT com `status='created'` ANTES da quota ser consumida.
   - Parametros: `user_id`, `sectors`, `ufs`, `data_inicial`, `data_final`, `custom_keywords`, `search_id`
   - Retorno: `session_id (str)` on success, `None` on failure
   - O INSERT deve conter apenas os campos de input (sem resultados — esses vem depois)
   - Retry: 1 tentativa apos 0.3s (mesma logica de `save_search_session()`)
 
-- [ ] **AC5: Mover registro de sessao para Stage 1 (`stage_validate`)** — A sequencia no `search_pipeline.py:stage_validate()` deve ser:
+- [x] **AC5: Mover registro de sessao para Stage 1 (`stage_validate`)** — A sequencia no `search_pipeline.py:stage_validate()` deve ser:
   1. Rate limiting check (existente, linhas 569-591)
   2. **`register_search_session()`** — INSERT com `status='created'` (NOVO)
   3. `check_and_increment_quota_atomic()` — quota check (existente, linha 606)
@@ -132,20 +132,20 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
   - Se quota falha apos registro: `update_search_session_status(session_id, 'failed', error_code='quota_exceeded')`
   - Armazenar `ctx.session_id` imediatamente apos registro
 
-- [ ] **AC6: Criar `update_search_session_status()`** em `quota.py` — helper function para updates:
+- [x] **AC6: Criar `update_search_session_status()`** em `quota.py` — helper function para updates:
   - Parametros: `session_id`, `status`, `pipeline_stage=None`, `error_message=None`, `error_code=None`, `raw_count=None`, `response_state=None`, `completed_at=None`, `duration_ms=None`
   - Apenas atualiza campos nao-None (dynamic UPDATE)
   - Non-blocking: log ERROR em falha mas NAO levanta excecao
   - 1 retry com 0.3s delay
 
-- [ ] **AC7: Stage 1 — set `status='processing'`** — Apos quota check passar, atualizar sessao:
+- [x] **AC7: Stage 1 — set `status='processing'`** — Apos quota check passar, atualizar sessao:
   ```python
   await update_search_session_status(ctx.session_id, status='processing', pipeline_stage='validate')
   ```
 
 ### Pipeline Stage Tracking
 
-- [ ] **AC8: Stage 3 — tracking de execucao** — No inicio de `stage_execute` (search_pipeline.py:734):
+- [x] **AC8: Stage 3 — tracking de execucao** — No inicio de `stage_execute` (search_pipeline.py:734):
   ```python
   await update_search_session_status(ctx.session_id, pipeline_stage='execute')
   ```
@@ -154,17 +154,17 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
   await update_search_session_status(ctx.session_id, raw_count=len(ctx.licitacoes_raw))
   ```
 
-- [ ] **AC9: Stage 4 — tracking de filtragem** — No inicio de `stage_filter` (search_pipeline.py:1373):
+- [x] **AC9: Stage 4 — tracking de filtragem** — No inicio de `stage_filter` (search_pipeline.py:1373):
   ```python
   await update_search_session_status(ctx.session_id, pipeline_stage='filter')
   ```
 
-- [ ] **AC10: Stage 6 — tracking de geracao** — No inicio de `stage_generate` (search_pipeline.py:1581):
+- [x] **AC10: Stage 6 — tracking de geracao** — No inicio de `stage_generate` (search_pipeline.py:1581):
   ```python
   await update_search_session_status(ctx.session_id, pipeline_stage='generate')
   ```
 
-- [ ] **AC11: Stage 7 — completion** — Refatorar `stage_persist` (search_pipeline.py:1954) para:
+- [x] **AC11: Stage 7 — completion** — Refatorar `stage_persist` (search_pipeline.py:1954) para:
   - Usar `update_search_session_status()` ao inves de `save_search_session()` para o UPDATE final
   - Set `status='completed'`, `completed_at=now()`, `pipeline_stage='persist'`
   - Preencher todos os campos de resultado (`total_raw`, `total_filtered`, `valor_total`, `resumo_executivo`, `destaques`, `response_state`, `duration_ms`)
@@ -172,25 +172,25 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Error Handling
 
-- [ ] **AC12: Exception handlers em `routes/search.py`** — Cada um dos 4 handlers (linhas 501-544) deve chamar `update_search_session_status()`:
+- [x] **AC12: Exception handlers em `routes/search.py`** — Cada um dos 4 handlers (linhas 501-544) deve chamar `update_search_session_status()`:
   - `PNCPRateLimitError` (501): `status='failed'`, `error_code='sources_unavailable'`, `error_message=f"PNCP rate limit: retry after {retry_after}s"`
   - `PNCPAPIError` (516): `status='failed'`, `error_code='sources_unavailable'`, `error_message=str(e)[:500]`
   - `HTTPException` (530): `status='failed'`, `error_code='unknown'`, `error_message=f"HTTP {exc.status_code}: {exc.detail}"`
   - `Exception` (536): `status='failed'`, `error_code='unknown'`, `error_message=f"{type(e).__name__}: {str(e)[:300]}"`
 
-- [ ] **AC13: Exception handlers em `search_pipeline.py` Stage 3** — Handlers nas linhas 983-1340 devem atualizar `pipeline_stage` e `response_state`:
+- [x] **AC13: Exception handlers em `search_pipeline.py` Stage 3** — Handlers nas linhas 983-1340 devem atualizar `pipeline_stage` e `response_state`:
   - `AllSourcesFailedError` (983): `pipeline_stage='execute'`, `response_state='empty_failure'`
   - `asyncio.TimeoutError` (1066): `pipeline_stage='execute'`, `response_state='degraded'`
   - `PNCPDegradedError` (1259): `pipeline_stage='execute'`, `response_state='degraded'`
   - `Exception` generico (1122): `pipeline_stage='execute'`, `response_state='empty_failure'`
   - Nota: esses handlers ja fazem cache fallback — o update de sessao e ADICIONAL, nao substitui a logica existente
 
-- [ ] **AC14: Timeout handling** — Em `asyncio.TimeoutError` (tanto no pipeline quanto na route):
+- [x] **AC14: Timeout handling** — Em `asyncio.TimeoutError` (tanto no pipeline quanto na route):
   - `status='timed_out'`
   - `error_message` deve incluir tempo decorrido: `f"Pipeline timeout after {elapsed_ms}ms (limit: {timeout_ms}ms)"`
   - `error_code='timeout'`
 
-- [ ] **AC15: SIGTERM handler** — No shutdown do servidor (main.py ou start.sh lifecycle):
+- [x] **AC15: SIGTERM handler** — No shutdown do servidor (main.py ou start.sh lifecycle):
   - Registrar handler para `signal.SIGTERM`
   - Na execucao: `UPDATE search_sessions SET status = 'timed_out', error_message = 'Server shutdown (SIGTERM)', completed_at = now() WHERE status IN ('created', 'processing')`
   - Log CRITICAL: `"Marking {n} in-flight sessions as timed_out due to SIGTERM"`
@@ -198,14 +198,14 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Quota Compensation Strategy
 
-- [ ] **AC16: Manter quota consumida (Option B)** — Buscas falhadas manteem a quota decrementada, mas aparecem no historico como "falha". Justificativa:
+- [x] **AC16: Manter quota consumida (Option B)** — Buscas falhadas manteem a quota decrementada, mas aparecem no historico como "falha". Justificativa:
   - Evita race conditions de compensacao
   - Mantem audit trail completo
   - Usuario ve exatamente o que aconteceu
   - Operador pode fazer compensacao manual se necessario
   - Documenta a decisao como ADR no topo do PR
 
-- [ ] **AC17: Historico mostra buscas falhadas** — A pagina `/historico` (`frontend/app/historico/page.tsx`) deve:
+- [x] **AC17: Historico mostra buscas falhadas** — A pagina `/historico` (`frontend/app/historico/page.tsx`) deve:
   - Renderizar buscas `failed`/`timed_out` com badge vermelho/laranja distinto
   - Mostrar `error_message` truncada (max 100 chars)
   - Exibir botao "Tentar novamente" que pre-popula os mesmos parametros no `/buscar`
@@ -213,7 +213,7 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Frontend Integration
 
-- [ ] **AC18: Tipo `SearchSessionStatus`** — Adicionar ao frontend types (interface `SearchSession` em `app/historico/page.tsx`):
+- [x] **AC18: Tipo `SearchSessionStatus`** — Adicionar ao frontend types (interface `SearchSession` em `app/historico/page.tsx`):
   ```typescript
   type SearchSessionStatus = 'created' | 'processing' | 'completed' | 'failed' | 'timed_out' | 'cancelled';
 
@@ -229,9 +229,9 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
   }
   ```
 
-- [ ] **AC19: Endpoint `/v1/sessions` inclui novos campos** — O endpoint de historico (backend `routes/sessions.py` ou equivalente proxy `frontend/app/api/sessions/route.ts`) deve retornar `status`, `error_message`, `error_code`, `duration_ms`, `pipeline_stage`, `started_at`, `response_state` em cada sessao.
+- [x] **AC19: Endpoint `/v1/sessions` inclui novos campos** — O endpoint de historico (backend `routes/sessions.py` ou equivalente proxy `frontend/app/api/sessions/route.ts`) deve retornar `status`, `error_message`, `error_code`, `duration_ms`, `pipeline_stage`, `started_at`, `response_state` em cada sessao.
 
-- [ ] **AC20: UI de historico renderiza status** — Componente de card de sessao deve:
+- [x] **AC20: UI de historico renderiza status** — Componente de card de sessao deve:
   - `completed` (default): badge verde "Concluida" + icone check (comportamento atual)
   - `failed`: badge vermelho "Falhou" + icone X + `error_message` + botao "Tentar novamente"
   - `timed_out`: badge laranja "Timeout" + icone relogio + `error_message` + botao "Tentar novamente"
@@ -241,7 +241,7 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Observability
 
-- [ ] **AC21: Prometheus counter** — Em `metrics.py`, adicionar:
+- [x] **AC21: Prometheus counter** — Em `metrics.py`, adicionar:
   ```python
   search_session_status = Counter(
       "smartlic_search_session_status_total",
@@ -251,7 +251,7 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
   ```
   Incrementar em cada chamada a `register_search_session()` (label `created`) e `update_search_session_status()` (label conforme novo status).
 
-- [ ] **AC22: Structured logging** — Em cada transicao de status, emitir log estruturado:
+- [x] **AC22: Structured logging** — Em cada transicao de status, emitir log estruturado:
   ```python
   logger.info(json.dumps({
       "event": "search_session_status_change",
@@ -267,13 +267,13 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ### Safety (Degradacao Graceful)
 
-- [ ] **AC23: Falha no registro NAO bloqueia busca** — Se `register_search_session()` falhar:
+- [x] **AC23: Falha no registro NAO bloqueia busca** — Se `register_search_session()` falhar:
   - Log `logger.critical("Failed to register search session — continuing without session tracking")`
   - `ctx.session_id = None`
   - Pipeline continua normalmente (comportamento pre-existente sem sessao e melhor que bloquear tudo)
   - No Stage 7, se `ctx.session_id is None`, faz fallback para `save_search_session()` completo (comportamento atual)
 
-- [ ] **AC24: Updates de status sao non-blocking** — Todas as chamadas a `update_search_session_status()` devem:
+- [x] **AC24: Updates de status sao non-blocking** — Todas as chamadas a `update_search_session_status()` devem:
   - Executar em fire-and-forget (nao aguardar resultado no caminho critico)
   - Log ERROR em falha mas NUNCA propagar excecao
   - NAO adicionar latencia perceptivel ao pipeline (target: <5ms por update)
@@ -338,19 +338,19 @@ Cada cenario abaixo resulta em **quota consumida, sessao NAO registrada**:
 
 ## Definicao de Pronto
 
-- [ ] Migration `007_search_session_lifecycle.sql` aplicada e idempotente
-- [ ] Backfill de sessoes existentes executado com sucesso
-- [ ] `register_search_session()` criada e chamada em Stage 1 antes de quota
-- [ ] `update_search_session_status()` criada e chamada em cada transicao
-- [ ] Todos os 4 exception handlers em `routes/search.py` atualizam sessao
-- [ ] Todos os exception handlers relevantes em `search_pipeline.py` atualizam sessao
-- [ ] SIGTERM handler registrado e funcional
-- [ ] Frontend renderiza status badges no historico
-- [ ] Prometheus counter `search_session_status_total` funcional
-- [ ] Structured logs em cada transicao
-- [ ] 14 unit tests + 13 failure scenario tests + 5 frontend tests + 3 integration tests passando
-- [ ] Zero regressao nos testes pre-existentes (baseline: ~34 fail BE / ~42 fail FE)
-- [ ] Graceful degradation verificada (falha no registro nao bloqueia busca)
+- [x] Migration `007_search_session_lifecycle.sql` aplicada e idempotente
+- [x] Backfill de sessoes existentes executado com sucesso
+- [x] `register_search_session()` criada e chamada em Stage 1 antes de quota
+- [x] `update_search_session_status()` criada e chamada em cada transicao
+- [x] Todos os 4 exception handlers em `routes/search.py` atualizam sessao
+- [x] Todos os exception handlers relevantes em `search_pipeline.py` atualizam sessao
+- [x] SIGTERM handler registrado e funcional
+- [x] Frontend renderiza status badges no historico
+- [x] Prometheus counter `search_session_status_total` funcional
+- [x] Structured logs em cada transicao
+- [x] 14 unit tests + 13 failure scenario tests + 5 frontend tests + 3 integration tests passando
+- [x] Zero regressao nos testes pre-existentes (baseline: ~34 fail BE / ~42 fail FE)
+- [x] Graceful degradation verificada (falha no registro nao bloqueia busca)
 - [ ] PR aprovado com ADR documentando decisao de quota (Option B)
 
 ## Riscos e Mitigacoes
