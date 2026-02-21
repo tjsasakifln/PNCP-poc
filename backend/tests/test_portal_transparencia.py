@@ -38,8 +38,9 @@ def adapter():
 
 
 @pytest.fixture
-def adapter_no_key():
+def adapter_no_key(monkeypatch):
     """Adapter without an API key."""
+    monkeypatch.delenv("PORTAL_TRANSPARENCIA_API_KEY", raising=False)
     return PortalTransparenciaAdapter(api_key="", timeout=5)
 
 

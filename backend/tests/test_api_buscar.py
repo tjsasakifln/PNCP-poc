@@ -69,7 +69,12 @@ class TestBuscarFeatureFlagEnabled:
             )
 
             assert response.status_code == 403
-            assert "Limite de 50 buscas mensais atingido" in response.json()["detail"]
+            detail = response.json()["detail"]
+            if isinstance(detail, dict):
+                assert detail.get("error_code") == "QUOTA_EXCEEDED"
+                assert "Limite de 50 buscas mensais atingido" in detail["detail"]
+            else:
+                assert "Limite de 50 buscas mensais atingido" in detail
         finally:
             cleanup()
 

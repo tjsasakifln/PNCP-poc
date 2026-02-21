@@ -1,6 +1,6 @@
 # STORY-258 — Fix 7 Pre-existing Backend Test Failures
 
-**Status:** READY
+**Status:** DONE
 **Priority:** Medium
 **Sprint:** Current
 **Estimate:** 2-3h
@@ -97,13 +97,13 @@ Or change `__init__` to use `api_key if api_key is not None else os.environ.get(
 
 ## Acceptance Criteria
 
-- [ ] **AC1:** `test_enforces_quota_when_feature_flag_enabled` passes — assertion updated for CRIT-009 structured error format
-- [ ] **AC2:** `test_no_quota_enforcement_when_disabled` passes — updated to reflect quota-always-enforced reality, OR deleted with justification
-- [ ] **AC3:** `test_no_api_key_returns_unavailable` passes — env var leak fixed (either fixture or __init__)
-- [ ] **AC4:** All 4 `test_profile_context` tests pass — mock chain matches current route implementation
-- [ ] **AC5:** Zero regressions — `pytest` shows ≤55 skipped, 0 failed (down from 7)
-- [ ] **AC6:** No production code changes required (test-only fixes preferred). If `__init__` fix chosen for AC3, verify no behavioral change
-- [ ] **AC7:** Baseline numbers updated in `MEMORY.md` (from "~35 fail" to actual)
+- [x] **AC1:** `test_enforces_quota_when_feature_flag_enabled` passes — assertion updated for CRIT-009 structured error format (detail is now a dict, check `error_code` and nested `detail`)
+- [x] **AC2:** `test_no_quota_enforcement_when_disabled` passes — already self-healed (quota flow works with live Supabase)
+- [x] **AC3:** `test_no_api_key_returns_unavailable` passes — env var leak fixed via `monkeypatch.delenv` in fixture
+- [x] **AC4:** All 4 `test_profile_context` tests pass — already self-healed (mock chain matches current route)
+- [x] **AC5:** Zero regressions — `pytest` shows 0 failed (down from 7→2 actual failures)
+- [x] **AC6:** No production code changes — test-only fixes (2 files: test_api_buscar.py, test_portal_transparencia.py)
+- [x] **AC7:** Baseline numbers updated in `MEMORY.md`
 
 ---
 
