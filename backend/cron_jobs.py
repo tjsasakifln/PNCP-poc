@@ -43,6 +43,7 @@ async def cleanup_stale_sessions() -> dict:
 
     - Sessions with status='in_progress' and created_at > 1 hour → mark as 'timeout'
     - Sessions with status IN ('failed', 'timeout', 'timed_out') and created_at > 7 days → delete
+    - If status column doesn't exist: delete sessions with created_at > 7 days (graceful fallback)
 
     Returns dict with counts: {"marked_stale": N, "deleted_old": M}
     """
@@ -54,24 +55,10 @@ async def cleanup_stale_sessions() -> dict:
         stale_cutoff = (now - timedelta(hours=SESSION_STALE_HOURS)).isoformat()
         old_cutoff = (now - timedelta(days=SESSION_OLD_DAYS)).isoformat()
 
-        # Mark stale in_progress sessions as timed_out
-        marked_result = (
-            sb.table("search_sessions")
-            .update({
-                "status": "timed_out",
-                "error_message": "Session timed out (cleanup)",
-                "error_code": "session_timeout",
-                "completed_at": now.isoformat(),
-            })
-            .eq("status", "in_progress")
-            .lt("created_at", stale_cutoff)
-            .execute()
-        )
-        marked_stale = len(marked_result.data) if marked_result.data else 0
-
-        # Also mark stale 'created' and 'processing' sessions
-        for stale_status in ("created", "processing"):
-            extra_result = (
+        # Try status-based cleanup first; fall back if column doesn't exist
+        try:
+            # Mark stale in_progress sessions as timed_out
+            marked_result = (
                 sb.table("search_sessions")
                 .update({
                     "status": "timed_out",
@@ -79,25 +66,58 @@ async def cleanup_stale_sessions() -> dict:
                     "error_code": "session_timeout",
                     "completed_at": now.isoformat(),
                 })
-                .eq("status", stale_status)
+                .eq("status", "in_progress")
                 .lt("created_at", stale_cutoff)
                 .execute()
             )
-            marked_stale += len(extra_result.data) if extra_result.data else 0
+            marked_stale = len(marked_result.data) if marked_result.data else 0
 
-        # Delete old terminal sessions
-        deleted_old = 0
-        for terminal_status in ("failed", "timeout", "timed_out"):
-            del_result = (
-                sb.table("search_sessions")
-                .delete()
-                .eq("status", terminal_status)
-                .lt("created_at", old_cutoff)
-                .execute()
-            )
-            deleted_old += len(del_result.data) if del_result.data else 0
+            # Also mark stale 'created' and 'processing' sessions
+            for stale_status in ("created", "processing"):
+                extra_result = (
+                    sb.table("search_sessions")
+                    .update({
+                        "status": "timed_out",
+                        "error_message": "Session timed out (cleanup)",
+                        "error_code": "session_timeout",
+                        "completed_at": now.isoformat(),
+                    })
+                    .eq("status", stale_status)
+                    .lt("created_at", stale_cutoff)
+                    .execute()
+                )
+                marked_stale += len(extra_result.data) if extra_result.data else 0
 
-        return {"marked_stale": marked_stale, "deleted_old": deleted_old}
+            # Delete old terminal sessions
+            deleted_old = 0
+            for terminal_status in ("failed", "timeout", "timed_out"):
+                del_result = (
+                    sb.table("search_sessions")
+                    .delete()
+                    .eq("status", terminal_status)
+                    .lt("created_at", old_cutoff)
+                    .execute()
+                )
+                deleted_old += len(del_result.data) if del_result.data else 0
+
+            return {"marked_stale": marked_stale, "deleted_old": deleted_old}
+
+        except Exception as col_err:
+            if "42703" in str(col_err):
+                # status/error columns don't exist — fallback to created_at-only cleanup
+                logger.warning(
+                    "Session cleanup: status column not found, "
+                    "falling back to created_at-only cleanup"
+                )
+                del_result = (
+                    sb.table("search_sessions")
+                    .delete()
+                    .lt("created_at", old_cutoff)
+                    .execute()
+                )
+                deleted_old = len(del_result.data) if del_result.data else 0
+                return {"marked_stale": 0, "deleted_old": deleted_old}
+            raise
 
     except Exception as e:
         logger.error(f"Session cleanup error: {e}", exc_info=True)

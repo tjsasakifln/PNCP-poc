@@ -11,10 +11,9 @@ CREATE INDEX IF NOT EXISTS idx_search_sessions_search_id
   ON search_sessions (search_id)
   WHERE search_id IS NOT NULL;
 
--- Index for cleanup of old sessions
-CREATE INDEX IF NOT EXISTS idx_search_sessions_status_created
-  ON search_sessions (status, created_at)
-  WHERE status = 'in_progress';
+-- NOTE: idx_search_sessions_status_created omitted — search_sessions table
+-- does not have a 'status' column in production (status is managed by
+-- search_state_transitions table instead). See CRIT-011 investigation.
 
 COMMENT ON COLUMN search_sessions.search_id IS
   'UUID linking session to SSE progress tracker, ARQ jobs, and cache entries. Optional for backward compatibility.';

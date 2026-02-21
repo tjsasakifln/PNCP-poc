@@ -45,7 +45,8 @@ class TestMigrationValidity:
         assert "UUID" in sql
         assert "DEFAULT NULL" in sql
         assert "CREATE INDEX IF NOT EXISTS idx_search_sessions_search_id" in sql
-        assert "CREATE INDEX IF NOT EXISTS idx_search_sessions_status_created" in sql
+        # NOTE: idx_search_sessions_status_created omitted — status column
+        # does not exist in production (see CRIT-011 investigation)
         assert "COMMENT ON COLUMN" in sql
 
     def test_supabase_migration_exists_and_valid(self):
@@ -76,8 +77,8 @@ class TestMigrationValidity:
             sql = f.read()
 
         # Every ALTER/CREATE should use IF NOT EXISTS
-        assert sql.count("IF NOT EXISTS") >= 3, (
-            "Migration must use IF NOT EXISTS for column + 2 indexes"
+        assert sql.count("IF NOT EXISTS") >= 2, (
+            "Migration must use IF NOT EXISTS for column + index"
         )
 
 
@@ -238,22 +239,18 @@ class TestStartupRecoveryBackwardCompat:
 
     @pytest.mark.asyncio
     async def test_recovery_without_search_id_column(self):
-        """T4: Recovery falls back to query without search_id on 42703 error."""
+        """T4: Recovery falls back to created_at-only query on 42703 error."""
         now = datetime.now(timezone.utc)
         old_time = (now - timedelta(minutes=20)).isoformat()
 
         mock_sb = MagicMock()
         mock_table = MagicMock()
-        mock_select_with_sid = MagicMock()
-        mock_select_without_sid = MagicMock()
-        mock_in_fail = MagicMock()
-        mock_in_ok = MagicMock()
         mock_update = MagicMock()
         mock_eq = MagicMock()
 
         mock_sb.table.return_value = mock_table
 
-        # First call (with search_id) fails with 42703
+        # First call (with search_id+status) fails with 42703
         call_count = [0]
         def select_side_effect(columns):
             call_count[0] += 1
@@ -265,19 +262,27 @@ class TestStartupRecoveryBackwardCompat:
                 ))
                 return result
             else:
-                # Second call without search_id → succeeds
+                # Fallback: select id, created_at → uses .lt() not .in_()
                 result = MagicMock()
-                mock_in_ok = MagicMock()
-                mock_in_ok.execute.return_value = MagicMock(data=[
-                    {"id": "s3", "status": "processing", "started_at": old_time},
+                mock_lt = MagicMock()
+                mock_lt.execute.return_value = MagicMock(data=[
+                    {"id": "s3", "created_at": old_time},
                 ])
-                result.in_.return_value = mock_in_ok
+                result.lt.return_value = mock_lt
                 return result
 
         mock_table.select.side_effect = select_side_effect
+
+        # The recovery tries to update/delete stale sessions
         mock_table.update.return_value = mock_update
         mock_update.eq.return_value = mock_eq
         mock_eq.execute.return_value = MagicMock(data=[])
+        # Also mock delete for fallback path
+        mock_delete = MagicMock()
+        mock_delete_eq = MagicMock()
+        mock_delete_eq.execute.return_value = MagicMock(data=[])
+        mock_delete.eq.return_value = mock_delete_eq
+        mock_table.delete.return_value = mock_delete
 
         with patch("supabase_client.get_supabase", return_value=mock_sb), \
              patch("search_state_manager._persist_transition", new_callable=AsyncMock):
@@ -286,7 +291,7 @@ class TestStartupRecoveryBackwardCompat:
 
         # Should still recover the session (without crashing)
         assert total == 1
-        # Verify it was called twice (first with search_id, then without)
+        # Verify it was called twice (first with search_id, then fallback)
         assert mock_table.select.call_count == 2
 
     @pytest.mark.asyncio
@@ -297,12 +302,19 @@ class TestStartupRecoveryBackwardCompat:
 
         mock_sb.table.return_value = mock_table
 
-        # Both calls fail (simulating total DB issue)
-        mock_select = MagicMock()
-        mock_select.in_.side_effect = Exception(
+        # First call fails with 42703 (search_id/status missing)
+        mock_select_first = MagicMock()
+        mock_select_first.in_.side_effect = Exception(
             "{'code': '42703', 'message': 'column search_sessions.search_id does not exist'}"
         )
-        mock_table.select.return_value = mock_select
+
+        # Fallback call also fails (e.g. table structure totally broken)
+        mock_select_fallback = MagicMock()
+        mock_select_fallback.lt.side_effect = Exception(
+            "{'code': '42703', 'message': 'column search_sessions.created_at does not exist'}"
+        )
+
+        mock_table.select.side_effect = [mock_select_first, mock_select_fallback]
 
         with patch("supabase_client.get_supabase", return_value=mock_sb):
             from search_state_manager import recover_stale_searches

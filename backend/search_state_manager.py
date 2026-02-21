@@ -364,7 +364,8 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(minutes=max_age_minutes)
 
-        # CRIT-011 AC6: Try with search_id first, fall back without it
+        # CRIT-011 AC6: Try with all columns first, fall back gracefully
+        # Production search_sessions may lack: search_id, status, started_at
         has_search_id_column = True
         try:
             result = (
@@ -375,19 +376,28 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
             )
         except Exception as col_err:
             err_str = str(col_err)
-            if "42703" in err_str or "search_id" in err_str:
-                # Column doesn't exist yet — query without it
+            if "42703" in err_str:
+                # One or more columns don't exist — try minimal query
                 logger.warning(
-                    "Startup recovery: search_id column not found, "
-                    "running recovery without correlation (apply CRIT-011 migration)"
+                    "Startup recovery: required columns missing (%s), "
+                    "attempting created_at-based recovery",
+                    err_str[:120],
                 )
                 has_search_id_column = False
-                result = (
-                    sb.table("search_sessions")
-                    .select("id, status, started_at")
-                    .in_("status", ["created", "processing"])
-                    .execute()
-                )
+                try:
+                    # Fallback: use only columns we know exist (id, created_at)
+                    result = (
+                        sb.table("search_sessions")
+                        .select("id, created_at")
+                        .lt("created_at", cutoff.isoformat())
+                        .execute()
+                    )
+                except Exception:
+                    logger.warning(
+                        "Startup recovery: fallback query also failed, "
+                        "skipping recovery (apply CRIT-011 migration)"
+                    )
+                    return 0
             else:
                 raise
 
@@ -399,30 +409,40 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
         failed_count = 0
 
         for session in result.data:
-            started_at_str = session.get("started_at")
-            if not started_at_str:
+            # Use started_at if available, otherwise created_at
+            time_str = session.get("started_at") or session.get("created_at")
+            if not time_str:
                 continue
 
             try:
-                started_at = datetime.fromisoformat(
-                    started_at_str.replace("Z", "+00:00")
+                session_time = datetime.fromisoformat(
+                    time_str.replace("Z", "+00:00")
                 )
             except (ValueError, TypeError):
                 continue
 
             session_id = session["id"]
 
-            if started_at < cutoff:
+            # Build update dict — only include columns that exist
+            if session_time < cutoff:
                 # AC17: Old search — timed_out
-                sb.table("search_sessions").update({
-                    "status": "timed_out",
-                    "error_message": "Server restart during processing",
-                    "error_code": "timeout",
-                    "completed_at": now.isoformat(),
-                }).eq("id", session_id).execute()
+                update_data: dict = {}
+                # Only set status/error columns if they exist (may not in production)
+                try:
+                    sb.table("search_sessions").update({
+                        "status": "timed_out",
+                        "error_message": "Server restart during processing",
+                        "error_code": "timeout",
+                        "completed_at": now.isoformat(),
+                    }).eq("id", session_id).execute()
+                except Exception:
+                    # Columns may not exist — just delete the stale session
+                    try:
+                        sb.table("search_sessions").delete().eq("id", session_id).execute()
+                    except Exception:
+                        pass
                 timed_out_count += 1
 
-                # Also record transition (only if search_id available)
                 sid = session.get("search_id") if has_search_id_column else None
                 if sid:
                     await _persist_transition(StateTransition(
@@ -434,12 +454,15 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                     ))
             else:
                 # AC18: Recent search — failed with retry
-                sb.table("search_sessions").update({
-                    "status": "failed",
-                    "error_message": "Server restart — retry recommended",
-                    "error_code": "server_restart",
-                    "completed_at": now.isoformat(),
-                }).eq("id", session_id).execute()
+                try:
+                    sb.table("search_sessions").update({
+                        "status": "failed",
+                        "error_message": "Server restart — retry recommended",
+                        "error_code": "server_restart",
+                        "completed_at": now.isoformat(),
+                    }).eq("id", session_id).execute()
+                except Exception:
+                    pass  # Columns may not exist — leave session as-is
                 failed_count += 1
 
                 sid = session.get("search_id") if has_search_id_column else None
@@ -463,7 +486,14 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
         return total
 
     except Exception as e:
-        logger.error(f"Startup recovery failed: {e}")
+        err_str = str(e)
+        if "42703" in err_str:
+            logger.warning(
+                "Startup recovery skipped: missing columns in search_sessions (%s)",
+                err_str[:120],
+            )
+        else:
+            logger.error(f"Startup recovery error: {e}", exc_info=True)
         return 0
 
 
