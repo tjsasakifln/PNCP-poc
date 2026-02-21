@@ -96,6 +96,41 @@ class TestAnalyticsSummary:
         assert data["success_rate"] == 66.7  # 2/3 * 100 rounded
 
 
+class TestAnalyticsSummaryRPCDegradation:
+    """CRIT-004 AC15: Analytics returns degraded response (not 500) when RPC fails."""
+
+    def test_summary_returns_200_when_rpc_fails(self, client, mock_supabase):
+        """When get_analytics_summary RPC raises, endpoint returns 200 with zeros."""
+        mock_supabase.rpc.side_effect = Exception("RPC get_analytics_summary not found (404)")
+
+        res = client.get("/analytics/summary", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200, f"Expected 200 degraded, got {res.status_code}"
+        data = res.json()
+        assert data["total_searches"] == 0
+        assert data["total_opportunities"] == 0
+        assert data["total_value_discovered"] == 0.0
+        assert "member_since" in data
+
+    def test_searches_over_time_returns_200_when_db_fails(self, client, mock_supabase):
+        """When DB query fails, searches-over-time returns 200 with empty data."""
+        mock_supabase.table.side_effect = Exception("DB connection lost")
+
+        res = client.get("/analytics/searches-over-time?period=week", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200, f"Expected 200 degraded, got {res.status_code}"
+        data = res.json()
+        assert data["data"] == []
+
+    def test_top_dimensions_returns_200_when_db_fails(self, client, mock_supabase):
+        """When DB query fails, top-dimensions returns 200 with empty lists."""
+        mock_supabase.table.side_effect = Exception("DB connection lost")
+
+        res = client.get("/analytics/top-dimensions", headers={"Authorization": "Bearer fake"})
+        assert res.status_code == 200, f"Expected 200 degraded, got {res.status_code}"
+        data = res.json()
+        assert data["top_ufs"] == []
+        assert data["top_sectors"] == []
+
+
 class TestSearchesOverTime:
     def test_empty_time_series(self, client, mock_supabase):
         chain = MagicMock()

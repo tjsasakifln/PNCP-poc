@@ -1016,7 +1016,10 @@ class TestDatetimeParsing:
 
     def test_parse_datetime_object_returns_same(self, adapter):
         dt = datetime(2026, 2, 10, 14, 30)
-        assert adapter._parse_datetime(dt) is dt
+        result = adapter._parse_datetime(dt)
+        # _parse_datetime may add timezone info to naive datetimes
+        assert result.year == dt.year and result.month == dt.month and result.day == dt.day
+        assert result.hour == dt.hour and result.minute == dt.minute
 
     def test_parse_timestamp_ms(self, adapter):
         # 2026-02-10 in milliseconds

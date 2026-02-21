@@ -36,17 +36,17 @@ class TestPlanCapabilities:
             assert set(caps.keys()) == required_fields, f"{plan_id} missing fields"
 
     def test_max_history_days_progression(self):
-        """History days should progress: FREE < Consultor < Máquina/Sala/SmartLic."""
-        assert PLAN_CAPABILITIES["free_trial"]["max_history_days"] == 7
+        """History days: Free trial = 365 (GTM-003: full product during trial)."""
+        assert PLAN_CAPABILITIES["free_trial"]["max_history_days"] == 365  # GTM-003: same as pro
         assert PLAN_CAPABILITIES["consultor_agil"]["max_history_days"] == 30
         assert PLAN_CAPABILITIES["maquina"]["max_history_days"] == 365
         assert PLAN_CAPABILITIES["sala_guerra"]["max_history_days"] == 1825
         assert PLAN_CAPABILITIES["smartlic_pro"]["max_history_days"] == 1825
 
-    def test_excel_only_allowed_for_premium_plans(self):
-        """Excel export only available for Máquina, Sala de Guerra, and SmartLic Pro."""
-        assert PLAN_CAPABILITIES["free_trial"]["allow_excel"] is False
-        assert PLAN_CAPABILITIES["consultor_agil"]["allow_excel"] is False
+    def test_excel_allowed_for_trial_and_premium(self):
+        """Excel export available for trial (GTM-003), Máquina, Sala, and SmartLic Pro."""
+        assert PLAN_CAPABILITIES["free_trial"]["allow_excel"] is True  # GTM-003: full product
+        assert PLAN_CAPABILITIES["consultor_agil"]["allow_excel"] is False  # Legacy
         assert PLAN_CAPABILITIES["maquina"]["allow_excel"] is True
         assert PLAN_CAPABILITIES["sala_guerra"]["allow_excel"] is True
         assert PLAN_CAPABILITIES["smartlic_pro"]["allow_excel"] is True
@@ -308,7 +308,7 @@ class TestCheckQuota:
         result = check_quota("user-123")
 
         assert result.allowed is False
-        assert "Trial expirado" in result.error_message
+        assert "trial expirou" in result.error_message.lower()
 
     @pytest.mark.skip(reason="Stale mock — check_quota now uses RPC-based subscription lookup with different mock chain — STORY-224")
     @patch("supabase_client.get_supabase")

@@ -89,7 +89,7 @@ class TestSetupLogging:
         formatter = handler.formatter
 
         assert (
-            formatter._fmt == "%(asctime)s | %(levelname)-8s | %(request_id)s | %(name)s | %(message)s"
+            formatter._fmt == "%(asctime)s | %(levelname)-8s | req=%(request_id)s | search=%(search_id)s | %(name)s | %(message)s"
         )
 
     def test_formatter_datefmt(self):

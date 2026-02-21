@@ -3,12 +3,18 @@
 STORY-250: Backend pipeline CRUD routes with access control.
 """
 
-from unittest.mock import Mock, patch
+import asyncio
+from unittest.mock import AsyncMock, Mock, patch
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
 from auth import require_auth
 from routes.pipeline import router
+
+
+async def _noop_check_pipeline_access(user):
+    """Async no-op mock for _check_pipeline_access."""
+    return None
 
 
 MOCK_USER = {"id": "user-pipeline-uuid", "email": "pipeline@test.com", "role": "authenticated"}
@@ -80,7 +86,7 @@ SAMPLE_ITEM = {
 
 class TestCreatePipelineItem:
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_create_success(self, mock_get_sb):
         sb = _mock_sb()
@@ -104,7 +110,7 @@ class TestCreatePipelineItem:
         assert body["pncp_id"] == PNCP_ID
         assert body["stage"] == "descoberta"
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_create_duplicate_409(self, mock_get_sb):
         """Test duplicate pncp_id for same user returns 409."""
@@ -125,7 +131,7 @@ class TestCreatePipelineItem:
         assert resp.status_code == 409
         assert "já está no seu pipeline" in resp.json()["detail"]
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_create_duplicate_23505_error_code(self, mock_get_sb):
         """Test PostgreSQL unique violation error code 23505."""
@@ -157,7 +163,7 @@ class TestCreatePipelineItem:
 
         assert resp.status_code == 422
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_create_empty_data_failure(self, mock_get_sb):
         """Test database failure (empty result.data) returns 500."""
@@ -184,7 +190,7 @@ class TestCreatePipelineItem:
 
 class TestListPipelineItems:
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_list_success(self, mock_get_sb):
         sb = _mock_sb()
@@ -202,7 +208,7 @@ class TestListPipelineItems:
         assert body["limit"] == 50
         assert body["offset"] == 0
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_list_with_stage_filter(self, mock_get_sb):
         sb = _mock_sb()
@@ -218,7 +224,7 @@ class TestListPipelineItems:
         assert len(body["items"]) == 1
         assert body["items"][0]["stage"] == "analise"
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_list_invalid_stage_422(self, mock_get_sb):
         client = _create_client()
@@ -228,7 +234,7 @@ class TestListPipelineItems:
         assert resp.status_code == 422
         assert "Stage inválido" in resp.json()["detail"]
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_list_with_pagination(self, mock_get_sb):
         sb = _mock_sb()
@@ -244,7 +250,7 @@ class TestListPipelineItems:
         assert body["offset"] == 5
         assert body["total"] == 10
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_list_empty(self, mock_get_sb):
         sb = _mock_sb()
@@ -266,7 +272,7 @@ class TestListPipelineItems:
 
 class TestUpdatePipelineItem:
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_update_stage_success(self, mock_get_sb):
         sb = _mock_sb()
@@ -283,7 +289,7 @@ class TestUpdatePipelineItem:
         body = resp.json()
         assert body["stage"] == "analise"
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_update_notes_success(self, mock_get_sb):
         sb = _mock_sb()
@@ -300,7 +306,7 @@ class TestUpdatePipelineItem:
         body = resp.json()
         assert body["notes"] == "Importante: verificar requisitos técnicos"
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_update_both_stage_and_notes(self, mock_get_sb):
         sb = _mock_sb()
@@ -333,7 +339,7 @@ class TestUpdatePipelineItem:
         assert isinstance(detail, list)
         assert detail[0]["loc"] == ["body", "stage"]
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_update_empty_payload_422(self, mock_get_sb):
         client = _create_client()
@@ -343,7 +349,7 @@ class TestUpdatePipelineItem:
         assert resp.status_code == 422
         assert "Nenhum campo para atualizar" in resp.json()["detail"]
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_update_not_found_404(self, mock_get_sb):
         sb = _mock_sb()
@@ -365,7 +371,7 @@ class TestUpdatePipelineItem:
 
 class TestDeletePipelineItem:
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_delete_success(self, mock_get_sb):
         sb = _mock_sb()
@@ -380,7 +386,7 @@ class TestDeletePipelineItem:
         assert body["success"] is True
         assert "removido" in body["message"]
 
-    @patch("routes.pipeline._check_pipeline_access", lambda user: None)
+    @patch("routes.pipeline._check_pipeline_access", _noop_check_pipeline_access)
     @patch("routes.pipeline.get_supabase")
     def test_delete_not_found_404(self, mock_get_sb):
         sb = _mock_sb()

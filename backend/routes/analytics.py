@@ -124,7 +124,17 @@ async def get_analytics_summary(user: dict = Depends(require_auth), db=Depends(g
 
     except Exception as e:
         logger.error(f"Error calling get_analytics_summary RPC for {mask_user_id(user_id)}: {e}")
-        raise
+        # CRIT-004 AC8: Graceful degradation — return zeros instead of 500
+        return SummaryResponse(
+            total_searches=0,
+            total_downloads=0,
+            total_opportunities=0,
+            total_value_discovered=0.0,
+            estimated_hours_saved=0.0,
+            avg_results_per_search=0.0,
+            success_rate=0.0,
+            member_since=datetime.now(timezone.utc).isoformat(),
+        )
 
 
 # ============================================================================
@@ -186,7 +196,8 @@ async def get_searches_over_time(
 
     except Exception as e:
         logger.error(f"Error fetching time series for {mask_user_id(user_id)}: {e}")
-        raise
+        # CRIT-004 AC8: Graceful degradation — return empty series instead of 500
+        return SearchesOverTimeResponse(period=period, data=[])
 
 
 # ============================================================================
@@ -242,7 +253,8 @@ async def get_top_dimensions(
 
     except Exception as e:
         logger.error(f"Error fetching top dimensions for {mask_user_id(user_id)}: {e}")
-        raise
+        # CRIT-004 AC8: Graceful degradation — return empty dimensions instead of 500
+        return TopDimensionsResponse(top_ufs=[], top_sectors=[])
 
 
 # ============================================================================

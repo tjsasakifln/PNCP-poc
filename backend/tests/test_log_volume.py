@@ -40,8 +40,10 @@ def _make_rate_limiter():
     return rl
 
 
-def _make_deps(**overrides):
+def _make_deps(num_ufs=5, **overrides):
     """Build minimal deps namespace with sane defaults."""
+    uf_list = ["SP", "RJ", "MG", "BA", "RS"][:num_ufs]
+
     mock_filter_stats = {
         "total": 100,
         "aprovadas": 10,
@@ -76,7 +78,7 @@ def _make_deps(**overrides):
         "buscar_todas_ufs_paralelo": AsyncMock(
             return_value=ParallelFetchResult(
                 items=mock_bids,
-                succeeded_ufs=["SP", "RJ", "MG", "BA", "RS"],
+                succeeded_ufs=uf_list,
                 failed_ufs=[],
                 truncated_ufs=[],
             )
@@ -381,7 +383,7 @@ class TestLogVolumeNoFilterStatsFlood:
     @pytest.mark.asyncio
     async def test_no_individual_filter_stat_lines(self):
         """After E-01, there should be no '  - Rejeitadas (X):' lines at INFO level."""
-        deps = _make_deps()
+        deps = _make_deps(num_ufs=3)
         request = _make_request(num_ufs=3)
         ctx = SearchContext(request=request, user=MOCK_USER)
 

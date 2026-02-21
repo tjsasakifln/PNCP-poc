@@ -27,7 +27,7 @@ router = APIRouter(tags=["pipeline"])
 VALID_STAGES = {"descoberta", "analise", "preparando", "enviada", "resultado"}
 
 
-def _check_pipeline_access(user: dict) -> None:
+async def _check_pipeline_access(user: dict) -> None:
     """Check if user's plan allows pipeline access (AC12).
 
     Pipeline is available for maquina and sala_guerra plans.
@@ -35,19 +35,12 @@ def _check_pipeline_access(user: dict) -> None:
     """
     from quota import check_quota
     from authorization import has_master_access
-    import asyncio
 
     user_id = user["id"]
 
     # Masters/admins always have access
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                is_master = pool.submit(asyncio.run, has_master_access(user_id)).result()
-        else:
-            is_master = asyncio.run(has_master_access(user_id))
+        is_master = await has_master_access(user_id)
         if is_master:
             return
     except Exception:
@@ -82,7 +75,7 @@ async def create_pipeline_item(
 
     Returns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).
     """
-    _check_pipeline_access(user)
+    await _check_pipeline_access(user)
 
     user_id = user["id"]
     sb = get_supabase()
@@ -135,7 +128,7 @@ async def list_pipeline_items(
 
     Supports filtering by stage and pagination via limit/offset.
     """
-    _check_pipeline_access(user)
+    await _check_pipeline_access(user)
 
     user_id = user["id"]
     sb = get_supabase()
@@ -181,7 +174,7 @@ async def update_pipeline_item(
     Validates that stage is a valid enum value.
     Returns 404 if item doesn't exist or doesn't belong to user.
     """
-    _check_pipeline_access(user)
+    await _check_pipeline_access(user)
 
     user_id = user["id"]
     sb = get_supabase()
@@ -235,7 +228,7 @@ async def delete_pipeline_item(
 
     Returns 404 if item doesn't exist or doesn't belong to user.
     """
-    _check_pipeline_access(user)
+    await _check_pipeline_access(user)
 
     user_id = user["id"]
     sb = get_supabase()
@@ -274,7 +267,7 @@ async def get_pipeline_alerts(
     Returns items where data_encerramento < now() + 3 days
     and stage is NOT in ('enviada', 'resultado').
     """
-    _check_pipeline_access(user)
+    await _check_pipeline_access(user)
 
     user_id = user["id"]
     sb = get_supabase()

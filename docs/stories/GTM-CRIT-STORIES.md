@@ -724,15 +724,28 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 
 **Parte D — Graceful degradation em endpoints:**
 
-- [ ] **AC7:** Auditar todos os usos de `db.rpc()` no codebase:
+- [x] **AC7:** Auditar todos os usos de `db.rpc()` no codebase:
   ```bash
   grep -rn "\.rpc(" backend/ --include="*.py"
   ```
   Listar cada RPC e se a migration correspondente existe em `supabase/migrations/`.
 
-- [ ] **AC8:** Para endpoints com RPCs sem migration, adicionar try/except com resposta degradada.
+  **Resultado da auditoria (2026-02-21):**
+  | Arquivo | RPC | Migration | Error handling |
+  |---------|-----|-----------|---------------|
+  | main.py:204 | get_table_columns_simple | ✅ 20260221100001 | ✅ nested try/except + fallback |
+  | quota.py:369 | increment_quota_atomic | ✅ 003 | ✅ try/except + upsert fallback |
+  | quota.py:401 | increment_existing_quota | ❌ Sem migration | ⚠️ Desabilitado (if False) |
+  | quota.py:465 | check_and_increment_quota | ✅ 003 | ✅ try/except + non-atomic fallback |
+  | analytics.py:74 | get_analytics_summary | ✅ 019 | ✅ Fixed: agora retorna zeros (era raise) |
+  | messages.py:98 | get_conversations_with_unread_count | ✅ 019 | ✅ retorna lista vazia |
+  | schema_contract.py:46 | get_table_columns_simple | ✅ 20260221100001 | ✅ nested try/except |
 
-- [ ] **AC9:** Verificar especificamente `routes/analytics.py` e `routes/messages.py`.
+- [x] **AC8:** Para endpoints com RPCs sem migration, adicionar try/except com resposta degradada.
+  **Feito:** analytics.py — 3 endpoints (summary, searches-over-time, top-dimensions) agora retornam resposta degradada com zeros/listas vazias em vez de 500.
+
+- [x] **AC9:** Verificar especificamente `routes/analytics.py` e `routes/messages.py`.
+  **Resultado:** analytics.py corrigido (3 endpoints), messages.py já tinha degradação graciosa.
 
 **Parte E — Aplicar em produção e verificar:**
 
@@ -751,7 +764,8 @@ APIError: Could not find the 'completed_at' column of 'search_sessions' in the s
 
 - [x] **AC13:** Teste: `_check_cache_schema()` funciona quando RPC existe e retorna colunas.
 - [x] **AC14:** Teste: `_check_cache_schema()` faz fallback quando RPC levanta Exception.
-- [ ] **AC15:** Teste: endpoint analytics retorna resposta degradada (não 500) quando RPC falha.
+- [x] **AC15:** Teste: endpoint analytics retorna resposta degradada (não 500) quando RPC falha.
+  **Feito:** 3 novos testes em test_analytics.py — summary, searches-over-time, top-dimensions todos retornam 200 quando DB/RPC falha.
 
 **Contrato de ambiente e evidência (adicionados pela auditoria PM 2026-02-21):**
 
@@ -1108,28 +1122,28 @@ FAILED download.test.tsx, buscar.test.tsx, signup.test.tsx (vários)
 
 **Fase 1 — Classificação (análise pura, sem código):**
 
-- [ ] **AC1:** Executar suíte completa e catalogar CADA falha:
+- [x] **AC1:** Executar suíte completa e catalogar CADA falha:
   ```bash
   cd backend && python -m pytest --tb=line -q 2>&1 | grep "FAILED"
   cd frontend && npm test -- --ci 2>&1 | grep "FAIL\|✕"
   ```
 
-- [ ] **AC2:** Classificar cada falha em uma das 3 categorias:
+- [x] **AC2:** Classificar cada falha em uma das 3 categorias:
   | Categoria | Significado | Ação |
   |-----------|-------------|------|
   | **Mock desatualizado** | Teste correto, mock/assertion não reflete behavior atual | Atualizar mock |
   | **Teste obsoleto** | Funcionalidade foi removida ou substituída | Deletar teste |
   | **Bug real** | Teste correto, código está errado | Criar sub-story |
 
-- [ ] **AC3:** Entregar tabela completa no PR com: arquivo, teste, categoria, ação proposta.
+- [x] **AC3:** Entregar tabela completa no PR com: arquivo, teste, categoria, ação proposta.
 
 **Fase 2 — Correção (backend):**
 
-- [ ] **AC4:** Para cada "mock desatualizado": atualizar assertion/mock para refletir o comportamento atual. **NÃO deletar** — o teste cobre funcionalidade real.
+- [x] **AC4:** Para cada "mock desatualizado": atualizar assertion/mock para refletir o comportamento atual. **NÃO deletar** — o teste cobre funcionalidade real.
 
-- [ ] **AC5:** Para cada "teste obsoleto": deletar com mensagem no commit explicando por quê (ex: "funcionalidade removida em GTM-002").
+- [x] **AC5:** Para cada "teste obsoleto": deletar com mensagem no commit explicando por quê (ex: "funcionalidade removida em GTM-002").
 
-- [ ] **AC6:** Os 7 testes SKIP com referência a STORY-224 devem ser avaliados: se STORY-224 não existe, atualizar o skip reason ou corrigir o teste.
+- [x] **AC6:** Os 7 testes SKIP com referência a STORY-224 devem ser avaliados: se STORY-224 não existe, atualizar o skip reason ou corrigir o teste.
 
 **Fase 3 — Correção (frontend):**
 

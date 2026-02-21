@@ -29,7 +29,7 @@ class TestMeEndpointFeatureFlagEnabled:
     """Test /api/me endpoint with ENABLE_NEW_PRICING=true."""
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_user_profile_with_capabilities(
@@ -80,7 +80,7 @@ class TestMeEndpointFeatureFlagEnabled:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_trial_info_for_free_users(
@@ -123,7 +123,7 @@ class TestMeEndpointFeatureFlagEnabled:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_expired_status_for_expired_trial(
@@ -207,7 +207,7 @@ class TestMeEndpointFeatureFlagDisabled:
     """Test /api/me endpoint with ENABLE_NEW_PRICING=false (legacy behavior)."""
 
     @patch("routes.user.ENABLE_NEW_PRICING", False)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     def test_returns_legacy_plan_when_disabled(
         self, mock_get_supabase, mock_check_roles
@@ -240,7 +240,7 @@ class TestMeEndpointDifferentPlanTiers:
     """Test /api/me with different subscription plan tiers."""
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_free_trial_plan_capabilities(
@@ -275,16 +275,16 @@ class TestMeEndpointDifferentPlanTiers:
             data = response.json()
 
             caps = data["capabilities"]
-            assert caps["max_history_days"] == 7
-            assert caps["allow_excel"] is False
-            # Free trial has limited requests (3 searches as per plan config)
             from quota import PLAN_CAPABILITIES
+            # GTM-003: free_trial now gets same capabilities as smartlic_pro
+            assert caps["max_history_days"] == PLAN_CAPABILITIES["free_trial"]["max_history_days"]
+            assert caps["allow_excel"] == PLAN_CAPABILITIES["free_trial"]["allow_excel"]
             assert caps["max_requests_per_month"] == PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"]
         finally:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_consultor_agil_plan_capabilities(
@@ -325,7 +325,7 @@ class TestMeEndpointDifferentPlanTiers:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_maquina_plan_capabilities(
@@ -370,7 +370,7 @@ class TestMeEndpointQuotaInfo:
     """Test /api/me quota information returned."""
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_quota_used_and_remaining(
@@ -410,7 +410,7 @@ class TestMeEndpointQuotaInfo:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_quota_reset_date(
@@ -453,7 +453,7 @@ class TestMeEndpointErrorHandling:
     """Test error handling in /api/me endpoint."""
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
@@ -563,7 +563,7 @@ class TestMeEndpointAdminStatus:
     """Test admin status in /api/me response."""
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(True, True))  # is_admin=True
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(True, True))  # is_admin=True
     @patch("supabase_client.get_supabase")
     def test_returns_is_admin_true_for_admin_users(
         self, mock_get_supabase, mock_check_roles
@@ -590,7 +590,7 @@ class TestMeEndpointAdminStatus:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("routes.user._check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_is_admin_false_for_regular_users(

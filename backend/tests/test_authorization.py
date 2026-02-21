@@ -301,9 +301,9 @@ class TestIsAdmin:
     async def test_via_env_var_fast_path(self, monkeypatch):
         """AC20: User in ADMIN_USER_IDS env var returns True (no DB call)."""
         monkeypatch.setenv("ADMIN_USER_IDS", "env-admin-1,env-admin-2")
-        from authorization import _is_admin
+        from authorization import is_admin as _is_admin
 
-        with patch("authorization._check_user_roles") as mock_check:
+        with patch("authorization.check_user_roles") as mock_check:
             result = await _is_admin("env-admin-1")
 
         assert result is True
@@ -314,9 +314,9 @@ class TestIsAdmin:
     async def test_via_env_var_case_insensitive(self, monkeypatch):
         """Env var match is case-insensitive."""
         monkeypatch.setenv("ADMIN_USER_IDS", "Admin-User-ABC")
-        from authorization import _is_admin
+        from authorization import is_admin as _is_admin
 
-        with patch("authorization._check_user_roles") as mock_check:
+        with patch("authorization.check_user_roles") as mock_check:
             result = await _is_admin("ADMIN-USER-ABC")
 
         assert result is True
@@ -326,9 +326,9 @@ class TestIsAdmin:
     async def test_via_supabase(self, monkeypatch):
         """User not in env var but is_admin=true in Supabase returns True."""
         monkeypatch.setenv("ADMIN_USER_IDS", "")
-        from authorization import _is_admin
+        from authorization import is_admin as _is_admin
 
-        with patch("authorization._check_user_roles", return_value=(True, True)):
+        with patch("authorization.check_user_roles", return_value=(True, True)):
             result = await _is_admin("db-admin-user")
 
         assert result is True
@@ -337,9 +337,9 @@ class TestIsAdmin:
     async def test_not_admin(self, monkeypatch):
         """User not in env var and is_admin=false in Supabase returns False."""
         monkeypatch.setenv("ADMIN_USER_IDS", "")
-        from authorization import _is_admin
+        from authorization import is_admin as _is_admin
 
-        with patch("authorization._check_user_roles", return_value=(False, False)):
+        with patch("authorization.check_user_roles", return_value=(False, False)):
             result = await _is_admin("regular-user")
 
         assert result is False
@@ -352,9 +352,9 @@ class TestHasMasterAccess:
     async def test_via_env_admin(self, monkeypatch):
         """User in ADMIN_USER_IDS has master access (no DB call)."""
         monkeypatch.setenv("ADMIN_USER_IDS", "env-admin")
-        from authorization import _has_master_access
+        from authorization import has_master_access as _has_master_access
 
-        with patch("authorization._check_user_roles") as mock_check:
+        with patch("authorization.check_user_roles") as mock_check:
             result = await _has_master_access("env-admin")
 
         assert result is True
@@ -364,9 +364,9 @@ class TestHasMasterAccess:
     async def test_via_db_admin(self, monkeypatch):
         """User with is_admin=true in Supabase has master access."""
         monkeypatch.setenv("ADMIN_USER_IDS", "")
-        from authorization import _has_master_access
+        from authorization import has_master_access as _has_master_access
 
-        with patch("authorization._check_user_roles", return_value=(True, True)):
+        with patch("authorization.check_user_roles", return_value=(True, True)):
             result = await _has_master_access("db-admin")
 
         assert result is True
@@ -375,9 +375,9 @@ class TestHasMasterAccess:
     async def test_via_db_master_plan_type(self, monkeypatch):
         """User with plan_type='master' has master access."""
         monkeypatch.setenv("ADMIN_USER_IDS", "")
-        from authorization import _has_master_access
+        from authorization import has_master_access as _has_master_access
 
-        with patch("authorization._check_user_roles", return_value=(False, True)):
+        with patch("authorization.check_user_roles", return_value=(False, True)):
             result = await _has_master_access("master-plan-user")
 
         assert result is True
@@ -386,9 +386,9 @@ class TestHasMasterAccess:
     async def test_regular_user(self, monkeypatch):
         """Regular user (not admin, not master) returns False."""
         monkeypatch.setenv("ADMIN_USER_IDS", "")
-        from authorization import _has_master_access
+        from authorization import has_master_access as _has_master_access
 
-        with patch("authorization._check_user_roles", return_value=(False, False)):
+        with patch("authorization.check_user_roles", return_value=(False, False)):
             result = await _has_master_access("regular-user")
 
         assert result is False

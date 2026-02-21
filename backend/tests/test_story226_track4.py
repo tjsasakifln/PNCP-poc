@@ -163,6 +163,7 @@ class TestExcelStorageOnly:
             municipios=None,
             ordenacao="relevancia",
             show_all_matches=False,
+            check_sanctions=False,
         )
 
         ctx = SearchContext(

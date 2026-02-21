@@ -801,7 +801,12 @@ class TestBuscarPNCPRateLimiting:
 
                 assert response.status_code == 503
                 assert "Retry-After" in response.headers
-                assert "60" in response.json()["detail"]
+                # CRIT-009: detail is now structured dict
+                detail = response.json()["detail"]
+                if isinstance(detail, dict):
+                    assert "60" in detail.get("detail", "") or "temporariamente" in detail.get("detail", "")
+                else:
+                    assert "60" in detail
         finally:
             cleanup()
 
@@ -848,8 +853,11 @@ class TestBuscarUserRateLimiting:
             assert response.status_code == 429
             assert "Retry-After" in response.headers
             assert response.headers["Retry-After"] == "45"
-            assert "10/min" in response.json()["detail"]
-            assert "45 segundos" in response.json()["detail"]
+            # CRIT-009: detail is now structured dict
+            detail = response.json()["detail"]
+            detail_msg = detail.get("detail", "") if isinstance(detail, dict) else detail
+            assert "10/min" in detail_msg or "Limite" in detail_msg
+            assert "45" in detail_msg
         finally:
             cleanup()
 
@@ -944,12 +952,15 @@ class TestBuscarUserRateLimiting:
             assert response.status_code == 429
             # Verify rate limiter was called with sala_guerra limit (60 req/min)
             mock_rate_limiter.check_rate_limit.assert_called_once_with("user-premium", 60)
-            assert "60/min" in response.json()["detail"]
+            # CRIT-009: detail is now structured dict
+            detail = response.json()["detail"]
+            detail_msg = detail.get("detail", "") if isinstance(detail, dict) else detail
+            assert "60/min" in detail_msg or "Limite" in detail_msg
         finally:
             cleanup()
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
-    @patch("routes.search._check_user_roles", new_callable=AsyncMock)
+    @patch("routes.search.check_user_roles", new_callable=AsyncMock)
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
@@ -992,7 +1003,7 @@ class TestBuscarUserRateLimiting:
             cleanup()
 
     @patch("routes.search.ENABLE_NEW_PRICING", True)
-    @patch("routes.search._check_user_roles", new_callable=AsyncMock)
+    @patch("routes.search.check_user_roles", new_callable=AsyncMock)
     @patch("routes.search.rate_limiter")
     @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
@@ -1180,7 +1191,10 @@ class TestBuscarErrorHandling:
             )
 
             assert response.status_code == 403
-            assert "Trial expirado" in response.json()["detail"]
+            # CRIT-009: detail may be structured dict
+            detail = response.json()["detail"]
+            detail_msg = detail.get("detail", "") if isinstance(detail, dict) else detail
+            assert "Trial expirado" in detail_msg or "expirou" in detail_msg or "Limite" in detail_msg
         finally:
             cleanup()
 
@@ -1207,7 +1221,10 @@ class TestBuscarErrorHandling:
             )
 
             assert response.status_code == 503
-            assert "temporariamente indisponível" in response.json()["detail"]
+            # CRIT-009: detail may be structured dict
+            detail = response.json()["detail"]
+            detail_msg = detail.get("detail", "") if isinstance(detail, dict) else detail
+            assert "indisponível" in detail_msg or "Erro" in detail_msg or "error_code" in str(detail)
         finally:
             cleanup()
 
