@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { BuscaResult } from "../../types";
-import type { SearchProgressEvent, RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
+import type { SearchProgressEvent, RefreshAvailableInfo } from "../../../hooks/useSearchSSE";
 import RefreshBanner from "./RefreshBanner";
 import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
@@ -11,7 +11,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { DegradationBanner } from "./DegradationBanner"; // AC10: kept as deprecated
 import { OperationalStateBanner } from "./OperationalStateBanner";
 import { UfProgressGrid } from "./UfProgressGrid";
-import type { UfStatus } from "../hooks/useUfProgress";
+import type { UfStatus } from "../../../hooks/useSearchSSE";
 import { PartialResultsPrompt, PartialResultsBanner, FailedUfsBanner } from "./PartialResultsPrompt";
 import { CacheBanner } from "./CacheBanner";
 import { SourcesUnavailable } from "./SourcesUnavailable";

@@ -32,8 +32,8 @@ jest.mock("../../hooks/useQuota", () => {
   return { useQuota: () => ({ refresh: fn }), __mockRefreshQuota: fn };
 });
 
-jest.mock("../../hooks/useSearchProgress", () => ({
-  useSearchProgress: () => ({
+jest.mock("../../hooks/useSearchSSE", () => ({
+  useSearchSSE: () => ({
     currentEvent: null,
     sseAvailable: false,
     sseDisconnected: false,
@@ -41,6 +41,10 @@ jest.mock("../../hooks/useSearchProgress", () => ({
     degradedDetail: null,
     partialProgress: null,
     refreshAvailable: null,
+    ufStatuses: new Map(),
+    ufTotalFound: 0,
+    ufAllComplete: false,
+    batchProgress: null,
   }),
 }));
 

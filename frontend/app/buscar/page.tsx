@@ -22,7 +22,6 @@ import { TrialCountdown } from "../components/TrialCountdown";
 import { Dialog } from "../components/Dialog";
 import { useSearchFilters } from "./hooks/useSearchFilters";
 import { useSearch } from "./hooks/useSearch";
-import { useUfProgress } from "./hooks/useUfProgress";
 import { useNavigationGuard } from "../../hooks/useNavigationGuard";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
@@ -275,14 +274,6 @@ function HomePageContent() {
     hasDownloaded,
   });
 
-  // STORY-257B: UF progress tracking via SSE (AC1-4)
-  const ufProgress = useUfProgress({
-    searchId: search.searchId,
-    enabled: search.loading,
-    authToken: session?.access_token,
-    selectedUfs: Array.from(filters.ufsSelecionadas),
-  });
-
   // STORY-257B AC5: Elapsed seconds tracker for partial results prompt
   const [searchElapsed, setSearchElapsed] = useState(0);
   const [partialDismissed, setPartialDismissed] = useState(false);
@@ -481,9 +472,9 @@ function HomePageContent() {
                 onShowUpgradeModal={handleShowUpgradeModal}
                 onTrackEvent={trackEvent}
                 // STORY-257B: UF Progress Grid (AC1-4)
-                ufStatuses={ufProgress.ufStatuses}
-                ufTotalFound={ufProgress.totalFound}
-                ufAllComplete={ufProgress.allComplete}
+                ufStatuses={search.ufStatuses}
+                ufTotalFound={search.ufTotalFound}
+                ufAllComplete={search.ufAllComplete}
                 // STORY-257B: Partial results (AC5)
                 searchElapsedSeconds={searchElapsed}
                 onViewPartial={search.cancelSearch}

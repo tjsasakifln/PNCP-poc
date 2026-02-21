@@ -10,7 +10,7 @@ import type { SavedSearch } from "../../../lib/savedSearches";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 import { useAuth } from "../../components/AuthProvider";
 import { useQuota } from "../../../hooks/useQuota";
-import { useSearchProgress, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
+import { useSearchSSE, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo, type UfStatus, type BatchProgress } from "../../../hooks/useSearchSSE";
 import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
 import { getUserFriendlyError, getMessageFromErrorCode, isTransientError } from "../../../lib/error-messages";
@@ -106,6 +106,11 @@ export interface UseSearchReturn {
   partialProgress: PartialProgress | null;
   /** A-04 AC4: Refresh available info from background fetch */
   refreshAvailable: RefreshAvailableInfo | null;
+  /** CRIT-003 AC19-AC20: Consolidated UF progress from single SSE connection */
+  ufStatuses: Map<string, UfStatus>;
+  ufTotalFound: number;
+  ufAllComplete: boolean;
+  batchProgress: BatchProgress | null;
   /** A-04 AC1: True when cached data shown with live fetch in background */
   liveFetchInProgress: boolean;
   /** A-04 AC9: Fetch live results and replace cached data */
@@ -209,10 +214,16 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   // A-04: Keep SSE open during background fetch (enabled when loading OR liveFetchInProgress)
   // F-01: Keep SSE open when llm_status/excel_status is "processing" (background jobs running)
   const hasProcessingJobs = !!(result?.llm_status === 'processing' || result?.excel_status === 'processing');
-  const { currentEvent: sseEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail, partialProgress, refreshAvailable } = useSearchProgress({
+  // CRIT-003 AC19-AC20: Single consolidated SSE connection (replaces useSearchProgress + useUfProgress)
+  const {
+    currentEvent: sseEvent, sseAvailable, sseDisconnected,
+    isDegraded, degradedDetail, partialProgress, refreshAvailable,
+    ufStatuses, ufTotalFound, ufAllComplete, batchProgress,
+  } = useSearchSSE({
     searchId: liveFetchInProgress ? liveFetchSearchIdRef.current : searchId,
     enabled: (loading && !!searchId) || liveFetchInProgress || hasProcessingJobs,
     authToken: session?.access_token,
+    selectedUfs: Array.from(filters.ufsSelecionadas),
     onEvent: handleSseEvent,
     onError: () => setUseRealProgress(false),
   });
@@ -791,7 +802,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     loading, loadingStep, statesProcessed, error, quotaError,
     result, setResult, setError, rawCount,
     searchId, useRealProgress, sseEvent: effectiveEvent, sseAvailable, sseDisconnected, isDegraded, degradedDetail,
-    partialProgress, refreshAvailable, liveFetchInProgress, handleRefreshResults,
+    partialProgress, refreshAvailable,
+    ufStatuses, ufTotalFound, ufAllComplete, batchProgress,
+    liveFetchInProgress, handleRefreshResults,
     downloadLoading, downloadError,
     searchButtonRef: searchButtonRef as React.RefObject<HTMLButtonElement>,
     showSaveDialog, setShowSaveDialog,

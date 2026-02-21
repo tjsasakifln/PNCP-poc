@@ -1,6 +1,6 @@
 "use client";
 
-import type { UfStatus, UfStatusType } from "../hooks/useUfProgress";
+import type { UfStatus, UfStatusType } from "../../../hooks/useSearchSSE";
 
 // ---------------------------------------------------------------------------
 // STORY-257B AC1-AC3: UF progress grid with real-time SSE updates
