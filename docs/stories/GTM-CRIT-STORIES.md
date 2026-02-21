@@ -14,6 +14,17 @@
 | **CRIT-010** | `_startup_time`, campo `ready` no `/health`, gunicorn `--preload`, SIGTERM handler | GTM-CRIT-001 |
 | **CRIT-011** | Migration `search_id` column, session cleanup task | GTM-CRIT-004 |
 
+### Validação contra Sentry (2026-02-21T01:15 UTC)
+
+Erros ativos em produção confirmados e mapeados às stories:
+
+| Sentry Error | Descrição | Story que resolve |
+|-------------|-----------|-------------------|
+| `POST /rpc/get_table_columns_simple` → 404 | RPC inexistente | **GTM-CRIT-004** AC4 |
+| `GET /search_sessions?select=id,search_id,status,started_at` → 400 | Colunas `status`, `started_at` inexistentes | **GTM-CRIT-004** AC1 |
+| `PATCH /search_sessions` → `completed_at` missing (Sentry #7280852332) | Migration 007 não sincronizada | **GTM-CRIT-004** AC1 |
+| `search_sessions` fallback para `created_at` only | Code funciona degradado mas sem lifecycle tracking | **GTM-CRIT-004** AC11-AC12 |
+
 ---
 
 ## STORY GTM-CRIT-000: Restaurar Frontend em Produção
@@ -436,47 +447,74 @@ Com JWT config completamente quebrada (`SUPABASE_JWT_SECRET` vazio + JWKS indisp
 
 ---
 
-## STORY GTM-CRIT-004: Schema Validation Funcional + RPC get_table_columns_simple
+## STORY GTM-CRIT-004: Sincronização de Migrations + Schema Validation Funcional
 
-**Prioridade:** P4 — Estabiliza DB e elimina crashes silenciosos
-**Resolve:** P7 (RPC ausente → endpoints crasham), P8 (RPC inexistente → health check mudo)
-**Esforço:** Médio (1 migration + 3 arquivos backend, ~100 linhas)
+**Prioridade:** P4 — Estabiliza DB, elimina crashes silenciosos, resolve erros ativos no Sentry
+**Resolve:** P7 (RPC ausente → endpoints crasham), P8 (RPC inexistente → health check mudo), **Sentry #7280852332** (missing `completed_at` column)
+**Esforço:** Médio (3 migrations + 3 arquivos backend, ~150 linhas)
 **Depende de:** —
 
 ### Contexto
 
-1. **P8 — RPC `get_table_columns_simple` nunca foi criada:** O health check de startup (`main.py:189-215`) chama esta RPC que NÃO EXISTE em nenhuma migration. O check é silently skipped (linha 211-215). **A validação de schema NUNCA roda em produção** — o sistema declara "healthy" com schema potencialmente divergente.
+**3 problemas convergentes confirmados por evidência do Sentry (2026-02-21T01:15):**
 
-2. **P7 — Endpoints crasham por schema/RPC ausente:** Se migrations não foram aplicadas em produção, endpoints que dependem de tabelas/colunas específicas retornam HTTP 500 sem fallback.
+1. **P8 — RPC `get_table_columns_simple` nunca foi criada:** O health check de startup (`main.py:189-215`) chama esta RPC que NÃO EXISTE. O check é silently skipped (linha 211-215). **A validação de schema NUNCA roda em produção.**
 
-### Evidência
+2. **Sentry #7280852332 — `search_sessions` missing 10 columns:** A migration `backend/migrations/007_search_session_lifecycle.sql` adiciona 10 colunas essenciais (`status`, `completed_at`, `started_at`, `error_code`, etc.) mas **nunca foi sincronizada para `supabase/migrations/`**. Em produção, `cron_jobs.py:71` e `search_state_manager.py:375` falham com HTTP 400 (PGRST204: column not found).
 
-**RPC inexistente (main.py:204):**
-```python
-result = db.rpc(
-    "get_table_columns_simple",
-    {"p_table_name": "search_results_cache"},
-).execute()
-# Exceção capturada silenciosamente → "Schema health check skipped"
+3. **P7 — Coluna `failed_ufs` inexistente:** `routes/search.py:841` faz `SELECT failed_ufs` na tabela `search_sessions`, mas essa coluna não existe em NENHUMA migration. O endpoint de retry crasharia com HTTP 400.
+
+### Evidência do Sentry (2026-02-21T01:15:04-05 UTC)
+
+**Erro S1 — RPC 404 (main.py:207):**
+```
+POST /rest/v1/rpc/get_table_columns_simple → 404 Not Found
 ```
 
-**Verificação:**
-```bash
-$ grep -r "get_table_columns_simple" supabase/migrations/ backend/migrations/
-# 0 resultados — função nunca foi criada
+**Erro S2 — search_sessions columns missing (search_state_manager.py:375):**
 ```
+GET /rest/v1/search_sessions?select=id,search_id,status,started_at → 400 Bad Request
+```
+
+**Erro S3 — completed_at column missing (cron_jobs.py:71):**
+```
+PATCH /rest/v1/search_sessions → 400 Bad Request
+APIError: Could not find the 'completed_at' column of 'search_sessions' in the schema cache
+```
+
+**Nota:** O código tem fallback gracioso (catch error 42703), então o sistema FUNCIONA em modo degradado. Mas o Sentry captura o erro, e o session lifecycle tracking (status, duração, errors) está completamente inoperante.
 
 ### Acceptance Criteria
 
-**Migration — Criar a RPC function:**
+**Parte A — Sincronizar migration 007 (search_sessions lifecycle):**
 
-- [ ] **AC1:** Criar `supabase/migrations/20260221000000_create_get_table_columns_simple.sql`:
+- [ ] **AC1:** Copiar `backend/migrations/007_search_session_lifecycle.sql` para `supabase/migrations/` com timestamp adequado (ex: `20260221100000_search_session_lifecycle.sql`). O conteúdo é idempotente (`ADD COLUMN IF NOT EXISTS`):
   ```sql
-  -- Função para schema validation no health check de startup (CRIT-004)
-  -- Retorna lista de colunas de uma tabela pública.
-  -- SECURITY DEFINER para funcionar com RLS habilitado.
-  -- STABLE para permitir caching pelo query planner.
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'created'
+      CHECK (status IN ('created', 'processing', 'completed', 'failed', 'timed_out', 'cancelled'));
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS error_message TEXT;
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS error_code TEXT;
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ NOT NULL DEFAULT now();
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS duration_ms INTEGER;
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS pipeline_stage TEXT;
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS raw_count INTEGER DEFAULT 0;
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS response_state TEXT;
+  -- search_id já existe (migration 20260220120000), não repetir
+  -- Backfill + indexes incluídos
+  ```
 
+- [ ] **AC2:** **NÃO duplicar** a adição de `search_id` — essa coluna já existe via `20260220120000_add_search_id_to_search_sessions.sql`. Remover a linha `ADD COLUMN IF NOT EXISTS search_id` da cópia (é safe por ser IF NOT EXISTS, mas evita confusão).
+
+- [ ] **AC3:** Adicionar coluna `failed_ufs` que é usada no endpoint de retry:
+  ```sql
+  ALTER TABLE search_sessions ADD COLUMN IF NOT EXISTS failed_ufs TEXT[];
+  ```
+
+**Parte B — Criar RPC get_table_columns_simple:**
+
+- [ ] **AC4:** Criar `supabase/migrations/20260221100001_create_get_table_columns_simple.sql`:
+  ```sql
   CREATE OR REPLACE FUNCTION get_table_columns_simple(p_table_name TEXT)
   RETURNS TABLE(column_name TEXT)
   LANGUAGE sql
@@ -490,70 +528,65 @@ $ grep -r "get_table_columns_simple" supabase/migrations/ backend/migrations/
     ORDER BY ordinal_position;
   $$;
 
-  -- Permitir que authenticated e service_role chamem a função
   GRANT EXECUTE ON FUNCTION get_table_columns_simple(TEXT) TO authenticated, service_role;
   ```
 
-- [ ] **AC2:** Verificar que a migration é idempotente (`CREATE OR REPLACE`).
+- [ ] **AC5:** Verificar que ambas migrations são idempotentes (safe to run multiple times).
 
-**Startup — Fallback robusto se RPC falhar:**
+**Parte C — Melhorar fallback no startup:**
 
-- [ ] **AC3:** Em `main.py:_check_cache_schema()` (linhas 203-215), melhorar o fallback quando a RPC falha. Em vez de skip silencioso, tentar query direta via Supabase client:
+- [ ] **AC6:** Em `main.py:_check_cache_schema()` (linhas 203-215), melhorar fallback quando RPC falha:
   ```python
   except Exception as rpc_err:
       logger.warning(f"CRIT-004: RPC get_table_columns_simple failed ({rpc_err}) — trying direct query")
       try:
-          # Fallback: query a known table to at least verify connectivity
           result = db.table("search_results_cache").select("*").limit(0).execute()
-          # If we get here, table exists. Can't get column names via PostgREST,
-          # but at least we know the table is accessible.
           logger.info("CRIT-004: Table search_results_cache exists (column validation skipped)")
           return
       except Exception as fallback_err:
           logger.critical(
-              f"CRIT-004: Schema validation FAILED — RPC error: {rpc_err}, "
-              f"Fallback error: {fallback_err}. Cache may not work correctly."
+              f"CRIT-004: Schema validation FAILED — RPC: {rpc_err}, Fallback: {fallback_err}"
           )
-          return  # Non-blocking — continue startup
+          return  # Non-blocking
   ```
 
-- [ ] **AC4:** Quando RPC funciona E detecta colunas faltantes, o log CRITICAL existente (linhas 222-225) é mantido inalterado.
+**Parte D — Graceful degradation em endpoints:**
 
-**Endpoints — Graceful degradation:**
-
-- [ ] **AC5:** Auditar todos os usos de `db.rpc()` no codebase e listar no PR:
+- [ ] **AC7:** Auditar todos os usos de `db.rpc()` no codebase:
   ```bash
   grep -rn "\.rpc(" backend/ --include="*.py"
   ```
-  Para cada RPC, verificar se a migration que a cria existe em `supabase/migrations/`.
+  Listar cada RPC e se a migration correspondente existe em `supabase/migrations/`.
 
-- [ ] **AC6:** Para endpoints que usam RPCs que NÃO têm migration correspondente, adicionar try/except que retorna resposta degradada (não HTTP 500):
-  ```python
-  try:
-      result = db.rpc("function_name", params).execute()
-  except Exception as e:
-      logger.warning(f"RPC function_name unavailable: {e}")
-      return {"data": None, "warning": "Dados temporariamente indisponíveis"}
-  ```
+- [ ] **AC8:** Para endpoints com RPCs sem migration, adicionar try/except com resposta degradada.
 
-- [ ] **AC7:** Verificar especificamente `routes/analytics.py` e `routes/messages.py` — ambos mencionados no diagnóstico como usando RPCs sem fallback.
+- [ ] **AC9:** Verificar especificamente `routes/analytics.py` e `routes/messages.py`.
 
-**Validação em Produção:**
+**Parte E — Aplicar em produção e verificar:**
 
-- [ ] **AC8:** Aplicar migration em produção: `npx supabase db push` (ou via Railway environment).
-- [ ] **AC9:** Após deploy, verificar no log do backend que aparece `"CRIT-001: Schema validated"` (não `"Schema health check skipped"`).
+- [ ] **AC10:** Aplicar migrations: `npx supabase db push`.
+
+- [ ] **AC11:** Verificar no Sentry que os erros S1, S2, S3 **param de ocorrer** após o deploy:
+  - `get_table_columns_simple` → 404 **não mais**
+  - `search_sessions` select com `status,started_at` → 400 **não mais**
+  - `completed_at` column missing → APIError **não mais**
+
+- [ ] **AC12:** Verificar no log do backend:
+  - `"CRIT-001: Schema validated — 0 missing columns"` (não `"Schema health check skipped"`)
+  - `cron_jobs` cleanup executa sem warnings de 42703
 
 **Testes:**
 
-- [ ] **AC10:** Teste: `_check_cache_schema()` funciona quando RPC existe e retorna colunas.
-- [ ] **AC11:** Teste: `_check_cache_schema()` faz fallback quando RPC levanta Exception.
-- [ ] **AC12:** Teste: endpoint analytics retorna resposta degradada (não 500) quando RPC falha.
+- [ ] **AC13:** Teste: `_check_cache_schema()` funciona quando RPC existe e retorna colunas.
+- [ ] **AC14:** Teste: `_check_cache_schema()` faz fallback quando RPC levanta Exception.
+- [ ] **AC15:** Teste: endpoint analytics retorna resposta degradada (não 500) quando RPC falha.
 
 ### Arquivos Afetados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `supabase/migrations/20260221000000_create_get_table_columns_simple.sql` | NOVO — migration |
+| `supabase/migrations/20260221100000_search_session_lifecycle.sql` | NOVO — sync de backend/migrations/007 + failed_ufs |
+| `supabase/migrations/20260221100001_create_get_table_columns_simple.sql` | NOVO — RPC function |
 | `backend/main.py:203-215` | Melhorar fallback em `_check_cache_schema()` |
 | `backend/routes/analytics.py` | Adicionar try/except com resposta degradada |
 | `backend/routes/messages.py` | Adicionar try/except se usa RPC sem migration |
@@ -561,10 +594,13 @@ $ grep -r "get_table_columns_simple" supabase/migrations/ backend/migrations/
 
 ### Definition of Done
 
-1. Startup: log `"CRIT-001: Schema validated — 0 missing columns"` (não `"Schema health check skipped"`).
-2. Se RPC falhar (ex: migration não aplicada), log `"CRIT-004: Table search_results_cache exists"` e startup continua.
-3. Analytics com RPC ausente: retorna 200 com dados degradados (não 500).
-4. Todos os testes passam sem regressão.
+1. **Sentry limpo:** Erros S1, S2, S3 não recorrem após deploy.
+2. Startup: log `"CRIT-001: Schema validated"` (não `"Schema health check skipped"`).
+3. `cron_jobs.py` cleanup executa sem error 42703.
+4. `search_state_manager.py` recover encontra sessions por `status` e `started_at`.
+5. Endpoint retry (`/v1/search/{id}/retry`) pode ler `failed_ufs`.
+6. Analytics com RPC ausente: retorna 200 degradado (não 500).
+7. Todos os testes passam sem regressão.
 
 ---
 
@@ -868,7 +904,7 @@ SPRINT 3 — "Qualidade Baseline" (3-5 dias)
 | **1** | GTM-CRIT-003 (Auth 401 not 500) | 2 linhas, impacto alto | 30 min | P5 | — | Paralelo |
 | **2** | GTM-CRIT-001 (Health Split + Gate) | Elimina 404 em deploy | 4h | P1,P2,P3 | CRIT-000 | Sequencial |
 | **3** | GTM-CRIT-002 (Error Boundary + Msgs) | Elimina tela branca | 3h | P4,P6 | CRIT-000 | Paralelo c/ 001 |
-| **4** | GTM-CRIT-004 (Schema Validation) | Estabiliza DB | 4h | P7,P8 | — | Paralelo |
+| **4** | GTM-CRIT-004 (Migrations + Schema) | Estabiliza DB + resolve 3 erros Sentry | 5h | P7,P8,Sentry#7280852332 | — | Paralelo |
 | **5** | GTM-CRIT-005 (CB Persistent) | Evita cascading | 4h | P9 | — | Paralelo |
 | **6** | GTM-CRIT-006 (URL Validation) | Previne misconfig | 2h | P10 | CRIT-001 | Após CRIT-001 |
 | **7** | GTM-CRIT-007 (Test Sanitization) | Qualidade baseline | 3-5d | ~77 falhas | — | Background |
