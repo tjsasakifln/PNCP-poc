@@ -12,6 +12,8 @@ interface GlassCardProps {
   hoverable?: boolean;
   variant?: GlassVariant;
   gemAccent?: GemAccent;
+  role?: string;
+  'aria-label'?: string;
 }
 
 const variantStyles: Record<GlassVariant, string> = {
@@ -45,6 +47,8 @@ export function GlassCard({
   hoverable = true,
   variant = 'default',
   gemAccent,
+  role,
+  'aria-label': ariaLabel,
 }: GlassCardProps) {
   const hoverAnimation: HTMLMotionProps<'div'>['whileHover'] = hoverable ? {
     y: -8,
@@ -71,6 +75,8 @@ export function GlassCard({
         duration: 0.3,
         ease: [0.4, 0, 0.2, 1],
       }}
+      role={role}
+      aria-label={ariaLabel}
     >
       {children}
     </motion.div>
