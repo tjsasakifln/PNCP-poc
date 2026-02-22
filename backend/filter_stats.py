@@ -14,7 +14,7 @@ Thread-safe via threading.Lock (FastAPI may use thread pools for sync deps).
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from threading import Lock
 from typing import Dict, List, Optional
 
@@ -74,7 +74,7 @@ class FilterStatsTracker:
             description_preview: First 100 chars of the procurement object.
         """
         entry: Dict = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "reason": reason,
             "sector": sector,
         }
@@ -100,7 +100,7 @@ class FilterStatsTracker:
         Returns a dict with each reason code mapped to its count, plus
         ``total_rejections`` and ``period_days``.
         """
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         cutoff_iso = cutoff.isoformat()
 
         result: Dict = {}
@@ -121,7 +121,7 @@ class FilterStatsTracker:
 
         Returns the number of entries removed.
         """
-        cutoff = datetime.utcnow() - timedelta(days=self._retention_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=self._retention_days)
         cutoff_iso = cutoff.isoformat()
         removed = 0
 

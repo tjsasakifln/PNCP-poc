@@ -230,8 +230,7 @@ def _build_coverage_metadata(ctx: "SearchContext") -> "CoverageMetadata":
     if ctx.cached and ctx.cached_at:
         data_timestamp = ctx.cached_at
     else:
-        from datetime import datetime as dt
-        data_timestamp = dt.utcnow().isoformat() + "Z"
+        data_timestamp = datetime.now(_tz.utc).isoformat()
 
     return CoverageMetadata(
         ufs_requested=requested,
@@ -898,7 +897,7 @@ class SearchPipeline:
             cache_data = {
                 "licitacoes": ctx.licitacoes_raw,
                 "total": len(ctx.licitacoes_raw),
-                "cached_at": datetime.now().isoformat() + "Z",
+                "cached_at": datetime.now(_tz.utc).isoformat(),
                 "search_params": {
                     "setor_id": request.setor_id,
                     "ufs": request.ufs,
@@ -1991,7 +1990,7 @@ class SearchPipeline:
             source_stats=ctx.source_stats_data,
             hidden_by_min_match=ctx.hidden_by_min_match if ctx.custom_terms else None,
             filter_relaxed=ctx.filter_relaxed if ctx.custom_terms else None,
-            ultima_atualizacao=datetime.now().isoformat() + "Z",
+            ultima_atualizacao=datetime.now(_tz.utc).isoformat(),
             is_partial=ctx.is_partial,
             data_sources=ctx.data_sources,
             degradation_reason=ctx.degradation_reason,

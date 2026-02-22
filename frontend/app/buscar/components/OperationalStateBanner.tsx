@@ -75,7 +75,7 @@ export function OperationalStateBanner({
   coverageMetadata,
 }: OperationalStateBannerProps) {
   const state = deriveState(coveragePct, responseState);
-  const config = stateConfig[state];
+  const config = stateConfig[state] ?? stateConfig.degraded;
 
   const timestamp = cachedAt || ultimaAtualizacao;
 

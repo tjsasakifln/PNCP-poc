@@ -130,7 +130,7 @@ export function UfProgressGrid({ ufStatuses, totalFound }: UfProgressGridProps) 
         aria-atomic="false"
       >
         {ufArray.map(([uf, status]) => {
-          const config = statusConfigs[status.status];
+          const config = statusConfigs[status.status] ?? statusConfigs.pending;
 
           return (
             <div

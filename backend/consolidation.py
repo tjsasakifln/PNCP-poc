@@ -291,7 +291,7 @@ class ConsolidationService:
         # AC15: ComprasGov last-resort fallback when ALL sources fail
         fallback_used = False
         if not all_records and source_errors and self._fallback_adapter is not None:
-            fallback_code = self._fallback_adapter.code
+            fallback_code = getattr(self._fallback_adapter, "code", "unknown_fallback")
             # Only attempt fallback if it wasn't already tried as a primary source
             already_tried = fallback_code in self._adapters
             if not already_tried:
@@ -567,7 +567,10 @@ class ConsolidationService:
         # Source priority lookup (lower number = higher priority)
         source_priority = {}
         for code, adapter in self._adapters.items():
-            source_priority[adapter.code] = adapter.metadata.priority
+            adapter_code = getattr(adapter, "code", code)
+            adapter_meta = getattr(adapter, "metadata", None)
+            if adapter_meta is not None:
+                source_priority[adapter_code] = adapter_meta.priority
 
         # Group by dedup_key, keep best priority
         seen: Dict[str, UnifiedProcurement] = {}

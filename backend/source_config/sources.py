@@ -464,6 +464,20 @@ class SourceConfig:
                 sources.append(source.code.value)
         return sources
 
+    def get_available_sources(self) -> List[str]:
+        """CRIT-016 AC9: Alias for get_enabled_sources (deprecated).
+
+        Kept for backward compatibility — callers should migrate to
+        ``get_enabled_sources()``.
+        """
+        import warnings
+        warnings.warn(
+            "get_available_sources() is deprecated, use get_enabled_sources()",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_enabled_sources()
+
     def get_source(self, code: str) -> Optional[SingleSourceConfig]:
         """
         Get configuration for a specific source.

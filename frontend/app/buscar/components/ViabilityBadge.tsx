@@ -58,7 +58,7 @@ export default function ViabilityBadge({
     },
   };
 
-  const c = config[level];
+  const c = config[level] ?? config["baixa"];
   if (!c) return null;
 
   // Build tooltip with factor breakdown
