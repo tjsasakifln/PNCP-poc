@@ -3,10 +3,9 @@ import ContentPageLayout from '../components/ContentPageLayout';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title:
-    'Como identificar licitacoes com maior chance de vitoria | SmartLic',
+  title: 'Como Identificar Licitações com Maior Chance de Vitória',
   description:
-    'Aprenda a priorizar oportunidades de licitacao usando criterios de aderencia, viabilidade e competicao estimada.',
+    'Framework prático para priorizar licitações: critérios de aderência, viabilidade e competição. Inclui exemplo com 3 editais reais e decisão fundamentada.',
   alternates: {
     canonical: 'https://smartlic.tech/como-priorizar-oportunidades',
   },
@@ -15,9 +14,9 @@ export const metadata: Metadata = {
 const articleSchema = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Como identificar licitacoes com maior chance de vitoria',
+  headline: 'Como identificar licitações com maior chance de vitória',
   description:
-    'Framework pratico para priorizar oportunidades de licitacao usando criterios de aderencia, viabilidade e competicao.',
+    'Framework prático para priorizar oportunidades de licitação usando critérios de aderência, viabilidade operacional e competição estimada.',
   author: {
     '@type': 'Organization',
     name: 'SmartLic',
@@ -46,7 +45,7 @@ const breadcrumbSchema = {
     {
       '@type': 'ListItem',
       position: 1,
-      name: 'Inicio',
+      name: 'Início',
       item: 'https://smartlic.tech',
     },
     {
@@ -61,15 +60,15 @@ const breadcrumbSchema = {
 const RELATED_PAGES = [
   {
     href: '/como-avaliar-licitacao',
-    title: 'Como avaliar se uma licitacao vale a pena',
+    title: 'Como avaliar se uma licitação vale a pena',
   },
   {
     href: '/como-evitar-prejuizo-licitacao',
-    title: 'Como evitar prejuizo em licitacoes',
+    title: 'Como evitar prejuízo em licitações',
   },
   {
     href: '/como-filtrar-editais',
-    title: 'Como filtrar editais de licitacao',
+    title: 'Como filtrar editais de licitação',
   },
 ];
 
@@ -88,229 +87,230 @@ export default function ComoPriorizarOportunidades() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      <h1>Como identificar licitacoes com maior chance de vitoria</h1>
+      <h1>Como identificar licitações com maior chance de vitória</h1>
 
-      <p className="lead text-lg">
-        Encontrar licitacoes e facil. Saber quais priorizar e o que gera
-        resultado. Uma empresa com recursos limitados — e todas tem — precisa
-        concentrar esforcos nos editais onde a probabilidade de vitoria e a
-        margem esperada justificam o investimento. Participar de tudo nao e
-        estrategia; e dispersao.
+      <p className="text-xl leading-relaxed text-ink">
+        Encontrar licitações é fácil. Saber quais priorizar é o que gera
+        resultado. Uma empresa com recursos limitados — e todas têm — precisa
+        concentrar esforços nos editais onde a probabilidade de vitória e a
+        margem esperada justificam o investimento. Participar de tudo não é
+        estratégia. É dispersão.
       </p>
 
-      <h2>Por que priorizacao importa mais que volume</h2>
+      <h2>Por que priorização importa mais que volume</h2>
 
       <p>
-        Existe uma crenca persistente no mercado B2G de que participar de mais
-        licitacoes automaticamente aumenta as chances de vencer. A matematica
-        conta outra historia.
-      </p>
-
-      <p>
-        Uma empresa que participa de 30 licitacoes por mes com preparacao
-        superficial tem taxa de sucesso tipica de 3-5%. A mesma empresa
-        participando de 8 licitacoes com preparacao aprofundada pode alcancar
-        25-35% de sucesso. O resultado liquido e melhor com menos participacoes
-        — desde que sejam as corretas.
+        Existe uma crença persistente no mercado B2G de que participar de mais
+        licitações automaticamente aumenta as chances de vencer. A matemática
+        conta outra história.
       </p>
 
       <p>
-        O custo de preparacao por licitacao cai quando voce participa de menos
-        editais com mais dedicacao. A qualidade da proposta sobe. A equipe
-        trabalha com menos pressao e mais foco.{' '}
+        Uma empresa que participa de 30 licitações por mês com preparação
+        superficial tem taxa de sucesso típica de 3-5%. A mesma empresa
+        participando de 8 licitações bem escolhidas, com preparação
+        aprofundada, pode alcançar 25-35% de sucesso. O resultado líquido é
+        melhor com menos participações — desde que sejam as corretas.
+      </p>
+
+      <p>
+        Menos editais com mais dedicação significa proposta melhor, equipe
+        menos sobrecarregada e{' '}
         <Link href="/como-evitar-prejuizo-licitacao">
-          E os riscos de prejuizo diminuem drasticamente
-        </Link>
-        .
+          risco de prejuízo drasticamente menor
+        </Link>.
       </p>
 
-      <h2>Criterios de priorizacao</h2>
+      <h2>Os três eixos de priorização</h2>
 
       <p>
-        Priorizar oportunidades exige um framework objetivo. Opiniao e
-        &quot;feeling&quot; nao escalam. Os tres eixos fundamentais de
-        priorizacao sao:
+        Priorizar exige um framework objetivo. Opinião e &quot;feeling&quot;
+        não escalam. Os três eixos fundamentais são:
       </p>
 
-      <h3>Aderencia ao perfil</h3>
+      <h3>Aderência ao perfil</h3>
       <p>
-        Quao alinhado o edital esta com o que sua empresa faz de melhor? Isso
-        inclui setor de atuacao, tipo de servico ou produto, porte do contrato
-        e complexidade tecnica. Uma aderencia alta significa que voce pode
-        apresentar atestados solidos, equipe qualificada e experiencia
-        comprovada — fatores que pesam em qualquer avaliacao.
+        Quão alinhado o edital está com o que sua empresa faz de melhor? Isso
+        vai além do setor — inclui tipo de serviço ou produto, porte do
+        contrato e complexidade técnica. Uma aderência alta significa atestados
+        sólidos, equipe qualificada e experiência comprovada. São fatores que
+        pesam em qualquer avaliação, independente da modalidade.
       </p>
 
       <h3>Viabilidade operacional</h3>
       <p>
-        Voce consegue executar esse contrato com qualidade e margem saudavel?
+        Você consegue executar esse contrato com qualidade e margem saudável?
         A viabilidade considera quatro fatores:{' '}
         <Link href="/como-avaliar-licitacao">
           modalidade, prazo, valor e geografia
-        </Link>
-        . Um edital pode ser altamente aderente ao seu perfil, mas inviavel
-        por estar em uma regiao onde voce nao tem infraestrutura.
+        </Link>. Um edital pode ser altamente aderente ao seu perfil, mas
+        inviável por estar em uma região onde você não tem infraestrutura ou
+        por exigir um prazo incompatível com sua capacidade atual.
       </p>
 
-      <h3>Competicao estimada</h3>
+      <h3>Competição estimada</h3>
       <p>
-        Quantas empresas provavelmente vao participar e quao forte e a
-        competicao? Pregoes eletronicos com criterio de menor preco em setores
-        comoditizados atraem dezenas de concorrentes. Concorrencias tecnicas
-        em nichos especializados podem ter 3-5 participantes. A probabilidade
-        de vitoria muda drasticamente.
+        Quantas empresas provavelmente vão participar? Pregões eletrônicos com
+        critério de menor preço em setores comoditizados atraem dezenas de
+        concorrentes. Concorrências técnicas em nichos especializados podem ter
+        3 a 5 participantes. A probabilidade de vitória muda drasticamente
+        entre esses cenários.
       </p>
 
       <h2>Como avaliar a viabilidade de cada oportunidade</h2>
 
       <p>
-        Para cada edital pre-filtrado, aplique uma avaliacao estruturada com
-        pontuacao:
+        Para cada edital pré-filtrado, aplique uma avaliação estruturada com
+        pontuação ponderada:
       </p>
 
       <ul>
         <li>
-          <strong>Modalidade (peso 30%):</strong> pregao eletronico com menor
-          preco pontua baixo para empresas que competem por qualidade.
-          Concorrencia com tecnica e preco pontua alto para quem tem
-          diferenciais tecnicos.
+          <strong>Modalidade (peso 30%)</strong> — pregão eletrônico com menor
+          preço pontua baixo para quem compete por qualidade. Concorrência com
+          técnica e preço pontua alto para quem tem diferenciais técnicos.
         </li>
         <li>
-          <strong>Prazo (peso 25%):</strong> quanto tempo ha para preparar a
-          proposta? Prazo apertado reduz a pontuacao pois limita a qualidade
-          da preparacao.
+          <strong>Prazo (peso 25%)</strong> — prazo apertado reduz a pontuação
+          porque limita a qualidade da preparação.
         </li>
         <li>
-          <strong>Faixa de valor (peso 25%):</strong> o valor esta na faixa
-          ideal da empresa? Muito acima ou muito abaixo reduz a pontuacao.
+          <strong>Faixa de valor (peso 25%)</strong> — o valor ideal é aquele
+          em que a empresa opera com eficiência. Muito acima ou muito abaixo
+          reduz a pontuação.
         </li>
         <li>
-          <strong>Geografia (peso 20%):</strong> o orgao esta em uma regiao
-          onde a empresa opera com eficiencia? Regioes distantes sem presenca
-          local reduzem a pontuacao.
+          <strong>Geografia (peso 20%)</strong> — regiões distantes sem
+          presença local reduzem a pontuação pelo custo logístico implícito.
         </li>
       </ul>
 
       <p>
-        A soma ponderada desses fatores gera um indice de viabilidade que pode
-        ser classificado em tres niveis: alta, media e baixa. Priorize os
-        editais com viabilidade alta e aderencia alta.
+        A soma ponderada gera um índice de viabilidade classificado em três
+        níveis: <strong>alta</strong> (acima de 70), <strong>média</strong>
+        {' '}(40-70) e <strong>baixa</strong> (abaixo de 40).
       </p>
 
-      <h2>Framework de decisao: participar, monitorar ou descartar</h2>
+      <h2>O framework: participar, monitorar ou descartar</h2>
 
       <p>
-        Com a aderencia e a viabilidade avaliadas, cada oportunidade cai em uma
-        de tres categorias:
+        Com aderência e viabilidade avaliadas, cada oportunidade cai em uma de
+        três categorias:
       </p>
 
       <ul>
         <li>
-          <strong>Participar:</strong> aderencia alta + viabilidade alta.
-          Dedique recursos completos para preparar a melhor proposta
-          possivel.
+          <strong>Participar</strong> — aderência alta + viabilidade alta.
+          Dedique recursos completos para a melhor proposta possível.
         </li>
         <li>
-          <strong>Monitorar:</strong> aderencia alta + viabilidade media, ou
-          aderencia media + viabilidade alta. Acompanhe o edital e reavalie
-          se as condicoes mudarem (esclarecimentos, aditivos).
+          <strong>Monitorar</strong> — aderência alta + viabilidade média, ou
+          vice-versa. Acompanhe e reavalie se as condições mudarem
+          (esclarecimentos, aditivos, prorrogação de prazo).
         </li>
         <li>
-          <strong>Descartar:</strong> qualquer combinacao com aderencia baixa
-          ou viabilidade baixa. Nao invista tempo — passe para o proximo.
+          <strong>Descartar</strong> — qualquer combinação com aderência baixa
+          ou viabilidade baixa. Não invista tempo — passe para o próximo.
         </li>
       </ul>
 
       <p>
-        Esse framework elimina decisoes emocionais (&quot;parece bom, vamos
-        tentar&quot;) e substitui por criterios objetivos e replicaveis.
+        Esse framework elimina decisões emocionais e substitui por critérios
+        objetivos e replicáveis.
       </p>
 
-      <h2>Exemplo pratico: 3 licitacoes, qual priorizar?</h2>
+      {/* Practical Example */}
+      <div className="not-prose my-10 border-l-4 border-brand-blue bg-surface-1 rounded-r-xl p-6 lg:p-8">
+        <h3 className="font-bold text-ink text-lg mb-6">
+          Na prática: 3 editais, qual priorizar?
+        </h3>
+        <p className="text-ink-secondary mb-6 leading-relaxed">
+          Uma empresa de materiais elétricos com sede em São Paulo, faixa ideal
+          de R$ 200k a R$ 1,5M, encontra três editais na mesma semana:
+        </p>
+
+        {/* Edital A */}
+        <div className="mb-6 bg-canvas rounded-lg p-5 border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-ink">Edital A — Pregão Eletrônico, R$ 450 mil</h4>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-success/10 text-success">PARTICIPAR</span>
+          </div>
+          <p className="text-sm text-ink-secondary mb-2">
+            Material elétrico para hospital em Campinas/SP. Menor preço. Prazo: 12 dias.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-ink-secondary">
+            <span>Setor: <strong className="text-success">Alta</strong></span>
+            <span>Valor: <strong className="text-success">Adequado</strong></span>
+            <span>Prazo: <strong className="text-success">Suficiente</strong></span>
+            <span>Geografia: <strong className="text-success">Mesma UF</strong></span>
+            <span>Modalidade: <strong className="text-ink-secondary">Competitiva</strong></span>
+          </div>
+        </div>
+
+        {/* Edital B */}
+        <div className="mb-6 bg-canvas rounded-lg p-5 border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-ink">Edital B — Concorrência, R$ 3,2 milhões</h4>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-error/10 text-error">DESCARTAR</span>
+          </div>
+          <p className="text-sm text-ink-secondary mb-2">
+            Instalação elétrica completa de escola em Manaus/AM. Técnica e preço. Prazo: 25 dias.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-ink-secondary">
+            <span>Setor: <strong className="text-ink-secondary">Média</strong></span>
+            <span>Valor: <strong className="text-error">Acima da faixa</strong></span>
+            <span>Prazo: <strong className="text-success">Confortável</strong></span>
+            <span>Geografia: <strong className="text-error">Logística inviável</strong></span>
+            <span>Modalidade: <strong className="text-success">Favorável</strong></span>
+          </div>
+        </div>
+
+        {/* Edital C */}
+        <div className="bg-canvas rounded-lg p-5 border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-ink">Edital C — Pregão Eletrônico, R$ 180 mil</h4>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-warning/10 text-warning">MONITORAR</span>
+          </div>
+          <p className="text-sm text-ink-secondary mb-2">
+            Material elétrico para reforma de edifício público no Rio de Janeiro/RJ. Menor preço. Prazo: 8 dias.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-ink-secondary">
+            <span>Setor: <strong className="text-success">Alta</strong></span>
+            <span>Valor: <strong className="text-ink-secondary">Abaixo da faixa</strong></span>
+            <span>Prazo: <strong className="text-warning">Apertado</strong></span>
+            <span>Geografia: <strong className="text-success">Viável</strong></span>
+            <span>Modalidade: <strong className="text-ink-secondary">Competitiva</strong></span>
+          </div>
+        </div>
+
+        <p className="text-ink-secondary mt-6 leading-relaxed">
+          Sem esse framework, a empresa provavelmente tentaria os três editais,
+          diluindo recursos e reduzindo a qualidade de todas as propostas.
+        </p>
+      </div>
 
       <p>
-        Uma empresa de materiais eletricos com sede em Sao Paulo, faixa de
-        valor ideal de R$ 200k a R$ 1,5M, encontra tres editais na mesma
-        semana:
-      </p>
-
-      <h3>Edital A — Pregao Eletronico, R$ 450 mil</h3>
-      <p>
-        Fornecimento de material eletrico para hospital em Campinas/SP.
-        Criterio: menor preco. Prazo: 12 dias.
-      </p>
-      <ul>
-        <li>Aderencia: <strong>Alta</strong> — core business</li>
-        <li>Modalidade: Media — pregao menor preco, competicao acirrada</li>
-        <li>Valor: <strong>Alto</strong> — dentro da faixa ideal</li>
-        <li>Prazo: <strong>Alto</strong> — 12 dias e suficiente</li>
-        <li>Geografia: <strong>Alta</strong> — mesma UF, 100 km da sede</li>
-      </ul>
-      <p>
-        <strong>Decisao: PARTICIPAR</strong> — viabilidade alta em todos os
-        eixos
-      </p>
-
-      <h3>Edital B — Concorrencia, R$ 3,2 milhoes</h3>
-      <p>
-        Instalacao eletrica completa de escola em Manaus/AM. Criterio: tecnica
-        e preco. Prazo: 25 dias.
-      </p>
-      <ul>
-        <li>Aderencia: Media — inclui servicos de instalacao alem do fornecimento</li>
-        <li>Modalidade: <strong>Alta</strong> — tecnica e preco favorece experiencia</li>
-        <li>Valor: Baixo — acima da faixa ideal (R$ 3,2M vs limite de R$ 1,5M)</li>
-        <li>Prazo: <strong>Alto</strong> — 25 dias e confortavel</li>
-        <li>Geografia: Baixa — Manaus exige logistica complexa</li>
-      </ul>
-      <p>
-        <strong>Decisao: DESCARTAR</strong> — valor fora da faixa + logistica
-        inviavel
-      </p>
-
-      <h3>Edital C — Pregao Eletronico, R$ 180 mil</h3>
-      <p>
-        Material eletrico para reforma de edificio publico no Rio de
-        Janeiro/RJ. Criterio: menor preco. Prazo: 8 dias.
-      </p>
-      <ul>
-        <li>Aderencia: <strong>Alta</strong> — core business</li>
-        <li>Modalidade: Media — pregao menor preco</li>
-        <li>Valor: Media — ligeiramente abaixo da faixa ideal</li>
-        <li>Prazo: Baixo — 8 dias e apertado para proposta completa</li>
-        <li>Geografia: <strong>Alta</strong> — RJ, logistica viavel</li>
-      </ul>
-      <p>
-        <strong>Decisao: MONITORAR</strong> — prazo apertado e o fator
-        limitante. Se um aditivo ampliar o prazo, reclassifique para
-        &quot;participar&quot;.
-      </p>
-
-      <p>
-        Sem esse framework, a empresa provavelmente tentaria participar dos
-        tres editais, diluindo recursos e reduzindo a qualidade de todas as
-        propostas.{' '}
         <Link href="/como-filtrar-editais">
           Veja como a filtragem inteligente automatiza a primeira etapa desse
           processo
-        </Link>
-        .
+        </Link> — entregando apenas os editais que merecem essa análise
+        aprofundada.
       </p>
 
       {/* CTA Section */}
-      <div className="not-prose mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-lg p-8 text-center border border-brand-blue/20">
-        <p className="text-lg font-semibold text-ink mb-2">
-          Priorize com dados, nao com intuicao
+      <div className="not-prose mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-8 text-center border border-brand-blue/20">
+        <p className="text-xl font-bold text-ink mb-2">
+          Priorize com dados, não com intuição
         </p>
-        <p className="text-ink-secondary mb-6">
-          O SmartLic avalia a viabilidade de cada edital com 4 criterios
-          ponderados e classifica automaticamente em alta, media e baixa.
+        <p className="text-ink-secondary mb-6 max-w-lg mx-auto">
+          O SmartLic avalia a viabilidade de cada edital com 4 critérios
+          ponderados e classifica automaticamente em alta, média e baixa.
         </p>
         <Link
           href="/signup?source=content-priorizar"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-6 py-3 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
-          Comece Gratis
+          Comece Grátis
         </Link>
       </div>
     </ContentPageLayout>

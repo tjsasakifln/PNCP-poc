@@ -46,13 +46,13 @@ export default function Footer() {
 
           {/* Conteudo */}
           <div>
-            <h3 className="font-bold text-lg mb-4 text-ink">Conteudo</h3>
+            <h3 className="font-bold text-lg mb-4 text-ink">Conteúdo</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <FooterLink href="/como-avaliar-licitacao">Avaliar licitacoes</FooterLink>
+                <FooterLink href="/como-avaliar-licitacao">Avaliar licitações</FooterLink>
               </li>
               <li>
-                <FooterLink href="/como-evitar-prejuizo-licitacao">Evitar prejuizo</FooterLink>
+                <FooterLink href="/como-evitar-prejuizo-licitacao">Evitar prejuízo</FooterLink>
               </li>
               <li>
                 <FooterLink href="/como-filtrar-editais">Filtrar editais</FooterLink>

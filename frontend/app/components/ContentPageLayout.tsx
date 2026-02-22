@@ -34,7 +34,7 @@ export default function ContentPageLayout({
               href="/"
               className="hover:text-brand-blue transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 rounded px-1"
             >
-              Inicio
+              Início
             </Link>
             <ChevronRight className="w-4 h-4" aria-hidden="true" />
             <span className="font-medium text-ink" aria-current="page">
@@ -45,7 +45,7 @@ export default function ContentPageLayout({
           {/* Content Grid */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-12">
             {/* Main Content */}
-            <article className="lg:col-span-2 prose prose-gray dark:prose-invert max-w-none prose-headings:text-ink prose-p:text-ink-secondary prose-strong:text-ink prose-a:text-brand-blue prose-a:no-underline hover:prose-a:underline prose-li:text-ink-secondary">
+            <article className="lg:col-span-2 prose prose-lg prose-gray dark:prose-invert max-w-none prose-headings:text-ink prose-headings:font-bold prose-p:text-ink-secondary prose-p:leading-relaxed prose-strong:text-ink prose-a:text-brand-blue prose-a:no-underline hover:prose-a:underline prose-li:text-ink-secondary prose-h1:text-3xl prose-h1:sm:text-4xl prose-h1:tracking-tight prose-h2:text-xl prose-h2:sm:text-2xl prose-h2:mt-12 prose-h2:border-b prose-h2:border-[var(--border)] prose-h2:pb-3 prose-h3:text-lg">
               {children}
             </article>
 
@@ -53,27 +53,27 @@ export default function ContentPageLayout({
             <aside className="mt-12 lg:mt-0">
               <div className="sticky top-24 space-y-8">
                 {/* CTA Card */}
-                <div className="bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-lg p-6 border border-brand-blue/20">
+                <div className="bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-6 border border-brand-blue/20 shadow-sm">
                   <h3 className="font-semibold text-ink text-lg mb-2">
-                    Avalie licitacoes automaticamente
+                    Avalie licitações automaticamente
                   </h3>
-                  <p className="text-sm text-ink-secondary mb-4">
+                  <p className="text-sm text-ink-secondary mb-4 leading-relaxed">
                     O SmartLic analisa editais em segundos usando IA e 5
-                    criterios de viabilidade.
+                    critérios de viabilidade.
                   </p>
                   <Link
                     href="/signup?source=conteudo"
                     className="block text-center bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-4 py-2.5 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
                   >
-                    Comece Gratis
+                    Comece Grátis
                   </Link>
                 </div>
 
                 {/* Related Pages */}
                 {relatedPages.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-ink text-lg mb-4">
-                      Conteudo relacionado
+                  <div className="bg-surface-1 rounded-xl p-6 border border-[var(--border)]">
+                    <h3 className="font-semibold text-ink text-base mb-4">
+                      Conteúdo relacionado
                     </h3>
                     <ul className="space-y-3">
                       {relatedPages.map((page) => (
@@ -93,13 +93,13 @@ export default function ContentPageLayout({
                 {/* Features Link */}
                 <div className="border-t border-[var(--border)] pt-6">
                   <p className="text-sm text-ink-secondary mb-2">
-                    Conheca todas as funcionalidades
+                    Conheça todas as funcionalidades
                   </p>
                   <Link
                     href="/features"
                     className="text-sm font-medium text-brand-blue hover:underline"
                   >
-                    Ver recursos do SmartLic
+                    Ver recursos do SmartLic &rarr;
                   </Link>
                 </div>
               </div>

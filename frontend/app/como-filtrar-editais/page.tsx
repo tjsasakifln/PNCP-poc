@@ -3,9 +3,9 @@ import ContentPageLayout from '../components/ContentPageLayout';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Como filtrar editais de licitacao e focar no que importa | SmartLic',
+  title: 'Como Filtrar Editais de Licitação e Focar no que Importa',
   description:
-    'Entenda por que a busca manual de editais nao funciona e como um filtro inteligente transforma 1.500 publicacoes em 12 oportunidades relevantes.',
+    'Entenda por que a busca manual de editais não funciona e como um filtro por perfil transforma 1.500 publicações diárias em 12 oportunidades relevantes.',
   alternates: {
     canonical: 'https://smartlic.tech/como-filtrar-editais',
   },
@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 const articleSchema = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Como filtrar editais de licitacao e focar no que importa',
+  headline: 'Como filtrar editais de licitação e focar no que importa',
   description:
-    'Por que a busca manual de editais nao funciona e como um filtro inteligente transforma milhares de publicacoes em oportunidades relevantes.',
+    'Por que a busca manual de editais não funciona e como um filtro inteligente transforma milhares de publicações em oportunidades relevantes para o seu setor.',
   author: {
     '@type': 'Organization',
     name: 'SmartLic',
@@ -45,7 +45,7 @@ const breadcrumbSchema = {
     {
       '@type': 'ListItem',
       position: 1,
-      name: 'Inicio',
+      name: 'Início',
       item: 'https://smartlic.tech',
     },
     {
@@ -60,11 +60,11 @@ const breadcrumbSchema = {
 const RELATED_PAGES = [
   {
     href: '/como-avaliar-licitacao',
-    title: 'Como avaliar se uma licitacao vale a pena',
+    title: 'Como avaliar se uma licitação vale a pena',
   },
   {
     href: '/como-evitar-prejuizo-licitacao',
-    title: 'Como evitar prejuizo em licitacoes',
+    title: 'Como evitar prejuízo em licitações',
   },
   {
     href: '/como-priorizar-oportunidades',
@@ -87,198 +87,200 @@ export default function ComoFiltrarEditais() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      <h1>Como filtrar editais de licitacao e focar no que importa</h1>
+      <h1>Como filtrar editais de licitação e focar no que importa</h1>
 
-      <p className="lead text-lg">
-        O problema nao e falta de licitacoes. E excesso de irrelevancia. Todos
-        os dias, milhares de editais sao publicados nos portais PNCP,
-        ComprasGov e Portal de Compras Publicas. Para uma empresa de
-        engenharia, por exemplo, menos de 1% dessas publicacoes sao realmente
-        relevantes. O desafio nao e encontrar licitacoes — e separar as que
-        importam das que so consomem tempo.
+      <p className="text-xl leading-relaxed text-ink">
+        O problema não é falta de licitações. É excesso de irrelevância. Todos
+        os dias, milhares de editais são publicados nos portais PNCP,
+        ComprasGov e Portal de Compras Públicas. Para uma empresa de
+        engenharia, por exemplo, menos de 1% dessas publicações são realmente
+        relevantes. O desafio não é encontrar licitações — é separar as que
+        importam das que só consomem tempo.
       </p>
 
-      <h2>Por que a busca manual nao funciona</h2>
+      <h2>Por que a busca manual não funciona</h2>
 
       <p>
-        A maioria das empresas ainda monitora licitacoes da forma tradicional:
-        acessa os portais oficiais, digita palavras-chave e navega paginas de
-        resultados. Esse processo tem tres problemas estruturais:
+        A maioria das empresas ainda monitora licitações da forma tradicional:
+        acessa os portais oficiais, digita palavras-chave e navega páginas de
+        resultados. Esse processo tem três problemas estruturais que nenhum
+        esforço individual resolve.
       </p>
 
-      <h3>Volume impossivel de processar</h3>
+      <h3>Volume impossível de processar</h3>
       <p>
-        O PNCP sozinho publica milhares de contratacoes por dia. Para cobrir
-        todas as 27 UFs com profundidade, seria necessario analisar centenas de
-        resultados diariamente. Nenhuma equipe de licitacoes consegue fazer
-        isso com consistencia.
+        O PNCP sozinho publica milhares de contratações por dia, cobrindo 27
+        UFs. Para monitorar tudo com profundidade, seria necessário analisar
+        centenas de resultados diariamente. Nenhuma equipe de licitações
+        consegue fazer isso com consistência — e quando tenta, a qualidade
+        da análise cai.
       </p>
 
       <h3>Fontes dispersas</h3>
       <p>
-        Nao existe um unico portal que consolide todas as licitacoes do Brasil.
-        O PNCP cobre a maioria, mas o Portal de Compras Publicas e o ComprasGov
-        publicam editais que nao aparecem no PNCP — e vice-versa. Monitorar
-        uma fonte so ja e dificil. Monitorar tres, com formatos diferentes,
-        paginacoes diferentes e atualizacoes em horarios diferentes, e
-        impraticavel.
+        Não existe um portal único que consolide todas as licitações do Brasil.
+        O PNCP cobre a maioria, mas o Portal de Compras Públicas e o ComprasGov
+        publicam editais que não aparecem lá — e vice-versa. Monitorar uma
+        fonte já é difícil. Monitorar três, com formatos diferentes e
+        atualizações em horários diferentes, é impraticável no dia a dia.
       </p>
 
-      <h3>Palavras-chave sao ambiguas</h3>
+      <h3>Palavras-chave são ambíguas</h3>
       <p>
-        Buscar por &quot;manutencao&quot; retorna licitacoes de manutencao
-        predial, manutencao de veiculos, manutencao de equipamentos medicos,
-        manutencao de software e dezenas de outros objetos completamente
-        diferentes. A mesma palavra-chave que traz editais relevantes traz
-        tambem uma avalanche de ruido.
+        Buscar por &quot;manutenção&quot; retorna manutenção predial,
+        manutenção de veículos, manutenção de equipamentos médicos, manutenção
+        de software e dezenas de outros objetos completamente diferentes entre
+        si. A mesma palavra que traz editais relevantes traz uma avalanche de
+        ruído.
       </p>
 
       <h2>O que um bom filtro precisa considerar</h2>
 
       <p>
-        Um filtro eficaz vai alem de palavras-chave. Ele precisa cruzar
-        multiplas dimensoes para determinar se um edital e relevante:
+        Um filtro eficaz vai além de palavras-chave. Ele cruza múltiplas
+        dimensões para determinar se um edital é relevante para uma empresa
+        específica:
       </p>
 
       <ul>
         <li>
-          <strong>Setor de atuacao:</strong> nao apenas o objeto, mas o
-          contexto completo do edital. Uma licitacao de &quot;servicos de
-          limpeza&quot; pode ser facilities ou pode ser descontaminacao
-          industrial — setores completamente diferentes.
+          <strong>Setor de atuação</strong> — não apenas o objeto, mas o
+          contexto completo. Uma licitação de &quot;serviços de limpeza&quot;
+          pode ser facilities ou pode ser descontaminação industrial. Setores
+          completamente diferentes.
         </li>
         <li>
-          <strong>Faixa de valor:</strong> filtrar editais que estejam dentro
-          da capacidade financeira e operacional da empresa.
+          <strong>Faixa de valor</strong> — editais dentro da capacidade
+          financeira e operacional da empresa.
         </li>
         <li>
-          <strong>Regiao:</strong> focar nas UFs onde a empresa tem presenca
-          ou capacidade logistica.
+          <strong>Região</strong> — UFs onde a empresa tem presença ou
+          capacidade logística real.
         </li>
         <li>
-          <strong>Prazo:</strong> excluir editais com prazo insuficiente para
-          preparacao de proposta.
+          <strong>Prazo</strong> — tempo suficiente para preparar uma proposta
+          de qualidade.
         </li>
         <li>
-          <strong>Modalidade:</strong> priorizar modalidades compativeis com
-          o perfil da empresa.
+          <strong>Modalidade</strong> — compatível com o perfil competitivo da
+          empresa.
         </li>
       </ul>
 
       <h2>Filtro por palavra-chave vs. filtro por perfil</h2>
 
       <p>
-        A diferenca fundamental entre a busca tradicional e um filtro
-        inteligente esta na abordagem:
+        Aqui está a diferença fundamental entre a busca tradicional e um filtro
+        inteligente.
       </p>
 
       <p>
-        <strong>Filtro por palavra-chave</strong> busca textos que contenham
-        termos especificos. E rapido, mas impreciso. A palavra
-        &quot;informatica&quot; aparece tanto em editais de compra de
-        computadores quanto em editais de cursos de capacitacao em informatica
-        basica. O resultado: muito ruido, pouca relevancia.
+        <strong>Filtro por palavra-chave</strong> pergunta: &quot;esse edital
+        contém a palavra X?&quot;. É rápido, mas impreciso. A palavra
+        &quot;informática&quot; aparece tanto em editais de compra de
+        computadores quanto em cursos de capacitação em informática básica.
+        Muito ruído, pouca relevância.
       </p>
 
       <p>
-        <strong>Filtro por perfil</strong> analisa o edital como um todo e
-        compara com o perfil da empresa: setor, faixa de valor, regioes de
-        atuacao, historico. Em vez de perguntar &quot;esse edital contem a
-        palavra X?&quot;, pergunta &quot;esse edital e compativel com o perfil
-        dessa empresa?&quot;. O resultado: menos editais, mais relevancia.
-      </p>
-
-      <p>
+        <strong>Filtro por perfil</strong> pergunta: &quot;esse edital é
+        compatível com o que essa empresa faz, na faixa de valor que ela
+        opera, nas regiões onde ela atua?&quot;. Menos editais, mais
+        relevância.{' '}
         <Link href="/como-avaliar-licitacao">
-          Veja os 5 criterios usados para avaliar compatibilidade
-        </Link>
-        .
+          Veja os critérios usados para avaliar essa compatibilidade
+        </Link>.
       </p>
 
-      <h2>Na pratica: de 1.500 para 12</h2>
-
-      <p>Considere o cenario real de uma empresa de mobiliario corporativo:</p>
-
-      <ul>
-        <li>
-          <strong>Total publicado na semana:</strong> ~1.500 editais nas 3
-          fontes oficiais para as 27 UFs
-        </li>
-        <li>
-          <strong>Apos filtro por setor:</strong> 180 editais relacionados a
-          mobiliario (12% do total)
-        </li>
-        <li>
-          <strong>Apos filtro por faixa de valor</strong> (R$ 100k a R$ 2M):
-          45 editais (3% do total)
-        </li>
-        <li>
-          <strong>Apos filtro por UFs de atuacao</strong> (SP, RJ, MG, PR):
-          22 editais (1,5% do total)
-        </li>
-        <li>
-          <strong>Apos classificacao IA de relevancia:</strong> 12 editais
-          com alta aderencia (0,8% do total)
-        </li>
-      </ul>
-
-      <p>
-        Esses 12 editais sao os que realmente merecem a atencao da equipe. Os
-        outros 1.488 seriam tempo perdido.{' '}
-        <Link href="/como-evitar-prejuizo-licitacao">
-          E tempo perdido em licitacoes se traduz diretamente em prejuizo
-        </Link>
-        .
-      </p>
+      {/* Practical Example */}
+      <div className="not-prose my-10 border-l-4 border-brand-blue bg-surface-1 rounded-r-xl p-6 lg:p-8">
+        <h3 className="font-bold text-ink text-lg mb-4">
+          Na prática: de 1.500 para 12
+        </h3>
+        <p className="text-ink-secondary mb-4 leading-relaxed">
+          Cenário real de uma empresa de mobiliário corporativo em uma semana
+          típica:
+        </p>
+        <ul className="space-y-3 text-ink-secondary">
+          <li className="flex items-start gap-3">
+            <span className="text-ink-muted font-mono text-sm mt-0.5 shrink-0">1.500</span>
+            <span>editais publicados nas 3 fontes oficiais para 27 UFs</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-ink-muted font-mono text-sm mt-0.5 shrink-0 pl-1.5">180</span>
+            <span>após filtro por setor — 12% relacionados a mobiliário</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-ink-muted font-mono text-sm mt-0.5 shrink-0 pl-3">45</span>
+            <span>após filtro por faixa de valor (R$ 100k a R$ 2M)</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-ink-muted font-mono text-sm mt-0.5 shrink-0 pl-3">22</span>
+            <span>após filtro por UFs de atuação (SP, RJ, MG, PR)</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-brand-blue font-mono text-sm mt-0.5 font-bold shrink-0 pl-3">12</span>
+            <span><strong className="text-ink">após classificação IA de relevância</strong> — 0,8% do total</span>
+          </li>
+        </ul>
+        <p className="text-ink mt-4 font-medium">
+          Esses 12 editais são os que realmente merecem atenção. Os outros
+          1.488 seriam tempo perdido.{' '}
+          <Link href="/como-evitar-prejuizo-licitacao" className="text-brand-blue hover:underline">
+            E tempo perdido em licitações se traduz diretamente em prejuízo
+          </Link>.
+        </p>
+      </div>
 
       <h2>Como o SmartLic aborda esse problema</h2>
 
       <p>
-        O SmartLic agrega dados de tres fontes oficiais (PNCP, Portal de
-        Compras Publicas e ComprasGov) e aplica um pipeline de filtragem em
-        multiplas etapas:
+        O SmartLic agrega dados de três fontes oficiais — PNCP, Portal de
+        Compras Públicas e ComprasGov — e aplica um pipeline de filtragem em
+        múltiplas etapas:
       </p>
 
       <ol>
         <li>
-          <strong>Consolidacao:</strong> busca simultanea nas 3 fontes com
-          deduplicacao automatica (o mesmo edital pode aparecer em mais de
-          um portal)
+          <strong>Consolidação</strong> — busca simultânea nas 3 fontes com
+          deduplicação automática, já que o mesmo edital pode aparecer em mais
+          de um portal.
         </li>
         <li>
-          <strong>Filtro por UF e valor:</strong> eliminacao rapida de editais
-          fora do escopo geografico e financeiro
+          <strong>Filtro por UF e valor</strong> — eliminação rápida de editais
+          fora do escopo geográfico e financeiro da empresa.
         </li>
         <li>
-          <strong>Classificacao setorial:</strong> analise por keywords com
-          pontuacao de densidade, complementada por classificacao IA para
-          editais ambiguos
+          <strong>Classificação setorial</strong> — análise por keywords com
+          pontuação de densidade, complementada por classificação com IA para
+          editais ambíguos.
         </li>
         <li>
-          <strong>Avaliacao de viabilidade:</strong> scoring de 4 fatores
-          (modalidade, prazo, valor, geografia) para cada edital aprovado
+          <strong>Avaliação de viabilidade</strong> — scoring de 4 fatores
+          (modalidade, prazo, valor, geografia) para cada edital aprovado.
         </li>
       </ol>
 
       <p>
-        O resultado e um conjunto reduzido de editais classificados por
-        relevancia e viabilidade — prontos para analise humana qualificada.
+        O resultado é um conjunto reduzido de editais classificados por
+        relevância e viabilidade — prontos para análise humana qualificada.
+        Sem ruído, sem repetição, sem perda de tempo.
       </p>
 
       {/* CTA Section */}
-      <div className="not-prose mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-lg p-8 text-center border border-brand-blue/20">
-        <p className="text-lg font-semibold text-ink mb-2">
+      <div className="not-prose mt-12 bg-brand-blue-subtle dark:bg-brand-navy/20 rounded-xl p-8 text-center border border-brand-blue/20">
+        <p className="text-xl font-bold text-ink mb-2">
           Pare de perder tempo com editais irrelevantes
         </p>
-        <p className="text-ink-secondary mb-6">
-          O SmartLic filtra milhares de licitacoes e entrega apenas as que
-          importam para o seu setor, regiao e faixa de valor.
+        <p className="text-ink-secondary mb-6 max-w-lg mx-auto">
+          O SmartLic filtra milhares de licitações e entrega apenas as que
+          importam para o seu setor, região e faixa de valor.
         </p>
         <Link
           href="/signup?source=content-filtrar"
           className="inline-block bg-brand-navy hover:bg-brand-blue-hover text-white font-semibold px-6 py-3 rounded-button transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
         >
-          Comece Gratis
+          Comece Grátis
         </Link>
       </div>
     </ContentPageLayout>
