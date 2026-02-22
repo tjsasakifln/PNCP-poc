@@ -653,6 +653,15 @@ sectors:
       # "sal" in non-food context (additional)
       - "sal mineral"
       - "sal para piscina"
+      # Animal feed (not human food)
+      - "alimentos para animais"
+      - "alimento para animal"
+      - "ração"
+      - "racao"
+      - "ração animal"
+      - "racao animal"
+      - "nutrição animal"
+      - "nutricao animal"
     context_required_keywords:
       # CRIT-021 AC9: Alimentos context gates
       # Generic food ingredients ("sal", "óleo", "café", "farinha") appear in
@@ -2842,6 +2851,17 @@ sectors:
       - "produto de limpeza profissional"
       - "material de limpeza hospitalar"
       - "fornecimento de material de limpeza"
+      # Additional facilities services (CRIT-FLT-009 AC-FAC)
+      - "copeiragem"
+      - "dedetização"
+      - "dedetizacao"
+      - "desinsetização"
+      - "desinsetizacao"
+      - "lavanderia"
+      - "lavanderia hospitalar"
+      - "controle de pragas"
+      - "coleta de resíduos"
+      - "coleta de residuos"
     exclusions:
       # Automotive
       - "manutenção de veículos"
@@ -2945,12 +2965,7 @@ sectors:
       # Agriculture
       - "manutenção de tratores"
       - "manutencao de tratores"
-      # Pest control (not cleaning)
-      - "nebulização"
-      - "nebulizacao"
-      - "desinsetização"
-      - "desinsetizacao"
-      - "controle de pragas"
+      # Pest control vectors (non-building: environmental/epidemiological)
       - "controle de vetores"
       # "cera" in non-cleaning context
       - "cera perdida"
@@ -4264,6 +4279,16 @@ sectors:
       - "gestao de edificacoes"
       - "gestão predial de utilidades"
       - "gestao predial de utilidades"
+      # Additional building maintenance (CRIT-FLT-009 AC-MAN)
+      - "esquadrias"
+      - "pintura interna"
+      - "pintura externa"
+      - "pintura interna e externa"
+      - "substituição de telhas"
+      - "substituicao de telhas"
+      - "troca de telhas"
+      - "revestimento cerâmico"
+      - "revestimento ceramico"
     exclusions:
       # Automotive
       - "manutenção de veículos"
@@ -4490,6 +4515,21 @@ sectors:
       - "supervisao rodoviaria"
       - "implantação de rodovia"
       - "implantacao de rodovia"
+      # Traffic infrastructure (CRIT-FLT-009 AC-ROD)
+      - "rotatória"
+      - "rotatoria"
+      - "lombada"
+      - "lombadas"
+      - "semáforo"
+      - "semaforo"
+      - "semáforos"
+      - "semaforos"
+      - "sinalização de trânsito"
+      - "sinalizacao de transito"
+      - "restauração de pavimento"
+      - "restauracao de pavimento"
+      - "ciclovia"
+      - "ciclovias"
     exclusions:
       # Software/IT
       - "engenharia de software"
@@ -4893,6 +4933,23 @@ sectors:
       - "coleta de esgoto"
       - "fossa séptica"
       - "fossa septica"
+      # Plural forms (CRIT-FLT-009)
+      - "tubos PVC"
+      - "tubos PEAD"
+      - "conexões hidráulicas"
+      - "conexoes hidraulicas"
+      - "válvulas hidráulicas"
+      - "valvulas hidraulicas"
+      - "registros hidráulicos"
+      - "registros hidraulicos"
+      - "tubos galvanizados"
+      - "bombas submersas"
+      - "hidrômetros"
+      - "hidrometros"
+      - "torneira"
+      - "torneiras"
+      - "mangueira"
+      - "mangueiras"
     exclusions:
       # Industrial equipment
       - "prensa hidráulica"
