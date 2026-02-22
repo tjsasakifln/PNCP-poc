@@ -196,6 +196,13 @@ SSE_CONNECTION_ERRORS = _create_counter(
     labelnames=["error_type", "phase"],
 )
 
+# CRIT-026 AC3: Worker timeout tracking
+WORKER_TIMEOUT = _create_counter(
+    "smartlic_worker_timeout_total",
+    "Gunicorn worker timeout events",
+    labelnames=["reason"],
+)
+
 # ============================================================================
 # Gauges
 # ============================================================================

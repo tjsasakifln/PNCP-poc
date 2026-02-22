@@ -309,6 +309,22 @@ export function useSearchSSE({
       url += `&token=${encodeURIComponent(authToken)}`;
     }
 
+    // CRIT-026 AC9: Sentry breadcrumb before SSE connection
+    try {
+      // Dynamic import to avoid hard dependency in tests
+      import("@sentry/nextjs").then((Sentry) => {
+        Sentry.addBreadcrumb({
+          category: "sse",
+          message: `SSE connecting: search_id=${searchId}`,
+          level: "info",
+          data: {
+            search_id: searchId,
+            timestamp_ms: Date.now(),
+          },
+        });
+      }).catch(() => { /* Sentry not available */ });
+    } catch { /* Sentry not available */ }
+
     const es = connectSSE(url);
 
     // CRIT-006 AC12: Coordinated retry -- single retry for the consolidated connection

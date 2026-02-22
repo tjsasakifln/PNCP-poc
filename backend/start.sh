@@ -26,12 +26,18 @@ case "$PROCESS_TYPE" in
       echo "  --preload enabled: app loaded in master before forking workers"
     fi
 
+    # CRIT-026 AC1+AC2+AC4: Increased timeout 600→900s for SSE long-lived streams,
+    # WEB_CONCURRENCY 2→3 to prevent total downtime when 1 worker dies,
+    # added --keep-alive for persistent connections.
+    echo "  timeout=${GUNICORN_TIMEOUT:-900}s, workers=${WEB_CONCURRENCY:-3}, graceful=${GUNICORN_GRACEFUL_TIMEOUT:-120}s"
+
     exec gunicorn main:app \
       -k uvicorn.workers.UvicornWorker \
-      -w "${WEB_CONCURRENCY:-2}" \
+      -w "${WEB_CONCURRENCY:-3}" \
       --bind "0.0.0.0:${PORT:-8000}" \
-      --timeout "${GUNICORN_TIMEOUT:-600}" \
-      --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT:-60}" \
+      --timeout "${GUNICORN_TIMEOUT:-900}" \
+      --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT:-120}" \
+      --keep-alive "${GUNICORN_KEEP_ALIVE:-5}" \
       $PRELOAD_FLAG
     ;;
   worker)

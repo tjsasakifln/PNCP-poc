@@ -328,7 +328,21 @@ async def buscar_progress_stream(
                         from metrics import SSE_CONNECTION_ERRORS
                         SSE_CONNECTION_ERRORS.labels(error_type="cancelled", phase="streaming").inc()
                         break
+        except Exception as gen_exc:
+            # CRIT-026 AC8: Log when SSE generator finishes abruptly (unexpected exception)
+            from metrics import SSE_CONNECTION_ERRORS, WORKER_TIMEOUT
+            SSE_CONNECTION_ERRORS.labels(error_type="generator_abrupt", phase="streaming").inc()
+            WORKER_TIMEOUT.labels(reason="sse_generator_exception").inc()
+            logger.error(
+                f"CRIT-026: SSE generator abrupt finish for {search_id}: "
+                f"{type(gen_exc).__name__}: {gen_exc}"
+            )
         finally:
+            # CRIT-026 AC8: Log SSE generator lifecycle completion
+            logger.debug(
+                f"CRIT-026: SSE generator finished for {search_id} "
+                f"(heartbeats={heartbeat_count})"
+            )
             await release_sse_connection(user_id)
 
     return StreamingResponse(
