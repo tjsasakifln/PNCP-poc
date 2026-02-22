@@ -48,13 +48,17 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
-                <span>Cada dia sem filtro de compatibilidade é um dia de esforço direcionado para editais que não pagam</span>
+                <span>Sem filtro estratégico, você decide com base em intuição — sem saber se aquele edital realmente se encaixa</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-warning font-bold">•</span>
                 <span>O risco não é perder tempo. É perder dinheiro investindo proposta em licitações erradas.</span>
               </li>
             </ul>
+
+            <p className="mt-6 text-base text-ink font-medium border-t border-yellow-200/50 dark:border-yellow-700/50 pt-4">
+              Com SmartLic, cada decisão é baseada em critérios objetivos documentados — setor, valor, prazo, região e modalidade.
+            </p>
           </div>
         </div>
       </div>

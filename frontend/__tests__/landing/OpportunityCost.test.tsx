@@ -15,9 +15,15 @@ describe('OpportunityCost', () => {
 
     expect(screen.getByText(/Uma única licitação perdida por investir proposta no edital errado/i)).toBeInTheDocument();
     expect(screen.getByText(/R\$ 50\.000, R\$ 200\.000 ou mais/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cada dia sem filtro de compatibilidade/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sem filtro estratégico, você decide com base em intuição/i)).toBeInTheDocument();
     expect(screen.getByText(/O risco não é perder tempo/i)).toBeInTheDocument();
     expect(screen.getByText(/É perder dinheiro investindo proposta em licitações erradas/i)).toBeInTheDocument();
+  });
+
+  it('renders objective criteria contrast (GTM-COPY-004 AC6)', () => {
+    render(<OpportunityCost />);
+
+    expect(screen.getByText(/Com SmartLic, cada decisão é baseada em critérios objetivos documentados/i)).toBeInTheDocument();
   });
 
   it('does NOT use forbidden terms (AC11)', () => {

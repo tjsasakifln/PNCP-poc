@@ -134,6 +134,25 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           <StatsBadge icon={Zap} value="15" label="setores especializados" delay={0.1} />
           <StatsBadge icon={Globe} value="27" label="UFs cobertas" delay={0.2} />
         </motion.div>
+
+        {/* AC7: Trust indicators */}
+        <motion.div
+          className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-ink-muted"
+          variants={fadeInUp}
+        >
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Fontes oficiais verificadas
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Critérios objetivos, não opinião
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            Sem dados fabricados
+          </span>
+        </motion.div>
       </motion.div>
     </section>
   );

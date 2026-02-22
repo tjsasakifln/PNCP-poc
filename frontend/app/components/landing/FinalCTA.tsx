@@ -44,8 +44,20 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
           </a>
         </div>
 
+        <div
+          className={`mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/70 transition-all duration-500 delay-300 ${
+            isInView ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <span>Fontes oficiais verificadas</span>
+          <span className="hidden sm:inline text-white/30">|</span>
+          <span>Critérios objetivos</span>
+          <span className="hidden sm:inline text-white/30">|</span>
+          <span>Cancelamento em 1 clique</span>
+        </div>
+
         <p
-          className={`mt-6 text-sm text-white/60 transition-all duration-500 delay-300 ${
+          className={`mt-3 text-sm text-white/50 transition-all duration-500 delay-400 ${
             isInView ? 'opacity-100' : 'opacity-0'
           }`}
         >

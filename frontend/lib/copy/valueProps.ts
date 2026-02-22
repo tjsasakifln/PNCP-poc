@@ -108,6 +108,39 @@ export const valueProps = {
 };
 
 // ============================================================================
+// TRUST CRITERIA (GTM-COPY-004: Decision Safety Elements)
+// ============================================================================
+
+export const trustCriteria = {
+  sectionBadge: 'Transparência de critérios',
+  headline: 'Cada recomendação tem uma justificativa',
+  subheadline:
+    'Você sabe exatamente por que cada oportunidade foi selecionada — e por que as outras foram descartadas. Sem caixa preta, sem palpite.',
+  criteria: [
+    'Compatibilidade setorial',
+    'Faixa de valor adequada',
+    'Prazo viável para preparação',
+    'Região de atuação',
+    'Modalidade favorável',
+  ],
+  adherenceLevels: {
+    alta: '3 ou mais critérios atendem seu perfil — oportunidade prioritária',
+    media: '2 critérios atendem — vale avaliar com atenção',
+    baixa: '1 critério ou menos — considere apenas se estratégico',
+  },
+  falsePositiveReduction:
+    'Você recebe 20 recomendações qualificadas, não 2.000 resultados genéricos',
+  falseNegativeReduction:
+    'Se existe algo compatível em qualquer lugar do Brasil, você sabe',
+  trustIndicators: [
+    'Fontes oficiais verificadas',
+    'Critérios objetivos, não opinião',
+    'Cancelamento em 1 clique',
+    'Sem dados fabricados',
+  ],
+};
+
+// ============================================================================
 // FEATURES PAGE COPY
 // ============================================================================
 
@@ -498,6 +531,7 @@ export function formatMetric(value: number, suffix: string): string {
 export default {
   hero,
   valueProps,
+  trustCriteria,
   features,
   pricing,
   searchPage,

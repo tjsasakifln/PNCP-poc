@@ -17,7 +17,7 @@ describe('BeforeAfter', () => {
     expect(screen.getByText(/Gasta horas analisando editais que não se encaixam/i)).toBeInTheDocument();
     expect(screen.getByText(/Perde licitações porque não sabia que existiam/i)).toBeInTheDocument();
     expect(screen.getByText(/Descobre oportunidades quando o prazo já está curto/i)).toBeInTheDocument();
-    expect(screen.getByText(/Investe proposta com base em intuição/i)).toBeInTheDocument();
+    expect(screen.getByText(/Decide com base em intuição — opera no escuro/i)).toBeInTheDocument();
   });
 
   it('renders "Com SmartLic" card with filtering-focused positives (AC5)', () => {
@@ -27,7 +27,7 @@ describe('BeforeAfter', () => {
     expect(screen.getByText(/87% dos editais descartados antes de chegar até você/i)).toBeInTheDocument();
     expect(screen.getByText(/Cobertura nacional automática — 27 UFs/i)).toBeInTheDocument();
     expect(screen.getByText(/Acesso assim que publicados — você se posiciona antes/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cada recomendação com justificativa objetiva/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cada decisão baseada em critérios objetivos documentados/i)).toBeInTheDocument();
   });
 
   it('uses asymmetric 40/60 layout', () => {

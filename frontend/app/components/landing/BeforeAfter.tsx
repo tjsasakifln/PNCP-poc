@@ -60,7 +60,7 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
             </li>
             <li className="flex items-start gap-2">
               <X className="text-red-500 flex-shrink-0 mt-1" size={18} />
-              <span>Investe proposta com base em intuição, sem dados de compatibilidade</span>
+              <span>Decide com base em intuição — opera no escuro, sem critérios objetivos</span>
             </li>
           </ul>
         </div>
@@ -100,7 +100,7 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Cada recomendação com justificativa objetiva: setor, valor, prazo, região</span>
+              <span>Cada decisão baseada em critérios objetivos documentados: setor, valor, prazo, região, modalidade</span>
             </li>
           </ul>
         </div>

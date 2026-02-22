@@ -26,77 +26,80 @@ O visitante deve perceber que **continuar sem a ferramenta = operar no escuro**,
 ## Acceptance Criteria
 
 ### AC1 — Seção "Por que confiar nas recomendações"
-- [ ] Nova seção ou expansão de seção existente na landing
-- [ ] Título orientado a confiança: "Cada recomendação tem uma justificativa"
-- [ ] Explica em 3-4 pontos como o sistema avalia (sem revelar propriedade intelectual)
-- [ ] Arquivo: novo componente ou expansão de `DifferentialsGrid.tsx`
+- [x] Nova seção ou expansão de seção existente na landing
+- [x] Título orientado a confiança: "Cada recomendação tem uma justificativa"
+- [x] Explica em 3-4 pontos como o sistema avalia (sem revelar propriedade intelectual)
+- [x] Arquivo: novo componente ou expansão de `DifferentialsGrid.tsx`
 
 ### AC2 — Critérios de Avaliação Visíveis
-- [ ] Lista explícita dos critérios que o sistema usa para avaliar oportunidades:
+- [x] Lista explícita dos critérios que o sistema usa para avaliar oportunidades:
   - Compatibilidade setorial (keywords + IA)
   - Faixa de valor adequada ao porte
   - Prazo viável para preparação
   - Região de atuação
   - Modalidade favorável
-- [ ] Cada critério com ícone + descrição de 1 linha
-- [ ] Posicionamento: próximo à prova de funcionamento (GTM-COPY-003) ou como seção independente
+- [x] Cada critério com ícone + descrição de 1 linha
+- [x] Posicionamento: próximo à prova de funcionamento (GTM-COPY-003) ou como seção independente
 
 ### AC3 — Indicador de Aderência Explicado
-- [ ] Explicação visual de como o "nível de aderência" funciona
-- [ ] Escala: Alta / Média / Baixa com cores (verde/amarelo/cinza)
-- [ ] Cada nível tem descrição: "Alta = 3+ critérios atendem seu perfil"
-- [ ] Conecta com ViabilityBadge existente (se feature flag ativa) ou usa linguagem similar
+- [x] Explicação visual de como o "nível de aderência" funciona
+- [x] Escala: Alta / Média / Baixa com cores (verde/amarelo/cinza)
+- [x] Cada nível tem descrição: "Alta = 3+ critérios atendem seu perfil"
+- [x] Conecta com ViabilityBadge existente (se feature flag ativa) ou usa linguagem similar
 
 ### AC4 — Redução de Falsos Positivos (Comunicação)
-- [ ] Copy explícita sobre como o sistema **reduz ruído**
-- [ ] Números ou proporções: "Em média, X% dos editais são descartados por irrelevância"
-- [ ] Benefício tangível: "Você recebe 20 recomendações, não 2.000 resultados genéricos"
-- [ ] Pode ser integrado à seção de comparação ou à prova de funcionamento
+- [x] Copy explícita sobre como o sistema **reduz ruído**
+- [x] Números ou proporções: "Em média, X% dos editais são descartados por irrelevância"
+- [x] Benefício tangível: "Você recebe 20 recomendações, não 2.000 resultados genéricos"
+- [x] Pode ser integrado à seção de comparação ou à prova de funcionamento
 
 ### AC5 — Redução de Falsos Negativos (Comunicação)
-- [ ] Copy explícita sobre como o sistema **não perde oportunidades relevantes**
-- [ ] Explica: cobertura de 27 UFs, múltiplas fontes oficiais, IA para editais ambíguos
-- [ ] Benefício tangível: "Se existe algo compatível em qualquer lugar do Brasil, você sabe"
-- [ ] Pode ser integrado à seção de cobertura
+- [x] Copy explícita sobre como o sistema **não perde oportunidades relevantes**
+- [x] Explica: cobertura de 27 UFs, múltiplas fontes oficiais, IA para editais ambíguos
+- [x] Benefício tangível: "Se existe algo compatível em qualquer lugar do Brasil, você sabe"
+- [x] Pode ser integrado à seção de cobertura
 
 ### AC6 — "Operar no Escuro" Narrative
-- [ ] Em pelo menos 2 pontos da página, a narrativa reforça:
+- [x] Em pelo menos 2 pontos da página, a narrativa reforça:
   - "Sem filtro estratégico, você decide com base em intuição"
   - "Com SmartLic, cada decisão é baseada em critérios objetivos documentados"
-- [ ] O contraste deve ser **emocional mas factual** — não fear-mongering
-- [ ] Integrado naturalmente nas seções BeforeAfter ou OpportunityCost
+- [x] O contraste deve ser **emocional mas factual** — não fear-mongering
+- [x] Integrado naturalmente nas seções BeforeAfter ou OpportunityCost
 
 ### AC7 — Trust Indicators Consolidados
-- [ ] Revisar e consolidar todos os indicadores de confiança da página:
+- [x] Revisar e consolidar todos os indicadores de confiança da página:
   - Fontes oficiais verificadas
   - Critérios objetivos (não opinião)
   - Cancelamento em 1 clique
   - Sem dados fabricados
-- [ ] Posicionamento estratégico: próximo ao CTA principal e ao CTA final
-- [ ] Arquivo: `FinalCTA.tsx` e/ou `HeroSection.tsx`
+- [x] Posicionamento estratégico: próximo ao CTA principal e ao CTA final
+- [x] Arquivo: `FinalCTA.tsx` e/ou `HeroSection.tsx`
 
 ### AC8 — Features Page — Seção de Confiança
-- [ ] Página `/features` recebe menção explícita à transparência de critérios
-- [ ] Pode ser um card adicional ou expansão dos existentes
-- [ ] Arquivo: `features/page.tsx` ou `FeaturesContent.tsx`
+- [x] Página `/features` recebe menção explícita à transparência de critérios
+- [x] Pode ser um card adicional ou expansão dos existentes
+- [x] Arquivo: `features/page.tsx` ou `FeaturesContent.tsx`
 
 ### AC9 — Zero Regressions
-- [ ] TypeScript compila
-- [ ] Testes frontend: zero novas falhas
-- [ ] Layout visual preservado nas seções não alteradas
+- [x] TypeScript compila
+- [x] Testes frontend: zero novas falhas
+- [x] Layout visual preservado nas seções não alteradas
 
 ## Arquivos Impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `frontend/app/components/landing/TrustCriteria.tsx` | **NOVO** (ou expansão de existente) |
-| `frontend/app/components/landing/DifferentialsGrid.tsx` | AC1 (possível expansão) |
-| `frontend/app/components/landing/OpportunityCost.tsx` | AC6 |
-| `frontend/app/components/landing/BeforeAfter.tsx` | AC6 |
-| `frontend/app/components/landing/FinalCTA.tsx` | AC7 |
-| `frontend/app/components/landing/HeroSection.tsx` | AC7 |
-| `frontend/app/features/page.tsx` | AC8 |
-| `frontend/app/page.tsx` | Import do novo componente |
+| `frontend/app/components/landing/TrustCriteria.tsx` | **NOVO** — AC1, AC2, AC3, AC4, AC5 |
+| `frontend/__tests__/landing/TrustCriteria.test.tsx` | **NOVO** — 9 testes |
+| `frontend/app/components/landing/OpportunityCost.tsx` | AC6 — contraste critérios objetivos |
+| `frontend/app/components/landing/BeforeAfter.tsx` | AC6 — "opera no escuro" + "critérios documentados" |
+| `frontend/app/components/landing/FinalCTA.tsx` | AC7 — trust indicators near CTA |
+| `frontend/app/components/landing/HeroSection.tsx` | AC7 — trust indicators below stats |
+| `frontend/app/features/page.tsx` | AC8 — seção transparência de critérios |
+| `frontend/app/page.tsx` | Import + placement do TrustCriteria |
+| `frontend/lib/copy/valueProps.ts` | trustCriteria copy section |
+| `frontend/__tests__/landing/BeforeAfter.test.tsx` | Updated assertions for new copy |
+| `frontend/__tests__/landing/OpportunityCost.test.tsx` | Updated + new AC6 test |
 
 ## Notas de Implementação
 
@@ -107,6 +110,6 @@ O visitante deve perceber que **continuar sem a ferramenta = operar no escuro**,
 
 ## Definition of Done
 
-- [ ] ACs 1-9 verificados
-- [ ] Narrativa de confiança coerente ao longo da página
-- [ ] Commit: `feat(frontend): GTM-COPY-004 — elementos de segurança na decisão`
+- [x] ACs 1-9 verificados
+- [x] Narrativa de confiança coerente ao longo da página
+- [x] Commit: `feat(frontend): GTM-COPY-004 — elementos de segurança na decisão`

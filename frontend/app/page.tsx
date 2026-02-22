@@ -14,6 +14,7 @@ import ProofOfValue from './components/landing/ProofOfValue';
 import ValuePropSection from './components/ValuePropSection';
 import ComparisonTable from './components/ComparisonTable';
 import AnalysisExamplesCarousel from './components/landing/AnalysisExamplesCarousel';
+import TrustCriteria from './components/landing/TrustCriteria';
 import Footer from './components/Footer';
 
 export default function LandingPage() {
@@ -36,6 +37,7 @@ export default function LandingPage() {
         </section>
         <SectorsGrid />
         <AnalysisExamplesCarousel />
+        <TrustCriteria />
         <section id="suporte">
           <FinalCTA />
         </section>
