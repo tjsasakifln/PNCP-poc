@@ -1994,3 +1994,504 @@ class TestPrazoHeuristics:
         )
         assert len(result) == 1
         assert stats["rejeitadas_prazo"] == 0
+
+
+class TestCRIT021ContextRequiredExpansion:
+    """CRIT-021: Tests for expanded context_required_keywords.
+
+    Verifies that the context gates for engenharia, reforma, concreto, ferro,
+    piso, and madeira now accept legitimate engineering sub-disciplines and
+    construction material variants, while still blocking false positives.
+    """
+
+    # ── AC2: "servicos de engenharia eletrica" returns valid match ──────
+
+    def test_engenharia_eletrica_match(self):
+        """AC2: 'Servicos de engenharia eletrica' should match via context."""
+        keywords = {"engenharia"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Serviços de engenharia elétrica", keywords, context_required=context
+        )
+        assert matched is True
+        assert any("engenharia" in t.lower() for t in terms)
+
+    def test_engenharia_ambiental_match(self):
+        """AC2 variant: 'engenharia para estudos ambientais' should match."""
+        keywords = {"engenharia"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Serviço de engenharia para estudos ambientais",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_engenharia_consultiva_estrutural_match(self):
+        """AC2 variant: 'Engenharia consultiva para analise estrutural'."""
+        keywords = {"engenharia"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Engenharia consultiva para análise estrutural",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_engenharia_sanitaria_match(self):
+        """AC2 variant: 'Contratação de engenharia sanitária'."""
+        keywords = {"engenharia"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Contratação de engenharia sanitária",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_engenharia_mecanica_match(self):
+        """AC2 variant: 'Engenharia mecânica industrial'."""
+        keywords = {"engenharia"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Engenharia mecânica industrial",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_engenharia_trafego_match(self):
+        """AC2 variant: 'Engenharia de tráfego e sinalização'."""
+        keywords = {"engenharia"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Engenharia de tráfego e sinalização",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    # ── AC3: "engenharia de software" blocked via exclusions ────────────
+
+    def test_engenharia_de_software_blocked_by_exclusions(self):
+        """AC3: 'Engenharia de software' must be blocked by exclusions."""
+        keywords = {"engenharia"}
+        exclusions = {"engenharia de software", "engenharia de dados", "engenharia social"}
+        context = {"engenharia": {
+            "civil", "obra", "construção", "construcao", "projeto", "laudo",
+            "técnico", "tecnico", "serviço", "servico", "serviços", "servicos",
+            "consultoria", "contratação", "contratacao", "execução", "execucao",
+            "estudo", "estudos", "ambiental",
+            "elétrica", "eletrica", "elétrico", "eletrico",
+            "hidráulica", "hidraulica", "mecânica", "mecanica",
+            "mecânico", "mecanico", "estrutural",
+            "sanitária", "sanitaria", "sanitário", "sanitario",
+            "tráfego", "trafego", "sinalização", "sinalizacao",
+        }}
+        matched, terms = match_keywords(
+            "Contratação de serviços de engenharia de software",
+            keywords, exclusions, context,
+        )
+        assert matched is False
+        assert terms == []
+
+    def test_engenharia_de_dados_blocked_by_exclusions(self):
+        """AC3 variant: 'Engenharia de dados' must be blocked by exclusions."""
+        keywords = {"engenharia"}
+        exclusions = {"engenharia de software", "engenharia de dados", "engenharia social"}
+        context = {"engenharia": {"civil", "obra", "serviço", "servico"}}
+        matched, terms = match_keywords(
+            "Serviço de engenharia de dados para BI",
+            keywords, exclusions, context,
+        )
+        assert matched is False
+
+    # ── AC5: "reforma da quadra esportiva" returns valid match ──────────
+
+    def test_reforma_quadra_esportiva_match(self):
+        """AC5: 'Reforma da quadra esportiva' should match via expanded context."""
+        keywords = {"reforma"}
+        context = {"reforma": {
+            "prédio", "predio", "edificação", "edificacao", "obra",
+            "construção", "construcao", "predial", "escola", "hospital", "unidade",
+            "sala", "quadra", "ginásio", "ginasio", "ponte", "viaduto",
+            "muro", "telhado", "cobertura", "fachada", "piscina",
+        }}
+        matched, terms = match_keywords(
+            "Reforma da quadra esportiva",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_reforma_ginasio_match(self):
+        """AC5 variant: 'Reforma do ginásio municipal'."""
+        keywords = {"reforma"}
+        context = {"reforma": {
+            "prédio", "predio", "edificação", "edificacao", "obra",
+            "construção", "construcao", "predial", "escola", "hospital", "unidade",
+            "sala", "quadra", "ginásio", "ginasio", "ponte", "viaduto",
+            "muro", "telhado", "cobertura", "fachada", "piscina",
+        }}
+        matched, terms = match_keywords(
+            "Reforma do ginásio municipal",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_reforma_fachada_match(self):
+        """AC5 variant: 'Reforma da fachada do edifício'."""
+        keywords = {"reforma"}
+        context = {"reforma": {
+            "prédio", "predio", "edificação", "edificacao", "obra",
+            "construção", "construcao", "predial", "escola", "hospital", "unidade",
+            "sala", "quadra", "ginásio", "ginasio", "ponte", "viaduto",
+            "muro", "telhado", "cobertura", "fachada", "piscina",
+        }}
+        matched, terms = match_keywords(
+            "Reforma da fachada do edifício público",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_reforma_without_context_rejected(self):
+        """Standalone 'reforma' without any construction context → rejected."""
+        keywords = {"reforma"}
+        context = {"reforma": {
+            "prédio", "predio", "edificação", "edificacao", "obra",
+            "construção", "construcao", "predial", "escola", "hospital", "unidade",
+            "sala", "quadra", "ginásio", "ginasio", "ponte", "viaduto",
+            "muro", "telhado", "cobertura", "fachada", "piscina",
+        }}
+        matched, terms = match_keywords(
+            "Reforma agrária do assentamento",
+            keywords, context_required=context,
+        )
+        assert matched is False
+
+    # ── AC6: concreto expanded context words ────────────────────────────
+
+    def test_concreto_protendido_match(self):
+        """AC6: 'Concreto protendido para viaduto' should match."""
+        keywords = {"concreto"}
+        context = {"concreto": {
+            "obra", "construção", "construcao", "armado", "usinado",
+            "estrutura", "fundação", "fundacao",
+            "protendido", "pré-moldado", "pre-moldado", "bloco",
+            "meio-fio", "meio fio", "poste", "laje", "pilar", "viga",
+        }}
+        matched, terms = match_keywords(
+            "Concreto protendido para viaduto",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_concreto_pre_moldado_match(self):
+        """AC6: 'Blocos de concreto pré-moldado' should match."""
+        keywords = {"concreto"}
+        context = {"concreto": {
+            "obra", "construção", "construcao", "armado", "usinado",
+            "estrutura", "fundação", "fundacao",
+            "protendido", "pré-moldado", "pre-moldado", "bloco",
+            "meio-fio", "meio fio", "poste", "laje", "pilar", "viga",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de blocos de concreto pré-moldado",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_concreto_laje_pilar_match(self):
+        """AC6: 'Laje e pilar de concreto' should match."""
+        keywords = {"concreto"}
+        context = {"concreto": {
+            "obra", "construção", "construcao", "armado", "usinado",
+            "estrutura", "fundação", "fundacao",
+            "protendido", "pré-moldado", "pre-moldado", "bloco",
+            "meio-fio", "meio fio", "poste", "laje", "pilar", "viga",
+        }}
+        matched, terms = match_keywords(
+            "Fornecimento de laje e pilar de concreto",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_concreto_meio_fio_match(self):
+        """AC6: 'Meio-fio de concreto' should match."""
+        keywords = {"concreto"}
+        context = {"concreto": {
+            "obra", "construção", "construcao", "armado", "usinado",
+            "estrutura", "fundação", "fundacao",
+            "protendido", "pré-moldado", "pre-moldado", "bloco",
+            "meio-fio", "meio fio", "poste", "laje", "pilar", "viga",
+        }}
+        matched, terms = match_keywords(
+            "Meio-fio de concreto para via pública",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_caso_concreto_rejected(self):
+        """'Caso concreto' (abstract usage) should NOT match."""
+        keywords = {"concreto"}
+        context = {"concreto": {
+            "obra", "construção", "construcao", "armado", "usinado",
+            "estrutura", "fundação", "fundacao",
+            "protendido", "pré-moldado", "pre-moldado", "bloco",
+            "meio-fio", "meio fio", "poste", "laje", "pilar", "viga",
+        }}
+        matched, terms = match_keywords(
+            "Análise do caso concreto para parecer jurídico",
+            keywords, context_required=context,
+        )
+        assert matched is False
+
+    # ── AC8: ferro, piso, madeira expanded context ──────────────────────
+
+    def test_ferro_barra_tubo_match(self):
+        """AC8: 'Barra de ferro para construção' should match."""
+        keywords = {"ferro"}
+        context = {"ferro": {
+            "construção", "construcao", "obra", "vergalhão", "vergalhao",
+            "armação", "armacao", "estrutura", "metalúrgica", "metalurgica",
+            "barra", "tubo", "perfil", "chapa", "grade",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de barra de ferro para obras",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_ferro_chapa_match(self):
+        """AC8: 'Chapa de ferro galvanizado' should match."""
+        keywords = {"ferro"}
+        context = {"ferro": {
+            "construção", "construcao", "obra", "vergalhão", "vergalhao",
+            "armação", "armacao", "estrutura", "metalúrgica", "metalurgica",
+            "barra", "tubo", "perfil", "chapa", "grade",
+        }}
+        matched, terms = match_keywords(
+            "Chapa de ferro galvanizado",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_piso_epoxi_match(self):
+        """AC8: 'Piso epóxi para garagem' should match."""
+        keywords = {"piso"}
+        context = {"piso": {
+            "revestimento", "cerâmico", "ceramico", "porcelanato",
+            "vinílico", "vinilico", "instalação", "instalacao", "obra",
+            "epóxi", "epoxi", "borracha", "cimentado", "polido", "industrial",
+        }}
+        matched, terms = match_keywords(
+            "Aplicação de piso epóxi para garagem",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_piso_industrial_match(self):
+        """AC8: 'Piso industrial cimentado' should match."""
+        keywords = {"piso"}
+        context = {"piso": {
+            "revestimento", "cerâmico", "ceramico", "porcelanato",
+            "vinílico", "vinilico", "instalação", "instalacao", "obra",
+            "epóxi", "epoxi", "borracha", "cimentado", "polido", "industrial",
+        }}
+        matched, terms = match_keywords(
+            "Piso industrial cimentado para galpão",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_piso_salarial_rejected(self):
+        """'Piso salarial' (salary floor) should NOT match."""
+        keywords = {"piso"}
+        context = {"piso": {
+            "revestimento", "cerâmico", "ceramico", "porcelanato",
+            "vinílico", "vinilico", "instalação", "instalacao", "obra",
+            "epóxi", "epoxi", "borracha", "cimentado", "polido", "industrial",
+        }}
+        matched, terms = match_keywords(
+            "Piso salarial dos servidores municipais",
+            keywords, context_required=context,
+        )
+        assert matched is False
+
+    def test_madeira_porta_janela_match(self):
+        """AC8: 'Portas e janelas de madeira' should match."""
+        keywords = {"madeira"}
+        context = {"madeira": {
+            "construção", "construcao", "obra", "forro", "estrutura",
+            "telhado", "carpintaria", "marcenaria",
+            "porta", "janela", "ripas", "caibros", "tábuas", "tabuas", "assoalho",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de portas e janelas de madeira",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_madeira_ripas_caibros_match(self):
+        """AC8: 'Ripas e caibros de madeira para telhado' should match."""
+        keywords = {"madeira"}
+        context = {"madeira": {
+            "construção", "construcao", "obra", "forro", "estrutura",
+            "telhado", "carpintaria", "marcenaria",
+            "porta", "janela", "ripas", "caibros", "tábuas", "tabuas", "assoalho",
+        }}
+        matched, terms = match_keywords(
+            "Ripas e caibros de madeira para cobertura",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_madeira_brinquedo_rejected(self):
+        """'Brinquedo de madeira' → no construction context → rejected."""
+        keywords = {"madeira"}
+        context = {"madeira": {
+            "construção", "construcao", "obra", "forro", "estrutura",
+            "telhado", "carpintaria", "marcenaria",
+            "porta", "janela", "ripas", "caibros", "tábuas", "tabuas", "assoalho",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de brinquedo de madeira educativo",
+            keywords, context_required=context,
+        )
+        assert matched is False
+
+    # ── Integration: load from real YAML via sectors.py ─────────────────
+
+    def test_engenharia_sector_yaml_has_expanded_context(self):
+        """Verify the YAML was correctly updated with expanded terms."""
+        from sectors import get_sector
+        sector = get_sector("engenharia")
+        ctx = sector.context_required_keywords
+        # AC1: "engenharia" context should include new terms
+        eng_ctx = ctx.get("engenharia", set())
+        assert "eletrica" in eng_ctx, "Missing 'eletrica' in engenharia context"
+        assert "servico" in eng_ctx or "serviço" in eng_ctx, "Missing service terms"
+        assert "ambiental" in eng_ctx, "Missing 'ambiental' in engenharia context"
+        assert "estrutural" in eng_ctx, "Missing 'estrutural' in engenharia context"
+        assert "sanitaria" in eng_ctx or "sanitária" in eng_ctx, "Missing sanitaria"
+        assert "trafego" in eng_ctx or "tráfego" in eng_ctx, "Missing trafego"
+        assert "sinalizacao" in eng_ctx or "sinalização" in eng_ctx, "Missing sinalizacao"
+        assert "consultoria" in eng_ctx, "Missing 'consultoria' in engenharia context"
+        assert "contratacao" in eng_ctx or "contratação" in eng_ctx, "Missing contratacao"
+        assert "execucao" in eng_ctx or "execução" in eng_ctx, "Missing execucao"
+
+    def test_reforma_sector_yaml_has_expanded_context(self):
+        """Verify reforma context was expanded with sports/infrastructure terms."""
+        from sectors import get_sector
+        sector = get_sector("engenharia")
+        ctx = sector.context_required_keywords
+        ref_ctx = ctx.get("reforma", set())
+        assert "quadra" in ref_ctx, "Missing 'quadra' in reforma context"
+        assert "ginasio" in ref_ctx or "ginásio" in ref_ctx, "Missing ginasio"
+        assert "piscina" in ref_ctx, "Missing 'piscina' in reforma context"
+        assert "fachada" in ref_ctx, "Missing 'fachada' in reforma context"
+        assert "muro" in ref_ctx, "Missing 'muro' in reforma context"
+        assert "telhado" in ref_ctx, "Missing 'telhado' in reforma context"
+
+    def test_concreto_sector_yaml_has_expanded_context(self):
+        """Verify concreto context was expanded."""
+        from sectors import get_sector
+        sector = get_sector("engenharia")
+        ctx = sector.context_required_keywords
+        conc_ctx = ctx.get("concreto", set())
+        assert "protendido" in conc_ctx, "Missing 'protendido'"
+        assert "laje" in conc_ctx, "Missing 'laje'"
+        assert "pilar" in conc_ctx, "Missing 'pilar'"
+        assert "viga" in conc_ctx, "Missing 'viga'"
+        assert "poste" in conc_ctx, "Missing 'poste'"
+        assert "bloco" in conc_ctx, "Missing 'bloco'"
+
+    def test_ferro_sector_yaml_has_expanded_context(self):
+        """Verify ferro context was expanded."""
+        from sectors import get_sector
+        sector = get_sector("engenharia")
+        ctx = sector.context_required_keywords
+        ferro_ctx = ctx.get("ferro", set())
+        assert "barra" in ferro_ctx, "Missing 'barra'"
+        assert "tubo" in ferro_ctx, "Missing 'tubo'"
+        assert "perfil" in ferro_ctx, "Missing 'perfil'"
+        assert "chapa" in ferro_ctx, "Missing 'chapa'"
+        assert "grade" in ferro_ctx, "Missing 'grade'"
+
+    def test_piso_sector_yaml_has_expanded_context(self):
+        """Verify piso context was expanded."""
+        from sectors import get_sector
+        sector = get_sector("engenharia")
+        ctx = sector.context_required_keywords
+        piso_ctx = ctx.get("piso", set())
+        assert "epoxi" in piso_ctx or "epóxi" in piso_ctx, "Missing epoxi"
+        assert "borracha" in piso_ctx, "Missing 'borracha'"
+        assert "cimentado" in piso_ctx, "Missing 'cimentado'"
+        assert "polido" in piso_ctx, "Missing 'polido'"
+        assert "industrial" in piso_ctx, "Missing 'industrial'"
+
+    def test_madeira_sector_yaml_has_expanded_context(self):
+        """Verify madeira context was expanded."""
+        from sectors import get_sector
+        sector = get_sector("engenharia")
+        ctx = sector.context_required_keywords
+        mad_ctx = ctx.get("madeira", set())
+        assert "porta" in mad_ctx, "Missing 'porta'"
+        assert "janela" in mad_ctx, "Missing 'janela'"
+        assert "ripas" in mad_ctx, "Missing 'ripas'"
+        assert "caibros" in mad_ctx, "Missing 'caibros'"
+        assert "assoalho" in mad_ctx, "Missing 'assoalho'"

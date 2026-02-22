@@ -310,7 +310,9 @@ sectors:
       - "servicos de engenharia"
       - "serviços de engenharia"
     context_required_keywords:
-      # STORY-181 AC4.1: Context-required keywords for vestuario
+      # STORY-181 AC4.1 / CRIT-021 AC9: Vestuario context gates
+      # "avental" can be kitchen/industrial, "epi" can be safety equipment,
+      # "colete" can be ballistic/tactical — require uniform/clothing context
       avental:
         - "uniforme"
         - "fardamento"
@@ -634,6 +636,10 @@ sectors:
       - "sal mineral"
       - "sal para piscina"
     context_required_keywords:
+      # CRIT-021 AC9: Alimentos context gates
+      # Generic food ingredients ("sal", "óleo", "café", "farinha") appear in
+      # non-food contexts (sal mineral, óleo lubrificante, café da manhã como evento).
+      # Context ensures match only in food procurement/kitchen supply context.
       sal:
         - "alimento"
         - "alimentação"
@@ -916,6 +922,10 @@ sectors:
       # "switch" in non-IT context (unlikely but guard)
       - "switch grass"
     context_required_keywords:
+      # CRIT-021 AC9: Informatica context gates
+      # "servidor" means public servant (funcionário) in most gov procurement.
+      # "monitor" can be person monitoring. "switch" can be electrical.
+      # "projetor" can be cinema/events. Context ensures IT hardware context.
       servidor:
         - "informática"
         - "informatica"
@@ -1283,6 +1293,10 @@ sectors:
       - "água mineral"
       - "agua mineral"
     context_required_keywords:
+      # CRIT-021 AC9: Mobiliario context gates
+      # "mesa" appears in food context (mesa de jantar, mesa cirúrgica).
+      # "banco" means financial institution or bench. "cadeira" can be dental.
+      # "rack" can be IT equipment. Context ensures furniture procurement.
       mesa:
         - "escritório"
         - "escritorio"
@@ -1577,6 +1591,10 @@ sectors:
       - "concessão"
       - "concessao"
     context_required_keywords:
+      # CRIT-021 AC9: Papelaria context gates
+      # "papel" appears in legal context (papel timbrado, papel de parede).
+      # "borracha" can be tire/rubber material. "cola" can be adhesive non-office.
+      # "pasta" can be food or dental. Context ensures office supply context.
       papel:
         - "escritório"
         - "escritorio"
@@ -1904,6 +1922,8 @@ sectors:
       # Sports context matching "areia" (sand courts)
       - "arbitragem"
     context_required_keywords:
+      # CRIT-021: "reforma" is generic (car reform, agrarian reform, etc.)
+      # Context ensures it matches only construction/building renovation
       reforma:
         - "prédio"
         - "predio"
@@ -1916,6 +1936,18 @@ sectors:
         - "escola"
         - "hospital"
         - "unidade"
+        # CRIT-021 AC4: expanded context for sports/infrastructure facilities
+        - "sala"
+        - "quadra"
+        - "ginásio"
+        - "ginasio"
+        - "ponte"
+        - "viaduto"
+        - "muro"
+        - "telhado"
+        - "cobertura"
+        - "fachada"
+        - "piscina"
       reformas:
         - "prédio"
         - "predio"
@@ -1928,6 +1960,20 @@ sectors:
         - "escola"
         - "hospital"
         - "unidade"
+        # CRIT-021 AC4: expanded context for sports/infrastructure facilities
+        - "sala"
+        - "quadra"
+        - "ginásio"
+        - "ginasio"
+        - "ponte"
+        - "viaduto"
+        - "muro"
+        - "telhado"
+        - "cobertura"
+        - "fachada"
+        - "piscina"
+      # CRIT-021: "ferro" is ambiguous (ferro de passar, ferro elétrico)
+      # Context ensures it matches only construction/structural use
       ferro:
         - "construção"
         - "construcao"
@@ -1939,6 +1985,14 @@ sectors:
         - "estrutura"
         - "metalúrgica"
         - "metalurgica"
+        # CRIT-021 AC8: expanded for construction material forms
+        - "barra"
+        - "tubo"
+        - "perfil"
+        - "chapa"
+        - "grade"
+      # CRIT-021: "madeira" is ambiguous (brinquedo de madeira, espátula)
+      # Context ensures it matches only construction/carpentry use
       madeira:
         - "construção"
         - "construcao"
@@ -1948,6 +2002,16 @@ sectors:
         - "telhado"
         - "carpintaria"
         - "marcenaria"
+        # CRIT-021 AC8: expanded for common construction wood items
+        - "porta"
+        - "janela"
+        - "ripas"
+        - "caibros"
+        - "tábuas"
+        - "tabuas"
+        - "assoalho"
+      # CRIT-021: "areia" is ambiguous (areia para gatos, areia terapêutica)
+      # Context ensures it matches only construction/earthwork use
       areia:
         - "construção"
         - "construcao"
@@ -1957,6 +2021,8 @@ sectors:
         - "concreto"
         - "aterro"
         - "terraplanagem"
+      # CRIT-021: "piso" is ambiguous (piso salarial, piso tátil)
+      # Context ensures it matches only flooring/construction use
       piso:
         - "revestimento"
         - "cerâmico"
@@ -1967,6 +2033,15 @@ sectors:
         - "instalação"
         - "instalacao"
         - "obra"
+        # CRIT-021 AC8: expanded for additional flooring types
+        - "epóxi"
+        - "epoxi"
+        - "borracha"
+        - "cimentado"
+        - "polido"
+        - "industrial"
+      # CRIT-021: "revestimento" can refer to non-construction coatings
+      # Context ensures it matches only wall/floor finishing
       revestimento:
         - "parede"
         - "cerâmico"
@@ -1976,6 +2051,8 @@ sectors:
         - "azulejo"
         - "fachada"
         - "obra"
+      # CRIT-021: "concreto" can appear in abstract contexts ("caso concreto")
+      # Context ensures it matches only construction material use
       concreto:
         - "obra"
         - "construção"
@@ -1985,6 +2062,21 @@ sectors:
         - "estrutura"
         - "fundação"
         - "fundacao"
+        # CRIT-021 AC6: expanded for concrete types and structural elements
+        - "protendido"
+        - "pré-moldado"
+        - "pre-moldado"
+        - "bloco"
+        - "meio-fio"
+        - "meio fio"
+        - "poste"
+        - "laje"
+        - "pilar"
+        - "viga"
+      # CRIT-021 AC1: "engenharia" is a broad term spanning many disciplines
+      # Exclusions handle "engenharia de software/dados/social" specifically.
+      # Context gate ensures standalone "engenharia" matches engineering services,
+      # not incidental mentions. Expanded to cover all engineering sub-disciplines.
       engenharia:
         - "civil"
         - "obra"
@@ -1994,6 +2086,40 @@ sectors:
         - "laudo"
         - "técnico"
         - "tecnico"
+        # CRIT-021 AC1: service/contracting context
+        - "serviço"
+        - "servico"
+        - "serviços"
+        - "servicos"
+        - "consultoria"
+        - "contratação"
+        - "contratacao"
+        - "execução"
+        - "execucao"
+        # CRIT-021 AC1: study/analysis context
+        - "estudo"
+        - "estudos"
+        - "ambiental"
+        # CRIT-021 AC1: engineering sub-disciplines
+        - "elétrica"
+        - "eletrica"
+        - "elétrico"
+        - "eletrico"
+        - "hidráulica"
+        - "hidraulica"
+        - "mecânica"
+        - "mecanica"
+        - "mecânico"
+        - "mecanico"
+        - "estrutural"
+        - "sanitária"
+        - "sanitaria"
+        - "sanitário"
+        - "sanitario"
+        - "tráfego"
+        - "trafego"
+        - "sinalização"
+        - "sinalizacao"
     signature_terms:
       - "pavimentacao"
       - "terraplanagem"
@@ -2270,6 +2396,11 @@ sectors:
       - "luminárias"
       - "luminarias"
     context_required_keywords:
+      # CRIT-021 AC9: Software context gates
+      # "licenciamento" can be vehicle licensing or environmental licensing.
+      # "sap" can be tree sap. "bi" can be prefix (bicicleta, bilateral).
+      # "aplicativo" can refer to non-software applications.
+      # Context ensures software/IT procurement context.
       licenciamento:
         - "software"
         - "sistema"
@@ -2579,6 +2710,10 @@ sectors:
       - "recepção de obra"
       - "recepcao de obra"
     context_required_keywords:
+      # CRIT-021 AC9: Facilities context gates
+      # "limpeza" can be data cleansing or general cleaning product (not service).
+      # "cera" can be beeswax/cosmetic. "portaria" can be government decree.
+      # "recepção" can be event reception. Context ensures building service context.
       limpeza:
         - "predial"
         - "conservação"
@@ -3059,6 +3194,10 @@ sectors:
       # "comprimido" in non-medical context (compressed)
       - "ar comprimido"
     context_required_keywords:
+      # CRIT-021 AC9: Saude context gates
+      # "luva" can be PVC plumbing fitting or boxing glove.
+      # "sonda" can be space probe or geological survey.
+      # "maca" can be fruit (maçã). Context ensures medical/hospital context.
       luva:
         - "hospitalar"
         - "procedimento"
@@ -3339,6 +3478,9 @@ sectors:
       - "monitoramento de saúde"
       - "monitoramento de saude"
     context_required_keywords:
+      # CRIT-021 AC9: Vigilancia context gates
+      # "alarme" can be fire alarm (bombeiros) or medical alarm.
+      # "cancela" can be verb (cancelar). Context ensures security context.
       alarme:
         - "segurança"
         - "seguranca"
@@ -3587,6 +3729,10 @@ sectors:
       - "lubrificante cirurgico"
       - "lubrificante industrial"
     context_required_keywords:
+      # CRIT-021 AC9: Transporte context gates
+      # "diesel" can appear in generator/equipment fuel context.
+      # "van" can be surname. "frete" can be abstract shipping cost.
+      # "lubrificante" can be industrial (non-vehicle). Context ensures vehicle context.
       diesel:
         - "combustível"
         - "combustivel"
@@ -3809,6 +3955,9 @@ sectors:
       - "manutenção de implementos agrícolas"
       - "manutencao de implementos agricolas"
     context_required_keywords:
+      # CRIT-021 AC9: Manutencao_predial context gates
+      # "elevador" can be hydraulic vehicle lift or agricultural elevator.
+      # Context ensures building/facility maintenance context.
       elevador:
         - "predial"
         - "prédio"
@@ -3942,6 +4091,10 @@ sectors:
       - "túnel de dados"
       - "tunel de dados"
     context_required_keywords:
+      # CRIT-021 AC9: Engenharia_rodoviaria context gates
+      # "estrada" can be metaphorical or in address names.
+      # "ponte" can be dental bridge or network bridge.
+      # Context ensures road infrastructure context.
       "estrada":
         - "pavimentação"
         - "pavimentacao"
@@ -4092,6 +4245,10 @@ sectors:
       - "choque elétrico"
       - "choque eletrico"
     context_required_keywords:
+      # CRIT-021 AC9: Materiais_eletricos context gates
+      # "tomada" can be decision-making (tomada de decisão/preços).
+      # "reator" can be nuclear reactor. "refletor" can be photography.
+      # "transformador" can be toy/entertainment. Context ensures electrical context.
       tomada:
         - "elétrica"
         - "eletrica"
@@ -4242,6 +4399,10 @@ sectors:
       - "elevador hidráulico"
       - "elevador hidraulico"
     context_required_keywords:
+      # CRIT-021 AC9: Materiais_hidraulicos context gates
+      # "joelho" is body part (knee). "curva" is mathematical curve.
+      # "tê" is tea drink. "luva" is glove. "adaptador" can be electronic.
+      # Context ensures plumbing/hydraulic fittings context.
       joelho:
         - "PVC"
         - "pvc"

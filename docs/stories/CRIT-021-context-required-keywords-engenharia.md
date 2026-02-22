@@ -3,7 +3,7 @@
 **Tipo:** Bug / Recall Loss
 **Prioridade:** P0 (Contribui para 0 resultados em buscas de engenharia)
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluída
 **Origem:** Investigacao P0 — busca de engenharia retornando 0 resultados
 **Dependencias:** Nenhuma (pode ser feito em paralelo com CRIT-019 e CRIT-020)
 **Estimativa:** XS (expansao de termos no YAML)
@@ -62,24 +62,24 @@ engenharia:
 
 #### Engenharia — Keyword "engenharia"
 
-- [ ] **AC1:** Adicionar context words: `servico`, `servicos`, `consultoria`, `estudo`, `estudos`, `ambiental`, `eletrica`, `eletrico`, `hidraulica`, `mecanica`, `mecanico`, `estrutural`, `sanitaria`, `sanitario`, `trafego`, `sinalizacao`, `contratacao`, `execucao`
-- [ ] **AC2:** Teste com "servicos de engenharia eletrica" retorna match valido
-- [ ] **AC3:** Teste com "engenharia de software" continua sendo bloqueado (via exclusions, nao context)
+- [x] **AC1:** Adicionar context words: `servico`, `servicos`, `consultoria`, `estudo`, `estudos`, `ambiental`, `eletrica`, `eletrico`, `hidraulica`, `mecanica`, `mecanico`, `estrutural`, `sanitaria`, `sanitario`, `trafego`, `sinalizacao`, `contratacao`, `execucao`
+- [x] **AC2:** Teste com "servicos de engenharia eletrica" retorna match valido
+- [x] **AC3:** Teste com "engenharia de software" continua sendo bloqueado (via exclusions, nao context)
 
 #### Engenharia — Keyword "reforma"
 
-- [ ] **AC4:** Adicionar context words: `sala`, `quadra`, `ginasio`, `ponte`, `viaduto`, `muro`, `telhado`, `cobertura`, `fachada`, `piscina`
-- [ ] **AC5:** Teste com "reforma da quadra esportiva" retorna match valido
+- [x] **AC4:** Adicionar context words: `sala`, `quadra`, `ginasio`, `ponte`, `viaduto`, `muro`, `telhado`, `cobertura`, `fachada`, `piscina`
+- [x] **AC5:** Teste com "reforma da quadra esportiva" retorna match valido
 
 #### Engenharia — Keyword "concreto"
 
-- [ ] **AC6:** Adicionar context words: `protendido`, `pre-moldado`, `bloco`, `meio-fio`, `poste`, `laje`, `pilar`, `viga`
+- [x] **AC6:** Adicionar context words: `protendido`, `pre-moldado`, `bloco`, `meio-fio`, `poste`, `laje`, `pilar`, `viga`
 
 #### Revisao Sistemica
 
-- [ ] **AC7:** Revisar `context_required_keywords` de todos os 15 setores (nao apenas engenharia)
-- [ ] **AC8:** Para cada setor, verificar se ha keywords com context gates muito restritivos
-- [ ] **AC9:** Documentar no YAML (como comentario) a razao de cada context gate
+- [x] **AC7:** Revisar `context_required_keywords` de todos os 15 setores (nao apenas engenharia)
+- [x] **AC8:** Para cada setor, verificar se ha keywords com context gates muito restritivos
+- [x] **AC9:** Documentar no YAML (como comentario) a razao de cada context gate
 
 ### Verificacao Pos-Deploy
 
