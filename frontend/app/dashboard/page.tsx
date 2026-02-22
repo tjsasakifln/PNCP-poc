@@ -190,6 +190,8 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
 // Main Dashboard Page
 // ============================================================================
 
+const LOADING_TIMEOUT_MS = 10_000;
+
 export default function DashboardPage() {
   const { session, user, loading: authLoading } = useAuth();
   const { trackEvent } = useAnalytics();
@@ -201,24 +203,18 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch helper
+  // Fetch helper — always uses proxy to avoid CORS issues
   const fetchAnalytics = useCallback(
-    async (endpoint: string, params?: Record<string, string>) => {
+    async (endpoint: string, params?: Record<string, string>, signal?: AbortSignal) => {
       if (!session?.access_token) return null;
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       const searchParams = new URLSearchParams(params);
-
-      let url: string;
-      if (backendUrl) {
-        url = `${backendUrl}/v1/analytics/${endpoint}${searchParams.toString() ? `?${searchParams}` : ""}`;
-      } else {
-        searchParams.set("endpoint", endpoint);
-        url = `/api/analytics?${searchParams}`;
-      }
+      searchParams.set("endpoint", endpoint);
+      const url = `/api/analytics?${searchParams}`;
 
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${session.access_token}` },
+        signal,
       });
       if (!res.ok) throw new Error(`Erro ao carregar ${endpoint}`);
       return res.json();
@@ -226,43 +222,44 @@ export default function DashboardPage() {
     [session?.access_token]
   );
 
-  // Load all data
+  // Load all data with timeout
+  const loadData = useCallback(async () => {
+    if (!session) return;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LOADING_TIMEOUT_MS);
+
+    setLoading(true);
+    setError(null);
+    try {
+      const [summaryData, timeData, dimData] = await Promise.all([
+        fetchAnalytics("summary", undefined, controller.signal),
+        fetchAnalytics("searches-over-time", { period, range_days: "90" }, controller.signal),
+        fetchAnalytics("top-dimensions", { limit: "7" }, controller.signal),
+      ]);
+      setSummary(summaryData);
+      setTimeSeries(timeData?.data || []);
+      setDimensions(dimData);
+      trackEvent("dashboard_viewed", { period });
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        console.error("[Dashboard] Loading timeout after 10s");
+        setError("O painel demorou demais para carregar. Verifique sua conexão.");
+      } else {
+        const msg = err instanceof Error ? err.message : "Erro ao carregar dashboard";
+        console.error("[Dashboard] Fetch error:", msg);
+        setError(msg);
+      }
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
+  }, [session, period, fetchAnalytics, trackEvent]);
+
   useEffect(() => {
     if (authLoading || !session) return;
-
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [summaryData, timeData, dimData] = await Promise.all([
-          fetchAnalytics("summary"),
-          fetchAnalytics("searches-over-time", { period, range_days: "90" }),
-          fetchAnalytics("top-dimensions", { limit: "7" }),
-        ]);
-        setSummary(summaryData);
-        setTimeSeries(timeData?.data || []);
-        setDimensions(dimData);
-        trackEvent("dashboard_viewed", { period });
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Erro ao carregar dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
-  }, [authLoading, session, period, fetchAnalytics, trackEvent]);
-
-  // Reload time series when period changes
-  useEffect(() => {
-    if (!session || authLoading || loading) return;
-
-    fetchAnalytics("searches-over-time", { period, range_days: "90" })
-      .then((data) => {
-        if (data) setTimeSeries(data.data || []);
-      })
-      .catch(() => {});
-  }, [period]);
+  }, [authLoading, session, loadData]);
 
   // CSV export
   const handleExportCSV = useCallback(() => {
@@ -298,7 +295,7 @@ export default function DashboardPage() {
   // Pie chart data for UFs
   const ufPieData = useMemo(
     () =>
-      dimensions?.top_ufs.map((u, i) => ({
+      dimensions?.top_ufs?.map((u, i) => ({
         name: UF_NAMES[u.name] || u.name,
         value: u.count,
         fill: CHART_COLORS[i % CHART_COLORS.length],
@@ -363,10 +360,14 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
         <div className="max-w-6xl mx-auto text-center py-16">
-          <p className="text-[var(--error)] text-lg mb-4">{error}</p>
+          <span className="text-4xl mb-4 block">&#9888;&#65039;</span>
+          <p className="text-lg font-display font-semibold text-[var(--ink)] mb-2">
+            Não foi possível carregar o painel
+          </p>
+          <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">{error}</p>
           <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-[var(--brand-navy)] text-white rounded-button hover:bg-[var(--brand-blue)] transition-colors"
+            onClick={loadData}
+            className="px-5 py-2.5 bg-[var(--brand-navy)] text-white rounded-button hover:bg-[var(--brand-blue)] transition-colors font-medium"
           >
             Tentar novamente
           </button>
@@ -383,24 +384,23 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-2">Meu Dashboard</h1>
+          <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-2">Dashboard</h1>
           <div className="text-center py-20">
-            <span className="text-5xl mb-6 block">📊</span>
+            <svg aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-[var(--brand-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
             <h2 className="text-xl font-display font-semibold text-[var(--ink)] mb-3">
-              Seu dashboard está vazio
+              Seu painel de inteligência
             </h2>
             <p className="text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">
-              Faça sua primeira busca para começar a ver estatísticas sobre oportunidades
-              descobertas e valor identificado.
+              Aqui você verá resumos das suas buscas, tendências e oportunidades.
             </p>
             <Link
               href="/buscar"
               className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--brand-navy)] text-white
                          rounded-button hover:bg-[var(--brand-blue)] transition-colors font-medium"
             >
-              <svg
-              role="img"
-              aria-label="Pesquisar" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               Fazer primeira busca
