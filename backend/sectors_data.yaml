@@ -359,6 +359,15 @@ sectors:
         - "camisa"
         - "bota"
         - "botina"
+        # CRIT-FLT-001: Standard EPI procurement phrasing
+        - "proteção"
+        - "protecao"
+        - "segurança"
+        - "seguranca"
+        - "proteção individual"
+        - "protecao individual"
+        - "segurança do trabalho"
+        - "seguranca do trabalho"
       epis:
         - "vestuario"
         - "vestimenta"
@@ -369,6 +378,15 @@ sectors:
         - "camisa"
         - "bota"
         - "botina"
+        # CRIT-FLT-001: Standard EPI procurement phrasing
+        - "proteção"
+        - "protecao"
+        - "segurança"
+        - "seguranca"
+        - "proteção individual"
+        - "protecao individual"
+        - "segurança do trabalho"
+        - "seguranca do trabalho"
       "macacão":
         - "uniforme"
         - "fardamento"
@@ -938,6 +956,7 @@ sectors:
         - "hardware"
         - "virtualização"
         - "virtualizacao"
+        - "virtual"
         - "nuvem"
         - "cloud"
       servidores:
@@ -952,6 +971,7 @@ sectors:
         - "hardware"
         - "virtualização"
         - "virtualizacao"
+        - "virtual"
         - "nuvem"
         - "cloud"
       monitor:
@@ -959,6 +979,7 @@ sectors:
         - "informatica"
         - "computador"
         - "tela"
+        - "polegada"
         - "polegadas"
         - "lcd"
         - "led"
@@ -971,6 +992,7 @@ sectors:
         - "informatica"
         - "computador"
         - "tela"
+        - "polegada"
         - "polegadas"
         - "lcd"
         - "led"

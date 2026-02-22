@@ -2495,3 +2495,239 @@ class TestCRIT021ContextRequiredExpansion:
         assert "ripas" in mad_ctx, "Missing 'ripas'"
         assert "caibros" in mad_ctx, "Missing 'caibros'"
         assert "assoalho" in mad_ctx, "Missing 'assoalho'"
+
+
+class TestCRITFLT001EpiContextGate:
+    """CRIT-FLT-001: Tests for expanded EPI context gate in vestuario.
+
+    The original context gate for "epi"/"epis" only accepted clothing-related
+    terms (uniforme, fardamento, etc.), missing standard procurement phrasing
+    like "equipamento de proteção individual" and "segurança do trabalho".
+    """
+
+    # ── AC1: EPI with protection context should match ──────────────────
+
+    def test_epi_with_protecao_context(self):
+        """AC1: 'EPI — equipamento de proteção individual' should match."""
+        keywords = {"epi"}
+        context = {"epi": {
+            "vestuario", "vestimenta", "uniforme", "fardamento",
+            "roupa", "calca", "camisa", "bota", "botina",
+            "proteção", "protecao", "segurança", "seguranca",
+            "proteção individual", "protecao individual",
+            "segurança do trabalho", "seguranca do trabalho",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de EPI — equipamento de proteção individual para servidores",
+            keywords, context_required=context,
+        )
+        assert matched is True
+        assert any("epi" in t.lower() for t in terms)
+
+    def test_epi_with_seguranca_do_trabalho_context(self):
+        """AC1: 'EPI para segurança do trabalho' should match."""
+        keywords = {"epi"}
+        context = {"epi": {
+            "vestuario", "vestimenta", "uniforme", "fardamento",
+            "roupa", "calca", "camisa", "bota", "botina",
+            "proteção", "protecao", "segurança", "seguranca",
+            "proteção individual", "protecao individual",
+            "segurança do trabalho", "seguranca do trabalho",
+        }}
+        matched, terms = match_keywords(
+            "Fornecimento de EPI para segurança do trabalho",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_epi_with_seguranca_simple_context(self):
+        """AC1: 'EPI de segurança' should match via 'segurança' context."""
+        keywords = {"epi"}
+        context = {"epi": {
+            "vestuario", "vestimenta", "uniforme", "fardamento",
+            "roupa", "calca", "camisa", "bota", "botina",
+            "proteção", "protecao", "segurança", "seguranca",
+            "proteção individual", "protecao individual",
+            "segurança do trabalho", "seguranca do trabalho",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de EPI de segurança para uso dos servidores",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_epis_with_protecao_individual_context(self):
+        """AC1: 'EPIs de proteção individual' should match."""
+        keywords = {"epis"}
+        context = {"epis": {
+            "vestuario", "vestimenta", "uniforme", "fardamento",
+            "roupa", "calca", "camisa", "bota", "botina",
+            "proteção", "protecao", "segurança", "seguranca",
+            "proteção individual", "protecao individual",
+            "segurança do trabalho", "seguranca do trabalho",
+        }}
+        matched, terms = match_keywords(
+            "Fornecimento de EPIs de proteção individual",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_epi_with_uniforme_context_still_works(self):
+        """AC1: Original uniform context still matches (no regression)."""
+        keywords = {"epi"}
+        context = {"epi": {
+            "vestuario", "vestimenta", "uniforme", "fardamento",
+            "roupa", "calca", "camisa", "bota", "botina",
+            "proteção", "protecao", "segurança", "seguranca",
+            "proteção individual", "protecao individual",
+            "segurança do trabalho", "seguranca do trabalho",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de EPI e uniforme para funcionários",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_epi_without_any_context_rejected(self):
+        """EPI without any clothing/protection context should be rejected."""
+        keywords = {"epi"}
+        context = {"epi": {
+            "vestuario", "vestimenta", "uniforme", "fardamento",
+            "roupa", "calca", "camisa", "bota", "botina",
+            "proteção", "protecao", "segurança", "seguranca",
+            "proteção individual", "protecao individual",
+            "segurança do trabalho", "seguranca do trabalho",
+        }}
+        matched, terms = match_keywords(
+            "Contratação de serviços de consultoria em EPI para análise",
+            keywords, context_required=context,
+        )
+        # "consultoria" and "análise" are not in context list → rejected
+        assert matched is False
+
+    # ── AC1: YAML verification ─────────────────────────────────────────
+
+    def test_vestuario_yaml_epi_has_protection_terms(self):
+        """Verify the YAML was updated with protection/safety terms for epi."""
+        from sectors import get_sector
+        sector = get_sector("vestuario")
+        ctx = sector.context_required_keywords
+        epi_ctx = ctx.get("epi", set())
+        assert "protecao" in epi_ctx, "Missing 'protecao' in epi context"
+        assert "seguranca" in epi_ctx, "Missing 'seguranca' in epi context"
+        assert "protecao individual" in epi_ctx, "Missing 'protecao individual'"
+        assert "seguranca do trabalho" in epi_ctx, "Missing 'seguranca do trabalho'"
+        # Original terms still present
+        assert "uniforme" in epi_ctx, "Missing original 'uniforme'"
+        assert "bota" in epi_ctx, "Missing original 'bota'"
+
+    def test_vestuario_yaml_epis_has_protection_terms(self):
+        """Verify the YAML was updated with protection/safety terms for epis."""
+        from sectors import get_sector
+        sector = get_sector("vestuario")
+        ctx = sector.context_required_keywords
+        epis_ctx = ctx.get("epis", set())
+        assert "protecao" in epis_ctx, "Missing 'protecao' in epis context"
+        assert "seguranca" in epis_ctx, "Missing 'seguranca' in epis context"
+        assert "protecao individual" in epis_ctx, "Missing 'protecao individual'"
+        assert "seguranca do trabalho" in epis_ctx, "Missing 'seguranca do trabalho'"
+
+    # ── AC2: Informatica context gate verification ─────────────────────
+
+    def test_informatica_servidor_has_virtual(self):
+        """AC2: 'servidor' context in informatica should include 'virtual'."""
+        from sectors import get_sector
+        sector = get_sector("informatica")
+        ctx = sector.context_required_keywords
+        srv_ctx = ctx.get("servidor", set())
+        assert "virtual" in srv_ctx, "Missing 'virtual' in servidor context"
+        assert "virtualizacao" in srv_ctx, "Missing 'virtualizacao' in servidor context"
+
+    def test_informatica_monitor_has_polegada(self):
+        """AC2: 'monitor' context in informatica should include 'polegada'."""
+        from sectors import get_sector
+        sector = get_sector("informatica")
+        ctx = sector.context_required_keywords
+        mon_ctx = ctx.get("monitor", set())
+        assert "polegada" in mon_ctx, "Missing 'polegada' in monitor context"
+        assert "polegadas" in mon_ctx, "Missing 'polegadas' in monitor context"
+
+    def test_informatica_switch_has_porta_gbps(self):
+        """AC2: 'switch' context in informatica already has 'porta' and 'gbps'."""
+        from sectors import get_sector
+        sector = get_sector("informatica")
+        ctx = sector.context_required_keywords
+        sw_ctx = ctx.get("switch", set())
+        assert "porta" in sw_ctx, "Missing 'porta' in switch context"
+        assert "gbps" in sw_ctx, "Missing 'gbps' in switch context"
+
+    # ── AC2: Functional tests for informatica expansions ───────────────
+
+    def test_servidor_virtual_match(self):
+        """AC2: 'Servidor virtual para datacenter' should match."""
+        keywords = {"servidor"}
+        context = {"servidor": {
+            "informática", "informatica", "rede", "data center", "rack",
+            "processador", "computador", "ti", "hardware",
+            "virtualização", "virtualizacao", "virtual", "nuvem", "cloud",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de servidor virtual para datacenter",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    def test_monitor_polegada_singular_match(self):
+        """AC2: 'Monitor de 24 polegada' should match with singular form."""
+        keywords = {"monitor"}
+        context = {"monitor": {
+            "informática", "informatica", "computador", "tela",
+            "polegada", "polegadas", "lcd", "led", "hdmi", "vga",
+            "vídeo", "video",
+        }}
+        matched, terms = match_keywords(
+            "Aquisição de monitor de 24 polegada",
+            keywords, context_required=context,
+        )
+        assert matched is True
+
+    # ── AC3: Integration test with real YAML sector data ───────────────
+
+    def test_epi_real_sector_protecao_match(self):
+        """AC3: Full integration — real YAML vestuario sector + EPI proteção."""
+        from sectors import get_sector
+        sector = get_sector("vestuario")
+        matched, terms = match_keywords(
+            "Aquisição de EPI — equipamento de proteção individual",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"EPI with proteção should match vestuario. Terms found: {terms}"
+        )
+
+    def test_epi_real_sector_seguranca_trabalho_match(self):
+        """AC3: Full integration — real YAML vestuario + segurança do trabalho."""
+        from sectors import get_sector
+        sector = get_sector("vestuario")
+        matched, terms = match_keywords(
+            "Fornecimento de EPIs para segurança do trabalho dos servidores",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"EPIs with segurança do trabalho should match. Terms: {terms}"
+        )
+
+    def test_servidor_real_sector_virtual_match(self):
+        """AC3: Full integration — real YAML informatica + servidor virtual."""
+        from sectors import get_sector
+        sector = get_sector("informatica")
+        matched, terms = match_keywords(
+            "Contratação de servidor virtual para ambiente de TI",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"servidor with virtual context should match informatica. Terms: {terms}"
+        )

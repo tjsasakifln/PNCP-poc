@@ -1,7 +1,7 @@
 # Auditoria Multi-Setor — Falsos Positivos/Negativos
 
-**Data:** 2026-01-29
-**Período:** 2026-01-19 a 2026-01-29
+**Data:** 2026-02-22
+**Período:** 2026-02-12 a 2026-02-22
 **UFs:** SP, MG, RJ
 **Total itens:** 400
 
@@ -9,378 +9,895 @@
 
 | Setor | Aprovados | Bloqueados por Exclusão | Rejeitados (keyword) |
 |-------|-----------|------------------------|---------------------|
-| Vestuário e Uniformes | 8 | 4 | 205 |
-| Alimentos e Merenda | 6 | 0 | 211 |
-| Informática e Tecnologia | 9 | 4 | 204 |
-| Produtos de Limpeza | 10 | 3 | 204 |
-| Mobiliário | 3 | 2 | 212 |
-| Papelaria e Material de Escritório | 7 | 1 | 209 |
-| Engenharia e Construção | 18 | 11 | 188 |
+| Vestuário e Uniformes | 23 | 1 | 376 |
+| Alimentos e Merenda | 17 | 3 | 380 |
+| Hardware e Equipamentos de TI | 18 | 2 | 380 |
+| Mobiliário | 9 | 4 | 387 |
+| Papelaria e Material de Escritório | 13 | 0 | 387 |
+| Engenharia, Projetos e Obras | 21 | 0 | 379 |
+| Software e Sistemas | 8 | 0 | 392 |
+| Facilities e Manutenção | 19 | 2 | 379 |
+| Saúde | 127 | 4 | 269 |
+| Vigilância e Segurança Patrimonial | 6 | 3 | 391 |
+| Transporte e Veículos | 36 | 1 | 363 |
+| Manutenção e Conservação Predial | 6 | 0 | 394 |
+| Engenharia Rodoviária e Infraestrutura Viária | 6 | 0 | 394 |
+| Materiais Elétricos e Instalações | 4 | 0 | 396 |
+| Materiais Hidráulicos e Saneamento | 12 | 0 | 388 |
 
 ## Vestuário e Uniformes (vestuario)
 
-### Aprovados (amostra — 8 total)
-
-**1.** [SP] R$ 503,550.00
-  Aquisição de coletes retrorrefletivos, através de Ata de Registro de Preços, a serem utilizados pelos servidores e colaboradores do Departamento de Estradas de Rodagem do Estado de
-  Keywords: coletes
-
-**2.** [SP] R$ 208,590.80
-  REGISTRO DE PREÇOS para eventual e futura aquisição de equipamentos de proteção individual EPIs
-  Keywords: epis, equipamentos de protecao individual
-
-**3.** [SP] R$ 4,090,438.54
-  PREGÃO ELETRÔNICO Nº 002/2026 -REGISTRO DE PREÇOS PARA FUTURA AQUISIÇÃO DE EQUIPAMENTOS DE PROTEÇÃO INDIVIDUAL (EPI), PARA USO DOS FUNCIONÁRIOS DAS UNIDADES DA PREFEITURA MUNICIPAL
-  Keywords: equipamentos de protecao individual, epi
-
-**4.** [SP] R$ 396,258.57
-  REGISTRO DE PREÇO PARA AQUISIÇÃO EVENTUAL E FUTURA DE EPI, CONFORME ESPECIFICAÇÕES CONSTANTES NO TERMO DE REFERÊNCIA.
-  Keywords: epi
-
-**5.** [SP] R$ 396,258.58
-  REGISTRO DE PREÇO PARA AQUISIÇÃO EVENTUAL E FUTURA DE EPI, CONFORME ESPECIFICAÇÕES CONSTANTES NO TERMO DE REFERÊNCIA.
-  Keywords: epi
-
-**6.** [SP] R$ 367,256.50
-  Aquisição de UNIFORMES, AVIAMENTOS, BANDEIRAS, FLÂMULAS E INSÍGNIAS.
-  Keywords: uniformes, aquisição de uniformes
-
-**7.** [SP] R$ 2,097,486.64
-  Registro de preços para aquisição de Equipamentos de Proteção Individual (EPIs), destinados à proteção dos servidores públicos da Prefeitura Municipal de Várzea Paulista
-  Keywords: epis, equipamentos de protecao individual
-
-**8.** [SP] R$ 69,529.15
-  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE EPIS
-  Keywords: epis
-
-### Bloqueados por Exclusão (4)
-
-**EXC-1.** Contratação de empresa especializada na confecção de próteses dentárias, para fornecimento aos pacientes atendidos pelo consultório odontológico do Município de Icém/SP, conforme e
-  Keywords que teriam matchado: confecção, confeccao
-
-**EXC-2.** Aquisição de material de roupa de cama, mesa e banho.
-  Keywords que teriam matchado: roupa
-
-**EXC-3.** CONTRATAÇÃO DE EMPRESA PRESTADORA DE SERVIÇOS GRÁFICOS ESPECIALIZADOS EM CONFECÇÃO E IMPRESSÃO DE CARNÊS COM SELO DE CERTIFICAÇÃO FLORESTAL PARA PAGAMENTOS DOS CRÉDITOS TRIBUTÁRIOS
-  Keywords que teriam matchado: confecção, confeccao
-
-**EXC-4.** CONTRATAÇÃO DE EMPRESA PRESTADORA DE SERVIÇOS GRÁFICOS ESPECIALIZADOS EM CONFECÇÃO E IMPRESSÃO DE CARNÊS COM SELO DE CERTIFICAÇÃO FLORESTAL PARA PAGAMENTOS DOS CRÉDITOS TRIBUTÁRIOS
-  Keywords que teriam matchado: confecção, confeccao
-
-## Alimentos e Merenda (alimentos)
-
-### Aprovados (amostra — 6 total)
-
-**1.** [SP] R$ 188,615.80
-  Gêneros Alimentícios Remanescentes
-  Keywords: gêneros alimentícios, generos alimenticios
-
-**2.** [SP] R$ 1,329,693.09
-  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE GENÊROS ALIMENTÍCIOS, PARA ATENDER A MERENDA ESCOLAR, CRECHE JOANNA D’ANGELIS, APAE,  PROJETO GURI, ASSITÊNCIA SOCIAL, BOLSA FAMÍLIA, CCI (CENT
-  Keywords: merenda escolar, merenda, gêneros alimentícios, generos alimenticios
-
-**3.** [SP] R$ 933,836.10
-  Aquisição de gêneros alimentícios a serem utilizados na alimentação escolar oferecida aos alunos matriculados na Rede Estadual e Municipal de ensino do Município de Murutinga do Su
-  Keywords: gêneros alimentícios, generos alimenticios
-
-**4.** [SP] R$ 1,501,366.50
-  REGISTRO DE PREÇOS para aquisição fracionada de GÊNEROS ALIMENTÍCIOS (Produtos NÃO PERECÍVEIS e PERECÍVEIS) destinados a merenda escolar do município.
-  Keywords: merenda escolar, merenda, gêneros alimentícios, generos alimenticios
-
-**5.** [SP] R$ 107,172.25
-  AQUISIÇÃO PARCELADA DE CAFÉ PARA O ANO DE 2026
-  Keywords: café, cafe
-
-**6.** [SP] R$ 871,673.70
-  Fornecimento de Gêneros Alimentícios
-  Keywords: gêneros alimentícios, generos alimenticios
-
-## Informática e Tecnologia (informatica)
-
-### Aprovados (amostra — 9 total)
-
-**1.** [SP] R$ 152,073.90
-  Registro de Preços para aquisição de notebooks para a FIPASE, entidade gestora do SUPERA Parque de Inovação e Tecnologia de Ribeirão Preto, conforme condições estabelecidas neste i
-  Keywords: notebooks
-
-**2.** [SP] R$ 202,545.00
-  REGISTRO DE PREÇO PARA AQUISIÇÃO DE RECARGAS DE CARTUCHOS DE TONERS 
-  Keywords: cartuchos, toners
-
-**3.** [SP] R$ 582,486.34
-  Aquisição de materiais de expediente, papelaria e suprimentos de informática.
-  Keywords: informatica, informática
-
-**4.** [SP] R$ 158,400.00
-  Contratação de serviço especializado em atendimento presencial de informática, contemplando apenas serviços presenciais nos pontos públicos da Prefeitura Municipal de Jacupiranga c
-  Keywords: computadores, informatica, informática
-
-**5.** [SP] R$ 1,244,858.53
-  AQUISIÇÃO DE ESTAÇÕES DE TRABALHO (DESKTOPS), EQUIPAMENTOS MÓVEIS (NOTEBOOKS) E MONITORES
-  Keywords: desktops, notebooks, monitores
-
-**6.** [SP] R$ 1,244,858.53
-  REGISTRO DE PREÇO PARA AQUISIÇÃO EVENTUAL E FUTURA DE EQUIPAMENTOS DE INFORMATICA, CONFORME TERMO DE REFERÊNCIA E DEMAIS ANEXOS DO EDITAL
-  Keywords: informatica, informática
-
-**7.** [SP] R$ 548,560.91
-  Aquisição de equipamentos e componentes de informática, com prazo de entrega em até 20 (vinte) dias.
-  Keywords: informatica, informática
-
-**8.** [SP] R$ 1,651,692.00
-  Contratação de empresa especializada em locação de Registrador Eletrônico de Ponto (REP), com reconhecimento facial, incluindo software de controle e sua licença, implantação, inst
-  Keywords: software
-
-**9.** [SP] R$ 92,407.36
-  Contratação(ões) de pessoa(s) jurídica(s) para fornecimento de móveis, eletrodomésticos e equipamentos de informática para a Secretaria Municipal de Assistência e Desenvolvimento S
-  Keywords: informatica, informática
-
-### Bloqueados por Exclusão (4)
-
-**EXC-1.** Aquisição de coletes retrorrefletivos, através de Ata de Registro de Preços, a serem utilizados pelos servidores e colaboradores do Departamento de Estradas de Rodagem do Estado de
-  Keywords que teriam matchado: servidores
-
-**EXC-2.** O OBJETO DA PRESENTE LICITAÇÃO É A CONTRATAÇÃO DE ESTABELECIMENTO BANCÁRIO PARA CENTRALIZAÇÃO DOS SERVIÇOS DE PAGAMENTOS DAS REMUNERAÇÕES E SALÁRIOS DOS SERVIDORES ATIVOS, INATIVOS
-  Keywords que teriam matchado: servidores
-
-**EXC-3.** Registro de preços para aquisição de Equipamentos de Proteção Individual (EPIs), destinados à proteção dos servidores públicos da Prefeitura Municipal de Várzea Paulista
-  Keywords que teriam matchado: servidores
-
-**EXC-4.** Contratação de instituição bancária para operar os serviços de processamento e
-
-gerenciamento de créditos provenientes da folha de pagamento dos servidores da Prefeitura
-
-Municipal
-  Keywords que teriam matchado: servidores
-
-## Produtos de Limpeza (limpeza)
-
-### Aprovados (amostra — 10 total)
-
-**1.** [SP] R$ 712,135.70
-  Registro de Preços para eventual aquisição de materiais de higiene, limpeza, descartáveis e cozinha.
-  Keywords: descartaveis, limpeza, descartáveis, higiene
-
-**2.** [SP] R$ 440,003.11
-  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS DA CLASSE “DESCARTÁVEIS” PARA ATENDIMENTO DA DEMANDA DAS UNIDADES DE SAÚDE
-  Keywords: descartaveis, descartáveis
-
-**3.** [SP] R$ 2,603,459.35
-  REGISTRO DE PREÇOS PARA A AQUISIÇÃO FUTURA DE DIVERSOS MATERIAIS DE LIMPEZA PARA ATENDER AS SECRETARIAS E DEPARTAMENTOS.
-  Keywords: limpeza, materiais de limpeza
-
-**4.** [SP] R$ 106,412.00
-  AQUISICAO DE SACO DE LIXO 
-  Keywords: saco de lixo
-
-**5.** [SP] R$ 248,439.11
-  REGISTRO DE PREÇOS PARA A EVENTUAL CONTRATAÇÃO DE EMPRESA ESPECIALIZADA EM: SERVIÇOS DE INSTALAÇÃO, MANUTENÇÃO PREVENTIVA E CORRETIVA DE BOMBAS SUBMERSA, REPARO E CONFIGURAÇÃO DE Q
-  Keywords: limpeza
-
-**6.** [SP] R$ 3,581,477.84
-  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS DE HIGIENE E LIMPEZA E DESCARTÁVEIS, PARA ATENDER A DEMANDA DA PREFEITURA MUNICIPAL DE BIRIGUI PELO PERÍODO DE 12 MESES – SECRETARIA 
-  Keywords: descartaveis, limpeza, descartáveis, higiene
-
-**7.** [SP] R$ 1,057,497.00
-  “Registro de Preços para futura e eventual aquisição de materiais de limpeza para atendimento de todos os setores da municipalidade, conforme especificações e condições estabelecid
-  Keywords: limpeza, materiais de limpeza
-
-**8.** [SP] R$ 759,820.18
-  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS PARA LIMPEZA, COM ENTREGA PARCELADA, PARA ATENDER OS DIVERSOS SETORES DA MUNICIPALIDADE, PELO PERÍODO DE 12 (DOZE) MESES, PODENDO SER
-  Keywords: limpeza
-
-**9.** [SP] R$ 253,178.70
-  Contratação de Serviços de Limpeza, Asseio e Conservação Predial para a Delegacia de Polícia do Município de Taquarituba.
-  Keywords: limpeza
-
-**10.** [SP] R$ 405,849.30
-  Prestação de serviço de limpeza, asseio e conservação predial para a Delegacia de Defesa da Mulher e Delegacia Seccional de Polícia de Registro.
-  Keywords: servico de limpeza, limpeza, serviço de limpeza
-
-### Bloqueados por Exclusão (3)
-
-**EXC-1.** Aquisição de escavadeira hidráulica anfíbia nova, zero hora, destinada às atividades de limpeza, desassoreamento e manejo da lagoa de captação, do canal principal do Rio Batalha e 
-  Keywords que teriam matchado: limpeza
-
-**EXC-2.** Registro de preços de serviços de nebulização costal "casa a casa" em quantidade estimada de 800 (oitocentas) quadras do Município de Brotas-SP, com inseticida especificamente forn
-  Keywords que teriam matchado: inseticida
-
-**EXC-3.** REGISTRO DE PREÇOS PARA EVENTUAL, FUTURA E PARCELADA AQUISIÇÃO DE LUBRIFICANTES E PRODUTOS DE LIMPEZA PESADA PARA VEICULOS EM GERAL E MÁQUINAS DO MUNICÍPIO, PELO PERÍODO DE 12 MESE
-  Keywords que teriam matchado: limpeza, produtos de limpeza
-
-## Mobiliário (mobiliario)
-
-### Aprovados (amostra — 3 total)
-
-**1.** [SP] R$ 179,785.02
-  Aquisição eventual de 80 mesas de reunião (78 unidades de 1,40 m x 0,70 m x 0,74 m e 02 unidades de 0,70 m x 0,70 m x 0,74 m), com prazo de validade da Ata de Registro de Preços de
-  Keywords: mesas
-
-**2.** [SP] R$ 92,407.36
-  Contratação(ões) de pessoa(s) jurídica(s) para fornecimento de móveis, eletrodomésticos e equipamentos de informática para a Secretaria Municipal de Assistência e Desenvolvimento S
-  Keywords: moveis, móveis
-
-**3.** [SP] R$ 58,600.00
-  Aquisição de material permanente (armário vestiário de aço), por intermédio do Sistema de Registro de Preços
-  Keywords: armario, armário
-
-### Bloqueados por Exclusão (2)
-
-**EXC-1.** AQUISIÇÃO DE ESTAÇÕES DE TRABALHO (DESKTOPS), EQUIPAMENTOS MÓVEIS (NOTEBOOKS) E MONITORES
-  Keywords que teriam matchado: moveis, móveis
-
-**EXC-2.** Aquisição de material de roupa de cama, mesa e banho.
-  Keywords que teriam matchado: mesa
-
-## Papelaria e Material de Escritório (papelaria)
-
-### Aprovados (amostra — 7 total)
-
-**1.** [SP] R$ 222,674.00
-  Adesão à Ata de Registro de Preços do FDE para eventual aquisição de Kit de Material Escolar – Educação Infantil, Ensino Fundamental I (1º ao 5º anos), II (6º ao 9º anos), em atend
-  Keywords: material escolar
-
-**2.** [SP] R$ 582,486.34
-  Aquisição de materiais de expediente, papelaria e suprimentos de informática.
-  Keywords: expediente, papelaria
-
-**3.** [SP] R$ 753,141.48
-  Abertura de Ata de Registro de Preços para futura e eventual aquisição de Papel Sulfite para o atendimento à demanda da Secretaria Municipal do Desenvolvimento Social e suas Unidad
-  Keywords: papel, papel sulfite
-
-**4.** [SP] R$ 428,912.13
-  REGISTRO DE PREÇOS para aquisição eventual de MATERIAIS DE EXPEDIENTE, ESCRITÓRIO E PAPEL SULFITE, por um período de 12 (doze) meses, conforme condições, quantidades e exigências e
-  Keywords: papel, expediente, papel sulfite
-
-**5.** [SP] R$ 1,522,500.00
-  Seleção de propostas para REGISTRO DE PREÇOS visando ao fornecimento de material de consumo (papel sulfite A4, reciclado), para a Secretaria Municipal de Finanças e Gestão – SEFIN,
-  Keywords: papel, papel sulfite
-
-**6.** [SP] R$ 4,035,217.36
-   Registro de preço para aquisição de material de papelaria para atender os estudantes regularmente matriculados no sistema municipal de Ubatuba.
-  Keywords: papelaria
-
-**7.** [SP] R$ 169,075.79
-  “Aquisição de kits de material escolar, destinados aos alunos da Rede Municipal de Ensino de Iacanga, de acordo com as especificações dos Anexos do presente Edital”.
-  Keywords: material escolar
+### Aprovados (amostra — 23 total)
+
+**1.** [SP] R$ 6,960.00
+  Serviços de Confecção de Adesivos para CPDU.
+  Keywords: confeccao, confecção
+
+**2.** [SP] N/A
+  Aquisição de avental
+  Keywords: avental
+
+**3.** [SP] R$ 40,206.50
+  Contratação de serviços de Confecção de Pasta Azul - Uso Pessoal para documento / Congresso da Corregedoria PM.
+  Keywords: confeccao, confecção
+
+**4.** [SP] N/A
+  Aquisição de meias elásticas em cumprimento de determinação judicial
+  Keywords: meia, meias
+
+**5.** [SP] N/A
+  Aquisição de meias elásticas em cumprimento de determinação judicial
+  Keywords: meia, meias
+
+**6.** [SP] R$ 22,781.70
+  Serviços gráficos e confecção de porta-certificados.
+  Keywords: confeccao, confecção
+
+**7.** [SP] R$ 14,458.12
+  Contratação de Serviço de Confecção de Persianas.
+  Keywords: confeccao, confecção
+
+**8.** [SP] R$ 85,579.00
+  REGISTRO DE PREÇOS PARA EVENTUAL AQUISIÇÃO DE UNIFORMES DESTINADOS ÀS EQUIPES DE MANUTENÇÃO E ZELADORIA
+  Keywords: aquisição de uniformes, aquisição de uniforme, uniforme, uniformes
+
+**9.** [SP] R$ 1,717,758.10
+  REGISTRO DE PREÇOS PARA EVENTUAL FORNECIMENTO DE UNIFORMES PARA A GUARDA CIVIL MUNICIPAL DE RIBEIRÃO PIRES
+  Keywords: fornecimento de uniforme, fornecimento de uniformes, uniforme, uniformes
+
+**10.** [SP] N/A
+  Registro de preço para prestação de serviços especializados de confecção e conserto de aparelhos ortodônticos, a serem distribuídos aos pacientes cadastrados na Rede Municipal de S
+  Keywords: confeccao, confecção
+
+**11.** [SP] R$ 1,078,428.00
+  REGISTRO DE PREÇOS DE UNIFORMES ESCOLARES 
+  Keywords: uniforme, uniformes
+
+**12.** [SP] R$ 69,192.00
+  REGISTRO DE PREÇOS PARA FUTURA E EVENTUAL AQUISIÇÃO DE VESTUÁRIO HOSPITALAR DESTINADO AOS PROFISSIONAIS DA SAÚDE QUE ATUAM NA UNIDADE DE PRONTO ATENDIMENTO MUNICIPAL, VISANDO ASSEG
+  Keywords: aquisição de vestuario, vestuario
+
+**13.** [SP] R$ 85,579.00
+  REGISTRO DE PRECOS AQUISICAO UNIFORMES I NFRAESTRUTURA
+  Keywords: uniforme, uniformes
+
+**14.** [SP] R$ 300,742.47
+  PREGÃO 006 2026 - REGISTRO DE PREÇOS PARA AQUISIÇÃO FUTURA E PARCELADA DE EMPRESA ESPECIALIZADA NA CONFECÇÃO E FORNECIMENTO DE MOCHILAS E ESTOJOS ESCOLAR PERSONALIZÁVEIS, DESTINADO
+  Keywords: confeccao, confecção
+
+**15.** [SP] R$ 132,563.00
+  REGISTRO DE PREOS PARA FUTURA E EVENTUAL CONTRATAÇÃO DE EMPRESA ESPECIALIZADA NA PRESTAÇÃO DE SERVIÇOS ODONTOLOGICOS LABORATORIAIS, COMPREENDENDO A CONFECCÃO, FORNECIMENTO, AJUSTES
+  Keywords: confeccao, confecção
 
 ### Bloqueados por Exclusão (1)
 
-**EXC-1.** Aquisição de Material de Consumo, OPME Clipes de Aneurismas 
-  Keywords que teriam matchado: clipes
+**EXC-1.** Contratação de de serviços para Diagramação, Confecção e Instalação de 81 (oitenta e uma) Placas de Sinalização em rodovias administradas pelo Departamento de Estradas de Rodagem –
+  Keywords que teriam matchado: confeccao, confecção
 
-## Engenharia e Construção (engenharia)
+## Alimentos e Merenda (alimentos)
+
+### Aprovados (amostra — 17 total)
+
+**1.** [SP] N/A
+  REGISTRO DE PREÇOS PARA O FORNECIMENTO DE MEDICAMENTOS ALOPÁTICOS INDUSTRIALIZADOS INJETÁVEIS: ANFOTERICINA, DOBUAMINA CLORIDRATO, DOPAMINA CLORIDRATO, SORBITOL - Anfotericina B em
+  Keywords: sal
+
+**2.** [SP] R$ 821,944.02
+  Aquisição de Gêneros Alimentícios Perecíveis e Estocáveis para cumprimento do Cardápio Padrão
+  Keywords: generos alimenticios, gêneros alimentícios
+
+**3.** [SP] N/A
+  Aquisição de generos alimenticios estocaveis com entrega parcelada para o periodo de janeiro a abril de 2026
+  Keywords: generos alimenticios, gêneros alimentícios
+
+**4.** [SP] R$ 5,304,182.00
+  Aquisição de hortifrutigranjeiros para suprir o Programa de Alimentação Escolar, destinados às unidades educacionais da Rede Municipal, bem como às entidades conveniadas, sob a res
+  Keywords: hortifrutigranjeiro
+
+**5.** [SP] R$ 3,207,000.00
+  REGISTRO DE PREÇOS PARA EVENTUAL E FUTURO FORNECIMENTO DE MATERIAIS, FRALDAS E INSUMOS MÉDICO-HOSPITALARES, DIETAS ENTERAIS, LEITES E SUPLEMENTOS, CONSTANTES DA TABELA “TABELA REVI
+  Keywords: leite
+
+**6.** [SP] R$ 1,962,450.00
+  REGISTRO DE PREÇO PARA CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇO DE DESTINAÇÃO FINAL DE RESÍDUOS SÓLIDOS - INSERVÍVEIS CLASSE II A E II B GERADOS NO MUNICIPIO 
+  Keywords: sal
+
+**7.** [SP] N/A
+  Pregão Eletrônico nº 009/2026:REGISTRO DE PREÇOS PELO PERÍODO DE 12 (DOZE) MESES, PARA AQUISIÇÕES FUTURAS DE GALÕES DE ÁGUA MINERAL A SEREM ENTREGUES NAS ZONAS URBANA E RURAL DO MU
+  Keywords: agua mineral, água mineral
+
+**8.** [SP] N/A
+  Aquisição de alimentos para animais sob os cuidados do Departamento de Fauna e Bem-Estar Animal (DEFBEA), sob Sistema de Registro de Preços, pelo período de 12 (doze) meses.
+  Keywords: aquisicao de alimentos, aquisição de alimentos
+
+**9.** [SP] R$ 105,000.00
+  CONTRATAÇÃO DE EMPRESA ESPECIALIZADA NO FORNECIMENTO DE REFEIÇÕES PRONTAS, TIPO MARMITEX E REFRIGERANTES.
+  Keywords: refeições, refeicoes
+
+**10.** [SP] R$ 122,016.00
+  AQUISIÇÃO DE CHOCOLATE AO LEITE EM FORMATO OVAL PARA ATENDER AS UNIDADES ESCOLARES E ASSISTENCIA SOCIAL.
+  Keywords: leite
+
+**11.** [SP] R$ 93,947.87
+  AQUISIÇÃO DE OVOS DE CHOCOLATE DE 250 GRAMAS, DOS TIPOS: AO LEITE, 0% AÇÚCAR E 0% LACTOSE, CONFORME ESPECIFICAÇÕES CONSTANTES NO TERMO DE REFERÊNCIA.
+  Keywords: açúcar, acucar, leite
+
+**12.** [SP] R$ 213,857.00
+  CONTRATAÇÃO DE INSTITUIÇÃO FINANCEIRA P/ RECEBIMENTO DE CARNÊS DE TRIBUTOS, E DEMAIS GUIAS ARRECADATÓRIAS.
+  Keywords: carne
+
+**13.** [SP] R$ 25,062.90
+  Carnes para atender às necessidades da creche nas refeições das crianças para o período de seis meses (março a agosto de 2026).
+  Keywords: refeições, refeicoes, carne
+
+**14.** [SP] R$ 238,038.00
+  Aquisição de macarrão tipo parafuso, devidamente especificados no anexo i do edital, através do sistema de registro de preços.
+  Keywords: macarrao, macarrão
+
+**15.** [SP] R$ 33,280.20
+  Aquisição de água mineral sem gás, com entrega parcelada, conforme condições, quantidades e exigências estabelecidas no Edital e seus Anexos.    
+  Keywords: agua mineral, água mineral
+
+### Bloqueados por Exclusão (3)
+
+**EXC-1.** A estimativa de consumo de combustíveis, álcool etílico hidratado comum, gasolina comum, óleo diesel comum e óleo diesel S10/S50
+  Keywords que teriam matchado: óleo, oleo
+
+**EXC-2.** Sistema de Registro de Preços para futura e eventual aquisição de combustível: gasolina comum, etanol, óleo diesel comum, com abastecimento da frota da SAERP em POSTOS DE ATENDIMEN
+  Keywords que teriam matchado: óleo, oleo
+
+**EXC-3.** Registro de Preços para contratação de empresa especializada para a execução de serviços de revisão preventiva e corretiva em veículos  automotores pertencentes à frota do CRT-SP. 
+  Keywords que teriam matchado: óleo, oleo
+
+## Hardware e Equipamentos de TI (informatica)
 
 ### Aprovados (amostra — 18 total)
 
-**1.** [SP] R$ 317,289.00
-  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE AR-CONDICIONADO PARA ATENDIMENTO DA SECRETARIA MUNICIPAL DE SAÚDE E UBS.
-  Keywords: ar condicionado
+**1.** [SP] R$ 23,997.00
+  Aquisição de impressoras multifuncionais coloridas.
+  Keywords: impressora, impressoras
 
-**2.** [SP] R$ 101,835.10
-  aquisição de materiais de construção destinados ao atendimento de famílias em situação de vulnerabilidade social, em conformidade com a Lei Municipal nº 3.074 de 07 de maio de 2021
-  Keywords: construcao, construção
+**2.** [SP] N/A
+  Contratação de empresa especializada para a disponibilização de acesso gratuito à internet controlado por portal cativo, mediante o fornecimento, instalação, configuração, disponib
+  Keywords: software
 
-**3.** [SP] R$ 626,754.80
-  Contratacao de empresa especializada para fornecimento de postos de trabalho continuados de auxiliar de servicos gerais   Secretaria Municipal da Infraestrutura e Servicos.
-  Keywords: infraestrutura
+**3.** [SP] R$ 4,549,999.80
+  Contratação de empresa especializada em Tecnologia da Informação (TI) para o desenvolvimento, implementação, licenciamento de uso, manutenção, suporte técnico e hospedagem de siste
+  Keywords: tecnologia da informação, tecnologia da informacao
 
-**4.** [SP] R$ 789,311.95
-  AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO DIVERSOS PARA ATENDIMENTO DAS NECESSIDADES DA PREFEITURA MUNICIPAL DE INÚBIA PAULISTA- ENTREGA PARCELADA.
-  Keywords: construcao, construção
+**4.** [SP] R$ 2,749,078.89
+  Registro de preços para aquisição de equipamentos e materiais de informática. (Com itens Cota Principal, itens Cota Reservada e itens Exclusivos ME/EPP)
+  Keywords: informática, informatica
 
-**5.** [SP] R$ 400,000.00
-  REGISTRO DE PREÇOS PARA CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS DE SONDAGEM GEOTÉCNICA DO TIPO SPT (SONDAGEM À PERCUSSÃO) SECRETARIA MUNICIPAL DE OBRAS, CON
-  Keywords: obras
+**5.** [SP] R$ 20,083.88
+  Aquisição de Linha Branca e Impressora 
+  Keywords: impressora
 
-**6.** [SP] R$ 220,149.67
-  Contratação de serviços de engenharia de manutenção preventiva e corretiva dos grupos moto geradores (GMG) localizados no edifício sede do Tribunal Regional Federal da 3ª Região, i
-  Keywords: engenharia
+**6.** [SP] N/A
+  Aquisição de Material de Informática - Toner e Cilindro Fotocondutor
+  Keywords: informática, informatica, toner
 
-**7.** [SP] R$ 956,287.00
-  REGISTRO DE PREÇOS para eventual aquisição de concreto destinado à Secretaria de Obras
-  Keywords: concreto, obras
+**7.** [SP] N/A
+  Aquisição de material de consumo - Ribbon para impressora
+  Keywords: impressora
 
-**8.** [SP] R$ 248,439.11
-  REGISTRO DE PREÇOS PARA A EVENTUAL CONTRATAÇÃO DE EMPRESA ESPECIALIZADA EM: SERVIÇOS DE INSTALAÇÃO, MANUTENÇÃO PREVENTIVA E CORRETIVA DE BOMBAS SUBMERSA, REPARO E CONFIGURAÇÃO DE Q
-  Keywords: infraestrutura
+**8.** [SP] R$ 2,763,452.10
+  Contratação de serviços continuados de limpeza, asseio e conservação predial, com regime de dedicação  exclusiva de mão de obra e com o fornecimento de todos os saneantes, materiai
+  Keywords: tecnologia da informação, tecnologia da informacao
 
-**9.** [SP] R$ 2,026,954.10
-  REGISTRO DE PREÇO PARA AQUISIÇÃO DE TAMPÃO, VÁLVULAS DE GAVETAS E CONEXÕES EM FERRO FUNDIDO.
-  Keywords: ferro
+**9.** [SP] N/A
+  Contratação de máquinas de scanners para digitalização de prontuários
+  Keywords: scanner, scanners
 
-**10.** [SP] R$ 106,305.20
-  Contratação de Empresa especializada em Serviços de Arbitragem, compreendendo a escalação e
+**10.** [SP] R$ 2,749,078.89
+  Registro de preços para aquisição de equipamentos e materiais de informática. (Com itens Cota Principal, itens Cota Reservada e itens Exclusivos ME/EPP)
+  Keywords: informática, informatica
 
-fornecimento de árbitros, auxiliares, mesários e anotadores, para atuarem em jogos, tor
+**11.** [SP] R$ 1,487,650.00
+  Contratação de empresa especializada no fornecimento de solução tecnológica integrada, disponibilizada em ambiente web, no modelo Software as a Service (SaaS).
+  Keywords: software
+
+**12.** [SP] R$ 755,948.67
+  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE COMPUTADORES E PERIFÉRICOS PARA SUPORTE ÀS ATIVIDADES ADMINISTRATIVAS DAS DIVERSAS SECRETARIAS MUNICIPAIS
+  Keywords: computadores, computador, aquisicao de computador, aquisição de computador
+
+**13.** [SP] R$ 710,746.66
+  CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS TÉCNICOS DE INFORMÁTICA PARA O FORNECIMENTO DE SISTEMAS DE GESTÃO, INCLUINDO OS MÓDULOS: GESTÃO DO PLANO PLURIANUAL 
+  Keywords: informática, informatica
+
+**14.** [SP] R$ 11,396,723.51
+  [Portal de Compras Públicas] - Solicitação de autorização para abertura de procedimento licitatório para a aquisição de computadores, periféricos e insumos diversos em informática 
+  Keywords: computadores, computador, informática, informatica, aquisicao de computador
+
+**15.** [SP] R$ 380,080.68
+  LICENCA DE USO DE SOFTWARE 
+  Keywords: software
+
+### Bloqueados por Exclusão (2)
+
+**EXC-1.** Contratação de empresa especializada para confecção de uniformes destinados aos servidores da Secretaria Municipal de Infraestrutura e Manutenção da Cidade.
+  Keywords que teriam matchado: servidores, servidor
+
+**EXC-2.** AQUISIÇÃO DE UNIFORMES PARA OS SERVIDORES DAS SECRETARIAS MUNICIPAIS
+  Keywords que teriam matchado: servidores, servidor
+
+## Mobiliário (mobiliario)
+
+### Aprovados (amostra — 9 total)
+
+**1.** [SP] R$ 1,869,025.56
+  Registro de preços para possível aquisição de mobiliário - armário, gaveteiros e mesas
+  Keywords: mobiliario, aquisição de mobiliário, mesa, gaveteiros, armário
+
+**2.** [SP] N/A
+  Prancheta PORTATIL, UMEDECEDOR DE DEDOS TIPO CREME, PAPEL FLIP CHART,SULFITE,(640X880)MM,72G/M2,BRANCA, GRAMPEADOR DE MESA, PRETO CAP. MINIMA 25 FOLHAS, GRAMPEADOR DE MESA PRETO, C
+  Keywords: mesa
+
+**3.** [SP] R$ 1,764,938.00
+  Intenção de Registro de Preços para aquisição de equipamentos de cozinha – carros e mesas auxiliares (CA-01, MAC-01, MAC-02), destinados a atender a demanda presente e futura de to
+  Keywords: mesa, mesas
+
+**4.** [SP] R$ 392,929.08
+  Aquisições de mobiliários gerais para as unidades escolares da Secretaria da Educação de Votuporanga
+  Keywords: mobiliario, mobiliário
+
+**5.** [SP] R$ 137,714.17
+  LOCAÇÃO DE BEM MÓVEL
+  Keywords: móvel, movel
+
+**6.** [SP] R$ 193,508.05
+  REGISTRO DE PREÇOS PARA FUTURA E EVENTUAL AQUISIÇÃO DE MOBILIÁRIO CORPORATIVO DESTINADO AS UNIDADES DE SAÚDE DO MUNICÍPIO DE GAVIÃO PEIXOTO/SP.
+  Keywords: mobiliario, aquisição de mobiliário, aquisicao de mobiliario, mobiliário
+
+**7.** [SP] N/A
+  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE CADEIRAS GIRATÓRIAS
+  Keywords: cadeira, cadeiras
+
+**8.** [SP] R$ 188,380.00
+  Aquisição de móveis para Seção Odontológica
+  Keywords: moveis, móveis
+
+**9.** [SP] N/A
+  Contratação De Empresa Especializada Em Locação De Aparelho Ventilação Mecânica, Aparelho De Tosse E Oxímetro De Mesa, Incluindo Entrega, Treinamento, Manutenção Preventiva E Corre
+  Keywords: mesa
+
+### Bloqueados por Exclusão (4)
+
+**EXC-1.** Aquisição de cadeira de rodas para atender demanda judicial.
+  Keywords que teriam matchado: cadeira
+
+**EXC-2.** AQUISIÇÃO DE UNIDADE ODONTOLÓGICA MÓVEL (UOM), ADAPTADA EM VEÍCULO AUTOMOTOR TIPO FURGÃO, PARA OFERTAR SERVIÇOS ODONTOLÓGICOS PARA POPULAÇÕES DE LOCAIS QUE APRESENTAM MAIOR DIFICUL
+  Keywords que teriam matchado: móvel, mobiliario, movel, mobiliário
+
+**EXC-3.** Contratação de empresa para atuar na retaguarda médica de urgência e emergência e equipe multiprofissional especializada para o gerenciamento, operacionalização e execução de servi
+  Keywords que teriam matchado: móvel, moveis, movel, móveis
+
+**EXC-4.** Aquisição de cadeira de rodas motorizada, órtese, prótese para amputação e outros - DEMAIS ESPECIFICAÇÕES CONFORME EDITAL.
+  Keywords que teriam matchado: cadeira
+
+## Papelaria e Material de Escritório (papelaria)
+
+### Aprovados (amostra — 13 total)
+
+**1.** [SP] R$ 40,206.50
+  Contratação de serviços de Confecção de Pasta Azul - Uso Pessoal para documento / Congresso da Corregedoria PM.
+  Keywords: pasta
+
+**2.** [SP] R$ 28,760.00
+  Aquisição de Envelopes Plásticos de Segurança com Lacre Numerado.
+  Keywords: envelopes, envelope
+
+**3.** [SP] N/A
+  Material Consumo Exclusiva (Papel Sulfite)
+  Keywords: papel, papel sulfite
+
+**4.** [SP] N/A
+  Ma4-003 REQUISICAO DE EXAME RADIOLOGICO,T4 013 TERMO DE RESPONSABILIDADE,MA2-001- SOLICITACAO GERAL DE EXAMES,ANOTAÇÃO DE ENFERMAGEM,T4-026 - PEDIDO DE CONSULTA (FORMULÁRIO DE EXAM
+  Keywords: envelope
+
+**5.** [SP] N/A
+  Prancheta PORTATIL, UMEDECEDOR DE DEDOS TIPO CREME, PAPEL FLIP CHART,SULFITE,(640X880)MM,72G/M2,BRANCA, GRAMPEADOR DE MESA, PRETO CAP. MINIMA 25 FOLHAS, GRAMPEADOR DE MESA PRETO, C
+  Keywords: papel, papeis, papéis, grampeador de mesa, grampeador
+
+**6.** [SP] R$ 6,924,700.00
+  REGISTRO DE PREÇOS PARA AQUISIÇÃO DE KIT ESCOLAR PARA OS ALUNOS DA REDE DE ENSINO DE ARUJÁ
+  Keywords: kit escolar
+
+**7.** [SP] R$ 111,205.72
+   - Registro de Preços para fornecimento parcelado de Material de Escritório
+  Keywords: material de escritorio, material de escritório
+
+**8.** [SP] R$ 111,205.72
+   - Registro de Preços para fornecimento parcelado de Material de Escritório
+  Keywords: material de escritorio, material de escritório
+
+**9.** [SP] R$ 9,905,212.80
+  2º CADERNO  AQUISIÇÃO DE CHAPAS,SARRAFOS,MELAMINICO,COMPENSADO,PLASTIFICADO,FÓRMICA, RESINADO,CUMEEIRAS,TÁBUAS,FORROS,PONTALETES,VIGAS,PRANCHAS DE MADEIRA,ROLO DE FITA,CAIBRO E FOL
+  Keywords: caderno
+
+**10.** [SP] R$ 2,272,045.23
+  REGISTRO DE PREÇO PARA EVENTUAL AQUISIÇÃO DE MATERIAIS ESCOLARES, MATERIAIS DE EXPEDIENTE E PAPELARIA, DESTINADOS AOS DIVERSOS DEPARTAMENTOS DO MUNICÍPIO DE GAVIÃO PEIXOTO/SP.
+  Keywords: expediente, papelaria
+
+**11.** [SP] R$ 2,531.41
+  AQUISIÇÃO DE MATERIAIS ESCOLARES PARA A COMPOSIÇÃO DO KIT ESCOLAR DO ANO LETIVO DE 2026.
+  Keywords: kit escolar
+
+**12.** [SP] N/A
+  Gorro CIRURGICO DESCARTAVEL, GRAMATURA MINIMA 30, TALA P/IMOBILIZACAO ORTOPEDICA 30X7CM X2 CM, PAPEL PARA CARDIOTOCO, PAPEL TERM.IMPRES. DE VIDEO ULTRAS. 110MM X 20M UPP-110S/1
+  Keywords: papel
+
+**13.** [SP] N/A
+  Aquisição de Pasta, Clipe, Pilha, Caneta, Elastico, Fita, Marca texto e Lacre
+  Keywords: pasta, clipe, marca-texto, caneta, marca texto
+
+## Engenharia, Projetos e Obras (engenharia)
+
+### Aprovados (amostra — 21 total)
+
+**1.** [SP] R$ 70,538.33
+  Contratação de empresa especializada para a prestação de serviços de substituição de calhas de drenagem pluvial nos blocos B e C da EEFE/USP, com fornecimento e instalação de calha
+  Keywords: drenagem
+
+**2.** [SP] N/A
+  Manutenção corretiva e reforma da UIS do CPA/M-4
+  Keywords: reforma
+
+**3.** [SP] N/A
+  AQUISIÇÃO DE AREIA MÉDIA LAVADA, de acordo com o Anexo I (Termo de Referência).
   Keywords: areia
 
-**11.** [SP] R$ 661,032.08
-  REGISTRO DE PREÇOS para eventual e futura aquisição de materiais para construção
-  Keywords: construcao, construção
-
-**12.** [SP] R$ 74,591.94
-  Aquisição de materiais metalúrgicos em aço inox.
-  Keywords: aço, aco
-
-**13.** [SP] R$ 802,577.67
-  Registro de preços para fornecimento de materiais hidráulicos em PVC, PEAD, CPVC, PVC-U e em Ferro Fundido, para manutenção dos sistemas de água e esgoto, conforme especificações c
-  Keywords: ferro
-
-**14.** [SP] R$ 258,000.00
-  Contratação de empresa especializada para a execução dos serviços de engenharia de
-
-segurança e medicina do trabalho, para atender as demandas da Prefeitura de Municipal de Garça, 
+**4.** [SP] N/A
+  Pregão 002/2026- Contratação de serviços comuns de engenharia para operação e manutenção preventiva da estação de tratamento de esgoto composta por lagoas da penitenciária "Zwingli
   Keywords: engenharia
 
-**15.** [SP] R$ 84,000.00
-  CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA A AQUISIÇÃO DE SERVIÇOS DE CAMINHÃO PRANCHA PARA SER UTILIZADO PELA DIRETORIA DE OBRAS DO MUNICIPIO DE JUNQUEIRÓPOLIS NA REALIZAÇÃO DE SEU
-  Keywords: obras
+**5.** [SP] N/A
+  Contratação de pessoa jurídica especializada para fornecer serviços de apoio na verificação e validação dos laudos anuais de ativos das operações da Concessionária Sabesp – Companh
+  Keywords: saneamento básico, saneamento basico
 
-### Bloqueados por Exclusão (11)
+**6.** [SP] R$ 582,519.20
+  Registro de Preços para contratação de empresa especializada para execução de sondagens de simples reconhecimento do solo (SPT), em terrenos de uso da Secretaria de Educação para c
+  Keywords: ampliação, construcao, construção, ampliacao
 
-**EXC-1.** Locação de caminhão toco com cabine suplementar e carroceria de madeira, sem motorista
-  Keywords que teriam matchado: madeira
+**7.** [SP] N/A
+  REGISTRO DE PREÇOS VISANDO A CONTRATAÇÃO DE EMPRESA PARA PRESTAÇÃO DE SERVIÇOS DE MANUTENÇÃO DE PAVIMENTAÇÃO ASFÁLTICA, RECUPERAÇÃO DE VIAS, PASSEIOS E DEMAIS ELEMENTOS DE INFRAEST
+  Keywords: pavimentação asfáltica, pavimentacao, pavimentação, pavimentacao asfaltica
 
-**EXC-2.** Contratação de empresa especializada para prestação de serviços de montagem, operação, manutenção e desmontagem de infraestrutura temporária para eventos, com disponibilização dos 
-  Keywords que teriam matchado: infraestrutura
+**8.** [SP] R$ 17,307,739.07
+  ELABORAÇÃO DE ATA DE REGISTRO DE PREÇOS PARA A AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO CIVIL DIVERSOS PARA EFETUAR PEQUENAS OBRAS DE REPARO E/OU MANUTENÇÃO DE PRÉDIOS, PRAÇAS E VIAS D
+  Keywords: construcao civil, materiais de construcao, construção civil, alvenaria, construcao
 
-**EXC-3.** Contratação de empresa especializada para a prestação de serviços de telecomunicações e fornecimento de equipamentos, visando modernizar e ampliar a infraestrutura de comunicação d
-  Keywords que teriam matchado: infraestrutura
+**9.** [SP] R$ 9,905,212.80
+  2º CADERNO  AQUISIÇÃO DE CHAPAS,SARRAFOS,MELAMINICO,COMPENSADO,PLASTIFICADO,FÓRMICA, RESINADO,CUMEEIRAS,TÁBUAS,FORROS,PONTALETES,VIGAS,PRANCHAS DE MADEIRA,ROLO DE FITA,CAIBRO E FOL
+  Keywords: madeira
 
-**EXC-4.** REGISTRO DE PREÇOS PARA CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA PRESTAÇÃO DE SERVIÇOS TÉCNICOS AUTOMOTIVOS ESPECIALIZADOS EM MANUTENÇÃO PREVENTIVA E CORRETIVA, ATRAVÉS DE SERVIÇO
-  Keywords que teriam matchado: obra, ar condicionado
+**10.** [SP] N/A
+  aquisição e instalação de uma carroceria carrega tudo, confeccionada em estrutura metálica de aço, com rampas hidráulicas e tampas laterais, bem como demais especificações técnicas
+  Keywords: aco, aço
 
-**EXC-5.** Abertura de pregão eletrônico visando o registo de preços para contratação de empresa especializada nos serviços de borracharia com materiais inclusos, de caráter preventivo, predi
-  Keywords que teriam matchado: infraestrutura
+**11.** [SP] R$ 161,200.00
+  REGISTRO DE PREÇOS OBJETIVANDO A AQUISIÇÃO PARCELADA DE CONCRETO ASFÁLTICO USINADO A QUENTE PARA APLICAÇÃO A FRIO, EM SACO DE 25 KG, E MASSA ASFÁLTICA USINADA A QUENTE (CBUQ) A GRA
+  Keywords: concreto
 
-**EXC-6.** CONTRATAÇÃO DE EQUIPAMENTO DE SONORIZAÇÃO E ILUMINAÇÃO COM MÃO DE OBRA INCLUSO , PARA DESFILE DAS ESCOLAS DE SAMBA , CARNAVAL 2026 - CONFORME ESPECIFICAÇÕES CONTIDAS NO TERMO DE RE
-  Keywords que teriam matchado: obra
+**12.** [SP] R$ 1,857,537.31
+  Registro de Preços para fornecimento de areia, brita, rachão e demais materiais de construção.
+Processo Adm 2290/2025
+  Keywords: materiais de construcao, brita, construcao, construção, materiais de construção
 
-**EXC-7.** CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA A CONCEPÇÃO, CONSTRUÇÃO, MONTAGEM, MANUTENÇÃO E DESMONTAGEM DE CENÁRIOS CENOGRÁFICOS DESTINADOS À ENCENAÇÃO DA PAIXÃO DE CRISTO – EDIÇÃO 2
-  Keywords que teriam matchado: construcao, construção
+**13.** [SP] R$ 100,590.00
+  REGISTRO DE PREÇOS PARA FUTURA E EVENTUAL AQUISIÇÃO DE MATERIAIS DE  CONSTRUÇÃO PARA ATENDIMENTO ÀS DEMANDAS DIÁRIAS DO SAAE DE CRUZEIRO
+  Keywords: materiais de construcao, construcao, construção, materiais de construção
 
-**EXC-8.** [LICITANET] - A presente contratação tem por objeto a seleção de empresa especializada para prestação de serviços de gerenciamento eletrônico e integrado da frota municipal de Alti
-  Keywords que teriam matchado: obra
+**14.** [SP] R$ 100,590.00
+  AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO.
+  Keywords: materiais de construcao, construcao, construção, materiais de construção
 
-**EXC-9.** Contratação de empresa especializada para o fornecimento de material, equipamentos e mão-de-obra para adequação do sistema elétrico com a finalidade da Climatização das escolas mun
-  Keywords que teriam matchado: obra, climatização, climatizacao
+**15.** [SP] N/A
+  AQUISIÇÃO DE EMULSÃO ASFÁLTICA E MASSA ASFÁLTICA DO TIPO CONCRETO BETUMINOSO USINADO A QUENTE (CBUQ), DESTINADA AO USO DA DIRETORIA DE OBRAS, CONFORME AS ESPECIFICAÇÕES E QUANTIDAD
+  Keywords: concreto
 
-**EXC-10.** CONTRATACAO DE EMPRESA ESPECIALIZADA COM FORNECIMENTO DE MATERIAL E MAO DE OBRA PARA A  REVITALIZACAO DA PRACA ESPORTIVA NO CONJUNTO HABITACIONAL BARROS MUNHOZ .
-  Keywords que teriam matchado: obra
+## Software e Sistemas (software)
+
+### Aprovados (amostra — 8 total)
+
+**1.** [SP] N/A
+  Contratação de empresa especializada para a disponibilização de acesso gratuito à internet controlado por portal cativo, mediante o fornecimento, instalação, configuração, disponib
+  Keywords: software
+
+**2.** [SP] R$ 4,549,999.80
+  Contratação de empresa especializada em Tecnologia da Informação (TI) para o desenvolvimento, implementação, licenciamento de uso, manutenção, suporte técnico e hospedagem de siste
+  Keywords: tecnologia da informação, tecnologia da informacao, licenciamento
+
+**3.** [SP] R$ 2,763,452.10
+  Contratação de serviços continuados de limpeza, asseio e conservação predial, com regime de dedicação  exclusiva de mão de obra e com o fornecimento de todos os saneantes, materiai
+  Keywords: tecnologia da informação, tecnologia da informacao
+
+**4.** [SP] N/A
+  Contratação de Prestação de serviços de emissão, reemissão e cancelamento de passagens aéreas nacionais e internacionais, por meio de Sistema de Gestão de Viagens Corporativas
+  Keywords: sistema de gestão, sistema de gestao
+
+**5.** [SP] R$ 1,487,650.00
+  Contratação de empresa especializada no fornecimento de solução tecnológica integrada, disponibilizada em ambiente web, no modelo Software as a Service (SaaS).
+  Keywords: software, solução tecnológica, saas, software as a service, solucao tecnologica
+
+**6.** [SP] R$ 208,083.90
+  [Portal de Compras Públicas] - Abertura de processo licitatório para a contratação de sistema informatizado de gestão e tramitação de processos digitais
+  Keywords: sistema informatizado
+
+**7.** [SP] R$ 380,080.68
+  LICENCA DE USO DE SOFTWARE 
+  Keywords: software, licenca
+
+**8.** [SP] N/A
+  Contratação de Serviços para Fornecimento de Licenças de Software - Revit
+  Keywords: software, licenca
+
+## Facilities e Manutenção (facilities)
+
+### Aprovados (amostra — 19 total)
+
+**1.** [SP] R$ 2,808,344.10
+  Contratação de Prestação de Serviços de Limpeza, Asseio e Conservação Predial para os prédios da Delegacia Seccional de Polícia  de Jales e Unidades Subordinadas, inclusive sub-reg
+  Keywords: limpeza, conservação predial, asseio, conservacao predial
+
+**2.** [SP] R$ 527,255.52
+  Contratação de empresa especializada para a prestação de serviços continuados de limpeza e conservação  predial, com cessão de mão de obra em regime de dedicação exclusiva, incluin
+  Keywords: limpeza, limpeza e conservação, conservação predial, limpeza e conservacao, conservacao predial
+
+**3.** [SP] N/A
+  Registro de Preços de ponteiras descartáveis de uso laboratorial
+  Keywords: descartaveis, descartáveis
+
+**4.** [SP] N/A
+  Escova DESCARTAVEL COM CLOREXIDINA DEGERMANTE 2%, ÁLCOOL GEL PARA HIGIENE DAS MÃOS TIPO PUMP, CLOREXIDINA DIGLUCONATO DEGERMANTE 2, CLOREXIDINA DIGLUCONATO AQUOSA 0,2
+  Keywords: descartável, higiene
+
+**5.** [SP] N/A
+  Aquisição de sabonete líquido e outros. 
+  Keywords: sabonete
+
+**6.** [SP] R$ 631,502.00
+  Serviço de limpeza, asseio e conservação predial da Sede do 15º BPM/I
+  Keywords: limpeza, servico de limpeza, serviço de limpeza, conservação predial, asseio
+
+**7.** [SP] R$ 411,454.20
+  Contratação de serviço de limpeza, asseio e conservação predial para a sede do DRS III de Araraquara
+  Keywords: limpeza, servico de limpeza, serviço de limpeza, conservação predial, asseio
+
+**8.** [SP] R$ 99,407.70
+  REGISTRO DE PRECOS PARA AQUISICAO DE MATERIAIS DESCARTAVEIS  DE LIMPEZA E UTENSILIOS DOMESTICOS PARA A SECRETARIA DE SAUDE DO MUNICIPIO DE PINDORAMA SP
+  Keywords: limpeza, descartaveis, descartáveis
+
+**9.** [SP] R$ 85,579.00
+  REGISTRO DE PREÇOS PARA EVENTUAL AQUISIÇÃO DE UNIFORMES DESTINADOS ÀS EQUIPES DE MANUTENÇÃO E ZELADORIA
+  Keywords: zeladoria
+
+**10.** [SP] R$ 726,497.19
+  Registro de Preços para aquisição de produtos de higiene, limpeza e utensílios para diversos setores da Prefeitura Municipal de Tejupá, pelo período de 12 meses.
+  Keywords: limpeza, higiene
+
+**11.** [SP] R$ 7,380,799.92
+  Contratação de empresa para atuar na retaguarda médica de urgência e emergência e equipe multiprofissional especializada para o gerenciamento, operacionalização e execução de servi
+  Keywords: limpeza, higienizacao, higienização
+
+**12.** [SP] R$ 1,650,420.07
+  Constitui objeto da presente licitação a contratação empresa especializada para a prestação de serviços de higiene, auxiliar de rouparia hospitalar, recepção hospitalar e controle 
+  Keywords: recepção, recepcao, higiene
+
+**13.** [SP] R$ 17,958,818.28
+  Realização de processo licitatório para a contratação de empresa especializada na prestação de serviços de Limpeza Hospitalar, Controle de Acesso, Recepção e Auxiliar de Rouparia, 
+  Keywords: recepção, limpeza, recepcao
+
+**14.** [SP] R$ 165,529.41
+  DESTINADO À AQUISIÇÃO DE MÁQUINAS E EQUIPAMENTOS AGRÍCOLAS E DE JARDINAGEM
+  Keywords: jardinagem
+
+**15.** [SP] R$ 1,000,100.00
+  Contratação de empresa para prestação de serviços de publicação de caráter institucional e publicação de leis, atos administrativos, resoluções, decretos, portarias e outras matéri
+  Keywords: portaria
+
+### Bloqueados por Exclusão (2)
+
+**EXC-1.** Contratação de serviços continuados de limpeza, asseio e conservação predial, com regime de dedicação  exclusiva de mão de obra e com o fornecimento de todos os saneantes, materiai
+  Keywords que teriam matchado: limpeza, conservação predial, asseio, conservacao predial, saneante
+
+**EXC-2.** ELABORAÇÃO DE ATA DE REGISTRO DE PREÇOS PARA A AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO CIVIL DIVERSOS PARA EFETUAR PEQUENAS OBRAS DE REPARO E/OU MANUTENÇÃO DE PRÉDIOS, PRAÇAS E VIAS D
+  Keywords que teriam matchado: jardinagem
+
+## Saúde (saude)
+
+### Aprovados (amostra — 127 total)
+
+**1.** [SP] N/A
+  Aquisição de medicamentos
+  Keywords: medicamentos, medicamento
+
+**2.** [SP] N/A
+  Aquisição de medicamentos
+  Keywords: medicamentos, medicamento
+
+**3.** [SP] N/A
+  Aquisição de medicamentos
+  Keywords: medicamentos, medicamento
+
+**4.** [SP] N/A
+  CaNULAS ENDOTRAQUEAL e SONDAS FOLEY
+  Keywords: sonda, sondas
+
+**5.** [SP] N/A
+  AguLHA HIPOD.C/SEGURANCA 13x0,3mm ou 30G
+  Keywords: agulha
+
+**6.** [SP] N/A
+  Conjunto de sonda para gastrostomia peg pull remov silic 20fr
+  Keywords: sonda
+
+**7.** [SP] N/A
+  AQUISIÇÃO DE AGULHAS PARA BIÓPSIAs
+  Keywords: agulha, agulhas
+
+**8.** [SP] N/A
+  Aquisição de BISACODIL 5MG – Comprimido; DEXCLORFENIRAMINA 2MG – Comprimido;  DICLOFENACO SODICO 50MG – Comprimido; ESCOPOLAMINA, NBUTILBROMETO 10MG - Comprimido;  HIDRALAZINA, CLO
+  Keywords: comprimido
+
+**9.** [SP] N/A
+  Aquisição de Medicamentos para o atendimento de Demanda Judicial com e sem marca
+  Keywords: medicamentos, medicamento
+
+**10.** [SP] N/A
+  Aquisição de Medicamentos para o atendimento de Demandas Judiciais com e sem marca.
+  Keywords: medicamentos, medicamento
+
+**11.** [SP] N/A
+  Acessórios Bomba de Insulina
+  Keywords: insulina
+
+**12.** [SP] N/A
+  Constituição de sistema de registro de preços para aquisição futura e eventual de material médico.
+  Keywords: material medico, material médico
+
+**13.** [SP] N/A
+  Aquisição de exames de tomografia de coerência óptica oct, para atender determinação judicial deste departamento regional de saúde de franca.
+  Keywords: saude, saúde, tomografia
+
+**14.** [SP] N/A
+  Comp.GAZE P/QUEIMADOS,MED.130CMX90CM ABERTA,10X10 DOBR., COMPRESSA DE GAZE E ALGODAO 50X10CM e COMPRESSA CIRUGICA ESTERIL 10,0 X 9,0 CM
+  Keywords: compressa, gaze
+
+**15.** [SP] N/A
+  Constituição de sistema de registro de preços para aquisição futura e eventual de material médico.
+  Keywords: material medico, material médico
+
+### Bloqueados por Exclusão (4)
+
+**EXC-1.** Contratação de empresa especializada para prestar serviços continuados de manutenção preventiva e corretiva, com fornecimento de peças, equipamentos, produtos químicos necessários 
+  Keywords que teriam matchado: hospital
+
+**EXC-2.** REGISTRO DE PREÇOS PARA FUTURA E EVENTUAL AQUISIÇÃO DE VESTUÁRIO HOSPITALAR DESTINADO AOS PROFISSIONAIS DA SAÚDE QUE ATUAM NA UNIDADE DE PRONTO ATENDIMENTO MUNICIPAL, VISANDO ASSEG
+  Keywords que teriam matchado: saude, hospitalar, saúde
+
+**EXC-3.** REGISTRO DE PREÇOS PARA FUTURA E EVENTUAL AQUISIÇÃO DE MOBILIÁRIO CORPORATIVO DESTINADO AS UNIDADES DE SAÚDE DO MUNICÍPIO DE GAVIÃO PEIXOTO/SP.
+  Keywords que teriam matchado: saude, saúde
+
+**EXC-4.** Constitui objeto da presente licitação a contratação empresa especializada para a prestação de serviços de higiene, auxiliar de rouparia hospitalar, recepção hospitalar e controle 
+  Keywords que teriam matchado: saude, hospitalar, saúde
+
+## Vigilância e Segurança Patrimonial (vigilancia)
+
+### Aprovados (amostra — 6 total)
+
+**1.** [SP] R$ 253,511.64
+  Contratação da prestação do serviço de vigilância e segurança patrimonial, desarmada, com bastão ronda (5 bottons) - posto 12 horas diárias – noturno – 2ª feira a domingo – motocic
+  Keywords: vigilancia, vigilância, seguranca patrimonial, serviço de vigilância, servico de vigilancia
+
+**2.** [SP] R$ 456,000.00
+  Contratação de serviço de Manutenção Preventiva, Corretiva, Emergencial e  gerenciamento/monitoramento remoto, COM FORNECIMENTO DE PEÇAS,  para 2 (dois) geradores, sendo 01 instala
+  Keywords: monitoramento remoto
+
+**3.** [SP] R$ 81,270.00
+  CONTRATAÇÃO TEMPORÁRIA DE EMPRESA ESPECIALIZADA NA PRESTAÇÃO DE SERVIÇOS DE SEGURANÇA PRIVADA E SERVIÇOS DE BOMBEIRO CIVIL, EM VIRTUDE DO EVENTO DENOMINADO “ITAJOBI RODEIO SHOW 202
+  Keywords: seguranca privada, segurança privada, servicos de seguranca, serviços de segurança
+
+**4.** [SP] R$ 160,000.00
+  Aquisição de equipamentos de TI para composição de solução de controle de acesso e gerenciamento dos sistemas de armazenamento, acesso e distribuição de dados para o projeto SisMOM
+  Keywords: controle de acesso
+
+**5.** [SP] R$ 6,392.20
+  Aquisição de serviço de instalação de controle de acesso da Força Tática do 30ºBPMI
+  Keywords: controle de acesso
+
+**6.** [SP] R$ 253,050.00
+  Contratação de serviços de vigilância eletrônica com locação de Sistema de CFTV- circuito fechado de TV, inclusos  manutenções preventivas e  corretivas
+  Keywords: servicos de vigilancia, vigilancia, vigilância eletrônica, vigilância, vigilancia eletronica
+
+### Bloqueados por Exclusão (3)
+
+**EXC-1.** AQUISIÇÃO DE DOIS VEÍCULOS AUTOMOTOR TIPO UTILITÁRIO LEVE, CABINE SIMPLES, 02 PORTAS, ZERO QUILÔMETRO, MOVIDO A COMBUSTÍVEL FLEX, DESTINADO PARA A VIGILÂNCIA EPIDEMIOLÓGICA E VIGIL
+  Keywords que teriam matchado: vigilancia, vigilância
+
+**EXC-2.** Constitui objeto da presente licitação a contratação empresa especializada para a prestação de serviços de higiene, auxiliar de rouparia hospitalar, recepção hospitalar e controle 
+  Keywords que teriam matchado: controle de acesso, vigilancia, vigilância
+
+**EXC-3.** Realização de processo licitatório para a contratação de empresa especializada na prestação de serviços de Limpeza Hospitalar, Controle de Acesso, Recepção e Auxiliar de Rouparia, 
+  Keywords que teriam matchado: controle de acesso
+
+## Transporte e Veículos (transporte)
+
+### Aprovados (amostra — 36 total)
+
+**1.** [SP] R$ 2,735,314.10
+  Registro de Preços para contratação(ões) futura(s) de serviços de transporte de passageiros mediante fretamento
+  Keywords: serviços de transporte, servicos de transporte, transporte de passageiros
+
+**2.** [SP] R$ 84.93
+  Contratação de empresa(s) para prestação de serviços de TRANSPORTE ESCOLAR do Município de Pedregulho, conforme Edital e seus anexos.
+  Keywords: serviços de transporte, transporte escolar, servicos de transporte
+
+**3.** [SP] R$ 253,511.64
+  Contratação da prestação do serviço de vigilância e segurança patrimonial, desarmada, com bastão ronda (5 bottons) - posto 12 horas diárias – noturno – 2ª feira a domingo – motocic
+  Keywords: motocicleta
+
+**4.** [SP] N/A
+  A estimativa de consumo de combustíveis, álcool etílico hidratado comum, gasolina comum, óleo diesel comum e óleo diesel S10/S50
+  Keywords: diesel, combustíveis, combustiveis, oleo diesel, gasolina
+
+**5.** [SP] R$ 100.00
+  Gerenciamento do Abastecimento de Combustível de Veículos e Outros Serviços
+  Keywords: veiculo, abastecimento de combustivel, abastecimento de combustível, veículos, veículo
+
+**6.** [SP] N/A
+  Contratação de empresa especializada para prestação de manutenções corretivas diversas em veículo oficial (caminhão - VW - placa CMW-9H45)
+  Keywords: caminhão, veiculo, veículo, caminhao
+
+**7.** [SP] R$ 691,659.00
+  REGISTRO DE PREÇOS para futura aquisição de veículos automotores novos (zero quilômetro), destinados ao atendimento das necessidades do Departamento Municipal de Trânsito e demais 
+  Keywords: veiculo, aquisição de veículo, aquisicao de veiculos, aquisição de veículos, veículos
+
+**8.** [SP] N/A
+  CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA SERVIÇOS DE LOCAÇÃO DE EQUIPAMENTOS PESADOS, MÁQUINAS E VEÍCULOS COM OPERADOR, INCLUSO COMBUSTÍVEL, MOBILIZAÇÃO E DESMOBILIZAÇÃO ATÉ O LOC
+  Keywords: veiculo, veículos, veículo, combustível, combustivel
+
+**9.** [SP] R$ 230,340.00
+  AQUISIÇÃO DE DOIS VEÍCULOS AUTOMOTOR TIPO UTILITÁRIO LEVE, CABINE SIMPLES, 02 PORTAS, ZERO QUILÔMETRO, MOVIDO A COMBUSTÍVEL FLEX, DESTINADO PARA A VIGILÂNCIA EPIDEMIOLÓGICA E VIGIL
+  Keywords: veiculo, utilitário, utilitario, veículos, veículo
+
+**10.** [SP] R$ 330,533.33
+  AQUISIÇÃO DE VEÍCULO TIPO VAN/MINIBUS PARA TRANSPORTE DE PASSAGEIROS, COM CAPACIDADE MÍNIMA DE 15+1 LUGARES 
+  Keywords: veiculo, aquisição de veículo, van, aquisicao de veiculo, transporte de passageiros
+
+**11.** [SP] R$ 1,386,000.00
+  REGISTRO DE PREÇO DE EMPRESA ESPECIALIZADA PARA FORNECIMENTO DE 42.000 (QUARENTA E DOIS MIL) QUILOS DE POLIMERO CATIÔNICO GRANULAR (PÓ) DE ALTO PESO/ALTA CARGA PARA UTILIZAÇÃO NO S
+  Keywords: mecanica, mecânica
+
+**12.** [SP] R$ 55,376.28
+  AQUISIÇÃO DE MATERIAL DE MANUTENÇÃO MECÂNICA.
+  Keywords: mecanica, mecânica
+
+**13.** [SP] R$ 340,263.33
+  Aquisição de 01 (um) veículo automotivo de passageiros tipo van com no mínimo 16 lugares, para atender as necessidades da Secretaria Municipal das Prefeituras Regionais - SEPREF.
+  Keywords: veiculo, van, veículo
+
+**14.** [SP] R$ 324,850.00
+  Sistema de Registro de Preços para futura e eventual aquisição de combustível: gasolina comum, etanol, óleo diesel comum, com abastecimento da frota da SAERP em POSTOS DE ATENDIMEN
+  Keywords: etanol, diesel, frota, combustível, combustivel
+
+**15.** [SP] R$ 82,397.10
+  AQUISIÇÃO DE VEÍCULO AUTOMOTOR NOVO, TIPO PASSEIO, PARA PREMIAÇÃO DO EVENTO “PROFESSOR NOTA 10”
+  Keywords: veiculo, aquisição de veículo, aquisicao de veiculo, veículo
+
+### Bloqueados por Exclusão (1)
+
+**EXC-1.** Contratação De Empresa Especializada Em Locação De Aparelho Ventilação Mecânica, Aparelho De Tosse E Oxímetro De Mesa, Incluindo Entrega, Treinamento, Manutenção Preventiva E Corre
+  Keywords que teriam matchado: mecanica, mecânica
+
+## Manutenção e Conservação Predial (manutencao_predial)
+
+### Aprovados (amostra — 6 total)
+
+**1.** [SP] R$ 373,362.46
+  Aquisição de aparelhos de ar-condicionado.
+  Keywords: ar condicionado
+
+**2.** [SP] R$ 2,336,558.40
+  Contratação de empresa especializada para a prestação de serviços de manutenções preventiva mensal e corretiva em equipamentos de climatização, incluindo o fornecimento e substitui
+  Keywords: climatizacao, climatização
+
+**3.** [SP] R$ 27,000.00
+  MANUTENCAO DE AR CONDICIONADO 
+  Keywords: ar condicionado
+
+**4.** [SP] R$ 2,695.44
+  Aquisição de Equipamentos para realização de reparos em instalações elétricas, Departamento de Química UFSCar Campus São Carlos. 
+  Keywords: instalações elétricas, instalacoes eletricas
+
+**5.** [SP] R$ 6,983,179.40
+  Sistema de Registro de preços para a prestação de serviços não contínuos especializados de manutenção predial
+  Keywords: manutenção predial, manutencao predial
+
+**6.** [SP] N/A
+  Aquisição com Instalação e Desinstalação de Aparelho de Ar Condicionado
+  Keywords: ar condicionado
+
+## Engenharia Rodoviária e Infraestrutura Viária (engenharia_rodoviaria)
+
+### Aprovados (amostra — 6 total)
+
+**1.** [SP] R$ 405,540.00
+  Contratação de de serviços para Diagramação, Confecção e Instalação de 81 (oitenta e uma) Placas de Sinalização em rodovias administradas pelo Departamento de Estradas de Rodagem –
+  Keywords: estrada, rodovia
+
+**2.** [SP] N/A
+  REGISTRO DE PREÇOS VISANDO A CONTRATAÇÃO DE EMPRESA PARA PRESTAÇÃO DE SERVIÇOS DE MANUTENÇÃO DE PAVIMENTAÇÃO ASFÁLTICA, RECUPERAÇÃO DE VIAS, PASSEIOS E DEMAIS ELEMENTOS DE INFRAEST
+  Keywords: pavimentação asfáltica, pavimentacao asfaltica
+
+**3.** [SP] R$ 459,010.74
+  ELABORAÇÃO DE ATA REGISTRO DE PREÇOS DESTINADO À AQUISIÇÃO DE 03 (TRÊS) VEÍCULOS ZERO QUILÔMETRO, TIPO MINIVAN, NA COR BRANCA, PARA ATENDER ÀS DEMANDAS ORIUNDAS DA DIRETORIA MUNICI
+  Keywords: ponte
+
+**4.** [SP] R$ 161,200.00
+  REGISTRO DE PREÇOS OBJETIVANDO A AQUISIÇÃO PARCELADA DE CONCRETO ASFÁLTICO USINADO A QUENTE PARA APLICAÇÃO A FRIO, EM SACO DE 25 KG, E MASSA ASFÁLTICA USINADA A QUENTE (CBUQ) A GRA
+  Keywords: massa asfaltica, massa asfáltica, CBUQ
+
+**5.** [SP] R$ 247,400.00
+  Aquisições futuras e parceladas de MASSA ASFÁLTICA para atender as necessidades da Secretaria Municipal de Infraestrutura, Obras e Serviços Municipais.
+  Keywords: massa asfaltica, massa asfáltica
+
+**6.** [SP] N/A
+  AQUISIÇÃO DE EMULSÃO ASFÁLTICA E MASSA ASFÁLTICA DO TIPO CONCRETO BETUMINOSO USINADO A QUENTE (CBUQ), DESTINADA AO USO DA DIRETORIA DE OBRAS, CONFORME AS ESPECIFICAÇÕES E QUANTIDAD
+  Keywords: concreto betuminoso, massa asfaltica, massa asfáltica, CBUQ, emulsão asfáltica
+
+## Materiais Elétricos e Instalações (materiais_eletricos)
+
+### Aprovados (amostra — 4 total)
+
+**1.** [SP] R$ 17,307,739.07
+  ELABORAÇÃO DE ATA DE REGISTRO DE PREÇOS PARA A AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO CIVIL DIVERSOS PARA EFETUAR PEQUENAS OBRAS DE REPARO E/OU MANUTENÇÃO DE PRÉDIOS, PRAÇAS E VIAS D
+  Keywords: lâmpada, lampada
+
+**2.** [SP] R$ 122,922.00
+  Contratação de empresa para prestação de serviços mecânicos de manutenção elétrica automotiva, em veículos leves, utilitários, pesados e máquinas, com fornecimento de peças e acess
+  Keywords: manutenção elétrica, manutencao eletrica
+
+**3.** [SP] R$ 4,248,200.00
+  Contratação de empresa especializada em prestação de serviço de serviço de locação estrutura metálica para palco, sonorização e iluminação de eventos, incluído montagem, desmontage
+  Keywords: LED
+
+**4.** [SP] R$ 316,529.04
+  Contratação de empresa para fornecimento de equipamentos audiovisuais, serviços de internet via satélite para link de transmissão externa ao vivo e serviço de instalação de eletrod
+  Keywords: eletroduto
+
+## Materiais Hidráulicos e Saneamento (materiais_hidraulicos)
+
+### Aprovados (amostra — 12 total)
+
+**1.** [SP] N/A
+  Pregão 002/2026- Contratação de serviços comuns de engenharia para operação e manutenção preventiva da estação de tratamento de esgoto composta por lagoas da penitenciária "Zwingli
+  Keywords: estação de tratamento, estacao de tratamento, tratamento de esgoto
+
+**2.** [SP] R$ 28,102.57
+  Aquisição de conexões em PVC PBA do tipo luvas DN 50mm (2”) e 100mm (4”), conforme condições, quantidades e exigências estabelecidas no Edital e seus Anexos.
+  Keywords: luva
+
+**3.** [SP] R$ 205,131.36
+  Contratação de laboratório para a prestação de serviços de Análises Ambientais para a coleta (amostragem) e análises de águas superficiais (Rio Jaguari), sendo quinzenalmente 01 (u
+  Keywords: estação de tratamento, estacao de tratamento, tratamento de esgoto
+
+**4.** [SP] N/A
+  Serviço de manutenção preventiva e corretiva em sistema de tratamento de água por Osmose Reversa
+  Keywords: tratamento de água, tratamento de agua
+
+**5.** [SP] N/A
+  Aquisição de materiais hidráulicos, aquecedor e outros.  
+  Keywords: materiais hidraulicos, materiais hidráulicos
+
+**6.** [SP] N/A
+  Contratação de pessoa jurídica especializada para fornecer serviços de apoio na verificação e validação dos laudos anuais de ativos das operações da Concessionária Sabesp – Companh
+  Keywords: saneamento, saneamento básico, saneamento basico
+
+**7.** [SP] R$ 1,386,000.00
+  REGISTRO DE PREÇO DE EMPRESA ESPECIALIZADA PARA FORNECIMENTO DE 42.000 (QUARENTA E DOIS MIL) QUILOS DE POLIMERO CATIÔNICO GRANULAR (PÓ) DE ALTO PESO/ALTA CARGA PARA UTILIZAÇÃO NO S
+  Keywords: ETE
+
+**8.** [SP] R$ 70,000.00
+  CONTRATAÇÃO DE EMPRESA PARA FORNECIMENTO DE HIPOCLORITO DE SÓDIO PARA TRATAMENTO DE ÁGUA
+  Keywords: tratamento de água, tratamento de agua
+
+**9.** [SP] R$ 649,539.20
+  PROCESSO LICITATÓRIO PARA AQUISIÇÃO DE CONEXÕES DIVERSAS PARA PEAD, HIDRÔMETRO E CORTE
+  Keywords: hidrômetro, hidrometro
+
+**10.** [SP] R$ 97,960.00
+  Registro de preços para aquisição futura e parcelada de 1000 (um mil) hidrômetros unijato para água fria, classe metrológica "B" para instalação nas residências do município
+  Keywords: hidrômetro, hidrometro
+
+**11.** [SP] N/A
+  Aquisição de Material Médico Hospitalar - Adaptador 2 vias e Outros.
+  Keywords: adaptador
+
+**12.** [SP] N/A
+  Aquisição de Gaze Embebida, Lenço Umedecido, Luva Cirúrgica Estéril, Mascara com Tiras e Tubo para Coleta de Sangue
+  Keywords: luva
 
 ## Conflitos Cross-Setor
 
 Itens que matcham em mais de um setor:
 
-**1.** Setores: informatica, papelaria
-  Aquisição de materiais de expediente, papelaria e suprimentos de informática.
+**1.** Setores: informatica, software
+  Contratação de empresa especializada para a disponibilização de acesso gratuito à internet controlado por portal cativo, mediante o fornecimento, instalação, configuração, disponibilização e manutençã
 
-**2.** Setores: limpeza, engenharia
-  REGISTRO DE PREÇOS PARA A EVENTUAL CONTRATAÇÃO DE EMPRESA ESPECIALIZADA EM: SERVIÇOS DE INSTALAÇÃO, MANUTENÇÃO PREVENTIVA E CORRETIVA DE BOMBAS SUBMERSA, REPARO E CONFIGURAÇÃO DE QUADRO ELÉTRICO DE BO
+**2.** Setores: vestuario, papelaria
+  Contratação de serviços de Confecção de Pasta Azul - Uso Pessoal para documento / Congresso da Corregedoria PM.
 
-**3.** Setores: informatica, mobiliario
-  Contratação(ões) de pessoa(s) jurídica(s) para fornecimento de móveis, eletrodomésticos e equipamentos de informática para a Secretaria Municipal de Assistência e Desenvolvimento Social e a entidade l
+**3.** Setores: informatica, software
+  Contratação de empresa especializada em Tecnologia da Informação (TI) para o desenvolvimento, implementação, licenciamento de uso, manutenção, suporte técnico e hospedagem de sistema integrado de gest
 
-**4.** Setores: mobiliario, engenharia
-  Aquisição de material permanente (armário vestiário de aço), por intermédio do Sistema de Registro de Preços
+**4.** Setores: engenharia, materiais_hidraulicos
+  Pregão 002/2026- Contratação de serviços comuns de engenharia para operação e manutenção preventiva da estação de tratamento de esgoto composta por lagoas da penitenciária "Zwinglio Ferreira de Presid
+
+**5.** Setores: vigilancia, transporte
+  Contratação da prestação do serviço de vigilância e segurança patrimonial, desarmada, com bastão ronda (5 bottons) - posto 12 horas diárias – noturno – 2ª feira a domingo – motocicleta
+
+**6.** Setores: mobiliario, papelaria
+  Prancheta PORTATIL, UMEDECEDOR DE DEDOS TIPO CREME, PAPEL FLIP CHART,SULFITE,(640X880)MM,72G/M2,BRANCA, GRAMPEADOR DE MESA, PRETO CAP. MINIMA 25 FOLHAS, GRAMPEADOR DE MESA PRETO, CAPAC.MINIMA 20 FOLHA
+
+**7.** Setores: alimentos, saude
+  REGISTRO DE PREÇOS PARA O FORNECIMENTO DE MEDICAMENTOS ALOPÁTICOS INDUSTRIALIZADOS INJETÁVEIS: ANFOTERICINA, DOBUAMINA CLORIDRATO, DOPAMINA CLORIDRATO, SORBITOL - Anfotericina B em pó para solução inj
+
+**8.** Setores: informatica, software
+  Contratação de serviços continuados de limpeza, asseio e conservação predial, com regime de dedicação  exclusiva de mão de obra e com o fornecimento de todos os saneantes, materiais, equipamentos e fe
+
+**9.** Setores: engenharia, materiais_hidraulicos
+  Contratação de pessoa jurídica especializada para fornecer serviços de apoio na verificação e validação dos laudos anuais de ativos das operações da Concessionária Sabesp – Companhia de Saneamento Bás
+
+**10.** Setores: facilities, saude
+  REGISTRO DE PRECOS PARA AQUISICAO DE MATERIAIS DESCARTAVEIS  DE LIMPEZA E UTENSILIOS DOMESTICOS PARA A SECRETARIA DE SAUDE DO MUNICIPIO DE PINDORAMA SP
+
+**11.** Setores: vestuario, facilities
+  REGISTRO DE PREÇOS PARA EVENTUAL AQUISIÇÃO DE UNIFORMES DESTINADOS ÀS EQUIPES DE MANUTENÇÃO E ZELADORIA
+
+**12.** Setores: transporte, materiais_hidraulicos
+  REGISTRO DE PREÇO DE EMPRESA ESPECIALIZADA PARA FORNECIMENTO DE 42.000 (QUARENTA E DOIS MIL) QUILOS DE POLIMERO CATIÔNICO GRANULAR (PÓ) DE ALTO PESO/ALTA CARGA PARA UTILIZAÇÃO NO SISTEMA DE DESIDRATAÇ
+
+**13.** Setores: informatica, software
+  Contratação de empresa especializada no fornecimento de solução tecnológica integrada, disponibilizada em ambiente web, no modelo Software as a Service (SaaS).
+
+**14.** Setores: engenharia, engenharia_rodoviaria
+  REGISTRO DE PREÇOS VISANDO A CONTRATAÇÃO DE EMPRESA PARA PRESTAÇÃO DE SERVIÇOS DE MANUTENÇÃO DE PAVIMENTAÇÃO ASFÁLTICA, RECUPERAÇÃO DE VIAS, PASSEIOS E DEMAIS ELEMENTOS DE INFRAESTRUTURA URBANA QUE CO
+
+**15.** Setores: engenharia, materiais_eletricos
+  ELABORAÇÃO DE ATA DE REGISTRO DE PREÇOS PARA A AQUISIÇÃO DE MATERIAIS DE CONSTRUÇÃO CIVIL DIVERSOS PARA EFETUAR PEQUENAS OBRAS DE REPARO E/OU MANUTENÇÃO DE PRÉDIOS, PRAÇAS E VIAS DE PROPRIEDADE DO MUN
+
+**16.** Setores: papelaria, engenharia
+  2º CADERNO  AQUISIÇÃO DE CHAPAS,SARRAFOS,MELAMINICO,COMPENSADO,PLASTIFICADO,FÓRMICA, RESINADO,CUMEEIRAS,TÁBUAS,FORROS,PONTALETES,VIGAS,PRANCHAS DE MADEIRA,ROLO DE FITA,CAIBRO E FOLHAS DE MADEIRA
+
+**17.** Setores: engenharia, transporte
+  aquisição e instalação de uma carroceria carrega tudo, confeccionada em estrutura metálica de aço, com rampas hidráulicas e tampas laterais, bem como demais especificações técnicas compatíveis, destin
+
+**18.** Setores: vestuario, saude
+  Registro de preço para prestação de serviços especializados de confecção e conserto de aparelhos ortodônticos, a serem distribuídos aos pacientes cadastrados na Rede Municipal de Saúde.
+
+**19.** Setores: alimentos, saude
+  REGISTRO DE PREÇOS PARA EVENTUAL E FUTURO FORNECIMENTO DE MATERIAIS, FRALDAS E INSUMOS MÉDICO-HOSPITALARES, DIETAS ENTERAIS, LEITES E SUPLEMENTOS, CONSTANTES DA TABELA “TABELA REVISTA SIMPRO”, DESTINA
+
+**20.** Setores: transporte, materiais_eletricos
+  Contratação de empresa para prestação de serviços mecânicos de manutenção elétrica automotiva, em veículos leves, utilitários, pesados e máquinas, com fornecimento de peças e acessórios.

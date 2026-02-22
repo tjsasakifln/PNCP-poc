@@ -27,13 +27,13 @@ Decisão: REJECTED → FALSO NEGATIVO
 
 ## Acceptance Criteria
 
-- [ ] **AC1:** Adicionar `"proteção"`, `"protecao"`, `"segurança"`, `"seguranca"`, `"proteção individual"`, `"protecao individual"`, `"segurança do trabalho"`, `"seguranca do trabalho"` ao context_required de "epi" e "epis" no `sectors_data.yaml` (setor vestuario)
-- [ ] **AC2:** Verificar se outros setores têm keywords com context gates igualmente restritivos:
-  - `informatica`: "servidor" (verificar se "virtual", "virtualização" estão no contexto)
-  - `informatica`: "monitor" (verificar se "polegada" está no contexto)
-  - `informatica`: "switch" (verificar se "porta", "gbps" estão no contexto)
-- [ ] **AC3:** Adicionar testes unitários para cada context gate expandido
-- [ ] **AC4:** Rodar `audit_all_sectors.py` antes e depois da mudança e comparar falsos negativos
+- [x] **AC1:** Adicionar `"proteção"`, `"protecao"`, `"segurança"`, `"seguranca"`, `"proteção individual"`, `"protecao individual"`, `"segurança do trabalho"`, `"seguranca do trabalho"` ao context_required de "epi" e "epis" no `sectors_data.yaml` (setor vestuario)
+- [x] **AC2:** Verificar se outros setores têm keywords com context gates igualmente restritivos:
+  - `informatica`: "servidor" — já tinha "virtualização"/"virtualizacao", adicionado "virtual"
+  - `informatica`: "monitor" — já tinha "polegadas", adicionado "polegada" (singular)
+  - `informatica`: "switch" — já tinha "porta" e "gbps" ✓ (nenhuma mudança necessária)
+- [x] **AC3:** Adicionar testes unitários para cada context gate expandido (16 testes em TestCRITFLT001EpiContextGate)
+- [x] **AC4:** Rodar `audit_all_sectors.py` antes e depois da mudança e comparar falsos negativos (400 itens PNCP, vestuario: 23 aprovados)
 
 ## Impacto
 
