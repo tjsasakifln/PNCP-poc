@@ -93,21 +93,21 @@ describe('InstitutionalSidebar', () => {
     it('renders official data badge', () => {
       render(<InstitutionalSidebar variant="login" />);
 
-      expect(screen.getByText('Dados de fontes oficiais federais e estaduais')).toBeInTheDocument();
+      expect(screen.getByText('Dados oficiais — federal, estadual e municipal')).toBeInTheDocument();
     });
 
     it('badge has check icon', () => {
       const { container } = render(<InstitutionalSidebar variant="login" />);
 
       // Badge should contain an SVG icon
-      const badge = screen.getByText('Dados de fontes oficiais federais e estaduais').closest('div');
+      const badge = screen.getByText('Dados oficiais — federal, estadual e municipal').closest('div');
       expect(badge?.querySelector('svg')).toBeInTheDocument();
     });
 
     it('badge has proper styling', () => {
       const { container } = render(<InstitutionalSidebar variant="login" />);
 
-      const badge = screen.getByText('Dados de fontes oficiais federais e estaduais').closest('div');
+      const badge = screen.getByText('Dados oficiais — federal, estadual e municipal').closest('div');
       expect(badge?.className).toContain('bg-white/10');
       expect(badge?.className).toContain('backdrop-blur-sm');
     });

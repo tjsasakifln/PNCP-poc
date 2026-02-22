@@ -152,7 +152,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "De onde vêm os dados das licitações?",
         answer:
-          "Todos os dados são obtidos diretamente de fontes oficiais do Governo Federal para publicação de contratações públicas. Os dados são públicos e abertos.",
+          "Todos os dados são obtidos diretamente de portais oficiais de contratações públicas do Brasil, que consolidam licitações federais, estaduais e municipais — incluindo autarquias, fundações e empresas públicas. Os dados são públicos e abertos.",
       },
       {
         question: "Com que frequência os dados são atualizados?",
@@ -188,7 +188,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "De onde vêm os dados das licitações?",
         answer:
-          "Todos os dados são obtidos de portais oficiais de contratações públicas do Governo Federal. São dados públicos e abertos. O SmartLic consolida automaticamente múltiplas fontes oficiais para garantir cobertura nacional (27 UFs) e atualização contínua.",
+          "Todos os dados são obtidos de portais oficiais de contratações públicas do Brasil, que cobrem licitações de todas as esferas — federal, estadual e municipal. O SmartLic consolida automaticamente múltiplas fontes oficiais para garantir cobertura nacional (27 UFs) e atualização contínua.",
       },
       {
         question: "Quem está por trás do SmartLic?",

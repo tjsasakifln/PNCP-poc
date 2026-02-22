@@ -103,7 +103,7 @@ export const valueProps = {
       "Se um edital compatível com seu perfil é publicado em qualquer estado do Brasil, você sabe. Cobertura nacional de fontes oficiais sem precisar monitorar dezenas de portais manualmente.",
     icon: Globe,
     metric: "27 UFs",
-    proof: "Consolidação automática de fontes oficiais federais e estaduais",
+    proof: "Consolidação automática de fontes oficiais de todas as esferas",
   },
 };
 

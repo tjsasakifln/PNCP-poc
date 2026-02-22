@@ -230,7 +230,7 @@ export default function SobrePage() {
 
             <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-2xl p-6 sm:p-8 space-y-4">
               <p className="text-[var(--ink-secondary)] leading-relaxed">
-                Todos os dados utilizados pelo SmartLic vêm de <strong className="text-[var(--ink)]">portais oficiais de contratações públicas</strong> do Governo Federal. São dados públicos, abertos e acessíveis a qualquer cidadão.
+                Todos os dados utilizados pelo SmartLic vêm de <strong className="text-[var(--ink)]">portais oficiais de contratações públicas do Brasil</strong> — que abrangem licitações federais, estaduais e municipais, incluindo autarquias, fundações e empresas públicas. São dados públicos, abertos e acessíveis a qualquer cidadão.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-4 pt-2">

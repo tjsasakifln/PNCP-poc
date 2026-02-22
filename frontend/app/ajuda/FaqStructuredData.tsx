@@ -54,7 +54,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "De onde vêm os dados das licitações?",
-    a: "Todos os dados são obtidos diretamente de fontes oficiais do Governo Federal para publicação de contratações públicas. Os dados são públicos e abertos.",
+    a: "Todos os dados são obtidos diretamente de portais oficiais de contratações públicas do Brasil, que consolidam licitações federais, estaduais e municipais — incluindo autarquias, fundações e empresas públicas. Os dados são públicos e abertos.",
   },
   {
     q: "Com que frequência os dados são atualizados?",
