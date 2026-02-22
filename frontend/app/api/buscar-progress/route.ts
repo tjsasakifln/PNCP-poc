@@ -53,11 +53,15 @@ export async function GET(request: NextRequest) {
     };
 
     try {
-      const { Agent } = await import("undici");
-      fetchOptions.dispatcher = new Agent({
-        bodyTimeout: 0,
-        headersTimeout: 30_000,
-      });
+      // @ts-expect-error — undici is available at runtime in Node.js but lacks type declarations
+      const undiciModule = await import("undici");
+      const UndiciAgent = undiciModule.Agent;
+      if (UndiciAgent) {
+        fetchOptions.dispatcher = new UndiciAgent({
+          bodyTimeout: 0,
+          headersTimeout: 30_000,
+        });
+      }
     } catch {
       // undici not available — proceed without custom dispatcher
     }
