@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { PageHeader } from "../../components/PageHeader";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -226,37 +227,22 @@ export default function MensagensPage() {
 
   return (
     <div className="min-h-screen bg-[var(--canvas)] flex flex-col">
-      {/* Header */}
-      <header className="border-b border-[var(--border)] bg-[var(--surface-0)] sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-          <div className="flex items-center gap-3">
-            {mobileShowThread && (
-              <button
-                onClick={() => setMobileShowThread(false)}
-                className="md:hidden p-1 -ml-1 text-[var(--ink-secondary)] hover:text-[var(--ink)]"
-                aria-label="Voltar"
-              >
-                <svg
-              aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-              </button>
-            )}
-            <Link href="/buscar" className="text-lg font-bold text-[var(--brand-navy)] hover:text-[var(--brand-blue)] transition-colors">
-              SmartLic<span className="text-[var(--brand-blue)]">.tech</span>
-            </Link>
-            <span className="text-sm text-[var(--ink-secondary)] font-medium border-l border-[var(--border)] pl-3">
-              Mensagens
-            </span>
-          </div>
-          <Link
-            href="/buscar"
-            className="px-3 py-1.5 text-sm border border-[var(--border)] rounded-button hover:bg-[var(--surface-1)] transition-colors"
-          >
-            Voltar
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Mensagens"
+        extraControls={
+          mobileShowThread ? (
+            <button
+              onClick={() => setMobileShowThread(false)}
+              className="md:hidden p-1 -ml-1 text-[var(--ink-secondary)] hover:text-[var(--ink)]"
+              aria-label="Voltar"
+            >
+              <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Main layout: two-panel */}
       <div className="flex-1 flex max-w-6xl mx-auto w-full">

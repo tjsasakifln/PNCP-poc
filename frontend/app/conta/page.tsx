@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { PageHeader } from "../../components/PageHeader";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -188,14 +189,9 @@ export default function ContaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
-      <div className="max-w-lg mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-display font-bold text-[var(--ink)]">Minha Conta</h1>
-          <Link href="/buscar" className="text-sm text-[var(--brand-blue)] hover:underline">
-            Voltar
-          </Link>
-        </div>
+    <div className="min-h-screen bg-[var(--canvas)]">
+      <PageHeader title="Minha Conta" />
+      <div className="max-w-lg mx-auto py-8 px-4">
 
         {/* Profile info */}
         <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">

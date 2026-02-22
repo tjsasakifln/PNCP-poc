@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { PageHeader } from "../../components/PageHeader";
 import Link from "next/link";
 import {
   BarChart,
@@ -415,40 +416,31 @@ export default function DashboardPage() {
   // ──────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-display font-bold text-[var(--ink)]">Meu Dashboard</h1>
-            {summary && (
-              <p className="text-sm text-[var(--ink-muted)]">
-                Membro desde {formatDate(summary.member_since)}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[var(--canvas)]">
+      <PageHeader
+        title="Dashboard"
+        extraControls={
+          <>
             <button
               onClick={handleExportCSV}
-              className="px-4 py-2 text-sm border border-[var(--border)] rounded-button
-                         text-[var(--ink-secondary)] hover:bg-[var(--surface-1)] transition-colors
-                         flex items-center gap-2"
+              className="hidden sm:flex px-3 py-1.5 text-sm border border-[var(--border)] rounded-button
+                         text-[var(--ink-secondary)] hover:bg-[var(--surface-1)] transition-colors items-center gap-1.5"
             >
-              <svg
-              aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Exportar CSV
+              CSV
             </button>
-            <Link
-              href="/buscar"
-              className="px-4 py-2 text-sm bg-[var(--brand-navy)] text-white rounded-button
-                         hover:bg-[var(--brand-blue)] transition-colors"
-            >
-              Nova busca
-            </Link>
-          </div>
-        </div>
+          </>
+        }
+      />
+      <div className="max-w-6xl mx-auto py-8 px-4">
+        {/* Subtitle */}
+        {summary && (
+          <p className="text-sm text-[var(--ink-muted)] mb-6">
+            Membro desde {formatDate(summary.member_since)}
+          </p>
+        )}
 
         {/* Stat Cards */}
         {summary && (

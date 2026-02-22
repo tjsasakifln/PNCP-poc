@@ -14,7 +14,6 @@ import { UserMenu } from "../components/UserMenu";
 import { SavedSearchesDropdown } from "../components/SavedSearchesDropdown";
 import { QuotaBadge } from "../components/QuotaBadge";
 import { PlanBadge } from "../components/PlanBadge";
-import { MessageBadge } from "../components/MessageBadge";
 import { UpgradeModal } from "../components/UpgradeModal";
 import { TrialConversionScreen } from "../components/TrialConversionScreen";
 import { TrialExpiringBanner } from "../components/TrialExpiringBanner";
@@ -325,22 +324,22 @@ function HomePageContent() {
 
   return (
     <div className="min-h-screen">
-      {/* Navigation Header */}
-      <header className="sticky top-0 z-50 bg-[var(--surface-0)] backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95 border-b border-[var(--border)] shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+      {/* Page Header */}
+      <header className="sticky top-0 z-40 bg-[var(--surface-0)] backdrop-blur-sm supports-[backdrop-filter]:bg-[var(--surface-0)]/95 border-b border-[var(--border)] shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-xl font-bold text-brand-navy hover:text-brand-blue transition-colors">
+            {/* Logo visible only on mobile (sidebar hidden) */}
+            <Link href="/buscar" className="lg:hidden text-xl font-bold text-brand-navy hover:text-brand-blue transition-colors">
               SmartLic<span className="text-brand-blue">.tech</span>
             </Link>
-            <span className="hidden sm:block text-sm text-ink-muted font-medium border-l border-strong pl-3">
-              Inteligência de decisão em licitações
-            </span>
+            <h1 className="hidden lg:block text-base font-semibold text-[var(--ink)]">
+              Buscar Licitacoes
+            </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <BackendStatusIndicator />
             <SavedSearchesDropdown onLoadSearch={search.handleLoadSearch} onAnalyticsEvent={trackEvent} />
             <ThemeToggle />
-            <MessageBadge />
             <UserMenu
               onRestartTour={!shouldShowOnboarding ? restartTour : undefined}
               statusSlot={
@@ -365,7 +364,7 @@ function HomePageContent() {
         </div>
       </header>
 
-      <main id="main-content" className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+      <main id="main-content" className="max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <PullToRefresh
           onRefresh={search.handleRefresh}
           pullingContent=""

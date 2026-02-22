@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { PageHeader } from "../../components/PageHeader";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "../../hooks/useAnalytics";
@@ -212,23 +213,21 @@ export default function HistoricoPage() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-display font-bold text-[var(--ink)]">
-              Histórico de Buscas
-            </h1>
-            <p className="text-[var(--ink-secondary)]">{total} busca{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
-          </div>
+    <div className="min-h-screen bg-[var(--canvas)]">
+      <PageHeader
+        title="Historico"
+        extraControls={
           <Link
             href="/buscar"
-            className="px-4 py-2 bg-[var(--brand-navy)] text-white rounded-button
+            className="hidden sm:inline-flex px-3 py-1.5 bg-[var(--brand-navy)] text-white rounded-button
                        hover:bg-[var(--brand-blue)] transition-colors text-sm"
           >
             Nova busca
           </Link>
-        </div>
+        }
+      />
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <p className="text-[var(--ink-secondary)] mb-6">{total} busca{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
 
         {loading ? (
           <div className="space-y-4">

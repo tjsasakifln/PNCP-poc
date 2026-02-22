@@ -18,7 +18,7 @@ import { usePipeline } from "../../hooks/usePipeline";
 import { STAGES_ORDER, STAGE_CONFIG, type PipelineItem, type PipelineStage } from "./types";
 import { PipelineColumn } from "./PipelineColumn";
 import { PipelineCard } from "./PipelineCard";
-import { AppHeader } from "../components/AppHeader";
+import { PageHeader } from "../../components/PageHeader";
 import { useAuth } from "../components/AuthProvider";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { toast } from "sonner";
@@ -101,7 +101,7 @@ export default function PipelinePage() {
   if (!session?.access_token) {
     return (
       <>
-        <AppHeader />
+        <PageHeader title="Pipeline" />
         <div className="max-w-7xl mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Pipeline de Oportunidades</h1>
           <p className="text-[var(--text-secondary)]">Faça login para acessar seu pipeline.</p>
@@ -112,7 +112,7 @@ export default function PipelinePage() {
 
   return (
     <>
-      <AppHeader />
+      <PageHeader title="Pipeline" />
       <main className="max-w-[1600px] mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>

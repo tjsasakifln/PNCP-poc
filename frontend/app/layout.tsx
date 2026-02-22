@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { SessionExpiredBanner } from "./components/SessionExpiredBanner";
 import { PaymentFailedBanner } from "../components/billing/PaymentFailedBanner";
+import { NavigationShell } from "../components/NavigationShell";
 import { StructuredData } from "./components/StructuredData";
 import { GoogleAnalytics } from "./components/GoogleAnalytics";
 
@@ -156,7 +157,9 @@ export default function RootLayout({
               <NProgressProvider>
                 <SessionExpiredBanner />
                 <PaymentFailedBanner />
-                {children}
+                <NavigationShell>
+                  {children}
+                </NavigationShell>
                 <Toaster position="top-right" richColors closeButton />
                 <CookieConsentBanner />
               </NProgressProvider>

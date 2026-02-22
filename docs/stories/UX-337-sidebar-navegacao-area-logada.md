@@ -3,7 +3,7 @@
 **Tipo:** Feature / UX Critico
 **Prioridade:** Critica (C2 + C3 + M1 da auditoria UX 2026-02-22)
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluida
 **Origem:** Auditoria UX — Persona "Seu Carlos" (gestor PME 60 anos, interior BR)
 
 ---
@@ -78,52 +78,54 @@ Todas as paginas internas devem ter o header com:
 
 ### Sidebar Desktop
 
-- [ ] AC1: Sidebar visivel em todas as paginas logadas (/buscar, /dashboard, /pipeline, /historico, /mensagens, /conta)
-- [ ] AC2: Sidebar mostra 7 itens: Buscar, Dashboard, Pipeline, Historico, Mensagens, Minha Conta, Ajuda
-- [ ] AC3: Item ativo esta highlighted com estilo distinto
-- [ ] AC4: Sidebar pode ser colapsada (so icones) via toggle
-- [ ] AC5: Estado colapsado/expandido persiste em localStorage
-- [ ] AC6: Sidebar nao aparece em paginas publicas (/, /login, /signup, /planos, /ajuda)
+- [x] AC1: Sidebar visivel em todas as paginas logadas (/buscar, /dashboard, /pipeline, /historico, /mensagens, /conta)
+- [x] AC2: Sidebar mostra 7 itens: Buscar, Dashboard, Pipeline, Historico, Mensagens, Minha Conta, Ajuda
+- [x] AC3: Item ativo esta highlighted com estilo distinto
+- [x] AC4: Sidebar pode ser colapsada (so icones) via toggle
+- [x] AC5: Estado colapsado/expandido persiste em localStorage
+- [x] AC6: Sidebar nao aparece em paginas publicas (/, /login, /signup, /planos, /ajuda)
 
 ### Bottom Nav Mobile
 
-- [ ] AC7: Bottom nav aparece em < 1024px com 5 itens
-- [ ] AC8: Cada item tem icone + label visivel
-- [ ] AC9: Touch targets >= 44px (WCAG)
-- [ ] AC10: "Mais" abre drawer com Conta, Ajuda, Sair
+- [x] AC7: Bottom nav aparece em < 1024px com 5 itens
+- [x] AC8: Cada item tem icone + label visivel
+- [x] AC9: Touch targets >= 44px (WCAG)
+- [x] AC10: "Mais" abre drawer com Conta, Ajuda, Sair
 
 ### Header Padrao
 
-- [ ] AC11: Todas as paginas internas tem header com logo + navegacao
-- [ ] AC12: Logo no header leva para /buscar (nao para /)
-- [ ] AC13: Paginas sem header anterior (Historico, Conta) ganham header
+- [x] AC11: Todas as paginas internas tem header com logo + navegacao
+- [x] AC12: Logo no header leva para /buscar (nao para /)
+- [x] AC13: Paginas sem header anterior (Historico, Conta) ganham header
 
 ### Nao-Regressao
 
-- [ ] AC14: Pagina de busca continua funcional (filtros, SSE, resultados)
-- [ ] AC15: Nenhum teste existente quebra (baseline: 50 fail FE)
-- [ ] AC16: Performance: LCP nao aumenta mais que 200ms
+- [x] AC14: Pagina de busca continua funcional (filtros, SSE, resultados)
+- [x] AC15: Nenhum teste existente quebra (baseline: 50 fail FE)
+- [x] AC16: Performance: LCP nao aumenta mais que 200ms
 
 ---
 
 ## Arquivos Envolvidos (Estimativa)
 
-### Criar
-- `frontend/components/Sidebar.tsx` — componente sidebar desktop
-- `frontend/components/BottomNav.tsx` — componente bottom nav mobile
-- `frontend/components/AppLayout.tsx` — layout wrapper para area logada
+### Criados
+- `frontend/components/Sidebar.tsx` — sidebar desktop colapsavel (200px/56px)
+- `frontend/components/BottomNav.tsx` — bottom nav mobile + drawer "Mais"
+- `frontend/components/NavigationShell.tsx` — wrapper condicional (auth + rota)
+- `frontend/components/PageHeader.tsx` — header padrao reutilizavel
 
-### Modificar
-- `frontend/app/buscar/page.tsx` — wrapper com AppLayout
-- `frontend/app/dashboard/page.tsx` — wrapper com AppLayout
-- `frontend/app/pipeline/page.tsx` — wrapper com AppLayout
-- `frontend/app/historico/page.tsx` — wrapper com AppLayout + header
-- `frontend/app/mensagens/page.tsx` — wrapper com AppLayout
-- `frontend/app/conta/page.tsx` — wrapper com AppLayout + header
+### Modificados
+- `frontend/app/layout.tsx` — NavigationShell wrapping children
+- `frontend/app/buscar/page.tsx` — header simplificado, logo mobile-only
+- `frontend/app/dashboard/page.tsx` — PageHeader + CSV no extraControls
+- `frontend/app/pipeline/page.tsx` — AppHeader → PageHeader
+- `frontend/app/historico/page.tsx` — PageHeader + "Nova busca" extraControl
+- `frontend/app/mensagens/page.tsx` — header custom → PageHeader
+- `frontend/app/conta/page.tsx` — PageHeader (era inline header)
 
 ### Testes
-- `frontend/__tests__/sidebar.test.tsx` — novo
-- `frontend/__tests__/bottom-nav.test.tsx` — novo
+- `frontend/__tests__/sidebar.test.tsx` — 14 testes (AC1-AC6)
+- `frontend/__tests__/bottom-nav.test.tsx` — 14 testes (AC7-AC10)
 
 ---
 
