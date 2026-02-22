@@ -2340,6 +2340,22 @@
               "description": "Source that provided this record",
               "title": "Source"
             },
+            "_value_source": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "estimated",
+                    "missing"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whether the bid's estimated value was reported ('estimated') or missing ('missing')",
+              "title": "Value Source"
+            },
             "confidence": {
               "anyOf": [
                 {
@@ -2420,7 +2436,7 @@
               "title": "Dias Restantes"
             },
             "link": {
-              "description": "Direct link to PNCP portal",
+              "description": "Direct link to bid source (priority: linkSistemaOrigem > constructed PNCP URL)",
               "title": "Link",
               "type": "string"
             },
@@ -4333,7 +4349,7 @@
     },
     "info": {
       "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relat\u00f3rios Excel e avalia\u00e7\u00e3o estrat\u00e9gica via IA.",
-      "title": "BidIQ Uniformes API",
+      "title": "SmartLic API",
       "version": "dev"
     },
     "openapi": "3.1.0",
@@ -16322,7 +16338,7 @@
       },
       "/buscar-progress/{search_id}": {
         "get": {
-          "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
+          "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nGTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
           "operationId": "buscar_progress_stream_buscar_progress__search_id__get",
           "parameters": [
             {
@@ -19135,7 +19151,7 @@
       },
       "/v1/buscar-progress/{search_id}": {
         "get": {
-          "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
+          "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nGTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
           "operationId": "buscar_progress_stream_v1_buscar_progress__search_id__get",
           "parameters": [
             {

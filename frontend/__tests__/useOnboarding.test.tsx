@@ -36,7 +36,7 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should detect completed onboarding from localStorage', () => {
-      localStorageMock.setItem('bidiq_onboarding_completed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_completed', 'true');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
@@ -45,7 +45,7 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should detect dismissed onboarding from localStorage', () => {
-      localStorageMock.setItem('bidiq_onboarding_dismissed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_dismissed', 'true');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
@@ -72,7 +72,7 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should restart tour and clear localStorage', () => {
-      localStorageMock.setItem('bidiq_onboarding_completed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_completed', 'true');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
@@ -82,7 +82,7 @@ describe('useOnboarding Hook', () => {
         result.current.restartTour();
       });
 
-      expect(localStorageMock.getItem('bidiq_onboarding_completed')).toBeNull();
+      expect(localStorageMock.getItem('smartlic_onboarding_completed')).toBeNull();
       expect(result.current.hasCompleted).toBe(false);
     });
 
@@ -115,7 +115,7 @@ describe('useOnboarding Hook', () => {
 
       // Simulate tour completion by setting localStorage directly
       act(() => {
-        localStorageMock.setItem('bidiq_onboarding_completed', 'true');
+        localStorageMock.setItem('smartlic_onboarding_completed', 'true');
       });
 
       // Note: In real scenario, Shepherd.js would trigger this
@@ -151,25 +151,25 @@ describe('useOnboarding Hook', () => {
       renderHook(() => useOnboarding({ autoStart: false }));
 
       act(() => {
-        localStorageMock.setItem('bidiq_onboarding_completed', 'true');
+        localStorageMock.setItem('smartlic_onboarding_completed', 'true');
       });
 
-      expect(localStorageMock.getItem('bidiq_onboarding_completed')).toBe('true');
+      expect(localStorageMock.getItem('smartlic_onboarding_completed')).toBe('true');
     });
 
     it('should save dismissal to localStorage', () => {
       renderHook(() => useOnboarding({ autoStart: false }));
 
       act(() => {
-        localStorageMock.setItem('bidiq_onboarding_dismissed', 'true');
+        localStorageMock.setItem('smartlic_onboarding_dismissed', 'true');
       });
 
-      expect(localStorageMock.getItem('bidiq_onboarding_dismissed')).toBe('true');
+      expect(localStorageMock.getItem('smartlic_onboarding_dismissed')).toBe('true');
     });
 
     it('should clear localStorage on restart', () => {
-      localStorageMock.setItem('bidiq_onboarding_completed', 'true');
-      localStorageMock.setItem('bidiq_onboarding_dismissed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_completed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_dismissed', 'true');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 
@@ -177,8 +177,8 @@ describe('useOnboarding Hook', () => {
         result.current.restartTour();
       });
 
-      expect(localStorageMock.getItem('bidiq_onboarding_completed')).toBeNull();
-      expect(localStorageMock.getItem('bidiq_onboarding_dismissed')).toBeNull();
+      expect(localStorageMock.getItem('smartlic_onboarding_completed')).toBeNull();
+      expect(localStorageMock.getItem('smartlic_onboarding_dismissed')).toBeNull();
     });
   });
 
@@ -190,7 +190,7 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should NOT auto-start if already completed', () => {
-      localStorageMock.setItem('bidiq_onboarding_completed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_completed', 'true');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: true }));
 
@@ -198,7 +198,7 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should NOT auto-start if dismissed', () => {
-      localStorageMock.setItem('bidiq_onboarding_dismissed', 'true');
+      localStorageMock.setItem('smartlic_onboarding_dismissed', 'true');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: true }));
 
@@ -232,7 +232,7 @@ describe('useOnboarding Hook', () => {
     });
 
     it('should handle invalid localStorage values', () => {
-      localStorageMock.setItem('bidiq_onboarding_completed', 'invalid');
+      localStorageMock.setItem('smartlic_onboarding_completed', 'invalid');
 
       const { result } = renderHook(() => useOnboarding({ autoStart: false }));
 

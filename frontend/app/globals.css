@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BidIQ Design System — Navy/Blue institutional palette */
+/* SmartLic Design System — Navy/Blue institutional palette */
 :root {
   /* Canvas & Ink - WCAG Contrast Documentation */
   --canvas: #ffffff;  /* Base background */
@@ -307,7 +307,7 @@ select {
 }
 
 /* ==================================
-   Shepherd.js Custom Styling - BidIQ Theme
+   Shepherd.js Custom Styling - SmartLic Theme
    Feature #3 - Interactive Onboarding
    ================================== */
 

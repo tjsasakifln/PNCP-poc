@@ -7,7 +7,7 @@
  * - Step 2: Interactive demo (trigger real search)
  * - Step 3: Your turn (prompt user's first search)
  *
- * Persistence: localStorage flag `bidiq_onboarding_completed`
+ * Persistence: localStorage flag `smartlic_onboarding_completed`
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -19,8 +19,8 @@ import 'shepherd.js/dist/css/shepherd.css';
 type ShepherdTour = any;
 type ShepherdStep = any;
 
-const ONBOARDING_STORAGE_KEY = 'bidiq_onboarding_completed';
-const ONBOARDING_DISMISSED_KEY = 'bidiq_onboarding_dismissed';
+const ONBOARDING_STORAGE_KEY = 'smartlic_onboarding_completed';
+const ONBOARDING_DISMISSED_KEY = 'smartlic_onboarding_dismissed';
 
 export interface OnboardingOptions {
   /**
@@ -61,6 +61,17 @@ export function useOnboarding(options: OnboardingOptions = {}) {
 
   // Check localStorage on mount
   useEffect(() => {
+    // Migrate legacy keys
+    const legacyCompleted = localStorage.getItem('bidiq_onboarding_completed');
+    if (legacyCompleted) {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, legacyCompleted);
+      localStorage.removeItem('bidiq_onboarding_completed');
+    }
+    const legacyDismissed = localStorage.getItem('bidiq_onboarding_dismissed');
+    if (legacyDismissed) {
+      localStorage.setItem(ONBOARDING_DISMISSED_KEY, legacyDismissed);
+      localStorage.removeItem('bidiq_onboarding_dismissed');
+    }
     const completed = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
     const dismissed = localStorage.getItem(ONBOARDING_DISMISSED_KEY) === 'true';
     setHasCompleted(completed);
@@ -85,10 +96,10 @@ export function useOnboarding(options: OnboardingOptions = {}) {
     // Step 1: Welcome & Value Proposition
     tour.addStep({
       id: 'welcome',
-      title: '👋 Bem-vindo ao BidIQ Uniformes!',
+      title: '👋 Bem-vindo ao SmartLic!',
       text: `
         <p class="mb-3">
-          Descubra oportunidades de licitação para uniformes e vestuário de forma <strong>inteligente e automatizada</strong>.
+          Descubra oportunidades de licitação de forma <strong>inteligente e automatizada</strong>.
         </p>
         <ul class="list-disc list-inside space-y-1 text-sm">
           <li>🔍 Busca em 27 estados simultaneamente</li>
@@ -118,7 +129,7 @@ export function useOnboarding(options: OnboardingOptions = {}) {
           Selecionamos <strong>SC, PR e RS</strong> (região Sul) para mostrar como funciona.
         </p>
         <p class="text-sm text-gray-600">
-          Clique em "Buscar Vestuário e Uniformes" para ver os resultados em ação!
+          Clique em "Buscar" para ver os resultados em ação!
         </p>
       `,
       attachTo: {

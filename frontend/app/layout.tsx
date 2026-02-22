@@ -128,7 +128,9 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  let theme = localStorage.getItem('bidiq-theme');
+                  var legacy = localStorage.getItem('bidiq-theme');
+                  if (legacy) { localStorage.setItem('smartlic-theme', legacy); localStorage.removeItem('bidiq-theme'); }
+                  let theme = localStorage.getItem('smartlic-theme');
                   if (!theme) return;
                   if (theme === 'system') {
                     theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

@@ -39,7 +39,7 @@ function GoogleSheetsIcon({ className }: { className?: string }) {
 interface GoogleSheetsExportButtonProps {
   /** List of licitações to export */
   licitacoes: any[];
-  /** Label for spreadsheet title (e.g., "Uniformes - SP, RJ") */
+  /** Label for spreadsheet title (e.g., "Informática - SP, RJ") */
   searchLabel: string;
   /** Disable button (e.g., while search is loading) */
   disabled?: boolean;

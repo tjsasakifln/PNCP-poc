@@ -7,7 +7,7 @@ import { useState } from "react";
  *
  * Multi-select filter for procurement modality types.
  * Codes mapped to real PNCP API codes (codigoModalidadeContratacao).
- * Based on specs from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  *
  * Features:
  * - Multi-select with checkboxes

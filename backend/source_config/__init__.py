@@ -1,5 +1,5 @@
 """
-Configuration module for BidIQ backend.
+Configuration module for SmartLic backend.
 
 Provides centralized configuration management for:
 - Multi-source procurement data sources

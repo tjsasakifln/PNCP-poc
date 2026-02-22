@@ -1,5 +1,5 @@
 """
-Multi-sector configuration for BidIQ procurement search.
+Multi-sector configuration for SmartLic procurement search.
 
 Each sector defines a keyword set and exclusion list used by filter.py
 to identify relevant procurement opportunities in PNCP data.

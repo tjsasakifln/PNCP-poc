@@ -1,8 +1,8 @@
 """
-BidIQ Uniformes POC - Backend API
+SmartLic - Backend API
 
-FastAPI application for searching and analyzing uniform procurement bids
-from Brazil's PNCP (Portal Nacional de Contratações Públicas).
+FastAPI application for searching and analyzing procurement bids
+from Brazil's official sources (PNCP, PCP, ComprasGov).
 
 This API provides endpoints for:
 - Searching procurement opportunities by state and date range
@@ -451,7 +451,7 @@ _init_tracing()
 
 # Initialize FastAPI application
 app = FastAPI(
-    title="BidIQ Uniformes API",
+    title="SmartLic API",
     description=(
         "API para busca e análise de licitações em fontes oficiais. "
         "Permite filtrar oportunidades por estado, valor e setor, "
@@ -595,10 +595,10 @@ async def root():
     SYS-M08: Informs clients about API versioning.
     """
     return {
-        "name": "BidIQ Uniformes API",
+        "name": "SmartLic API",
         "version": APP_VERSION,
         "api_version": "v1",  # SYS-M08: Current API version
-        "description": "API para busca de licitações de uniformes no PNCP",
+        "description": "API para busca e análise de licitações em fontes oficiais",
         "endpoints": {
             "docs": "/docs",
             "redoc": "/redoc",

@@ -74,7 +74,7 @@ describe('CookieConsentBanner Component (AC24, AC25)', () => {
     });
 
     it('should NOT render banner when consent already exists in localStorage', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -85,7 +85,7 @@ describe('CookieConsentBanner Component (AC24, AC25)', () => {
     });
 
     it('should NOT render banner when consent is rejected in localStorage', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: false,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -180,7 +180,7 @@ describe('CookieConsentBanner Component (AC24, AC25)', () => {
 
   describe('TC-LGPD-004: Manage Cookies Event', () => {
     it('should re-show banner when "manage-cookies" event is dispatched', async () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -202,7 +202,7 @@ describe('CookieConsentBanner Component (AC24, AC25)', () => {
     });
 
     it('should clear localStorage when "manage-cookies" event is dispatched', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -251,7 +251,7 @@ describe('CookieConsentBanner Component (AC24, AC25)', () => {
     });
 
     it('getCookieConsent should handle corrupted localStorage data', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', 'invalid-json');
+      localStorageMock.setItem('smartlic_cookie_consent', 'invalid-json');
       const consent = getCookieConsent();
       expect(consent).toBeNull();
     });
@@ -262,7 +262,7 @@ describe('CookieConsentBanner Component (AC24, AC25)', () => {
       expect(consent.analytics).toBe(true);
       expect(consent.timestamp).toBeDefined();
 
-      const stored = JSON.parse(localStorageMock.getItem('bidiq_cookie_consent') || '{}');
+      const stored = JSON.parse(localStorageMock.getItem('smartlic_cookie_consent') || '{}');
       expect(stored.analytics).toBe(true);
     });
 
@@ -302,7 +302,7 @@ describe('AnalyticsProvider Component (AC25)', () => {
     });
 
     it('should initialize Mixpanel when consent with analytics:true exists', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -321,7 +321,7 @@ describe('AnalyticsProvider Component (AC25)', () => {
     });
 
     it('should track page_load event after initialization with consent', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -339,7 +339,7 @@ describe('AnalyticsProvider Component (AC25)', () => {
     });
 
     it('should NOT initialize Mixpanel when consent with analytics:false exists', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: false,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -358,7 +358,7 @@ describe('AnalyticsProvider Component (AC25)', () => {
   describe('TC-LGPD-008: Consent Revocation', () => {
     it('should call opt_out_tracking when consent is revoked', () => {
       // Start with consent
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -385,7 +385,7 @@ describe('AnalyticsProvider Component (AC25)', () => {
     it('should NOT initialize Mixpanel when token is missing', () => {
       delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -446,7 +446,7 @@ describe('useAnalytics Hook (AC8)', () => {
     });
 
     it('should NOT call mixpanel.track when consent with analytics:false', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: false,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -463,7 +463,7 @@ describe('useAnalytics Hook (AC8)', () => {
 
   describe('TC-LGPD-012: trackEvent with Consent', () => {
     it('should call mixpanel.track when consent with analytics:true', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -482,7 +482,7 @@ describe('useAnalytics Hook (AC8)', () => {
     });
 
     it('should include custom properties in track call', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -516,7 +516,7 @@ describe('useAnalytics Hook (AC8)', () => {
     });
 
     it('should NOT call mixpanel.identify when consent with analytics:false', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: false,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -533,7 +533,7 @@ describe('useAnalytics Hook (AC8)', () => {
 
   describe('TC-LGPD-014: identifyUser with Consent', () => {
     it('should call mixpanel.identify when consent with analytics:true', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -549,7 +549,7 @@ describe('useAnalytics Hook (AC8)', () => {
     });
 
     it('should call mixpanel.identify without properties', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -567,7 +567,7 @@ describe('useAnalytics Hook (AC8)', () => {
 
   describe('TC-LGPD-015: trackPageView', () => {
     it('should call trackEvent with page_view event when consent granted', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -598,7 +598,7 @@ describe('useAnalytics Hook (AC8)', () => {
     it('should NOT track events when token is missing', () => {
       delete process.env.NEXT_PUBLIC_MIXPANEL_TOKEN;
 
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -615,7 +615,7 @@ describe('useAnalytics Hook (AC8)', () => {
 
   describe('TC-LGPD-017: Error Handling', () => {
     it('should handle mixpanel.track errors gracefully', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));
@@ -634,7 +634,7 @@ describe('useAnalytics Hook (AC8)', () => {
     });
 
     it('should handle mixpanel.identify errors gracefully', () => {
-      localStorageMock.setItem('bidiq_cookie_consent', JSON.stringify({
+      localStorageMock.setItem('smartlic_cookie_consent', JSON.stringify({
         analytics: true,
         timestamp: '2026-02-13T00:00:00.000Z',
       }));

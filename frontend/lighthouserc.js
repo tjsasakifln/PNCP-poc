@@ -1,7 +1,7 @@
 /**
  * Lighthouse CI Configuration
  *
- * Performance budgets and assertions for BidIQ frontend.
+ * Performance budgets and assertions for SmartLic frontend.
  *
  * Run locally:
  *   npm run build

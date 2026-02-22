@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
  * ValorFilter Component
  *
  * Value range filter with dual slider and quick preset buttons.
- * Based on specs from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  *
  * Features:
  * - Dual slider (range) from R$ 0 to R$ 10M

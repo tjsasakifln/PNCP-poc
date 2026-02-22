@@ -69,7 +69,7 @@ export function getStoredUTMParams(): Record<string, string> {
  *
  * @example
  * const { trackEvent } = useAnalytics();
- * trackEvent('search_started', { ufs: ['SC', 'PR'], setor: 'vestuario' });
+ * trackEvent('search_started', { ufs: ['SC', 'PR'], setor: 'informatica' });
  */
 export const useAnalytics = () => {
   /**

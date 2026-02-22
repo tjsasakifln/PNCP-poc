@@ -6,7 +6,7 @@
  * Reusable badge for displaying licitacao status with appropriate colors and icons.
  * Supports: aberta (green), em_julgamento (yellow), encerrada (red), suspensa (gray)
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  */
 
 export type LicitacaoStatus =

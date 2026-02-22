@@ -1,5 +1,5 @@
 """
-Locust load testing for BidIQ Backend API.
+Locust load testing for SmartLic Backend API.
 
 Tests:
 - Search endpoint performance under concurrent load
@@ -115,9 +115,9 @@ def on_test_stop(environment, **kwargs):
 # Load Test User Behaviors
 # ============================================================================
 
-class BidIQUser(HttpUser):
+class SmartLicUser(HttpUser):
     """
-    Simulates typical BidIQ user behavior.
+    Simulates typical SmartLic user behavior.
 
     Behavior pattern:
     - Check health (rare)
@@ -267,7 +267,7 @@ class StressTestUser(HttpUser):
 # Load Test Scenarios
 # ============================================================================
 
-# Default: Use BidIQUser for realistic load testing
+# Default: Use SmartLicUser for realistic load testing
 # Override with: locust -f locustfile.py --user-class StressTestUser
 
 # Recommended test scenarios:

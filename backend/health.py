@@ -1,5 +1,5 @@
 """
-Health Check Module for Multi-Source BidIQ System
+Health Check Module for Multi-Source SmartLic System
 
 Provides comprehensive health check functionality including:
 - Overall system status

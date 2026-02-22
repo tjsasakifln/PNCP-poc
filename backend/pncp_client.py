@@ -766,7 +766,7 @@ class PNCPClient:
 
         # Set default headers (X-Request-ID is added per-request in fetch_page)
         session.headers.update({
-            "User-Agent": "BidIQ/1.0 (procurement-search; contact@bidiq.com.br)",
+            "User-Agent": "SmartLic/1.0 (procurement-search; contato@smartlic.tech)",
             "Accept": "application/json",
         })
 
@@ -1326,7 +1326,7 @@ class AsyncPNCPClient:
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(self.config.timeout),
             headers={
-                "User-Agent": "BidIQ/1.0 (procurement-search; contact@bidiq.com.br)",
+                "User-Agent": "SmartLic/1.0 (procurement-search; contato@smartlic.tech)",
                 "Accept": "application/json",
             },
             follow_redirects=True,

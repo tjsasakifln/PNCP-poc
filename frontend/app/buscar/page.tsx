@@ -564,7 +564,7 @@ function HomePageContent() {
             type="text"
             value={search.saveSearchName}
             onChange={(e) => search.setSaveSearchName(e.target.value)}
-            placeholder="Ex: Uniformes Sul do Brasil"
+            placeholder="Ex: Informática Sul do Brasil"
             className="w-full border border-strong rounded-input px-4 py-2.5 text-base bg-surface-0 text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue transition-colors"
             maxLength={50}
             autoFocus

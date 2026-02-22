@@ -1,5 +1,5 @@
 /**
- * Type definitions for BidIQ Uniformes POC
+ * Type definitions for SmartLic
  *
  * STORY-222: API response types are now generated from the backend OpenAPI schema.
  * This file re-exports those types for backward compatibility and defines

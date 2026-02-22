@@ -98,9 +98,9 @@ describe('ThemeToggle Component', () => {
     const darkOption = screen.getAllByRole('button').find(btn => btn.textContent?.includes('Dark'));
     fireEvent.click(darkOption!);
 
-    // Check localStorage (correct key is 'bidiq-theme')
+    // Check localStorage (correct key is 'smartlic-theme')
     await waitFor(() => {
-      expect(localStorage.getItem('bidiq-theme')).toBe('dark');
+      expect(localStorage.getItem('smartlic-theme')).toBe('dark');
     });
   });
 

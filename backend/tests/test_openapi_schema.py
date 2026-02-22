@@ -113,7 +113,7 @@ class TestOpenAPISchema:
         assert schema["openapi"].startswith("3.")  # OpenAPI 3.x
 
         assert "info" in schema
-        assert schema["info"]["title"] == "BidIQ Uniformes API"
+        assert schema["info"]["title"] == "SmartLic API"
         assert "version" in schema["info"]
         assert "description" in schema["info"]
 

@@ -48,7 +48,7 @@ describe('ThemeProvider Component', () => {
     });
 
     it('should load theme from localStorage if present', async () => {
-      localStorage.setItem('bidiq-theme', 'dark');
+      localStorage.setItem('smartlic-theme', 'dark');
 
       const TestComponent = () => {
         const { theme } = useTheme();
@@ -67,7 +67,7 @@ describe('ThemeProvider Component', () => {
     });
 
     it('should ignore invalid theme in localStorage', async () => {
-      localStorage.setItem('bidiq-theme', 'invalid-theme');
+      localStorage.setItem('smartlic-theme', 'invalid-theme');
 
       const TestComponent = () => {
         const { theme } = useTheme();
@@ -114,7 +114,7 @@ describe('ThemeProvider Component', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('theme')).toHaveTextContent('dark');
-        expect(localStorage.getItem('bidiq-theme')).toBe('dark');
+        expect(localStorage.getItem('smartlic-theme')).toBe('dark');
       });
     });
 
@@ -215,7 +215,7 @@ describe('ThemeProvider Component', () => {
         const root = document.documentElement;
         // Should apply dark theme since system prefers dark
         expect(root.classList.contains('dark')).toBe(true);
-        expect(localStorage.getItem('bidiq-theme')).toBe('system');
+        expect(localStorage.getItem('smartlic-theme')).toBe('system');
       });
     });
 
@@ -240,7 +240,7 @@ describe('ThemeProvider Component', () => {
         })),
       });
 
-      localStorage.setItem('bidiq-theme', 'system');
+      localStorage.setItem('smartlic-theme', 'system');
 
       const TestComponent = () => {
         const { theme } = useTheme();

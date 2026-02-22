@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
   // Read from filesystem (legacy mode / storage fallback)
   const tmpDir = tmpdir();
-  const filePath = join(tmpDir, `bidiq_${id}.xlsx`);
+  const filePath = join(tmpDir, `smartlic_${id}.xlsx`);
 
   try {
     const buffer = await readFile(filePath);

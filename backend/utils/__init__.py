@@ -1,5 +1,5 @@
 """
-Utility modules for BidIQ backend.
+Utility modules for SmartLic backend.
 
 This package contains helper functions and utilities for:
 - ordenacao: Sorting and ordering of procurement results

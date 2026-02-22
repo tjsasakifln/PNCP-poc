@@ -16,7 +16,7 @@ import { differenceInDays, differenceInHours, isPast, parseISO, format } from "d
  * - Matched keyword tags
  * - Quick actions: Ver Edital, Documentos, Favoritar
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  */
 
 interface LicitacaoCardProps {

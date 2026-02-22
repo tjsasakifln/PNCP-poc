@@ -1,5 +1,5 @@
 """
-Schemas package for BidIQ backend.
+Schemas package for SmartLic backend.
 
 This package contains Pydantic models and data schemas:
 - unified.py: Multi-source unified procurement models

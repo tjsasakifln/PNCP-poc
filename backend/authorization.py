@@ -1,4 +1,4 @@
-"""Authorization helpers for BidIQ API.
+"""Authorization helpers for SmartLic API.
 
 Shared authorization logic used across multiple route modules.
 Extracted from main.py as part of STORY-202 monolith decomposition.

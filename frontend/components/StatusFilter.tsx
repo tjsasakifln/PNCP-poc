@@ -4,7 +4,7 @@
  * StatusFilter Component
  *
  * Filter component for bid status selection.
- * Based on specs from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  *
  * Features:
  * - 4 radio button options: Abertas, Em Julgamento, Encerradas, Todas

@@ -1,5 +1,5 @@
 // Service Worker for offline fallback
-const CACHE_NAME = 'bidiq-offline-v1';
+const CACHE_NAME = 'smartlic-offline-v1';
 const OFFLINE_URL = '/offline.html';
 
 // Install event - cache offline page

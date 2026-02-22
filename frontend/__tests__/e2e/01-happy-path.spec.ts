@@ -25,10 +25,10 @@ test.describe('Happy Path User Journey', () => {
 
   test('AC1.1: should load homepage with all expected UI elements', async ({ page }) => {
     // Verify page title
-    await expect(page).toHaveTitle(/BidIQ Uniformes/i);
+    await expect(page).toHaveTitle(/SmartLic/i);
 
     // Verify header
-    const heading = page.getByRole('heading', { name: /BidIQ Uniformes/i });
+    const heading = page.getByRole('heading', { name: /SmartLic/i });
     await expect(heading).toBeVisible();
 
     // Verify UF selection section

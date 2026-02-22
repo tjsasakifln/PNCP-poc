@@ -1,7 +1,7 @@
 """
 Multi-Source Configuration Module
 
-Manages configuration for all procurement data sources in the BidIQ system.
+Manages configuration for all procurement data sources in the SmartLic system.
 Provides environment-based configuration loading, enable/disable toggles,
 timeout settings, and secure API key management.
 

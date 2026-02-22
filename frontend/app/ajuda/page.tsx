@@ -49,7 +49,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "O que significam os filtros de setor?",
         answer:
-          "Os setores representam as áreas de atuação (ex.: Facilities, Uniformes, Limpeza). Ao selecionar um setor, o sistema aplica filtros inteligentes de palavras-chave para encontrar licitações relevantes àquela área específica.",
+          "Os setores representam as áreas de atuação (ex.: TI, Engenharia, Saúde). Ao selecionar um setor, o sistema aplica filtros inteligentes de palavras-chave para encontrar licitações relevantes àquela área específica.",
       },
       {
         question: "Quanto tempo leva uma busca?",

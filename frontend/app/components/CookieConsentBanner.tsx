@@ -8,11 +8,17 @@ export interface CookieConsent {
   timestamp: string;
 }
 
-const CONSENT_KEY = "bidiq_cookie_consent";
+const CONSENT_KEY = "smartlic_cookie_consent";
 
 export function getCookieConsent(): CookieConsent | null {
   if (typeof window === "undefined") return null;
   try {
+    // Migrate legacy key
+    const legacy = localStorage.getItem("bidiq_cookie_consent");
+    if (legacy) {
+      localStorage.setItem(CONSENT_KEY, legacy);
+      localStorage.removeItem("bidiq_cookie_consent");
+    }
     const raw = localStorage.getItem(CONSENT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);

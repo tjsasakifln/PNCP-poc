@@ -1,5 +1,5 @@
 /**
- * Page Object Model (POM) for BidIQ Uniformes E2E Tests
+ * Page Object Model (POM) for SmartLic E2E Tests
  *
  * Provides reusable selectors and actions for common UI interactions
  * following the Page Object pattern for better maintainability.
@@ -94,7 +94,7 @@ export class SearchPage {
    */
   async goto() {
     await this.page.goto('/');
-    await expect(this.page).toHaveTitle(/BidIQ|DescompLicita|SmartLic/i);
+    await expect(this.page).toHaveTitle(/SmartLic/i);
   }
 
   /**

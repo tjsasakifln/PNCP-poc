@@ -16,7 +16,7 @@ import { useState, useRef, useEffect } from "react";
  * - Prazo mais proximo (prazo_asc)
  * - Relevancia (relevancia)
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  */
 
 export type OrdenacaoOption =

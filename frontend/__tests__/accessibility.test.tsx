@@ -185,25 +185,25 @@ describe('Accessibility - WCAG 2.2 AAA Compliance', () => {
     });
   });
 
-  describe('Issue #124 - Theme Name (BidIQ)', () => {
-    it('should use "bidiq-theme" instead of "descomplicita-theme"', () => {
-      const correctThemeName = 'bidiq-theme';
-      const incorrectThemeName = 'descomplicita-theme';
+  describe('Issue #124 - Theme Name (SmartLic)', () => {
+    it('should use "smartlic-theme" instead of legacy theme names', () => {
+      const correctThemeName = 'smartlic-theme';
+      const legacyThemeName = 'bidiq-theme';
 
       // Verify the pattern
-      expect(correctThemeName).toBe('bidiq-theme');
-      expect(correctThemeName).not.toBe(incorrectThemeName);
+      expect(correctThemeName).toBe('smartlic-theme');
+      expect(correctThemeName).not.toBe(legacyThemeName);
     });
 
-    it('should reference bidiq-theme in localStorage', () => {
+    it('should reference smartlic-theme in localStorage', () => {
       // Mock localStorage pattern
-      const storageKey = 'bidiq-theme';
-      expect(storageKey).toBe('bidiq-theme');
+      const storageKey = 'smartlic-theme';
+      expect(storageKey).toBe('smartlic-theme');
     });
 
-    it('should use "BidIQ Design System" in CSS comments', () => {
-      const cssComment = '/* BidIQ Design System — Navy/Blue institutional palette */';
-      expect(cssComment).toContain('BidIQ Design System');
+    it('should use "SmartLic Design System" in CSS comments', () => {
+      const cssComment = '/* SmartLic Design System — Navy/Blue institutional palette */';
+      expect(cssComment).toContain('SmartLic Design System');
       expect(cssComment).not.toContain('Descomplicita');
     });
   });

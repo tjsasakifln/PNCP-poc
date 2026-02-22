@@ -97,7 +97,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("bidiq-theme") as ThemeId | null;
+    // Migrate legacy key
+    const legacy = localStorage.getItem("bidiq-theme");
+    if (legacy) {
+      localStorage.setItem("smartlic-theme", legacy);
+      localStorage.removeItem("bidiq-theme");
+    }
+    const stored = localStorage.getItem("smartlic-theme") as ThemeId | null;
     const initial = stored && THEMES.some(t => t.id === stored) ? stored : "light";
     setThemeState(initial);
     applyTheme(initial);
@@ -116,7 +122,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = useCallback((t: ThemeId) => {
     setThemeState(t);
     applyTheme(t);
-    localStorage.setItem("bidiq-theme", t);
+    localStorage.setItem("smartlic-theme", t);
   }, []);
 
   const config = THEMES.find(t => t.id === theme) || THEMES[0];

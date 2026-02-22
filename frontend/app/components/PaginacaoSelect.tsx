@@ -13,7 +13,7 @@ import { useState, useRef, useEffect } from "react";
  * - 50 items per page
  * - 100 items per page
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md (Section 8)
+ * Based on SmartLic technical specs
  */
 
 export type PaginacaoOption = 10 | 20 | 50 | 100;

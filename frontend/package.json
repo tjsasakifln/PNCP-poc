@@ -1,8 +1,8 @@
 {
-  "name": "bidiq-uniformes-frontend",
+  "name": "smartlic-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Frontend for BidIQ Uniformes POC - Placeholder for Next.js setup in issue #21",
+  "description": "Frontend for SmartLic — Inteligência em Licitações",
   "scripts": {
     "dev": "next dev",
     "build": "next build && npm run postbuild",

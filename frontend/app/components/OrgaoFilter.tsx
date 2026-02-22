@@ -14,7 +14,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
  * - Removable badges for selected agencies
  * - Shows frequent agencies based on search results
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md (Section 6)
+ * Based on SmartLic technical specs
  */
 
 export interface Orgao {

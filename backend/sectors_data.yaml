@@ -1,5 +1,5 @@
 # =============================================================================
-# Multi-sector keyword configuration for BidIQ procurement search.
+# Multi-sector keyword configuration for SmartLic procurement search.
 #
 # Each sector defines keywords, exclusions, context_required_keywords, and
 # max_contract_value used by filter.py to identify relevant procurement

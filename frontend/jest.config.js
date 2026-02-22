@@ -1,5 +1,5 @@
 /**
- * Jest configuration for BidIQ Uniformes Frontend
+ * Jest configuration for SmartLic Frontend
  *
  * This configuration is ready for Next.js 14+ with TypeScript.
  * Install required dependencies:

@@ -2500,7 +2500,7 @@
   },
   "info": {
     "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es de uniformes no PNCP. Permite filtrar oportunidades por estado, valor e keywords, gerando relat\u00f3rios Excel e resumos executivos via IA.",
-    "title": "BidIQ Uniformes API",
+    "title": "SmartLic API",
     "version": "0.2.0"
   },
   "openapi": "3.1.0",

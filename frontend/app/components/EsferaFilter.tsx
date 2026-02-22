@@ -8,7 +8,7 @@ import { useMemo } from "react";
  * Filter for government spheres (Federal, Estadual, Municipal).
  * Allows multi-selection with toggle buttons and visual icons.
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  */
 
 export type Esfera = "F" | "E" | "M";

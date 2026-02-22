@@ -15,7 +15,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
  * - Disabled when no UF is selected
  * - Removable badges for selected municipalities
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  */
 
 export interface Municipio {

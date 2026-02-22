@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
       downloadId = randomUUID();
       const buffer = Buffer.from(data.excel_base64, "base64");
       const tmpDir = tmpdir();
-      const filePath = join(tmpDir, `bidiq_${downloadId}.xlsx`);
+      const filePath = join(tmpDir, `smartlic_${downloadId}.xlsx`);
 
       try {
         await writeFile(filePath, buffer);

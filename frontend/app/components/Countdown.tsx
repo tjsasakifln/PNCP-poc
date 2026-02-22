@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo } from "react";
  * - "Encerra hoje!" when < 12 hours with urgency styling
  * - "Encerrado" when past due
  *
- * Based on specification from docs/reports/especificacoes-tecnicas-melhorias-bidiq.md
+ * Based on SmartLic technical specs
  */
 
 interface CountdownProps {

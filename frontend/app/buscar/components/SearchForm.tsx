@@ -270,7 +270,7 @@ export default function SearchForm({
                 value={setorId}
                 options={setores.map(s => ({ value: s.id, label: s.name, description: s.description }))}
                 onChange={(value) => { setSetorId(value); clearResult(); }}
-                placeholder="Ex: Uniformes, TI, Engenharia, Facilities..."
+                placeholder="Ex: TI, Engenharia, Facilities, Saúde..."
               />
             )}
           </div>

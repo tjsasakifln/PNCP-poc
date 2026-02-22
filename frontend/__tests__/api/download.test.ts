@@ -277,7 +277,7 @@ describe("GET /api/download", () => {
 
       expect(mockReadFile).toHaveBeenCalledTimes(1);
       const calledPath = mockReadFile.mock.calls[0][0] as string;
-      expect(calledPath).toContain(`bidiq_${VALID_UUID}.xlsx`);
+      expect(calledPath).toContain(`smartlic_${VALID_UUID}.xlsx`);
     });
 
     it("should return 404 when the file does not exist on disk", async () => {

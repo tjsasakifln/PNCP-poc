@@ -36,12 +36,12 @@ export interface UseSavedSearchesReturn {
  * const { searches, saveNewSearch, deleteSearch, loadSearch } = useSavedSearches();
  *
  * // Save a search
- * saveNewSearch("Uniformes SC/PR/RS", {
+ * saveNewSearch("Informática SC/PR/RS", {
  *   ufs: ["SC", "PR", "RS"],
  *   dataInicial: "2026-01-22",
  *   dataFinal: "2026-01-29",
  *   searchMode: "setor",
- *   setorId: "vestuario"
+ *   setorId: "informatica"
  * });
  *
  * // Load a search
