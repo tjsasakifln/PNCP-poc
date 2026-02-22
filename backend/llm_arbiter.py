@@ -309,12 +309,15 @@ def _parse_structured_response(
         data = json.loads(raw_content.strip())
         classification = LLMClassification.model_validate(data)
 
-        # AC6: Validate evidence as literal substrings of objeto
-        objeto_lower = objeto.lower()
+        # AC6 + CRIT-022: Validate evidence as literal substrings of objeto
+        # Use normalize_text() for accent/punctuation/whitespace normalization
+        # (LLM often returns text without accents or with normalized whitespace)
+        from filter import normalize_text as _normalize
+        objeto_normalized = _normalize(objeto)
         validated_evidence = []
         for ev in classification.evidencias:
             if ev and len(ev) <= 100:
-                if ev.lower() in objeto_lower:
+                if _normalize(ev) in objeto_normalized:
                     validated_evidence.append(ev)
                 else:
                     logger.warning(
@@ -324,7 +327,7 @@ def _parse_structured_response(
             elif ev and len(ev) > 100:
                 # Truncate to 100 chars and re-validate
                 truncated = ev[:100]
-                if truncated.lower() in objeto_lower:
+                if _normalize(truncated) in objeto_normalized:
                     validated_evidence.append(truncated)
 
         classification.evidencias = validated_evidence

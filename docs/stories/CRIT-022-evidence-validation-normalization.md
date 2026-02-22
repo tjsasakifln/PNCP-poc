@@ -3,7 +3,7 @@
 **Tipo:** Bug / Auditabilidade
 **Prioridade:** P1 (Nao afeta recall, afeta auditabilidade)
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluído
 **Origem:** Investigacao P0 — warnings "Discarding hallucinated evidence (not substring)" nos logs
 **Dependencias:** Nenhuma
 **Estimativa:** XS (usar normalize_text() existente)
@@ -51,12 +51,12 @@ O LLM (GPT-4.1-nano) frequentemente retorna evidencias sem acentos ou com whites
 
 ### Criterios de Aceitacao
 
-- [ ] **AC1:** Evidence validation em `llm_arbiter.py:312-330` usa `normalize_text()` (importado de filter.py) ao inves de `.lower()`
-- [ ] **AC2:** Evidencia "servicos de engenharia" e aceita quando objeto contem "servicos de engenharia"
-- [ ] **AC3:** Evidencia "manutencao predial" e aceita quando objeto contem "manutencao predial"
-- [ ] **AC4:** Evidencia completamente inventada (sem relacao com objeto) continua sendo rejeitada
-- [ ] **AC5:** Teste unitario com 5+ cenarios de mismatch de acentos/whitespace
-- [ ] **AC6:** Warning log de "hallucinated evidence" cai drasticamente em producao
+- [x] **AC1:** Evidence validation em `llm_arbiter.py:312-330` usa `normalize_text()` (importado de filter.py) ao inves de `.lower()`
+- [x] **AC2:** Evidencia "servicos de engenharia" e aceita quando objeto contem "servicos de engenharia"
+- [x] **AC3:** Evidencia "manutencao predial" e aceita quando objeto contem "manutencao predial"
+- [x] **AC4:** Evidencia completamente inventada (sem relacao com objeto) continua sendo rejeitada
+- [x] **AC5:** Teste unitario com 5+ cenarios de mismatch de acentos/whitespace
+- [x] **AC6:** Warning log de "hallucinated evidence" cai drasticamente em producao
 
 ---
 

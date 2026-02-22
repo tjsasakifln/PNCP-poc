@@ -340,6 +340,97 @@ class TestCostMonitoring:
 # Existing tests updated for dict return
 # =============================================================================
 
+# =============================================================================
+# CRIT-022: Evidence Validation with Accent/Whitespace Normalization
+# =============================================================================
+
+class TestEvidenceNormalization:
+    """CRIT-022: Evidence validation uses normalize_text() for accent/whitespace tolerance."""
+
+    def test_accent_mismatch_cedilha_accepted(self):
+        """AC2: 'servicos de engenharia' accepted when objeto has 'serviços de engenharia'."""
+        raw = _structured_json("SIM", 90, ["servicos de engenharia"])
+        result = _parse_structured_response(
+            raw, "Contratação de serviços de engenharia para reforma predial"
+        )
+        assert "servicos de engenharia" in result.evidencias
+
+    def test_accent_mismatch_tilde_accepted(self):
+        """AC3: 'manutencao predial' accepted when objeto has 'manutenção predial'."""
+        raw = _structured_json("SIM", 85, ["manutencao predial"])
+        result = _parse_structured_response(
+            raw, "Serviço de manutenção predial e conservação de edifício"
+        )
+        assert "manutencao predial" in result.evidencias
+
+    def test_whitespace_normalization_accepted(self):
+        """AC2/AC3: Double spaces in objeto don't prevent match."""
+        raw = _structured_json("SIM", 80, ["reforma e ampliacao"])
+        result = _parse_structured_response(
+            raw, "Serviço de  reforma  e  ampliação  do prédio"
+        )
+        assert "reforma e ampliacao" in result.evidencias
+
+    def test_punctuation_normalization_accepted(self):
+        """CRIT-022: Hyphen/punctuation removed by LLM doesn't prevent match."""
+        raw = _structured_json("SIM", 75, ["ENGENHARIA PROJETOS"])
+        result = _parse_structured_response(
+            raw, "ENGENHARIA - PROJETOS E OBRAS DE INFRAESTRUTURA"
+        )
+        assert "ENGENHARIA PROJETOS" in result.evidencias
+
+    def test_hallucinated_evidence_still_rejected(self):
+        """AC4: Completely invented evidence is still rejected after normalization."""
+        raw = _structured_json("SIM", 90, ["consultoria em blockchain"])
+        result = _parse_structured_response(
+            raw, "Aquisição de uniformes escolares para rede municipal de ensino"
+        )
+        assert "consultoria em blockchain" not in result.evidencias
+        assert len(result.evidencias) == 0
+
+    def test_mixed_valid_and_hallucinated(self):
+        """AC4: Valid evidence kept, hallucinated discarded."""
+        raw = _structured_json("SIM", 85, [
+            "uniformes escolares",       # valid
+            "blockchain descentralizado",  # hallucinated
+            "rede municipal",             # valid
+        ])
+        result = _parse_structured_response(
+            raw, "Aquisição de uniformes escolares para rede municipal de ensino"
+        )
+        assert "uniformes escolares" in result.evidencias
+        assert "rede municipal" in result.evidencias
+        assert "blockchain descentralizado" not in result.evidencias
+        assert len(result.evidencias) == 2
+
+    def test_acute_accent_mismatch(self):
+        """CRIT-022: Acute accent (é, á, ó) removed by LLM still matches."""
+        raw = _structured_json("SIM", 90, ["servico de conservacao"])
+        result = _parse_structured_response(
+            raw, "Serviço de conservação das áreas internas"
+        )
+        assert "servico de conservacao" in result.evidencias
+
+    def test_circumflex_accent_mismatch(self):
+        """CRIT-022: Circumflex (ê, â) removed by LLM still matches."""
+        raw = _structured_json("SIM", 85, ["gerencia de projetos"])
+        result = _parse_structured_response(
+            raw, "Gerência de projetos técnicos de engenharia"
+        )
+        assert "gerencia de projetos" in result.evidencias
+
+    def test_truncated_evidence_with_normalization(self):
+        """CRIT-022: Evidence > 100 chars truncated and still matched with normalization."""
+        long_ev = "servicos de engenharia para construcao civil e reformas " + "x" * 60
+        raw = _structured_json("SIM", 80, [long_ev])
+        # Truncated to 100 chars: "servicos de engenharia para construcao civil e reformas xxxx..."
+        result = _parse_structured_response(
+            raw, "Serviços de engenharia para construção civil e reformas " + "x" * 100 + " mais texto"
+        )
+        # Truncated evidence should match after normalization
+        assert len(result.evidencias) == 1
+
+
 class TestLLMClassificationLegacy:
     """Test LLM classification logic (updated for dict return)."""
 
