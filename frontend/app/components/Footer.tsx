@@ -33,7 +33,10 @@ export default function Footer() {
             <h3 className="font-bold text-lg mb-4 text-ink">Sobre</h3>
             <ul className="space-y-2 text-sm text-ink-secondary">
               <li>
-                <FooterLink href="#sobre">Quem somos</FooterLink>
+                <FooterLink href="/sobre">Quem somos</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/sobre#metodologia">Metodologia</FooterLink>
               </li>
               <li>
                 <FooterLink href="#como-funciona">Como funciona</FooterLink>
@@ -178,6 +181,9 @@ export default function Footer() {
             <p className="text-sm text-ink-secondary">
               © 2026 SmartLic.tech. Todos os direitos reservados.
             </p>
+            <p className="text-xs text-ink-muted">
+              CONFENGE Avaliações e Inteligência Artificial LTDA — CNPJ: 56.187.452/0001-90
+            </p>
 
             {/* LGPD Badge */}
             <div className="flex items-center gap-2">
@@ -200,7 +206,7 @@ export default function Footer() {
 
             {/* Developer Attribution */}
             <p className="text-sm text-ink-secondary">
-              Sistema desenvolvido por servidores públicos
+              Solução da CONFENGE
             </p>
           </div>
         </div>

@@ -1,12 +1,14 @@
 /**
  * Footer Component Tests
  * STORY-230 AC1-AC4: Footer navigation links
+ * GTM-COPY-005 AC5: CNPJ, /sobre link, CONFENGE attribution
  *
  * Tests:
  * - AC1: "Central de Ajuda" links to /ajuda
  * - AC2: "Contato" links to /ajuda#contato (not /mensagens)
  * - AC3: Footer links consistent across pages
  * - AC4: All footer links accessible to unauthenticated users
+ * - GTM-COPY-005 AC5: CNPJ visible, /sobre link, CONFENGE mention
  */
 
 import { render, screen } from '@testing-library/react';
@@ -50,6 +52,27 @@ describe('Footer Component', () => {
       expect(screen.getByText('Planos')).toBeInTheDocument();
       expect(screen.getByText('Suporte')).toBeInTheDocument();
       expect(screen.getByText('Legal')).toBeInTheDocument();
+    });
+  });
+
+  describe('GTM-COPY-005 AC5: Credibility & Authority', () => {
+    it('should link "Quem somos" to /sobre page', () => {
+      const link = screen.getByText('Quem somos');
+      expect(link.closest('a')).toHaveAttribute('href', '/sobre');
+    });
+
+    it('should link "Metodologia" to /sobre#metodologia', () => {
+      const link = screen.getByText('Metodologia');
+      expect(link.closest('a')).toHaveAttribute('href', '/sobre#metodologia');
+    });
+
+    it('should display CNPJ', () => {
+      expect(screen.getByText(/56\.187\.452\/0001-90/)).toBeInTheDocument();
+    });
+
+    it('should display CONFENGE attribution', () => {
+      const elements = screen.getAllByText(/CONFENGE/);
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 });

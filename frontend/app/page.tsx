@@ -38,6 +38,16 @@ export default function LandingPage() {
         <SectorsGrid />
         <AnalysisExamplesCarousel />
         <TrustCriteria />
+
+        {/* GTM-COPY-005 AC6: Credibility badge */}
+        <div className="text-center py-6 bg-surface-1 border-y border-[var(--border)]">
+          <p className="text-sm text-ink-secondary">
+            Desenvolvido pela <strong className="text-ink">CONFENGE Avaliações e Inteligência Artificial</strong>{' '}
+            <span className="mx-1">·</span>{' '}
+            <a href="/sobre" className="text-brand-blue hover:underline">Conheça nossa metodologia</a>
+          </p>
+        </div>
+
         <section id="suporte">
           <FinalCTA />
         </section>

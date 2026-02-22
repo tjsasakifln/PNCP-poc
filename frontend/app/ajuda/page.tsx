@@ -172,6 +172,32 @@ const FAQ_DATA: FAQCategory[] = [
     ],
   },
   {
+    id: "confianca",
+    title: "Confiança e Credibilidade",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+    items: [
+      {
+        question: "Como o SmartLic decide quais licitações recomendar?",
+        answer:
+          "Cada licitação é avaliada com 5 critérios objetivos: compatibilidade setorial, faixa de valor, prazo de preparação, região de atuação e modalidade. O resultado é um nível de aderência (Alta, Média ou Baixa) que indica o quanto a oportunidade se encaixa no seu perfil. Não há opinião envolvida — são critérios documentados e verificáveis.",
+      },
+      {
+        question: "De onde vêm os dados das licitações?",
+        answer:
+          "Todos os dados são obtidos de portais oficiais de contratações públicas do Governo Federal. São dados públicos e abertos. O SmartLic consolida automaticamente múltiplas fontes oficiais para garantir cobertura nacional (27 UFs) e atualização contínua.",
+      },
+      {
+        question: "Quem está por trás do SmartLic?",
+        answer:
+          "O SmartLic é desenvolvido pela CONFENGE Avaliações e Inteligência Artificial LTDA, empresa com experiência em avaliações técnicas e inteligência artificial aplicada ao mercado B2G. Você pode saber mais na nossa página Sobre.",
+      },
+    ],
+  },
+  {
     id: "minha-conta",
     title: "Minha Conta",
     icon: (
