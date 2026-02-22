@@ -189,6 +189,13 @@ RATE_LIMIT_EXCEEDED = _create_counter(
     labelnames=["endpoint", "limit_type"],
 )
 
+# CRIT-012 AC8: SSE connection errors
+SSE_CONNECTION_ERRORS = _create_counter(
+    "smartlic_sse_connection_errors_total",
+    "SSE connection errors by type and phase",
+    labelnames=["error_type", "phase"],
+)
+
 # ============================================================================
 # Gauges
 # ============================================================================

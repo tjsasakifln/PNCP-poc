@@ -65,6 +65,10 @@ logger = get_sanitized_logger(__name__)
 
 router = APIRouter(tags=["search"])
 
+# CRIT-012 AC2: Heartbeat interval reduced from 30s to 15s
+_SSE_HEARTBEAT_INTERVAL = 15.0
+_SSE_WAIT_HEARTBEAT_EVERY = 10  # Every 10 iterations of 0.5s = 5s
+
 
 def _build_error_detail(
     message: str,
@@ -207,33 +211,43 @@ async def buscar_progress_stream(
             headers={"Retry-After": "5"},
         )
 
-    # CRIT-005 AC28-29: Wait for tracker, then check DB — return 404 before SSE if not found
-    tracker = None
-    for _ in range(60):  # 60 * 0.5s = 30s
-        tracker = await get_tracker(search_id)
-        if tracker:
-            break
-        await _asyncio.sleep(0.5)
-
-    db_state = None
-    if not tracker:
-        # AC9: On reconnection, try to get current state from DB
-        try:
-            db_state = await get_current_state(search_id)
-        except Exception:
-            db_state = None
-
-        if not db_state:
-            # GTM-GO-002: Release SSE slot before returning 404
-            await release_sse_connection(user_id)
-            # CRIT-005 AC28: Return 404 when search_id doesn't exist at all
-            raise HTTPException(status_code=404, detail="Search not found")
-
     async def event_generator():
-        nonlocal tracker, db_state
-
         # GTM-GO-002 AC6: Release SSE slot when generator finishes
+        heartbeat_count = 0
         try:
+            # CRIT-012 AC1: Wait for tracker with SSE keepalive comments every 5s
+            # Moved inside generator so heartbeats flow before first real event
+            tracker = None
+            for i in range(60):  # 60 * 0.5s = 30s
+                tracker = await get_tracker(search_id)
+                if tracker:
+                    break
+                # CRIT-012 AC1: Emit SSE comment every 5s to keep connection alive
+                if i > 0 and i % _SSE_WAIT_HEARTBEAT_EVERY == 0:
+                    heartbeat_count += 1
+                    yield ": waiting\n\n"
+                    # CRIT-012 AC3: Telemetry logging
+                    logger.debug(
+                        f"CRIT-012: Wait heartbeat #{heartbeat_count} for {search_id} "
+                        f"(elapsed={i * 0.5:.1f}s)"
+                    )
+                await _asyncio.sleep(0.5)
+
+            # CRIT-005 AC28-29: Check DB state if no tracker found
+            db_state = None
+            if not tracker:
+                try:
+                    db_state = await get_current_state(search_id)
+                except Exception:
+                    db_state = None
+
+                if not db_state:
+                    # CRIT-012: Emit error event (can't use HTTP 404 — headers already sent)
+                    from metrics import SSE_CONNECTION_ERRORS
+                    SSE_CONNECTION_ERRORS.labels(error_type="tracker_not_found", phase="wait").inc()
+                    yield f'data: {_json.dumps({"stage": "error", "progress": -1, "message": "Search not found"})}\n\n'
+                    return
+
             if not tracker and db_state:
                 # AC9: Emit current state from DB for reconnection
                 state_val = db_state.get("to_state", "error")
@@ -256,9 +270,12 @@ async def buscar_progress_stream(
                 try:
                     while True:
                         try:
-                            message = await _asyncio.wait_for(pubsub.get_message(ignore_subscribe_messages=True), timeout=30.0)
+                            # CRIT-012 AC2: Reduced heartbeat interval from 30s to 15s
+                            message = await _asyncio.wait_for(
+                                pubsub.get_message(ignore_subscribe_messages=True),
+                                timeout=_SSE_HEARTBEAT_INTERVAL,
+                            )
                             if message and message["type"] == "message":
-                                # Redis returns JSON string, parse it
                                 event_data = _json.loads(message["data"])
                                 yield f"data: {_json.dumps(event_data)}\n\n"
 
@@ -266,10 +283,17 @@ async def buscar_progress_stream(
                                     break
 
                         except _asyncio.TimeoutError:
-                            # Heartbeat to keep connection alive
+                            # CRIT-012 AC2: Heartbeat every 15s
+                            heartbeat_count += 1
                             yield ": heartbeat\n\n"
+                            # CRIT-012 AC3: Telemetry logging
+                            logger.debug(
+                                f"CRIT-012: Heartbeat #{heartbeat_count} for {search_id} (redis)"
+                            )
 
                         except _asyncio.CancelledError:
+                            from metrics import SSE_CONNECTION_ERRORS
+                            SSE_CONNECTION_ERRORS.labels(error_type="cancelled", phase="streaming").inc()
                             break
 
                 finally:
@@ -281,17 +305,28 @@ async def buscar_progress_stream(
                 logger.debug(f"SSE using in-memory queue for {search_id}")
                 while True:
                     try:
-                        event = await _asyncio.wait_for(tracker.queue.get(), timeout=30.0)
+                        # CRIT-012 AC2: Reduced heartbeat interval from 30s to 15s
+                        event = await _asyncio.wait_for(
+                            tracker.queue.get(),
+                            timeout=_SSE_HEARTBEAT_INTERVAL,
+                        )
                         yield f"data: {_json.dumps(event.to_dict())}\n\n"
 
                         if event.stage in ("complete", "degraded", "error", "refresh_available"):
                             break
 
                     except _asyncio.TimeoutError:
-                        # Heartbeat to keep connection alive
+                        # CRIT-012 AC2: Heartbeat every 15s
+                        heartbeat_count += 1
                         yield ": heartbeat\n\n"
+                        # CRIT-012 AC3: Telemetry logging
+                        logger.debug(
+                            f"CRIT-012: Heartbeat #{heartbeat_count} for {search_id} (in-memory)"
+                        )
 
                     except _asyncio.CancelledError:
+                        from metrics import SSE_CONNECTION_ERRORS
+                        SSE_CONNECTION_ERRORS.labels(error_type="cancelled", phase="streaming").inc()
                         break
         finally:
             await release_sse_connection(user_id)

@@ -4,6 +4,8 @@
  * Proxies Server-Sent Events from the backend /buscar-progress/{search_id}
  * endpoint to the browser. This allows real-time progress updates during
  * PNCP search operations.
+ *
+ * CRIT-012: Added bodyTimeout: 0, AbortController, structured error handling.
  */
 
 import { NextRequest } from "next/server";
@@ -36,10 +38,33 @@ export async function GET(request: NextRequest) {
     headers["X-Correlation-ID"] = correlationId;
   }
 
+  // CRIT-012 AC5: AbortController for cleanup on client disconnect
+  const controller = new AbortController();
+  const startTime = Date.now();
+
+  // Cancel backend fetch when client disconnects
+  request.signal.addEventListener("abort", () => controller.abort());
+
   try {
+    // CRIT-012 AC4: Build fetch options with undici bodyTimeout: 0
+    const fetchOptions: Record<string, unknown> = {
+      headers,
+      signal: controller.signal,
+    };
+
+    try {
+      const { Agent } = await import("undici");
+      fetchOptions.dispatcher = new Agent({
+        bodyTimeout: 0,
+        headersTimeout: 30_000,
+      });
+    } catch {
+      // undici not available — proceed without custom dispatcher
+    }
+
     const backendResponse = await fetch(
       `${backendUrl}/v1/buscar-progress/${encodeURIComponent(searchId)}`,
-      { headers }
+      fetchOptions as RequestInit
     );
 
     if (!backendResponse.ok) {
@@ -61,7 +86,49 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("SSE proxy error:", error);
+    const elapsed = Date.now() - startTime;
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // CRIT-012 AC7: Structured logging for streaming errors
+    console.error(
+      "SSE proxy error:",
+      JSON.stringify({
+        error_type: errorName,
+        search_id: searchId,
+        elapsed_ms: elapsed,
+        message: errorMessage,
+      })
+    );
+
+    // CRIT-012 AC6: Explicit handling for BodyTimeoutError and TypeError: terminated
+    if (
+      errorName === "BodyTimeoutError" ||
+      (errorName === "TypeError" && errorMessage === "terminated") ||
+      errorMessage.includes("body timeout") ||
+      errorMessage.includes("terminated")
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "SSE stream timeout",
+          detail:
+            "Backend stream was silent too long or connection was terminated",
+          error_type: errorName,
+          search_id: searchId,
+          elapsed_ms: elapsed,
+        }),
+        {
+          status: 504,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // CRIT-012 AC5: AbortError from client disconnect — not a server error
+    if (errorName === "AbortError") {
+      return new Response("Client disconnected", { status: 499 });
+    }
+
     return new Response("Failed to connect to backend", { status: 502 });
   }
 }

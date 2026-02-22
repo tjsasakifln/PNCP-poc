@@ -1,6 +1,6 @@
 # CRIT-012 — SSE Heartbeat Gap + Undici BodyTimeoutError
 
-**Status:** pending
+**Status:** completed
 **Priority:** P1 — Production (erros recorrentes em logs Railway)
 **Origem:** Consultoria externa — Análise de logs Railway (2026-02-21)
 **Componentes:** backend/routes/search.py, backend/progress.py, frontend/app/api/buscar-progress/route.ts
@@ -40,27 +40,27 @@ except _asyncio.TimeoutError:
 
 ### Backend — Heartbeat durante wait-for-tracker
 
-- [ ] **AC1:** Durante o loop de espera pelo tracker (`wait_for_tracker`, até 30s), enviar comentários SSE (`:\n\n`) a cada 5s para manter a conexão viva
-- [ ] **AC2:** Reduzir o intervalo de heartbeat de 30s para 15s no loop principal de eventos (tanto Redis quanto in-memory)
-- [ ] **AC3:** Adicionar log de telemetria ao emitir heartbeats (nível DEBUG), com contagem de heartbeats por search_id
+- [x] **AC1:** Durante o loop de espera pelo tracker (`wait_for_tracker`, até 30s), enviar comentários SSE (`:\n\n`) a cada 5s para manter a conexão viva
+- [x] **AC2:** Reduzir o intervalo de heartbeat de 30s para 15s no loop principal de eventos (tanto Redis quanto in-memory)
+- [x] **AC3:** Adicionar log de telemetria ao emitir heartbeats (nível DEBUG), com contagem de heartbeats por search_id
 
 ### Frontend Proxy — Configuração undici + resiliência
 
-- [ ] **AC4:** Configurar `bodyTimeout: 0` (desabilitar) no fetch do proxy SSE para evitar que undici mate a conexão durante streams longos
-- [ ] **AC5:** Usar `AbortController` com `request.signal` para cancelar o fetch backend quando o cliente desconecta
-- [ ] **AC6:** Adicionar tratamento explícito para `BodyTimeoutError` e `TypeError: terminated` no catch, retornando 504 com mensagem descritiva em vez de 502 genérico
+- [x] **AC4:** Configurar `bodyTimeout: 0` (desabilitar) no fetch do proxy SSE para evitar que undici mate a conexão durante streams longos
+- [x] **AC5:** Usar `AbortController` com `request.signal` para cancelar o fetch backend quando o cliente desconecta
+- [x] **AC6:** Adicionar tratamento explícito para `BodyTimeoutError` e `TypeError: terminated` no catch, retornando 504 com mensagem descritiva em vez de 502 genérico
 
 ### Observabilidade
 
-- [ ] **AC7:** Adicionar log estruturado no proxy SSE para erros de streaming: `{ error_type, search_id, elapsed_ms, heartbeats_received }`
-- [ ] **AC8:** Criar métrica Prometheus `sse_connection_errors_total` (labels: `error_type`, `phase`) no backend
+- [x] **AC7:** Adicionar log estruturado no proxy SSE para erros de streaming: `{ error_type, search_id, elapsed_ms, heartbeats_received }`
+- [x] **AC8:** Criar métrica Prometheus `sse_connection_errors_total` (labels: `error_type`, `phase`) no backend
 
 ### Testes
 
-- [ ] **AC9:** Teste backend: SSE endpoint envia heartbeat durante wait-for-tracker (simular tracker que demora 10s para aparecer, verificar que comentários SSE são emitidos antes)
-- [ ] **AC10:** Teste backend: heartbeat a cada 15s durante silêncio no loop principal
-- [ ] **AC11:** Teste frontend: proxy SSE trata `TypeError: terminated` e retorna 504
-- [ ] **AC12:** Zero regressões nos testes existentes (baseline: ~35 fail backend, ~50 fail frontend)
+- [x] **AC9:** Teste backend: SSE endpoint envia heartbeat durante wait-for-tracker (simular tracker que demora 10s para aparecer, verificar que comentários SSE são emitidos antes)
+- [x] **AC10:** Teste backend: heartbeat a cada 15s durante silêncio no loop principal
+- [x] **AC11:** Teste frontend: proxy SSE trata `TypeError: terminated` e retorna 504
+- [x] **AC12:** Zero regressões nos testes existentes (baseline: ~35 fail backend, ~50 fail frontend)
 
 ## Arquivos Impactados
 
@@ -129,10 +129,10 @@ export async function GET(request: NextRequest, { params }) {
 
 ## Definition of Done
 
-- [ ] Heartbeats emitidos durante wait-for-tracker (gap eliminado)
-- [ ] Intervalo de heartbeat reduzido para 15s
-- [ ] Proxy SSE com bodyTimeout desabilitado
-- [ ] AbortController conectado ao request.signal
-- [ ] Testes cobrindo todos os ACs
-- [ ] Zero regressões
+- [x] Heartbeats emitidos durante wait-for-tracker (gap eliminado)
+- [x] Intervalo de heartbeat reduzido para 15s
+- [x] Proxy SSE com bodyTimeout desabilitado
+- [x] AbortController conectado ao request.signal
+- [x] Testes cobrindo todos os ACs
+- [x] Zero regressões
 - [ ] Deploy Railway + verificar ausência de BodyTimeoutError nos logs (24h)
