@@ -788,7 +788,7 @@ class LicitacaoItem(BaseModel):
     data_encerramento: Optional[str] = Field(default=None, description="Proposal submission deadline")
     dias_restantes: Optional[int] = Field(default=None, description="Days remaining until proposal deadline (negative if past)")
     urgencia: Optional[str] = Field(default=None, description="Urgency level: critica (<7d), alta (7-14d), media (14-30d), baixa (>30d), encerrada (past)")
-    link: str = Field(..., description="Direct link to PNCP portal")
+    link: str = Field(..., description="Direct link to bid source (priority: linkSistemaOrigem > constructed PNCP URL)")
     source: Optional[str] = Field(default=None, alias="_source", description="Source that provided this record")
     relevance_score: Optional[float] = Field(default=None, description="Relevance score 0.0-1.0 (only when custom terms active)")
     matched_terms: Optional[List[str]] = Field(default=None, description="List of search terms that matched this bid")

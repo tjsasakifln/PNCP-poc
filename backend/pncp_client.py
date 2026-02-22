@@ -818,9 +818,17 @@ class PNCPClient:
                 - temProximaPagina: Boolean indicating if more pages exist
 
         Raises:
+            ValueError: If modalidade is missing (PNCP API requires codigoModalidadeContratacao)
             PNCPAPIError: On non-retryable errors or after max retries
             PNCPRateLimitError: If rate limit persists after retries
         """
+        # CRIT-FLT-008 AC1: Guard — PNCP API requires codigoModalidadeContratacao (HTTP 400 without it)
+        if not modalidade:
+            raise ValueError(
+                "codigoModalidadeContratacao is required by PNCP API. "
+                "Sending a request without it will return HTTP 400."
+            )
+
         self._rate_limit()
 
         # GTM-FIX-032 AC2: Pre-flight date validation + formatting
@@ -1148,8 +1156,8 @@ class PNCPClient:
         ``unidadeOrgao`` objects.  The rest of the codebase expects flat
         top-level keys: ``uf``, ``municipio``, ``nomeOrgao``, ``codigoCompra``.
 
-        Also ensures linkSistemaOrigem and linkProcessoEletronico are preserved
-        for Excel hyperlinks.
+        Also ensures linkSistemaOrigem is preserved for Excel hyperlinks.
+        Note: linkProcessoEletronico is always empty from PNCP API (CRIT-FLT-008).
         """
         unidade = item.get("unidadeOrgao") or {}
         orgao = item.get("orgaoEntidade") or {}
@@ -1159,8 +1167,9 @@ class PNCPClient:
         item["nomeOrgao"] = orgao.get("razaoSocial", "") or unidade.get("nomeUnidade", "")
         item["codigoCompra"] = item.get("numeroControlePNCP", "")
 
-        # Preserve link fields for Excel generation (already in root level from API)
-        # No mapping needed - linkSistemaOrigem and linkProcessoEletronico are already at root
+        # Preserve link fields (already in root level from API)
+        # CRIT-FLT-008: linkSistemaOrigem is the primary link (86% populated).
+        # linkProcessoEletronico is always empty from PNCP API but kept for other sources.
 
         return item
 
@@ -1531,7 +1540,17 @@ class AsyncPNCPClient:
 
         Returns:
             API response dictionary
+
+        Raises:
+            ValueError: If modalidade is missing (PNCP API requires codigoModalidadeContratacao)
         """
+        # CRIT-FLT-008 AC1: Guard — PNCP API requires codigoModalidadeContratacao (HTTP 400 without it)
+        if not modalidade:
+            raise ValueError(
+                "codigoModalidadeContratacao is required by PNCP API. "
+                "Sending a request without it will return HTTP 400."
+            )
+
         if self._client is None:
             raise RuntimeError("Client not initialized. Use async context manager.")
 

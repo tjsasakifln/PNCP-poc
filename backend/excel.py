@@ -167,7 +167,7 @@ def create_excel(licitacoes: list[dict]) -> BytesIO:
         ws.cell(row=row_idx, column=10, value=sanitize_for_excel(lic.get("situacaoCompraNome")))
 
         # K: Link (hyperlink)
-        # Prioridade: linkSistemaOrigem (URL real do edital) > linkProcessoEletronico > fallback PNCP
+        # CRIT-FLT-008: linkSistemaOrigem (86% populated) > linkProcessoEletronico (0% — dead field) > fallback PNCP
         link = lic.get("linkSistemaOrigem") or lic.get("linkProcessoEletronico")
 
         # Fallback: construir URL do PNCP a partir do numeroControlePNCP

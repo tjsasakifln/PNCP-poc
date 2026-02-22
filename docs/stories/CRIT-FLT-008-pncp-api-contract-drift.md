@@ -46,24 +46,24 @@ A auditoria direta da API PNCP revelou mudanças no contrato da API que podem im
 
 ### Guard contra API Drift
 
-- [ ] **AC1:** Adicionar validação no `pncp_client.py` que garante `codigoModalidadeContratacao` SEMPRE presente nos params antes de fazer request. Se ausente, raise `ValueError` com mensagem clara (não enviar request que vai dar 400)
-- [ ] **AC2:** Verificar que `_health_canary()` envia `codigoModalidadeContratacao` no request
-- [ ] **AC3:** Criar teste `test_pncp_client_requires_modalidade.py` que valida que requests sem modalidade são bloqueados antes de sair
+- [x] **AC1:** Adicionar validação no `pncp_client.py` que garante `codigoModalidadeContratacao` SEMPRE presente nos params antes de fazer request. Se ausente, raise `ValueError` com mensagem clara (não enviar request que vai dar 400)
+- [x] **AC2:** Verificar que `_health_canary()` envia `codigoModalidadeContratacao` no request
+- [x] **AC3:** Criar teste `test_pncp_client_requires_modalidade.py` que valida que requests sem modalidade são bloqueados antes de sair
 
 ### Campo de Link
 
-- [ ] **AC4:** No `LicitacaoItem` (schemas.py), priorizar `linkSistemaOrigem` sobre `linkProcessoEletronico` como link primário
-- [ ] **AC5:** No frontend, usar `linkSistemaOrigem` como "Ver no portal" quando disponível (86% dos casos)
-- [ ] **AC6:** Remover referências a `linkProcessoEletronico` que nunca funcionam
+- [x] **AC4:** No `LicitacaoItem` (schemas.py), priorizar `linkSistemaOrigem` sobre `linkProcessoEletronico` como link primário
+- [x] **AC5:** No frontend, usar `linkSistemaOrigem` como "Ver no portal" quando disponível (86% dos casos)
+- [x] **AC6:** Remover referências a `linkProcessoEletronico` que nunca funcionam
 
 ### Monitoramento de Contract Drift
 
-- [ ] **AC7:** Criar smoke test semanal (`scripts/pncp_api_smoke_test.py`) que:
+- [x] **AC7:** Criar smoke test semanal (`scripts/pncp_api_smoke_test.py`) que:
   - Faz 1 chamada real à API PNCP com params mínimos válidos
   - Verifica que os campos esperados existem na resposta
   - Verifica que novos campos required não foram adicionados
   - Alerta se a response structure mudou significativamente
-- [ ] **AC8:** Documentar campos "mortos" (nunca populados) vs "vivos" no `docs/api/pncp-field-audit.md`
+- [x] **AC8:** Documentar campos "mortos" (nunca populados) vs "vivos" no `docs/api/pncp-field-audit.md`
 
 ## Campos Auditados
 

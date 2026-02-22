@@ -126,7 +126,11 @@ def _maybe_send_quota_email(user_id: str, quota_used: int, quota_info) -> None:
 def _build_pncp_link(lic: dict) -> str:
     """Build PNCP link from bid data.
 
-    Priority: linkSistemaOrigem > linkProcessoEletronico > constructed URL.
+    Priority: linkSistemaOrigem (86% populated) > linkProcessoEletronico (0% — dead field,
+    kept as defensive fallback) > constructed URL from numeroControlePNCP.
+
+    CRIT-FLT-008: PNCP API audit confirmed linkProcessoEletronico is always empty.
+    linkSistemaOrigem is the only reliable link field (present in 86% of records).
     """
     link = lic.get("linkSistemaOrigem") or lic.get("linkProcessoEletronico")
 
