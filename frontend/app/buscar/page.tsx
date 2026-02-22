@@ -26,6 +26,7 @@ import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
 import BackendStatusIndicator, { useBackendStatus } from "../../components/BackendStatusIndicator";
 import { SearchErrorBoundary } from "./components/SearchErrorBoundary";
+import { MobileDrawer } from "../../components/MobileDrawer";
 
 import { dateDiffInDays } from "../../lib/utils/dateDiffInDays";
 import { toast } from "sonner";
@@ -276,6 +277,7 @@ function HomePageContent() {
   // STORY-257B AC5: Elapsed seconds tracker for partial results prompt
   const [searchElapsed, setSearchElapsed] = useState(0);
   const [partialDismissed, setPartialDismissed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!search.loading) {
@@ -336,7 +338,22 @@ function HomePageContent() {
               Buscar Licitacoes
             </h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+
+          {/* UX-340 AC1: Mobile — hamburger with "Menu" label (AC8: ≥44px touch) */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="lg:hidden flex items-center gap-1.5 min-w-[44px] min-h-[44px] px-3 rounded-lg text-[var(--ink-secondary)] hover:text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors"
+            aria-label="Abrir menu"
+            data-testid="mobile-menu-button"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+            <span className="text-sm font-medium">Menu</span>
+          </button>
+
+          {/* AC10: Desktop — full controls (unchanged) */}
+          <div className="hidden lg:flex items-center gap-2 sm:gap-3">
             <BackendStatusIndicator />
             <SavedSearchesDropdown onLoadSearch={search.handleLoadSearch} onAnalyticsEvent={trackEvent} />
             <ThemeToggle />
@@ -363,6 +380,9 @@ function HomePageContent() {
           </div>
         </div>
       </header>
+
+      {/* UX-340 AC4: Mobile drawer */}
+      <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       <main id="main-content" className="max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
         <PullToRefresh
