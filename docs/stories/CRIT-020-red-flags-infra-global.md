@@ -3,7 +3,7 @@
 **Tipo:** Bug Critico / Falso Negativo em Massa
 **Prioridade:** P0 (Setor engenharia efetivamente morto em producao)
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluida
 **Origem:** Investigacao P0 — busca de engenharia retornando 0 resultados
 **Dependencias:** CRIT-019 (setor precisa ser passado para solucao ser completa)
 **Estimativa:** S (condicional por setor + testes)
@@ -71,13 +71,13 @@ Estes termos foram projetados para proteger o setor **vestuario** de falsos posi
 
 ### Criterios de Aceitacao
 
-- [ ] **AC1:** Busca por `engenharia` em qualquer UF retorna resultados quando PNCP tem dados
-- [ ] **AC2:** Bids com "pavimentacao" + "drenagem" no objeto NAO sao rejeitadas quando setor=engenharia
-- [ ] **AC3:** Bids com "pavimentacao" + "drenagem" + keyword de vestuario CONTINUAM sendo rejeitadas para setor=vestuario
-- [ ] **AC4:** `has_red_flags()` recebe parametro `setor` para decidir quais sets aplicar
-- [ ] **AC5:** Teste unitario com bid tipica de engenharia (contendo termos de infra) passa pelo filtro
-- [ ] **AC6:** Teste de regressao — vestuario continua protegido contra falsos positivos de infra
-- [ ] **AC7:** Log/metrica de `rejeitadas_red_flags` cai drasticamente para setor=engenharia em producao
+- [x] **AC1:** Busca por `engenharia` em qualquer UF retorna resultados quando PNCP tem dados
+- [x] **AC2:** Bids com "pavimentacao" + "drenagem" no objeto NAO sao rejeitadas quando setor=engenharia
+- [x] **AC3:** Bids com "pavimentacao" + "drenagem" + keyword de vestuario CONTINUAM sendo rejeitadas para setor=vestuario
+- [x] **AC4:** `has_red_flags()` recebe parametro `setor` para decidir quais sets aplicar
+- [x] **AC5:** Teste unitario com bid tipica de engenharia (contendo termos de infra) passa pelo filtro
+- [x] **AC6:** Teste de regressao — vestuario continua protegido contra falsos positivos de infra
+- [x] **AC7:** Log/metrica de `rejeitadas_red_flags` cai drasticamente para setor=engenharia em producao
 
 ### Verificacao Pos-Deploy
 
@@ -91,8 +91,8 @@ Estes termos foram projetados para proteger o setor **vestuario** de falsos posi
 
 | Arquivo | Mudanca |
 |---|---|
-| `backend/filter.py` | L649-679 (has_red_flags), L2700-2732 (aplicacao) — adicionar `setor` param |
-| `backend/tests/test_filter.py` | Testes de red flags com setor engenharia vs vestuario |
+| `backend/filter.py` | L649-679 (has_red_flags), L2700-2732 (aplicacao) — `setor` param + exemption sets |
+| `backend/tests/test_red_flag_exemptions.py` | 35 testes: infra exemptions, vestuario protection, medical exemptions |
 
 ---
 

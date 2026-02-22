@@ -651,11 +651,22 @@ RED_FLAGS_INFRASTRUCTURE: Set[str] = {
     "recapeamento", "asfalto", "esgoto", "bueiro",
 }
 
+# CRIT-020: Sectors exempt from specific red flag categories
+# Infrastructure red flags are the PRIMARY keywords for these sectors
+_INFRA_EXEMPT_SECTORS: Set[str] = {
+    "engenharia", "engenharia_rodoviaria", "manutencao_predial", "materiais_hidraulicos",
+}
+# Medical red flags are the PRIMARY keywords for saude
+_MEDICAL_EXEMPT_SECTORS: Set[str] = {
+    "saude",
+}
+
 
 def has_red_flags(
     objeto_norm: str,
     red_flag_sets: List[Set[str]],
     threshold: int = 2,
+    setor: Optional[str] = None,
 ) -> Tuple[bool, List[str]]:
     """
     Check if a contract description contains red flag terms (STORY-181 AC6).
@@ -663,16 +674,27 @@ def has_red_flags(
     A contract is flagged when it contains 2+ terms from any single red flag
     category, indicating the object is probably NOT about the matched sector.
 
+    CRIT-020: Exempts infrastructure sectors from RED_FLAGS_INFRASTRUCTURE
+    and saude from RED_FLAGS_MEDICAL, since those terms are the primary
+    keywords of those sectors.
+
     Args:
         objeto_norm: Normalized procurement object description
         red_flag_sets: List of red flag term sets to check
         threshold: Minimum matches in any single set to trigger flag
+        setor: Sector ID — used to skip exempted red flag sets
 
     Returns:
         Tuple of (has_flags, matched_flags)
     """
     all_matched: List[str] = []
     for red_flags in red_flag_sets:
+        # CRIT-020: Skip red flag sets when sector is exempt
+        if setor:
+            if red_flags is RED_FLAGS_INFRASTRUCTURE and setor in _INFRA_EXEMPT_SECTORS:
+                continue
+            if red_flags is RED_FLAGS_MEDICAL and setor in _MEDICAL_EXEMPT_SECTORS:
+                continue
         matches = [flag for flag in red_flags if flag in objeto_norm]
         if len(matches) >= threshold:
             all_matched.extend(matches)
@@ -2699,10 +2721,12 @@ def aplicar_todos_filtros(
         elif density >= TERM_DENSITY_MEDIUM_THRESHOLD:
             # Medium-high zone (2-5%) - LLM with standard prompt
             # STORY-181 AC6: Check red flags BEFORE sending to LLM
+            # CRIT-020: Pass setor to exempt infrastructure/medical sectors
             objeto_norm = normalize_text(lic.get("objetoCompra", ""))
             flagged, flag_terms = has_red_flags(
                 objeto_norm,
                 [RED_FLAGS_MEDICAL, RED_FLAGS_ADMINISTRATIVE, RED_FLAGS_INFRASTRUCTURE],
+                setor=setor,
             )
             if flagged:
                 stats["rejeitadas_red_flags"] += 1
@@ -2718,10 +2742,12 @@ def aplicar_todos_filtros(
         else:
             # Low-medium zone (1-2%) - LLM with conservative prompt
             # STORY-181 AC6: Check red flags BEFORE sending to LLM
+            # CRIT-020: Pass setor to exempt infrastructure/medical sectors
             objeto_norm = normalize_text(lic.get("objetoCompra", ""))
             flagged, flag_terms = has_red_flags(
                 objeto_norm,
                 [RED_FLAGS_MEDICAL, RED_FLAGS_ADMINISTRATIVE, RED_FLAGS_INFRASTRUCTURE],
+                setor=setor,
             )
             if flagged:
                 stats["rejeitadas_red_flags"] += 1
