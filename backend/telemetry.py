@@ -99,20 +99,8 @@ def init_tracing() -> None:
 
         # Configure OTLP exporter
         # CRIT-023: HTTP/protobuf exporter (Grafana Cloud recommended)
-        headers_raw = os.getenv("OTEL_EXPORTER_OTLP_HEADERS", "").strip()
-        headers = None
-        if headers_raw:
-            # Parse "key1=val1,key2=val2" format
-            headers = {
-                k: v
-                for h in headers_raw.split(",")
-                if "=" in h
-                for k, v in [h.split("=", 1)]
-            }
-        exporter = OTLPSpanExporter(
-            endpoint=endpoint,
-            headers=headers,
-        )
+        # SDK auto-reads OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS
+        exporter = OTLPSpanExporter()
         span_processor = BatchSpanProcessor(exporter)
         _tracer_provider.add_span_processor(span_processor)
 
