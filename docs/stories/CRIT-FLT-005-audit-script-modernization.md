@@ -24,33 +24,33 @@ Os scripts de auditoria existentes (`audit_filter.py` e `audit_all_sectors.py`) 
 
 ## Acceptance Criteria
 
-- [ ] **AC1:** Novo script `backend/scripts/audit_pipeline_complete.py` que executa o pipeline COMPLETO (8 etapas + LLM + viability) para cada um dos **15 setores**
-- [ ] **AC2:** Para cada setor, o script deve:
+- [x] **AC1:** Novo script `backend/scripts/audit_pipeline_complete.py` que executa o pipeline COMPLETO (8 etapas + LLM + viability) para cada um dos **15 setores**
+- [x] **AC2:** Para cada setor, o script deve:
   - Buscar 100+ itens reais do PNCP (5 UFs, 10 dias)
   - Aplicar `aplicar_todos_filtros()` com sector keywords, exclusions, context_required
   - Calcular distribuição de density zones: >5%, 2-5%, 1-2%, <1%, 0%
   - Classificar itens aprovados em: keyword_high_density, llm_standard, llm_conservative, llm_zero_match, synonym_match
   - Identificar potenciais falsos positivos (itens aprovados com keywords ambíguas)
   - Identificar potenciais falsos negativos (itens rejeitados com hints setoriais)
-- [ ] **AC3:** Gerar relatório markdown com:
+- [x] **AC3:** Gerar relatório markdown com:
   - Tabela resumo: 15 setores x [aprovados, rejeitados_kw, rejeitados_density, rejeitados_exclusao, llm_calls, falsos_positivos_suspeitos, falsos_negativos_suspeitos]
   - Precision estimada (% de aprovados que são realmente relevantes, via amostragem manual)
   - Recall estimado (% de relevantes que foram aprovados, via heurísticas de falso negativo)
-- [ ] **AC4:** Incluir análise cross-setor expandida:
+- [x] **AC4:** Incluir análise cross-setor expandida:
   - Quantos itens matcham em 2+ setores
   - Quais pares de setores têm mais colisões
   - Para cada colisão: qual setor é o "correto" (heurística por tipo de órgão)
-- [ ] **AC5:** Incluir análise de dados PCP v2 (buscar 50 itens, comparar com PNCP):
+- [x] **AC5:** Incluir análise de dados PCP v2 (buscar 50 itens, comparar com PNCP):
   - PCP v2 tem `valor_estimado=0` sempre → validar que isso não gera problemas
   - PCP v2 tem descrições mais curtas → validar que density calculation funciona
-- [ ] **AC6:** Output em 3 formatos:
+- [x] **AC6:** Output em 3 formatos:
   - `audit_pipeline_report.md` — relatório legível
   - `audit_pipeline_data.json` — dados brutos para análise
   - `audit_pipeline_metrics.json` — métricas sumarizadas (para CI/CD threshold)
-- [ ] **AC7:** Adicionar ao CI/CD (opcional): `pytest scripts/test_audit_pipeline.py` que valida métricas mínimas
-- [ ] **AC8:** Script deve ser executável via `python scripts/audit_pipeline_complete.py --sectors all --ufs SP,MG,RJ --days 10`
-- [ ] **AC9:** Modo `--dry-run` que usa dados salvos em vez de chamar API (para testes rápidos)
-- [ ] **AC10:** Modo `--sector vestuario` para auditar um setor específico
+- [x] **AC7:** Adicionar ao CI/CD (opcional): `pytest scripts/test_audit_pipeline.py` que valida métricas mínimas
+- [x] **AC8:** Script deve ser executável via `python scripts/audit_pipeline_complete.py --sectors all --ufs SP,MG,RJ --days 10`
+- [x] **AC9:** Modo `--dry-run` que usa dados salvos em vez de chamar API (para testes rápidos)
+- [x] **AC10:** Modo `--sector vestuario` para auditar um setor específico
 
 ## Heurísticas de Detecção
 
