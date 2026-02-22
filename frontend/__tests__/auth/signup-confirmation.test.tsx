@@ -62,59 +62,23 @@ jest.mock("../../lib/error-messages", () => ({
     err instanceof Error ? err.message : String(err),
 }));
 
-// Helper to fill form, scroll consent, and submit
+// Helper to fill simplified form (Nome, Email, Senha) and submit
 async function signupAndGetToConfirmation(
   email = "test@example.com"
 ) {
   render(<SignupPage />);
 
-  // Fill required fields
+  // Fill required fields (GTM-FIX-037: simplified to 3 fields)
   const nameInput = screen.getByLabelText(/Nome completo/i);
-  const companyInput = screen.getByLabelText(/Empresa/i);
-  const sectorSelect = screen.getByLabelText(/Setor de atuação/i);
   const emailInput = screen.getByPlaceholderText(/seu@email.com/i);
   const passwordInput = screen.getByPlaceholderText(
     /Min\. 8 caracteres, 1 maiúscula, 1 número/i
   );
-  const confirmPasswordInput = screen.getByPlaceholderText(
-    /Digite a senha novamente/i
-  );
-  const phoneInput = screen.getByPlaceholderText(/\(11\) 99999-9999/i);
 
   await act(async () => {
     fireEvent.change(nameInput, { target: { value: "Test User" } });
-    fireEvent.change(companyInput, { target: { value: "Test Co" } });
-    fireEvent.change(sectorSelect, { target: { value: "informatica" } });
     fireEvent.change(emailInput, { target: { value: email } });
     fireEvent.change(passwordInput, { target: { value: "Password123" } });
-    fireEvent.change(confirmPasswordInput, {
-      target: { value: "Password123" },
-    });
-    fireEvent.change(phoneInput, { target: { value: "11999999999" } });
-  });
-
-  // Scroll to bottom
-  const scrollBox = screen.getByTestId("consent-scroll-box");
-  await act(async () => {
-    Object.defineProperty(scrollBox, "scrollHeight", {
-      value: 500,
-      configurable: true,
-    });
-    Object.defineProperty(scrollBox, "clientHeight", {
-      value: 144,
-      configurable: true,
-    });
-    Object.defineProperty(scrollBox, "scrollTop", {
-      value: 360,
-      configurable: true,
-    });
-    fireEvent.scroll(scrollBox);
-  });
-
-  // Check consent
-  const consentCheckbox = screen.getByRole("checkbox");
-  await act(async () => {
-    fireEvent.click(consentCheckbox);
   });
 
   // Submit

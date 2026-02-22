@@ -103,12 +103,5 @@ describe('Sector Sync (STORY-249)', () => {
     }
   });
 
-  test('AC2: signup SECTORS has backend sectors + outro', () => {
-    const signupPath = path.join(__dirname, '../app/signup/page.tsx');
-    const signupSectors = parseSectorsFromFile(signupPath, 'SECTORS');
-    const signupIds = signupSectors.map(s => s.id);
-
-    const expectedIds = [...backendSectors.map(s => s.id), 'outro'];
-    expect(signupIds).toEqual(expectedIds);
-  });
+  // AC2 removed: signup no longer has SECTORS constant (GTM-FIX-037 simplified form — TFIX-003)
 });
