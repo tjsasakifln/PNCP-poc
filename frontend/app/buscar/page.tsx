@@ -187,15 +187,35 @@ function HomePageContent() {
   const [upgradeSource, setUpgradeSource] = useState<string | undefined>();
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
+  // UX-346 AC1: Track whether user has ever searched (for progressive disclosure)
+  const hasSearchedBefore = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('smartlic-has-searched') === 'true';
+  }, []);
+
   // Customize accordion state (AC7: maintain in localStorage)
+  // UX-346 AC1: First-time users always see collapsed; returning users use persisted state
   const [customizeOpen, setCustomizeOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
+    if (localStorage.getItem('smartlic-has-searched') !== 'true') return false;
     return localStorage.getItem('smartlic-customize-open') === 'open';
   });
 
   useEffect(() => {
     localStorage.setItem('smartlic-customize-open', customizeOpen ? 'open' : 'closed');
   }, [customizeOpen]);
+
+  // UX-346 AC5: First-use tip (shown until first search or dismiss)
+  const [showFirstUseTip, setShowFirstUseTip] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('smartlic-has-searched') !== 'true'
+      && localStorage.getItem('smartlic-first-tip-dismissed') !== 'true';
+  });
+
+  const dismissFirstUseTip = useCallback(() => {
+    setShowFirstUseTip(false);
+    localStorage.setItem('smartlic-first-tip-dismissed', 'true');
+  }, []);
 
   // Onboarding
   const { shouldShowOnboarding, restartTour } = useOnboarding({
@@ -223,6 +243,9 @@ function HomePageContent() {
       toast.info("Servidor indisponível no momento. A busca será iniciada quando o servidor estiver disponível.");
       queuedSearchRef.current = () => {
         setCustomizeOpen(false);
+        // UX-346 AC1/AC5: Mark user as having searched + dismiss first-use tip
+        localStorage.setItem('smartlic-has-searched', 'true');
+        setShowFirstUseTip(false);
         originalBuscar();
         setTimeout(() => {
           progressAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -231,6 +254,9 @@ function HomePageContent() {
       return;
     }
     setCustomizeOpen(false);
+    // UX-346 AC1/AC5: Mark user as having searched + dismiss first-use tip
+    localStorage.setItem('smartlic-has-searched', 'true');
+    setShowFirstUseTip(false);
     originalBuscar();
     // Smooth-scroll to progress area after a tick (let state update + render)
     setTimeout(() => {
@@ -429,6 +455,8 @@ function HomePageContent() {
               clearResult={() => search.setResult(null)}
               customizeOpen={customizeOpen}
               setCustomizeOpen={setCustomizeOpen}
+              showFirstUseTip={showFirstUseTip}
+              onDismissFirstUseTip={dismissFirstUseTip}
             />
 
             {/* GTM-004: Auto-search banners */}
@@ -602,8 +630,8 @@ function HomePageContent() {
         >Entendi</button>
       </Dialog>
 
-      {/* Footer */}
-      <footer className="bg-surface-1 text-ink border-t border-[var(--border)] mt-12" role="contentinfo">
+      {/* UX-346 AC7: Footer only visible after results to save viewport space */}
+      <footer className={`bg-surface-1 text-ink border-t border-[var(--border)] mt-12${!search.result ? ' hidden' : ''}`} role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>

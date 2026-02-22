@@ -102,6 +102,10 @@ export interface SearchFormProps {
   // Customize accordion (AC6-AC8)
   customizeOpen: boolean;
   setCustomizeOpen: (open: boolean) => void;
+
+  // UX-346 AC5: First-use tip
+  showFirstUseTip?: boolean;
+  onDismissFirstUseTip?: () => void;
 }
 
 export default function SearchForm({
@@ -122,7 +126,34 @@ export default function SearchForm({
   result, handleSaveSearch, isMaxCapacity,
   planInfo, onShowUpgradeModal, clearResult,
   customizeOpen, setCustomizeOpen,
+  showFirstUseTip, onDismissFirstUseTip,
 }: SearchFormProps) {
+  // UX-346 AC3/AC4: Build compact summary text
+  const compactSummary = (() => {
+    const parts: string[] = [];
+    // UF count
+    parts.push(ufsSelecionadas.size === 27 ? 'Todo o Brasil' : `${ufsSelecionadas.size} estado${ufsSelecionadas.size !== 1 ? 's' : ''}`);
+    // Status
+    const statusLabels: Record<string, string> = {
+      recebendo_proposta: 'Abertas',
+      em_julgamento: 'Em julgamento',
+      encerrada: 'Encerradas',
+      todos: 'Todos os status',
+    };
+    parts.push(statusLabels[status] || 'Abertas');
+    // Modalidades
+    if (modalidades.length > 0) {
+      parts.push(`${modalidades.length} modalidade${modalidades.length !== 1 ? 's' : ''}`);
+    }
+    // Period
+    if (modoBusca === 'abertas') {
+      parts.push(`Últimos ${DEFAULT_SEARCH_DAYS} dias`);
+    } else if (dataInicial && dataFinal) {
+      const days = dateDiffInDays(dataInicial, dataFinal);
+      parts.push(`${days} dia${days !== 1 ? 's' : ''}`);
+    }
+    return parts.join(' • ');
+  })();
   return (
     <>
       {/* AC3: Stale cache banner (blue/informative) */}
@@ -362,6 +393,29 @@ export default function SearchForm({
         )}
       </section>
 
+      {/* UX-346 AC5: First-use tip for new users */}
+      {showFirstUseTip && (
+        <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 flex items-start gap-3 animate-fade-in-up" data-testid="first-use-tip">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-blue-700 dark:text-blue-300 flex-1">
+            <strong>Dica:</strong> selecione seu setor e clique Buscar. Personalize depois se quiser.
+          </p>
+          <button
+            type="button"
+            onClick={onDismissFirstUseTip}
+            className="text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 transition-colors flex-shrink-0"
+            aria-label="Fechar dica"
+            data-testid="dismiss-first-use-tip"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Search Buttons - AC5: moved up, right after sector selection */}
       <div className="mb-6 space-y-3 sm:relative sticky bottom-4 sm:bottom-auto z-20 bg-[var(--canvas)] sm:bg-transparent pt-2 sm:pt-0 -mx-4 px-4 sm:mx-0 sm:px-0 pb-2 sm:pb-0 animate-fade-in-up stagger-2">
         <button
@@ -430,17 +484,19 @@ export default function SearchForm({
           </svg>
         </button>
 
-        {/* AC8: Badge when collapsed */}
+        {/* UX-346 AC3/AC4: Compact summary when collapsed — clickable to expand */}
         {!customizeOpen && (
-          <div className="flex items-center justify-center gap-2 text-sm text-ink-secondary py-2 animate-fade-in-up">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <button
+            type="button"
+            onClick={() => setCustomizeOpen(true)}
+            className="w-full flex items-center justify-center gap-2 text-sm text-ink-secondary py-2 hover:text-brand-blue transition-colors cursor-pointer animate-fade-in-up"
+            data-testid="compact-summary"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>
-              Buscando em {ufsSelecionadas.size === 27 ? 'todo o Brasil' : `${ufsSelecionadas.size} estado${ufsSelecionadas.size !== 1 ? 's' : ''}`} • Licitações abertas
-              {modalidades.length > 0 ? ` • ${modalidades.length} modalidade${modalidades.length !== 1 ? 's' : ''}` : ''}
-            </span>
-          </div>
+            <span>{compactSummary}</span>
+          </button>
         )}
 
         {customizeOpen && (
