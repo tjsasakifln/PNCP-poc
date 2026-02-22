@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "../components/AuthProvider";
+import { usePlan } from "../../hooks/usePlan";
 import { PageHeader } from "../../components/PageHeader";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import Link from "next/link";
@@ -10,6 +11,7 @@ import { CancelSubscriptionModal } from "../../components/account/CancelSubscrip
 
 export default function ContaPage() {
   const { user, session, loading: authLoading, signOut } = useAuth();
+  const { planInfo } = usePlan();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -341,37 +343,162 @@ export default function ContaPage() {
           </form>
         </div>
 
-        {/* Subscription Management */}
-        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
-          <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Gerenciar SmartLic Pro</h2>
+        {/* Plan Status Section (AC9-AC13) */}
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6" data-testid="plan-section">
+          <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Seu Acesso ao SmartLic</h2>
 
-          {cancellingEndsAt ? (
-            <div className="flex items-center gap-3 p-4 bg-[var(--warning-subtle,#fef3cd)] rounded-input">
-              <svg aria-hidden="true" className="w-5 h-5 text-[var(--warning,#856404)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-[var(--warning,#856404)]">
-                  Ativa até {new Date(cancellingEndsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
-                </p>
-                <p className="text-xs text-[var(--ink-muted)] mt-0.5">
-                  Você mantém acesso completo até esta data.
-                </p>
+          {planInfo ? (
+            <div className="space-y-4">
+              {/* Status badge */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[var(--ink-muted)]">Status:</span>
+                {planInfo.plan_id === "free_trial" ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                    Periodo de avaliacao
+                  </span>
+                ) : planInfo.subscription_status === "active" ? (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                    Ativo
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                    Expirado
+                  </span>
+                )}
+              </div>
+
+              {/* Trial-specific info (AC10) */}
+              {planInfo.plan_id === "free_trial" && planInfo.trial_expires_at && (() => {
+                const daysLeft = Math.max(0, Math.ceil((new Date(planInfo.trial_expires_at!).getTime() - Date.now()) / 86400000));
+                const totalTrialDays = 7;
+                const used = planInfo.quota_used ?? 0;
+                const total = planInfo.capabilities.max_requests_per_month ?? 3;
+                const usagePct = total > 0 ? Math.min(Math.round((used / total) * 100), 100) : 0;
+
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--ink-secondary)]">Dias restantes</span>
+                      <span className="font-medium text-[var(--ink)]">{daysLeft} de {totalTrialDays}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--ink-secondary)]">Analises usadas</span>
+                      <span className="font-medium text-[var(--ink)]">{used} de {total}</span>
+                    </div>
+                    <div className="w-full h-2 bg-[var(--surface-1)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${usagePct}%`,
+                          backgroundColor: usagePct > 80 ? "var(--error,#dc2626)" : "var(--brand-blue)",
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-[var(--ink-muted)] text-right">{usagePct}% utilizado</p>
+                  </div>
+                );
+              })()}
+
+              {/* Subscriber info (AC11) */}
+              {planInfo.plan_id !== "free_trial" && planInfo.subscription_status === "active" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--ink-secondary)]">Acesso</span>
+                    <span className="font-medium text-[var(--ink)]">{planInfo.plan_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--ink-secondary)]">Analises este mes</span>
+                    <span className="font-medium text-[var(--ink)]">
+                      {planInfo.quota_used} de {planInfo.capabilities.max_requests_per_month === -1 ? "ilimitado" : planInfo.capabilities.max_requests_per_month}
+                    </span>
+                  </div>
+                  {planInfo.quota_reset_date && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[var(--ink-secondary)]">Proxima renovacao</span>
+                      <span className="font-medium text-[var(--ink)]">
+                        {new Date(planInfo.quota_reset_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cancelling notice */}
+              {cancellingEndsAt && (
+                <div className="flex items-center gap-3 p-3 bg-[var(--warning-subtle,#fef3cd)] rounded-input">
+                  <svg aria-hidden="true" className="w-5 h-5 text-[var(--warning,#856404)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--warning,#856404)]">
+                      Ativo ate {new Date(cancellingEndsAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                    </p>
+                    <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+                      Voce mantem acesso completo ate esta data.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* CTA: primary = Subscribe (trial) or Manage (subscriber) — AC12 */}
+              <div className="pt-2 space-y-3">
+                {planInfo.plan_id === "free_trial" ? (
+                  <Link
+                    href="/planos"
+                    className="w-full py-3 px-4 rounded-button bg-[var(--brand-navy)] text-white
+                               hover:bg-[var(--brand-blue)] transition-colors
+                               flex items-center justify-center gap-2 font-medium"
+                    data-testid="plan-cta-primary"
+                  >
+                    Assinar SmartLic Pro
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </Link>
+                ) : planInfo.subscription_status === "active" && !cancellingEndsAt ? (
+                  <Link
+                    href="/planos"
+                    className="w-full py-3 px-4 rounded-button border border-[var(--brand-blue)] text-[var(--brand-blue)]
+                               bg-transparent hover:bg-[var(--brand-blue-subtle)] transition-colors
+                               flex items-center justify-center gap-2 font-medium text-sm"
+                    data-testid="plan-cta-primary"
+                  >
+                    Gerenciar acesso
+                  </Link>
+                ) : planInfo.subscription_status !== "active" ? (
+                  <Link
+                    href="/planos"
+                    className="w-full py-3 px-4 rounded-button bg-[var(--brand-navy)] text-white
+                               hover:bg-[var(--brand-blue)] transition-colors
+                               flex items-center justify-center gap-2 font-medium"
+                    data-testid="plan-cta-primary"
+                  >
+                    Reativar SmartLic Pro
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </Link>
+                ) : null}
+
+                {/* Cancel — secondary/discreet (AC13) */}
+                {planInfo.subscription_status === "active" && !cancellingEndsAt && planInfo.plan_id !== "free_trial" && (
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full text-center text-xs text-[var(--ink-muted)] hover:text-[var(--error,#dc2626)]
+                               transition-colors py-2"
+                    data-testid="cancel-link"
+                  >
+                    Cancelar acesso
+                  </button>
+                )}
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowCancelModal(true)}
-              className="w-full py-3 px-4 rounded-button border border-[var(--error,#dc2626)]
-                         text-[var(--error,#dc2626)] bg-transparent
-                         hover:bg-[var(--error-subtle,#fef2f2)] transition-colors
-                         flex items-center justify-center gap-2 text-sm"
-            >
-              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Cancelar SmartLic Pro
-            </button>
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 w-32 bg-[var(--surface-1)] rounded" />
+              <div className="h-4 w-48 bg-[var(--surface-1)] rounded" />
+              <div className="h-10 w-full bg-[var(--surface-1)] rounded-button" />
+            </div>
           )}
         </div>
 

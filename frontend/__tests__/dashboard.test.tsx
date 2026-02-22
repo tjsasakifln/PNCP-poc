@@ -181,12 +181,10 @@ describe("DashboardPage — UX-338", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Seu painel de inteligência")
+          screen.getByText("Seu Painel de Inteligencia")
         ).toBeInTheDocument();
         expect(
-          screen.getByText(
-            /resumos das suas buscas, tendências e oportunidades/i
-          )
+          screen.getByText(/Apos suas primeiras buscas/i)
         ).toBeInTheDocument();
       });
     });

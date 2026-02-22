@@ -382,28 +382,45 @@ export default function DashboardPage() {
 
   if (summary && summary.total_searches === 0) {
     return (
-      <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-2">Dashboard</h1>
-          <div className="text-center py-20">
-            <svg aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-[var(--brand-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-            </svg>
+      <div className="min-h-screen bg-[var(--canvas)]">
+        <PageHeader title="Dashboard" />
+        <div className="max-w-6xl mx-auto py-8 px-4">
+          <div className="text-center py-16 px-4" data-testid="empty-state">
+            <div className="mx-auto mb-6 w-16 h-16 flex items-center justify-center rounded-full bg-[var(--brand-blue-subtle)]">
+              <svg aria-hidden="true" className="w-8 h-8 text-[var(--brand-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+              </svg>
+            </div>
             <h2 className="text-xl font-display font-semibold text-[var(--ink)] mb-3">
-              Seu painel de inteligência
+              Seu Painel de Inteligencia
             </h2>
             <p className="text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">
-              Aqui você verá resumos das suas buscas, tendências e oportunidades.
+              Apos suas primeiras buscas, voce vera aqui:
             </p>
+            <ul className="text-left max-w-sm mx-auto mb-8 space-y-2">
+              <li className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-blue)] flex-shrink-0" />
+                Resumo de oportunidades encontradas
+              </li>
+              <li className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-blue)] flex-shrink-0" />
+                Tendencias do seu setor
+              </li>
+              <li className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-blue)] flex-shrink-0" />
+                Valor total de oportunidades analisadas
+              </li>
+            </ul>
             <Link
               href="/buscar"
               className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--brand-navy)] text-white
                          rounded-button hover:bg-[var(--brand-blue)] transition-colors font-medium"
+              data-testid="empty-state-cta"
             >
-              <svg aria-hidden="true" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
               Fazer primeira busca
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
             </Link>
           </div>
         </div>

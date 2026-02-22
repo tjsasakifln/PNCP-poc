@@ -3,7 +3,7 @@
 **Tipo:** Feature / UX Medio
 **Prioridade:** Media (M2 + M3 da auditoria UX 2026-02-22)
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluida
 **Origem:** Auditoria UX — Persona "Seu Carlos" (gestor PME 60 anos, interior BR)
 
 ---
@@ -110,33 +110,33 @@ Paginas internas sem dados exibem estados vazios genericos ou confusos:
 
 ### Pipeline
 
-- [ ] AC1: Pipeline vazio exibe empty state educativo com 3 passos
-- [ ] AC2: CTA "Buscar oportunidades" leva a /buscar
-- [ ] AC3: Empty state desaparece quando ha >= 1 item no pipeline
+- [x] AC1: Pipeline vazio exibe empty state educativo com 3 passos
+- [x] AC2: CTA "Buscar oportunidades" leva a /buscar
+- [x] AC3: Empty state desaparece quando ha >= 1 item no pipeline
 
 ### Historico
 
-- [ ] AC4: Historico vazio exibe empty state educativo
-- [ ] AC5: Menciona que revisitar nao gasta analise (se aplicavel)
-- [ ] AC6: CTA "Fazer primeira busca" leva a /buscar
+- [x] AC4: Historico vazio exibe empty state educativo
+- [x] AC5: Menciona que revisitar nao gasta analise (se aplicavel)
+- [x] AC6: CTA "Fazer primeira busca" leva a /buscar
 
 ### Dashboard
 
-- [ ] AC7: Dashboard vazio (apos fix UX-338) exibe empty state com preview do que vera
-- [ ] AC8: CTA "Fazer primeira busca" leva a /buscar
+- [x] AC7: Dashboard vazio (apos fix UX-338) exibe empty state com preview do que vera
+- [x] AC8: CTA "Fazer primeira busca" leva a /buscar
 
 ### Conta — Secao Plano
 
-- [ ] AC9: Mostrar status do plano (trial / ativo / expirado)
-- [ ] AC10: Se trial: mostrar dias restantes + analises usadas/total
-- [ ] AC11: Se assinante: mostrar plano, valor, proxima cobranca
-- [ ] AC12: CTA primario = "Assinar" (trial) ou "Gerenciar" (assinante)
-- [ ] AC13: Botao "Cancelar" e secundario/discreto (texto, nao botao vermelho proeminente)
+- [x] AC9: Mostrar status do plano (trial / ativo / expirado)
+- [x] AC10: Se trial: mostrar dias restantes + analises usadas/total
+- [x] AC11: Se assinante: mostrar plano, valor, proxima cobranca
+- [x] AC12: CTA primario = "Assinar" (trial) ou "Gerenciar" (assinante)
+- [x] AC13: Botao "Cancelar" e secundario/discreto (texto, nao botao vermelho proeminente)
 
 ### Nao-Regressao
 
-- [ ] AC14: Nenhum teste existente quebra
-- [ ] AC15: Paginas com dados continuam funcionando normalmente
+- [x] AC14: Nenhum teste existente quebra
+- [x] AC15: Paginas com dados continuam funcionando normalmente
 
 ---
 
