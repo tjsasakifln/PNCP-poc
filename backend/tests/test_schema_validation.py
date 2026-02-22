@@ -24,7 +24,7 @@ class TestCacheSchemaCheck:
         mock_result.data = [
             {"column_name": "id"},
             {"column_name": "params_hash"},
-            {"column_name": "results_json"},
+            {"column_name": "results"},
             {"column_name": "created_at"},
             {"column_name": "priority"},
             {"column_name": "access_count"},
@@ -99,7 +99,7 @@ class TestSchemaContract:
                     {"column_name": "created_at"},
                 ]
             elif table_name == "search_results_cache":
-                # Missing 'results_json'
+                # Missing 'results'
                 mock_result.data = [
                     {"column_name": "id"},
                     {"column_name": "params_hash"},
@@ -109,7 +109,6 @@ class TestSchemaContract:
                 # All columns present
                 mock_result.data = [
                     {"column_name": "id"},
-                    {"column_name": "user_id"},
                     {"column_name": "plan_type"},
                     {"column_name": "email"},
                 ]
@@ -125,7 +124,7 @@ class TestSchemaContract:
         assert not passed, "Should detect missing columns"
         assert "search_sessions.status" in missing
         assert "search_sessions.search_id" in missing
-        assert "search_results_cache.results_json" in missing
+        assert "search_results_cache.results" in missing
         assert len(missing) == 3
 
     def test_schema_contract_all_columns_present(self):
@@ -153,13 +152,12 @@ class TestSchemaContract:
                 mock_result.data = [
                     {"column_name": "id"},
                     {"column_name": "params_hash"},
-                    {"column_name": "results_json"},
+                    {"column_name": "results"},
                     {"column_name": "created_at"},
                 ]
             elif table_name == "profiles":
                 mock_result.data = [
                     {"column_name": "id"},
-                    {"column_name": "user_id"},
                     {"column_name": "plan_type"},
                     {"column_name": "email"},
                 ]

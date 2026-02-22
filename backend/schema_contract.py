@@ -15,10 +15,10 @@ CRITICAL_SCHEMA: dict[str, list[str]] = {
         "completed_at", "created_at",
     ],
     "search_results_cache": [
-        "id", "params_hash", "results_json", "created_at",
+        "id", "params_hash", "results", "created_at",
     ],
     "profiles": [
-        "id", "user_id", "plan_type", "email",
+        "id", "plan_type", "email",
     ],
 }
 
