@@ -15,6 +15,12 @@ jest.mock('../../app/components/AuthProvider', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// UX-339: Mock usePlan hook (now used by PlanosPage)
+const mockUsePlan = jest.fn();
+jest.mock('../../hooks/usePlan', () => ({
+  usePlan: () => mockUsePlan(),
+}));
+
 // Mock useAnalytics hook
 const mockTrackEvent = jest.fn();
 jest.mock('../../hooks/useAnalytics', () => ({
@@ -66,6 +72,13 @@ beforeEach(() => {
     user: null,
     isAdmin: false,
     loading: false,
+  });
+  // UX-339: Default usePlan mock (no plan for anonymous)
+  mockUsePlan.mockReturnValue({
+    planInfo: null,
+    loading: false,
+    error: null,
+    refresh: jest.fn(),
   });
   // Mock /me endpoint for non-authenticated users
   mockFetch.mockResolvedValue({
@@ -306,6 +319,11 @@ describe('PlanosPage Component', () => {
         isAdmin: false,
         loading: false,
       });
+      // UX-339: Mock usePlan for trial user
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
+      });
 
       // Mock /me endpoint returning regular user
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
@@ -326,11 +344,12 @@ describe('PlanosPage Component', () => {
 
       render(<PlanosPage />);
 
+      // UX-339: Trial user sees "Assinar agora" CTA
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Começar Agora/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Assinar agora/i })).toBeInTheDocument();
       });
 
-      const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+      const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
       await act(async () => {
         fireEvent.click(ctaButton);
       });
@@ -356,6 +375,10 @@ describe('PlanosPage Component', () => {
         isAdmin: false,
         loading: false,
       });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
+      });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
         if (url.includes('/me')) {
@@ -380,7 +403,7 @@ describe('PlanosPage Component', () => {
       fireEvent.click(annualRadio);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 
@@ -399,6 +422,10 @@ describe('PlanosPage Component', () => {
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
@@ -420,7 +447,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 
@@ -436,6 +463,10 @@ describe('PlanosPage Component', () => {
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
@@ -457,7 +488,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 
@@ -473,6 +504,10 @@ describe('PlanosPage Component', () => {
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
@@ -494,7 +529,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 
@@ -503,13 +538,18 @@ describe('PlanosPage Component', () => {
       });
     });
 
-    it('should disable button if already subscribed to SmartLic Pro', async () => {
+    it('should show manage subscription button for active subscribers', async () => {
       const mockSession = { access_token: 'test-token-123' };
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      // UX-339: Active subscriber sees "Gerenciar assinatura"
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'smartlic_pro', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string) => {
@@ -525,8 +565,10 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Acesso já ativo/i });
-        expect(ctaButton).toBeDisabled();
+        // Both banner and CTA show "Gerenciar assinatura"
+        const buttons = screen.getAllByRole('button', { name: /Gerenciar assinatura/i });
+        expect(buttons.length).toBeGreaterThanOrEqual(2);
+        buttons.forEach(btn => expect(btn).not.toBeDisabled());
       });
     });
   });
@@ -598,14 +640,19 @@ describe('PlanosPage Component', () => {
     });
   });
 
-  describe('Already subscribed banner', () => {
-    it('should show banner if user already has SmartLic Pro', async () => {
+  describe('Subscriber status banner', () => {
+    it('should show subscriber banner if user already has SmartLic Pro', async () => {
       const mockSession = { access_token: 'test-token-123' };
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      // UX-339: Active subscriber
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'smartlic_pro', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string) => {
@@ -621,18 +668,22 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Você já possui o SmartLic Pro ativo/i)).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /Gerenciar acesso/i })).toBeInTheDocument();
+        // UX-339: New banner text
+        expect(screen.getByText(/Você possui acesso completo ao SmartLic/i)).toBeInTheDocument();
       });
     });
 
-    it('should not show banner if user is on free trial', async () => {
+    it('should not show subscriber banner if user is on free trial', async () => {
       const mockSession = { access_token: 'test-token-123' };
       mockUseAuth.mockReturnValue({
         session: mockSession,
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string) => {
@@ -648,7 +699,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.queryByText(/Você já possui o SmartLic Pro ativo/i)).not.toBeInTheDocument();
+        expect(screen.queryByTestId('status-banner-subscriber')).not.toBeInTheDocument();
       });
     });
   });
@@ -676,12 +727,16 @@ describe('PlanosPage Component', () => {
   });
 
   describe('Privileged user access', () => {
-    it('should show privileged message for admin users', async () => {
+    it('should show privileged banner for admin users with full pricing visible', async () => {
       mockUseAuth.mockReturnValue({
         session: { access_token: 'test-token' },
         user: { id: '123' },
         isAdmin: true,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string) => {
@@ -697,17 +752,23 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Você possui acesso completo/i })).toBeInTheDocument();
-        expect(screen.getByText(/Todas as funcionalidades do SmartLic estão disponíveis para você/i)).toBeInTheDocument();
+        // UX-339: Now shows banner instead of overlay, pricing is visible
+        expect(screen.getByText(/Você possui acesso completo ao SmartLic/i)).toBeInTheDocument();
+        // Pricing card is now visible for admins too
+        expect(screen.getByRole('heading', { name: /SmartLic Pro/i })).toBeInTheDocument();
       });
     });
 
-    it('should show privileged message for master plan users', async () => {
+    it('should show privileged banner for master plan users with pricing visible', async () => {
       mockUseAuth.mockReturnValue({
         session: { access_token: 'test-token' },
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string) => {
@@ -723,16 +784,22 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Você possui acesso completo/i })).toBeInTheDocument();
+        // UX-339: Banner shows with full pricing below
+        expect(screen.getByTestId('status-banner-privileged')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /SmartLic Pro/i })).toBeInTheDocument();
       });
     });
 
-    it('should show link to /buscar for privileged users', async () => {
+    it('should show link to /buscar in privileged banner', async () => {
       mockUseAuth.mockReturnValue({
         session: { access_token: 'test-token' },
         user: { id: '123' },
         isAdmin: true,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string) => {
@@ -763,6 +830,10 @@ describe('PlanosPage Component', () => {
         isAdmin: false,
         loading: false,
       });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
+      });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
         if (url.includes('/me')) {
@@ -783,7 +854,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 
@@ -803,6 +874,10 @@ describe('PlanosPage Component', () => {
         user: { id: '123' },
         isAdmin: false,
         loading: false,
+      });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
       });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
@@ -824,7 +899,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 
@@ -887,6 +962,10 @@ describe('PlanosPage Component', () => {
         isAdmin: false,
         loading: false,
       });
+      mockUsePlan.mockReturnValue({
+        planInfo: { plan_id: 'free_trial', subscription_status: 'active', trial_expires_at: null },
+        loading: false, error: null, refresh: jest.fn(),
+      });
 
       mockFetch.mockImplementation((url: string, options?: RequestInit) => {
         if (url.includes('/me')) {
@@ -907,7 +986,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const ctaButton = screen.getByRole('button', { name: /Começar Agora/i });
+        const ctaButton = screen.getByRole('button', { name: /Assinar agora/i });
         fireEvent.click(ctaButton);
       });
 

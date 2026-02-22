@@ -3,7 +3,7 @@
 **Tipo:** Bug / UX Alto
 **Prioridade:** Alta (A4 da auditoria UX 2026-02-22)
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluida
 **Origem:** Auditoria UX — Persona "Seu Carlos" (gestor PME 60 anos, interior BR)
 
 ---
@@ -78,29 +78,30 @@ Mostrar pricing com urgencia:
 
 ## Criterios de Aceitacao
 
-- [ ] AC1: Usuario logado (qualquer status) sempre ve o pricing completo na pagina /planos
-- [ ] AC2: Banner contextual no topo indica status atual (trial X dias, assinante ativo, trial expirado)
-- [ ] AC3: Assinante ativo ve "Gerenciar assinatura" que leva ao billing portal do Stripe
-- [ ] AC4: Usuario em trial ve CTA "Assinar agora" nos cards
-- [ ] AC5: Usuario com trial expirado ve CTA com urgencia
-- [ ] AC6: Toggle mensal/semestral/anual continua funcional
-- [ ] AC7: FAQ continua visivel e funcional
-- [ ] AC8: Secao ROI ("Uma unica licitacao ganha pode pagar um ano") continua visivel
+- [x] AC1: Usuario logado (qualquer status) sempre ve o pricing completo na pagina /planos
+- [x] AC2: Banner contextual no topo indica status atual (trial X dias, assinante ativo, trial expirado)
+- [x] AC3: Assinante ativo ve "Gerenciar assinatura" que leva ao billing portal do Stripe
+- [x] AC4: Usuario em trial ve CTA "Assinar agora" nos cards
+- [x] AC5: Usuario com trial expirado ve CTA com urgencia
+- [x] AC6: Toggle mensal/semestral/anual continua funcional
+- [x] AC7: FAQ continua visivel e funcional
+- [x] AC8: Secao ROI ("Uma unica licitacao ganha pode pagar um ano") continua visivel
 
 ### Nao-Regressao
 
-- [ ] AC9: Usuario nao-logado ve a pagina de planos normalmente (sem banner)
-- [ ] AC10: Nenhum teste existente quebra
+- [x] AC9: Usuario nao-logado ve a pagina de planos normalmente (sem banner)
+- [x] AC10: Nenhum teste existente quebra
 
 ---
 
 ## Arquivos Envolvidos (Estimativa)
 
 ### Modificar
-- `frontend/app/planos/page.tsx` — remover bloqueio overlay, adicionar banner contextual
+- `frontend/app/planos/page.tsx` — remover bloqueio overlay, adicionar banner contextual, usePlan hook
 
 ### Testes
-- `frontend/__tests__/planos.test.tsx` — atualizar/criar
+- `frontend/__tests__/planos-page.test.tsx` — 22 novos testes (AC1-AC9)
+- `frontend/__tests__/pages/PlanosPage.test.tsx` — 42 testes existentes atualizados (usePlan mock + novo comportamento)
 
 ---
 

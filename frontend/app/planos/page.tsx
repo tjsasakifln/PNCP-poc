@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import LandingNavbar from "../components/landing/LandingNavbar";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { useAnalytics } from "../../hooks/useAnalytics";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
 import { formatCurrency } from '@/lib/copy/roi';
+import { usePlan } from "../../hooks/usePlan";
 import { toast } from "sonner";
 
 interface UserProfile {
@@ -54,18 +55,11 @@ const FAQ_ITEMS = [
   },
 ];
 
-/**
- * Check if user is privileged (admin, master, owner).
- */
-function isPrivilegedUser(isAdmin: boolean, userProfile?: UserProfile | null): boolean {
-  if (isAdmin) return true;
-  if (userProfile?.is_admin) return true;
-  if (userProfile?.plan_id && ["master"].includes(userProfile.plan_id)) return true;
-  return false;
-}
+type UserStatus = "subscriber" | "privileged" | "trial" | "trial_expired" | "anonymous";
 
 export default function PlanosPage() {
   const { session, user, isAdmin, loading: authLoading } = useAuth();
+  const { planInfo, loading: planLoading } = usePlan();
   const { trackEvent } = useAnalytics();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [stripeRedirecting, setStripeRedirecting] = useState(false);
@@ -73,6 +67,7 @@ export default function PlanosPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   // Check URL params
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -113,38 +108,52 @@ export default function PlanosPage() {
     fetchUserProfile();
   }, [session?.access_token]);
 
-  const currentPricing = PRICING[billingPeriod];
-  const userIsPrivileged = isPrivilegedUser(isAdmin, userProfile);
-  const isAlreadyPro = userProfile?.plan_id === "smartlic_pro";
+  // UX-339: Derive user status for contextual banner
+  const userStatus: UserStatus = useMemo(() => {
+    if (!session || !user) return "anonymous";
+    // Active subscriber
+    if (planInfo?.plan_id === "smartlic_pro" && planInfo?.subscription_status === "active") return "subscriber";
+    // Admin/master/privileged
+    if (isAdmin || userProfile?.is_admin || userProfile?.plan_id === "master") return "privileged";
+    // Trial expired
+    if (planInfo?.plan_id === "free_trial" && planInfo?.subscription_status === "expired") return "trial_expired";
+    // Trial active (default for logged-in users with free_trial)
+    if (planInfo?.plan_id === "free_trial") return "trial";
+    // Fallback: if we have a session but unknown plan, treat as trial
+    return "trial";
+  }, [session, user, planInfo, isAdmin, userProfile]);
 
-  // Privileged users see a different view
-  if (!authLoading && !profileLoading && userIsPrivileged) {
-    return (
-      <div className="min-h-screen bg-[var(--canvas)] py-12 px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="backdrop-blur-md bg-white/60 dark:bg-gray-900/50 border border-white/20 dark:border-white/10 rounded-card p-8 text-center shadow-glass">
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[var(--brand-blue)]/10 flex items-center justify-center">
-              <svg role="img" aria-label="Ícone" className="w-8 h-8 text-[var(--brand-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-display font-bold text-[var(--ink)] mb-3">
-              Você possui acesso completo
-            </h1>
-            <p className="text-[var(--ink-secondary)] mb-6">
-              Todas as funcionalidades do SmartLic estão disponíveis para você, sem restrições.
-            </p>
-            <Link
-              href="/buscar"
-              className="inline-block px-6 py-3 border border-[var(--border)] text-[var(--ink)] rounded-button font-semibold hover:bg-[var(--surface-1)] transition-colors"
-            >
-              Iniciar análise
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // UX-339: Calculate trial days remaining
+  const trialDaysRemaining = useMemo(() => {
+    if (!planInfo?.trial_expires_at) return null;
+    const expiryDate = new Date(planInfo.trial_expires_at);
+    const now = new Date();
+    const diffTime = expiryDate.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  }, [planInfo?.trial_expires_at]);
+
+  const currentPricing = PRICING[billingPeriod];
+  const isAlreadyPro = userStatus === "subscriber";
+  const hasFullAccess = userStatus === "subscriber" || userStatus === "privileged";
+
+  // UX-339: Billing portal redirect for active subscribers
+  const handleManageSubscription = useCallback(async () => {
+    if (!session?.access_token) return;
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/billing-portal", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error("Erro ao abrir portal");
+      const data = await res.json();
+      window.location.href = data.url;
+    } catch (err) {
+      toast.error(getUserFriendlyError(err));
+    } finally {
+      setPortalLoading(false);
+    }
+  }, [session?.access_token]);
 
   const handleCheckout = async () => {
     if (!session) {
@@ -221,13 +230,52 @@ export default function PlanosPage() {
           </div>
         )}
 
-        {/* Already Pro Banner */}
-        {isAlreadyPro && (
-          <div className="mb-8 p-4 bg-[var(--brand-blue)]/10 backdrop-blur-sm border border-[var(--brand-blue)]/30 rounded-card text-center">
-            <p className="font-semibold text-[var(--ink)]">Você já possui o SmartLic Pro ativo.</p>
-            <Link href="/conta" className="text-sm text-[var(--brand-blue)] hover:underline">
-              Gerenciar acesso
+        {/* UX-339: Contextual status banner for logged-in users */}
+        {userStatus === "subscriber" && (
+          <div data-testid="status-banner-subscriber" className="mb-8 p-4 bg-emerald-50 dark:bg-emerald-950/30 backdrop-blur-sm border border-emerald-200 dark:border-emerald-800 rounded-card text-center">
+            <p className="font-semibold text-emerald-800 dark:text-emerald-200">
+              Você possui acesso completo ao SmartLic
+            </p>
+            <button
+              onClick={handleManageSubscription}
+              disabled={portalLoading}
+              className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50"
+            >
+              {portalLoading ? "Abrindo..." : "Gerenciar assinatura"}
+            </button>
+          </div>
+        )}
+
+        {userStatus === "privileged" && (
+          <div data-testid="status-banner-privileged" className="mb-8 p-4 bg-emerald-50 dark:bg-emerald-950/30 backdrop-blur-sm border border-emerald-200 dark:border-emerald-800 rounded-card text-center">
+            <p className="font-semibold text-emerald-800 dark:text-emerald-200">
+              Você possui acesso completo ao SmartLic
+            </p>
+            <Link href="/buscar" className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline">
+              Iniciar análise
             </Link>
+          </div>
+        )}
+
+        {userStatus === "trial" && (
+          <div data-testid="status-banner-trial" className="mb-8 p-4 bg-blue-50 dark:bg-blue-950/30 backdrop-blur-sm border border-blue-200 dark:border-blue-800 rounded-card text-center">
+            <p className="font-semibold text-blue-800 dark:text-blue-200">
+              Você está no período de avaliação{trialDaysRemaining !== null ? ` (${trialDaysRemaining} ${trialDaysRemaining === 1 ? "dia restante" : "dias restantes"})` : ""}
+            </p>
+            <p className="text-sm text-blue-600 dark:text-blue-400">
+              Escolha seu compromisso para continuar após o trial
+            </p>
+          </div>
+        )}
+
+        {userStatus === "trial_expired" && (
+          <div data-testid="status-banner-expired" className="mb-8 p-4 bg-amber-50 dark:bg-amber-950/30 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-card text-center">
+            <p className="font-semibold text-amber-800 dark:text-amber-200">
+              Seu período de avaliação encerrou
+            </p>
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              Escolha um compromisso para voltar a ter acesso
+            </p>
           </div>
         )}
 
@@ -292,13 +340,23 @@ export default function PlanosPage() {
 
             {/* CTA Button */}
             <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading || isAlreadyPro}
+              onClick={hasFullAccess ? handleManageSubscription : handleCheckout}
+              disabled={checkoutLoading || portalLoading}
               className="w-full py-4 rounded-button text-lg font-bold transition-all
                 bg-[var(--brand-navy)] text-white hover:bg-[var(--brand-blue)] hover:shadow-lg
                 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {checkoutLoading ? "Processando..." : isAlreadyPro ? "Acesso já ativo" : "Começar Agora"}
+              {checkoutLoading || portalLoading
+                ? "Processando..."
+                : userStatus === "subscriber"
+                ? "Gerenciar assinatura"
+                : userStatus === "privileged"
+                ? "Acesso completo"
+                : userStatus === "trial_expired"
+                ? "Continuar com SmartLic"
+                : userStatus === "trial"
+                ? "Assinar agora"
+                : "Começar Agora"}
             </button>
 
             <p className="mt-3 text-center text-xs text-[var(--ink-muted)]">
@@ -371,7 +429,7 @@ export default function PlanosPage() {
             href="/buscar"
             className="text-sm text-[var(--ink-muted)] hover:underline"
           >
-            Continuar com período de avaliação
+            {hasFullAccess ? "Voltar para análises" : "Continuar com período de avaliação"}
           </Link>
         </div>
       </div>
