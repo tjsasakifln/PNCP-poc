@@ -1,6 +1,6 @@
 # TFIX-009: Corrigir null safety em BuscarHeader (saveSearchName.length)
 
-**Status:** Pending
+**Status:** Done
 **Prioridade:** Alta
 **Estimativa:** 30min
 **Arquivos afetados:** 1 componente + 1 test file
@@ -30,10 +30,10 @@ O teste de BuscarHeader renderiza a página inteira (`BuscarPage`) com mocks que
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `page.tsx` linha 544 usa null-safe access: `(search.saveSearchName ?? '').length`
-- [ ] AC2: Mock de `useSearch` no teste inclui `saveSearchName: ''` e todos os campos obrigatórios
-- [ ] AC3: 8/8 testes passam
-- [ ] AC4: Sem regressão em buscar/page.tsx runtime
+- [x] AC1: `page.tsx` linha 544 usa null-safe access: `(search.saveSearchName ?? '').length`
+- [x] AC2: Mock de `useSearch` no teste inclui `saveSearchName: ''` e todos os campos obrigatórios
+- [x] AC3: 8/8 testes passam
+- [x] AC4: Sem regressão em buscar/page.tsx runtime
 
 ## Solução
 

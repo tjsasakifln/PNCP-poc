@@ -56,6 +56,7 @@ jest.mock('next/navigation', () => ({
     prefetch: jest.fn(),
   }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/buscar',
 }));
 
 // Mock PullToRefresh component
@@ -131,18 +132,53 @@ jest.mock('../../app/buscar/hooks/useSearchFilters', () => ({
 
 jest.mock('../../app/buscar/hooks/useSearch', () => ({
   useSearch: () => ({
-    result: null,
     loading: false,
-    loadingStep: null,
-    progress: null,
+    loadingStep: 0,
     statesProcessed: 0,
-    buscar: jest.fn(),
-    downloadExcel: jest.fn(),
+    error: null,
+    quotaError: null,
+    result: null,
     setResult: jest.fn(),
-    restoreSearchStateOnMount: jest.fn(),
-    handleLoadSearch: jest.fn(),
+    setError: jest.fn(),
+    rawCount: 0,
+    searchId: null,
+    useRealProgress: false,
+    sseEvent: null,
+    sseAvailable: false,
+    sseDisconnected: false,
+    isDegraded: false,
+    degradedDetail: null,
+    partialProgress: null,
+    refreshAvailable: null,
+    ufStatuses: new Map(),
+    ufTotalFound: 0,
+    ufAllComplete: false,
+    batchProgress: null,
+    liveFetchInProgress: false,
+    handleRefreshResults: jest.fn(),
+    downloadLoading: false,
+    downloadError: null,
+    searchButtonRef: { current: null },
+    showSaveDialog: false,
+    setShowSaveDialog: jest.fn(),
+    saveSearchName: '',
+    setSaveSearchName: jest.fn(),
+    saveError: null,
+    isMaxCapacity: false,
+    buscar: jest.fn(),
+    buscarForceFresh: jest.fn(),
     cancelSearch: jest.fn(),
+    handleDownload: jest.fn(),
+    handleSaveSearch: jest.fn(),
+    confirmSaveSearch: jest.fn(),
+    handleLoadSearch: jest.fn(),
+    handleRefresh: jest.fn(),
     estimateSearchTime: jest.fn(() => 30),
+    restoreSearchStateOnMount: jest.fn(),
+    getRetryCooldown: jest.fn(() => 0),
+    retryCountdown: null,
+    retryNow: jest.fn(),
+    cancelRetry: jest.fn(),
   }),
 }));
 
@@ -222,7 +258,7 @@ describe('BuscarPage Header - Auth States', () => {
       // Should show the header with SmartLic logo (use getByRole to be specific)
       const logoLink = screen.getByRole('link', { name: /SmartLic/i });
       expect(logoLink).toBeInTheDocument();
-      expect(logoLink).toHaveAttribute('href', '/');
+      expect(logoLink).toHaveAttribute('href', '/buscar');
 
       // Should show UserMenu avatar button (first letter of email)
       // UserMenu renders a button with the first letter of the email as text and title attribute
@@ -254,8 +290,10 @@ describe('BuscarPage Header - Auth States', () => {
       // Should show saved searches
       expect(screen.getByText('Saved Searches')).toBeInTheDocument();
 
-      // Should show message badge
-      expect(screen.getByText('Message Badge')).toBeInTheDocument();
+      // Should show user menu (no separate MessageBadge in header)
+      const avatarButtons = screen.getAllByRole('button');
+      const avatarButton = avatarButtons.find(btn => btn.getAttribute('title') === 'test@example.com');
+      expect(avatarButton).toBeDefined();
     });
   });
 
@@ -340,7 +378,7 @@ describe('BuscarPage Header - Auth States', () => {
 
         const logoLink = screen.getByRole('link', { name: /SmartLic/i });
         expect(logoLink).toBeInTheDocument();
-        expect(logoLink).toHaveAttribute('href', '/');
+        expect(logoLink).toHaveAttribute('href', '/buscar');
 
         unmount();
       });

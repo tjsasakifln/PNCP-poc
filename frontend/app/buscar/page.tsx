@@ -541,7 +541,7 @@ function HomePageContent() {
             maxLength={50}
             autoFocus
           />
-          <p className="text-xs text-ink-muted mt-1">{search.saveSearchName.length}/50 caracteres</p>
+          <p className="text-xs text-ink-muted mt-1">{(search.saveSearchName ?? '').length}/50 caracteres</p>
         </div>
         {search.saveError && (
           <div className="mb-4 p-3 bg-error-subtle border border-error/20 rounded text-sm text-error" role="alert">{search.saveError}</div>
@@ -554,7 +554,7 @@ function HomePageContent() {
           >Cancelar</button>
           <button
             onClick={search.confirmSaveSearch}
-            disabled={!search.saveSearchName.trim()}
+            disabled={!(search.saveSearchName ?? '').trim()}
             type="button"
             className="px-4 py-2 text-sm font-medium text-white bg-brand-navy hover:bg-brand-blue-hover rounded-button transition-colors disabled:bg-ink-faint disabled:cursor-not-allowed"
           >Salvar</button>
