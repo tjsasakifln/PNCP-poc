@@ -24,7 +24,7 @@ import { useSearch } from "./hooks/useSearch";
 import { useNavigationGuard } from "../../hooks/useNavigationGuard";
 import SearchForm from "./components/SearchForm";
 import SearchResults from "./components/SearchResults";
-import BackendStatusIndicator, { useBackendStatus } from "../../components/BackendStatusIndicator";
+import BackendStatusIndicator, { useBackendStatusContext } from "../../components/BackendStatusIndicator";
 import { SearchErrorBoundary } from "./components/SearchErrorBoundary";
 import { MobileDrawer } from "../../components/MobileDrawer";
 
@@ -172,7 +172,7 @@ function HomePageContent() {
   }, [isTrialExpired, fetchTrialValue]);
 
   // CRIT-008 AC9-AC10: Backend connectivity status
-  const backendStatus = useBackendStatus();
+  const backendStatus = useBackendStatusContext();
   const queuedSearchRef = useRef<(() => void) | null>(null);
 
   // GTM-004: Auto-search from onboarding

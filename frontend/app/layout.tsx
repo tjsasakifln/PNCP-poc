@@ -10,6 +10,7 @@ import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { SessionExpiredBanner } from "./components/SessionExpiredBanner";
 import { PaymentFailedBanner } from "../components/billing/PaymentFailedBanner";
 import { NavigationShell } from "../components/NavigationShell";
+import { BackendStatusProvider } from "../components/BackendStatusIndicator";
 import { StructuredData } from "./components/StructuredData";
 import { GoogleAnalytics } from "./components/GoogleAnalytics";
 
@@ -155,13 +156,15 @@ export default function RootLayout({
           <AuthProvider>
             <ThemeProvider>
               <NProgressProvider>
-                <SessionExpiredBanner />
-                <PaymentFailedBanner />
-                <NavigationShell>
-                  {children}
-                </NavigationShell>
-                <Toaster position="top-right" richColors closeButton />
-                <CookieConsentBanner />
+                <BackendStatusProvider>
+                  <SessionExpiredBanner />
+                  <PaymentFailedBanner />
+                  <NavigationShell>
+                    {children}
+                  </NavigationShell>
+                  <Toaster position="top-right" richColors closeButton />
+                  <CookieConsentBanner />
+                </BackendStatusProvider>
               </NProgressProvider>
             </ThemeProvider>
           </AuthProvider>

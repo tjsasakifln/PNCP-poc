@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useBackendStatusContext } from "../../components/BackendStatusIndicator";
+import { useFetchWithBackoff } from "../../hooks/useFetchWithBackoff";
 import { PageHeader } from "../../components/PageHeader";
 import Link from "next/link";
 import {
@@ -192,18 +194,21 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
 
 const LOADING_TIMEOUT_MS = 10_000;
 
+// CRIT-018: Dashboard data bundle returned by the fetch hook
+interface DashboardData {
+  summary: AnalyticsSummary | null;
+  timeSeries: TimeSeriesPoint[];
+  dimensions: TopDimensions | null;
+}
+
 export default function DashboardPage() {
   const { session, user, loading: authLoading } = useAuth();
   const { trackEvent } = useAnalytics();
+  const { status: backendStatus } = useBackendStatusContext();
 
-  const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
-  const [timeSeries, setTimeSeries] = useState<TimeSeriesPoint[]>([]);
-  const [dimensions, setDimensions] = useState<TopDimensions | null>(null);
   const [period, setPeriod] = useState<Period>("week");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch helper — always uses proxy to avoid CORS issues
+  // Stable fetch helper — always uses proxy to avoid CORS issues
   const fetchAnalytics = useCallback(
     async (endpoint: string, params?: Record<string, string>, signal?: AbortSignal) => {
       if (!session?.access_token) return null;
@@ -216,50 +221,49 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${session.access_token}` },
         signal,
       });
-      if (!res.ok) throw new Error(`Erro ao carregar ${endpoint}`);
+      if (!res.ok) throw new Error("Erro ao carregar dados");
       return res.json();
     },
     [session?.access_token]
   );
 
-  // Load all data with timeout
-  const loadData = useCallback(async () => {
-    if (!session) return;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), LOADING_TIMEOUT_MS);
-
-    setLoading(true);
-    setError(null);
-    try {
+  // CRIT-018 AC1-AC6: Fetch function consumed by useFetchWithBackoff
+  const fetchDashboard = useCallback(
+    async (signal: AbortSignal): Promise<DashboardData> => {
       const [summaryData, timeData, dimData] = await Promise.all([
-        fetchAnalytics("summary", undefined, controller.signal),
-        fetchAnalytics("searches-over-time", { period, range_days: "90" }, controller.signal),
-        fetchAnalytics("top-dimensions", { limit: "7" }, controller.signal),
+        fetchAnalytics("summary", undefined, signal),
+        fetchAnalytics("searches-over-time", { period, range_days: "90" }, signal),
+        fetchAnalytics("top-dimensions", { limit: "7" }, signal),
       ]);
-      setSummary(summaryData);
-      setTimeSeries(timeData?.data || []);
-      setDimensions(dimData);
       trackEvent("dashboard_viewed", { period });
-    } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        console.error("[Dashboard] Loading timeout after 10s");
-        setError("O painel demorou demais para carregar. Verifique sua conexão.");
-      } else {
-        const msg = err instanceof Error ? err.message : "Erro ao carregar dashboard";
-        console.error("[Dashboard] Fetch error:", msg);
-        setError(msg);
-      }
-    } finally {
-      clearTimeout(timeout);
-      setLoading(false);
-    }
-  }, [session, period, fetchAnalytics, trackEvent]);
+      return {
+        summary: summaryData,
+        timeSeries: timeData?.data || [],
+        dimensions: dimData,
+      };
+    },
+    [period, fetchAnalytics, trackEvent]
+  );
 
-  useEffect(() => {
-    if (authLoading || !session) return;
-    loadData();
-  }, [authLoading, session, loadData]);
+  // CRIT-018 AC1-AC6: Backoff-managed fetch with backend status integration
+  const {
+    data,
+    loading,
+    error,
+    retryCount,
+    hasExhaustedRetries,
+    manualRetry,
+  } = useFetchWithBackoff<DashboardData>(fetchDashboard, {
+    enabled: !authLoading && !!session && backendStatus !== "offline",
+    maxRetries: 5,
+    initialDelayMs: 2000,
+    maxDelayMs: 30000,
+    timeoutMs: LOADING_TIMEOUT_MS,
+  });
+
+  const summary = data?.summary ?? null;
+  const timeSeries = data?.timeSeries ?? [];
+  const dimensions = data?.dimensions ?? null;
 
   // CSV export
   const handleExportCSV = useCallback(() => {
@@ -329,7 +333,65 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Loading state
+  // CRIT-018 AC8: Error state with cloud+X icon + manual retry
+  // ──────────────────────────────────────────────────────────────────────────
+
+  if (error && hasExhaustedRetries) {
+    return (
+      <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
+        <div className="max-w-6xl mx-auto text-center py-16" data-testid="dashboard-error-state">
+          {/* AC8: Cloud with X icon */}
+          <div className="mx-auto mb-6 w-16 h-16 flex items-center justify-center rounded-full bg-[var(--surface-1)]">
+            <svg
+              aria-hidden="true"
+              className="w-8 h-8 text-[var(--ink-muted)]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2 15a5 5 0 005 5h9a5 5 0 10-4.5-7.17A4 4 0 002 15z"
+              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 12.5l5 5m0-5l-5 5" />
+            </svg>
+          </div>
+          <p className="text-lg font-display font-semibold text-[var(--ink)] mb-2">
+            Painel temporariamente indisponivel
+          </p>
+          <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">
+            Nossos servidores estao sendo atualizados. Seus dados estarao disponiveis em breve.
+          </p>
+          <button
+            onClick={manualRetry}
+            className="px-5 py-2.5 bg-[var(--brand-navy)] text-white rounded-button hover:bg-[var(--brand-blue)] transition-colors font-medium"
+            data-testid="dashboard-manual-retry"
+          >
+            Atualizar agora
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Transient error during retries (still retrying automatically)
+  if (error && !hasExhaustedRetries) {
+    return (
+      <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
+        <div className="max-w-6xl mx-auto text-center py-16" data-testid="dashboard-retrying">
+          <div className="mx-auto mb-4 w-8 h-8 border-2 border-[var(--brand-blue)] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-[var(--ink-secondary)]">
+            Tentando reconectar... ({retryCount}/5)
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Loading state (AC9/AC10: skeletons shown only on initial load, max 10s)
   // ──────────────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -347,30 +409,6 @@ export default function DashboardPage() {
             <div className="h-48 bg-[var(--surface-1)] rounded-card animate-pulse" />
             <div className="h-48 bg-[var(--surface-1)] rounded-card animate-pulse" />
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Error state
-  // ──────────────────────────────────────────────────────────────────────────
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[var(--canvas)] py-8 px-4">
-        <div className="max-w-6xl mx-auto text-center py-16">
-          <span className="text-4xl mb-4 block">&#9888;&#65039;</span>
-          <p className="text-lg font-display font-semibold text-[var(--ink)] mb-2">
-            Não foi possível carregar o painel
-          </p>
-          <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">{error}</p>
-          <button
-            onClick={loadData}
-            className="px-5 py-2.5 bg-[var(--brand-navy)] text-white rounded-button hover:bg-[var(--brand-blue)] transition-colors font-medium"
-          >
-            Tentar novamente
-          </button>
         </div>
       </div>
     );

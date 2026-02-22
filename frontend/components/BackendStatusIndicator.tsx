@@ -1,8 +1,45 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 
 export type BackendStatus = "online" | "offline" | "recovering";
+
+// ============================================================================
+// CRIT-018 AC7: Shared backend status context — avoids duplicate polling
+// ============================================================================
+
+interface BackendStatusState {
+  status: BackendStatus;
+  isPolling: boolean;
+  checkHealth: () => Promise<boolean>;
+}
+
+const BackendStatusContext = createContext<BackendStatusState | null>(null);
+
+/**
+ * CRIT-018 AC7: Provider that runs a single polling instance for all consumers.
+ * Wrap your app layout with this provider.
+ */
+export function BackendStatusProvider({ children }: { children: React.ReactNode }) {
+  const state = useBackendStatus();
+  return (
+    <BackendStatusContext.Provider value={state}>
+      {children}
+    </BackendStatusContext.Provider>
+  );
+}
+
+/**
+ * CRIT-018 AC7: Consume shared backend status from context.
+ * Falls back to standalone hook if no provider exists (backward compatible).
+ */
+export function useBackendStatusContext(): BackendStatusState {
+  const ctx = useContext(BackendStatusContext);
+  if (ctx) return ctx;
+  // Fallback: standalone polling (backward compat for tests / pages outside provider)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useBackendStatus();
+}
 
 /**
  * CRIT-008 AC9: Hook for tracking backend connectivity.
@@ -116,7 +153,7 @@ export function useBackendStatus() {
  * - Recovering: green dot for 3s → disappears
  */
 export default function BackendStatusIndicator() {
-  const { status } = useBackendStatus();
+  const { status } = useBackendStatusContext();
 
   if (status === "online") return null;
 

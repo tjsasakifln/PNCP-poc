@@ -28,6 +28,22 @@ jest.mock("../hooks/useAnalytics", () => ({
   }),
 }));
 
+jest.mock("../components/BackendStatusIndicator", () => ({
+  useBackendStatusContext: () => ({
+    status: "online",
+    isPolling: false,
+    checkHealth: jest.fn(),
+  }),
+  BackendStatusProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useBackendStatus: () => ({
+    status: "online",
+    isPolling: false,
+    checkHealth: jest.fn(),
+  }),
+  __esModule: true,
+  default: () => null,
+}));
+
 jest.mock("next/link", () => {
   return function MockLink({
     children,
@@ -155,7 +171,9 @@ describe("DashboardPage — UX-338", () => {
       });
 
       const calls = (global.fetch as jest.Mock).mock.calls;
-      for (const [url] of calls) {
+      const analyticsCalls = calls.filter(([url]: [string]) => url.includes("/api/analytics"));
+      expect(analyticsCalls.length).toBeGreaterThan(0);
+      for (const [url] of analyticsCalls) {
         expect(url).toMatch(/^\/api\/analytics\?/);
         expect(url).not.toContain("v1/analytics");
       }
@@ -243,46 +261,69 @@ describe("DashboardPage — UX-338", () => {
     });
   });
 
-  describe("AC4: Error state with retry", () => {
-    it("should show error message on fetch failure", async () => {
+  describe("AC4: Error state with retry (CRIT-018)", () => {
+    it("should show error state after retries are exhausted", async () => {
+      jest.useFakeTimers();
       (global.fetch as jest.Mock).mockRejectedValue(
         new Error("Network error")
       );
 
       render(<DashboardPage />);
 
+      // Exhaust all 5 retry attempts
+      for (let i = 0; i < 6; i++) {
+        await act(async () => {
+          jest.advanceTimersByTime(i === 0 ? 100 : 30_000);
+          await Promise.resolve();
+          await Promise.resolve();
+        });
+      }
+
       await waitFor(() => {
         expect(
-          screen.getByText("Não foi possível carregar o painel")
+          screen.getByText("Painel temporariamente indisponivel")
         ).toBeInTheDocument();
-        expect(screen.getByText("Network error")).toBeInTheDocument();
       });
+
+      jest.useRealTimers();
     });
 
-    it("should retry data fetch on button click (not page reload)", async () => {
-      // All 3 fetches fail
+    it("should retry data fetch on manual retry button click", async () => {
+      jest.useFakeTimers();
       (global.fetch as jest.Mock).mockRejectedValue(
         new Error("Network error")
       );
 
       render(<DashboardPage />);
 
+      // Exhaust retries
+      for (let i = 0; i < 6; i++) {
+        await act(async () => {
+          jest.advanceTimersByTime(i === 0 ? 100 : 30_000);
+          await Promise.resolve();
+          await Promise.resolve();
+        });
+      }
+
       await waitFor(() => {
-        expect(
-          screen.getByText("Não foi possível carregar o painel")
-        ).toBeInTheDocument();
+        expect(screen.getByTestId("dashboard-error-state")).toBeInTheDocument();
       });
 
-      // Now set fetch to succeed for retry
+      // Now set fetch to succeed for manual retry
       mockFetchSuccess();
-      const retryButton = screen.getByRole("button", {
-        name: /Tentar novamente/i,
+      fireEvent.click(screen.getByTestId("dashboard-manual-retry"));
+
+      await act(async () => {
+        jest.advanceTimersByTime(100);
+        await Promise.resolve();
+        await Promise.resolve();
       });
-      fireEvent.click(retryButton);
 
       await waitFor(() => {
         expect(screen.getByText("42")).toBeInTheDocument();
       });
+
+      jest.useRealTimers();
     });
   });
 
@@ -299,7 +340,7 @@ describe("DashboardPage — UX-338", () => {
       expect(pulses.length).toBeGreaterThan(0);
     });
 
-    it("should show timeout error after 10s of loading", async () => {
+    it("should transition from skeletons to retry state after 10s timeout", async () => {
       jest.useFakeTimers();
 
       // Make fetch respect AbortController signal
@@ -322,38 +363,44 @@ describe("DashboardPage — UX-338", () => {
       // Verify loading skeletons appear
       expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
 
-      // Advance past the 10s timeout
-      act(() => {
+      // Advance past the 10s timeout — should transition to retry state
+      await act(async () => {
         jest.advanceTimersByTime(11_000);
+        await Promise.resolve();
+        await Promise.resolve();
       });
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/demorou demais para carregar/i)
-        ).toBeInTheDocument();
+        // CRIT-018: now shows retrying spinner instead of inline error
+        expect(screen.getByTestId("dashboard-retrying")).toBeInTheDocument();
       });
 
       jest.useRealTimers();
     });
   });
 
-  describe("AC6: No silent console errors", () => {
-    it("should log error to console on fetch failure", async () => {
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+  describe("AC6: Error visibility (CRIT-018)", () => {
+    it("should surface errors in the UI instead of only console", async () => {
+      jest.useFakeTimers();
       (global.fetch as jest.Mock).mockRejectedValue(
         new Error("Test error")
       );
 
       render(<DashboardPage />);
 
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith(
-          "[Dashboard] Fetch error:",
-          "Test error"
-        );
+      // After first failure, the retrying UI should appear
+      await act(async () => {
+        jest.advanceTimersByTime(100);
+        await Promise.resolve();
+        await Promise.resolve();
       });
 
-      consoleSpy.mockRestore();
+      await waitFor(() => {
+        expect(screen.getByTestId("dashboard-retrying")).toBeInTheDocument();
+        expect(screen.getByText(/Tentando reconectar/)).toBeInTheDocument();
+      });
+
+      jest.useRealTimers();
     });
   });
 
