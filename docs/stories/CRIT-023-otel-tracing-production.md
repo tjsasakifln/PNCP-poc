@@ -3,7 +3,7 @@
 **Tipo:** Observabilidade / Debt
 **Prioridade:** P1 (Sem tracing fim-a-fim, debug de incidentes e cego)
 **Criada:** 2026-02-22
-**Status:** Parcialmente Concluído (falta OTLP endpoint)
+**Status:** Parcialmente Concluído (falta deploy + validação pós-deploy)
 **Origem:** Investigacao P0 — trace_id e span_id aparecem como "-" em todos os logs
 **Dependencias:** Nenhuma
 **Estimativa:** S (configuracao + verificacao)
@@ -43,7 +43,7 @@ O codigo de tracing OpenTelemetry esta implementado (`telemetry.py`, `middleware
 
 ### Criterios de Aceitacao
 
-- [ ] **AC1:** `OTEL_EXPORTER_OTLP_ENDPOINT` configurado no Railway para backend service (apontando para Grafana Cloud OTLP endpoint) — **PENDENTE: Requer URL do Grafana Cloud Tempo OTLP. Configurar via `railway variables --set "OTEL_EXPORTER_OTLP_ENDPOINT=https://<stack>.grafana.net/otlp" --set "OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64(instanceId:apiKey)>"`**
+- [x] **AC1:** `OTEL_EXPORTER_OTLP_ENDPOINT` configurado no Railway para backend service — `https://otlp-gateway-prod-sa-east-1.grafana.net/otlp` + `OTEL_EXPORTER_OTLP_HEADERS` com Basic auth (instanceId 1534562, token `smartlic-backend-otel`)
 - [x] **AC2:** `OTEL_SERVICE_NAME=smartlic-backend` configurado
 - [x] **AC3:** `.env.example` documentado com as variaveis OTEL
 - [ ] **AC4:** Logs em producao mostram `trace_id` e `span_id` reais (nao "-") — pós-deploy
@@ -62,9 +62,10 @@ O codigo de tracing OpenTelemetry esta implementado (`telemetry.py`, `middleware
 
 | Arquivo | Mudanca |
 |---|---|
-| `.env.example` | Documentar OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME, OTEL_SAMPLING_RATE |
-| `backend/telemetry.py` | CRIT-023: Suporte a HTTPS + OTEL_EXPORTER_OTLP_HEADERS para Grafana Cloud |
-| Railway env vars | OTEL_SERVICE_NAME e OTEL_SAMPLING_RATE configurados (falta OTLP endpoint) |
+| `.env.example` | Documentar OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_HEADERS, OTEL_SERVICE_NAME, OTEL_SAMPLING_RATE |
+| `backend/telemetry.py` | CRIT-023: HTTP/protobuf exporter (was gRPC) + OTEL_EXPORTER_OTLP_HEADERS parsing |
+| `backend/requirements.txt` | Switch `opentelemetry-exporter-otlp-proto-grpc` → `opentelemetry-exporter-otlp-proto-http` |
+| Railway env vars | 4 OTEL vars configuradas (ENDPOINT, HEADERS, SERVICE_NAME, SAMPLING_RATE) |
 
 ---
 

@@ -79,7 +79,7 @@ def init_tracing() -> None:
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
         from opentelemetry.sdk.resources import Resource, SERVICE_NAME
         from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
@@ -98,18 +98,19 @@ def init_tracing() -> None:
         )
 
         # Configure OTLP exporter
-        # CRIT-023: Support both local (insecure gRPC) and cloud (HTTPS with auth)
-        use_insecure = not endpoint.startswith("https://")
+        # CRIT-023: HTTP/protobuf exporter (Grafana Cloud recommended)
         headers_raw = os.getenv("OTEL_EXPORTER_OTLP_HEADERS", "").strip()
         headers = None
         if headers_raw:
             # Parse "key1=val1,key2=val2" format
-            headers = tuple(
-                tuple(h.split("=", 1)) for h in headers_raw.split(",") if "=" in h
-            )
+            headers = {
+                k: v
+                for h in headers_raw.split(",")
+                if "=" in h
+                for k, v in [h.split("=", 1)]
+            }
         exporter = OTLPSpanExporter(
             endpoint=endpoint,
-            insecure=use_insecure,
             headers=headers,
         )
         span_processor = BatchSpanProcessor(exporter)
