@@ -113,23 +113,31 @@ def init_tracing() -> None:
             f"endpoint={endpoint}, sampling_rate={sampling_rate}"
         )
 
-        # AC4: Auto-instrument FastAPI (class-level, before app creation)
-        _instrument_fastapi()
-
-        # AC5: Auto-instrument httpx
+        # AC5: Auto-instrument httpx (stateless, safe to call early)
         _instrument_httpx()
+
+        # NOTE: FastAPI instrumentation is done via instrument_fastapi_app(app)
+        # AFTER all middleware is registered, so OTel middleware wraps everything.
 
     except Exception as e:
         logger.error(f"Failed to initialize OpenTelemetry: {e}")
         _noop = True
 
 
-def _instrument_fastapi() -> None:
-    """AC4: Auto-instrument FastAPI routes with spans (class-level patching)."""
+def instrument_fastapi_app(app) -> None:
+    """Instrument a specific FastAPI app instance with OTel ASGI middleware.
+
+    CRIT-023: Must be called AFTER all app.add_middleware() calls so that
+    the OTel middleware is the outermost (LIFO stack). This ensures the
+    span context is active for all inner middleware, enabling trace_id
+    propagation in CorrelationIDMiddleware logs.
+    """
+    if _noop:
+        return
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-        FastAPIInstrumentor().instrument()
-        logger.info("FastAPI auto-instrumentation enabled")
+        FastAPIInstrumentor().instrument_app(app)
+        logger.info("FastAPI auto-instrumentation enabled (instrument_app)")
     except ImportError:
         logger.warning("opentelemetry-instrumentation-fastapi not installed — skipping")
     except Exception as e:

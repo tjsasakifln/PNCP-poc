@@ -444,8 +444,8 @@ async def lifespan(app_instance: FastAPI):
     await shutdown_redis()
 
 
-# CRIT-023: Initialize tracing BEFORE app creation so FastAPIInstrumentor
-# can patch the FastAPI class (instrument_app in lifespan is too late)
+# CRIT-023: Initialize TracerProvider + httpx instrumentation before app creation.
+# FastAPI instrumentation is done AFTER middleware registration (see below).
 from telemetry import init_tracing as _init_tracing
 _init_tracing()
 
@@ -484,6 +484,13 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # STORY-226 AC14: Add deprecation headers to legacy (non-versioned) routes
 app.add_middleware(DeprecationMiddleware)
+
+# CRIT-023: Instrument FastAPI AFTER all add_middleware() calls.
+# Starlette middleware stack is LIFO — last added = outermost.
+# This makes OTel ASGI middleware the outermost, so the span context
+# is active for all inner middleware (including CorrelationIDMiddleware logs).
+from telemetry import instrument_fastapi_app
+instrument_fastapi_app(app)
 
 # ============================================================================
 # SYS-M08: API Versioning with /v1/ prefix
