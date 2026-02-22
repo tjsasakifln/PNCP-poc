@@ -40,11 +40,8 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
       case "free_trial":
         return "bg-gray-500 text-white border-gray-600";
       case "consultor_agil":
-        return "bg-blue-500 text-white border-blue-600";
       case "maquina":
-        return "bg-green-500 text-white border-green-600";
       case "sala_guerra":
-        return "bg-yellow-500 text-gray-900 border-yellow-600";
       case "smartlic_pro":
         return "bg-brand-navy text-white border-brand-blue";
       default:
@@ -58,9 +55,9 @@ export function PlanBadge({ planId: rawPlanId, planName, trialExpiresAt, onClick
   // Plan icon - use text icons instead of emojis for better cross-platform support
   const icon = useMemo(() => {
     if (planId === "free_trial") return "A";  // Avaliação
-    if (planId === "consultor_agil") return "C";  // Consultor
-    if (planId === "maquina") return "M";  // Maquina
-    if (planId === "sala_guerra") return "S";  // Sala de Guerra
+    if (planId === "consultor_agil") return "P";  // Legacy → Pro
+    if (planId === "maquina") return "P";  // Legacy → Pro
+    if (planId === "sala_guerra") return "P";  // Legacy → Pro
     if (planId === "smartlic_pro") return "P";  // Pro
     return "?";
   }, [planId]);

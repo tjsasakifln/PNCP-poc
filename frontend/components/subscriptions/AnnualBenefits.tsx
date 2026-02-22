@@ -13,7 +13,7 @@ import { BillingPeriod } from "./PlanToggle";
  * - Only shows when billingPeriod = "annual"
  * - Status badges (active, coming_soon, future)
  * - Tooltips with launch dates
- * - Special section for "Sala de Guerra" exclusive benefits
+ * - Special section for SmartLic Pro exclusive benefits
  */
 
 export interface Benefit {
@@ -52,21 +52,21 @@ const ALL_BENEFITS: Benefit[] = [
     description: 'IA avalia oportunidades e gera análise estratégica',
     status: 'coming_soon',
     launchDate: 'Abril 2026',
-    planExclusive: 'sala_guerra',
+    planExclusive: 'smartlic_pro',
   },
   {
     key: 'dashboard_executivo',
     title: 'Dashboard Executivo',
     description: 'Gráficos de tendências, heatmaps, análise de concorrência',
     status: 'future',
-    planExclusive: 'sala_guerra',
+    planExclusive: 'smartlic_pro',
   },
   {
     key: 'alertas_multi_canal',
     title: 'Alertas Multi-Canal',
     description: 'Telegram, Email, notificações in-app e mais',
     status: 'future',
-    planExclusive: 'sala_guerra',
+    planExclusive: 'smartlic_pro',
   },
 ];
 
@@ -82,8 +82,8 @@ export function AnnualBenefits({
 
   // Filter benefits based on plan
   const allPlansBenefits = ALL_BENEFITS.filter(b => !b.planExclusive);
-  const salaGuerraBenefits = ALL_BENEFITS.filter(b => b.planExclusive === 'sala_guerra');
-  const showSalaGuerra = planId === 'sala_guerra';
+  const proBenefits = ALL_BENEFITS.filter(b => b.planExclusive === 'smartlic_pro');
+  const showProExclusive = planId === 'smartlic_pro' || planId === 'sala_guerra' || planId === 'maquina' || planId === 'consultor_agil';
 
   return (
     <div className={`space-y-6 ${className}`} data-testid="annual-benefits">
@@ -119,17 +119,17 @@ export function AnnualBenefits({
         </ul>
       </div>
 
-      {/* Sala de Guerra Exclusive Benefits */}
-      {showSalaGuerra && salaGuerraBenefits.length > 0 && (
+      {/* SmartLic Pro Exclusive Benefits */}
+      {showProExclusive && proBenefits.length > 0 && (
         <div className="bg-gradient-to-br from-brand-blue-subtle to-surface-1 rounded-card p-6 border-2 border-brand-blue">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-2xl" aria-hidden="true">👑</span>
             <h4 className="text-lg font-semibold text-brand-navy">
-              Exclusivo Sala de Guerra
+              Exclusivo SmartLic Pro
             </h4>
           </div>
           <ul className="space-y-4">
-            {salaGuerraBenefits.map((benefit) => (
+            {proBenefits.map((benefit) => (
               <li key={benefit.key} className="flex items-start gap-3">
                 <FeatureBadge
                   status={benefit.status}

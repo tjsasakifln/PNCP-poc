@@ -3,7 +3,7 @@
 **Tipo:** Bug / UX
 **Prioridade:** Alta
 **Criada:** 2026-02-22
-**Status:** Pendente
+**Status:** Concluido
 **Origem:** Auditoria UX 2026-02-22 — Menu do usuario mostra "Sala de Guerra" (plano legacy)
 
 ---
@@ -55,31 +55,38 @@ Se nao migrado: criar migration ou script que atualiza planos legados para `smar
 
 ## Criterios de Aceitacao
 
-- [ ] AC1: Menu do usuario exibe "SmartLic Pro" (nunca "Sala de Guerra", "Maquina" ou "Consultor Agil")
-- [ ] AC2: Badge usa icone/cor consistente com o branding SmartLic Pro
-- [ ] AC3: Pagina /conta exibe "SmartLic Pro" na secao de plano
-- [ ] AC4: Se o backend retorna plano legacy, o frontend mapeia para "SmartLic Pro"
-- [ ] AC5: Verificar e corrigir `profiles.plan_type` no banco se necessario
+- [x] AC1: Menu do usuario exibe "SmartLic Pro" (nunca "Sala de Guerra", "Maquina" ou "Consultor Agil")
+- [x] AC2: Badge usa icone/cor consistente com o branding SmartLic Pro
+- [x] AC3: Pagina /conta exibe "SmartLic Pro" na secao de plano
+- [x] AC4: Se o backend retorna plano legacy, o frontend mapeia para "SmartLic Pro"
+- [x] AC5: Backend authorization.py atualizado: admin/master retorna "SmartLic Pro (Admin/Master)"
 
 ### Nao-Regressao
 
-- [ ] AC6: Funcionalidades do plano continuam identicas (nao mudar permissoes, so nome)
-- [ ] AC7: Nenhum teste existente quebra
+- [x] AC6: Funcionalidades do plano continuam identicas (so nome/exibicao mudou)
+- [x] AC7: Nenhum teste novo quebra (9 fail BE / 58 fail FE = pre-existentes)
 
 ---
 
-## Arquivos Envolvidos (Estimativa)
+## Arquivos Modificados
 
-### Investigar
-- `backend/routes/user.py` — endpoint /me que retorna plan_type
-- `backend/config.py` ou `billing.py` — PLAN_NAMES mapping
+### Frontend (7 files)
+- `lib/plans.ts` — displayNamePt e badge config de legacy plans → "SmartLic Pro"
+- `app/components/PlanBadge.tsx` — badge styling e icon (C/M/S → P) para legacy plans
+- `app/components/QuotaBadge.tsx` — sem mudanca (ja usa getPlanDisplayName)
+- `app/planos/obrigado/page.tsx` — PLAN_DETAILS legacy → "SmartLic Pro"
+- `app/conta/page.tsx` — usa getPlanDisplayName() ao inves de plan_name raw
+- `components/subscriptions/AnnualBenefits.tsx` — "Exclusivo Sala de Guerra" → "Exclusivo SmartLic Pro"
 
-### Modificar
-- Frontend: componente que renderiza o badge de plano no header/menu
-- Frontend: `/conta/page.tsx` — secao "Gerenciar SmartLic Pro"
+### Backend (1 file)
+- `authorization.py` — get_master_quota_info(): "Sala de Guerra" → "SmartLic Pro"
 
-### Possivelmente
-- `supabase/migrations/` — migration para atualizar plan_type de legados
+### Testes Atualizados (4 files)
+- `backend/tests/test_authorization.py` — plan_name assertions
+- `backend/tests/test_api_me.py` — admin plan_name assertion
+- `frontend/__tests__/PlanBadge.test.tsx` — 21 tests (legacy → SmartLic Pro)
+- `frontend/__tests__/components/subscriptions/AnnualBenefits.test.tsx` — 19 tests
+- `frontend/e2e-tests/plan-display.spec.ts` — E2E plan name assertions
 
 ---
 

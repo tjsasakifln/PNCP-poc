@@ -2,15 +2,13 @@
  * E2E Test: Plan Badge and Quota Display
  *
  * Critical User Flow: Verifying correct plan names and credit balance
+ * Updated UX-343: Legacy plans now display as "SmartLic Pro"
  *
  * Steps:
  * 1. Verify plan badge displays correct name
  * 2. Verify quota counter shows credit balance
  * 3. Verify plan-specific styling
  * 4. Verify trial countdown (if applicable)
- *
- * Covers bugs:
- * - Nomenclatura Planos: Consistencia de nomes, badge, saldo de creditos
  */
 
 import { test, expect } from '@playwright/test';
@@ -48,7 +46,7 @@ test.describe('Plan Badge Display', () => {
     }
   });
 
-  test('AC2: should display consultor agil badge correctly', async ({ page }) => {
+  test('AC2: should display legacy consultor_agil as SmartLic Pro', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'consultor_agil',
       plan_name: 'Consultor Agil',
@@ -58,15 +56,15 @@ test.describe('Plan Badge Display', () => {
 
     await page.goto('/');
 
-    // Look for plan badge
-    const planBadge = page.locator('[aria-label*="plan"]').or(page.locator('button:has-text("Consultor")'));
+    // Legacy plans now display as SmartLic Pro
+    const planBadge = page.locator('[aria-label*="plan"]').or(page.locator('button:has-text("SmartLic Pro")'));
 
     if (await planBadge.isVisible()) {
-      await expect(planBadge).toContainText(/Consultor|Agil/i);
+      await expect(planBadge).toContainText(/SmartLic Pro/i);
     }
   });
 
-  test('AC3: should display maquina badge correctly', async ({ page }) => {
+  test('AC3: should display legacy maquina as SmartLic Pro', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'maquina',
       plan_name: 'Maquina de Vendas',
@@ -76,15 +74,15 @@ test.describe('Plan Badge Display', () => {
 
     await page.goto('/');
 
-    // Look for plan badge
-    const planBadge = page.locator('[aria-label*="plan"]').or(page.locator('button:has-text("Maquina")'));
+    // Legacy plans now display as SmartLic Pro
+    const planBadge = page.locator('[aria-label*="plan"]').or(page.locator('button:has-text("SmartLic Pro")'));
 
     if (await planBadge.isVisible()) {
-      await expect(planBadge).toContainText(/Maquina|Vendas/i);
+      await expect(planBadge).toContainText(/SmartLic Pro/i);
     }
   });
 
-  test('AC4: should display sala de guerra badge correctly', async ({ page }) => {
+  test('AC4: should display legacy sala_guerra as SmartLic Pro', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'sala_guerra',
       plan_name: 'Sala de Guerra',
@@ -94,11 +92,11 @@ test.describe('Plan Badge Display', () => {
 
     await page.goto('/');
 
-    // Look for plan badge
-    const planBadge = page.locator('[aria-label*="plan"]').or(page.locator('button:has-text("Sala")'));
+    // Legacy plans now display as SmartLic Pro
+    const planBadge = page.locator('[aria-label*="plan"]').or(page.locator('button:has-text("SmartLic Pro")'));
 
     if (await planBadge.isVisible()) {
-      await expect(planBadge).toContainText(/Sala|Guerra/i);
+      await expect(planBadge).toContainText(/SmartLic Pro/i);
     }
   });
 
@@ -129,7 +127,7 @@ test.describe('Quota Counter Display', () => {
   test('AC6: should display quota counter with correct values', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'consultor_agil',
-      plan_name: 'Consultor Agil',
+      plan_name: 'SmartLic Pro',
       credits_remaining: 7,
       credits_total: 10,
       reset_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -150,7 +148,7 @@ test.describe('Quota Counter Display', () => {
   test('AC7: should show progress bar for quota usage', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'consultor_agil',
-      plan_name: 'Consultor Agil',
+      plan_name: 'SmartLic Pro',
       credits_remaining: 3,
       credits_total: 10,
     });
@@ -169,7 +167,7 @@ test.describe('Quota Counter Display', () => {
   test('AC8: should show warning when quota is near limit (70%+)', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'maquina',
-      plan_name: 'Maquina de Vendas',
+      plan_name: 'SmartLic Pro',
       credits_remaining: 8,
       credits_total: 50,
       quota_used: 42,
@@ -189,7 +187,7 @@ test.describe('Quota Counter Display', () => {
   test('AC9: should show error state when quota exhausted', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'consultor_agil',
-      plan_name: 'Consultor Agil',
+      plan_name: 'SmartLic Pro',
       credits_remaining: 0,
       credits_total: 10,
       quota_used: 10,
@@ -235,7 +233,7 @@ test.describe('Quota Counter Display', () => {
     const resetDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
     await mockMeAPI(page, {
       plan_id: 'maquina',
-      plan_name: 'Maquina de Vendas',
+      plan_name: 'SmartLic Pro',
       credits_remaining: 30,
       credits_total: 50,
       reset_date: resetDate.toISOString(),
@@ -261,15 +259,15 @@ test.describe('Plan Badge Interactivity', () => {
   test('AC12: should navigate to plans page on badge click', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'consultor_agil',
-      plan_name: 'Consultor Agil',
+      plan_name: 'SmartLic Pro',
       credits_remaining: 10,
     });
     await mockAuthAPI(page, 'user');
 
     await page.goto('/');
 
-    // Find and click plan badge
-    const planBadge = page.locator('[title*="planos"]').or(page.locator('button:has-text("Consultor")'));
+    // Find and click plan badge (now shows SmartLic Pro for legacy plans)
+    const planBadge = page.locator('[title*="planos"]').or(page.locator('button:has-text("SmartLic Pro")'));
 
     if (await planBadge.isVisible()) {
       await planBadge.click();
@@ -286,14 +284,14 @@ test.describe('Plan Badge Interactivity', () => {
   test('AC13: should have accessible label on plan badge', async ({ page }) => {
     await mockMeAPI(page, {
       plan_id: 'maquina',
-      plan_name: 'Maquina de Vendas',
+      plan_name: 'SmartLic Pro',
     });
     await mockAuthAPI(page, 'user');
 
     await page.goto('/');
 
-    // Find plan badge
-    const planBadge = page.locator('button').filter({ hasText: /Maquina/i }).first();
+    // Find plan badge (now displays as SmartLic Pro)
+    const planBadge = page.locator('button').filter({ hasText: /SmartLic Pro/i }).first();
 
     if (await planBadge.isVisible()) {
       // Should have accessible label

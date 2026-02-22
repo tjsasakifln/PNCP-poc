@@ -4,11 +4,9 @@
  * This file centralizes all plan-related mappings to ensure consistency
  * between the backend plan_id values and user-facing display names.
  *
- * Backend Plan IDs (from quota.py PLAN_NAMES):
- * - free_trial: "FREE Trial"
- * - consultor_agil: "Consultor Agil"
- * - maquina: "Maquina"
- * - sala_guerra: "Sala de Guerra"
+ * After GTM-002, all legacy plans (consultor_agil, maquina, sala_guerra)
+ * display as "SmartLic Pro" to the user. The plan_id is kept for
+ * backward compatibility but the user-facing name is always "SmartLic Pro".
  */
 
 export interface PlanConfig {
@@ -41,34 +39,34 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
   },
   consultor_agil: {
     id: "consultor_agil",
-    displayName: "Consultor Agil",
-    displayNamePt: "Consultor Agil",
-    price: "R$ 297/mes",
+    displayName: "SmartLic Pro",
+    displayNamePt: "SmartLic Pro",
+    price: "R$ 1.999/mês",
     badge: {
-      bg: "bg-blue-500",
-      icon: "briefcase",
+      bg: "bg-brand-navy",
+      icon: "star",
     },
     tier: 1,
   },
   maquina: {
     id: "maquina",
-    displayName: "Maquina",
-    displayNamePt: "Maquina",
-    price: "R$ 597/mes",
+    displayName: "SmartLic Pro",
+    displayNamePt: "SmartLic Pro",
+    price: "R$ 1.999/mês",
     badge: {
-      bg: "bg-green-500",
-      icon: "cog",
+      bg: "bg-brand-navy",
+      icon: "star",
     },
     tier: 2,
   },
   sala_guerra: {
     id: "sala_guerra",
-    displayName: "Sala de Guerra",
-    displayNamePt: "Sala de Guerra",
-    price: "R$ 1.497/mes",
+    displayName: "SmartLic Pro",
+    displayNamePt: "SmartLic Pro",
+    price: "R$ 1.999/mês",
     badge: {
-      bg: "bg-yellow-500",
-      icon: "crown",
+      bg: "bg-brand-navy",
+      icon: "star",
     },
     tier: 3,
   },

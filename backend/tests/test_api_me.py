@@ -585,7 +585,7 @@ class TestMeEndpointAdminStatus:
 
             assert data["is_admin"] is True
             assert data["plan_id"] == "sala_guerra"
-            assert data["plan_name"] == "Sala de Guerra (Admin)"
+            assert data["plan_name"] == "SmartLic Pro (Admin)"
         finally:
             cleanup()
 

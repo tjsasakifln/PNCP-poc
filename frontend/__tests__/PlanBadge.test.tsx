@@ -1,5 +1,6 @@
 /**
  * Tests for PlanBadge component (STORY-165)
+ * Updated UX-343: Legacy plans now display as "SmartLic Pro"
  */
 
 import React from 'react';
@@ -17,15 +18,13 @@ describe('PlanBadge', () => {
         />
       );
 
-      // getPlanDisplayName returns "Avaliação" for free_trial
       const badge = screen.getByText('Avaliação');
       expect(badge).toBeInTheDocument();
-      // The button element has the styling class
       const button = screen.getByRole('button');
       expect(button.className).toContain('bg-gray-500');
     });
 
-    it('renders Consultor Ágil badge with correct styling', () => {
+    it('renders legacy Consultor Ágil as SmartLic Pro', () => {
       render(
         <PlanBadge
           planId="consultor_agil"
@@ -34,14 +33,13 @@ describe('PlanBadge', () => {
         />
       );
 
-      // getPlanDisplayName returns "Consultor Agil" (no accent)
-      const badge = screen.getByText('Consultor Agil');
+      const badge = screen.getByText('SmartLic Pro');
       expect(badge).toBeInTheDocument();
       const button = screen.getByRole('button');
-      expect(button.className).toContain('bg-blue-500');
+      expect(button.className).toContain('bg-brand-navy');
     });
 
-    it('renders Máquina badge with correct styling', () => {
+    it('renders legacy Máquina as SmartLic Pro', () => {
       render(
         <PlanBadge
           planId="maquina"
@@ -50,14 +48,13 @@ describe('PlanBadge', () => {
         />
       );
 
-      // getPlanDisplayName returns "Maquina" (no accent)
-      const badge = screen.getByText('Maquina');
+      const badge = screen.getByText('SmartLic Pro');
       expect(badge).toBeInTheDocument();
       const button = screen.getByRole('button');
-      expect(button.className).toContain('bg-green-500');
+      expect(button.className).toContain('bg-brand-navy');
     });
 
-    it('renders Sala de Guerra badge with correct styling', () => {
+    it('renders legacy Sala de Guerra as SmartLic Pro', () => {
       render(
         <PlanBadge
           planId="sala_guerra"
@@ -66,10 +63,25 @@ describe('PlanBadge', () => {
         />
       );
 
-      const badge = screen.getByText('Sala de Guerra');
+      const badge = screen.getByText('SmartLic Pro');
       expect(badge).toBeInTheDocument();
       const button = screen.getByRole('button');
-      expect(button.className).toContain('bg-yellow-500');
+      expect(button.className).toContain('bg-brand-navy');
+    });
+
+    it('renders SmartLic Pro badge correctly', () => {
+      render(
+        <PlanBadge
+          planId="smartlic_pro"
+          planName="SmartLic Pro"
+          onClick={jest.fn()}
+        />
+      );
+
+      const badge = screen.getByText('SmartLic Pro');
+      expect(badge).toBeInTheDocument();
+      const button = screen.getByRole('button');
+      expect(button.className).toContain('bg-brand-navy');
     });
   });
 
@@ -170,7 +182,7 @@ describe('PlanBadge', () => {
       expect(handleClick).toHaveBeenCalledTimes(1);
     });
 
-    it('has accessible label', () => {
+    it('has accessible label with SmartLic Pro for legacy plans', () => {
       render(
         <PlanBadge
           planId="maquina"
@@ -180,13 +192,12 @@ describe('PlanBadge', () => {
       );
 
       const badge = screen.getByRole('button');
-      // aria-label uses getPlanDisplayName which returns "Maquina" (no accent)
-      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Maquina'));
+      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('SmartLic Pro'));
     });
   });
 
   describe('Icons', () => {
-    it('shows G letter icon for FREE trial', () => {
+    it('shows A letter icon for FREE trial', () => {
       const { container } = render(
         <PlanBadge
           planId="free_trial"
@@ -195,11 +206,10 @@ describe('PlanBadge', () => {
         />
       );
 
-      // Component uses letter icons: A for Avaliação
       expect(container.textContent).toContain('A');
     });
 
-    it('shows C letter icon for Consultor Ágil', () => {
+    it('shows P letter icon for legacy Consultor Ágil', () => {
       const { container } = render(
         <PlanBadge
           planId="consultor_agil"
@@ -208,11 +218,11 @@ describe('PlanBadge', () => {
         />
       );
 
-      // Component uses letter icons: C for Consultor
-      expect(container.textContent).toContain('C');
+      // Legacy plans now show P for Pro
+      expect(container.textContent).toContain('P');
     });
 
-    it('shows M letter icon for Máquina', () => {
+    it('shows P letter icon for legacy Máquina', () => {
       const { container } = render(
         <PlanBadge
           planId="maquina"
@@ -221,11 +231,11 @@ describe('PlanBadge', () => {
         />
       );
 
-      // Component uses letter icons: M for Maquina
-      expect(container.textContent).toContain('M');
+      // Legacy plans now show P for Pro
+      expect(container.textContent).toContain('P');
     });
 
-    it('shows S letter icon for Sala de Guerra', () => {
+    it('shows P letter icon for legacy Sala de Guerra', () => {
       const { container } = render(
         <PlanBadge
           planId="sala_guerra"
@@ -234,8 +244,20 @@ describe('PlanBadge', () => {
         />
       );
 
-      // Component uses letter icons: S for Sala de Guerra
-      expect(container.textContent).toContain('S');
+      // Legacy plans now show P for Pro
+      expect(container.textContent).toContain('P');
+    });
+
+    it('shows P letter icon for SmartLic Pro', () => {
+      const { container } = render(
+        <PlanBadge
+          planId="smartlic_pro"
+          planName="SmartLic Pro"
+          onClick={jest.fn()}
+        />
+      );
+
+      expect(container.textContent).toContain('P');
     });
   });
 });

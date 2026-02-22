@@ -21,12 +21,12 @@
 
 | ID | Titulo | Severidade | Status |
 |----|--------|-----------|--------|
-| UX-337 | Sidebar de Navegacao Persistente na Area Logada | Critica | Pendente |
-| UX-338 | Fix Dashboard Loading Infinito | Critica | Pendente |
-| UX-339 | Mostrar Pricing Completo para Usuario Logado | Alta | Pendente |
-| UX-340 | Redesign Header Mobile | Alta | Pendente |
-| UX-341 | Empty States Educativos (Pipeline, Historico, Dashboard, Conta) | Media | Pendente |
-| UX-343 | Fix Exibicao Nome Plano Legacy ("Sala de Guerra" → "SmartLic Pro") | Alta | Pendente |
+| UX-337 | Sidebar de Navegacao Persistente na Area Logada | Critica | Concluido |
+| UX-338 | Fix Dashboard Loading Infinito | Critica | Concluido |
+| UX-339 | Mostrar Pricing Completo para Usuario Logado | Alta | Concluido |
+| UX-340 | Redesign Header Mobile | Alta | Concluido |
+| UX-341 | Empty States Educativos (Pipeline, Historico, Dashboard, Conta) | Media | Concluido |
+| UX-343 | Fix Exibicao Nome Plano Legacy ("Sala de Guerra" → "SmartLic Pro") | Alta | Concluido |
 
 ---
 

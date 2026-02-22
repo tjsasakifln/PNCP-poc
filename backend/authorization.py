@@ -140,7 +140,7 @@ def get_master_quota_info(is_admin: bool = False):
     from quota import QuotaInfo, PLAN_CAPABILITIES
     from datetime import datetime, timezone
 
-    plan_name = "Sala de Guerra (Admin)" if is_admin else "Sala de Guerra (Master)"
+    plan_name = "SmartLic Pro (Admin)" if is_admin else "SmartLic Pro (Master)"
 
     return QuotaInfo(
         allowed=True,

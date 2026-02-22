@@ -398,25 +398,25 @@ class TestGetMasterQuotaInfo:
     """Test _get_master_quota_info() returns sala_guerra plan."""
 
     def test_admin_label(self):
-        """Admin user gets 'Sala de Guerra (Admin)' label."""
+        """Admin user gets 'SmartLic Pro (Admin)' label."""
         from authorization import _get_master_quota_info
 
         quota_info = _get_master_quota_info(is_admin=True)
 
         assert quota_info.allowed is True
         assert quota_info.plan_id == "sala_guerra"
-        assert quota_info.plan_name == "Sala de Guerra (Admin)"
+        assert quota_info.plan_name == "SmartLic Pro (Admin)"
         assert quota_info.quota_remaining == 999999
 
     def test_master_label(self):
-        """Master user gets 'Sala de Guerra (Master)' label."""
+        """Master user gets 'SmartLic Pro (Master)' label."""
         from authorization import _get_master_quota_info
 
         quota_info = _get_master_quota_info(is_admin=False)
 
         assert quota_info.allowed is True
         assert quota_info.plan_id == "sala_guerra"
-        assert quota_info.plan_name == "Sala de Guerra (Master)"
+        assert quota_info.plan_name == "SmartLic Pro (Master)"
         assert quota_info.quota_remaining == 999999
 
     def test_returns_correct_plan_id(self):

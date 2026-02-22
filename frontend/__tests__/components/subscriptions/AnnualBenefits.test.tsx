@@ -2,6 +2,7 @@
  * AnnualBenefits Component Tests
  *
  * STORY-171 AC7: Testes Unitários - Frontend
+ * Updated UX-343: Legacy plans display as SmartLic Pro
  * Tests annual benefits display with conditional rendering
  */
 
@@ -56,45 +57,62 @@ describe('AnnualBenefits Component', () => {
     });
   });
 
-  describe('Sala de Guerra Exclusive Benefits', () => {
-    it('should not show exclusive section for other plans', () => {
+  describe('SmartLic Pro Exclusive Benefits', () => {
+    it('should not show exclusive section when no planId provided', () => {
+      render(<AnnualBenefits billingPeriod="annual" />);
+
+      expect(screen.queryByText('Exclusivo SmartLic Pro')).not.toBeInTheDocument();
+    });
+
+    it('should show exclusive section for smartlic_pro plan', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
+
+      expect(screen.getByText('Exclusivo SmartLic Pro')).toBeInTheDocument();
+    });
+
+    it('should show exclusive section for legacy sala_guerra plan', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+
+      expect(screen.getByText('Exclusivo SmartLic Pro')).toBeInTheDocument();
+    });
+
+    it('should show exclusive section for legacy consultor_agil plan', () => {
       render(<AnnualBenefits billingPeriod="annual" planId="consultor_agil" />);
 
-      expect(screen.queryByText('Exclusivo Sala de Guerra')).not.toBeInTheDocument();
-      expect(screen.queryByText('Análise IA de Editais')).not.toBeInTheDocument();
+      expect(screen.getByText('Exclusivo SmartLic Pro')).toBeInTheDocument();
     });
 
-    it('should show exclusive section for Sala de Guerra plan', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+    it('should show exclusive section for legacy maquina plan', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="maquina" />);
 
-      expect(screen.getByText('Exclusivo Sala de Guerra')).toBeInTheDocument();
+      expect(screen.getByText('Exclusivo SmartLic Pro')).toBeInTheDocument();
     });
 
-    it('should display AI Edital Analysis benefit for Sala de Guerra', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+    it('should display AI Edital Analysis benefit', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
       expect(screen.getByText('Análise IA de Editais')).toBeInTheDocument();
       expect(screen.getByText(/IA avalia oportunidades/)).toBeInTheDocument();
     });
 
-    it('should display Dashboard Executivo benefit for Sala de Guerra', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+    it('should display Dashboard Executivo benefit', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
       expect(screen.getByText('Dashboard Executivo')).toBeInTheDocument();
       expect(screen.getByText(/Gráficos de tendências/)).toBeInTheDocument();
     });
 
-    it('should display Alertas Multi-Canal benefit for Sala de Guerra', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+    it('should display Alertas Multi-Canal benefit', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
       expect(screen.getByText('Alertas Multi-Canal')).toBeInTheDocument();
       expect(screen.getByText(/Telegram, Email, notificações/)).toBeInTheDocument();
     });
 
     it('should show crown icon for exclusive section', () => {
-      const { container } = render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
-      const exclusiveSection = screen.getByText('Exclusivo Sala de Guerra').closest('.border-2');
+      const exclusiveSection = screen.getByText('Exclusivo SmartLic Pro').closest('.border-2');
       expect(exclusiveSection).toHaveClass('border-brand-blue');
     });
   });
@@ -124,7 +142,7 @@ describe('AnnualBenefits Component', () => {
     });
 
     it('should show future badge for Dashboard Executivo', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
       const dashboardSection = screen.getByText('Dashboard Executivo').closest('li');
       expect(dashboardSection).toContainHTML('Futuro');
@@ -132,25 +150,19 @@ describe('AnnualBenefits Component', () => {
   });
 
   describe('Plan Variations', () => {
-    it('should render for Consultor Ágil plan', () => {
+    it('should show exclusive section for all paid plans', () => {
       render(<AnnualBenefits billingPeriod="annual" planId="consultor_agil" />);
 
       expect(screen.getByTestId('annual-benefits')).toBeInTheDocument();
-      expect(screen.queryByText('Exclusivo Sala de Guerra')).not.toBeInTheDocument();
+      // Legacy plans now show as SmartLic Pro
+      expect(screen.getByText('Exclusivo SmartLic Pro')).toBeInTheDocument();
     });
 
-    it('should render for Máquina plan', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="maquina" />);
+    it('should render with all benefits for SmartLic Pro plan', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
       expect(screen.getByTestId('annual-benefits')).toBeInTheDocument();
-      expect(screen.queryByText('Exclusivo Sala de Guerra')).not.toBeInTheDocument();
-    });
-
-    it('should render with all benefits for Sala de Guerra plan', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
-
-      expect(screen.getByTestId('annual-benefits')).toBeInTheDocument();
-      expect(screen.getByText('Exclusivo Sala de Guerra')).toBeInTheDocument();
+      expect(screen.getByText('Exclusivo SmartLic Pro')).toBeInTheDocument();
 
       // Should have both general and exclusive benefits
       expect(screen.getByText('Early Access')).toBeInTheDocument();
@@ -159,11 +171,10 @@ describe('AnnualBenefits Component', () => {
   });
 
   describe('Visual Styling', () => {
-    it('should apply gradient background to Sala de Guerra section', () => {
-      render(<AnnualBenefits billingPeriod="annual" planId="sala_guerra" />);
+    it('should apply gradient background to SmartLic Pro section', () => {
+      render(<AnnualBenefits billingPeriod="annual" planId="smartlic_pro" />);
 
-      // The gradient class is on the outer wrapper div, not the immediate parent of the text
-      const exclusiveHeading = screen.getByText('Exclusivo Sala de Guerra');
+      const exclusiveHeading = screen.getByText('Exclusivo SmartLic Pro');
       const outerDiv = exclusiveHeading.closest('.bg-gradient-to-br');
       expect(outerDiv).toBeInTheDocument();
     });

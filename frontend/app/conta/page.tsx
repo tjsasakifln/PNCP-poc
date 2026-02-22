@@ -5,6 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 import { usePlan } from "../../hooks/usePlan";
 import { PageHeader } from "../../components/PageHeader";
 import { getUserFriendlyError } from "../../lib/error-messages";
+import { getPlanDisplayName } from "../../lib/plans";
 import Link from "next/link";
 import { toast } from "sonner";
 import { CancelSubscriptionModal } from "../../components/account/CancelSubscriptionModal";
@@ -404,7 +405,7 @@ export default function ContaPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--ink-secondary)]">Acesso</span>
-                    <span className="font-medium text-[var(--ink)]">{planInfo.plan_name}</span>
+                    <span className="font-medium text-[var(--ink)]">{getPlanDisplayName(planInfo.plan_id, planInfo.plan_name)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--ink-secondary)]">Analises este mes</span>
