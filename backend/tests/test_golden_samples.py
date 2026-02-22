@@ -437,8 +437,8 @@ class TestGoldenSamplesFacilities:
         "Execução de obra de construção civil para reforma do prédio da prefeitura",
         # Exclusion: limpeza de terrenos
         "Contratação para limpeza de terrenos baldios no perímetro urbano",
-        # Exclusion: desinsetização (pest control)
-        "Contratação de controle de pragas e desinsetização para as unidades de saúde",
+        # Exclusion: nebulização (vector control, not cleaning)
+        "Contratação de serviço de nebulização e controle de vetores em área de risco",
         # Exclusion: portaria ministerial
         "Publicação de portaria ministerial regulamentando o uso de recursos do FNDE",
     ])
