@@ -182,7 +182,7 @@ export default function Footer() {
               © 2026 SmartLic.tech. Todos os direitos reservados.
             </p>
             <p className="text-xs text-ink-muted">
-              CONFENGE Avaliações e Inteligência Artificial LTDA — CNPJ: 56.187.452/0001-90
+              CONFENGE Avaliações e Inteligência Artificial LTDA — CNPJ: 52.407.089/0001-09
             </p>
 
             {/* LGPD Badge */}

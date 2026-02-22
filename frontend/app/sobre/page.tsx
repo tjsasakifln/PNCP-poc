@@ -121,7 +121,7 @@ export default function SobrePage() {
                 O SmartLic nasceu da observação direta do desperdício no mercado de licitações: empresas gastam horas buscando editais manualmente, analisam oportunidades irrelevantes e perdem as que realmente importam. Nossa plataforma resolve isso com tecnologia.
               </p>
               <div className="pt-2 text-sm text-[var(--ink-muted)]">
-                CNPJ: 56.187.452/0001-90
+                CNPJ: 52.407.089/0001-09
               </div>
             </div>
           </section>

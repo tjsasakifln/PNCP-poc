@@ -67,7 +67,7 @@ describe('Footer Component', () => {
     });
 
     it('should display CNPJ', () => {
-      expect(screen.getByText(/56\.187\.452\/0001-90/)).toBeInTheDocument();
+      expect(screen.getByText(/52\.407\.089\/0001-09/)).toBeInTheDocument();
     });
 
     it('should display CONFENGE attribution', () => {
