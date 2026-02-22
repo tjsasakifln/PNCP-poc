@@ -45,7 +45,7 @@ export default function ContentPageLayout({
           {/* Content Grid */}
           <div className="lg:grid lg:grid-cols-3 lg:gap-12">
             {/* Main Content */}
-            <article className="lg:col-span-2 prose prose-base sm:prose-lg prose-gray dark:prose-invert max-w-none prose-headings:text-ink prose-headings:font-bold prose-p:text-ink-secondary prose-p:leading-relaxed prose-strong:text-ink prose-a:text-brand-blue prose-a:no-underline hover:prose-a:underline prose-li:text-ink-secondary prose-h1:text-[1.75rem] prose-h1:sm:text-[2rem] prose-h1:lg:text-4xl prose-h1:tracking-tight prose-h1:leading-[1.2] prose-h1:mb-6 prose-h2:text-[1.375rem] prose-h2:sm:text-[1.625rem] prose-h2:lg:text-3xl prose-h2:mt-10 prose-h2:sm:mt-12 prose-h2:mb-4 prose-h2:border-b prose-h2:border-[var(--border)] prose-h2:pb-3 prose-h3:text-[1.125rem] prose-h3:sm:text-[1.25rem] prose-h3:lg:text-2xl prose-h3:mt-8 prose-h3:mb-3">
+            <article className="lg:col-span-2 prose prose-base sm:prose-lg prose-gray dark:prose-invert max-w-none prose-headings:text-ink prose-headings:font-bold prose-headings:tracking-tight prose-p:text-ink-secondary prose-p:leading-relaxed prose-strong:text-ink prose-a:text-brand-blue prose-a:no-underline hover:prose-a:underline prose-li:text-ink-secondary prose-h2:border-b prose-h2:border-[var(--border)] prose-h2:pb-3">
               {children}
             </article>
 
