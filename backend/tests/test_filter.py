@@ -2731,3 +2731,257 @@ class TestCRITFLT001EpiContextGate:
         assert matched is True, (
             f"servidor with virtual context should match informatica. Terms: {terms}"
         )
+
+
+# =============================================================================
+# CRIT-FLT-004: Cross-Sector Keyword Collision Tests
+# =============================================================================
+
+
+class TestCRITFLT004SoftwareSRPExclusions:
+    """CRIT-FLT-004 AC1+AC2: SRP exclusions prevent false positives in software sector."""
+
+    def test_exclusion_sistema_de_registro_de_precos_acento(self):
+        """AC1: 'sistema de registro de preços' is excluded from software."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Aquisição por sistema de registro de preços de materiais de construção",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de registro de preços' should be excluded. Terms: {terms}"
+        )
+
+    def test_exclusion_sistema_de_registro_de_precos_sem_acento(self):
+        """AC1: 'sistema de registro de precos' (no accent) is excluded."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "SRP - sistema de registro de precos para aquisicao de moveis",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de registro de precos' should be excluded. Terms: {terms}"
+        )
+
+    def test_exclusion_srp_abbreviation(self):
+        """AC1: 'srp' abbreviation is excluded from software."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Pregão Eletrônico SRP para aquisição de equipamentos",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'srp' abbreviation should be excluded. Terms: {terms}"
+        )
+
+    def test_exclusion_sistema_de_registro_short_form(self):
+        """AC2: 'sistema de registro' (without 'de preços') is excluded."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Pregão por sistema de registro para fornecimento de material de limpeza",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de registro' should be excluded. Terms: {terms}"
+        )
+
+    def test_srp_exclusion_in_yaml(self):
+        """AC1: Verify 'srp' exists in software exclusions set."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        assert "srp" in sector.exclusions, (
+            f"'srp' missing from software exclusions: {sorted(sector.exclusions)[:10]}..."
+        )
+
+    def test_sistema_de_registro_exclusion_in_yaml(self):
+        """AC2: Verify 'sistema de registro' exists in software exclusions set."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        assert "sistema de registro" in sector.exclusions, (
+            "'sistema de registro' missing from software exclusions"
+        )
+
+
+class TestCRITFLT004SistemaContextGate:
+    """CRIT-FLT-004 AC5: Context gate for 'sistema' in software sector."""
+
+    def test_sistema_keyword_exists_in_software(self):
+        """AC5: Verify 'sistema' is a keyword in software sector."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        assert "sistema" in sector.keywords, (
+            "'sistema' should be a keyword in software sector"
+        )
+
+    def test_sistema_context_required_exists(self):
+        """AC5: Verify context_required entry exists for 'sistema'."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        assert "sistema" in sector.context_required_keywords, (
+            "'sistema' should have context_required_keywords"
+        )
+
+    def test_sistema_context_required_terms(self):
+        """AC5: Verify all required context terms are present."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        ctx = sector.context_required_keywords.get("sistema", set())
+        expected_terms = {
+            "informação", "informacao", "software", "digital",
+            "computador", "tecnologia", "ti", "automação", "automacao",
+        }
+        for term in expected_terms:
+            assert term in ctx, f"Missing '{term}' in sistema context_required"
+
+    def test_sistema_matches_with_software_context(self):
+        """AC5: 'sistema' matches when 'software' context is present."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Contratação de sistema de software para gestão municipal",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"'sistema' with 'software' context should match. Terms: {terms}"
+        )
+
+    def test_sistema_matches_with_tecnologia_context(self):
+        """AC5: 'sistema' matches when 'tecnologia' context is present."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Implantação de sistema de tecnologia da informação",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"'sistema' with 'tecnologia' context should match. Terms: {terms}"
+        )
+
+    def test_sistema_matches_with_digital_context(self):
+        """AC5: 'sistema' matches when 'digital' context is present."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Desenvolvimento de sistema digital para protocolo eletrônico",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"'sistema' with 'digital' context should match. Terms: {terms}"
+        )
+
+    def test_sistema_matches_with_ti_context(self):
+        """AC5: 'sistema' matches when 'ti' context is present."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Aquisição de sistema para o setor de TI do hospital",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"'sistema' with 'ti' context should match. Terms: {terms}"
+        )
+
+    def test_sistema_matches_with_automacao_context(self):
+        """AC5: 'sistema' matches when 'automação' context is present."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Sistema de automação de processos administrativos",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is True, (
+            f"'sistema' with 'automação' context should match. Terms: {terms}"
+        )
+
+    def test_sistema_rejected_without_context_registro_precos(self):
+        """AC5: 'sistema de registro de preços' rejected — no IT context."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Aquisição por sistema de registro de preços de mobiliário",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de registro de preços' should be rejected. Terms: {terms}"
+        )
+
+    def test_sistema_rejected_without_context_climatizacao(self):
+        """AC5: 'sistema de climatização' rejected — no IT context."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Instalação de sistema de climatização para auditório",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de climatização' should be rejected. Terms: {terms}"
+        )
+
+    def test_sistema_rejected_without_context_alarme(self):
+        """AC5: 'sistema de alarme' rejected — no IT context."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Manutenção de sistema de alarme predial",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de alarme' should be rejected. Terms: {terms}"
+        )
+
+    def test_sistema_rejected_without_context_hidrantes(self):
+        """AC5: 'sistema de hidrantes' rejected — no IT context."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Instalação de sistema de hidrantes no prédio público",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema de hidrantes' should be rejected. Terms: {terms}"
+        )
+
+    def test_sistema_rejected_without_context_generic(self):
+        """AC5: Bare 'sistema' with no IT context is rejected."""
+        keywords = {"sistema"}
+        context = {"sistema": {
+            "informação", "informacao", "software", "digital",
+            "computador", "tecnologia", "ti", "automação", "automacao",
+        }}
+        matched, terms = match_keywords(
+            "Manutenção do sistema elétrico do prédio",
+            keywords, context_required=context,
+        )
+        assert matched is False, (
+            f"Bare 'sistema' without IT context should be rejected. Terms: {terms}"
+        )
+
+    def test_sistema_rejected_sus(self):
+        """AC5: 'sistema único de saúde' rejected — no IT context."""
+        from sectors import get_sector
+        sector = get_sector("software")
+        matched, terms = match_keywords(
+            "Credenciamento junto ao sistema único de saúde",
+            sector.keywords, sector.exclusions,
+            context_required=sector.context_required_keywords,
+        )
+        assert matched is False, (
+            f"'sistema único de saúde' should be rejected. Terms: {terms}"
+        )

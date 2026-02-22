@@ -2232,11 +2232,14 @@ sectors:
       - "sistema de licitacao"
       - "portal de transparência"
       - "portal de transparencia"
-      # Restored standalone terms (guarded by exclusions)
+      # Restored standalone terms (guarded by exclusions + context gates)
       - "software"
       - "softwares"
       - "aplicativo"
       - "aplicativos"
+      # CRIT-FLT-004: standalone "sistema" with context gate to prevent
+      # cross-sector false positives (e.g. "sistema de registro de preços")
+      - "sistema"
       # CRITICAL ADDITIONS (Issue #software-0-results - 2026-02-06)
       - "sistema informatizado"
       - "sistema informatizada"
@@ -2325,6 +2328,8 @@ sectors:
       - "sistema de hidrantes"
       - "sistema de registro de preços"
       - "sistema de registro de precos"
+      - "sistema de registro"
+      - "srp"
       - "sistema único de saúde"
       - "sistema unico de saude"
       - "sus"
@@ -2480,6 +2485,19 @@ sectors:
         - "app"
         - "celular"
         - "software"
+      # CRIT-FLT-004 AC5: "sistema" is extremely generic (5% of PNCP items
+      # contain "sistema de registro de preços"). Context gate ensures only
+      # IT/software contexts match.
+      sistema:
+        - "informação"
+        - "informacao"
+        - "software"
+        - "digital"
+        - "computador"
+        - "tecnologia"
+        - "ti"
+        - "automação"
+        - "automacao"
     signature_terms:
       - "licenca de software"
       - "sistema de gestao"
