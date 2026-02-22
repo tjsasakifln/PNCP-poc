@@ -32,127 +32,127 @@ Perguntas que o público faz sob pressão:
 ### Página 1: `/como-avaliar-licitacao`
 
 #### AC1 — Estrutura da Página
-- [ ] Título H1: diretamente a pergunta ("Como avaliar se uma licitação vale a pena?")
-- [ ] Meta description: resposta direta em 155 chars
-- [ ] 800-1200 palavras de conteúdo original
-- [ ] Arquivo: `frontend/app/como-avaliar-licitacao/page.tsx` (**NOVO**)
+- [x] Título H1: diretamente a pergunta ("Como avaliar se uma licitação vale a pena?")
+- [x] Meta description: resposta direta em 155 chars
+- [x] 800-1200 palavras de conteúdo original
+- [x] Arquivo: `frontend/app/como-avaliar-licitacao/page.tsx` (**NOVO**)
 
 #### AC2 — Conteúdo
-- [ ] Introdução: o problema real (empresas participam de licitações erradas e perdem dinheiro)
-- [ ] 4-5 critérios práticos de avaliação:
+- [x] Introdução: o problema real (empresas participam de licitações erradas e perdem dinheiro)
+- [x] 4-5 critérios práticos de avaliação:
   1. Compatibilidade setorial (o edital é do seu segmento?)
   2. Faixa de valor (o valor justifica o investimento de preparo?)
   3. Prazo (há tempo suficiente para preparar a proposta?)
   4. Região (é viável operar nessa localidade?)
   5. Modalidade (pregão vs concorrência vs...)
-- [ ] Para cada critério: o que é, por que importa, como avaliar
-- [ ] Exemplo concreto: análise de uma licitação fictícia mas realista
-- [ ] Conclusão: "Se fizer isso manualmente, leva X horas. O SmartLic faz em segundos."
-- [ ] CTA contextual: "Veja quais licitações passam nesses critérios para seu setor"
+- [x] Para cada critério: o que é, por que importa, como avaliar
+- [x] Exemplo concreto: análise de uma licitação fictícia mas realista
+- [x] Conclusão: "Se fizer isso manualmente, leva X horas. O SmartLic faz em segundos."
+- [x] CTA contextual: "Veja quais licitações passam nesses critérios para seu setor"
 
 #### AC3 — SEO & Estrutura
-- [ ] Heading hierarchy correta (H1 → H2 → H3)
-- [ ] Schema `Article` ou `HowTo` JSON-LD
-- [ ] Internal links para `/features`, `/planos`, outras páginas de conteúdo
-- [ ] Breadcrumb visual e em structured data
+- [x] Heading hierarchy correta (H1 → H2 → H3)
+- [x] Schema `Article` ou `HowTo` JSON-LD
+- [x] Internal links para `/features`, `/planos`, outras páginas de conteúdo
+- [x] Breadcrumb visual e em structured data
 
 ---
 
 ### Página 2: `/como-evitar-prejuizo-licitacao`
 
 #### AC4 — Estrutura da Página
-- [ ] Título H1: "Como evitar prejuízo em licitações públicas"
-- [ ] 800-1200 palavras
-- [ ] Arquivo: `frontend/app/como-evitar-prejuizo-licitacao/page.tsx` (**NOVO**)
+- [x] Título H1: "Como evitar prejuízo em licitações públicas"
+- [x] 800-1200 palavras
+- [x] Arquivo: `frontend/app/como-evitar-prejuizo-licitacao/page.tsx` (**NOVO**)
 
 #### AC5 — Conteúdo
-- [ ] Introdução: "Participar da licitação errada custa mais do que não participar"
-- [ ] 4-5 causas comuns de prejuízo:
+- [x] Introdução: "Participar da licitação errada custa mais do que não participar"
+- [x] 4-5 causas comuns de prejuízo:
   1. Participar sem avaliar viabilidade
   2. Subestimar custos de preparação da proposta
   3. Ignorar requisitos técnicos incompatíveis
   4. Competir fora da faixa de valor ideal
   5. Não considerar logística/região
-- [ ] Para cada causa: exemplo prático + como evitar
-- [ ] Seção: "Como um filtro estratégico reduz o risco"
-- [ ] CTA contextual
+- [x] Para cada causa: exemplo prático + como evitar
+- [x] Seção: "Como um filtro estratégico reduz o risco"
+- [x] CTA contextual
 
 ---
 
 ### Página 3: `/como-filtrar-editais`
 
 #### AC6 — Estrutura da Página
-- [ ] Título H1: "Como filtrar editais de licitação e focar no que importa"
-- [ ] 800-1200 palavras
-- [ ] Arquivo: `frontend/app/como-filtrar-editais/page.tsx` (**NOVO**)
+- [x] Título H1: "Como filtrar editais de licitação e focar no que importa"
+- [x] 800-1200 palavras
+- [x] Arquivo: `frontend/app/como-filtrar-editais/page.tsx` (**NOVO**)
 
 #### AC7 — Conteúdo
-- [ ] Introdução: "O problema não é falta de licitações. É excesso de irrelevância."
-- [ ] Seções:
+- [x] Introdução: "O problema não é falta de licitações. É excesso de irrelevância."
+- [x] Seções:
   1. Por que a busca manual não funciona (volume, fontes dispersas, palavras-chave ambíguas)
   2. O que um bom filtro precisa considerar (setor, valor, região, prazo, modalidade)
   3. Filtro por palavra-chave vs. filtro por perfil (a diferença)
   4. Exemplo: "1.500 editais publicados hoje → 12 relevantes para seu setor"
   5. Como o SmartLic aborda isso (sem vender — explicar o mecanismo)
-- [ ] CTA contextual
+- [x] CTA contextual
 
 ---
 
 ### Página 4: `/como-priorizar-oportunidades`
 
 #### AC8 — Estrutura da Página
-- [ ] Título H1: "Como identificar licitações com maior chance de vitória"
-- [ ] 800-1200 palavras
-- [ ] Arquivo: `frontend/app/como-priorizar-oportunidades/page.tsx` (**NOVO**)
+- [x] Título H1: "Como identificar licitações com maior chance de vitória"
+- [x] 800-1200 palavras
+- [x] Arquivo: `frontend/app/como-priorizar-oportunidades/page.tsx` (**NOVO**)
 
 #### AC9 — Conteúdo
-- [ ] Introdução: "Encontrar licitações é fácil. Saber quais priorizar é o que gera resultado."
-- [ ] Seções:
+- [x] Introdução: "Encontrar licitações é fácil. Saber quais priorizar é o que gera resultado."
+- [x] Seções:
   1. Por que priorização importa mais que volume
   2. Critérios de priorização (aderência, viabilidade, competição estimada)
   3. Como avaliar a viabilidade de cada oportunidade
   4. Framework de decisão: participar / monitorar / descartar
   5. Exemplo prático: 3 licitações, qual priorizar e por quê
-- [ ] CTA contextual
+- [x] CTA contextual
 
 ---
 
 ### Elementos Comuns
 
 #### AC10 — Layout Compartilhado
-- [ ] Todas as páginas de conteúdo usam layout consistente:
+- [x] Todas as páginas de conteúdo usam layout consistente:
   - Header do site (com nav)
   - Breadcrumb: Home > [Página]
   - Conteúdo com max-width para legibilidade (prose)
   - Sidebar ou seção lateral com CTA + links para outras páginas
   - Footer
-- [ ] Componente reutilizável `ContentPageLayout.tsx` (**NOVO**)
+- [x] Componente reutilizável `ContentPageLayout.tsx` (**NOVO**)
 
 #### AC11 — Cross-Linking
-- [ ] Cada página linka para pelo menos 2 outras páginas de conteúdo
-- [ ] Cada página tem CTA para signup/trial
-- [ ] Landing page linka para as páginas de conteúdo (seção ou footer)
+- [x] Cada página linka para pelo menos 2 outras páginas de conteúdo
+- [x] Cada página tem CTA para signup/trial
+- [x] Landing page linka para as páginas de conteúdo (seção ou footer)
 
 #### AC12 — Exemplos com Dados Reais
-- [ ] Cada página inclui pelo menos 1 exemplo concreto de análise
-- [ ] Dados baseados em licitações reais (anonimizados se necessário)
-- [ ] Exemplos demonstram como o SmartLic faria a análise
-- [ ] Tom: "Veja como isso funciona na prática"
+- [x] Cada página inclui pelo menos 1 exemplo concreto de análise
+- [x] Dados baseados em licitações reais (anonimizados se necessário)
+- [x] Exemplos demonstram como o SmartLic faria a análise
+- [x] Tom: "Veja como isso funciona na prática"
 
 #### AC13 — Mobile & Dark Mode
-- [ ] Todas as páginas responsivas (375px mínimo)
-- [ ] Dark mode funcional
-- [ ] Tipografia legível (font-size, line-height, contrast)
+- [x] Todas as páginas responsivas (375px mínimo)
+- [x] Dark mode funcional
+- [x] Tipografia legível (font-size, line-height, contrast)
 
 #### AC14 — Sitemap & Indexação
-- [ ] Novas páginas adicionadas ao sitemap
-- [ ] Internal linking a partir da landing e do footer
-- [ ] Canonical URLs configuradas
+- [x] Novas páginas adicionadas ao sitemap
+- [x] Internal linking a partir da landing e do footer
+- [x] Canonical URLs configuradas
 
 #### AC15 — Zero Regressions
-- [ ] TypeScript compila
-- [ ] Testes frontend: zero novas falhas
-- [ ] Todas as 4 páginas renderizam sem erros
+- [x] TypeScript compila
+- [x] Testes frontend: zero novas falhas
+- [x] Todas as 4 páginas renderizam sem erros
 
 ## Arquivos Impactados
 
@@ -185,7 +185,7 @@ Perguntas que o público faz sob pressão:
 
 ## Definition of Done
 
-- [ ] ACs 1-15 verificados
-- [ ] 4 páginas publicáveis e indexáveis
+- [x] ACs 1-15 verificados
+- [x] 4 páginas publicáveis e indexáveis
 - [ ] Conteúdo revisado por stakeholder
-- [ ] Commit: `feat(frontend): GTM-COPY-007 — páginas de conteúdo estratégico`
+- [x] Commit: `feat(frontend): GTM-COPY-007 — páginas de conteúdo estratégico` → `24af959`
