@@ -3120,6 +3120,7 @@ def aplicar_todos_filtros(
     # Initialize FLUXO 2 stats
     stats["recuperadas_exclusion_recovery"] = 0
     stats["aprovadas_synonym_match"] = 0
+    stats["synonyms_auto_approved"] = 0  # CRIT-FLT-006 AC3
     stats["recuperadas_llm_fn"] = 0
     stats["recuperadas_zero_results"] = 0
     stats["llm_arbiter_calls_fn_flow"] = 0
@@ -3190,8 +3191,9 @@ def aplicar_todos_filtros(
                 )
 
                 if should_approve:
-                    # High confidence: 2+ synonym matches → auto-approve
+                    # High confidence: 2+ distinct synonym matches → auto-approve
                     stats["aprovadas_synonym_match"] += 1
+                    stats["synonyms_auto_approved"] += 1  # CRIT-FLT-006 AC3
                     lic["_recovered_by"] = "synonym_auto_approve"
                     lic["_synonym_matches"] = [
                         f"{canon}≈{syn}" for canon, syn in matches

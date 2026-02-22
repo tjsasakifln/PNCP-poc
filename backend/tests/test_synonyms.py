@@ -9,6 +9,7 @@ Coverage targets:
 - Multiple sectors
 """
 
+from filter import normalize_text
 from synonyms import (
     find_synonym_matches,
     count_synonym_matches,
@@ -28,10 +29,8 @@ class TestFindSynonymMatches:
 
         matches = find_synonym_matches(objeto, setor_keywords, setor_id)
 
-        assert len(matches) == 1
-        # Should match either "fardamento" or "fardamentos" (fuzzy match)
-        assert matches[0][0] == "uniforme"
-        assert "fardamento" in matches[0][1]  # Check substring
+        assert len(matches) >= 1
+        assert any(m[0] == "uniforme" and "fardamento" in m[1] for m in matches)
 
     def test_exact_synonym_match_facilities(self):
         """Test exact match: 'asseio' → 'limpeza'."""
@@ -132,9 +131,8 @@ class TestFindSynonymMatches:
 
         matches = find_synonym_matches(objeto, setor_keywords, setor_id)
 
-        assert len(matches) == 1
-        assert matches[0][0] == "uniforme"
-        assert "fardamento" in matches[0][1].lower()  # Case-insensitive check
+        assert len(matches) >= 1
+        assert any(m[0] == "uniforme" and "fardamento" in m[1].lower() for m in matches)
 
 
 class TestCountSynonymMatches:
@@ -158,7 +156,7 @@ class TestCountSynonymMatches:
 
         count = count_synonym_matches(objeto, setor_keywords, setor_id)
 
-        assert count == 1
+        assert count >= 1
 
     def test_count_multiple_matches(self):
         """Test multiple synonym matches."""
@@ -227,6 +225,102 @@ class TestShouldAutoApproveBySynonyms:
 
         assert should_approve is True
         assert len(matches) >= 1
+
+
+class TestCritFlt006SynonymDedup:
+    """CRIT-FLT-006: Multiple synonyms of same canonical should count as distinct matches."""
+
+    def test_two_synonyms_same_canonical_returns_two_matches(self):
+        """Two distinct synonyms of the same canonical keyword → 2 matches (not 1)."""
+        objeto = "Aquisição de fardamento e indumentária profissional para servidores"
+        setor_keywords = {"uniforme"}
+        setor_id = "vestuario"
+
+        matches = find_synonym_matches(objeto, setor_keywords, setor_id)
+
+        # Both "fardamento" and "indumentária" are synonyms of "uniforme"
+        # CRIT-FLT-006: should return 2 distinct matches
+        assert len(matches) == 2
+        matched_synonyms = {normalize_text(m[1]) for m in matches}
+        assert "fardamento" in matched_synonyms
+        assert "indumentaria" in matched_synonyms
+        # Both map to same canonical
+        assert all(m[0] == "uniforme" for m in matches)
+
+    def test_two_synonyms_same_canonical_auto_approves(self):
+        """Two synonyms of same canonical → auto-approve (no LLM needed)."""
+        objeto = "Aquisição de fardamento e indumentária profissional para servidores"
+        setor_keywords = {"uniforme"}
+        setor_id = "vestuario"
+
+        should_approve, matches = should_auto_approve_by_synonyms(
+            objeto, setor_keywords, setor_id, min_synonyms=2
+        )
+
+        assert should_approve is True
+        assert len(matches) >= 2
+
+    def test_one_synonym_does_not_auto_approve(self):
+        """Only 1 synonym match → send to LLM (no auto-approve)."""
+        objeto = "Aquisição de fardamento profissional para servidores"
+        setor_keywords = {"uniforme"}
+        setor_id = "vestuario"
+
+        should_approve, matches = should_auto_approve_by_synonyms(
+            objeto, setor_keywords, setor_id, min_synonyms=2
+        )
+
+        assert should_approve is False
+        assert len(matches) == 1
+
+    def test_three_synonyms_same_canonical(self):
+        """Three synonyms of same canonical → 3 matches, auto-approve."""
+        objeto = "Fornecimento de fardamento, indumentária e vestimenta para guardas"
+        setor_keywords = {"uniforme"}
+        setor_id = "vestuario"
+
+        matches = find_synonym_matches(objeto, setor_keywords, setor_id)
+
+        assert len(matches) >= 3
+        assert all(m[0] == "uniforme" for m in matches)
+
+    def test_mixed_canonicals_and_same_canonical_synonyms(self):
+        """Synonyms from different canonicals + same canonical all count."""
+        objeto = "Fardamento e vestimenta com avental hospitalar"
+        setor_keywords = {"uniforme", "jaleco"}
+        setor_id = "vestuario"
+
+        matches = find_synonym_matches(objeto, setor_keywords, setor_id)
+
+        # "fardamento" → "uniforme", "vestimenta" → "uniforme", "avental hospitalar" → "jaleco"
+        assert len(matches) >= 3
+
+    def test_audit_log_contains_all_synonym_matches(self, caplog):
+        """AC2: Audit log includes all matched synonyms."""
+        import logging
+
+        objeto = "Aquisição de fardamento e indumentária profissional para servidores"
+        setor_keywords = {"uniforme"}
+        setor_id = "vestuario"
+
+        with caplog.at_level(logging.INFO, logger="synonyms"):
+            matches = find_synonym_matches(objeto, setor_keywords, setor_id)
+
+        assert len(matches) == 2
+        # Verify audit log was emitted
+        assert any("synonym_matches_audit" in r.message for r in caplog.records)
+
+    def test_same_synonym_not_double_counted(self):
+        """Same synonym appearing twice in objeto should only count once."""
+        objeto = "Fardamento tipo A e fardamento tipo B para guardas"
+        setor_keywords = {"uniforme"}
+        setor_id = "vestuario"
+
+        matches = find_synonym_matches(objeto, setor_keywords, setor_id)
+
+        # "fardamento" appears twice in objeto, but should only match once
+        fardamento_matches = [m for m in matches if "fardamento" in m[1]]
+        assert len(fardamento_matches) == 1
 
 
 class TestSectorSynonymDictionaries:
@@ -333,7 +427,7 @@ class TestIntegrationWithRealData:
     """Test with real PNCP-like procurement descriptions."""
 
     def test_real_fardamento_case(self):
-        """Test real case: 'Fardamento militar' → auto-approve without LLM."""
+        """Test real case: single synonym doesn't auto-approve, needs LLM."""
         objeto = (
             "Registro de preços para eventual aquisição de fardamento "
             "operacional para guardas municipais, incluindo camisas, calças, "
@@ -346,9 +440,9 @@ class TestIntegrationWithRealData:
             objeto, setor_keywords, setor_id, min_synonyms=2
         )
 
-        # Should have "fardamento" → "uniforme"
-        # "farda" is in keywords, but "fardamento" is a synonym
-        assert should_approve is False  # Only 1 unique synonym match
+        # Only "fardamento" → "uniforme" (1 distinct synonym match)
+        # CRIT-FLT-006: Still not enough for auto-approve — needs 2+ distinct synonyms
+        assert should_approve is False
         assert len(matches) >= 1
 
     def test_real_manutencao_predial_case(self):

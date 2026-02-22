@@ -287,9 +287,15 @@ def find_synonym_matches(
     Returns pairs of (canonical_keyword, synonym_found) where the synonym
     was found in the object but the canonical keyword was not.
 
-    NOTE: Returns UNIQUE canonical keywords (deduplicated). If multiple synonyms
-    for the same canonical keyword match (e.g., "farda", "fardamento", "fardamentos"),
-    only the FIRST match is returned.
+    CRIT-FLT-006: Returns ALL distinct synonym matches, including multiple
+    synonyms for the same canonical keyword. For example, if "fardamento" and
+    "indumentária" both map to canonical "uniforme", both are returned as
+    separate matches. This enables auto-approval when 2+ distinct synonyms
+    are present in the object — even if they share the same canonical keyword.
+
+    Previous behavior (pre-CRIT-FLT-006) deduplicated by canonical keyword,
+    causing unnecessary LLM calls when multiple synonyms of the same canonical
+    matched (e.g., "fardamento" + "indumentária" → 1 match instead of 2).
 
     Args:
         objeto: Procurement object description (e.g., "Fardamento para guardas municipais")
@@ -298,15 +304,15 @@ def find_synonym_matches(
         similarity_threshold: Minimum similarity ratio for fuzzy matching (0.0-1.0)
 
     Returns:
-        List of (canonical_keyword, matched_synonym) tuples (deduplicated by canonical_keyword)
+        List of (canonical_keyword, matched_synonym) tuples (deduplicated by synonym)
 
     Example:
         >>> find_synonym_matches(
-        ...     objeto="Fardamento para guardas municipais",
-        ...     setor_keywords={"uniforme", "farda"},
+        ...     objeto="Aquisição de fardamento e indumentária profissional",
+        ...     setor_keywords={"uniforme"},
         ...     setor_id="vestuario"
         ... )
-        [("uniforme", "fardamento")]
+        [("uniforme", "fardamento"), ("uniforme", "indumentária")]
     """
     if setor_id not in SECTOR_SYNONYMS:
         logger.debug(f"No synonym dictionary for sector '{setor_id}'")
@@ -315,7 +321,14 @@ def find_synonym_matches(
     objeto_norm = normalize_text(objeto)
     synonyms_dict = SECTOR_SYNONYMS[setor_id]
     near_misses: List[Tuple[str, str]] = []
-    matched_canonicals: Set[str] = set()  # Track which canonicals already matched
+    matched_synonyms: Set[str] = set()  # Track matched synonyms to avoid duplicates
+
+    def _is_duplicate_synonym(syn_norm: str) -> bool:
+        """Check if synonym is too similar to an already-matched one (e.g. singular/plural)."""
+        for already in matched_synonyms:
+            if SequenceMatcher(None, syn_norm, already).ratio() > 0.85:
+                return True
+        return False
 
     for canonical_keyword in setor_keywords:
         canonical_norm = normalize_text(canonical_keyword)
@@ -324,48 +337,67 @@ def find_synonym_matches(
         if canonical_norm in objeto_norm:
             continue
 
-        # Skip if we already found a synonym for this canonical keyword
-        if canonical_keyword in matched_canonicals:
-            continue
-
         # Check synonyms for this canonical keyword
         if canonical_keyword not in synonyms_dict:
             continue
 
         # Sort synonyms by length (longest first) to prioritize longer exact matches
-        # E.g., "fardamento" before "farda" to avoid fuzzy matching "fardamento" with "farda"
         sorted_synonyms = sorted(synonyms_dict[canonical_keyword], key=len, reverse=True)
 
+        # Two-pass approach: exact matches first, then fuzzy.
+        # This ensures "fardamento" (exact) always beats "fardamentos" (fuzzy).
+
+        # Pass 1: Exact substring matches
         for synonym in sorted_synonyms:
             synonym_norm = normalize_text(synonym)
 
-            # Exact match
+            if synonym_norm in matched_synonyms or _is_duplicate_synonym(synonym_norm):
+                continue
+
             if synonym_norm in objeto_norm:
                 near_misses.append((canonical_keyword, synonym))
-                matched_canonicals.add(canonical_keyword)
+                matched_synonyms.add(synonym_norm)
                 logger.debug(
                     f"Exact synonym match: '{synonym}' ≈ '{canonical_keyword}' "
                     f"in '{objeto[:100]}...'"
                 )
-                break  # Stop after first match for this canonical
 
-            # Fuzzy match using SequenceMatcher
-            # Compare each word in objeto with synonym
-            objeto_words = objeto_norm.split()
+        # Pass 2: Fuzzy matches (single-word synonyms only)
+        objeto_words = objeto_norm.split()
+        for synonym in sorted_synonyms:
+            synonym_norm = normalize_text(synonym)
+
+            if synonym_norm in matched_synonyms or _is_duplicate_synonym(synonym_norm):
+                continue
+
+            # Multi-word synonyms should only match via exact substring (pass 1)
+            if " " in synonym_norm:
+                continue
+
             for word in objeto_words:
                 similarity = SequenceMatcher(None, word, synonym_norm).ratio()
                 if similarity >= similarity_threshold:
                     near_misses.append((canonical_keyword, synonym))
-                    matched_canonicals.add(canonical_keyword)
+                    matched_synonyms.add(synonym_norm)
                     logger.debug(
                         f"Fuzzy synonym match: '{word}' ≈ '{synonym}' "
                         f"(similarity: {similarity:.2f}) → '{canonical_keyword}'"
                     )
-                    break  # Stop after first fuzzy match
+                    break  # Stop checking words for this synonym
 
-            # If we found a match for this canonical, move to next canonical
-            if canonical_keyword in matched_canonicals:
-                break
+    # AC2: Audit log of all synonym matches
+    if near_misses:
+        logger.info(
+            "synonym_matches_audit",
+            extra={
+                "synonym_matches": [
+                    f"{syn}→{canon}" for canon, syn in near_misses
+                ],
+                "setor_id": setor_id,
+                "distinct_count": len(near_misses),
+                "objeto_preview": objeto[:120],
+            },
+        )
 
     return near_misses
 

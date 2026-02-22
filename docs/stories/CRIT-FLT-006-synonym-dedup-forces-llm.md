@@ -28,11 +28,11 @@ O bid claramente é sobre vestuário (2 termos sinônimos distintos presentes). 
 
 ## Acceptance Criteria
 
-- [ ] **AC1:** No `synonyms.py`, contar matches por **sinônimo distinto** (não por keyword canônica). Se 2+ sinônimos distintos matcham (mesmo que da mesma canônica) → auto-approve
-- [ ] **AC2:** Manter log de sinônimos matchados para auditoria: `{synonym_matches: ["fardamento→uniforme", "indumentária→uniforme"]}`
-- [ ] **AC3:** Adicionar stat `synonyms_auto_approved` ao filter stats
-- [ ] **AC4:** Testes unitários: 2 sinônimos do mesmo canônico = auto-approve; 1 sinônimo = LLM
-- [ ] **AC5:** Documentar a mudança de lógica no docstring de `expand_keywords_with_synonyms()`
+- [x] **AC1:** No `synonyms.py`, contar matches por **sinônimo distinto** (não por keyword canônica). Se 2+ sinônimos distintos matcham (mesmo que da mesma canônica) → auto-approve
+- [x] **AC2:** Manter log de sinônimos matchados para auditoria: `{synonym_matches: ["fardamento→uniforme", "indumentária→uniforme"]}`
+- [x] **AC3:** Adicionar stat `synonyms_auto_approved` ao filter stats
+- [x] **AC4:** Testes unitários: 2 sinônimos do mesmo canônico = auto-approve; 1 sinônimo = LLM
+- [x] **AC5:** Documentar a mudança de lógica no docstring de `find_synonym_matches()`
 
 ## Impacto
 
