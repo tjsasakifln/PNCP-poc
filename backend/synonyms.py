@@ -272,6 +272,101 @@ SECTOR_SYNONYMS: Dict[str, Dict[str, Set[str]]] = {
             "sistema de ar condicionado",
         },
     },
+
+    # CRIT-FLT-007: New synonym dicts for previously missing sectors
+    "engenharia_rodoviaria": {
+        "pavimentação": {
+            "pavimentacao",
+            "asfaltamento", "recapeamento",
+            "pavimentação asfáltica", "pavimentacao asfaltica",
+            "capa asfáltica", "capa asfaltica",
+        },
+        "rodovia": {
+            "estrada", "via", "pista",
+            "rodovia federal", "rodovia estadual",
+            "trecho rodoviário", "trecho rodoviario",
+        },
+        "sinalização viária": {
+            "sinalizacao viaria",
+            "sinalização rodoviária", "sinalizacao rodoviaria",
+            "sinalização horizontal", "sinalizacao horizontal",
+            "sinalização vertical", "sinalizacao vertical",
+            "demarcação viária", "demarcacao viaria",
+        },
+        "guard rail": {
+            "defensa metálica", "defensa metalica",
+            "defensas metálicas", "defensas metalicas",
+            "barreira de proteção", "barreira de protecao",
+        },
+        "meio-fio": {
+            "meio fio", "guia",
+            "guia e sarjeta", "sarjeta",
+        },
+    },
+
+    "materiais_eletricos": {
+        "cabo elétrico": {
+            "cabo eletrico",
+            "fio elétrico", "fio eletrico",
+            "condutor elétrico", "condutor eletrico",
+            "fiação", "fiacao",
+            "cabeamento elétrico", "cabeamento eletrico",
+        },
+        "luminária": {
+            "luminaria",
+            "ponto de luz", "aparelho de iluminação",
+            "aparelho de iluminacao",
+        },
+        "disjuntor": {
+            "dispositivo de proteção", "dispositivo de protecao",
+            "chave de proteção", "chave de protecao",
+        },
+        "quadro elétrico": {
+            "quadro eletrico",
+            "quadro de distribuição", "quadro de distribuicao",
+            "painel elétrico", "painel eletrico",
+            "QDC", "QGBT",
+        },
+        "lâmpada": {
+            "lampada",
+            "lâmpada LED", "lampada LED",
+            "lâmpada fluorescente", "lampada fluorescente",
+            "bulbo", "tubo fluorescente",
+        },
+    },
+
+    "materiais_hidraulicos": {
+        "tubo PVC": {
+            "tubo de PVC", "tubulação PVC", "tubulacao PVC",
+            "cano PVC", "cano de PVC",
+            "tubo PEAD",
+        },
+        "registro hidráulico": {
+            "registro hidraulico",
+            "válvula", "valvula",
+            "válvula de gaveta", "valvula de gaveta",
+            "válvula de esfera", "valvula de esfera",
+            "registro de gaveta", "registro de esfera",
+        },
+        "bomba d'água": {
+            "bomba d'agua", "bomba d agua",
+            "bomba submersa", "bomba centrífuga", "bomba centrifuga",
+            "motobomba", "moto bomba",
+            "conjunto moto-bomba",
+        },
+        "caixa d'água": {
+            "caixa d'agua", "caixa d agua",
+            "reservatório", "reservatorio",
+            "reservatório de água", "reservatorio de agua",
+            "cisterna",
+        },
+        "conexão hidráulica": {
+            "conexao hidraulica",
+            "joelho PVC", "tê PVC", "te PVC",
+            "luva PVC", "curva PVC",
+            "adaptador PVC",
+        },
+    },
 }
 
 

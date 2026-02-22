@@ -787,6 +787,54 @@ sectors:
         - "panificacao"
         - "gênero alimentício"
         - "genero alimenticio"
+    # CRIT-FLT-007: Co-occurrence rules for alimentos
+    co_occurrence_rules:
+      # Rule 1: "carne" in non-food context (anatomical/medical)
+      - trigger: "carne"
+        negative_contexts:
+          - "esporao"
+          - "infeccao"
+          - "tumor"
+          - "cirurgia"
+          - "necrose"
+        positive_signals:
+          - "alimentacao"
+          - "merenda"
+          - "cozinha"
+          - "refeicao"
+      # Rule 2: "leite" in non-food context (cosmetics, industrial)
+      - trigger: "leite"
+        negative_contexts:
+          - "hidratante"
+          - "corporal"
+          - "cosmetico"
+          - "beleza"
+          - "banco de leite"
+        positive_signals:
+          - "alimentacao"
+          - "merenda"
+          - "laticinio"
+          - "cesta basica"
+    # CRIT-FLT-007: Domain signals for alimentos
+    domain_signals:
+      ncm_prefixes:
+        - "0201"  # Carnes de bovinos, frescas ou refrigeradas
+        - "0207"  # Carnes de aves (frango)
+        - "0401"  # Leite e creme de leite
+        - "1006"  # Arroz
+        - "0713"  # Leguminosas (feijão)
+        - "1101"  # Farinhas de trigo
+        - "1701"  # Açúcares
+        - "2009"  # Sucos de frutas
+      unit_patterns:
+        - "kg"
+        - "unidade"
+        - "litro"
+        - "caixa"
+        - "pacote"
+        - "fardo"
+        - "saco"
+      size_patterns: []
     signature_terms:
       - "merenda"
       - "alimenticio"
@@ -1487,6 +1535,48 @@ sectors:
         - "escritório"
         - "escritorio"
         - "cozinha"
+    # CRIT-FLT-007: Co-occurrence rules for mobiliario
+    co_occurrence_rules:
+      # Rule 1: "cadeira" in non-furniture context (wheelchair, dental chair)
+      - trigger: "cadeira"
+        negative_contexts:
+          - "rodas"
+          - "odontologica"
+          - "cirurgica"
+          - "eletrica"
+          - "bebe"
+        positive_signals:
+          - "escritorio"
+          - "giratoria"
+          - "executiva"
+          - "mobiliario"
+      # Rule 2: "mesa" in non-furniture context (surgery, audio, digital)
+      - trigger: "mesa"
+        negative_contexts:
+          - "cirurgica"
+          - "som"
+          - "digital"
+          - "exame"
+          - "diretora"
+        positive_signals:
+          - "escritorio"
+          - "reuniao"
+          - "mobiliario"
+          - "computador"
+    # CRIT-FLT-007: Domain signals for mobiliario
+    domain_signals:
+      ncm_prefixes:
+        - "9401"  # Assentos (cadeiras, poltronas)
+        - "9403"  # Outros móveis (mesas, armários, estantes)
+        - "8304"  # Classificadores, fichários, porta-papéis de metal
+        - "9406"  # Construções pré-fabricadas (estantes modulares)
+      unit_patterns:
+        - "unidade"
+        - "peca"
+        - "peça"
+        - "conjunto"
+        - "jogo"
+      size_patterns: []
     signature_terms:
       - "movel"
       - "mobiliario"
@@ -1739,6 +1829,49 @@ sectors:
         - "papelaria"
         - "escolar"
         - "material"
+    # CRIT-FLT-007: Co-occurrence rules for papelaria
+    co_occurrence_rules:
+      # Rule 1: "material" in non-office context
+      - trigger: "material"
+        negative_contexts:
+          - "construcao"
+          - "limpeza"
+          - "hospitalar"
+          - "eletrico"
+          - "hidraulico"
+        positive_signals:
+          - "escritorio"
+          - "papelaria"
+          - "expediente"
+          - "escolar"
+      # Rule 2: "papel" in non-stationery context (wallpaper, toilet paper)
+      - trigger: "papel"
+        negative_contexts:
+          - "parede"
+          - "higienico"
+          - "toalha"
+          - "moeda"
+          - "filtro"
+        positive_signals:
+          - "a4"
+          - "sulfite"
+          - "oficio"
+          - "impressao"
+    # CRIT-FLT-007: Domain signals for papelaria
+    domain_signals:
+      ncm_prefixes:
+        - "4802"  # Papel e cartão não revestidos (papel A4, sulfite)
+        - "9608"  # Canetas esferográficas, canetas de feltro
+        - "8472"  # Máquinas e aparelhos de escritório (grampeadores, perfuradores)
+        - "4820"  # Cadernos, blocos, livros de registro
+        - "3506"  # Colas e adesivos (para escritório)
+      unit_patterns:
+        - "resma"
+        - "unidade"
+        - "caixa"
+        - "pacote"
+        - "bloco"
+      size_patterns: []
     signature_terms:
       - "resma"
       - "toner"
@@ -2142,6 +2275,51 @@ sectors:
         - "trafego"
         - "sinalização"
         - "sinalizacao"
+    # CRIT-FLT-007: Co-occurrence rules for engenharia
+    co_occurrence_rules:
+      # Rule 1: "obra" in non-construction context (literary, artistic)
+      - trigger: "obra"
+        negative_contexts:
+          - "literaria"
+          - "artistica"
+          - "musical"
+          - "intelectual"
+          - "cinematografica"
+        positive_signals:
+          - "construcao"
+          - "reforma"
+          - "edificacao"
+          - "pavimentacao"
+      # Rule 2: "material" in non-construction context
+      - trigger: "material"
+        negative_contexts:
+          - "escritorio"
+          - "limpeza"
+          - "hospitalar"
+          - "informatica"
+          - "pedagogico"
+        positive_signals:
+          - "construcao"
+          - "obra"
+          - "cimento"
+          - "areia"
+    # CRIT-FLT-007: Domain signals for engenharia
+    domain_signals:
+      ncm_prefixes:
+        - "2523"  # Cimentos hidráulicos
+        - "6810"  # Artigos de cimento, concreto, pedra artificial
+        - "7214"  # Barras de ferro/aço (vergalhões)
+        - "7213"  # Fio-máquina de ferro/aço
+        - "6907"  # Ladrilhos, azulejos e placas cerâmicas
+        - "2517"  # Pedras britadas (brita, cascalho)
+      unit_patterns:
+        - "m2"
+        - "m3"
+        - "metro"
+        - "tonelada"
+        - "saco"
+        - "unidade"
+      size_patterns: []
     signature_terms:
       - "pavimentacao"
       - "terraplanagem"
@@ -2498,6 +2676,46 @@ sectors:
         - "ti"
         - "automação"
         - "automacao"
+    # CRIT-FLT-007: Co-occurrence rules for software
+    co_occurrence_rules:
+      # Rule 1: "plataforma" in non-software context (physical platform)
+      - trigger: "plataforma"
+        negative_contexts:
+          - "elevacao"
+          - "carga"
+          - "fixa"
+          - "movel"
+          - "hidraulica"
+        positive_signals:
+          - "digital"
+          - "software"
+          - "web"
+          - "nuvem"
+      # Rule 2: "consultoria" in non-IT context
+      - trigger: "consultoria"
+        negative_contexts:
+          - "juridica"
+          - "contabil"
+          - "ambiental"
+          - "recursos humanos"
+          - "financeira"
+        positive_signals:
+          - "ti"
+          - "tecnologia"
+          - "software"
+          - "sistema"
+    # CRIT-FLT-007: Domain signals for software
+    domain_signals:
+      ncm_prefixes:
+        - "8523"  # Discos e suportes para gravação (mídias de software)
+      unit_patterns:
+        - "licenca"
+        - "licença"
+        - "usuario"
+        - "usuário"
+        - "mensal"
+        - "anual"
+      size_patterns: []
     signature_terms:
       - "licenca de software"
       - "sistema de gestao"
@@ -2833,6 +3051,50 @@ sectors:
         - "desinfeccao"
         - "higienização"
         - "higienizacao"
+    # CRIT-FLT-007: Co-occurrence rules for facilities
+    co_occurrence_rules:
+      # Rule 1: "limpeza" in non-building context (environmental, data)
+      - trigger: "limpeza"
+        negative_contexts:
+          - "terreno"
+          - "fossa"
+          - "rio"
+          - "bueiro"
+          - "dados"
+        positive_signals:
+          - "predial"
+          - "conservacao"
+          - "edificacao"
+          - "hospitalar"
+      # Rule 2: "material" in non-cleaning context
+      - trigger: "material"
+        negative_contexts:
+          - "construcao"
+          - "eletrico"
+          - "hidraulico"
+          - "hospitalar"
+          - "escritorio"
+        positive_signals:
+          - "limpeza"
+          - "higienizacao"
+          - "produto de limpeza"
+          - "saneante"
+    # CRIT-FLT-007: Domain signals for facilities
+    domain_signals:
+      ncm_prefixes:
+        - "3402"  # Agentes orgânicos de superfície (detergentes)
+        - "3401"  # Sabões
+        - "4818"  # Papel higiênico, toalhas de papel
+        - "3808"  # Inseticidas, desinfetantes
+        - "9603"  # Vassouras, escovas, rodos
+      unit_patterns:
+        - "unidade"
+        - "litro"
+        - "galao"
+        - "caixa"
+        - "pacote"
+        - "fardo"
+      size_patterns: []
     signature_terms:
       - "limpeza predial"
       - "jardinagem"
@@ -3559,6 +3821,47 @@ sectors:
         - "veicular"
         - "segurança"
         - "seguranca"
+    # CRIT-FLT-007: Co-occurrence rules for vigilancia
+    co_occurrence_rules:
+      # Rule 1: "segurança" in non-guard context (cybersecurity, food safety)
+      - trigger: "seguranca"
+        negative_contexts:
+          - "informacao"
+          - "cibernetica"
+          - "alimentar"
+          - "trabalho"
+          - "viaria"
+        positive_signals:
+          - "patrimonial"
+          - "vigilante"
+          - "armada"
+          - "desarmada"
+      # Rule 2: "monitoramento" in non-security context
+      - trigger: "monitoramento"
+        negative_contexts:
+          - "ambiental"
+          - "qualidade"
+          - "alunos"
+          - "saude"
+          - "agua"
+        positive_signals:
+          - "camera"
+          - "cftv"
+          - "seguranca"
+          - "24h"
+    # CRIT-FLT-007: Domain signals for vigilancia
+    domain_signals:
+      ncm_prefixes:
+        - "8525"  # Aparelhos transmissores de rádio/TV; câmeras de vídeo
+        - "8531"  # Aparelhos elétricos de sinalização acústica/visual (alarmes)
+        - "8543"  # Máquinas e aparelhos elétricos (detectores de metal)
+        - "9022"  # Aparelhos de raios X (raio-x de bagagem)
+      unit_patterns:
+        - "posto"
+        - "unidade"
+        - "mensal"
+        - "hora"
+      size_patterns: []
     signature_terms:
       - "vigilante"
       - "cftv"
@@ -3832,6 +4135,51 @@ sectors:
         - "troca"
         - "veículo"
         - "veiculo"
+    # CRIT-FLT-007: Co-occurrence rules for transporte
+    co_occurrence_rules:
+      # Rule 1: "manutenção" in non-vehicle context
+      - trigger: "manutencao"
+        negative_contexts:
+          - "predial"
+          - "edificacao"
+          - "predio"
+          - "imovel"
+          - "software"
+        positive_signals:
+          - "veiculo"
+          - "frota"
+          - "automotiva"
+          - "motor"
+      # Rule 2: "combustível/diesel" in non-vehicle context (generators)
+      - trigger: "diesel"
+        negative_contexts:
+          - "gerador"
+          - "grupo gerador"
+          - "usina"
+          - "termoeletrica"
+        positive_signals:
+          - "abastecimento"
+          - "veiculo"
+          - "posto"
+          - "frota"
+    # CRIT-FLT-007: Domain signals for transporte
+    domain_signals:
+      ncm_prefixes:
+        - "8703"  # Automóveis de passageiros
+        - "8704"  # Veículos para transporte de mercadorias (caminhões)
+        - "8702"  # Veículos para transporte coletivo (ônibus)
+        - "8711"  # Motocicletas
+        - "2710"  # Óleos de petróleo (gasolina, diesel)
+        - "4011"  # Pneumáticos novos de borracha
+        - "8708"  # Partes e acessórios para veículos
+      unit_patterns:
+        - "unidade"
+        - "litro"
+        - "peca"
+        - "peça"
+        - "par"
+        - "km"
+      size_patterns: []
     signature_terms:
       - "veiculo"
       - "automotivo"
@@ -4020,6 +4368,47 @@ sectors:
         - "instalação"
         - "instalacao"
         - "passageiro"
+    # CRIT-FLT-007: Co-occurrence rules for manutencao_predial
+    co_occurrence_rules:
+      # Rule 1: "manutenção" in non-building context (vehicles, equipment)
+      - trigger: "manutencao"
+        negative_contexts:
+          - "veiculo"
+          - "frota"
+          - "automotiva"
+          - "trator"
+          - "equipamento de ti"
+        positive_signals:
+          - "predial"
+          - "edificacao"
+          - "predio"
+          - "imovel"
+      # Rule 2: "ar condicionado" in non-maintenance context (purchase/acquisition)
+      - trigger: "ar condicionado"
+        negative_contexts:
+          - "aquisicao"
+          - "compra"
+          - "fornecimento"
+          - "novo"
+        positive_signals:
+          - "manutencao"
+          - "preventiva"
+          - "corretiva"
+          - "pmoc"
+    # CRIT-FLT-007: Domain signals for manutencao_predial
+    domain_signals:
+      ncm_prefixes:
+        - "8415"  # Máquinas e aparelhos de ar condicionado
+        - "8428"  # Máquinas de elevação/movimentação (elevadores)
+        - "7324"  # Artefatos de higiene sanitária de ferro/aço
+        - "3214"  # Mástique de vidraceiro, cimentos-resinas
+      unit_patterns:
+        - "unidade"
+        - "servico"
+        - "serviço"
+        - "mensal"
+        - "global"
+      size_patterns: []
     signature_terms:
       - "predial"
       - "dedetizacao"
@@ -4157,6 +4546,47 @@ sectors:
         - "manutenção"
         - "manutencao"
         - "viaduto"
+    # CRIT-FLT-007: Co-occurrence rules for engenharia_rodoviaria
+    co_occurrence_rules:
+      # Rule 1: "asfalto" in non-road context (roofing, waterproofing)
+      - trigger: "asfalto"
+        negative_contexts:
+          - "manta"
+          - "impermeabilizacao"
+          - "telhado"
+          - "cobertura"
+        positive_signals:
+          - "rodovia"
+          - "pavimentacao"
+          - "recapeamento"
+          - "pista"
+      # Rule 2: "ponte" in non-infrastructure context
+      - trigger: "ponte"
+        negative_contexts:
+          - "dental"
+          - "protese"
+          - "rede"
+          - "dados"
+        positive_signals:
+          - "rodoviaria"
+          - "concreto"
+          - "construcao"
+          - "viaduto"
+    # CRIT-FLT-007: Domain signals for engenharia_rodoviaria
+    domain_signals:
+      ncm_prefixes:
+        - "2713"  # Betumes e asfaltos naturais
+        - "2715"  # Misturas betuminosas (CBUQ, massa asfáltica)
+        - "6801"  # Pedras para calçamento, meios-fios
+        - "7308"  # Estruturas de ferro/aço (guard rails, defensas)
+        - "6810"  # Artigos de cimento/concreto (bueiros, sarjetas pré-moldadas)
+      unit_patterns:
+        - "km"
+        - "metro"
+        - "tonelada"
+        - "m2"
+        - "m3"
+      size_patterns: []
     signature_terms:
       - "asfalto"
       - "pavimento"
@@ -4330,6 +4760,55 @@ sectors:
         - "kva"
         - "distribuição"
         - "distribuicao"
+    # CRIT-FLT-007: Co-occurrence rules for materiais_eletricos
+    co_occurrence_rules:
+      # Rule 1: "cabo" in non-electrical context (nautical, telecom)
+      - trigger: "cabo"
+        negative_contexts:
+          - "naval"
+          - "embarcacao"
+          - "ancora"
+          - "navio"
+          - "rede de dados"
+        positive_signals:
+          - "eletrico"
+          - "energia"
+          - "iluminacao"
+          - "cobre"
+      # Rule 2: "material" in non-electrical context
+      - trigger: "material"
+        negative_contexts:
+          - "limpeza"
+          - "escritorio"
+          - "construcao"
+          - "hospitalar"
+          - "escolar"
+        positive_signals:
+          - "eletrico"
+          - "iluminacao"
+          - "energia"
+          - "instalacao eletrica"
+    # CRIT-FLT-007: Domain signals for materiais_eletricos
+    domain_signals:
+      ncm_prefixes:
+        - "8536"  # Aparelhos para interrupção/proteção de circuitos (disjuntores, fusíveis)
+        - "8544"  # Fios, cabos e condutores elétricos isolados
+        - "9405"  # Aparelhos de iluminação (lustres, luminárias, refletores)
+        - "8539"  # Lâmpadas e tubos de iluminação elétrica
+        - "8537"  # Quadros, painéis, consoles para comando elétrico
+        - "8535"  # Aparelhos para interrupção/proteção (alta tensão)
+      unit_patterns:
+        - "metro"
+        - "rolo"
+        - "unidade"
+        - "peca"
+        - "peça"
+        - "conjunto"
+      size_patterns:
+        - "\\b\\d+mm2\\b"
+        - "\\b\\d+A\\b"
+        - "\\b\\d+W\\b"
+        - "\\b\\d+V\\b"
     signature_terms:
       - "disjuntor"
       - "luminaria"
@@ -4501,6 +4980,56 @@ sectors:
         - "conexão"
         - "conexao"
         - "encanamento"
+    # CRIT-FLT-007: Co-occurrence rules for materiais_hidraulicos
+    co_occurrence_rules:
+      # Rule 1: "tubo" in non-plumbing context (medical, musical, structural)
+      - trigger: "tubo"
+        negative_contexts:
+          - "ensaio"
+          - "laboratorio"
+          - "coleta"
+          - "sangue"
+          - "oxigenio"
+        positive_signals:
+          - "pvc"
+          - "hidraulico"
+          - "esgoto"
+          - "agua"
+      # Rule 2: "bomba" in non-hydraulic context (explosive, cosmetic)
+      - trigger: "bomba"
+        negative_contexts:
+          - "incendio"
+          - "combustivel"
+          - "gasolina"
+          - "cosmetico"
+        positive_signals:
+          - "agua"
+          - "submersa"
+          - "centrifuga"
+          - "poco"
+    # CRIT-FLT-007: Domain signals for materiais_hidraulicos
+    domain_signals:
+      ncm_prefixes:
+        - "3917"  # Tubos e seus acessórios de plástico
+        - "7307"  # Acessórios para tubos de ferro/aço (conexões)
+        - "7412"  # Acessórios para tubos de cobre (conexões)
+        - "8413"  # Bombas para líquidos
+        - "8481"  # Torneiras, válvulas, registros
+        - "6810"  # Artigos de cimento/concreto (caixas d'água)
+      unit_patterns:
+        - "metro"
+        - "unidade"
+        - "peca"
+        - "peça"
+        - "barra"
+        - "rolo"
+      size_patterns:
+        - "\\b\\d+mm\\b"
+        - "\\b\\d+/\\d+\\b"
+        - "polegada"
+        - "polegadas"
+        - "\\b1/2\\b"
+        - "\\b3/4\\b"
     signature_terms:
       - "encanamento"
       - "sifao"
