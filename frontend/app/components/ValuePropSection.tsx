@@ -24,7 +24,7 @@ export default function ValuePropSection() {
     { ...valueProps.prioritization, size: 'large' as const },  // 2x2
     { ...valueProps.analysis, size: 'medium' as const },       // 2x1
     { ...valueProps.uncertainty, size: 'medium' as const },    // 2x1
-    { ...valueProps.coverage, size: 'wide' as const },         // 3x1 (full width)
+    { ...valueProps.coverage, size: 'full' as const },         // 4x1 (full width)
   ];
 
   return (

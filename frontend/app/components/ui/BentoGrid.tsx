@@ -84,7 +84,7 @@ export function BentoGrid({
  */
 interface BentoGridItemProps {
   children: ReactNode;
-  size?: 'small' | 'medium' | 'large' | 'wide' | 'tall' | 'hero';
+  size?: 'small' | 'medium' | 'large' | 'wide' | 'full' | 'tall' | 'hero';
   className?: string;
 }
 
@@ -99,6 +99,7 @@ export function BentoGridItem({
     medium: 'lg:col-span-2 lg:row-span-1',      // 2x1
     large: 'lg:col-span-2 lg:row-span-2',       // 2x2
     wide: 'lg:col-span-3 lg:row-span-1',        // 3x1
+    full: 'lg:col-span-4 lg:row-span-1',        // 4x1 (full width)
     tall: 'lg:col-span-1 lg:row-span-2',        // 1x2
     hero: 'lg:col-span-4 lg:row-span-2',        // 4x2 (full width, double height)
   };
