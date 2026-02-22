@@ -37,8 +37,8 @@ _noop = True  # True when tracing is disabled or packages unavailable
 def _is_otel_available() -> bool:
     """Check if OpenTelemetry SDK packages are installed."""
     try:
-        import opentelemetry.api  # noqa: F401
-        import opentelemetry.sdk  # noqa: F401
+        import opentelemetry.trace  # noqa: F401
+        import opentelemetry.sdk.trace  # noqa: F401
         return True
     except ImportError:
         return False
@@ -70,7 +70,7 @@ def init_tracing() -> None:
         logger.warning(
             "OpenTelemetry packages not installed — tracing disabled. "
             "Install: pip install opentelemetry-api opentelemetry-sdk "
-            "opentelemetry-exporter-otlp-proto-grpc"
+            "opentelemetry-exporter-otlp-proto-http"
         )
         _noop = True
         return
