@@ -1,6 +1,6 @@
 # TFIX-006: Atualizar testes InstitutionalSidebar para benefícios atuais
 
-**Status:** Pending
+**Status:** Done
 **Prioridade:** Média
 **Estimativa:** 30min
 **Arquivos afetados:** 1 test file
@@ -32,9 +32,9 @@ O componente `InstitutionalSidebar.tsx` foi atualizado (provavelmente em UX-341 
 
 ## Critérios de Aceitação
 
-- [ ] AC1: Testes atualizados para refletir textos atuais do componente
-- [ ] AC2: 19/19 testes passam
-- [ ] AC3: Variante signup continua passando (já passa hoje)
+- [x] AC1: Testes atualizados para refletir textos atuais do componente
+- [x] AC2: 24/24 testes passam (file has 24 tests, not 19 as estimated)
+- [x] AC3: Variante signup continua passando
 
 ## Solução
 

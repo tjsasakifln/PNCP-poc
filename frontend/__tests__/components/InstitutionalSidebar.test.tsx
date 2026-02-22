@@ -27,7 +27,7 @@ describe('InstitutionalSidebar', () => {
     it('renders correct login benefits', () => {
       render(<InstitutionalSidebar variant="login" />);
 
-      expect(screen.getByText('Monitoramento em tempo real de licitações')).toBeInTheDocument();
+      expect(screen.getByText('Cobertura nacional de fontes oficiais')).toBeInTheDocument();
       expect(screen.getByText('Filtros por estado, valor e setor')).toBeInTheDocument();
       expect(screen.getByText('Avaliação estratégica por IA')).toBeInTheDocument();
       expect(screen.getByText('Exportação de relatórios em Excel')).toBeInTheDocument();
@@ -38,9 +38,9 @@ describe('InstitutionalSidebar', () => {
       render(<InstitutionalSidebar variant="login" />);
 
       expect(screen.getByText('27')).toBeInTheDocument();
-      expect(screen.getByText('estados monitorados')).toBeInTheDocument();
-      expect(screen.getByText('12')).toBeInTheDocument();
-      expect(screen.getByText('setores pré-configurados')).toBeInTheDocument();
+      expect(screen.getByText('estados cobertos')).toBeInTheDocument();
+      expect(screen.getByText('15')).toBeInTheDocument();
+      expect(screen.getByText('setores especializados')).toBeInTheDocument();
       expect(screen.getByText('24h')).toBeInTheDocument();
       expect(screen.getByText('atualização diária')).toBeInTheDocument();
     });
@@ -93,21 +93,21 @@ describe('InstitutionalSidebar', () => {
     it('renders official data badge', () => {
       render(<InstitutionalSidebar variant="login" />);
 
-      expect(screen.getByText('Dados oficiais em tempo real')).toBeInTheDocument();
+      expect(screen.getByText('Dados de fontes oficiais federais e estaduais')).toBeInTheDocument();
     });
 
     it('badge has check icon', () => {
       const { container } = render(<InstitutionalSidebar variant="login" />);
 
       // Badge should contain an SVG icon
-      const badge = screen.getByText('Dados oficiais em tempo real').closest('div');
+      const badge = screen.getByText('Dados de fontes oficiais federais e estaduais').closest('div');
       expect(badge?.querySelector('svg')).toBeInTheDocument();
     });
 
     it('badge has proper styling', () => {
       const { container } = render(<InstitutionalSidebar variant="login" />);
 
-      const badge = screen.getByText('Dados oficiais em tempo real').closest('div');
+      const badge = screen.getByText('Dados de fontes oficiais federais e estaduais').closest('div');
       expect(badge?.className).toContain('bg-white/10');
       expect(badge?.className).toContain('backdrop-blur-sm');
     });
@@ -200,7 +200,7 @@ describe('InstitutionalSidebar', () => {
     it('does not render login content in signup variant', () => {
       render(<InstitutionalSidebar variant="signup" />);
 
-      expect(screen.queryByText('Monitoramento em tempo real do PNCP')).not.toBeInTheDocument();
+      expect(screen.queryByText('Cobertura nacional de fontes oficiais')).not.toBeInTheDocument();
     });
   });
 });
