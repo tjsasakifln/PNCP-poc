@@ -6,7 +6,7 @@ uvicorn[standard]==0.40.0
 gunicorn==23.0.0
 pydantic[email]==2.12.5
 pydantic-settings==2.10.1
-starlette==0.45.3
+starlette==0.52.1
 
 # HTTP client
 httpx==0.28.1
