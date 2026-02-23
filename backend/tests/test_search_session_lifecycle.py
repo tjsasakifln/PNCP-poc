@@ -386,7 +386,7 @@ class TestSigtermMarksInflight:
         update_call = mock_sb.table.return_value.update.call_args
         update_data = update_call[0][0]
         assert update_data["status"] == "timed_out"
-        assert update_data["error_message"] == "Server shutdown (SIGTERM)"
+        assert update_data["error_message"] == "O servidor foi reiniciado. Tente novamente."
         assert update_data["error_code"] == "timeout"
         assert "completed_at" in update_data
 

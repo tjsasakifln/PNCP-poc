@@ -1,14 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { PageHeader } from "../../components/PageHeader";
 import { EmptyState } from "../../components/EmptyState";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { getUserFriendlyError } from "../../lib/error-messages";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
+
+// All 27 Brazilian UFs
+const ALL_UFS = [
+  "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA",
+  "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN",
+  "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+];
 
 // CRIT-002 AC18: SearchSessionStatus type
 type SearchSessionStatus = 'created' | 'processing' | 'completed' | 'failed' | 'timed_out' | 'cancelled';
@@ -43,7 +51,7 @@ const STATUS_CONFIG: Record<SearchSessionStatus, {
   icon: string;
 }> = {
   completed: {
-    label: "Concluída",
+    label: "Conclu\u00edda",
     bgClass: "bg-emerald-100 dark:bg-emerald-900/30",
     textClass: "text-emerald-700 dark:text-emerald-400",
     icon: "check",
@@ -55,13 +63,13 @@ const STATUS_CONFIG: Record<SearchSessionStatus, {
     icon: "x",
   },
   timed_out: {
-    label: "Timeout",
+    label: "Tempo esgotado",
     bgClass: "bg-orange-100 dark:bg-orange-900/30",
     textClass: "text-orange-700 dark:text-orange-400",
     icon: "clock",
   },
   processing: {
-    label: "Processando...",
+    label: "Em andamento",
     bgClass: "bg-blue-100 dark:bg-blue-900/30",
     textClass: "text-blue-700 dark:text-blue-400",
     icon: "spinner",
@@ -79,6 +87,24 @@ const STATUS_CONFIG: Record<SearchSessionStatus, {
     icon: "dot",
   },
 };
+
+// UX-351 AC8-AC9: Format UFs for display
+function formatUfs(ufs: string[]): string {
+  if (!ufs || ufs.length === 0) return "";
+  // AC8: All 27 UFs = "Todo o Brasil"
+  if (ufs.length >= ALL_UFS.length) return "Todo o Brasil";
+  // AC9: Up to 5 shown, rest abbreviated
+  if (ufs.length <= 5) return ufs.join(", ");
+  const shown = ufs.slice(0, 5).join(", ");
+  const remaining = ufs.length - 5;
+  return `${shown} + ${remaining} ${remaining === 1 ? "outro" : "outros"}`;
+}
+
+// UX-351 AC7: Translate error messages stored in DB to Portuguese
+function getLocalizedError(message: string | null): string {
+  if (!message) return "";
+  return getUserFriendlyError(message);
+}
 
 function StatusBadge({ status }: { status: SearchSessionStatus }) {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.completed;
@@ -114,6 +140,8 @@ function StatusBadge({ status }: { status: SearchSessionStatus }) {
   );
 }
 
+const TERMINAL_STATUSES: Set<SearchSessionStatus> = new Set(["completed", "failed", "timed_out", "cancelled"]);
+
 export default function HistoricoPage() {
   const { session, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -123,6 +151,7 @@ export default function HistoricoPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const limit = 20;
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Handle re-run search navigation (AC17: "Tentar novamente" for failed/timed_out)
   const handleRerunSearch = useCallback((searchSession: SearchSession) => {
@@ -155,28 +184,50 @@ export default function HistoricoPage() {
     router.push(`/buscar?${params.toString()}`);
   }, [router, trackEvent]);
 
-  useEffect(() => {
-    if (authLoading || !session) return;
-    fetchSessions();
-  }, [session, authLoading, page]);
-
-  const fetchSessions = async () => {
-    setLoading(true);
+  const fetchSessions = useCallback(async (silent = false) => {
+    if (!session?.access_token) return;
+    if (!silent) setLoading(true);
     try {
       const res = await fetch(
         `/api/sessions?limit=${limit}&offset=${page * limit}`,
-        { headers: { Authorization: `Bearer ${session!.access_token}` } }
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
       );
-      if (!res.ok) throw new Error("Erro ao carregar histórico");
+      if (!res.ok) throw new Error("Erro ao carregar hist\u00f3rico");
       const data = await res.json();
       setSessions(data.sessions);
       setTotal(data.total);
     } catch {
-      setSessions([]);
+      if (!silent) setSessions([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [session?.access_token, page]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (authLoading || !session) return;
+    fetchSessions();
+  }, [session, authLoading, page, fetchSessions]);
+
+  // UX-351 AC3-AC5: Poll for updates when sessions are in non-terminal state
+  useEffect(() => {
+    const hasActiveSessions = sessions.some(
+      (s) => !TERMINAL_STATUSES.has(s.status)
+    );
+
+    if (hasActiveSessions) {
+      pollIntervalRef.current = setInterval(() => {
+        fetchSessions(true); // silent refresh
+      }, 5000);
+    }
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [sessions, fetchSessions]);
 
   if (authLoading) {
     return (
@@ -190,7 +241,7 @@ export default function HistoricoPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
         <div className="text-center">
-          <p className="text-[var(--ink-secondary)] mb-4">Faça login para ver seu histórico</p>
+          <p className="text-[var(--ink-secondary)] mb-4">Fa\u00e7a login para ver seu hist\u00f3rico</p>
           <Link href="/login" className="text-[var(--brand-blue)] hover:underline">
             Ir para login
           </Link>
@@ -216,7 +267,7 @@ export default function HistoricoPage() {
   return (
     <div className="min-h-screen bg-[var(--canvas)]">
       <PageHeader
-        title="Histórico"
+        title="Hist\u00f3rico"
         extraControls={
           <Link
             href="/buscar"
@@ -243,8 +294,8 @@ export default function HistoricoPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
               </svg>
             }
-            title="Histórico de Buscas"
-            description="Cada busca que você faz fica salva aqui. Você pode revisitar resultados anteriores sem gastar uma nova análise."
+            title="Hist\u00f3rico de Buscas"
+            description="Cada busca que voc\u00ea faz fica salva aqui. Voc\u00ea pode revisitar resultados anteriores sem gastar uma nova an\u00e1lise."
             ctaLabel="Fazer primeira busca"
             ctaHref="/buscar"
           />
@@ -269,8 +320,8 @@ export default function HistoricoPage() {
                           {formatDate(s.created_at)}
                         </span>
                       </div>
-                      <p className="text-sm text-[var(--ink)] mb-1">
-                        <span className="font-medium">{s.ufs.join(", ")}</span>
+                      <p className="text-sm text-[var(--ink)] mb-1" data-testid="uf-display">
+                        <span className="font-medium">{formatUfs(s.ufs)}</span>
                         {" "}| {s.data_inicial} a {s.data_final}
                       </p>
                       {s.custom_keywords && s.custom_keywords.length > 0 && (
@@ -280,8 +331,8 @@ export default function HistoricoPage() {
                       )}
                       {/* AC17: Show error message for failed/timed_out sessions */}
                       {s.error_message && isRetryable(s.status) && (
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-2">
-                          {s.error_message.slice(0, 100)}
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-2" data-testid="error-message">
+                          {getLocalizedError(s.error_message)}
                         </p>
                       )}
                       {s.resumo_executivo && s.status === "completed" && (
@@ -316,7 +367,7 @@ export default function HistoricoPage() {
                                      border border-red-300 dark:border-red-700 rounded-button
                                      hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors
                                      flex items-center gap-1.5"
-                          title="Tentar novamente com os mesmos parâmetros"
+                          title="Tentar novamente com os mesmos par\u00e2metros"
                         >
                           <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -330,7 +381,7 @@ export default function HistoricoPage() {
                                      border border-[var(--brand-blue)] rounded-button
                                      hover:bg-[var(--brand-blue-subtle)] transition-colors
                                      flex items-center gap-1.5"
-                          title="Repetir esta busca com os mesmos parâmetros"
+                          title="Repetir esta busca com os mesmos par\u00e2metros"
                         >
                           <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -364,7 +415,7 @@ export default function HistoricoPage() {
                   className="px-3 py-1 text-sm border border-[var(--border)] rounded-button
                              disabled:opacity-30 hover:bg-[var(--surface-1)]"
                 >
-                  Próximo
+                  Pr\u00f3ximo
                 </button>
               </div>
             )}

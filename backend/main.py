@@ -287,7 +287,7 @@ async def _mark_inflight_sessions_timed_out() -> None:
                 sb.table("search_sessions")
                 .update({
                     "status": "timed_out",
-                    "error_message": "Server shutdown (SIGTERM)",
+                    "error_message": "O servidor foi reiniciado. Tente novamente.",
                     "error_code": "timeout",
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                 })

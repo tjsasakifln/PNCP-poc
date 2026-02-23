@@ -885,6 +885,23 @@ async def register_search_session(
         logger.error(f"Cannot register session: profile missing for user {mask_user_id(user_id)}")
         return None
 
+    # UX-351 AC1: Prevent duplicate entries — if search_id already registered, return existing
+    if search_id:
+        try:
+            existing = (
+                sb.table("search_sessions")
+                .select("id")
+                .eq("search_id", search_id)
+                .eq("user_id", user_id)
+                .limit(1)
+                .execute()
+            )
+            if existing.data and len(existing.data) > 0:
+                logger.info(f"Session already exists for search_id={search_id[:8]}***, reusing")
+                return existing.data[0]["id"]
+        except Exception:
+            pass  # Fall through to insert
+
     for attempt in range(2):
         try:
             data = {

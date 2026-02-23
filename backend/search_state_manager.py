@@ -431,7 +431,7 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                 try:
                     sb.table("search_sessions").update({
                         "status": "timed_out",
-                        "error_message": "Server restart during processing",
+                        "error_message": "O servidor reiniciou durante o processamento.",
                         "error_code": "timeout",
                         "completed_at": now.isoformat(),
                     }).eq("id", session_id).execute()
@@ -450,14 +450,14 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                         from_state=SearchState.FETCHING,
                         to_state=SearchState.TIMED_OUT,
                         stage="recovery",
-                        details={"reason": "Server restart during processing"},
+                        details={"reason": "O servidor reiniciou durante o processamento."},
                     ))
             else:
                 # AC18: Recent search — failed with retry
                 try:
                     sb.table("search_sessions").update({
                         "status": "failed",
-                        "error_message": "Server restart — retry recommended",
+                        "error_message": "O servidor reiniciou. Tente novamente.",
                         "error_code": "server_restart",
                         "completed_at": now.isoformat(),
                     }).eq("id", session_id).execute()
@@ -472,7 +472,7 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                         from_state=SearchState.FETCHING,
                         to_state=SearchState.FAILED,
                         stage="recovery",
-                        details={"reason": "Server restart — retry recommended"},
+                        details={"reason": "O servidor reiniciou. Tente novamente."},
                     ))
 
         total = timed_out_count + failed_count
