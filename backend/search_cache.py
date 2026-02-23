@@ -1505,3 +1505,98 @@ async def inspect_cache_entry(params_hash: str) -> Optional[dict]:
     except Exception as e:
         logger.warning(f"Cache inspection failed for {params_hash[:12]}: {e}")
         return None
+
+
+# ============================================================================
+# CRIT-032: Stale entries query for periodic cache refresh
+# ============================================================================
+
+
+async def get_stale_entries_for_refresh(batch_size: int = 25) -> list[dict]:
+    """CRIT-032 AC4-9: Query cache entries eligible for periodic refresh.
+
+    Selects:
+      - HOT + WARM entries with fetched_at older than CACHE_FRESH_HOURS (6h)
+      - Entries with total_results=0 (empty caches), regardless of priority
+    Excludes:
+      - Entries with degraded_until > now (respects backoff)
+    Orders:
+      - Empty (total_results=0) first, then HOT before WARM, then by access_count DESC
+    Limits to batch_size.
+
+    Returns list of dicts with: user_id, params_hash, search_params, total_results, priority.
+    """
+    from supabase_client import get_supabase
+
+    sb = get_supabase()
+    now = datetime.now(timezone.utc)
+    stale_cutoff = (now - timedelta(hours=CACHE_FRESH_HOURS)).isoformat()
+
+    # Query 1: Empty entries (total_results = 0), any priority
+    empty_resp = (
+        sb.table("search_results_cache")
+        .select("user_id, params_hash, search_params, total_results, priority, access_count, degraded_until")
+        .eq("total_results", 0)
+        .execute()
+    )
+
+    # Query 2: HOT + WARM stale entries (fetched_at < stale_cutoff)
+    hot_resp = (
+        sb.table("search_results_cache")
+        .select("user_id, params_hash, search_params, total_results, priority, access_count, degraded_until")
+        .eq("priority", "hot")
+        .lt("fetched_at", stale_cutoff)
+        .gt("total_results", 0)
+        .execute()
+    )
+    warm_resp = (
+        sb.table("search_results_cache")
+        .select("user_id, params_hash, search_params, total_results, priority, access_count, degraded_until")
+        .eq("priority", "warm")
+        .lt("fetched_at", stale_cutoff)
+        .gt("total_results", 0)
+        .execute()
+    )
+
+    # Merge and deduplicate by params_hash
+    seen_hashes: set[str] = set()
+    candidates: list[dict] = []
+
+    all_rows = (empty_resp.data or []) + (hot_resp.data or []) + (warm_resp.data or [])
+
+    for row in all_rows:
+        ph = row.get("params_hash", "")
+        if ph in seen_hashes:
+            continue
+
+        # AC8: Exclude entries with degraded_until in the future
+        degraded_str = row.get("degraded_until")
+        if degraded_str:
+            try:
+                degraded_until = datetime.fromisoformat(str(degraded_str).replace("Z", "+00:00"))
+                if degraded_until.tzinfo is None:
+                    degraded_until = degraded_until.replace(tzinfo=timezone.utc)
+                if degraded_until > now:
+                    continue
+            except (ValueError, TypeError):
+                pass
+
+        seen_hashes.add(ph)
+        candidates.append({
+            "user_id": row.get("user_id"),
+            "params_hash": ph,
+            "search_params": row.get("search_params", {}),
+            "total_results": row.get("total_results", 0),
+            "priority": row.get("priority", "cold"),
+            "access_count": row.get("access_count", 0) or 0,
+        })
+
+    # AC7: Sort — empty first, then HOT before WARM, then access_count DESC
+    priority_order = {"hot": 0, "warm": 1, "cold": 2}
+    candidates.sort(key=lambda e: (
+        0 if e["total_results"] == 0 else 1,
+        priority_order.get(e["priority"], 2),
+        -e["access_count"],
+    ))
+
+    return candidates[:batch_size]

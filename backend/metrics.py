@@ -203,6 +203,19 @@ WORKER_TIMEOUT = _create_counter(
     labelnames=["reason"],
 )
 
+# CRIT-032: Periodic cache refresh metrics
+CACHE_REFRESH_TOTAL = _create_counter(
+    "smartlic_cache_refresh_total",
+    "Cache refresh job outcomes",
+    labelnames=["result"],  # success, skipped, failed, empty_retry
+)
+
+CACHE_REFRESH_DURATION = _create_histogram(
+    "smartlic_cache_refresh_duration_seconds",
+    "Cache refresh cycle duration",
+    buckets=[10, 30, 60, 120, 300, 600],
+)
+
 # ============================================================================
 # Gauges
 # ============================================================================

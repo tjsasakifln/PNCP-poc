@@ -345,6 +345,155 @@ async def excel_generation_job(
 
 
 # ==========================================================================
+# CRIT-032: Periodic Cache Refresh Job
+# ==========================================================================
+
+async def cache_refresh_job(ctx: dict) -> dict:
+    """CRIT-032 AC1: Periodic cache refresh — re-fetches stale and empty cache entries.
+
+    Runs as ARQ cron job every N hours. Queries search_results_cache for:
+      - HOT + WARM entries older than 6h
+      - Empty entries (total_results=0)
+    Re-executes each via trigger_background_revalidation().
+
+    Returns summary dict with refresh stats.
+    """
+    import uuid
+    import time as _time
+
+    from config import (
+        CACHE_REFRESH_ENABLED,
+        CACHE_REFRESH_BATCH_SIZE,
+        CACHE_REFRESH_STAGGER_SECONDS,
+    )
+    from metrics import CACHE_REFRESH_TOTAL, CACHE_REFRESH_DURATION
+
+    cycle_id = str(uuid.uuid4())[:8]
+    start = _time.monotonic()
+
+    # AC3: Feature flag check
+    if not CACHE_REFRESH_ENABLED:
+        logger.info(f"[CacheRefresh {cycle_id}] Skipped — CACHE_REFRESH_ENABLED=false")
+        return {"status": "disabled", "cycle_id": cycle_id}
+
+    stats = {
+        "cycle_id": cycle_id,
+        "total_candidates": 0,
+        "refreshed": 0,
+        "skipped_cooldown": 0,
+        "skipped_degraded": 0,
+        "skipped_cb_open": 0,
+        "failed": 0,
+        "empty_retried": 0,
+    }
+
+    # AC14: Graceful on Redis unavailable
+    try:
+        from redis_pool import get_redis_pool
+        redis = await get_redis_pool()
+        if redis is None:
+            logger.warning(f"[CacheRefresh {cycle_id}] Redis unavailable — skipping cycle")
+            return {"status": "redis_unavailable", "cycle_id": cycle_id}
+    except Exception as e:
+        logger.warning(f"[CacheRefresh {cycle_id}] Redis check failed: {e}")
+        return {"status": "redis_unavailable", "cycle_id": cycle_id}
+
+    # AC15: Graceful on Supabase unavailable
+    try:
+        from search_cache import get_stale_entries_for_refresh
+        entries = await get_stale_entries_for_refresh(batch_size=CACHE_REFRESH_BATCH_SIZE)
+    except Exception as e:
+        logger.error(f"[CacheRefresh {cycle_id}] Supabase query failed: {e}")
+        return {"status": "supabase_unavailable", "cycle_id": cycle_id}
+
+    stats["total_candidates"] = len(entries)
+
+    if not entries:
+        logger.info(f"[CacheRefresh {cycle_id}] No stale entries found")
+        duration_s = _time.monotonic() - start
+        CACHE_REFRESH_DURATION.observe(duration_s)
+        return {"status": "no_candidates", "cycle_id": cycle_id, **stats}
+
+    # AC10-13: Replay each entry with stagger
+    from datetime import date, timedelta
+    from search_cache import trigger_background_revalidation, compute_search_hash
+
+    today = date.today()
+    data_final = today.isoformat()
+    data_inicial = (today - timedelta(days=10)).isoformat()
+
+    for i, entry in enumerate(entries):
+        # AC13: Check circuit breaker before each dispatch
+        try:
+            from pncp_client import get_circuit_breaker
+            cb = get_circuit_breaker("pncp")
+            if hasattr(cb, "is_degraded") and cb.is_degraded:
+                remaining = len(entries) - i
+                stats["skipped_cb_open"] += remaining
+                logger.warning(
+                    f"[CacheRefresh {cycle_id}] PNCP circuit breaker degraded — "
+                    f"stopping cycle ({remaining} entries skipped)"
+                )
+                break
+        except Exception:
+            pass
+
+        search_params = entry.get("search_params", {})
+        user_id = entry.get("user_id")
+        is_empty = entry.get("total_results", 0) == 0
+
+        # AC10: Build request_data with fresh date window
+        request_data = {
+            "ufs": search_params.get("ufs", []),
+            "data_inicial": data_inicial,
+            "data_final": data_final,
+            "modalidades": search_params.get("modalidades"),
+            "setor_id": search_params.get("setor_id"),
+            "status": search_params.get("status"),
+            "modo_busca": search_params.get("modo_busca"),
+        }
+
+        # AC11: Dispatch via existing revalidation infrastructure
+        try:
+            dispatched = await trigger_background_revalidation(
+                user_id=user_id,
+                params=search_params,
+                request_data=request_data,
+            )
+
+            if dispatched:
+                stats["refreshed"] += 1
+                if is_empty:
+                    stats["empty_retried"] += 1
+                CACHE_REFRESH_TOTAL.labels(
+                    result="empty_retry" if is_empty else "success"
+                ).inc()
+            else:
+                stats["skipped_cooldown"] += 1
+                CACHE_REFRESH_TOTAL.labels(result="skipped").inc()
+
+        except Exception as e:
+            stats["failed"] += 1
+            CACHE_REFRESH_TOTAL.labels(result="failed").inc()
+            logger.debug(f"[CacheRefresh {cycle_id}] Entry {entry['params_hash'][:12]} failed: {e}")
+
+        # AC12: Stagger between dispatches (skip after last)
+        if i < len(entries) - 1:
+            await asyncio.sleep(CACHE_REFRESH_STAGGER_SECONDS)
+
+    # AC17: Structured log summary
+    duration_s = _time.monotonic() - start
+    duration_ms = int(duration_s * 1000)
+    stats["duration_ms"] = duration_ms
+    CACHE_REFRESH_DURATION.observe(duration_s)
+
+    import json as _json
+    logger.info(_json.dumps({"event": "cache_refresh_cycle", **stats}))
+
+    return {"status": "completed", **stats}
+
+
+# ==========================================================================
 # ARQ Worker Settings (AC5)
 # ==========================================================================
 
@@ -354,6 +503,19 @@ try:
 except Exception:
     # Web process without REDIS_URL — WorkerSettings won't be used
     _worker_redis_settings = None
+
+# CRIT-032 AC2: Build cron_jobs at module level (arq expects list attribute)
+try:
+    from arq.cron import cron as _arq_cron
+    from config import CACHE_REFRESH_INTERVAL_HOURS, CACHE_REFRESH_BATCH_SIZE
+
+    _cron_timeout = max(300, CACHE_REFRESH_BATCH_SIZE * 10)
+    _cron_hours = set(range(0, 24, CACHE_REFRESH_INTERVAL_HOURS))
+    _worker_cron_jobs = [
+        _arq_cron(cache_refresh_job, hour=_cron_hours, minute=0, timeout=_cron_timeout),
+    ]
+except Exception:
+    _worker_cron_jobs = []
 
 
 class WorkerSettings:
@@ -366,7 +528,8 @@ class WorkerSettings:
         cd backend && arq job_queue.WorkerSettings
     """
 
-    functions = [llm_summary_job, excel_generation_job]
+    functions = [llm_summary_job, excel_generation_job, cache_refresh_job]
+    cron_jobs = _worker_cron_jobs  # CRIT-032 AC2: periodic cache refresh
     redis_settings = _worker_redis_settings
     max_jobs = 10
     job_timeout = 60   # AC16: worst case (Excel can take longer than LLM)

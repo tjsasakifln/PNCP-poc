@@ -405,7 +405,16 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "PROXIMITY_CONTEXT_ENABLED": ("PROXIMITY_CONTEXT_ENABLED", "true"),
     "RATE_LIMITING_ENABLED": ("RATE_LIMITING_ENABLED", "true"),
     "SECTOR_RED_FLAGS_ENABLED": ("SECTOR_RED_FLAGS_ENABLED", "true"),
+    "CACHE_REFRESH_ENABLED": ("CACHE_REFRESH_ENABLED", "false"),
 }
+
+# ============================================
+# CRIT-032: Periodic Cache Refresh (ARQ Cron)
+# ============================================
+CACHE_REFRESH_ENABLED: bool = str_to_bool(os.getenv("CACHE_REFRESH_ENABLED", "false"))
+CACHE_REFRESH_INTERVAL_HOURS: int = int(os.getenv("CACHE_REFRESH_INTERVAL_HOURS", "12"))
+CACHE_REFRESH_BATCH_SIZE: int = int(os.getenv("CACHE_REFRESH_BATCH_SIZE", "25"))
+CACHE_REFRESH_STAGGER_SECONDS: int = int(os.getenv("CACHE_REFRESH_STAGGER_SECONDS", "5"))
 
 # ============================================
 # D-05: User Feedback Loop
