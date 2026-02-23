@@ -203,6 +203,12 @@ WORKER_TIMEOUT = _create_counter(
     labelnames=["reason"],
 )
 
+# CRIT-035: Evidence prefix stripping counter
+EVIDENCE_PREFIX_STRIPPED = _create_counter(
+    "smartlic_filter_evidence_prefix_stripped_total",
+    "Evidence prefix stripped before substring validation",
+)
+
 # CRIT-032: Periodic cache refresh metrics
 CACHE_REFRESH_TOTAL = _create_counter(
     "smartlic_cache_refresh_total",

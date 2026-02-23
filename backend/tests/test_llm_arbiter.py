@@ -25,6 +25,7 @@ from llm_arbiter import (
     LLMClassification,
     _build_conservative_prompt,
     _parse_structured_response,
+    _strip_evidence_prefix,
     classify_contract_primary_match,
     clear_cache,
     get_cache_stats,
@@ -730,3 +731,116 @@ class TestConservativePromptIntegration:
             )
 
         assert result["is_primary"] is False
+
+
+# =============================================================================
+# CRIT-035: Evidence Prefix Stripping
+# =============================================================================
+
+class TestEvidencePrefixStripping:
+    """CRIT-035: Strip 'Objeto:', 'Descrição:', 'Título:' prefixes from evidence."""
+
+    def test_strip_objeto_prefix_with_space(self):
+        """AC1/AC2: 'Objeto: texto real' → 'texto real'."""
+        stripped, was_stripped = _strip_evidence_prefix("Objeto: texto real")
+        assert was_stripped is True
+        assert stripped == "texto real"
+
+    def test_strip_objeto_prefix_without_space(self):
+        """AC2: 'Objeto:texto real' → 'texto real'."""
+        stripped, was_stripped = _strip_evidence_prefix("Objeto:texto real")
+        assert was_stripped is True
+        assert stripped == "texto real"
+
+    def test_strip_case_insensitive_upper(self):
+        """AC2: 'OBJETO: texto' → 'texto'."""
+        stripped, was_stripped = _strip_evidence_prefix("OBJETO: texto real")
+        assert was_stripped is True
+        assert stripped == "texto real"
+
+    def test_strip_descricao_prefix(self):
+        """AC1: 'Descrição: texto' → 'texto'."""
+        stripped, was_stripped = _strip_evidence_prefix("Descrição: materiais de limpeza")
+        assert was_stripped is True
+        assert stripped == "materiais de limpeza"
+
+    def test_strip_titulo_prefix(self):
+        """AC1: 'Título: texto' → 'texto'."""
+        stripped, was_stripped = _strip_evidence_prefix("Título: aquisição de uniformes")
+        assert was_stripped is True
+        assert stripped == "aquisição de uniformes"
+
+    def test_no_prefix_unchanged(self):
+        """AC7: Evidence without prefix returns unchanged."""
+        stripped, was_stripped = _strip_evidence_prefix("materiais de higiene e limpeza")
+        assert was_stripped is False
+        assert stripped == "materiais de higiene e limpeza"
+
+    def test_empty_after_strip_not_stripped(self):
+        """Edge: 'Objeto: ' (only prefix) returns original."""
+        stripped, was_stripped = _strip_evidence_prefix("Objeto: ")
+        assert was_stripped is False
+        assert stripped == "Objeto: "
+
+    def test_strip_descricao_without_accent(self):
+        """AC2: 'Descricao: texto' (no accent) → 'texto'."""
+        stripped, was_stripped = _strip_evidence_prefix("Descricao: serviços gerais")
+        assert was_stripped is True
+        assert stripped == "serviços gerais"
+
+    # ---- Integration with _parse_structured_response ----
+
+    def test_evidence_with_objeto_prefix_matches_after_strip(self):
+        """AC5: Evidence with 'Objeto:' prefix matches after stripping."""
+        raw = _structured_json("SIM", 85, [
+            "Objeto: Registro de preços para aquisição de materiais de higiene e limpeza"
+        ])
+        result = _parse_structured_response(
+            raw, "Registro de preços para aquisição de materiais de higiene e limpeza para órgão"
+        )
+        assert len(result.evidencias) == 1
+        assert "Registro de preços" in result.evidencias[0]
+        assert not result.evidencias[0].startswith("Objeto:")
+
+    def test_hallucinated_evidence_still_discarded(self):
+        """AC6: Evidence that is truly hallucinated continues being discarded."""
+        raw = _structured_json("SIM", 70, [
+            "Objeto: consultoria em blockchain descentralizado"
+        ])
+        result = _parse_structured_response(
+            raw, "Aquisição de uniformes escolares para rede municipal de ensino"
+        )
+        assert len(result.evidencias) == 0
+
+    def test_evidence_without_prefix_unchanged(self):
+        """AC7: Evidence without prefix passes validation normally."""
+        raw = _structured_json("SIM", 90, ["uniformes escolares"])
+        result = _parse_structured_response(
+            raw, "Aquisição de uniformes escolares para rede municipal"
+        )
+        assert "uniformes escolares" in result.evidencias
+
+    def test_multiple_evidences_mixed_prefixes(self):
+        """AC5+AC6+AC7: Mix of prefixed, non-prefixed, and hallucinated."""
+        raw = _structured_json("SIM", 80, [
+            "Objeto: materiais de higiene",      # prefixed, valid after strip
+            "limpeza para órgão",                 # no prefix, valid
+            "Título: blockchain consulting",      # prefixed, hallucinated
+        ])
+        result = _parse_structured_response(
+            raw, "Registro de preços para aquisição de materiais de higiene e limpeza para órgão público"
+        )
+        assert len(result.evidencias) == 2
+        assert "materiais de higiene" in result.evidencias
+        assert "limpeza para órgão" in result.evidencias
+
+    def test_upper_case_objeto_prefix_stripped(self):
+        """AC2: 'OBJETO: texto' matches case-insensitively."""
+        raw = _structured_json("SIM", 85, [
+            "OBJETO: Registro de preços para aquisição"
+        ])
+        result = _parse_structured_response(
+            raw, "Registro de preços para aquisição de materiais diversos"
+        )
+        assert len(result.evidencias) == 1
+        assert result.evidencias[0] == "Registro de preços para aquisição"

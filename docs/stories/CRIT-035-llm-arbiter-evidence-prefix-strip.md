@@ -1,6 +1,6 @@
 # CRIT-035 — LLM Arbiter: Strip de Prefixo "Objeto:" em Evidências
 
-**Status:** Pending
+**Status:** Done
 **Priority:** P2 — Important
 **Severity:** Funcional (recall potencialmente reduzido)
 **Created:** 2026-02-23
@@ -66,13 +66,13 @@ CRIT-035: "Objeto: Registro..." vs "Registro..." → prefixo de campo ✗ NOVO
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: Em `llm_arbiter.py`, antes do substring check, strip prefixos comuns: `Objeto:`, `Descrição:`, `Título:`
-- [ ] **AC2**: Strip case-insensitive e com/sem espaço após `:`
-- [ ] **AC3**: Log quando strip é aplicado: `"Evidence prefix stripped: 'Objeto:' → checking cleaned evidence"`
-- [ ] **AC4**: Métrica: `filter_evidence_prefix_stripped_total` (counter)
-- [ ] **AC5**: Test: evidence com `Objeto: texto real` → match encontrado após strip
-- [ ] **AC6**: Test: evidence com `texto realmente alucinado` → continua sendo descartada
-- [ ] **AC7**: Test: evidence sem prefixo → comportamento inalterado (zero regression)
+- [x] **AC1**: Em `llm_arbiter.py`, antes do substring check, strip prefixos comuns: `Objeto:`, `Descrição:`, `Título:`
+- [x] **AC2**: Strip case-insensitive e com/sem espaço após `:`
+- [x] **AC3**: Log quando strip é aplicado: `"Evidence prefix stripped: 'Objeto:' → checking cleaned evidence"`
+- [x] **AC4**: Métrica: `filter_evidence_prefix_stripped_total` (counter)
+- [x] **AC5**: Test: evidence com `Objeto: texto real` → match encontrado após strip
+- [x] **AC6**: Test: evidence com `texto realmente alucinado` → continua sendo descartada
+- [x] **AC7**: Test: evidence sem prefixo → comportamento inalterado (zero regression)
 
 ## Solução Proposta
 

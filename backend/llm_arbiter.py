@@ -24,7 +24,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 from openai import OpenAI
-from metrics import LLM_CALLS, LLM_DURATION
+from metrics import LLM_CALLS, LLM_DURATION, EVIDENCE_PREFIX_STRIPPED
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -273,6 +273,36 @@ Este contrato é sobre {setor_name}?{suffix}"""
 
 
 # ============================================================================
+# CRIT-035: Strip LLM-added field-name prefixes from evidence
+# ============================================================================
+
+_KNOWN_PREFIXES = ["objeto:", "descrição:", "descricao:", "título:", "titulo:", "title:", "description:"]
+
+
+def _strip_evidence_prefix(evidence: str) -> tuple[str, bool]:
+    """Strip common field-name prefixes that GPT adds to evidence (CRIT-035).
+
+    GPT-4.1-nano systematically adds prefixes like "Objeto:" when copying text
+    from procurement descriptions, causing substring validation to fail.
+
+    Returns:
+        tuple: (cleaned_evidence, was_stripped)
+    """
+    ev_lower = evidence.strip().lower()
+    for prefix in _KNOWN_PREFIXES:
+        if ev_lower.startswith(prefix):
+            stripped = evidence.strip()[len(prefix):].strip()
+            if stripped:  # Don't return empty string
+                logger.debug(
+                    f"CRIT-035: Evidence prefix stripped: '{evidence.strip()[:len(prefix)]}' "
+                    f"→ checking cleaned evidence"
+                )
+                EVIDENCE_PREFIX_STRIPPED.inc()
+                return stripped, True
+    return evidence, False
+
+
+# ============================================================================
 # D-02 AC3: Robust JSON parser with fallback
 # ============================================================================
 
@@ -320,10 +350,15 @@ def _parse_structured_response(
                 if _normalize(ev) in objeto_normalized:
                     validated_evidence.append(ev)
                 else:
-                    logger.warning(
-                        f"D-02 AC6: Discarding hallucinated evidence (not substring): "
-                        f"evidence={ev!r} not found in objeto"
-                    )
+                    # CRIT-035: Try stripping known prefixes before discarding
+                    stripped_ev, was_stripped = _strip_evidence_prefix(ev)
+                    if was_stripped and _normalize(stripped_ev) in objeto_normalized:
+                        validated_evidence.append(stripped_ev)
+                    else:
+                        logger.warning(
+                            f"D-02 AC6: Discarding hallucinated evidence (not substring): "
+                            f"evidence={ev!r} not found in objeto"
+                        )
             elif ev and len(ev) > 100:
                 # Truncate to 100 chars and re-validate
                 truncated = ev[:100]
