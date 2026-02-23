@@ -3,9 +3,8 @@
  * STORY-230 AC5-AC8: FAQ page contact section auth-awareness
  *
  * Tests:
- * - AC5: "Enviar Mensagem" shows mailto for unauthenticated users
- * - AC5: "Enviar Mensagem" links to /mensagens for authenticated users
- * - AC6: mailto:suporte@smartlic.tech always visible
+ * - AC5: Unauthenticated users see "Criar Conta para Contato" linking to /signup
+ * - AC5: Authenticated users see "Enviar Mensagem" linking to /mensagens
  * - AC7: Anonymous user can access /ajuda content
  * - AC8: Anonymous clicking "Contato" does NOT redirect to login
  */
@@ -38,9 +37,9 @@ describe('AjudaPage', () => {
       render(<AjudaPage />);
     });
 
-    it('should show "Enviar E-mail" button with mailto link', () => {
-      const emailButton = screen.getByText('Enviar E-mail');
-      expect(emailButton.closest('a')).toHaveAttribute('href', 'mailto:suporte@smartlic.tech');
+    it('should show "Criar Conta para Contato" button linking to signup', () => {
+      const signupButton = screen.getByText('Criar Conta para Contato');
+      expect(signupButton.closest('a')).toHaveAttribute('href', '/signup?source=ajuda-contato');
     });
 
     it('should NOT show "Enviar Mensagem" link to /mensagens', () => {
@@ -64,25 +63,6 @@ describe('AjudaPage', () => {
     it('should show "Enviar Mensagem" link to /mensagens', () => {
       const msgButton = screen.getByText('Enviar Mensagem');
       expect(msgButton.closest('a')).toHaveAttribute('href', '/mensagens');
-    });
-  });
-
-  describe('AC6: Email contact always visible', () => {
-    it('should show suporte@smartlic.tech for unauthenticated users', () => {
-      mockUseAuth.mockReturnValue({ user: null, loading: false });
-      render(<AjudaPage />);
-      const emailLinks = screen.getAllByText('suporte@smartlic.tech');
-      expect(emailLinks.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('should show suporte@smartlic.tech for authenticated users', () => {
-      mockUseAuth.mockReturnValue({
-        user: { id: 'user-1', email: 'test@example.com' },
-        loading: false,
-      });
-      render(<AjudaPage />);
-      const emailLinks = screen.getAllByText('suporte@smartlic.tech');
-      expect(emailLinks.length).toBeGreaterThanOrEqual(1);
     });
   });
 

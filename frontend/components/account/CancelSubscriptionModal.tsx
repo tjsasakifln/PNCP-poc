@@ -129,7 +129,7 @@ export function CancelSubscriptionModal({
 
         <div className="flex flex-col gap-3">
           <a
-            href="mailto:suporte@smartlic.tech"
+            href="/mensagens"
             className="w-full py-3 px-4 rounded-button border border-[var(--brand-blue)]
                        text-[var(--brand-blue)] bg-transparent
                        hover:bg-[var(--brand-blue-subtle)] transition-colors

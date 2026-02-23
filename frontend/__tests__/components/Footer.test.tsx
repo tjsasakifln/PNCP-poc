@@ -1,14 +1,14 @@
 /**
  * Footer Component Tests
  * STORY-230 AC1-AC4: Footer navigation links
- * GTM-COPY-005 AC5: CNPJ, /sobre link, CONFENGE attribution
+ * GTM-COPY-005 AC5: Address, /sobre link, CONFENGE attribution
  *
  * Tests:
  * - AC1: "Central de Ajuda" links to /ajuda
  * - AC2: "Contato" links to /ajuda#contato (not /mensagens)
  * - AC3: Footer links consistent across pages
  * - AC4: All footer links accessible to unauthenticated users
- * - GTM-COPY-005 AC5: CNPJ visible, /sobre link, CONFENGE mention
+ * - GTM-COPY-005 AC5: Fiscal address visible, /sobre link, CONFENGE mention
  */
 
 import { render, screen } from '@testing-library/react';
@@ -42,9 +42,12 @@ describe('Footer Component', () => {
       expect(hrefs).not.toContain('/mensagens');
     });
 
-    it('should contain email link for direct contact', () => {
-      const emailLink = screen.getByText('suporte@smartlic.tech');
-      expect(emailLink.closest('a')).toHaveAttribute('href', 'mailto:suporte@smartlic.tech');
+    it('should not contain email link (email not yet configured)', () => {
+      const allLinks = screen.getAllByRole('link');
+      const mailtoLinks = allLinks.filter(
+        (link) => link.getAttribute('href')?.startsWith('mailto:')
+      );
+      expect(mailtoLinks).toHaveLength(0);
     });
 
     it('should render all expected sections', () => {
@@ -66,8 +69,8 @@ describe('Footer Component', () => {
       expect(link.closest('a')).toHaveAttribute('href', '/sobre#metodologia');
     });
 
-    it('should display CNPJ', () => {
-      expect(screen.getByText(/52\.407\.089\/0001-09/)).toBeInTheDocument();
+    it('should display fiscal address', () => {
+      expect(screen.getByText(/Av\. Pref\. Osmar Cunha, 416/)).toBeInTheDocument();
     });
 
     it('should display CONFENGE attribution', () => {

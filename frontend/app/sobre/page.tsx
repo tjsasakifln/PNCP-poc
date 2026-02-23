@@ -32,7 +32,7 @@ const organizationSchema = {
   foundingDate: '2024',
   contactPoint: {
     '@type': 'ContactPoint',
-    email: 'suporte@smartlic.tech',
+    url: 'https://smartlic.tech/ajuda#contato',
     contactType: 'customer service',
     availableLanguage: 'Portuguese',
   },
@@ -120,9 +120,6 @@ export default function SobrePage() {
               <p className="text-[var(--ink-secondary)] leading-relaxed">
                 O SmartLic nasceu da observação direta do desperdício no mercado de licitações: empresas gastam horas buscando editais manualmente, analisam oportunidades irrelevantes e perdem as que realmente importam. Nossa plataforma resolve isso com tecnologia.
               </p>
-              <div className="pt-2 text-sm text-[var(--ink-muted)]">
-                CNPJ: 52.407.089/0001-09
-              </div>
             </div>
           </section>
 
@@ -148,9 +145,9 @@ export default function SobrePage() {
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">4-6h</div>
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-2">40h/mês</div>
                   <p className="text-sm text-[var(--ink-secondary)]">
-                    gastas por semana em busca manual por empresas B2G
+                    gastas analisando editais irrelevantes por empresas B2G
                   </p>
                 </div>
                 <div className="text-center">

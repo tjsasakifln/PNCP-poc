@@ -86,9 +86,6 @@ export default function Footer() {
               <li>
                 <FooterLink href="/ajuda#contato">Contato</FooterLink>
               </li>
-              <li>
-                <FooterLink href="mailto:suporte@smartlic.tech">suporte@smartlic.tech</FooterLink>
-              </li>
             </ul>
           </div>
 
@@ -201,7 +198,7 @@ export default function Footer() {
               © 2026 SmartLic.tech. Todos os direitos reservados.
             </p>
             <p className="text-xs text-ink-muted">
-              CONFENGE Avaliações e Inteligência Artificial LTDA — CNPJ: 52.407.089/0001-09
+              CONFENGE Avaliações e Inteligência Artificial LTDA — Av. Pref. Osmar Cunha, 416 - Centro, Florianópolis - SC, 88015-100
             </p>
 
             {/* LGPD Badge */}

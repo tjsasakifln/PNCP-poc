@@ -135,10 +135,7 @@ function ObrigadoContent() {
               </p>
               <div className="p-4 bg-[var(--surface-1)] rounded-input text-left mb-4">
                 <p className="text-sm text-[var(--ink-secondary)]">
-                  Se o problema persistir, entre em contato:
-                </p>
-                <p className="text-sm font-medium text-[var(--ink)] mt-1">
-                  suporte@smartlic.tech
+                  Se o problema persistir, entre em contato pela página de Mensagens dentro da plataforma.
                 </p>
               </div>
             </>

@@ -66,7 +66,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Como entro em contato com o suporte?",
-    a: "Você pode entrar em contato pelo e-mail suporte@smartlic.tech ou através da página de Mensagens dentro da plataforma. Respondemos em até 24 horas úteis.",
+    a: "Você pode entrar em contato através da página de Mensagens dentro da plataforma. Respondemos em até 24 horas úteis.",
   },
 ];
 
