@@ -35,21 +35,21 @@ Dois problemas conectados: (1) O proxy de subscription-status engole erros e ret
 
 ### Subscription Status
 
-- [ ] AC1: Proxy `subscription-status/route.ts` usa `sanitizeProxyError()` — nao engole erros
-- [ ] AC2: Quando backend offline, retornar ultimo status conhecido (localStorage cache) com nota "Verificado ha X min"
-- [ ] AC3: Quando backend retorna erro, mostrar: "Nao foi possivel verificar seu plano. [Tentar novamente]"
-- [ ] AC4: NUNCA retornar "pending" como fallback silencioso
+- [x] AC1: Proxy `subscription-status/route.ts` usa `sanitizeProxyError()` — nao engole erros
+- [x] AC2: Quando backend offline, retornar ultimo status conhecido (localStorage cache) com nota "Verificado ha X min"
+- [x] AC3: Quando backend retorna erro, mostrar: "Nao foi possivel verificar seu plano. [Tentar novamente]"
+- [x] AC4: NUNCA retornar "pending" como fallback silencioso
 
 ### Dead Buttons
 
-- [ ] AC5: Botao "Ver ultima busca" em `SourcesUnavailable.tsx` conectado a `localStorage` (ultima busca salva)
-- [ ] AC6: Se nao houver ultima busca, botao nao aparece (em vez de aparecer desabilitado)
-- [ ] AC7: Se houver ultima busca, botao carrega resultados do cache/localStorage
+- [x] AC5: Botao "Ver ultima busca" em `SourcesUnavailable.tsx` conectado a `localStorage` (ultima busca salva)
+- [x] AC6: Se nao houver ultima busca, botao nao aparece (em vez de aparecer desabilitado)
+- [x] AC7: Se houver ultima busca, botao carrega resultados do cache/localStorage
 
 ### Feedback Pos-Pagamento
 
-- [ ] AC8: Apos checkout Stripe, pagina mostra "Processando pagamento..." com spinner (nao "pending" estatico)
-- [ ] AC9: Polling do status a cada 5s por 60s apos checkout — quando `active`, mostrar confirmacao com confetti/toast
+- [x] AC8: Apos checkout Stripe, pagina mostra "Processando pagamento..." com spinner (nao "pending" estatico)
+- [x] AC9: Polling do status a cada 5s por 60s apos checkout — quando `active`, mostrar confirmacao com confetti/toast
 
 ## Testes Obrigatorios
 
@@ -57,20 +57,28 @@ Dois problemas conectados: (1) O proxy de subscription-status engole erros e ret
 cd frontend && npm test -- --testPathPattern="subscription-status|SourcesUnavailable" --no-coverage
 ```
 
-- [ ] T1: Subscription proxy retorna erro real (nao "pending") quando backend offline
-- [ ] T2: Cache localStorage usado como fallback
-- [ ] T3: Botao "Ver ultima busca" funciona quando ha busca salva
-- [ ] T4: Botao escondido quando nao ha busca salva
-- [ ] T5: Polling pos-checkout funciona
+- [x] T1: Subscription proxy retorna erro real (nao "pending") quando backend offline
+- [x] T2: Cache localStorage usado como fallback
+- [x] T3: Botao "Ver ultima busca" funciona quando ha busca salva
+- [x] T4: Botao escondido quando nao ha busca salva
+- [x] T5: Polling pos-checkout funciona
 
 ## Arquivos Afetados
 
 | Arquivo | Tipo de Mudanca |
 |---------|----------------|
-| `frontend/app/api/subscription-status/route.ts` | Modificar — sanitizar, nao engolir erros |
-| `frontend/app/buscar/components/SourcesUnavailable.tsx` | Modificar — wiring botao |
-| `frontend/app/conta/page.tsx` | Modificar — error state para status |
-| `frontend/app/planos/obrigado/page.tsx` | Modificar — polling pos-checkout |
+| `frontend/app/api/subscription-status/route.ts` | Ja usava sanitizeProxyError — verificado |
+| `frontend/app/buscar/components/SourcesUnavailable.tsx` | Modificar — botao hidden em vez de disabled (AC6) |
+| `frontend/app/buscar/page.tsx` | Modificar — wiring hasLastSearch + onLoadLastSearch (AC5, AC7) |
+| `frontend/app/buscar/hooks/useSearch.ts` | Modificar — saveLastSearch apos busca (AC5) |
+| `frontend/app/conta/page.tsx` | Modificar — error state + cache notice (AC2, AC3) |
+| `frontend/app/planos/obrigado/page.tsx` | Modificar — polling 60s + toast (AC9) |
+| `frontend/hooks/usePlan.ts` | Modificar — isFromCache + cachedAt (AC2) |
+| `frontend/lib/lastSearchCache.ts` | Novo — utilidade cache ultima busca (AC5-AC7) |
+| `frontend/__tests__/gtm-ux-004-subscription-dead-buttons.test.tsx` | Novo — testes T2-T5 |
+| `frontend/__tests__/proxy-error-handler.test.ts` | Modificar — T1 (never pending) |
+| `frontend/__tests__/buscar/empty-failure.test.tsx` | Modificar — AC6 (button hidden) |
+| `frontend/__tests__/story-257b/ux-transparente.test.tsx` | Modificar — AC6 (button hidden) |
 
 ## Dependencias
 

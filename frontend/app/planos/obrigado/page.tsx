@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "../../components/AuthProvider";
 import Link from "next/link";
-import { Rocket, Zap, Trophy, CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { Rocket, Zap, Trophy, CheckCircle, Loader2, AlertCircle, PartyPopper } from "lucide-react";
+import { toast } from "sonner";
 import { useAnalytics } from "../../../hooks/useAnalytics";
 
 const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; message: string }> = {
@@ -31,7 +32,7 @@ const PLAN_DETAILS: Record<string, { name: string; icon: React.ReactNode; messag
 };
 
 const POLL_INTERVAL_MS = 5000;
-const MAX_POLL_DURATION_MS = 120000; // 2 minutes
+const MAX_POLL_DURATION_MS = 60000; // GTM-UX-004 AC9: 60s polling window
 
 type ActivationStatus = "polling" | "active" | "timeout";
 
@@ -77,6 +78,11 @@ function ObrigadoContent() {
           if (data.status === "active") {
             setActivationStatus("active");
             clearInterval(interval);
+            // GTM-UX-004 AC9: Celebration toast on activation
+            toast.success("Assinatura ativada com sucesso! Bem-vindo ao SmartLic Pro!", {
+              duration: 6000,
+              icon: <PartyPopper className="w-5 h-5" />,
+            });
           }
         }
       } catch {

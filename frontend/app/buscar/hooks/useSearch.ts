@@ -15,6 +15,7 @@ import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
 import { getUserFriendlyError, getMessageFromErrorCode, isTransientError } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
+import { saveLastSearch } from "../../../lib/lastSearchCache";
 import { toast } from "sonner";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
 import { getCorrelationId, logCorrelatedRequest } from "../../../lib/utils/correlationId";
@@ -570,6 +571,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
       setResult(data);
       setRawCount(data.total_raw || 0);
+
+      // GTM-UX-004 AC5: Persist last successful search for SourcesUnavailable fallback
+      if (data.licitacoes?.length > 0) {
+        saveLastSearch(data);
+      }
 
       // UX-350 AC1-AC2: Start 30s timeout for LLM summary when processing
       if (data.llm_status === 'processing') {

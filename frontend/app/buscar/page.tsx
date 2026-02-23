@@ -30,6 +30,8 @@ import { MobileDrawer } from "../../components/MobileDrawer";
 
 import { dateDiffInDays } from "../../lib/utils/dateDiffInDays";
 import { toast } from "sonner";
+import { checkHasLastSearch, getLastSearch } from "../../lib/lastSearchCache";
+import type { BuscaResult } from "../types";
 
 // White label branding configuration
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
@@ -204,6 +206,9 @@ function HomePageContent() {
     } catch { return false; }
   }, []);
 
+  // GTM-UX-004 AC5: Check if last search exists in localStorage
+  const [lastSearchAvailable, setLastSearchAvailable] = useState(() => checkHasLastSearch());
+
   // Customize accordion state (AC7: maintain in localStorage)
   // UX-346 AC1: First-time users always see collapsed; returning users use persisted state
   const [customizeOpen, setCustomizeOpen] = useState(() => {
@@ -245,6 +250,23 @@ function HomePageContent() {
   const filters = useSearchFilters(() => clearResultRef.current());
   const search = useSearch(filters);
   clearResultRef.current = () => search.setResult(null);
+
+  // GTM-UX-004 AC7: Load last search results from cache
+  const handleLoadLastSearch = useCallback(() => {
+    const cached = getLastSearch();
+    if (cached?.result) {
+      search.setResult(cached.result as BuscaResult);
+      toast.success("Resultados da última busca restaurados.");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // GTM-UX-004 AC5: Re-check localStorage after each search completes
+  useEffect(() => {
+    if (!search.loading) {
+      setLastSearchAvailable(checkHasLastSearch());
+    }
+  }, [search.loading]);
 
   // GTM-FIX-035 AC1: Auto-collapse filters + scroll to progress when search starts
   const originalBuscar = search.buscar;
@@ -541,8 +563,8 @@ function HomePageContent() {
                 // STORY-257B: Cache refresh (AC9)
                 onRetryForceFresh={search.buscarForceFresh}
                 // STORY-257B: Sources unavailable (AC10)
-                hasLastSearch={false}
-                onLoadLastSearch={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                hasLastSearch={lastSearchAvailable}
+                onLoadLastSearch={handleLoadLastSearch}
                 // A-04: Progressive delivery
                 liveFetchInProgress={search.liveFetchInProgress}
                 refreshAvailable={search.refreshAvailable}

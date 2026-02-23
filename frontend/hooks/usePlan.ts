@@ -36,6 +36,10 @@ interface UsePlanReturn {
   planInfo: PlanInfo | null;
   loading: boolean;
   error: string | null;
+  /** GTM-UX-004 AC2: true when planInfo came from localStorage cache fallback */
+  isFromCache: boolean;
+  /** GTM-UX-004 AC2: timestamp of when cached data was written (ms since epoch) */
+  cachedAt: number | null;
   refresh: () => void;
 }
 
@@ -48,14 +52,14 @@ interface CachedPlan {
 }
 
 /** Read cached plan from localStorage (returns null if expired or missing) */
-function getCachedPlan(): PlanInfo | null {
+function getCachedPlan(): CachedPlan | null {
   if (typeof window === "undefined") return null;
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
     const parsed: CachedPlan = JSON.parse(cached);
     if (Date.now() - parsed.timestamp >= CACHE_TTL) return null;
-    return parsed.data;
+    return parsed;
   } catch {
     return null;
   }
@@ -101,12 +105,12 @@ export function usePlan(): UsePlanReturn {
       // CRIT-028: Degradation detection — backend returned free_trial but cached paid plan exists
       if (data.plan_id === "free_trial") {
         const cached = getCachedPlan();
-        if (cached && cached.plan_id !== "free_trial" && cached.plan_id !== "free") {
+        if (cached && cached.data.plan_id !== "free_trial" && cached.data.plan_id !== "free") {
           console.warn(
             "[usePlan] Backend returned free_trial but cached paid plan exists. Using cached.",
-            { cachedPlan: cached.plan_id }
+            { cachedPlan: cached.data.plan_id }
           );
-          return cached;
+          return cached.data;
         }
       }
 
@@ -135,12 +139,16 @@ export function usePlan(): UsePlanReturn {
   });
 
   // CRIT-028 AC1-AC2: On error, fall back to cached plan (fail to last known plan)
-  const effectivePlanInfo = useMemo(() => {
-    if (data) return data;
+  // GTM-UX-004 AC2: Track whether data comes from cache + when it was cached
+  const { effectivePlanInfo, isFromCache, cachedAt } = useMemo(() => {
+    if (data) return { effectivePlanInfo: data, isFromCache: false, cachedAt: null };
     if (fetchError) {
-      return getCachedPlan();
+      const cached = getCachedPlan();
+      if (cached) {
+        return { effectivePlanInfo: cached.data, isFromCache: true, cachedAt: cached.timestamp };
+      }
     }
-    return null;
+    return { effectivePlanInfo: null, isFromCache: false, cachedAt: null };
   }, [data, fetchError]);
 
   // CRIT-031 AC7: Limited console warnings (max 1 per error state change, not 12)
@@ -148,7 +156,7 @@ export function usePlan(): UsePlanReturn {
     if (fetchError && !data) {
       const cached = getCachedPlan();
       if (cached) {
-        console.warn("[usePlan] Backend error — using cached plan info:", cached.plan_id);
+        console.warn("[usePlan] Backend error — using cached plan info:", cached.data.plan_id);
       } else {
         // CRIT-028 AC6: Downgrade to warn to avoid console error spam
         console.warn("[usePlan] Failed to fetch plan info:", fetchError);
@@ -160,6 +168,8 @@ export function usePlan(): UsePlanReturn {
     planInfo: effectivePlanInfo,
     loading,
     error: fetchError,
+    isFromCache,
+    cachedAt,
     refresh: manualRetry,
   };
 }

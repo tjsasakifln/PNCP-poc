@@ -12,7 +12,7 @@ import { CancelSubscriptionModal } from "../../components/account/CancelSubscrip
 
 export default function ContaPage() {
   const { user, session, loading: authLoading, signOut } = useAuth();
-  const { planInfo } = usePlan();
+  const { planInfo, error: planError, isFromCache, cachedAt, refresh: refreshPlan } = usePlan();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -347,6 +347,31 @@ export default function ContaPage() {
         {/* Plan Status Section (AC9-AC13) */}
         <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6" data-testid="plan-section">
           <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Seu Acesso ao SmartLic</h2>
+
+          {/* GTM-UX-004 AC2: Show "Verificado ha X min" when using cached data */}
+          {isFromCache && cachedAt && (
+            <div className="mb-4 p-3 bg-[var(--warning-subtle,#fef3cd)] rounded-input text-sm text-[var(--warning,#856404)] flex items-center gap-2" data-testid="plan-cache-notice">
+              <svg aria-hidden="true" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Verificado há {Math.max(1, Math.round((Date.now() - cachedAt) / 60000))} min
+            </div>
+          )}
+
+          {/* GTM-UX-004 AC3: Error state when backend fails and no cache */}
+          {planError && !planInfo && (
+            <div className="text-center py-4" data-testid="plan-error">
+              <p className="text-[var(--ink-secondary)] mb-3">
+                Não foi possível verificar seu plano.
+              </p>
+              <button
+                onClick={refreshPlan}
+                className="px-4 py-2 rounded-button bg-[var(--brand-navy)] text-white text-sm font-medium hover:bg-[var(--brand-blue)] transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
           {planInfo ? (
             <div className="space-y-4">

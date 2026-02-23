@@ -72,10 +72,12 @@ describe("GTM-RESILIENCE-A01 AC12: empty_failure rendering", () => {
     ).toBeInTheDocument();
   });
 
-  it("disables 'Ver última busca salva' when no saved search", () => {
+  // GTM-UX-004 AC6: Button hidden (not disabled) when no saved search
+  it("hides 'Ver última busca salva' button when no saved search", () => {
     render(<SourcesUnavailable {...defaultProps} hasLastSearch={false} />);
 
-    const btn = screen.getByRole("button", { name: /última busca salva/i });
-    expect(btn).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: /última busca salva/i })
+    ).not.toBeInTheDocument();
   });
 });

@@ -412,12 +412,12 @@ describe("T6: SourcesUnavailable no technical names", () => {
     expect(screen.getByText(/Tentar novamente \(0:30\)/)).toBeInTheDocument();
   });
 
-  it("disables 'Ver última busca salva' when no last search", () => {
+  // GTM-UX-004 AC6: Button hidden (not disabled) when no last search
+  it("hides 'Ver última busca salva' when no last search", () => {
     render(
       <SourcesUnavailable onRetry={jest.fn()} onLoadLastSearch={jest.fn()} hasLastSearch={false} retrying={false} />
     );
-    const btn = screen.getByText("Ver última busca salva");
-    expect(btn.closest("button")).toBeDisabled();
+    expect(screen.queryByText("Ver última busca salva")).not.toBeInTheDocument();
   });
 
   it("enables 'Ver última busca salva' when last search exists", () => {

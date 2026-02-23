@@ -113,22 +113,16 @@ export function SourcesUnavailable({
           )}
         </button>
 
-        {/* Load last search button */}
-        <button
-          onClick={onLoadLastSearch}
-          disabled={!hasLastSearch || retrying}
-          className="px-5 py-2.5 rounded-button text-sm font-medium transition-all border border-border bg-transparent hover:bg-surface-1 text-ink disabled:text-ink-muted disabled:cursor-not-allowed relative group"
-          title={
-            !hasLastSearch ? "Nenhuma busca anterior encontrada" : undefined
-          }
-        >
-          Ver última busca salva
-          {!hasLastSearch && (
-            <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 text-xs bg-gray-900 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-              Nenhuma busca anterior encontrada
-            </span>
-          )}
-        </button>
+        {/* GTM-UX-004 AC6: Only show button when last search exists — never show disabled */}
+        {hasLastSearch && (
+          <button
+            onClick={onLoadLastSearch}
+            disabled={retrying}
+            className="px-5 py-2.5 rounded-button text-sm font-medium transition-all border border-border bg-transparent hover:bg-surface-1 text-ink disabled:text-ink-muted disabled:cursor-not-allowed"
+          >
+            Ver última busca salva
+          </button>
+        )}
       </div>
     </div>
   );

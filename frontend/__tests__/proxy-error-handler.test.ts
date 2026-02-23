@@ -240,4 +240,29 @@ describe("proxy-error-handler", () => {
       expect(body.message).not.toContain("Bad Gateway");
     });
   });
+
+  // ─── GTM-UX-004 T1: Never returns "pending" as silent fallback ──────────
+  describe("GTM-UX-004 T1: Never returns 'pending' as silent fallback", () => {
+    it("sanitizeProxyError on 502 body does NOT contain 'pending'", async () => {
+      const result = sanitizeProxyError(502, "Bad Gateway", "text/html");
+      expect(result).not.toBeNull();
+      const body = await result!.json();
+      expect(body.status).not.toBe("pending");
+      expect(body.error).not.toContain("pending");
+    });
+
+    it("sanitizeProxyError on 503 body does NOT contain 'pending'", async () => {
+      const result = sanitizeProxyError(503, "Service Unavailable", "text/html");
+      expect(result).not.toBeNull();
+      const body = await result!.json();
+      expect(body.status).not.toBe("pending");
+    });
+
+    it("sanitizeNetworkError body does NOT contain 'pending'", async () => {
+      const result = sanitizeNetworkError(new Error("ECONNREFUSED"));
+      const body = await result.json();
+      expect(body.status).not.toBe("pending");
+      expect(body.error).not.toContain("pending");
+    });
+  });
 });
