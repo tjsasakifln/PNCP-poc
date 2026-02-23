@@ -106,7 +106,8 @@ def get_uptime_seconds() -> Optional[float]:
 # Source health check endpoints
 SOURCE_HEALTH_ENDPOINTS = {
     "PNCP": "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao",
-    "Portal": "https://apipcp.portaldecompraspublicas.com.br",
+    "Portal": "https://compras.api.portaldecompraspublicas.com.br",
+    "ComprasGov": "https://dadosabertos.compras.gov.br",
     "Licitar": "https://api.licitar.digital/v1",
     "BLL": "https://api.bll.org.br/v1",
     "BNC": "https://api.bnc.org.br/v1",
@@ -140,14 +141,14 @@ async def check_source_health(
         async with httpx.AsyncClient(timeout=timeout) as client:
             # Use HEAD request if possible, otherwise GET with minimal params
             if source_code == "PNCP":
-                # PNCP requires query params - use minimal request
+                # GTM-INFRA-002 AC1: Use tamanhoPagina=50 (same as production)
                 response = await client.get(
                     endpoint,
                     params={
                         "dataInicial": "2026-01-01",
                         "dataFinal": "2026-01-01",
                         "pagina": 1,
-                        "tamanhoPagina": 1,
+                        "tamanhoPagina": 50,
                     },
                 )
             else:

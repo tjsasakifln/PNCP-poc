@@ -13,6 +13,18 @@ const mockAuthToken = "Bearer mock-jwt-token-12345";
 // Set BACKEND_URL for all tests
 process.env.BACKEND_URL = "http://test-backend:8000";
 
+/** Helper: create a mock fetch response with text() support */
+function mockErrorResponse(status: number, detail?: string) {
+  const body = detail !== undefined ? { detail } : {};
+  const bodyStr = JSON.stringify(body);
+  return {
+    ok: false,
+    status,
+    text: async () => bodyStr,
+    headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+  };
+}
+
 describe("POST /api/buscar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -134,12 +146,9 @@ describe("POST /api/buscar", () => {
   });
 
   it("should handle backend errors", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      json: async () => ({ detail: "Backend error" }),
-      headers: { get: () => null },
-    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockErrorResponse(500, "Backend error")
+    );
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
@@ -162,8 +171,9 @@ describe("POST /api/buscar", () => {
 
   it("should handle network errors after all retries", async () => {
     jest.useRealTimers(); // Use real timers for retry delays
-    // Network errors are retried MAX_RETRIES=2 times before failing
+    // GTM-INFRA-002: Network errors are retried MAX_RETRIES=3 times before failing
     (global.fetch as jest.Mock)
+      .mockRejectedValueOnce(new Error("Network error"))
       .mockRejectedValueOnce(new Error("Network error"))
       .mockRejectedValueOnce(new Error("Network error"));
 
@@ -183,19 +193,30 @@ describe("POST /api/buscar", () => {
     const data = await response.json();
 
     expect(response.status).toBe(503);
-    expect(data.message).toContain("Backend indisponível");
-    // Should have tried 2 times (MAX_RETRIES=2)
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    // Should have tried 3 times (MAX_RETRIES=3)
+    expect(global.fetch).toHaveBeenCalledTimes(3);
   }, 15000);
 
-  it("should not retry on 502 (only 503 is retryable)", async () => {
-    // 502 is NOT retryable — backend already retried PNCP internally
+  it("GTM-INFRA-002 AC6/T3: should retry on 502 (expanded retryable statuses)", async () => {
+    jest.useRealTimers();
+    // GTM-INFRA-002 AC6: 502 IS now retryable (Railway deploy errors)
+    // Use structured error body so sanitizer passes it through
+    const errorBody = JSON.stringify({ detail: "PNCP temporarily down", error_code: "PNCP_UNAVAILABLE" });
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
-        ok: false,
-        status: 502,
-        json: async () => ({ detail: "PNCP unavailable" }),
-        headers: { get: () => null },
+        ok: false, status: 502,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 502,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 502,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
       });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
@@ -208,17 +229,31 @@ describe("POST /api/buscar", () => {
     const data = await response.json();
 
     expect(response.status).toBe(502);
-    expect(data.message).toBe("PNCP unavailable");
-    // Should only call fetch once (no retries for 502)
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-  });
+    // Should retry 3 times (MAX_RETRIES=3)
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  }, 15000);
 
   it("should retry on 503 and fail after max retries", async () => {
-    jest.useRealTimers(); // Use real timers for retry delays
-    // All 2 attempts return 503 (MAX_RETRIES=2)
+    jest.useRealTimers();
+    // GTM-INFRA-002: All 3 attempts return 503 (MAX_RETRIES=3)
+    // Use structured error with error_code so sanitizer passes it through
+    const errorBody = JSON.stringify({ detail: "Rate limited", error_code: "RATE_LIMITED" });
     (global.fetch as jest.Mock)
-      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) })
-      .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: "Service unavailable" }) });
+      .mockResolvedValueOnce({
+        ok: false, status: 503,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 503,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 503,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
@@ -230,17 +265,51 @@ describe("POST /api/buscar", () => {
     const data = await response.json();
 
     expect(response.status).toBe(503);
-    expect(data.message).toBe("Service unavailable");
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(data.message).toBe("Rate limited");
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+  }, 15000);
+
+  // GTM-INFRA-002 T3: Proxy retries 524 (Cloudflare/Railway timeout)
+  it("GTM-INFRA-002 T3: should retry on 524 (Railway timeout)", async () => {
+    jest.useRealTimers();
+    // 524 is now in RETRYABLE_STATUSES — must be retried like 502/503/504
+    const errorBody = JSON.stringify({ detail: "Connection timed out", error_code: "TIMEOUT" });
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: false, status: 524,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 524,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      })
+      .mockResolvedValueOnce({
+        ok: false, status: 524,
+        text: async () => errorBody,
+        headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
+      });
+
+    const request = new NextRequest("http://localhost:3000/api/buscar", {
+      method: "POST",
+      headers: { "Authorization": mockAuthToken },
+      body: JSON.stringify({ ufs: ["SC"], data_inicial: "2026-01-01", data_final: "2026-01-07" })
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    // 524 is retried MAX_RETRIES=3 times (proves it's in RETRYABLE_STATUSES)
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(response.status).toBe(524);
+    expect(data.message).toBe("Connection timed out");
   }, 15000);
 
   it("should not retry on non-retryable errors (400, 401, 500)", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      json: async () => ({ detail: "Bad request" }),
-      headers: { get: () => null },
-    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockErrorResponse(400, "Bad request")
+    );
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
@@ -409,12 +478,10 @@ describe("POST /api/buscar", () => {
 
   // CRIT-002 AC10: Contextual error message for HTTP 500
   it("should return contextual message for HTTP 500 (not generic 'Erro no backend')", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      json: async () => ({ detail: "" }), // Empty detail should trigger contextual message
-      headers: { get: () => null },
-    });
+    // Empty detail triggers contextual message
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockErrorResponse(500, "")
+    );
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
@@ -431,12 +498,14 @@ describe("POST /api/buscar", () => {
   });
 
   // CRIT-002 AC11: Contextual error message for HTTP 502
-  it("should return contextual message for HTTP 502", async () => {
+  // GTM-INFRA-002 AC6: 502 is now retryable. With empty JSON body,
+  // sanitizeProxyError detects it as non-structured and returns sanitized response.
+  it("should return sanitized message for HTTP 502 with non-structured body", async () => {
+    // Non-structured 502 is intercepted by sanitizer on first attempt
     (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 502,
-      json: async () => ({}), // No detail
-      headers: { get: () => null },
+      ok: false, status: 502,
+      text: async () => JSON.stringify({}),
+      headers: { get: (h: string) => h?.toLowerCase() === "content-type" ? "application/json" : null },
     });
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
@@ -449,17 +518,17 @@ describe("POST /api/buscar", () => {
     const data = await response.json();
 
     expect(response.status).toBe(502);
-    expect(data.message).toBe("O servidor está reiniciando. Aguarde ~30 segundos e tente novamente.");
+    // Sanitizer intercepts non-structured 502 and returns friendly message
+    expect(data.message).toBe("Nossos servidores estão sendo atualizados. Tente novamente em alguns instantes.");
+    // Sanitizer returns immediately (no retries for sanitized responses)
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   // CRIT-002 AC12: All error responses include request_id
   it("should include request_id in all error responses", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      json: async () => ({ detail: "Test error" }),
-      headers: { get: () => null },
-    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockErrorResponse(500, "Test error")
+    );
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",
@@ -511,12 +580,9 @@ describe("POST /api/buscar", () => {
   });
 
   it("should use backend detail message when available (not contextual)", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      json: async () => ({ detail: "Specific backend error message" }),
-      headers: { get: () => null },
-    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockErrorResponse(500, "Specific backend error message")
+    );
 
     const request = new NextRequest("http://localhost:3000/api/buscar", {
       method: "POST",

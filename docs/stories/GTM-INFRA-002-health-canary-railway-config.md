@@ -38,24 +38,24 @@ O health canary do PNCP usa `tamanhoPagina=10`, mas producao usa `tamanhoPagina=
 
 ### Health Canary
 
-- [ ] AC1: Canary usa `tamanhoPagina=50` (mesmo que producao)
-- [ ] AC2: Canary testa PCP v2 e ComprasGov alem de PNCP
-- [ ] AC3: Health endpoint reporta status per-source (nao apenas "ok/fail" global)
+- [x] AC1: Canary usa `tamanhoPagina=50` (mesmo que producao)
+- [x] AC2: Canary testa PCP v2 e ComprasGov alem de PNCP
+- [x] AC3: Health endpoint reporta status per-source (nao apenas "ok/fail" global)
 
 ### Railway Config
 
-- [ ] AC4: `drainingSeconds` aumentado para 120 (alinhado com Railway hard timeout)
-- [ ] AC5: Documentar em `railway.toml` ou `railway.json`
+- [x] AC4: `drainingSeconds` aumentado para 120 (alinhado com Railway hard timeout)
+- [x] AC5: Documentar em `railway.toml` ou `railway.json`
 
 ### Frontend Proxy Retry
 
-- [ ] AC6: `RETRYABLE_STATUSES` expandido: `[502, 503, 504, 524]`
-- [ ] AC7: Retry com backoff: 1s, 2s (max 2 retries no proxy level)
+- [x] AC6: `RETRYABLE_STATUSES` expandido: `[502, 503, 504, 524]`
+- [x] AC7: Retry com backoff: 1s, 2s (max 2 retries no proxy level)
 
 ### Batch Delay
 
-- [ ] AC8: `PNCP_BATCH_DELAY` reduzido: 2.0s → 0.5s (configuravel via env)
-- [ ] AC9: Monitorar rate limits apos reducao (metrica `api_errors_total{source="pncp",status="429"}`)
+- [x] AC8: `PNCP_BATCH_DELAY` reduzido: 2.0s → 0.5s (configuravel via env)
+- [x] AC9: Monitorar rate limits apos reducao (metrica `api_errors_total{source="pncp",status="429"}`)
 
 ## Testes Obrigatorios
 
@@ -63,10 +63,10 @@ O health canary do PNCP usa `tamanhoPagina=10`, mas producao usa `tamanhoPagina=
 cd backend && pytest -k "test_health_canary or test_pncp_batch" --no-coverage
 ```
 
-- [ ] T1: Canary usa tamanhoPagina=50
-- [ ] T2: Health endpoint reporta status per-source
-- [ ] T3: Proxy retenta 502 e 524 (nao apenas 503)
-- [ ] T4: Batch delay configuravel via env
+- [x] T1: Canary usa tamanhoPagina=50
+- [x] T2: Health endpoint reporta status per-source
+- [x] T3: Proxy retenta 502 e 524 (nao apenas 503)
+- [x] T4: Batch delay configuravel via env
 
 ## Arquivos Afetados
 

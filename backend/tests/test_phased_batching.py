@@ -25,7 +25,7 @@ class TestBatchConstants:
         assert PNCP_BATCH_SIZE == 5
 
     def test_default_batch_delay(self):
-        assert PNCP_BATCH_DELAY_S == 2.0
+        assert PNCP_BATCH_DELAY_S == 0.5
 
     def test_custom_batch_size_env_parsing(self):
         """Env var override for batch size (logic test without reload)."""
@@ -35,7 +35,7 @@ class TestBatchConstants:
     def test_custom_batch_delay_env_parsing(self):
         """Env var override for batch delay (logic test without reload)."""
         assert float("1.5") == 1.5
-        assert float(os.environ.get("PNCP_BATCH_DELAY_S", "2.0")) == 2.0
+        assert float(os.environ.get("PNCP_BATCH_DELAY_S", "0.5")) == 0.5
 
 
 class TestBatchSplitting:

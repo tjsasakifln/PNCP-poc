@@ -83,7 +83,7 @@ PNCP_TIMEOUT_PER_UF_DEGRADED: float = float(
 
 # GTM-FIX-031: Phased UF batching — reduces PNCP API pressure
 PNCP_BATCH_SIZE: int = int(os.environ.get("PNCP_BATCH_SIZE", "5"))
-PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "2.0"))
+PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "0.5"))
 
 # B-06: Redis-backed circuit breaker toggle (rollback: set to "false")
 USE_REDIS_CIRCUIT_BREAKER: bool = os.environ.get(
@@ -1362,7 +1362,7 @@ class AsyncPNCPClient:
                 "dataFinal": date.today().strftime("%Y%m%d"),
                 "codigoModalidadeContratacao": 6,
                 "pagina": 1,
-                "tamanhoPagina": 10,
+                "tamanhoPagina": 50,
                 "uf": "SP",
             }
             url = f"{self.BASE_URL}/contratacoes/publicacao"

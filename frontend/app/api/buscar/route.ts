@@ -88,10 +88,11 @@ export async function POST(request: NextRequest) {
       headers["X-Correlation-ID"] = correlationId;
     }
 
-    const MAX_RETRIES = 2;
-    const RETRY_DELAYS = [0, 3000]; // ms delay before each attempt
-    // Only retry 503 (rate limit) — 502 means backend already retried PNCP internally
-    const RETRYABLE_STATUSES = [503];
+    const MAX_RETRIES = 3;
+    // GTM-INFRA-002 AC7: Backoff 1s, 2s (max 2 retries at proxy level)
+    const RETRY_DELAYS = [0, 1000, 2000]; // ms delay before each attempt
+    // GTM-INFRA-002 AC6: Expanded retry statuses (502/524 from Railway timeouts/deploys)
+    const RETRYABLE_STATUSES = [502, 503, 504, 524];
 
     let response: Response | null = null;
     let lastError: { detail?: any; status: number } | null = null;

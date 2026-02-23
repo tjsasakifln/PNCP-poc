@@ -21,8 +21,9 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 # SLA-001: 45s overlap for zero-downtime deploys (SSE streams + long-running searches)
 overlapSeconds = 45
-# SLA-001: 30s drain for in-flight SSE/search requests after SIGTERM (was 15s)
-drainingSeconds = 30
+# GTM-INFRA-002 AC4: 120s drain aligned with Railway hard timeout
+# Prevents killing in-flight searches during deploys (was 30s)
+drainingSeconds = 120
 
 # =============================================================================
 # Environment Variables (Set in Railway Dashboard)
