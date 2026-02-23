@@ -905,16 +905,23 @@ async def register_search_session(
     # CRIT-029 AC1-AC3: Parameter-based dedup — prevent duplicate history entries
     # when same search params are executed within 5 minutes (e.g. cache hits, retries).
     # Checks (user_id + sectors + ufs + date_range) instead of search_id only.
+    # NOTE: Uses .filter() with PostgreSQL array literal format ({val1,val2}) because
+    # supabase-py .eq() serializes Python lists as "['a','b']" which PostgREST
+    # doesn't understand as array comparison — the dedup query silently returns empty.
     try:
         from datetime import datetime, timezone, timedelta
         cutoff = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        sorted_sectors = sorted(sectors)
         sorted_ufs = sorted(ufs)
+        # PostgreSQL array literal: {val1,val2}
+        sectors_pg = "{" + ",".join(sorted_sectors) + "}"
+        ufs_pg = "{" + ",".join(sorted_ufs) + "}"
         existing_params = (
             sb.table("search_sessions")
             .select("id, created_at")
             .eq("user_id", user_id)
-            .eq("sectors", sectors)
-            .eq("ufs", sorted_ufs)
+            .filter("sectors", "eq", sectors_pg)
+            .filter("ufs", "eq", ufs_pg)
             .eq("data_inicial", data_inicial)
             .eq("data_final", data_final)
             .gte("created_at", cutoff)
@@ -937,8 +944,8 @@ async def register_search_session(
         try:
             data = {
                 "user_id": user_id,
-                "sectors": sectors,
-                "ufs": ufs,
+                "sectors": sorted(sectors),
+                "ufs": sorted(ufs),
                 "data_inicial": data_inicial,
                 "data_final": data_final,
                 "custom_keywords": custom_keywords,
@@ -1116,8 +1123,8 @@ async def save_search_session(
                 sb.table("search_sessions")
                 .insert({
                     "user_id": user_id,
-                    "sectors": sectors,
-                    "ufs": ufs,
+                    "sectors": sorted(sectors),
+                    "ufs": sorted(ufs),
                     "data_inicial": data_inicial,
                     "data_final": data_final,
                     "custom_keywords": custom_keywords,

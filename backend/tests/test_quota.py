@@ -800,8 +800,8 @@ class TestSaveSearchSession:
         mock_table = mock_supabase_with_profile.table.return_value
         call_args = mock_table.insert.call_args[0][0]
         assert call_args["user_id"] == "user-123"
-        assert call_args["sectors"] == ["uniformes", "alimentacao"]
-        assert call_args["ufs"] == ["SP", "RJ"]
+        assert call_args["sectors"] == sorted(["uniformes", "alimentacao"])
+        assert call_args["ufs"] == sorted(["SP", "RJ"])
         assert call_args["data_inicial"] == "2025-01-01"
         assert call_args["data_final"] == "2025-01-31"
         assert call_args["custom_keywords"] == ["jaleco", "avental"]

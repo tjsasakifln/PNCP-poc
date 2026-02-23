@@ -6,6 +6,11 @@ AC3: Dedup checks (user_id + sectors + ufs + data_range) not just search_id
 AC4: Integration test: busca + retry → 1 history entry
 AC5: Unit test: cache hit same params → update instead of insert
 AC6: Zero regression
+
+Root cause: supabase-py .eq() serializes Python lists as "['a','b']" instead of
+PostgreSQL array literal format "{a,b}", causing the param dedup query to silently
+return empty → every search creates a new session → duplicates.
+Fix: Use .filter("col", "eq", "{val1,val2}") with explicit PG array literals.
 """
 
 import asyncio
@@ -15,36 +20,47 @@ from unittest.mock import MagicMock, patch, call
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# Helpers
 # ---------------------------------------------------------------------------
 
-@pytest.fixture
-def mock_sb():
-    """Create a mock Supabase client with chained method returns."""
-    sb = MagicMock()
+class FluidMock:
+    """Mock that returns itself for any chained PostgREST call, with custom execute().
 
-    # Default: insert returns a new session ID
-    sb.table.return_value.insert.return_value.execute.return_value = MagicMock(
-        data=[{"id": "new-session-id"}]
+    This decouples tests from the exact chain order (.eq/.filter/.gte etc.),
+    so tests survive refactors that change query builder method order.
+    """
+
+    def __init__(self, execute_data=None, execute_side_effect=None):
+        self._execute_data = execute_data if execute_data is not None else []
+        self._execute_side_effect = execute_side_effect
+
+    def __getattr__(self, name):
+        if name == "execute":
+            if self._execute_side_effect:
+                def _exec():
+                    raise self._execute_side_effect
+                return _exec
+            return lambda: MagicMock(data=self._execute_data)
+        # Any other method call (.select, .eq, .filter, .gte, .order, .limit)
+        # returns self for fluid chaining
+        return lambda *a, **kw: self
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+
+def make_insert_mock(session_id):
+    """Create a mock table that responds to .insert().execute() with given ID."""
+    mock_table = MagicMock()
+    mock_table.insert.return_value.execute.return_value = MagicMock(
+        data=[{"id": session_id}]
     )
+    return mock_table
 
-    # Default: select for search_id dedup returns empty
-    sb.table.return_value.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(
-        data=[]
-    )
 
-    # Default: select for param dedup returns empty
-    sb.table.return_value.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-        data=[]
-    )
-
-    # Default: update returns success
-    sb.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{}]
-    )
-
-    return sb
-
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def base_args():
@@ -69,46 +85,52 @@ class TestParameterBasedDedup:
     @pytest.mark.asyncio
     @patch("quota._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
-    async def test_no_dedup_match_creates_new_session(self, mock_get_sb, mock_profile, mock_sb, base_args):
+    async def test_no_dedup_match_creates_new_session(self, mock_get_sb, mock_profile, base_args):
         """When no recent session with same params exists, create new one."""
-        mock_get_sb.return_value = mock_sb
+        call_count = 0
+
+        def table_side_effect(table_name):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # search_id dedup → no match
+                return FluidMock(execute_data=[])
+            elif call_count == 2:
+                # param dedup → no match
+                return FluidMock(execute_data=[])
+            else:
+                # INSERT
+                return make_insert_mock("new-session-id")
+
+        sb = MagicMock()
+        sb.table.side_effect = table_side_effect
+        mock_get_sb.return_value = sb
 
         from quota import register_search_session
         result = await register_search_session(**base_args)
 
         assert result == "new-session-id"
-        mock_sb.table.return_value.insert.assert_called_once()
+        assert call_count == 3  # search_id check + param check + insert
 
     @pytest.mark.asyncio
     @patch("quota._ensure_profile_exists", return_value=True)
     @patch("supabase_client.get_supabase")
     async def test_param_dedup_returns_existing_session(self, mock_get_sb, mock_profile, base_args):
         """When session with same params exists within 5min, reuse it."""
-        # Use sequential table calls to handle multiple query chains
         call_count = 0
         recent_time = (datetime.now(timezone.utc) - timedelta(minutes=2)).isoformat()
 
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
-                # First: search_id dedup check → no match
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[]
-                )
+                # search_id dedup → no match
+                return FluidMock(execute_data=[])
             elif call_count == 2:
-                # Second: parameter-based dedup check → match found
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "existing-param-session", "created_at": recent_time}]
-                )
+                # param dedup → MATCH
+                return FluidMock(execute_data=[{"id": "existing-param-session", "created_at": recent_time}])
             else:
-                # Insert (should not be called)
-                mock_table.insert.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "should-not-reach"}]
-                )
-            return mock_table
+                return make_insert_mock("should-not-reach")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
@@ -118,8 +140,7 @@ class TestParameterBasedDedup:
         result = await register_search_session(**base_args)
 
         assert result == "existing-param-session"
-        # Insert should NOT have been called
-        assert call_count == 2  # Only search_id check + param check
+        assert call_count == 2  # Only search_id check + param check, no insert
 
     @pytest.mark.asyncio
     @patch("quota._ensure_profile_exists", return_value=True)
@@ -131,22 +152,15 @@ class TestParameterBasedDedup:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
                 # search_id check → no match
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[]
-                )
+                return FluidMock(execute_data=[])
             elif call_count == 2:
-                # param dedup check → DB error
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.side_effect = Exception("DB timeout")
+                # param dedup → DB error
+                return FluidMock(execute_side_effect=Exception("DB timeout"))
             else:
                 # Insert succeeds
-                mock_table.insert.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "fallback-insert-id"}]
-                )
-            return mock_table
+                return make_insert_mock("fallback-insert-id")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
@@ -176,25 +190,23 @@ class TestCacheHitMerge:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
-                # search_id check for second search → no match (different search_id)
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[]
-                )
+                # search_id check → no match (different search_id)
+                return FluidMock(execute_data=[])
             elif call_count == 2:
                 # param dedup → finds original session from 1 minute ago
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "original-session-from-search-A", "created_at": original_session_time}]
-                )
-            return mock_table
+                return FluidMock(execute_data=[{
+                    "id": "original-session-from-search-A",
+                    "created_at": original_session_time,
+                }])
+            else:
+                return make_insert_mock("should-not-reach")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
         mock_get_sb.return_value = sb
 
-        # Second search has a different search_id (as frontend generates new one each time)
+        # Second search has a different search_id (frontend generates new one each time)
         base_args["search_id"] = "search-crit029-002-different"
 
         from quota import register_search_session
@@ -202,6 +214,7 @@ class TestCacheHitMerge:
 
         # Should reuse the existing session, not create new
         assert result == "original-session-from-search-A"
+        assert call_count == 2  # No insert
 
     @pytest.mark.asyncio
     @patch("quota._ensure_profile_exists", return_value=True)
@@ -213,30 +226,17 @@ class TestCacheHitMerge:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
-                # search_id check → no match
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[]
-                )
+                return FluidMock(execute_data=[])
             elif call_count == 2:
-                # param dedup → no match (different sector)
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[]
-                )
+                return FluidMock(execute_data=[])
             else:
-                # Insert new session
-                mock_table.insert.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "new-sector-session"}]
-                )
-            return mock_table
+                return make_insert_mock("new-sector-session")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
         mock_get_sb.return_value = sb
 
-        # Different sector
         base_args["sectors"] = ["vestuario"]
 
         from quota import register_search_session
@@ -262,21 +262,18 @@ class TestCompositeKeyDedup:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                return FluidMock(execute_data=[])
             elif call_count == 2:
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                return FluidMock(execute_data=[])
             else:
-                mock_table.insert.return_value.execute.return_value = MagicMock(data=[{"id": "new-ufs-session"}])
-            return mock_table
+                return make_insert_mock("new-ufs-session")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
         mock_get_sb.return_value = sb
 
-        base_args["ufs"] = ["MG", "BA"]  # Different UFs
+        base_args["ufs"] = ["MG", "BA"]
 
         from quota import register_search_session
         result = await register_search_session(**base_args)
@@ -293,21 +290,18 @@ class TestCompositeKeyDedup:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                return FluidMock(execute_data=[])
             elif call_count == 2:
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                return FluidMock(execute_data=[])
             else:
-                mock_table.insert.return_value.execute.return_value = MagicMock(data=[{"id": "new-dates-session"}])
-            return mock_table
+                return make_insert_mock("new-dates-session")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
         mock_get_sb.return_value = sb
 
-        base_args["data_final"] = "2026-02-20"  # Different end date
+        base_args["data_final"] = "2026-02-20"
 
         from quota import register_search_session
         result = await register_search_session(**base_args)
@@ -325,16 +319,15 @@ class TestCompositeKeyDedup:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                return FluidMock(execute_data=[])
             elif call_count == 2:
-                # Param dedup finds match
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "sorted-match-session", "created_at": recent_time}]
-                )
-            return mock_table
+                return FluidMock(execute_data=[{
+                    "id": "sorted-match-session",
+                    "created_at": recent_time,
+                }])
+            else:
+                return make_insert_mock("should-not-reach")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
@@ -359,14 +352,14 @@ class TestCompositeKeyDedup:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count == 1:
                 # First call is param dedup (search_id check skipped)
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[{"id": "param-match-no-sid", "created_at": recent_time}]
-                )
-            return mock_table
+                return FluidMock(execute_data=[{
+                    "id": "param-match-no-sid",
+                    "created_at": recent_time,
+                }])
+            else:
+                return make_insert_mock("should-not-reach")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
@@ -399,28 +392,25 @@ class TestSearchRetryDedup:
         def table_side_effect(table_name):
             nonlocal call_count
             call_count += 1
-            mock_table = MagicMock()
-
             if call_count <= 2:
                 # First register_search_session call:
                 # 1. search_id check → no match
                 # 2. param dedup → no match
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                return FluidMock(execute_data=[])
             elif call_count == 3:
                 # Insert for first call
-                mock_table.insert.return_value.execute.return_value = MagicMock(
-                    data=[{"id": first_session_id}]
-                )
+                return make_insert_mock(first_session_id)
             elif call_count == 4:
-                # Second register_search_session call: search_id check → no match
-                mock_table.select.return_value.eq.return_value.eq.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+                # Second register_search_session: search_id check → no match
+                return FluidMock(execute_data=[])
             elif call_count == 5:
                 # Second call: param dedup → match (first session)
-                mock_table.select.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.eq.return_value.gte.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-                    data=[{"id": first_session_id, "created_at": creation_time}]
-                )
-            return mock_table
+                return FluidMock(execute_data=[{
+                    "id": first_session_id,
+                    "created_at": creation_time,
+                }])
+            else:
+                return make_insert_mock("should-not-reach")
 
         sb = MagicMock()
         sb.table.side_effect = table_side_effect
@@ -439,3 +429,101 @@ class TestSearchRetryDedup:
 
         # Both calls return the same session ID → only 1 history entry
         assert result1 == result2
+
+
+# ===========================================================================
+# AC5: Unit test — verify .filter() uses PostgreSQL array literal format
+# ===========================================================================
+
+class TestPostgresArrayLiteral:
+    """CRIT-029 AC5: Verify the dedup query uses correct PG array format."""
+
+    @pytest.mark.asyncio
+    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("supabase_client.get_supabase")
+    async def test_filter_called_with_pg_array_format(self, mock_get_sb, mock_profile, base_args):
+        """Dedup query must use .filter() with PostgreSQL array literal, not .eq() with Python list."""
+        call_count = 0
+        filter_calls = []
+
+        class TrackingFluidMock:
+            """Tracks .filter() calls to verify PG array format."""
+            def __init__(self):
+                self._filter_args = []
+
+            def __getattr__(self, name):
+                if name == "execute":
+                    return lambda: MagicMock(data=[])
+                if name == "filter":
+                    def _filter(*args, **kwargs):
+                        filter_calls.append(args)
+                        return self
+                    return _filter
+                return lambda *a, **kw: self
+
+            def __call__(self, *args, **kwargs):
+                return self
+
+        def table_side_effect(table_name):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return FluidMock(execute_data=[])
+            elif call_count == 2:
+                # param dedup — use tracking mock
+                return TrackingFluidMock()
+            else:
+                return make_insert_mock("new-id")
+
+        sb = MagicMock()
+        sb.table.side_effect = table_side_effect
+        mock_get_sb.return_value = sb
+
+        from quota import register_search_session
+        await register_search_session(**base_args)
+
+        # Verify .filter() was called with PG array literal format
+        assert len(filter_calls) == 2, f"Expected 2 .filter() calls, got {len(filter_calls)}"
+
+        # First filter: sectors — sorted ["informatica"] → "{informatica}"
+        assert filter_calls[0] == ("sectors", "eq", "{informatica}")
+
+        # Second filter: ufs — sorted ["SP", "RJ"] → ["RJ", "SP"] → "{RJ,SP}"
+        assert filter_calls[1] == ("ufs", "eq", "{RJ,SP}")
+
+    @pytest.mark.asyncio
+    @patch("quota._ensure_profile_exists", return_value=True)
+    @patch("supabase_client.get_supabase")
+    async def test_insert_stores_sorted_arrays(self, mock_get_sb, mock_profile, base_args):
+        """INSERT must store sorted sectors and ufs for consistent dedup matching."""
+        call_count = 0
+        insert_data = []
+
+        def table_side_effect(table_name):
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
+                return FluidMock(execute_data=[])
+            else:
+                mock_table = MagicMock()
+                def capture_insert(data):
+                    insert_data.append(data)
+                    result_mock = MagicMock()
+                    result_mock.execute.return_value = MagicMock(data=[{"id": "new-id"}])
+                    return result_mock
+                mock_table.insert.side_effect = capture_insert
+                return mock_table
+
+        sb = MagicMock()
+        sb.table.side_effect = table_side_effect
+        mock_get_sb.return_value = sb
+
+        # UFs in non-sorted order
+        base_args["ufs"] = ["SP", "RJ"]
+
+        from quota import register_search_session
+        await register_search_session(**base_args)
+
+        assert len(insert_data) == 1
+        assert insert_data[0]["ufs"] == ["RJ", "SP"], "UFs must be sorted on insert"
+        assert insert_data[0]["sectors"] == ["informatica"], "Sectors must be sorted on insert"
