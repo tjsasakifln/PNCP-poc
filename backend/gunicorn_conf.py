@@ -52,3 +52,25 @@ def worker_abort(worker):
             )
     except Exception:
         pass
+
+
+def worker_exit(server, worker):
+    """SLA-002: Log worker exit with reason for OOM/crash diagnosis.
+
+    Called by gunicorn arbiter when a worker exits (clean or crash).
+    Tracks exit codes to identify OOM kills (code -9) vs normal recycling.
+    """
+    exit_code = worker.exitcode if hasattr(worker, "exitcode") else "unknown"
+    if exit_code == -9:
+        logger.critical(
+            f"WORKER OOM KILLED — pid={worker.pid} exit_code={exit_code} "
+            f"(likely out of memory — consider reducing WEB_CONCURRENCY)"
+        )
+    elif exit_code == 0:
+        logger.info(
+            f"Worker recycled cleanly — pid={worker.pid} (max-requests reached)"
+        )
+    else:
+        logger.warning(
+            f"Worker exited — pid={worker.pid} exit_code={exit_code}"
+        )

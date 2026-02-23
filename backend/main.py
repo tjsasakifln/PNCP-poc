@@ -81,6 +81,8 @@ logger = logging.getLogger(__name__)
 log_feature_flags()
 
 # CRIT-010 AC5: Startup readiness tracking
+# SLA-002: _process_start_time is set immediately (for liveness), _startup_time after full init
+_process_start_time: float = time.monotonic()
 _startup_time: float | None = None  # Set when lifespan startup completes
 
 # STORY-210 AC8: Disable API docs in production to prevent reconnaissance
@@ -362,6 +364,7 @@ async def lifespan(app_instance: FastAPI):
     logger.info("GTM-CRIT-005: Circuit breakers initialized from Redis")
 
     # CRIT-004: Validate schema contract for critical tables
+    # SLA-002: NEVER crash on schema validation — degraded service > no service
     from schema_contract import validate_schema_contract, emit_degradation_warning
     try:
         from supabase_client import get_supabase
@@ -370,12 +373,12 @@ async def lifespan(app_instance: FastAPI):
         if not passed:
             logger.critical(
                 f"SCHEMA CONTRACT VIOLATED: missing {missing}. "
-                f"Run migrations before deploying. Refusing to start."
+                f"Run migrations before deploying. SERVICE DEGRADED but staying alive."
             )
-            raise SystemExit(1)
-        logger.info(f"CRIT-004: Schema contract validated — 0 missing columns")
-    except SystemExit:
-        raise  # Re-raise SystemExit
+            # SLA-002: Do NOT raise SystemExit — a degraded service that responds
+            # is infinitely better than a crashed service showing Railway 404.
+        else:
+            logger.info(f"CRIT-004: Schema contract validated — 0 missing columns")
     except Exception as e:
         logger.warning(f"CRIT-004: Schema validation could not run ({e}) — proceeding with caution")
 
@@ -387,14 +390,20 @@ async def lifespan(app_instance: FastAPI):
     _log_registered_routes(app_instance)
 
     # CRIT-001 AC4: Probe Supabase connectivity before accepting traffic
+    # SLA-002: NEVER crash on transient Supabase issues — log and continue
     try:
         from supabase_client import get_supabase
         db = get_supabase()
         db.table("profiles").select("id").limit(1).execute()
         logger.info("STARTUP GATE: Supabase connectivity confirmed")
     except Exception as e:
-        logger.critical(f"STARTUP GATE FAILED: Supabase unreachable — {e}")
-        raise  # Crash on startup = Railway will retry
+        # SLA-002: Supabase being temporarily down during deploy/restart is NORMAL.
+        # Crashing here causes Railway to cycle containers, making the outage WORSE.
+        # The service will retry Supabase on each actual request.
+        logger.critical(
+            f"STARTUP GATE: Supabase unreachable — {e}. "
+            f"SERVICE DEGRADED but staying alive. Will retry on requests."
+        )
 
     # CRIT-001 AC5: Redis connectivity check (non-blocking)
     if os.getenv("REDIS_URL"):
@@ -404,8 +413,11 @@ async def lifespan(app_instance: FastAPI):
         else:
             logger.warning("STARTUP GATE: Redis configured but unavailable — proceeding without Redis")
 
-    logger.info("STARTUP GATE: Supabase OK, Redis %s — setting ready=true",
-                "OK" if os.getenv("REDIS_URL") and await is_redis_available() else "not configured")
+    # SLA-002: Log startup gate summary (Supabase may have failed but we continue)
+    _redis_status = "not configured"
+    if os.getenv("REDIS_URL"):
+        _redis_status = "OK" if await is_redis_available() else "unavailable"
+    logger.info("STARTUP GATE: Redis %s — setting ready=true", _redis_status)
 
     # CRIT-010 AC4+AC5: Mark application as ready for traffic
     global _startup_time
@@ -676,14 +688,23 @@ async def root():
 
 @app.get("/health/ready")
 async def health_ready():
-    """Lightweight readiness probe for Railway health checks.
+    """Lightweight liveness + readiness probe for Railway health checks.
 
-    CRIT-001 AC1: Zero I/O, zero dependency checks. Just reads _startup_time.
-    Returns in <50ms guaranteed.
+    SLA-002: ALWAYS returns 200 if the process is running. Railway uses this
+    as healthcheckPath — returning non-200 or timing out causes Railway to
+    pull the container from the load balancer ("train not arrived" 404).
+
+    The `ready` field indicates whether full initialization completed,
+    but HTTP 200 is returned regardless to keep the container alive.
     """
     is_ready = _startup_time is not None
     uptime = round(time.monotonic() - _startup_time, 3) if is_ready else 0.0
-    return {"ready": is_ready, "uptime_seconds": uptime}
+    process_uptime = round(time.monotonic() - _process_start_time, 3)
+    return {
+        "ready": is_ready,
+        "uptime_seconds": uptime,
+        "process_uptime_seconds": process_uptime,
+    }
 
 
 @app.get("/health", response_model=HealthResponse)
