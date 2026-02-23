@@ -1,0 +1,16 @@
+# =============================================================================
+# BidIQ Uniformes - Worker Railway Configuration
+# =============================================================================
+# Service: bidiq-worker (ARQ background job processor)
+# Process: arq job_queue.WorkerSettings
+# NOTE: No healthcheck — worker is NOT an HTTP server
+# =============================================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["**"]
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
