@@ -605,6 +605,57 @@ TD-001 ──→ TD-016
 
 ---
 
+## PARTE 5: ROOT CAUSE STORIES — INVESTIGAÇÃO DE SQUAD (2026-02-23)
+
+> **Origem:** Squad de 4 agentes (architect, qa, ux, data-engineer) investigou por que SmartLic falha no basico apesar de codigo sofisticado. 101 findings → 12 stories.
+>
+> **Causa raiz fundamental:** Railway ~120s hard timeout torna pipeline 360-480s dead code. Cache per-user nao protege trial users. Erros em ingles. Banners empilham 8-deep.
+>
+> **Index completo:** [`GTM-ROOT-CAUSE-INDEX.md`](GTM-ROOT-CAUSE-INDEX.md)
+
+### Tier 1 — Bloqueadores de GTM (P0) — 52h
+
+| # | Story | Estimativa | Resumo |
+|---|-------|------------|--------|
+| 1 | **GTM-ARCH-001** | 24h | Migrar busca para async job pattern (eliminar 524 timeout) |
+| 2 | **GTM-ARCH-002** | 16h | Cache global cross-user + warmup cron |
+| 3 | **GTM-PROXY-001** | 12h | Sanitizar TODAS proxies (erros ingles + localhost fallback) |
+
+### Tier 2 — Experiencia Precaria (P1) — 32h
+
+| # | Story | Estimativa | Resumo |
+|---|-------|------------|--------|
+| 4 | **GTM-UX-001** | 12h | Unificar 8 banners em DataQualityBanner unico |
+| 5 | **GTM-UX-002** | 8h | Erros silenciosos → estados de erro explicitos |
+| 6 | **GTM-UX-003** | 6h | Unificar retry UX (eliminar cooldown 30s + dual mechanism) |
+| 7 | **GTM-UX-004** | 6h | Subscription status proxy + dead buttons |
+
+### Tier 3 — Infraestrutura de Resiliencia (P2) — 20h
+
+| # | Story | Estimativa | Resumo |
+|---|-------|------------|--------|
+| 8 | **GTM-INFRA-001** | 8h | Eliminar sync PNCPClient fallback + ajustar circuit breaker |
+| 9 | **GTM-INFRA-002** | 4h | Health canary realista + Railway config |
+| 10 | **GTM-INFRA-003** | 8h | Background revalidation multi-source + skip quota em cache |
+
+### Tier 4 — Polimento (P3) — 14h
+
+| # | Story | Estimativa | Resumo |
+|---|-------|------------|--------|
+| 11 | **GTM-POLISH-001** | 6h | Consistencia de UX — loading states across pages |
+| 12 | **GTM-POLISH-002** | 8h | Mobile error states + pipeline tabs |
+
+### Sumario Atualizado
+
+| Categoria | Stories | Esforço |
+|-----------|---------|---------|
+| GTM (Parte 1) | 10 stories | ~98h |
+| TD (Parte 2) | 16 stories | ~232h |
+| **Root Cause (Parte 5)** | **12 stories** | **~118h** |
+| **Total Backlog Ativo** | **38 stories** | **~448h** |
+
+---
+
 ## APÊNDICE: Stories Suprimidas/Absorvidas
 
 | Story Original | Absorvida Por | Justificativa |
