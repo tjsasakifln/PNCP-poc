@@ -26,14 +26,14 @@ const recommendedBid = {
 };
 
 const rejectedBid = {
-  title: 'Pregão Eletrônico — Aquisição de gêneros alimentícios para merenda escolar',
-  valor: 'R$ 42.000,00',
-  uf: 'AM',
+  title: 'Pregão Eletrônico — Manutenção preventiva e corretiva de sistemas prediais em unidades de saúde',
+  valor: 'R$ 420.000,00',
+  uf: 'SP',
   modalidade: 'Pregão Eletrônico',
   motivos: [
-    { icon: 'setor', text: 'Fora do seu setor de atuação' },
-    { icon: 'valor', text: 'Valor abaixo do mínimo do seu perfil' },
-    { icon: 'regiao', text: 'Fora da sua região de atuação' },
+    { icon: 'setor', text: 'Exige atestado técnico em engenharia hospitalar — fora da sua especialidade' },
+    { icon: 'valor', text: 'Requer capacidade técnica comprovada acima de R$ 1,2M' },
+    { icon: 'prazo', text: 'Prazo para envio de proposta: 2 dias — insuficiente para preparação' },
   ],
 };
 
@@ -53,6 +53,7 @@ function RejectionIcon({ tipo }: { tipo: string }) {
   switch (tipo) {
     case 'setor': return <Building2 className={`${iconClass} text-red-400`} />;
     case 'valor': return <DollarSign className={`${iconClass} text-red-400`} />;
+    case 'prazo': return <Calendar className={`${iconClass} text-red-400`} />;
     case 'regiao': return <MapPin className={`${iconClass} text-red-400`} />;
     default: return <AlertTriangle className={`${iconClass} text-red-400`} />;
   }
@@ -209,7 +210,7 @@ export default function ProofOfValue({ className = '' }: ProofOfValueProps) {
 
           {/* Visual indicator: this protects your time */}
           <p className="mt-4 text-xs text-red-400 italic">
-            Descartada para proteger seu tempo e esforço.
+            Parecia perfeita, mas te custaria horas para descobrir sozinho.
           </p>
         </div>
       </div>

@@ -88,29 +88,28 @@ describe('ProofOfValue', () => {
     it('renders rejected bid title', () => {
       render(<ProofOfValue />);
 
-      expect(screen.getByText(/Aquisição de gêneros alimentícios para merenda escolar/i)).toBeInTheDocument();
+      expect(screen.getByText(/Manutenção preventiva e corretiva de sistemas prediais em unidades de saúde/i)).toBeInTheDocument();
     });
 
     it('renders rejected bid details', () => {
       render(<ProofOfValue />);
 
-      expect(screen.getByText(/R\$ 42\.000,00/i)).toBeInTheDocument();
-      expect(screen.getByText('AM')).toBeInTheDocument();
+      expect(screen.getByText(/R\$ 420\.000,00/i)).toBeInTheDocument();
     });
 
     it('renders rejection reasons', () => {
       render(<ProofOfValue />);
 
       expect(screen.getByText(/Motivos do descarte:/i)).toBeInTheDocument();
-      expect(screen.getByText(/Fora do seu setor de atuação/i)).toBeInTheDocument();
-      expect(screen.getByText(/Valor abaixo do mínimo do seu perfil/i)).toBeInTheDocument();
-      expect(screen.getByText(/Fora da sua região de atuação/i)).toBeInTheDocument();
+      expect(screen.getByText(/Exige atestado técnico em engenharia hospitalar/i)).toBeInTheDocument();
+      expect(screen.getByText(/Requer capacidade técnica comprovada acima de R\$ 1,2M/i)).toBeInTheDocument();
+      expect(screen.getByText(/Prazo para envio de proposta: 2 dias/i)).toBeInTheDocument();
     });
 
     it('renders time protection message', () => {
       render(<ProofOfValue />);
 
-      expect(screen.getByText(/Descartada para proteger seu tempo e esforço/i)).toBeInTheDocument();
+      expect(screen.getByText(/Parecia perfeita, mas te custaria horas para descobrir sozinho/i)).toBeInTheDocument();
     });
   });
 
@@ -150,21 +149,22 @@ describe('ProofOfValue', () => {
   });
 
   describe('AC10 — Example data quality', () => {
-    it('examples cover different sectors (maintenance vs food)', () => {
+    it('examples show same sector with subtle disqualifiers (wow factor)', () => {
       render(<ProofOfValue />);
 
-      // Recommended: maintenance/predial — appears in title and justification
-      const predialMatches = screen.getAllByText(/manutenção predial/i);
-      expect(predialMatches.length).toBeGreaterThanOrEqual(1);
-      // Rejected: food/merenda
-      expect(screen.getByText(/gêneros alimentícios/i)).toBeInTheDocument();
+      // Both bids are in the same sector (manutenção predial) — the rejected one looks deceptively similar
+      const predialMatches = screen.getAllByText(/manutenção/i);
+      expect(predialMatches.length).toBeGreaterThanOrEqual(2);
+      // Rejected has hidden deal-breakers despite looking compatible
+      expect(screen.getByText(/engenharia hospitalar/i)).toBeInTheDocument();
     });
 
-    it('examples cover different UFs', () => {
+    it('both examples use same UF to emphasize subtle filtering', () => {
       render(<ProofOfValue />);
 
-      expect(screen.getByText('SP')).toBeInTheDocument();
-      expect(screen.getByText('AM')).toBeInTheDocument();
+      // Both are SP — region alone wouldn't disqualify, forcing deeper analysis
+      const spMatches = screen.getAllByText('SP');
+      expect(spMatches.length).toBeGreaterThanOrEqual(2);
     });
 
     it('values are in realistic range', () => {
