@@ -617,16 +617,22 @@ TD-001 ──→ TD-016
 
 | # | Story | Estimativa | Resumo |
 |---|-------|------------|--------|
-| 1 | **GTM-ARCH-001** | 24h | Migrar busca para async job pattern (eliminar 524 timeout) |
+| 1 | **GTM-ARCH-001** | 32h | Migrar busca para async job pattern + feature flag + rollback |
 | 2 | **GTM-ARCH-002** | 16h | Cache global cross-user + warmup cron |
 | 3 | **GTM-PROXY-001** | 12h | Sanitizar TODAS proxies (erros ingles + localhost fallback) |
 
-### Tier 2 — Experiencia Precaria (P1) — 32h
+### Quality Gate (P1) — 4h
+
+| # | Story | Estimativa | Resumo |
+|---|-------|------------|--------|
+| — | **GTM-QUAL-001** | 4h | Smoke test E2E pos-root cause (executar apos cada Tier) |
+
+### Tier 2 — Experiencia Precaria (P1) — 34h
 
 | # | Story | Estimativa | Resumo |
 |---|-------|------------|--------|
 | 4 | **GTM-UX-001** | 12h | Unificar 8 banners em DataQualityBanner unico |
-| 5 | **GTM-UX-002** | 8h | Erros silenciosos → estados de erro explicitos |
+| 5 | **GTM-UX-002** | 10h | Erros silenciosos → estados explicitos + zero results UX |
 | 6 | **GTM-UX-003** | 6h | Unificar retry UX (eliminar cooldown 30s + dual mechanism) |
 | 7 | **GTM-UX-004** | 6h | Subscription status proxy + dead buttons |
 
@@ -651,8 +657,8 @@ TD-001 ──→ TD-016
 |-----------|---------|---------|
 | GTM (Parte 1) | 10 stories | ~98h |
 | TD (Parte 2) | 16 stories | ~232h |
-| **Root Cause (Parte 5)** | **12 stories** | **~118h** |
-| **Total Backlog Ativo** | **38 stories** | **~448h** |
+| **Root Cause (Parte 5)** | **13 stories** | **~132h** |
+| **Total Backlog Ativo** | **39 stories** | **~462h** |
 
 ---
 

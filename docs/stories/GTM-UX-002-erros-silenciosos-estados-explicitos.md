@@ -10,7 +10,7 @@ Sprint 7: GTM Root Cause — Tier 2
 P1
 
 ## Estimativa
-8h
+10h
 
 ## Descricao
 
@@ -58,10 +58,16 @@ Historico, Dashboard, Mensagens e Pipeline retornam dados vazios quando a API fa
 - [ ] AC8: Quando `/api/pipeline` falha, mostrar error state com retry
 - [ ] AC9: Pipeline em modo leitura durante erro (pode ver colunas, nao pode drag-and-drop)
 
+### Zero Resultados (Busca)
+
+- [ ] AC10: Quando busca retorna 0 resultados, mostrar estado especifico: "Nenhuma oportunidade encontrada para [setor] em [UFs] nos ultimos [N] dias." + sugestoes acionaveis: "Ampliar periodo", "Adicionar estados vizinhos", "Verificar setor"
+- [ ] AC11: Se 0 resultados E existe cache global para parametros similares (mesmo setor, UFs vizinhas), mostrar: "Encontramos X oportunidades em estados proximos. [Ver resultados]"
+- [ ] AC12: Sugestoes sao botoes clicaveis que ajustam filtros e re-executam busca (nao texto passivo)
+
 ### Padrao Comum
 
-- [ ] AC10: Componente reutilizavel `ErrorStateWithRetry.tsx` com: icone, mensagem, botao retry, timestamp do erro
-- [ ] AC11: Cada pagina com data fetching implementa 3 estados: loading → data | empty | error
+- [ ] AC13: Componente reutilizavel `ErrorStateWithRetry.tsx` com: icone, mensagem, botao retry, timestamp do erro
+- [ ] AC14: Cada pagina com data fetching implementa 3 estados: loading → data | empty | error
 
 ## Testes Obrigatorios
 
@@ -75,6 +81,8 @@ cd backend && pytest -k "test_analytics_error" --no-coverage
 - [ ] T3: Backend analytics retorna 503 quando Supabase indisponivel
 - [ ] T4: Retry button funciona e recarrega dados
 - [ ] T5: Empty state diferente de error state visualmente
+- [ ] T6: Zero resultados mostra sugestoes acionaveis (ampliar periodo, estados vizinhos)
+- [ ] T7: Botao "Ver resultados" de estados proximos ajusta filtros e re-executa
 
 ## Arquivos Afetados
 
@@ -87,6 +95,8 @@ cd backend && pytest -k "test_analytics_error" --no-coverage
 | `frontend/app/pipeline/page.tsx` | Modificar — error state |
 | `backend/routes/analytics.py` | Modificar — retornar 503 em vez de zeros |
 | `backend/routes/sessions.py` | Modificar — nao engolir erros |
+| `frontend/app/buscar/components/SearchResults.tsx` | Modificar — zero results UX com sugestoes |
+| `frontend/app/buscar/page.tsx` | Modificar — logica de sugestoes (estados vizinhos, periodo) |
 
 ## Dependencias
 

@@ -10,7 +10,7 @@ Sprint 6: GTM Root Cause — Tier 1
 P0
 
 ## Estimativa
-24h
+32h
 
 ## Descricao
 
@@ -52,11 +52,26 @@ Railway impoe hard timeout de ~120s no proxy HTTP. O pipeline de busca do SmartL
 - [ ] AC7: `search_id` gerado no POST e reutilizado no SSE (ja existe essa logica — manter)
 - [ ] AC8: Quota consumida no POST (antes de enfileirar), nao no Worker
 
+### Rollback e Feature Flag
+
+- [ ] AC12: Feature flag `SEARCH_ASYNC_ENABLED` (default `false` em config.py). Quando `false`, comportamento sincrono atual preservado integralmente. Rollout gradual: flag on → 10% → 50% → 100%.
+- [ ] AC13: Quando flag `true` e Worker falha em processar dentro de 30s, fallback automatico para inline (sem intervencao manual, sem perda de busca)
+
+### Metas de Tempo (Trial User)
+
+- [ ] AC14: Trial user com cache global quente (via ARCH-002): resultado em <10s
+- [ ] AC15: Trial user sem cache, fontes live: resultado parcial (primeira UF) em <15s via SSE, resultado completo em <60s
+
+### Compatibilidade SSE (CRIT-012)
+
+- [ ] AC16: SSE mantem contrato existente de eventos (`progress`, `uf_complete`, `search_complete`, `llm_ready`, `excel_ready`, `error`). Frontend nao precisa saber se resultado veio de inline ou Worker.
+- [ ] AC17: Heartbeat SSE (15s, CRIT-012) mantido durante processamento do Worker — Worker emite eventos via tracker existente
+
 ### Observabilidade
 
-- [ ] AC9: Metrica `search_job_duration_seconds` (histogram) no Worker
-- [ ] AC10: Log estruturado: `{ search_id, queued_at, started_at, completed_at, status }`
-- [ ] AC11: SSE event `error` se Worker falhar (com `error_code` do CRIT-009)
+- [ ] AC18: Metrica `search_job_duration_seconds` (histogram) no Worker
+- [ ] AC19: Log estruturado: `{ search_id, queued_at, started_at, completed_at, status }`
+- [ ] AC20: SSE event `error` se Worker falhar (com `error_code` do CRIT-009)
 
 ## Testes Obrigatorios
 
@@ -64,12 +79,16 @@ Railway impoe hard timeout de ~120s no proxy HTTP. O pipeline de busca do SmartL
 cd backend && pytest -k "test_search_async or test_job_queue" --no-coverage
 ```
 
-- [ ] T1: POST /buscar retorna 202 com search_id quando ARQ disponivel
+- [ ] T1: POST /buscar retorna 202 com search_id quando ARQ disponivel e flag on
 - [ ] T2: Worker processa busca e persiste resultado
 - [ ] T3: SSE entrega resultado quando Worker completa
 - [ ] T4: Fallback inline quando ARQ indisponivel
-- [ ] T5: Quota consumida no POST, nao no Worker
-- [ ] T6: Worker timeout nao afeta HTTP response
+- [ ] T5: Fallback inline quando `SEARCH_ASYNC_ENABLED=false`
+- [ ] T6: Quota consumida no POST, nao no Worker
+- [ ] T7: Worker timeout nao afeta HTTP response
+- [ ] T8: Worker falha em 30s → fallback automatico para inline
+- [ ] T9: SSE contrato mantido (mesmos eventos) em modo async e inline
+- [ ] T10: Heartbeat 15s emitido durante processamento do Worker
 
 ## Arquivos Afetados
 
@@ -82,6 +101,7 @@ cd backend && pytest -k "test_search_async or test_job_queue" --no-coverage
 | `frontend/app/buscar/hooks/useSearch.ts` | Modificar — nao depender de POST response body |
 | `frontend/app/api/buscar/route.ts` | Modificar — proxy nao precisa esperar 480s |
 | `backend/schemas.py` | Modificar — response schema para 202 Accepted |
+| `backend/config.py` | Modificar — adicionar `SEARCH_ASYNC_ENABLED` flag |
 
 ## Dependencias
 
@@ -98,6 +118,8 @@ cd backend && pytest -k "test_search_async or test_job_queue" --no-coverage
 | Risco | Mitigacao |
 |-------|----------|
 | ARQ/Redis indisponivel | Fallback inline preservado (zero regression) |
-| Worker crash mid-search | SSE timeout + error event + retry manual |
+| Worker crash mid-search | SSE timeout + error event + fallback inline em 30s (AC13) |
 | Race condition POST vs SSE | search_id garante vinculo; SSE espera tracker |
 | Quota double-count | Consumir quota no POST, Worker nao verifica |
+| Deploy quebra SSE existente | Feature flag off por default (AC12); rollout gradual |
+| Worker nao emite heartbeat | Worker usa tracker existente; heartbeat mantido (AC17) |
