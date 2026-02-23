@@ -41,44 +41,45 @@ Alem disso, `get_stale_entries_for_refresh()` existe em `search_cache.py` mas nu
 
 ### Cache Global Fallback
 
-- [ ] AC1: Quando busca falha e nao ha cache do user, sistema tenta buscar cache de QUALQUER user com mesmo `params_hash_global` (hash sem user_id)
-- [ ] AC2: `params_hash_global` = hash de (setor, ufs, data_inicio, data_fim) — sem user_id
-- [ ] AC3: Cache global e read-only fallback — cada user continua tendo seu proprio cache write
-- [ ] AC4: Supabase L2 query: `search_cache.where(params_hash_global=X).order(created_at.desc).limit(1)`
+- [x] AC1: Quando busca falha e nao ha cache do user, sistema tenta buscar cache de QUALQUER user com mesmo `params_hash_global` (hash sem user_id)
+- [x] AC2: `params_hash_global` = hash de (setor, ufs, data_inicio, data_fim) — sem user_id
+- [x] AC3: Cache global e read-only fallback — cada user continua tendo seu proprio cache write
+- [x] AC4: Supabase L2 query: `search_cache.where(params_hash_global=X).order(created_at.desc).limit(1)`
 
 ### Warmup Cron
 
-- [ ] AC5: `cron_jobs.py` conectado a `get_stale_entries_for_refresh()` — executa a cada 4h
-- [ ] AC6: Top 10 combinacoes (setor+UFs) mais populares pre-aquecidas via cron
-- [ ] AC7: Warm-up pos-deploy: `startup` event em `main.py` enfileira refresh dos top 10 params
+- [x] AC5: `cron_jobs.py` conectado a `get_stale_entries_for_refresh()` — executa a cada 4h
+- [x] AC6: Top 10 combinacoes (setor+UFs) mais populares pre-aquecidas via cron
+- [x] AC7: Warm-up pos-deploy: `startup` event em `main.py` enfileira refresh dos top 10 params
 
 ### Revalidation Multi-Source
 
-- [ ] AC8: Background revalidation usa `ConsolidationService` (3 fontes) em vez de PNCP-only
-- [ ] AC9: Se PNCP falha, revalidation usa PCP+ComprasGov (resultado parcial > nada)
+- [x] AC8: Background revalidation usa `ConsolidationService` (3 fontes) em vez de PNCP-only
+- [x] AC9: Se PNCP falha, revalidation usa PCP+ComprasGov (resultado parcial > nada)
 
 ## Testes Obrigatorios
 
 ```bash
-cd backend && pytest -k "test_cache_global or test_warmup" --no-coverage
+cd backend && pytest tests/test_cache_global_warmup.py -v --no-coverage
 ```
 
-- [ ] T1: Trial user recebe cache global quando cache pessoal vazio
-- [ ] T2: `params_hash_global` nao inclui user_id
-- [ ] T3: Cache global nao sobrescreve cache pessoal existente
-- [ ] T4: Cron refresh executa para HOT entries
-- [ ] T5: Warmup pos-deploy enfileira top 10 params
-- [ ] T6: Revalidation usa ConsolidationService (nao PNCP-only)
+- [x] T1: Trial user recebe cache global quando cache pessoal vazio
+- [x] T2: `params_hash_global` nao inclui user_id
+- [x] T3: Cache global nao sobrescreve cache pessoal existente
+- [x] T4: Cron refresh executa para HOT entries
+- [x] T5: Warmup pos-deploy enfileira top 10 params
+- [x] T6: Revalidation usa ConsolidationService (nao PNCP-only)
 
 ## Arquivos Afetados
 
 | Arquivo | Tipo de Mudanca |
 |---------|----------------|
-| `backend/search_cache.py` | Modificar — adicionar `params_hash_global`, fallback cross-user |
-| `backend/cron_jobs.py` | Modificar — conectar `get_stale_entries_for_refresh()` |
-| `backend/main.py` | Modificar — startup warm-up event |
-| `backend/consolidation.py` | Modificar — expor para revalidation |
-| `supabase/migrations/` | Nova migration — indice em `params_hash_global` |
+| `backend/search_cache.py` | Modificado — `compute_global_hash()`, `_get_global_fallback_from_supabase()`, `_fetch_multi_source_for_revalidation()`, global fallback em `get_from_cache()` e `get_from_cache_cascade()`, `get_top_popular_params()` |
+| `backend/cron_jobs.py` | Modificado — `start_cache_refresh_task()`, `refresh_stale_cache_entries()`, `warmup_top_params()` |
+| `backend/main.py` | Modificado — startup warm-up event + cache refresh cron task |
+| `backend/models/cache.py` | Modificado — adicionado campo `params_hash_global` ao model |
+| `supabase/migrations/20260223100000_add_params_hash_global.sql` | Nova migration — coluna + indice em `params_hash_global` |
+| `backend/tests/test_cache_global_warmup.py` | Novo — 14 testes cobrindo T1-T6 + edge cases |
 
 ## Dependencias
 

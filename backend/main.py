@@ -341,11 +341,14 @@ async def lifespan(app_instance: FastAPI):
     await get_arq_pool()
 
     # UX-303 AC8: Start periodic cache cleanup
-    from cron_jobs import start_cache_cleanup_task, start_session_cleanup_task
+    from cron_jobs import start_cache_cleanup_task, start_session_cleanup_task, start_cache_refresh_task, warmup_top_params
     cleanup_task = await start_cache_cleanup_task()
 
     # CRIT-011 AC7: Start periodic session cleanup (stale + old sessions)
     session_cleanup_task = await start_session_cleanup_task()
+
+    # GTM-ARCH-002 AC5: Start periodic cache refresh (stale HOT/WARM entries every 4h)
+    cache_refresh_task = await start_cache_refresh_task()
 
     # CRIT-001 AC4: Schema health check for search_results_cache
     await _check_cache_schema()
@@ -407,6 +410,13 @@ async def lifespan(app_instance: FastAPI):
     # CRIT-010 AC4+AC5: Mark application as ready for traffic
     global _startup_time
     _startup_time = time.monotonic()
+    # GTM-ARCH-002 AC7: Post-deploy warmup — enqueue top 10 popular params
+    try:
+        warmup_result = await warmup_top_params()
+        logger.info(f"GTM-ARCH-002: Post-deploy warmup complete: {warmup_result}")
+    except Exception as e:
+        logger.warning(f"GTM-ARCH-002: Post-deploy warmup failed (non-fatal): {e}")
+
     logger.info("APPLICATION READY — all routes registered, accepting traffic")
 
     # CRIT-010 AC7: SIGTERM handler for graceful shutdown logging
@@ -432,6 +442,13 @@ async def lifespan(app_instance: FastAPI):
     session_cleanup_task.cancel()
     try:
         await session_cleanup_task
+    except Exception:
+        pass
+
+    # GTM-ARCH-002: Cancel cache refresh
+    cache_refresh_task.cancel()
+    try:
+        await cache_refresh_task
     except Exception:
         pass
 

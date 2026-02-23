@@ -1,16 +1,19 @@
-"""UX-303 AC8 + CRIT-011 AC7: Periodic cache and session cleanup tasks.
+"""UX-303 AC8 + CRIT-011 AC7 + GTM-ARCH-002 AC5-AC7: Periodic cache, session cleanup, and warmup tasks.
 
 Runs as background asyncio tasks during FastAPI lifespan.
 """
 
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 
 logger = logging.getLogger(__name__)
 
 # Cleanup interval: every 6 hours
 CLEANUP_INTERVAL_SECONDS = 6 * 60 * 60
+
+# GTM-ARCH-002 AC5: Cache refresh interval — every 4 hours
+CACHE_REFRESH_INTERVAL_SECONDS = 4 * 60 * 60
 
 # CRIT-011 AC7: Session cleanup thresholds
 SESSION_STALE_HOURS = 1        # in_progress > 1h → timeout
@@ -35,6 +38,17 @@ async def start_session_cleanup_task() -> asyncio.Task:
     """
     task = asyncio.create_task(_session_cleanup_loop(), name="session_cleanup")
     logger.info("Session cleanup background task started (interval: 6h)")
+    return task
+
+
+async def start_cache_refresh_task() -> asyncio.Task:
+    """GTM-ARCH-002 AC5: Start the periodic cache refresh background task.
+
+    Connects get_stale_entries_for_refresh() to a cron loop that runs every 4h.
+    Returns the Task so it can be cancelled during shutdown.
+    """
+    task = asyncio.create_task(_cache_refresh_loop(), name="cache_refresh")
+    logger.info("Cache refresh background task started (interval: 4h)")
     return task
 
 
@@ -124,6 +138,107 @@ async def cleanup_stale_sessions() -> dict:
         return {"marked_stale": 0, "deleted_old": 0, "error": str(e)}
 
 
+async def refresh_stale_cache_entries() -> dict:
+    """GTM-ARCH-002 AC5: Refresh stale HOT/WARM cache entries.
+
+    Connects get_stale_entries_for_refresh() to trigger_background_revalidation().
+    Returns dict with refresh stats.
+    """
+    from search_cache import get_stale_entries_for_refresh, trigger_background_revalidation
+
+    try:
+        entries = await get_stale_entries_for_refresh(batch_size=25)
+
+        if not entries:
+            return {"status": "no_stale_entries", "refreshed": 0}
+
+        refreshed = 0
+        failed = 0
+
+        for entry in entries:
+            try:
+                # Build request_data with dates (last 10 days as default)
+                search_params = entry.get("search_params", {})
+                request_data = {
+                    "ufs": search_params.get("ufs", []),
+                    "data_inicial": (date.today() - timedelta(days=10)).isoformat(),
+                    "data_final": date.today().isoformat(),
+                    "modalidades": search_params.get("modalidades"),
+                }
+
+                dispatched = await trigger_background_revalidation(
+                    user_id=entry["user_id"],
+                    params=search_params,
+                    request_data=request_data,
+                )
+                if dispatched:
+                    refreshed += 1
+
+                # Small delay between dispatches to avoid hammering sources
+                await asyncio.sleep(2)
+
+            except Exception as e:
+                failed += 1
+                logger.debug(f"Cache refresh dispatch failed for {entry.get('params_hash', '?')[:12]}: {e}")
+
+        logger.info(
+            f"Cache refresh cycle: {refreshed} dispatched, {failed} failed "
+            f"out of {len(entries)} stale entries"
+        )
+        return {"status": "completed", "refreshed": refreshed, "failed": failed, "total": len(entries)}
+
+    except Exception as e:
+        logger.error(f"Cache refresh error: {e}", exc_info=True)
+        return {"status": "error", "error": str(e), "refreshed": 0}
+
+
+async def warmup_top_params() -> dict:
+    """GTM-ARCH-002 AC6/AC7: Pre-warm top 10 popular sector+UF combinations.
+
+    Enqueues background revalidation for the most popular search parameters.
+    Used both on startup (AC7) and periodically via cron (AC6).
+    """
+    from search_cache import get_top_popular_params, trigger_background_revalidation
+
+    try:
+        top_params = await get_top_popular_params(limit=10)
+
+        if not top_params:
+            logger.info("Warmup: no popular params found to pre-warm")
+            return {"status": "no_params", "warmed": 0}
+
+        warmed = 0
+        for params in top_params:
+            try:
+                request_data = {
+                    "ufs": params.get("ufs", []),
+                    "data_inicial": (date.today() - timedelta(days=10)).isoformat(),
+                    "data_final": date.today().isoformat(),
+                    "modalidades": params.get("modalidades"),
+                }
+
+                # Use a system user_id for warmup (entries go into global cache)
+                dispatched = await trigger_background_revalidation(
+                    user_id="00000000-0000-0000-0000-000000000000",
+                    params=params,
+                    request_data=request_data,
+                )
+                if dispatched:
+                    warmed += 1
+
+                await asyncio.sleep(1)
+
+            except Exception as e:
+                logger.debug(f"Warmup dispatch failed: {e}")
+
+        logger.info(f"Warmup: {warmed}/{len(top_params)} popular params enqueued")
+        return {"status": "completed", "warmed": warmed, "total": len(top_params)}
+
+    except Exception as e:
+        logger.error(f"Warmup error: {e}", exc_info=True)
+        return {"status": "error", "error": str(e), "warmed": 0}
+
+
 async def _session_cleanup_loop() -> None:
     """CRIT-011 AC7: Run session cleanup on startup and every 6 hours."""
     # Run immediately on startup
@@ -172,4 +287,25 @@ async def _cache_cleanup_loop() -> None:
         except Exception as e:
             logger.error(f"Cache cleanup error: {e}", exc_info=True)
             # Don't crash the loop on transient errors
+            await asyncio.sleep(60)
+
+
+async def _cache_refresh_loop() -> None:
+    """GTM-ARCH-002 AC5: Run cache refresh every 4 hours."""
+    # Wait a bit after startup to avoid overloading (warmup runs on startup separately)
+    await asyncio.sleep(60)
+
+    while True:
+        try:
+            result = await refresh_stale_cache_entries()
+            logger.info(
+                f"Cache refresh cycle: {result} "
+                f"at {datetime.now(timezone.utc).isoformat()}"
+            )
+            await asyncio.sleep(CACHE_REFRESH_INTERVAL_SECONDS)
+        except asyncio.CancelledError:
+            logger.info("Cache refresh task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Cache refresh loop error: {e}", exc_info=True)
             await asyncio.sleep(60)

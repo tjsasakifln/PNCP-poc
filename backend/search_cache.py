@@ -124,6 +124,22 @@ def compute_search_hash(params: dict) -> str:
     return hashlib.sha256(params_json.encode()).hexdigest()
 
 
+def compute_global_hash(params: dict) -> str:
+    """GTM-ARCH-002 AC2: Global cache hash — setor + ufs + dates, WITHOUT user_id.
+
+    Used for cross-user cache fallback: when a trial user has no personal cache,
+    the system falls back to any user's cache with the same global hash.
+    """
+    normalized = {
+        "setor_id": params.get("setor_id"),
+        "ufs": sorted(params.get("ufs", [])),
+        "data_inicio": params.get("data_inicio") or params.get("data_inicial"),
+        "data_fim": params.get("data_fim") or params.get("data_final"),
+    }
+    params_json = json.dumps(normalized, sort_keys=True)
+    return hashlib.sha256(params_json.encode()).hexdigest()
+
+
 def calculate_backoff_minutes(fail_streak: int) -> int:
     """B-03 AC4: Exponential backoff for cache key degradation.
 
@@ -168,6 +184,7 @@ async def _save_to_supabase(
     """Save to Supabase cache (Level 1).
 
     B-03 AC2: On successful fetch, also writes health metadata fields.
+    GTM-ARCH-002 AC3: Also stores params_hash_global for cross-user fallback.
     """
     from supabase_client import get_supabase
     sb = get_supabase()
@@ -176,6 +193,7 @@ async def _save_to_supabase(
     row = {
         "user_id": user_id,
         "params_hash": params_hash,
+        "params_hash_global": compute_global_hash(params),  # GTM-ARCH-002 AC2
         "search_params": params,
         "results": results,
         "total_results": len(results),
@@ -252,6 +270,48 @@ async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
         "sources_json": row.get("sources_json"),
         "fetched_at": fetched_at_str,
         # B-02 fields
+        "priority": row.get("priority", "cold"),
+        "access_count": row.get("access_count", 0),
+        "last_accessed_at": row.get("last_accessed_at"),
+    }
+
+
+# ============================================================================
+# GTM-ARCH-002 AC1/AC4: Global cross-user cache fallback
+# ============================================================================
+
+
+async def _get_global_fallback_from_supabase(params: dict) -> Optional[dict]:
+    """GTM-ARCH-002 AC1/AC4: Cross-user global cache fallback.
+
+    Queries ANY user's cache with the same params_hash_global.
+    Used when a user (especially trial) has no personal cache.
+    Read-only: does NOT write to the user's own cache.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    global_hash = compute_global_hash(params)
+
+    response = (
+        sb.table("search_results_cache")
+        .select("results, total_results, sources_json, fetched_at, created_at, priority, access_count, last_accessed_at")
+        .eq("params_hash_global", global_hash)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+
+    if not response.data:
+        return None
+
+    row = response.data[0]
+    fetched_at_str = row.get("fetched_at") or row.get("created_at")
+    return {
+        "results": row.get("results", []),
+        "total_results": row.get("total_results", 0),
+        "sources_json": row.get("sources_json"),
+        "fetched_at": fetched_at_str,
         "priority": row.get("priority", "cold"),
         "access_count": row.get("access_count", 0),
         "last_accessed_at": row.get("last_accessed_at"),
@@ -510,7 +570,29 @@ async def get_from_cache(
     except Exception as e:
         logger.error(f"Local cache read failed: {e}")
 
-    # Miss across all levels
+    # GTM-ARCH-002 AC1: Global cross-user fallback before final miss
+    try:
+        global_data = await _get_global_fallback_from_supabase(params)
+        if global_data:
+            result = _process_cache_hit(global_data, params_hash, CacheLevel.SUPABASE)
+            if result:
+                elapsed = (time.monotonic() - start) * 1000
+                result["cache_level"] = "global"
+                _track_cache_operation(
+                    "read", True, CacheLevel.SUPABASE,
+                    len(result["results"]), elapsed,
+                    cache_age_seconds=result["cache_age_hours"] * 3600,
+                )
+                METRICS_CACHE_HITS.labels(level="global", freshness=result.get("cache_status", "stale")).inc()
+                logger.info(
+                    f"Cache HIT global fallback for hash {params_hash[:12]}... "
+                    f"({elapsed:.0f}ms, {len(result['results'])} results)"
+                )
+                return result
+    except Exception as e:
+        logger.debug(f"Global cache fallback failed: {e}")
+
+    # Miss across all levels (including global)
     elapsed = (time.monotonic() - start) * 1000
     # CRIT-004 AC14: Include search_id in cache miss log for correlation
     from middleware import search_id_var
@@ -597,6 +679,24 @@ async def get_from_cache_cascade(
                 return result
     except Exception as e:
         logger.error(f"Cascade L3/local read failed: {e}")
+
+    # GTM-ARCH-002 AC1: Global cross-user fallback before cascade miss
+    try:
+        global_data = await _get_global_fallback_from_supabase(params)
+        if global_data:
+            result = _process_cache_hit(global_data, params_hash, CacheLevel.SUPABASE)
+            if result:
+                result["cache_level"] = "global"
+                METRICS_CACHE_HITS.labels(level="global", freshness=result.get("cache_status", "stale")).inc()
+                logger.info(json.dumps({
+                    "event": "cache_global_fallback_served",
+                    "cache_key": params_hash[:12],
+                    "cache_age_hours": result["cache_age_hours"],
+                    "results_count": len(result["results"]),
+                }))
+                return result
+    except Exception as e:
+        logger.debug(f"Cascade global fallback failed: {e}")
 
     METRICS_CACHE_MISSES.labels(level="cascade").inc()
     return None
@@ -1104,11 +1204,14 @@ async def _do_revalidation(
 ) -> None:
     """Execute background revalidation (fire-and-forget task).
 
-    1. Fetch fresh data from PNCP with independent timeout (AC5)
-    2. On success: save_to_cache() resets fail_streak (AC2, AC9)
-    3. On failure: record_cache_fetch_failure() increments fail_streak (AC9)
-    4. If SSE tracker active: emit 'revalidated' event (AC7)
-    5. Log structured JSON result (AC8)
+    GTM-ARCH-002 AC8/AC9: Uses ConsolidationService (multi-source) instead of PNCP-only.
+    If PNCP fails, PCP+ComprasGov provide partial results (partial > nothing).
+
+    1. Fetch fresh data from all sources via ConsolidationService (AC8)
+    2. On success: save_to_cache() resets fail_streak
+    3. On failure: record_cache_fetch_failure() increments fail_streak
+    4. If SSE tracker active: emit 'revalidated' event
+    5. Log structured JSON result
     """
     global _active_revalidations
     from config import REVALIDATION_TIMEOUT
@@ -1116,50 +1219,32 @@ async def _do_revalidation(
     start = time.monotonic()
     result_status = "unknown"
     new_results_count = 0
+    sources_used: list[str] = []
 
     try:
-        # AC5: Independent timeout — does not affect active requests
+        # Independent timeout — does not affect active requests
         async with asyncio.timeout(REVALIDATION_TIMEOUT):
-            import pncp_client as _pncp
-
-            fetch_result = await _pncp.buscar_todas_ufs_paralelo(
-                ufs=request_data["ufs"],
-                data_inicial=request_data["data_inicial"],
-                data_final=request_data["data_final"],
-                modalidades=request_data.get("modalidades"),
-            )
-
-            # Handle ParallelFetchResult or plain list
-            if hasattr(fetch_result, "items"):
-                results = fetch_result.items
-            elif isinstance(fetch_result, list):
-                results = fetch_result
-            else:
-                results = list(fetch_result)
-
+            results, sources_used = await _fetch_multi_source_for_revalidation(request_data)
             new_results_count = len(results)
 
             if results:
-                # AC2: Save to all cache levels
-                sources = ["PNCP"]
                 duration_ms = int((time.monotonic() - start) * 1000)
                 coverage = {
                     "succeeded_ufs": list(request_data["ufs"]),
                     "failed_ufs": [],
                     "total_requested": len(request_data["ufs"]),
                 }
-                # AC9: save_to_cache resets fail_streak=0, last_success_at=now
                 await save_to_cache(
                     user_id=user_id,
                     params=params,
                     results=results,
-                    sources=sources,
+                    sources=sources_used,
                     fetch_duration_ms=duration_ms,
                     coverage=coverage,
                 )
                 result_status = "success"
 
-                # AC7: SSE notification if tracker still active
+                # SSE notification if tracker still active
                 if search_id:
                     try:
                         from progress import get_tracker
@@ -1190,12 +1275,12 @@ async def _do_revalidation(
         logger.debug(f"Revalidation fetch failed: {e}")
 
     finally:
-        # Release budget slot (AC4)
+        # Release budget slot
         lock = _get_revalidation_lock()
         async with lock:
             _active_revalidations = max(0, _active_revalidations - 1)
 
-        # AC8: Structured log — 1 JSON line per revalidation
+        # Structured log — 1 JSON line per revalidation
         duration_ms = int((time.monotonic() - start) * 1000)
         logger.info(json.dumps({
             "event": "revalidation_complete",
@@ -1204,7 +1289,89 @@ async def _do_revalidation(
             "duration_ms": duration_ms,
             "result": result_status,
             "new_results_count": new_results_count,
+            "sources": sources_used,
         }))
+
+
+async def _fetch_multi_source_for_revalidation(request_data: dict) -> tuple[list, list[str]]:
+    """GTM-ARCH-002 AC8/AC9: Multi-source fetch for revalidation.
+
+    Tries ConsolidationService with all enabled sources.
+    If PNCP fails, PCP+ComprasGov provide partial results.
+    Falls back to PNCP-only if ConsolidationService unavailable.
+
+    Returns (results_list, sources_used_list).
+    """
+    import os
+
+    # AC8: Try ConsolidationService (multi-source) first
+    try:
+        from consolidation import ConsolidationService
+        from source_config.sources import get_source_config
+
+        source_config = get_source_config()
+        adapters = {}
+
+        # Build adapters for all enabled sources
+        if source_config.pncp.enabled:
+            from pncp_client import PNCPLegacyAdapter
+            adapters["PNCP"] = PNCPLegacyAdapter(
+                ufs=list(request_data["ufs"]),
+                modalidades=request_data.get("modalidades"),
+            )
+
+        if source_config.compras_gov.enabled:
+            from clients.compras_gov_client import ComprasGovAdapter
+            adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+
+        if source_config.portal.enabled and source_config.portal.credentials.has_api_key():
+            from clients.portal_compras_client import PortalComprasAdapter
+            adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                api_key=source_config.portal.credentials.api_key,
+                timeout=source_config.portal.timeout,
+            )
+
+        if adapters:
+            svc = ConsolidationService(
+                adapters=adapters,
+                timeout_per_source=60,
+                timeout_global=120,
+                fail_on_all_errors=False,  # AC9: partial results > nothing
+            )
+            try:
+                consolidation_result = await svc.fetch_all(
+                    data_inicial=request_data["data_inicial"],
+                    data_final=request_data["data_final"],
+                    ufs=set(request_data["ufs"]),
+                )
+                sources = [sr.source_code for sr in consolidation_result.source_results if sr.status == "success"]
+                return consolidation_result.records, sources or ["consolidation"]
+            finally:
+                await svc.close()
+
+    except ImportError:
+        logger.debug("ConsolidationService not available, falling back to PNCP-only")
+    except Exception as e:
+        logger.warning(f"Multi-source revalidation failed, falling back to PNCP-only: {e}")
+
+    # Fallback: PNCP-only (original behavior)
+    import pncp_client as _pncp
+
+    fetch_result = await _pncp.buscar_todas_ufs_paralelo(
+        ufs=request_data["ufs"],
+        data_inicial=request_data["data_inicial"],
+        data_final=request_data["data_final"],
+        modalidades=request_data.get("modalidades"),
+    )
+
+    if hasattr(fetch_result, "items"):
+        results = fetch_result.items
+    elif isinstance(fetch_result, list):
+        results = fetch_result
+    else:
+        results = list(fetch_result)
+
+    return results, ["PNCP"]
 
 
 # ============================================================================
@@ -1600,3 +1767,43 @@ async def get_stale_entries_for_refresh(batch_size: int = 25) -> list[dict]:
     ))
 
     return candidates[:batch_size]
+
+
+async def get_top_popular_params(limit: int = 10) -> list[dict]:
+    """GTM-ARCH-002 AC6/AC7: Get top popular sector+UF combinations for warmup.
+
+    Queries search_results_cache for the most accessed search_params combinations,
+    ordered by access_count DESC. Returns deduplicated list of search_params.
+    """
+    from supabase_client import get_supabase
+    sb = get_supabase()
+
+    response = (
+        sb.table("search_results_cache")
+        .select("search_params, access_count, params_hash")
+        .order("access_count", desc=True)
+        .limit(limit * 3)  # Over-fetch to deduplicate
+        .execute()
+    )
+
+    if not response.data:
+        return []
+
+    # Deduplicate by params_hash (same params across users)
+    seen_hashes: set[str] = set()
+    results: list[dict] = []
+
+    for row in response.data:
+        ph = row.get("params_hash", "")
+        if ph in seen_hashes:
+            continue
+        seen_hashes.add(ph)
+
+        search_params = row.get("search_params", {})
+        if search_params and search_params.get("setor_id") and search_params.get("ufs"):
+            results.append(search_params)
+
+        if len(results) >= limit:
+            break
+
+    return results
