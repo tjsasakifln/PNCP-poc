@@ -565,7 +565,7 @@ export default function SearchResults({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <span>
-                IA analisou {result.filter_stats.llm_zero_match_calls} licitacoes adicionais para identificar oportunidades relevantes
+                IA analisou {result.filter_stats.llm_zero_match_calls} licitações adicionais para identificar oportunidades relevantes
                 {(result.filter_stats.llm_zero_match_aprovadas ?? 0) > 0 && (
                   <> — {result.filter_stats.llm_zero_match_aprovadas} aprovadas</>
                 )}
@@ -584,7 +584,7 @@ export default function SearchResults({
             </span>
             <span className="text-ink-faint">•</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-brand-blue-subtle text-brand-navy text-xs font-medium">
-              Licitacoes abertas
+              Licitações abertas
             </span>
             {searchMode === 'setor' && (
               <>
@@ -695,7 +695,7 @@ export default function SearchResults({
                 <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">
                   {result.resumo.total_oportunidades}
                 </span>
-                <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.total_oportunidades === 1 ? 'licitacao' : 'licitacoes'}</span>
+                <span className="text-sm sm:text-base text-ink-secondary block mt-1">{result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}</span>
               </div>
               <div>
                 <span className="text-3xl sm:text-4xl font-bold font-data tabular-nums text-brand-navy dark:text-brand-blue">

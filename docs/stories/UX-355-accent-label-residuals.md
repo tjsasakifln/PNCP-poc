@@ -3,7 +3,7 @@
 **Severity:** P2/P3 — Important/Cosmetic
 **Origin:** UX Production Audit 2026-02-23 (Bugs #6, #7)
 **Parent:** UX-353
-**Status:** [ ] Pending
+**Status:** [x] Completed
 
 ---
 
@@ -22,12 +22,12 @@ A mensagem de erro na busca exibe "Erro ao buscar licitacoes" sem acento em "lic
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: Mensagem de erro exibe "Erro ao buscar licitações" com acento cedilha
-- [ ] **AC2**: Header da página /mensagens exibe "Suporte" (consistente com sidebar)
-- [ ] **AC3**: Grep completo por "licitacoes" (sem acento) em todo o frontend — zero ocorrências em texto user-facing
-- [ ] **AC4**: Grep completo por inconsistências "Mensagens" vs "Suporte" — todas as referências user-facing usam "Suporte"
-- [ ] **AC5**: Teste existente atualizado para verificar acento
-- [ ] **AC6**: Zero regressão no baseline
+- [x] **AC1**: Mensagem de erro exibe "Erro ao buscar licitações" com acento cedilha
+- [x] **AC2**: Header da página /mensagens exibe "Suporte" (consistente com sidebar)
+- [x] **AC3**: Grep completo por "licitacoes" (sem acento) em todo o frontend — zero ocorrências em texto user-facing
+- [x] **AC4**: Grep completo por inconsistências "Mensagens" vs "Suporte" — todas as referências user-facing usam "Suporte"
+- [x] **AC5**: Teste existente atualizado para verificar acento
+- [x] **AC6**: Zero regressão no baseline
 
 ## Arquivos Prováveis
 

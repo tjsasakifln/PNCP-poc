@@ -8,6 +8,8 @@
 import { render, screen } from "@testing-library/react";
 import { ModalidadeFilter, MODALIDADES } from "@/components/ModalidadeFilter";
 import { StatusFilter } from "@/components/StatusFilter";
+import { getUserFriendlyError } from "@/lib/error-messages";
+import * as fs from "fs";
 
 describe("GTM-FIX-034: Portuguese accents smoke test", () => {
   describe("ModalidadeFilter accents", () => {
@@ -58,6 +60,56 @@ describe("GTM-FIX-034: Portuguese accents smoke test", () => {
         <StatusFilter value="recebendo_proposta" onChange={() => {}} />
       );
       expect(screen.getByText(/licitações que ainda aceitam propostas/)).toBeInTheDocument();
+    });
+  });
+
+  // UX-355 AC1+AC5: Error message accent verification
+  describe("UX-355: Error message and label accents", () => {
+    it("useSearch fallback error should contain accented 'licitações'", () => {
+      const src = fs.readFileSync(
+        require.resolve("../app/buscar/hooks/useSearch.ts"),
+        "utf-8"
+      );
+      expect(src).toContain("Erro ao buscar licitações");
+      expect(src).not.toMatch(/Erro ao buscar licitacoes/);
+    });
+
+    it("SearchResults should use accented 'licitações' in user-facing text", () => {
+      const src = fs.readFileSync(
+        require.resolve("../app/buscar/components/SearchResults.tsx"),
+        "utf-8"
+      );
+      expect(src).toContain("Licitações abertas");
+      expect(src).not.toMatch(/Licitacoes abertas/);
+      expect(src).toContain("licitações adicionais");
+      expect(src).not.toMatch(/licitacoes adicionais/);
+    });
+
+    it("error-messages mapping should match accented 'Erro ao buscar licitações'", () => {
+      const result = getUserFriendlyError("Erro ao buscar licitações");
+      expect(result).toBeTruthy();
+      expect(result).not.toBe("Erro ao buscar licitações"); // Should be mapped, not passthrough
+    });
+  });
+
+  // UX-355 AC2+AC5: Suporte label consistency
+  describe("UX-355: Suporte label consistency", () => {
+    it("mensagens page should use 'Suporte' title, not 'Mensagens'", () => {
+      const src = fs.readFileSync(
+        require.resolve("../app/mensagens/page.tsx"),
+        "utf-8"
+      );
+      expect(src).toMatch(/title="Suporte"/);
+      expect(src).not.toMatch(/title="Mensagens"/);
+    });
+
+    it("MessageBadge should use 'Suporte' title", () => {
+      const src = fs.readFileSync(
+        require.resolve("../app/components/MessageBadge.tsx"),
+        "utf-8"
+      );
+      expect(src).toMatch(/title="Suporte"/);
+      expect(src).not.toMatch(/title="Mensagens"/);
     });
   });
 

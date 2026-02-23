@@ -228,7 +228,7 @@ export default function MensagensPage() {
   return (
     <div className="min-h-screen bg-[var(--canvas)] flex flex-col">
       <PageHeader
-        title="Mensagens"
+        title="Suporte"
         extraControls={
           mobileShowThread ? (
             <button

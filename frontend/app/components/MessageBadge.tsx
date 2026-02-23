@@ -14,8 +14,8 @@ export function MessageBadge() {
     <Link
       href="/mensagens"
       className="relative p-2 rounded-full hover:bg-[var(--surface-1)] transition-colors"
-      title="Mensagens"
-      aria-label={unreadCount > 0 ? `${unreadCount} mensagens não lidas` : "Mensagens"}
+      title="Suporte"
+      aria-label={unreadCount > 0 ? `${unreadCount} mensagens não lidas` : "Suporte"}
     >
       {/* Envelope icon (Heroicons outline style) */}
       <svg

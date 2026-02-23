@@ -474,10 +474,10 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
           }
 
           if (err.error_code === 'RATE_LIMIT') {
-            throw attachMeta(new Error(`Limite de requisicoes excedido (2/min). Aguarde ${err.data?.wait_seconds || 60} segundos e tente novamente.`));
+            throw attachMeta(new Error(`Limite de requisições excedido (2/min). Aguarde ${err.data?.wait_seconds || 60} segundos e tente novamente.`));
           }
 
-          throw attachMeta(new Error(err.message || "Erro ao buscar licitacoes"));
+          throw attachMeta(new Error(err.message || "Erro ao buscar licitações"));
         }
 
         const parsed = await response.json().catch(() => null);
