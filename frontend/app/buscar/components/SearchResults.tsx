@@ -168,6 +168,18 @@ export default function SearchResults({
     ? Array.from(ufStatuses.values()).filter(s => s.status === 'pending' || s.status === 'fetching' || s.status === 'retrying').length
     : 0;
 
+  // UX-349 AC2/AC4: Excel processing timeout — auto-transition to retry after 60s
+  const [excelTimedOut, setExcelTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (result?.excel_status === 'processing' && !result?.download_url && !result?.download_id) {
+      setExcelTimedOut(false);
+      const timer = setTimeout(() => setExcelTimedOut(true), 60_000);
+      return () => clearTimeout(timer);
+    }
+    setExcelTimedOut(false);
+  }, [result?.excel_status, result?.download_url, result?.download_id]);
+
   // GTM-FIX-011 AC22: Toggle source badges for power users
   const [showSourceBadges, setShowSourceBadges] = useState(false);
 
@@ -788,62 +800,82 @@ export default function SearchResults({
             />
           )}
 
-          {/* Download Button — CRIT-005 AC9-12 */}
+          {/* Download Button — UX-349 AC1-AC5: Excel always visible when results exist */}
           {planInfo?.capabilities.allow_excel ? (
-            result.excel_status === 'failed' ? (
-              <button
-                disabled
-                className="w-full bg-ink-faint text-ink-muted py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
-                           cursor-not-allowed flex items-center justify-center gap-3"
-                data-testid="excel-failed-button"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                Excel indisponível — tente nova busca
-              </button>
-            ) : result.excel_status === 'processing' ? (
-              <button
-                disabled
-                className="w-full bg-brand-navy/70 text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
-                           cursor-wait flex items-center justify-center gap-3"
-                data-testid="excel-processing-button"
-              >
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Gerando Excel" role="img">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Gerando Excel...
-              </button>
-            ) : (
-              <button
-                onClick={onDownload}
-                disabled={downloadLoading}
-                aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} ${result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}`}
-                className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
-                           hover:bg-brand-blue-hover active:bg-brand-blue
-                           disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
-                           transition-all duration-200
-                           flex items-center justify-center gap-3"
-              >
-                {downloadLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
+            (() => {
+              const hasDownload = !!(result.download_url || result.download_id);
+              const isFailed = (result.excel_status === 'failed' || excelTimedOut) && !hasDownload;
+              const isProcessing = result.excel_status === 'processing' && !hasDownload && !isFailed;
+
+              if (isProcessing) {
+                // AC2: Processing → spinner with progress message
+                return (
+                  <button
+                    disabled
+                    className="w-full bg-brand-navy/70 text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                               cursor-wait flex items-center justify-center gap-3"
+                    data-testid="excel-processing-button"
+                  >
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Gerando Excel" role="img">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Preparando download...
-                  </>
-                ) : (
-                  <>
+                    Gerando Excel...
+                  </button>
+                );
+              }
+
+              if (isFailed) {
+                // AC4: Failed or timed out → "Gerar novamente" retry button
+                return (
+                  <button
+                    onClick={onSearch}
+                    disabled={loading}
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                               transition-all duration-200 flex items-center justify-center gap-3
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="excel-retry-button"
+                  >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    Baixar Excel ({result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'})
-                  </>
-                )}
-              </button>
-            )
+                    Gerar novamente
+                  </button>
+                );
+              }
+
+              // AC1/AC3/AC5: Active download button
+              return (
+                <button
+                  onClick={onDownload}
+                  disabled={downloadLoading}
+                  aria-label={`Baixar Excel com ${result.resumo.total_oportunidades} ${result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'}`}
+                  className="w-full bg-brand-navy text-white py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                             hover:bg-brand-blue-hover active:bg-brand-blue
+                             disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
+                             transition-all duration-200
+                             flex items-center justify-center gap-3"
+                  data-testid="excel-download-button"
+                >
+                  {downloadLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Preparando download...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Baixar Excel ({result.resumo.total_oportunidades} {result.resumo.total_oportunidades === 1 ? 'licitação' : 'licitações'})
+                    </>
+                  )}
+                </button>
+              );
+            })()
           ) : (
             <Link
               href="/planos"

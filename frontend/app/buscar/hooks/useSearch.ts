@@ -612,7 +612,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   const handleDownload = async () => {
     // STORY-202 CROSS-C02: Support both download_url (object storage) and download_id (filesystem)
-    if (!result?.download_id && !result?.download_url) return;
+    // UX-349 AC1: Show error instead of silently returning when no download available
+    if (!result?.download_id && !result?.download_url) {
+      setDownloadError("Excel ainda não disponível. Faça uma nova busca para gerar a planilha.");
+      return;
+    }
     setDownloadError(null);
     setDownloadLoading(true);
 
