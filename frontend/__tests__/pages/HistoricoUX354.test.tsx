@@ -315,7 +315,8 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
     });
   });
 
-  test('AC5: timed_out "All sources failed" renders PT-BR', async () => {
+  // UX-357: timed_out now always shows canonical timeout message
+  test('AC5: timed_out shows unified timeout message (UX-357)', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({
@@ -331,7 +332,7 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent(/fonte/i);
+      expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
     });
   });
 

@@ -39,9 +39,10 @@ const ERROR_MAP: Record<string, string> = {
   "Gateway Timeout": "A requisição demorou muito. Tente novamente.",
   "Nossos servidores estão sendo atualizados": "keep_original",
 
-  // UX-354 AC4-AC5: Server restart and other English messages from backend
+  // UX-354 AC4-AC5 + UX-357 AC1-AC4: Server restart messages (unified to max 2 variants)
   "Server restart": "O servidor reiniciou. Recomendamos tentar novamente.",
   "retry recommended": "O servidor reiniciou. Recomendamos tentar novamente.",
+  "reiniciou": "O servidor reiniciou. Recomendamos tentar novamente.",
   "Connection reset": "A conexão foi interrompida. Tente novamente.",
   "connection refused": "Servidor temporariamente indisponível. Tente novamente em instantes.",
   "Internal server error": "Erro interno do servidor. Tente novamente.",

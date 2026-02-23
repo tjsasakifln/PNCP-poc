@@ -429,4 +429,41 @@ describe('getUserFriendlyError', () => {
       expect(DEFAULT_ERROR_MESSAGE).toBe('Ocorreu um erro inesperado. Tente novamente.');
     });
   });
+
+  // UX-357: Restart error message consistency
+  describe('UX-357: Restart error consistency (AC1-AC5)', () => {
+    const CANONICAL_FAILURE = 'O servidor reiniciou. Recomendamos tentar novamente.';
+
+    // AC2: All restart-related inputs → canonical failure message
+    it.each([
+      ['Server restart — retry recommended'],
+      ['Server restart during processing'],
+      ['Something failed, retry recommended'],
+      ['O servidor reiniciou. Tente novamente.'],
+      ['O servidor reiniciou durante o processamento.'],
+      ['O servidor reiniciou. Recomendamos tentar novamente.'],
+    ])('AC2: "%s" → canonical failure message', (input) => {
+      expect(getUserFriendlyError(input)).toBe(CANONICAL_FAILURE);
+    });
+
+    // AC4: No duplicate restart outputs
+    it('AC4: "reiniciou" partial match catches Portuguese variants', () => {
+      expect(getUserFriendlyError('reiniciou')).toBe(CANONICAL_FAILURE);
+    });
+
+    // AC5: All restart inputs produce exactly 1 distinct message
+    it('AC5: all restart error codes produce exactly 1 distinct message', () => {
+      const inputs = [
+        'Server restart — retry recommended',
+        'Server restart during processing',
+        'retry recommended',
+        'O servidor reiniciou. Tente novamente.',
+        'O servidor reiniciou durante o processamento.',
+        'O servidor reiniciou. Recomendamos tentar novamente.',
+      ];
+      const results = new Set(inputs.map(getUserFriendlyError));
+      expect(results.size).toBe(1);
+      expect([...results][0]).toBe(CANONICAL_FAILURE);
+    });
+  });
 });

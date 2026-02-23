@@ -1,6 +1,6 @@
 # UX-357 — Inconsistência nas Mensagens de Erro de Restart no Histórico
 
-**Status:** Pending
+**Status:** Done
 **Priority:** P3 — Cosmetic
 **Severity:** Visual (todas em PT-BR, mas inconsistentes entre si)
 **Created:** 2026-02-23
@@ -36,13 +36,16 @@ Timeout com restart → variante 2 (?)
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: Unificar mensagens de restart para máximo 2 variantes: "falha" e "timeout"
-- [ ] **AC2**: Variante "falha": "O servidor reiniciou. Recomendamos tentar novamente." (mais educada)
-- [ ] **AC3**: Variante "timeout": "A busca excedeu o tempo limite. Recomendamos tentar novamente."
-- [ ] **AC4**: Auditar `error-messages.ts` para remover duplicatas de restart
-- [ ] **AC5**: Test: todos error codes de restart → max 2 mensagens distintas
+- [x] **AC1**: Unificar mensagens de restart para máximo 2 variantes: "falha" e "timeout"
+- [x] **AC2**: Variante "falha": "O servidor reiniciou. Recomendamos tentar novamente." (mais educada)
+- [x] **AC3**: Variante "timeout": "A busca excedeu o tempo limite. Recomendamos tentar novamente."
+- [x] **AC4**: Auditar `error-messages.ts` para remover duplicatas de restart
+- [x] **AC5**: Test: todos error codes de restart → max 2 mensagens distintas
 
 ## Files Envolvidos
 
-- `frontend/app/buscar/utils/error-messages.ts` — Mapeamento error→mensagem
-- `frontend/app/historico/page.tsx` — Rendering de mensagens de erro
+- `frontend/lib/error-messages.ts` — Added "reiniciou" partial-match key (catches PT-BR variants)
+- `frontend/app/historico/page.tsx` — timed_out always shows canonical timeout message
+- `frontend/__tests__/lib/error-messages.test.ts` — 8 new tests (UX-357 section)
+- `frontend/__tests__/pages/HistoricoUX357.test.tsx` — NEW: 9 tests for historico rendering
+- `frontend/__tests__/pages/HistoricoUX354.test.tsx` — Updated timed_out test expectation

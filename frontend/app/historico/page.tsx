@@ -332,10 +332,12 @@ export default function HistoricoPage() {
                           Termos: {s.custom_keywords.join(", ")}
                         </p>
                       )}
-                      {/* AC17: Show error message for failed/timed_out sessions */}
-                      {s.error_message && isRetryable(s.status) && (
+                      {/* UX-357: Unified error messages — max 2 variants (failure + timeout) */}
+                      {isRetryable(s.status) && (s.error_message || s.status === 'timed_out') && (
                         <p className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-2" data-testid="error-message">
-                          {getLocalizedError(s.error_message)}
+                          {s.status === 'timed_out'
+                            ? "A busca excedeu o tempo limite. Recomendamos tentar novamente."
+                            : getLocalizedError(s.error_message)}
                         </p>
                       )}
                       {s.resumo_executivo && s.status === "completed" && (
