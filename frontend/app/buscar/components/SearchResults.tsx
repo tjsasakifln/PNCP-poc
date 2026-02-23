@@ -114,6 +114,9 @@ export interface SearchResultsProps {
   searchId?: string;
   setorId?: string;
 
+  // UX-350 AC6: Profile completeness for recommendation context
+  isProfileComplete?: boolean;
+
   // CRIT-008 AC5: Auto-retry for transient errors
   retryCountdown?: number | null;
   onRetryNow?: () => void;
@@ -138,6 +141,8 @@ export default function SearchResults({
   liveFetchInProgress, refreshAvailable, onRefreshResults,
   // D-05
   searchId, setorId,
+  // UX-350
+  isProfileComplete = true,
   // CRIT-008
   retryCountdown, onRetryNow, onCancelRetry,
 }: SearchResultsProps) {
@@ -725,36 +730,82 @@ export default function SearchResults({
               </div>
             ) : null}
 
-            {/* AC10: Recommendation Cards */}
+            {/* AC10 + UX-350 AC5-AC8: Recommendation Cards with strategic context */}
             {result.resumo.recomendacoes && result.resumo.recomendacoes.length > 0 && (
               <div className="mt-4 sm:mt-6">
-                <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-3 sm:mb-4">Recomendações do Consultor:</h4>
+                {/* AC5: Proper accents in title */}
+                <h4 className="text-base sm:text-lg font-semibold font-display text-ink mb-3 sm:mb-4">Recomendações Estratégicas:</h4>
+
+                {/* AC6: Incomplete profile banner with CTA */}
+                {!isProfileComplete && (
+                  <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700/40 rounded-card flex items-center gap-3" data-testid="profile-incomplete-banner">
+                    <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-amber-800 dark:text-amber-200 flex-1">
+                      Complete seu perfil para recomendações mais precisas.{' '}
+                      <Link href="/conta" className="font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-100">
+                        Completar perfil →
+                      </Link>
+                    </p>
+                  </div>
+                )}
+
+                {/* AC8: AI transparency label */}
+                <p className="text-xs text-ink-muted mb-3" data-testid="ai-transparency-label">
+                  Análise gerada por IA com base no seu perfil e no edital
+                </p>
+
                 <div className="space-y-3">
-                  {result.resumo.recomendacoes.map((rec, i) => (
-                    <div
-                      key={i}
-                      className="p-3 sm:p-4 bg-surface border border-border rounded-card animate-fade-in-up"
-                      style={{ animationDelay: `${i * 80}ms` }}
-                    >
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          rec.urgencia === "alta"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                            : rec.urgencia === "media"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                            : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                        }`}>
-                          {rec.urgencia === "alta" ? "Urgente" : rec.urgencia === "media" ? "Atencao" : "Normal"}
-                        </span>
-                        <span className="text-sm font-semibold text-brand-navy dark:text-brand-blue">
-                          R$ {rec.valor.toLocaleString("pt-BR")}
-                        </span>
+                  {result.resumo.recomendacoes.map((rec, i) => {
+                    // AC7: Find matching licitacao to get its official link
+                    const matchedBid = result.licitacoes.find(l =>
+                      rec.oportunidade && (
+                        l.orgao && rec.oportunidade.includes(l.orgao) ||
+                        l.objeto && rec.oportunidade.includes(l.objeto.substring(0, 40))
+                      )
+                    );
+                    return (
+                      <div
+                        key={i}
+                        className="p-3 sm:p-4 bg-surface border border-border rounded-card animate-fade-in-up"
+                        style={{ animationDelay: `${i * 80}ms` }}
+                      >
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                            rec.urgencia === "alta"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                              : rec.urgencia === "media"
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                              : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          }`}>
+                            {rec.urgencia === "alta" ? "Urgente" : rec.urgencia === "media" ? "Atenção" : "Normal"}
+                          </span>
+                          <span className="text-sm font-semibold text-brand-navy dark:text-brand-blue">
+                            R$ {rec.valor.toLocaleString("pt-BR")}
+                          </span>
+                        </div>
+                        <p className="text-sm sm:text-base font-medium text-ink mb-1">{rec.oportunidade}</p>
+                        <p className="text-sm text-brand-navy dark:text-brand-blue font-medium mb-1">{rec.acao_sugerida}</p>
+                        <p className="text-xs sm:text-sm text-ink-secondary">{rec.justificativa}</p>
+                        {/* AC7: Link to official source */}
+                        {matchedBid?.link && (
+                          <a
+                            href={matchedBid.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-brand-navy dark:text-brand-blue hover:underline"
+                            data-testid="rec-edital-link"
+                          >
+                            Ver edital na fonte oficial
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        )}
                       </div>
-                      <p className="text-sm sm:text-base font-medium text-ink mb-1">{rec.oportunidade}</p>
-                      <p className="text-sm text-brand-navy dark:text-brand-blue font-medium mb-1">{rec.acao_sugerida}</p>
-                      <p className="text-xs sm:text-sm text-ink-secondary">{rec.justificativa}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

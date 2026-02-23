@@ -193,6 +193,17 @@ function HomePageContent() {
     return localStorage.getItem('smartlic-has-searched') === 'true';
   }, []);
 
+  // UX-350 AC6: Check profile completeness for recommendation context
+  const isProfileComplete = useMemo(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const cached = localStorage.getItem('profileContext');
+      if (!cached) return false;
+      const ctx = JSON.parse(cached);
+      return !!(ctx.porte_empresa && ctx.ufs_atuacao?.length > 0);
+    } catch { return false; }
+  }, []);
+
   // Customize accordion state (AC7: maintain in localStorage)
   // UX-346 AC1: First-time users always see collapsed; returning users use persisted state
   const [customizeOpen, setCustomizeOpen] = useState(() => {
@@ -539,6 +550,8 @@ function HomePageContent() {
                 // D-05: Feedback loop
                 searchId={search.searchId || undefined}
                 setorId={filters.setorId}
+                // UX-350: Profile completeness
+                isProfileComplete={isProfileComplete}
                 // CRIT-008: Auto-retry
                 retryCountdown={search.retryCountdown}
                 onRetryNow={search.retryNow}

@@ -191,14 +191,22 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
   // A-04: Keep searchId alive for SSE after cache-first
   const liveFetchSearchIdRef = useRef<string | null>(null);
 
+  // UX-350 AC1-AC4: LLM summary timeout — show fallback after 30s if AI summary not ready
+  const llmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // F-01 AC21: Handle background job completion via SSE
   const handleSseEvent = (event: SearchProgressEvent) => {
     if (event.stage === 'llm_ready' && event.detail.resumo) {
-      // Update the result's resumo with the AI-generated summary
+      // AC3: AI summary arrived — clear timeout and update silently
+      if (llmTimeoutRef.current) {
+        clearTimeout(llmTimeoutRef.current);
+        llmTimeoutRef.current = null;
+      }
       setResult(prev => prev ? {
         ...prev,
         resumo: event.detail.resumo as BuscaResult['resumo'],
         llm_status: 'ready' as const,
+        llm_source: 'ai' as const,
       } : prev);
     } else if (event.stage === 'excel_ready') {
       // Update the result's download_url when Excel is ready
@@ -260,6 +268,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   const cancelSearch = () => {
     abortControllerRef.current?.abort();
+    // UX-350: Clear LLM timeout on cancel
+    if (llmTimeoutRef.current) { clearTimeout(llmTimeoutRef.current); llmTimeoutRef.current = null; }
     // CRIT-006 AC16: Notify backend of cancellation
     if (searchId && session?.access_token) {
       fetch(`/api/v1/search/${encodeURIComponent(searchId)}/cancel`, {
@@ -313,6 +323,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       municipios: [...filters.municipios],
       ordenacao: filters.ordenacao,
     };
+
+    // UX-350: Clear any existing LLM timeout from previous search
+    if (llmTimeoutRef.current) { clearTimeout(llmTimeoutRef.current); llmTimeoutRef.current = null; }
 
     setLoading(true);
     setLoadingStep(1);
@@ -476,6 +489,21 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
       setResult(data);
       setRawCount(data.total_raw || 0);
+
+      // UX-350 AC1-AC2: Start 30s timeout for LLM summary when processing
+      if (data.llm_status === 'processing') {
+        if (llmTimeoutRef.current) clearTimeout(llmTimeoutRef.current);
+        llmTimeoutRef.current = setTimeout(() => {
+          // AC2: Timeout expired — transition to fallback label (resumo data already exists)
+          // AC4: No "preparando" message remains — fallback is the final result
+          setResult(prev => prev && prev.llm_source === 'processing' ? {
+            ...prev,
+            llm_source: 'fallback' as const,
+            llm_status: 'ready' as const,
+          } : prev);
+          llmTimeoutRef.current = null;
+        }, 30_000);
+      }
 
       // A-04 AC1/AC6: Cache-first — keep SSE open for background fetch
       if (data.live_fetch_in_progress) {
