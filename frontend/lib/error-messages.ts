@@ -39,6 +39,16 @@ const ERROR_MAP: Record<string, string> = {
   "Gateway Timeout": "A requisição demorou muito. Tente novamente.",
   "Nossos servidores estão sendo atualizados": "keep_original",
 
+  // UX-354 AC4-AC5: Server restart and other English messages from backend
+  "Server restart": "O servidor reiniciou. Recomendamos tentar novamente.",
+  "retry recommended": "O servidor reiniciou. Recomendamos tentar novamente.",
+  "Connection reset": "A conexão foi interrompida. Tente novamente.",
+  "connection refused": "Servidor temporariamente indisponível. Tente novamente em instantes.",
+  "Internal server error": "Erro interno do servidor. Tente novamente.",
+  "Pipeline failed": "A busca não pôde ser concluída. Tente novamente.",
+  "All sources failed": "Nenhuma fonte de dados respondeu. Tente novamente em alguns minutos.",
+  "No results found": "Nenhum resultado encontrado para os filtros selecionados.",
+
   // Backend specific — GTM-FIX-033 AC5: actionable message
   "Backend indisponível": "Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.",
   "Erro ao buscar licitações": "Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.",

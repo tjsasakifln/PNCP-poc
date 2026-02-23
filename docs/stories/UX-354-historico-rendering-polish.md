@@ -3,7 +3,7 @@
 **Severity:** P2 — Important
 **Origin:** UX Production Audit 2026-02-23 (Bugs #3, #4, #5)
 **Parent:** UX-351, UX-353
-**Status:** [ ] Pending
+**Status:** [x] Completed
 
 ---
 
@@ -25,14 +25,14 @@ UX-351 implementou `getUserFriendlyError()`, mas a mensagem do backend para serv
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: Header bar da página exibe "Histórico" com acento correto (não unicode escape)
-- [ ] **AC2**: Nomes de setor no histórico usam o display name completo do setor (mapeamento slug → nome)
-- [ ] **AC3**: Todos os 15 setores mapeiam corretamente (vestuario → "Vestuário e Uniformes", etc.)
-- [ ] **AC4**: Erro "Server restart" exibe "O servidor reiniciou. Recomendamos tentar novamente."
-- [ ] **AC5**: Nenhuma mensagem de erro em inglês visível no histórico (audit todas as mensagens de erro possíveis)
-- [ ] **AC6**: Teste: render de entry com setor "vestuario" → exibe "Vestuário e Uniformes"
-- [ ] **AC7**: Teste: render de entry com error "Server restart" → exibe mensagem em PT-BR
-- [ ] **AC8**: Zero regressão no baseline
+- [x] **AC1**: Header bar da página exibe "Histórico" com acento correto (não unicode escape)
+- [x] **AC2**: Nomes de setor no histórico usam o display name completo do setor (mapeamento slug → nome)
+- [x] **AC3**: Todos os 15 setores mapeiam corretamente (vestuario → "Vestuário e Uniformes", etc.)
+- [x] **AC4**: Erro "Server restart" exibe "O servidor reiniciou. Recomendamos tentar novamente."
+- [x] **AC5**: Nenhuma mensagem de erro em inglês visível no histórico (audit todas as mensagens de erro possíveis)
+- [x] **AC6**: Teste: render de entry com setor "vestuario" → exibe "Vestuário e Uniformes"
+- [x] **AC7**: Teste: render de entry com error "Server restart" → exibe mensagem em PT-BR
+- [x] **AC8**: Zero regressão no baseline
 
 ## Arquivos Prováveis
 
@@ -49,6 +49,14 @@ UX-351 implementou `getUserFriendlyError()`, mas a mensagem do backend para serv
 **Bug 2 (slugs):** O backend provavelmente salva o `setor` como slug na tabela de sessões. O frontend precisa de um mapa slug→displayName. Reutilizar o array de setores que já existe no dropdown da busca.
 
 **Bug 3 (inglês):** Adicionar mapeamento em `getUserFriendlyError()` ou `ERROR_CODE_MESSAGES` para "Server restart" → mensagem PT-BR.
+
+## Files Changed
+
+- `frontend/app/historico/page.tsx` — Replaced all `\u00XX` unicode escapes with UTF-8 chars; added `SECTOR_NAMES` mapping (15 sectors) + `getSectorDisplayName()` helper; changed sector rendering from raw `s.sectors.join(", ")` to `s.sectors.map(getSectorDisplayName).join(", ")`; added `data-testid="sector-display"` for testing
+- `frontend/lib/error-messages.ts` — Added 8 new English→PT-BR mappings: "Server restart", "retry recommended", "Connection reset", "connection refused", "Internal server error", "Pipeline failed", "All sources failed", "No results found"
+- `frontend/__tests__/pages/HistoricoUX354.test.tsx` — NEW: 18 tests (AC1-AC8 coverage)
+- `frontend/__tests__/lib/error-messages.test.ts` — Added 8 new tests for UX-354 English→PT-BR mappings
+- `docs/stories/UX-354-historico-rendering-polish.md` — Marked all ACs completed
 
 ## Referência
 
