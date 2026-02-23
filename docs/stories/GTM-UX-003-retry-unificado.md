@@ -37,23 +37,23 @@ Existem 2 mecanismos de retry competindo na pagina de busca: auto-retry do CRIT-
 
 ### Mecanismo Unico
 
-- [ ] AC1: UM unico mecanismo de retry: auto-retry com botao "Tentar agora" integrado
-- [ ] AC2: Cooldown reduzido: 5s → 10s → 15s (nao 10s→20s→30s)
-- [ ] AC3: Maximo 3 tentativas automaticas (manter)
+- [x] AC1: UM unico mecanismo de retry: auto-retry com botao "Tentar agora" integrado
+- [x] AC2: Cooldown reduzido: 5s → 10s → 15s (nao 10s→20s→30s)
+- [x] AC3: Maximo 3 tentativas automaticas (manter)
 
 ### Mensagens Contextuais
 
-- [ ] AC4: Erro de timeout PNCP: "A consulta esta demorando mais que o esperado. Tentando novamente..."
-- [ ] AC5: Erro 502/503/504: "Servico temporariamente indisponivel. Tentando novamente..."
-- [ ] AC6: Erro de rede: "Sem conexao com o servidor. Verificando..."
-- [ ] AC7: NUNCA dizer "servidor reiniciando" a menos que health probe confirme restart
+- [x] AC4: Erro de timeout PNCP: "A consulta esta demorando mais que o esperado. Tentando novamente..."
+- [x] AC5: Erro 502/503/504: "Servico temporariamente indisponivel. Tentando novamente..."
+- [x] AC6: Erro de rede: "Sem conexao com o servidor. Verificando..."
+- [x] AC7: NUNCA dizer "servidor reiniciando" a menos que health probe confirme restart
 
 ### UX Simplificada
 
-- [ ] AC8: Countdown numerico simples (nao circular SVG) — "Tentando em 5s... [Tentar agora]"
-- [ ] AC9: Apos 3 falhas: "Nao foi possivel completar a busca. [Tentar novamente] [Ver resultados parciais]"
-- [ ] AC10: Se houver resultados parciais, mostrar com banner (nao esconder)
-- [ ] AC11: Remover cooldown de 30s do botao manual
+- [x] AC8: Countdown numerico simples (nao circular SVG) — "Tentando em 5s... [Tentar agora]"
+- [x] AC9: Apos 3 falhas: "Nao foi possivel completar a busca. [Tentar novamente] [Ver resultados parciais]"
+- [x] AC10: Se houver resultados parciais, mostrar com banner (nao esconder)
+- [x] AC11: Remover cooldown de 30s do botao manual
 
 ## Testes Obrigatorios
 
@@ -61,11 +61,11 @@ Existem 2 mecanismos de retry competindo na pagina de busca: auto-retry do CRIT-
 cd frontend && npm test -- --testPathPattern="retry-unified|useSearch" --no-coverage
 ```
 
-- [ ] T1: Auto-retry usa mensagem contextual (nao "reiniciando")
-- [ ] T2: Cooldown 5s→10s→15s (nao 10s→20s→30s)
-- [ ] T3: Botao "Tentar agora" funciona sem cooldown extra
-- [ ] T4: Apos 3 falhas mostra opcao de resultados parciais
-- [ ] T5: Apenas 1 mecanismo de retry ativo
+- [x] T1: Auto-retry usa mensagem contextual (nao "reiniciando")
+- [x] T2: Cooldown 5s→10s→15s (nao 10s→20s→30s)
+- [x] T3: Botao "Tentar agora" funciona sem cooldown extra
+- [x] T4: Apos 3 falhas mostra opcao de resultados parciais
+- [x] T5: Apenas 1 mecanismo de retry ativo
 
 ## Arquivos Afetados
 

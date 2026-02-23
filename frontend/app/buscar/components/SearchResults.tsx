@@ -115,8 +115,12 @@ export interface SearchResultsProps {
   // UX-350 AC6: Profile completeness for recommendation context
   isProfileComplete?: boolean;
 
-  // CRIT-008 AC5: Auto-retry for transient errors
+  // CRIT-008 AC5 + GTM-UX-003: Unified retry mechanism
   retryCountdown?: number | null;
+  /** GTM-UX-003 AC4-AC7: Contextual retry message */
+  retryMessage?: string | null;
+  /** GTM-UX-003 AC9: All retry attempts exhausted */
+  retryExhausted?: boolean;
   onRetryNow?: () => void;
   onCancelRetry?: () => void;
 
@@ -147,8 +151,8 @@ export default function SearchResults({
   searchId, setorId,
   // UX-350
   isProfileComplete = true,
-  // CRIT-008
-  retryCountdown, onRetryNow, onCancelRetry,
+  // CRIT-008 + GTM-UX-003
+  retryCountdown, retryMessage, retryExhausted, onRetryNow, onCancelRetry,
   // GTM-UX-002 AC10-12
   onAdjustPeriod, onAddNeighborStates, nearbyResultsCount, onViewNearbyResults,
 }: SearchResultsProps) {
@@ -194,33 +198,7 @@ export default function SearchResults({
   // GTM-FIX-011 AC22: Toggle source badges for power users
   const [showSourceBadges, setShowSourceBadges] = useState(false);
 
-  // STORY-257B AC13: 30-second cooldown for retry button
-  const [retryCooldown, setRetryCooldown] = useState(0);
-
-  useEffect(() => {
-    if (error && !quotaError && retryCooldown === 0) {
-      setRetryCooldown(30);
-    }
-  }, [error, quotaError]);
-
-  useEffect(() => {
-    if (retryCooldown > 0) {
-      const timer = setTimeout(() => setRetryCooldown(retryCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [retryCooldown]);
-
-  useEffect(() => {
-    if (!error) {
-      setRetryCooldown(0);
-    }
-  }, [error]);
-
-  const formatCooldownTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // GTM-UX-003 AC11: 30-second cooldown REMOVED — single unified retry mechanism
 
   // GTM-UX-001: succeededUfs derivation removed — DataQualityBanner computes internally
 
@@ -272,40 +250,21 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* CRIT-008 AC5: Transient error with auto-retry countdown */}
+      {/* GTM-UX-003 AC1/AC8: Unified retry — simple numeric countdown (no circular SVG) */}
       {error && !quotaError && retryCountdown != null && retryCountdown > 0 && (
-        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-card animate-fade-in-up" role="alert">
-          <div className="flex items-center gap-3 mb-3">
-            {/* Circular countdown */}
-            <div className="relative w-10 h-10 flex-shrink-0">
-              <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
-                <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-200 dark:text-blue-800" />
-                <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  className="text-blue-500"
-                  strokeDasharray="94.25"
-                  strokeDashoffset={94.25 * (1 - retryCountdown / 30)}
-                  strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 1s linear' }}
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600 dark:text-blue-300">
-                {retryCountdown}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300">
-                O servidor está reiniciando
-              </p>
-              <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-0.5">
-                Tentando novamente em {retryCountdown}s...
-              </p>
-            </div>
-          </div>
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-card animate-fade-in-up" role="alert" data-testid="retry-countdown">
+          <p className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 mb-1" data-testid="retry-message">
+            {retryMessage || 'Serviço temporariamente indisponível. Tentando novamente...'}
+          </p>
+          <p className="text-sm text-blue-600/70 dark:text-blue-400/70 mb-3" data-testid="retry-countdown-text">
+            Tentando em {retryCountdown}s...
+          </p>
           <div className="flex gap-3">
             <button
               onClick={onRetryNow}
               className="px-4 py-2 bg-blue-600 text-white rounded-button text-sm font-medium hover:bg-blue-700 transition-colors"
               type="button"
+              data-testid="retry-now-button"
             >
               Tentar agora
             </button>
@@ -320,14 +279,48 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Error Display with Retry — CRIT-009 AC7-AC8: structured SearchError with ErrorDetail */}
-      {error && !quotaError && (retryCountdown == null || retryCountdown <= 0) && (
+      {/* GTM-UX-003 AC9: After 3 failed retries — show exhaustion state with partial results option */}
+      {error && !quotaError && retryExhausted && (retryCountdown == null || retryCountdown <= 0) && (
+        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-card animate-fade-in-up" role="alert" data-testid="retry-exhausted">
+          <p className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 mb-3">
+            Não foi possível completar a busca.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={onSearch}
+              disabled={loading}
+              className="px-4 py-2 bg-amber-600 text-white rounded-button text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50"
+              type="button"
+              data-testid="retry-manual-button"
+            >
+              Tentar novamente
+            </button>
+            {result && result.resumo && result.resumo.total_oportunidades > 0 && (
+              <button
+                onClick={() => {
+                  // AC10: Scroll to existing partial results
+                  const resultsEl = document.querySelector('[data-testid="results-header"]');
+                  resultsEl?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 bg-transparent text-amber-600 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-button text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                type="button"
+                data-testid="view-partial-results-button"
+              >
+                Ver resultados parciais
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Error Display with Retry — GTM-UX-003 AC11: No cooldown on manual retry */}
+      {error && !quotaError && (retryCountdown == null || retryCountdown <= 0) && !retryExhausted && (
         <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
           <p className="text-sm sm:text-base font-medium text-error mb-3">{error.message}</p>
           <ErrorDetail error={error} />
           <button
             onClick={onSearch}
-            disabled={loading || retryCooldown > 0}
+            disabled={loading}
             className="mt-3 px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
           >
             {loading ? (
@@ -337,14 +330,6 @@ export default function SearchResults({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 Tentando...
-              </>
-            ) : retryCooldown > 0 ? (
-              <>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                  <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2" />
-                </svg>
-                Tentar novamente ({formatCooldownTime(retryCooldown)})
               </>
             ) : "Tentar novamente"}
           </button>

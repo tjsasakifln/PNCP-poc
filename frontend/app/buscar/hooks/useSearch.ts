@@ -13,7 +13,7 @@ import { useQuota } from "../../../hooks/useQuota";
 import { useSearchSSE, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo, type UfStatus, type BatchProgress } from "../../../hooks/useSearchSSE";
 import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
-import { getUserFriendlyError, getMessageFromErrorCode, isTransientError } from "../../../lib/error-messages";
+import { getUserFriendlyError, getMessageFromErrorCode, isTransientError, getRetryMessage } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
 import { saveLastSearch } from "../../../lib/lastSearchCache";
 import { toast } from "sonner";
@@ -139,6 +139,10 @@ export interface UseSearchReturn {
   getRetryCooldown: (errorMessage: string | null, httpStatus?: number) => number;
   /** CRIT-008 AC5: Auto-retry countdown (seconds remaining, null when inactive) */
   retryCountdown: number | null;
+  /** GTM-UX-003 AC4-AC7: Contextual retry message (not "servidor reiniciando") */
+  retryMessage: string | null;
+  /** GTM-UX-003 AC9: True when all 3 auto-retry attempts have been exhausted */
+  retryExhausted: boolean;
   /** CRIT-008 AC5: Trigger immediate retry during countdown */
   retryNow: () => void;
   /** CRIT-008 AC5: Cancel auto-retry countdown */
@@ -160,6 +164,10 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   // CRIT-008 AC5: Auto-retry for transient errors
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
+  // GTM-UX-003 AC4-AC7: Contextual retry message
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
+  // GTM-UX-003 AC9: All retry attempts exhausted
+  const [retryExhausted, setRetryExhausted] = useState(false);
   const retryAttemptRef = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const buscarRef = useRef<((options?: { forceFresh?: boolean }) => Promise<void>) | null>(null);
@@ -359,6 +367,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         retryTimerRef.current = null;
       }
       setRetryCountdown(null);
+      setRetryMessage(null);
+      setRetryExhausted(false);
     }
     autoRetryInProgressRef.current = false;
 
@@ -657,12 +667,16 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         } else {
           setError(searchError);
 
-          // CRIT-008 AC4-AC5: Start auto-retry countdown for transient errors
+          // CRIT-008 AC4-AC5 + GTM-UX-003 AC1-AC7: Auto-retry with contextual messages
           if (isTransientError(searchError.httpStatus, searchError.rawMessage) && retryAttemptRef.current < 3) {
-            const RETRY_DELAYS = [10, 20, 30];
-            const delaySeconds = RETRY_DELAYS[retryAttemptRef.current] ?? 30;
+            // GTM-UX-003 AC2: Reduced cooldown 5s→10s→15s (was 10s→20s→30s)
+            const RETRY_DELAYS = [5, 10, 15];
+            const delaySeconds = RETRY_DELAYS[retryAttemptRef.current] ?? 15;
             let remaining = delaySeconds;
             setRetryCountdown(remaining);
+            // GTM-UX-003 AC4-AC7: Contextual message (never "reiniciando")
+            setRetryMessage(getRetryMessage(searchError.httpStatus, searchError.rawMessage));
+            setRetryExhausted(false);
 
             if (retryTimerRef.current) clearInterval(retryTimerRef.current);
             retryTimerRef.current = setInterval(() => {
@@ -674,11 +688,16 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
                 retryAttemptRef.current++;
                 autoRetryInProgressRef.current = true;
                 setError(null);
+                setRetryMessage(null);
                 buscarRef.current?.();
               } else {
                 setRetryCountdown(remaining);
               }
             }, 1000);
+          } else if (isTransientError(searchError.httpStatus, searchError.rawMessage) && retryAttemptRef.current >= 3) {
+            // GTM-UX-003 AC9: All 3 attempts exhausted
+            setRetryExhausted(true);
+            setRetryMessage(null);
           }
         }
       }
@@ -713,6 +732,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       retryTimerRef.current = null;
     }
     setRetryCountdown(null);
+    setRetryMessage(null);
     retryAttemptRef.current++;
     autoRetryInProgressRef.current = true;
     setError(null);
@@ -726,6 +746,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       retryTimerRef.current = null;
     }
     setRetryCountdown(null);
+    setRetryMessage(null);
     // Keep the error displayed — user chose to stop retrying
   };
 
@@ -936,6 +957,8 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     estimateSearchTime, restoreSearchStateOnMount,
     getRetryCooldown,
     retryCountdown,
+    retryMessage,
+    retryExhausted,
     retryNow,
     cancelRetry,
   };

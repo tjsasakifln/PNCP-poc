@@ -574,8 +574,10 @@ function HomePageContent() {
                 setorId={filters.setorId}
                 // UX-350: Profile completeness
                 isProfileComplete={isProfileComplete}
-                // CRIT-008: Auto-retry
+                // CRIT-008 + GTM-UX-003: Unified retry
                 retryCountdown={search.retryCountdown}
+                retryMessage={search.retryMessage}
+                retryExhausted={search.retryExhausted}
                 onRetryNow={search.retryNow}
                 onCancelRetry={search.cancelRetry}
               />

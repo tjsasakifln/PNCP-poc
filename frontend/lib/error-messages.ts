@@ -184,6 +184,42 @@ export const DEFAULT_ERROR_MESSAGE = "Ocorreu um erro inesperado. Tente novament
 export const TRANSIENT_HTTP_CODES = new Set([502, 503, 504]);
 
 /**
+ * GTM-UX-003 AC4-AC7: Contextual retry messages by error type.
+ * NEVER says "servidor reiniciando" — uses specific messages per error category.
+ */
+export function getRetryMessage(httpStatus: number | null, rawMessage?: string): string {
+  const msg = (rawMessage || '').toLowerCase();
+
+  // AC4: Timeout / PNCP timeout
+  if (httpStatus === 504 || msg.includes('timeout') || msg.includes('demorou') || msg.includes('tempo limite')) {
+    return 'A consulta está demorando mais que o esperado. Tentando novamente...';
+  }
+
+  // AC5: 502/503 — service unavailable
+  if (httpStatus === 502 || httpStatus === 503) {
+    return 'Serviço temporariamente indisponível. Tentando novamente...';
+  }
+
+  // AC6: Network errors
+  if (
+    msg.includes('fetch failed') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network error') ||
+    msg.includes('load failed') ||
+    msg.includes('econnrefused') ||
+    msg.includes('err_connection_refused') ||
+    msg.includes('conexão') ||
+    msg.includes('conexao')
+  ) {
+    return 'Sem conexão com o servidor. Verificando...';
+  }
+
+  // AC7: Generic transient — never say "reiniciando"
+  return 'Serviço temporariamente indisponível. Tentando novamente...';
+}
+
+/**
  * CRIT-008 AC4: Classify whether an error is transient (server restart, network blip)
  * vs permanent (bad request, auth failure). Only transient errors get auto-retry.
  */
