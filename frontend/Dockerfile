@@ -141,6 +141,11 @@ EXPOSE 3000
 # Next.js standalone server.js respects process.env.PORT automatically
 ENV HOSTNAME="0.0.0.0"
 
+# SLA-002: Cap Node.js heap at 512MB to prevent OOM kills on Railway 1GB plans.
+# Without this, V8 defaults to ~1.5GB heap which exceeds container memory limit,
+# triggering silent OOM kills (SIGKILL) with no error logs.
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
 # Railway has its own healthcheck system - no need for Docker HEALTHCHECK
 # This avoids conflicts and lets Railway manage the health monitoring
 
