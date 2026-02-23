@@ -3,7 +3,7 @@
 **Severity:** P1 — Blocker
 **Origin:** UX Production Audit 2026-02-23 (Bug #1)
 **Parent:** UX-351
-**Status:** [ ] Pending
+**Status:** [ ] Pending — **Validação UX 2026-02-23: FAIL confirmado** (duplicatas ativas em produção)
 
 ---
 
