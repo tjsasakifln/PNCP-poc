@@ -1,4 +1,5 @@
 "use client";
+/** @deprecated GTM-UX-001: Replaced by DataQualityBanner. This component will be removed in a future release. */
 
 // ---------------------------------------------------------------------------
 // UX-303 AC5: Enhanced cache banner with fresh/stale distinction + cache level

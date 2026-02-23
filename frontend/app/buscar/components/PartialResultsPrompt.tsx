@@ -1,4 +1,5 @@
 "use client";
+/** @deprecated GTM-UX-001: PartialResultsBanner and FailedUfsBanner replaced by DataQualityBanner. PartialResultsPrompt still used during loading. */
 
 import React from "react";
 

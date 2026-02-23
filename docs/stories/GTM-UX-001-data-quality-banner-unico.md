@@ -39,30 +39,30 @@ O frontend tem 8 banners independentes que podem empilhar simultaneamente na pag
 
 ### Banner Consolidado
 
-- [ ] AC1: Novo componente `DataQualityBanner.tsx` substitui 6-8 banners individuais
-- [ ] AC2: Banner unico com formato: "Resultados de 4/7 estados | Cache de 2h | 2 timeouts. [Atualizar]"
-- [ ] AC3: Maximo 1 banner visivel por vez (nunca empilhar)
-- [ ] AC4: Prioridade de exibicao: erro total > parcial > cache stale > truncation > info
+- [x] AC1: Novo componente `DataQualityBanner.tsx` substitui 6-8 banners individuais
+- [x] AC2: Banner unico com formato: "Resultados de 4/7 estados | Cache de 2h | 2 timeouts. [Atualizar]"
+- [x] AC3: Maximo 1 banner visivel por vez (nunca empilhar)
+- [x] AC4: Prioridade de exibicao: erro total > parcial > cache stale > truncation > info
 
 ### Informacao Consolidada
 
-- [ ] AC5: Badge discreto de UFs: "5/7 estados" (clicavel para expandir detalhes)
-- [ ] AC6: Badge de freshness: "Dados de 2h atras" ou "Dados em tempo real"
-- [ ] AC7: Badge de fonte: "3/3 fontes" ou "1/3 fontes" (tooltip com nomes)
-- [ ] AC8: Botao de acao contextual: "Atualizar" quando stale, "Tentar novamente" quando erro
+- [x] AC5: Badge discreto de UFs: "5/7 estados" (clicavel para expandir detalhes)
+- [x] AC6: Badge de freshness: "Dados de 2h atras" ou "Dados em tempo real"
+- [x] AC7: Badge de fonte: "3/3 fontes" ou "1/3 fontes" (tooltip com nomes)
+- [x] AC8: Botao de acao contextual: "Atualizar" quando stale, "Tentar novamente" quando erro
 
 ### Remocao dos Banners Individuais
 
-- [ ] AC9: `CacheBanner.tsx` removido ou deprecated
-- [ ] AC10: `DegradationBanner.tsx` removido ou deprecated
-- [ ] AC11: `PartialResultsPrompt.tsx` integrado ao DataQualityBanner
-- [ ] AC12: Banners inline em `SearchResults.tsx` removidos
+- [x] AC9: `CacheBanner.tsx` removido ou deprecated
+- [x] AC10: `DegradationBanner.tsx` removido ou deprecated
+- [x] AC11: `PartialResultsPrompt.tsx` integrado ao DataQualityBanner
+- [x] AC12: Banners inline em `SearchResults.tsx` removidos
 
 ### Visual
 
-- [ ] AC13: Banner usa glass morphism consistente (GlassCard base)
-- [ ] AC14: Cores: info (azul), warning (amarelo), error (vermelho) — um por vez
-- [ ] AC15: Mobile: banner compacto, badges em linha unica com scroll horizontal
+- [x] AC13: Banner usa glass morphism consistente (GlassCard base)
+- [x] AC14: Cores: info (azul), warning (amarelo), error (vermelho) — um por vez
+- [x] AC15: Mobile: banner compacto, badges em linha unica com scroll horizontal
 
 ## Testes Obrigatorios
 
@@ -70,11 +70,11 @@ O frontend tem 8 banners independentes que podem empilhar simultaneamente na pag
 cd frontend && npm test -- --testPathPattern="DataQualityBanner" --no-coverage
 ```
 
-- [ ] T1: Banner mostra "5/7 estados" quando 2 UFs falham
-- [ ] T2: Banner mostra "Cache de 2h" quando dados stale
-- [ ] T3: Apenas 1 banner visivel mesmo com multiplos problemas
-- [ ] T4: Botao "Atualizar" dispara refresh
-- [ ] T5: Mobile: banner compacto (375px)
+- [x] T1: Banner mostra "5/7 estados" quando 2 UFs falham
+- [x] T2: Banner mostra "Cache de 2h" quando dados stale
+- [x] T3: Apenas 1 banner visivel mesmo com multiplos problemas
+- [x] T4: Botao "Atualizar" dispara refresh
+- [x] T5: Mobile: banner compacto (375px)
 
 ## Arquivos Afetados
 

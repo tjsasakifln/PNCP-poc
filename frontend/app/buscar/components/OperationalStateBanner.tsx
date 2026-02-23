@@ -1,4 +1,5 @@
 "use client";
+/** @deprecated GTM-UX-001: Replaced by DataQualityBanner. This component will be removed in a future release. */
 
 import { CoverageBar } from "./CoverageBar";
 import { FreshnessIndicator } from "./FreshnessIndicator";

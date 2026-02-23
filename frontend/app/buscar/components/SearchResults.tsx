@@ -8,14 +8,11 @@ import RefreshBanner from "./RefreshBanner";
 import { EnhancedLoadingProgress } from "../../../components/EnhancedLoadingProgress";
 import { LoadingResultsSkeleton } from "../../components/LoadingResultsSkeleton";
 import { EmptyState } from "../../components/EmptyState";
-import { DegradationBanner } from "./DegradationBanner"; // AC10: kept as deprecated
-import { OperationalStateBanner } from "./OperationalStateBanner";
 import { UfProgressGrid } from "./UfProgressGrid";
 import type { UfStatus } from "../../../hooks/useSearchSSE";
-import { PartialResultsPrompt, PartialResultsBanner, FailedUfsBanner } from "./PartialResultsPrompt";
-import { CacheBanner } from "./CacheBanner";
+import { PartialResultsPrompt } from "./PartialResultsPrompt";
 import { SourcesUnavailable } from "./SourcesUnavailable";
-import { TruncationWarningBanner } from "./TruncationWarningBanner";
+import { DataQualityBanner } from "./DataQualityBanner";
 import { QuotaCounter } from "../../components/QuotaCounter";
 import { LicitacoesPreview } from "../../components/LicitacoesPreview";
 import { OrdenacaoSelect, type OrdenacaoOption } from "../../components/OrdenacaoSelect";
@@ -23,7 +20,7 @@ import GoogleSheetsExportButton from "../../../components/GoogleSheetsExportButt
 import { LlmSourceBadge } from "./LlmSourceBadge";
 import { ErrorDetail } from "./ErrorDetail";
 import type { SearchError } from "../hooks/useSearch";
-import { PartialTimeoutBanner } from "./PartialTimeoutBanner";
+// GTM-UX-001: PartialTimeoutBanner replaced by DataQualityBanner
 
 export interface SearchResultsProps {
   // Loading state
@@ -216,11 +213,7 @@ export default function SearchResults({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // CRIT-006 AC22-24: Derive succeeded UFs from coverage_metadata or failed_ufs
-  const succeededUfs: string[] = result?.coverage_metadata?.ufs_processed
-    ?? (result?.failed_ufs
-      ? Array.from(ufsSelecionadas).filter(uf => !result.failed_ufs!.includes(uf))
-      : []);
+  // GTM-UX-001: succeededUfs derivation removed — DataQualityBanner computes internally
 
   return (
     <>
@@ -404,14 +397,23 @@ export default function SearchResults({
       {/* STORY-252 AC23: Partial results, but all filtered out (total_raw>0, total_filtrado=0, is_partial=true) */}
       {!loading && result && result.is_partial && (result.total_raw || 0) > 0 && result.resumo.total_oportunidades === 0 && (
         <>
-          <OperationalStateBanner
-            coveragePct={result.coverage_pct ?? 100}
-            responseState={result.response_state}
-            ufsStatusDetail={result.ufs_status_detail}
-            ultimaAtualizacao={result.ultima_atualizacao}
+          {/* GTM-UX-001: DataQualityBanner replaces OperationalStateBanner */}
+          <DataQualityBanner
+            totalUfs={ufsSelecionadas.size}
+            succeededUfs={ufsSelecionadas.size - (result.failed_ufs?.length ?? 0)}
+            failedUfs={result.failed_ufs ?? []}
+            isCached={!!result.cached && !liveFetchInProgress && !refreshAvailable}
             cachedAt={result.cached_at}
             cacheStatus={result.cache_status}
-            coverageMetadata={result.coverage_metadata}
+            isTruncated={!!result.is_truncated}
+            sourcesTotal={result.source_stats?.length ?? 1}
+            sourcesAvailable={result.source_stats?.filter((s: { status: string }) => s.status === "success" || s.status === "partial").length ?? (result.source_stats?.length ?? 1)}
+            sourceNames={result.source_stats?.map((s: { source_code: string }) => s.source_code)}
+            responseState={result.response_state}
+            coveragePct={result.coverage_pct}
+            onRefresh={onRetryForceFresh || onSearch}
+            onRetry={onSearch}
+            loading={loading}
           />
           <EmptyState
             onAdjustSearch={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -456,71 +458,27 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* STORY-257B AC8: Cache banner when results come from cache (only when NOT live-fetching) */}
-      {/* CRIT-030 AC4: Guard with !loading to prevent bleed from previous search */}
-      {!loading && result && result.cached && result.cached_at && !liveFetchInProgress && !refreshAvailable && (
-        <CacheBanner
-          cachedAt={result.cached_at}
-          onRefresh={onRetryForceFresh || onSearch}
-          refreshing={loading}
-          cachedSources={result.cached_sources}
-          cacheStatus={result.cache_status}
-          cacheLevel={result.cache_level}
-        />
-      )}
-
-      {/* CRIT-006 AC22-24: PartialTimeoutBanner — shown when result has failed UFs */}
-      {/* CRIT-030 AC4: Guard with !loading to prevent bleed from previous search */}
-      {!loading && result && result.failed_ufs && result.failed_ufs.length > 0 && succeededUfs.length > 0 && (
-        <div className="mt-4">
-          <PartialTimeoutBanner
-            succeededUfs={succeededUfs}
-            failedUfs={result.failed_ufs}
-            onRetryFailed={onRetryForceFresh || (() => {})}
-            searchId={searchId}
-          />
-        </div>
-      )}
-
       {/* Result Display — CRIT-027 AC2: only after loading completes */}
       {!loading && result && result.resumo.total_oportunidades > 0 && (
         <div className={`mt-6 sm:mt-8 space-y-4 sm:space-y-6 ${!showGrid ? 'animate-fade-in-up' : ''}`}>
-          {/* STORY-257B AC7: Failed UFs banner */}
-          {result.failed_ufs && result.failed_ufs.length > 0 && (
-            <FailedUfsBanner
-              successCount={ufsSelecionadas.size - result.failed_ufs.length}
-              failedUfs={result.failed_ufs}
-              onRetryFailed={onSearch}
-              loading={loading}
-            />
-          )}
-
-          {/* GTM-FIX-004: Truncation warning banner */}
-          {result.is_truncated && (
-            <TruncationWarningBanner
-              truncatedUfs={result.truncated_ufs}
-              truncationDetails={result.truncation_details}
-            />
-          )}
-
-          {/* STORY-257B AC6: Partial results mini-banner */}
-          {result.is_partial && result.failed_ufs && result.failed_ufs.length > 0 && (
-            <PartialResultsBanner
-              visibleCount={ufsSelecionadas.size - result.failed_ufs.length}
-              totalCount={ufsSelecionadas.size}
-              searching={loading}
-            />
-          )}
-
-          {/* GTM-RESILIENCE-A05 AC3: Operational state banner replaces DegradationBanner */}
-          <OperationalStateBanner
-            coveragePct={result.coverage_pct ?? 100}
-            responseState={result.response_state}
-            ufsStatusDetail={result.ufs_status_detail}
-            ultimaAtualizacao={result.ultima_atualizacao}
+          {/* GTM-UX-001: Single unified DataQualityBanner replaces FailedUfsBanner,
+              TruncationWarningBanner, PartialResultsBanner, OperationalStateBanner, CacheBanner */}
+          <DataQualityBanner
+            totalUfs={ufsSelecionadas.size}
+            succeededUfs={ufsSelecionadas.size - (result.failed_ufs?.length ?? 0)}
+            failedUfs={result.failed_ufs ?? []}
+            isCached={!!result.cached && !liveFetchInProgress && !refreshAvailable}
             cachedAt={result.cached_at}
             cacheStatus={result.cache_status}
-            coverageMetadata={result.coverage_metadata}
+            isTruncated={!!result.is_truncated}
+            sourcesTotal={result.source_stats?.length ?? 1}
+            sourcesAvailable={result.source_stats?.filter((s: { status: string }) => s.status === "success" || s.status === "partial").length ?? (result.source_stats?.length ?? 1)}
+            sourceNames={result.source_stats?.map((s: { source_code: string }) => s.source_code)}
+            responseState={result.response_state}
+            coveragePct={result.coverage_pct}
+            onRefresh={onRetryForceFresh || onSearch}
+            onRetry={onSearch}
+            loading={loading}
           />
 
           {/* UX-348 AC7-AC8: Results header with positive framing */}

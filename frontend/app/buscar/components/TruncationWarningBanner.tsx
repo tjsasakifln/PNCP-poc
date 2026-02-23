@@ -1,4 +1,5 @@
 "use client";
+/** @deprecated GTM-UX-001: Replaced by DataQualityBanner. This component will be removed in a future release. */
 
 /**
  * GTM-FIX-004: Warning banner shown when search results are truncated
