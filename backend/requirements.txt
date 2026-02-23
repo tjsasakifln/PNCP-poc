@@ -30,7 +30,7 @@ redis==5.3.1  # Feature flag caching (STORY-171)
 # Google Sheets API integration (STORY-180)
 # ACTIVE: Used in oauth.py, google_sheets.py, routes/export_sheets.py
 # Provides: Google OAuth login + export search results to Google Sheets
-google-api-python-client==2.150.0  # Google Sheets API client
+google-api-python-client==2.190.0  # Google Sheets API client
 google-auth==2.48.0                # OAuth 2.0 authentication
 google-auth-oauthlib==1.2.4        # OAuth flow helpers
 google-auth-httplib2==0.3.0        # HTTP transport for Google APIs
