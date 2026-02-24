@@ -35,22 +35,22 @@ A background revalidation (GTM-RESILIENCE-B01) so usa PNCP como fonte, falhando 
 
 ### Revalidation Multi-Source
 
-- [ ] AC1: `_do_revalidation()` usa `ConsolidationService` (3 fontes) em vez de PNCP-only
-- [ ] AC2: Se PNCP falha durante revalidation, PCP+ComprasGov fornecem resultado parcial
-- [ ] AC3: Resultado parcial de revalidation e melhor que cache stale (atualiza cache)
-- [ ] AC4: Revalidation fallback order: PNCP+PCP+ComprasGov → PCP+ComprasGov → manter stale
+- [x] AC1: `_do_revalidation()` usa `ConsolidationService` (3 fontes) em vez de PNCP-only
+- [x] AC2: Se PNCP falha durante revalidation, PCP+ComprasGov fornecem resultado parcial
+- [x] AC3: Resultado parcial de revalidation e melhor que cache stale (atualiza cache)
+- [x] AC4: Revalidation fallback order: PNCP+PCP+ComprasGov → PCP+ComprasGov → manter stale
 
 ### Skip Quota em Cache
 
-- [ ] AC5: Quando resposta vem 100% de cache (L1 ou L2), NAO consumir quota
-- [ ] AC6: Flag `from_cache: bool` na response para frontend saber
-- [ ] AC7: Quota consumida apenas quando busca vai para fonte live (total ou parcial)
-- [ ] AC8: Stale-while-revalidate: quota da revalidation nao e atribuida ao user (e "sistema")
+- [x] AC5: Quando resposta vem 100% de cache (L1 ou L2), NAO consumir quota
+- [x] AC6: Flag `from_cache: bool` na response para frontend saber
+- [x] AC7: Quota consumida apenas quando busca vai para fonte live (total ou parcial)
+- [x] AC8: Stale-while-revalidate: quota da revalidation nao e atribuida ao user (e "sistema")
 
 ### Observabilidade
 
-- [ ] AC9: Metrica `cache_quota_skipped_total` — quantas vezes quota foi economizada por cache
-- [ ] AC10: Log: `Quota skipped for user {user_id}: response fully cached (params_hash={hash})`
+- [x] AC9: Metrica `cache_quota_skipped_total` — quantas vezes quota foi economizada por cache
+- [x] AC10: Log: `Quota skipped for user {user_id}: response fully cached (params_hash={hash})`
 
 ## Testes Obrigatorios
 
@@ -58,11 +58,11 @@ A background revalidation (GTM-RESILIENCE-B01) so usa PNCP como fonte, falhando 
 cd backend && pytest -k "test_revalidation or test_quota_cache" --no-coverage
 ```
 
-- [ ] T1: Revalidation usa ConsolidationService
-- [ ] T2: Revalidation parcial (sem PNCP) atualiza cache
-- [ ] T3: Cache hit nao consome quota
-- [ ] T4: Live search consome quota normalmente
-- [ ] T5: Revalidation nao consome quota do user
+- [x] T1: Revalidation usa ConsolidationService
+- [x] T2: Revalidation parcial (sem PNCP) atualiza cache
+- [x] T3: Cache hit nao consome quota
+- [x] T4: Live search consome quota normalmente
+- [x] T5: Revalidation nao consome quota do user
 
 ## Arquivos Afetados
 
