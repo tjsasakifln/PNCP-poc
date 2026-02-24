@@ -701,13 +701,15 @@ Order matters (fail-fast optimization):
 
 ### Backend Tests (backend/tests/)
 
-**169 test files, ~3966 passing, ~35 pre-existing failures**
+**169 test files, 5131+ passing, 0 failures** (CRIT-036 baseline)
 
 **Configuration:** `backend/pyproject.toml` (pytest + coverage settings, threshold: 70%)
 
+**CI Gate:** `.github/workflows/backend-tests.yml` — pytest exit code 0 required for merge.
+
 ```bash
 cd backend
-pytest                           # Run all tests
+pytest                           # Run all tests (must pass 100%)
 pytest --cov                     # With coverage (enforces 70% threshold)
 pytest -k "test_name"            # Run specific test
 pytest tests/integration/        # Integration tests only
@@ -718,7 +720,7 @@ pytest tests/integration/        # Integration tests only
 - `tests/integration/` — Integration tests (real pipeline, mock HTTP only)
 - `tests/snapshots/` — OpenAPI schema drift detection
 
-**Pre-existing failures (~35):** billing, stripe, feature flags, async, portal_transparencia. Compare against this baseline — new failures = regression.
+**Zero-Failure Policy:** 0 failures is the only acceptable baseline. If tests fail, fix them — never treat failures as "pre-existing".
 
 **Key Testing Patterns:**
 - Auth: Use `app.dependency_overrides[require_auth]` NOT `patch("routes.X.require_auth")`
@@ -730,20 +732,22 @@ pytest tests/integration/        # Integration tests only
 
 ### Frontend Tests (frontend/__tests__/)
 
-**135 test files, ~1921 passing, ~42 pre-existing failures**
+**135 test files, 2681+ passing, 0 failures** (CRIT-037 baseline)
 
 **Configuration:** `frontend/jest.config.js` + `frontend/jest.setup.js` (threshold: 60%)
 
+**CI Gate:** `.github/workflows/frontend-tests.yml` — npm test exit code 0 required for merge.
+
 ```bash
 cd frontend
-npm test                  # Run all tests
+npm test                  # Run all tests (must pass 100%)
 npm run test:coverage     # With coverage
 npm run test:ci           # CI mode (non-interactive)
 ```
 
 **jest.setup.js polyfills:** `crypto.randomUUID` + `EventSource` (jsdom lacks both)
 
-**Pre-existing failures (~42):** download, buscar integration, InstitutionalSidebar. Compare against baseline.
+**Zero-Failure Policy:** 0 failures is the only acceptable baseline. If tests fail, fix them — never treat failures as "pre-existing".
 
 ### E2E Tests (Playwright)
 

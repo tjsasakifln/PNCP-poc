@@ -54,6 +54,10 @@ Closes #
 - [ ] Documentation updated (if public APIs changed)
 - [ ] Tests added/updated for new functionality
 - [ ] CI checks are passing locally
+- [ ] **Zero test failures** — backend (`pytest`) and frontend (`npm test`) exit code 0
+
+> **Zero-Failure Policy (CRIT-038):** Se testes falharem, corrija os testes — não adicione ao baseline.
+> O único baseline aceitável é **0 failures**. PRs com testes falhando serão bloqueados pelo CI.
 
 ---
 
