@@ -9,7 +9,7 @@ const getBackendUrl = () => process.env.BACKEND_URL;
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { bidId: string } }
+  { params }: { params: Promise<{ bidId: string }> }
 ) {
   const backendUrl = getBackendUrl();
   if (!backendUrl) {
@@ -28,7 +28,7 @@ export async function POST(
     );
   }
 
-  const { bidId } = params;
+  const { bidId } = await params;
   if (!bidId) {
     return NextResponse.json({ message: "bidId obrigatório" }, { status: 400 });
   }
