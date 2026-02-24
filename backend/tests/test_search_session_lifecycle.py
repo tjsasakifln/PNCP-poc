@@ -90,7 +90,7 @@ class TestRegisterSearchSession:
         assert inserted_data["status"] == "created"
         assert inserted_data["user_id"] == "user-abc-123"
         assert inserted_data["sectors"] == ["facilities"]
-        assert inserted_data["ufs"] == ["SP", "RJ"]
+        assert sorted(inserted_data["ufs"]) == sorted(["SP", "RJ"])
         assert inserted_data["data_inicial"] == "2026-02-10"
         assert inserted_data["data_final"] == "2026-02-20"
         assert inserted_data["custom_keywords"] == ["limpeza", "portaria"]

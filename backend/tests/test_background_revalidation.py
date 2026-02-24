@@ -126,7 +126,7 @@ class TestAC2_CacheUpdated:
 
         with (
             patch("search_cache.save_to_cache", new_callable=AsyncMock) as mock_save,
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=mock_results),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=(mock_results, ["PNCP"])),
         ):
             await search_cache._do_revalidation(
                 user_id="user-1",
@@ -252,7 +252,7 @@ class TestAC4_BudgetLimit:
         search_cache._active_revalidations = 1
         search_cache._revalidation_lock = None
 
-        with patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=[]):
+        with patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=([], [])):
             await search_cache._do_revalidation(
                 user_id="user-1",
                 params={"setor_id": 1, "ufs": ["SP"]},
@@ -279,12 +279,12 @@ class TestAC5_IndependentTimeout:
         search_cache._active_revalidations = 1
         search_cache._revalidation_lock = None
 
-        async def slow_fetch(**kwargs):
+        async def slow_fetch(request_data):
             await asyncio.sleep(10)  # Will be canceled by timeout
-            return []
+            return ([], [])
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", side_effect=slow_fetch),
+            patch("search_cache._fetch_multi_source_for_revalidation", side_effect=slow_fetch),
             patch("config.REVALIDATION_TIMEOUT", 0.1),  # 100ms timeout
             patch("search_cache.record_cache_fetch_failure", new_callable=AsyncMock) as mock_fail,
         ):
@@ -388,7 +388,7 @@ class TestAC7_SSENotification:
         search_cache._revalidation_lock = None
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=[{"id": 1}]),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=([{"id": 1}], ["PNCP"])),
             patch("search_cache.save_to_cache", new_callable=AsyncMock),
             patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
         ):
@@ -416,7 +416,7 @@ class TestAC7_SSENotification:
         search_cache._revalidation_lock = None
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=[{"id": 1}]),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=([{"id": 1}], ["PNCP"])),
             patch("search_cache.save_to_cache", new_callable=AsyncMock),
             patch("progress.get_tracker", new_callable=AsyncMock, return_value=mock_tracker),
         ):
@@ -438,7 +438,7 @@ class TestAC7_SSENotification:
         search_cache._revalidation_lock = None
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=[{"id": 1}]),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=([{"id": 1}], ["PNCP"])),
             patch("search_cache.save_to_cache", new_callable=AsyncMock),
             patch("progress.get_tracker", new_callable=AsyncMock) as mock_get_tracker,
         ):
@@ -469,7 +469,7 @@ class TestAC8_StructuredLogging:
         search_cache._revalidation_lock = None
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=[{"id": 1}, {"id": 2}]),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=([{"id": 1}, {"id": 2}], ["PNCP"])),
             patch("search_cache.save_to_cache", new_callable=AsyncMock),
             caplog.at_level(logging.INFO, logger="search_cache"),
         ):
@@ -503,12 +503,12 @@ class TestAC8_StructuredLogging:
         search_cache._active_revalidations = 1
         search_cache._revalidation_lock = None
 
-        async def slow_fetch(**kwargs):
+        async def slow_fetch(request_data):
             await asyncio.sleep(10)
-            return []
+            return ([], [])
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", side_effect=slow_fetch),
+            patch("search_cache._fetch_multi_source_for_revalidation", side_effect=slow_fetch),
             patch("config.REVALIDATION_TIMEOUT", 0.05),
             patch("search_cache.record_cache_fetch_failure", new_callable=AsyncMock),
             caplog.at_level(logging.INFO, logger="search_cache"),
@@ -546,7 +546,7 @@ class TestAC9_HealthMetadata:
         search_cache._revalidation_lock = None
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, return_value=[{"id": 1}]),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, return_value=([{"id": 1}], ["PNCP"])),
             patch("search_cache.save_to_cache", new_callable=AsyncMock) as mock_save,
             patch("search_cache.record_cache_fetch_failure", new_callable=AsyncMock) as mock_fail,
         ):
@@ -569,7 +569,7 @@ class TestAC9_HealthMetadata:
         search_cache._revalidation_lock = None
 
         with (
-            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, side_effect=ConnectionError("PNCP down")),
+            patch("search_cache._fetch_multi_source_for_revalidation", new_callable=AsyncMock, side_effect=ConnectionError("PNCP down")),
             patch("search_cache.save_to_cache", new_callable=AsyncMock) as mock_save,
             patch("search_cache.record_cache_fetch_failure", new_callable=AsyncMock) as mock_fail,
         ):

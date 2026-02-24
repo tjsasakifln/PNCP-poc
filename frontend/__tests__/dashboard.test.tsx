@@ -328,6 +328,10 @@ describe("DashboardPage — UX-338", () => {
   });
 
   describe("AC5: Loading timeout after 10s", () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it("should show skeletons while loading", () => {
       // fetch never resolves
       (global.fetch as jest.Mock).mockImplementation(
@@ -340,7 +344,7 @@ describe("DashboardPage — UX-338", () => {
       expect(pulses.length).toBeGreaterThan(0);
     });
 
-    it("should transition from skeletons to retry state after 10s timeout", async () => {
+    it("should transition from skeletons to error state after 10s timeout", async () => {
       jest.useFakeTimers();
 
       // Make fetch respect AbortController signal
@@ -363,23 +367,27 @@ describe("DashboardPage — UX-338", () => {
       // Verify loading skeletons appear
       expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
 
-      // Advance past the 10s timeout — should transition to retry state
+      // Advance past the 10s timeout — fetch aborts, allSettled resolves with all errors
       await act(async () => {
         jest.advanceTimersByTime(11_000);
+        await Promise.resolve();
+        await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
       });
 
       await waitFor(() => {
-        // CRIT-018: now shows retrying spinner instead of inline error
-        expect(screen.getByTestId("dashboard-retrying")).toBeInTheDocument();
+        // With allSettled, all sections fail → dashboard-empty-state
+        expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument();
       });
-
-      jest.useRealTimers();
     });
   });
 
   describe("AC6: Error visibility (CRIT-018)", () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it("should surface errors in the UI instead of only console", async () => {
       jest.useFakeTimers();
       (global.fetch as jest.Mock).mockRejectedValue(
@@ -388,19 +396,20 @@ describe("DashboardPage — UX-338", () => {
 
       render(<DashboardPage />);
 
-      // After first failure, the retrying UI should appear
+      // After first failure (allSettled resolves with all errors), empty state should appear
       await act(async () => {
         jest.advanceTimersByTime(100);
+        await Promise.resolve();
+        await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId("dashboard-retrying")).toBeInTheDocument();
-        expect(screen.getByText(/Tentando reconectar/)).toBeInTheDocument();
+        // With allSettled, all sections fail → dashboard-empty-state (not dashboard-retrying)
+        expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument();
+        expect(screen.getByText("Dados temporariamente indisponíveis")).toBeInTheDocument();
       });
-
-      jest.useRealTimers();
     });
   });
 

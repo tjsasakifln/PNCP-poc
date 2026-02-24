@@ -173,7 +173,7 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
       render(<SearchResults {...props} />);
 
       // Check for source text (no count)
-      expect(screen.getByText(/\(dados de múltiplas fontes\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/\(dados de multiplas fontes\)/i)).toBeInTheDocument();
     });
 
     it("does not show source count when only one source is used", () => {

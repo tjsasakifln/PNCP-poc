@@ -386,7 +386,7 @@ class TestStartupRecovery:
                 # Verify timed_out status was set
                 update_call = mock_sb.table.return_value.update.call_args
                 assert update_call[0][0]["status"] == "timed_out"
-                assert "Server restart" in update_call[0][0]["error_message"]
+                assert "reiniciou" in update_call[0][0]["error_message"]
 
     @pytest.mark.asyncio
     async def test_recent_searches_marked_failed(self):
@@ -409,7 +409,7 @@ class TestStartupRecovery:
 
                 update_call = mock_sb.table.return_value.update.call_args
                 assert update_call[0][0]["status"] == "failed"
-                assert "retry" in update_call[0][0]["error_message"].lower()
+                assert "tente novamente" in update_call[0][0]["error_message"].lower()
 
     @pytest.mark.asyncio
     async def test_no_stale_searches(self):

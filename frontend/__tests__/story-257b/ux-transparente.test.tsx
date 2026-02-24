@@ -21,12 +21,31 @@ jest.mock("../../hooks/useSavedSearches", () => ({
 jest.mock("../../hooks/useSearchProgress", () => ({
   useSearchProgress: () => ({ currentEvent: null, sseAvailable: false }),
 }));
+jest.mock("../../hooks/useSearchSSE", () => ({
+  useSearchSSE: () => ({
+    currentEvent: null,
+    sseAvailable: false,
+    sseDisconnected: false,
+    isDegraded: false,
+    degradedDetail: null,
+    partialProgress: null,
+    refreshAvailable: null,
+    ufStatuses: new Map(),
+    ufTotalFound: 0,
+    ufAllComplete: false,
+    batchProgress: null,
+  }),
+}));
+jest.mock("../../hooks/useSearchPolling", () => ({
+  useSearchPolling: () => ({
+    asProgressEvent: null,
+  }),
+}));
 jest.mock("sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 jest.mock("../../lib/error-messages", () => ({
-  getUserFriendlyError: (e: any) => (e instanceof Error ? e.message : String(e)),
-  getMessageFromErrorCode: () => null,
+  ...jest.requireActual("../../lib/error-messages"),
 }));
 jest.mock("../../lib/searchStatePersistence", () => ({
   saveSearchState: jest.fn(),
@@ -401,7 +420,7 @@ describe("T6: SourcesUnavailable no technical names", () => {
     render(
       <SourcesUnavailable onRetry={jest.fn()} onLoadLastSearch={jest.fn()} hasLastSearch={false} retrying={false} />
     );
-    expect(screen.getByText(/fontes de dados governamentais/)).toBeInTheDocument();
+    expect(screen.getByText(/Fontes temporariamente indisponíveis/)).toBeInTheDocument();
     expect(screen.getByText(/temporariamente/)).toBeInTheDocument();
   });
 

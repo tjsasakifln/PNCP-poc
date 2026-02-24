@@ -27,7 +27,7 @@ describe('EmptyState Component', () => {
   it('should display default message when no rawCount', () => {
     render(<EmptyState />);
 
-    const message = screen.getByText(/Nenhuma oportunidade encontrada para o período e estados selecionados/i);
+    const message = screen.getByText(/Analisamos os editais disponíveis e nenhum correspondeu ao seu perfil/i);
     expect(message).toBeInTheDocument();
   });
 

@@ -1,6 +1,6 @@
 # CRIT-037 — Frontend: Zero Test Failures (68 → 0)
 
-**Status:** Open
+**Status:** Done
 **Priority:** P0 — Blocker
 **Severity:** Infraestrutura de qualidade
 **Created:** 2026-02-23
@@ -28,12 +28,12 @@
 
 As rotas SSE retornam mensagens em PT-BR, mas os testes esperam inglês.
 
-- [ ] **AC1:** `sse-proxy-errors.test.ts` — Atualizar expectations:
+- [x] **AC1:** `sse-proxy-errors.test.ts` — Atualizar expectations:
   - `"SSE stream timeout"` → `"Tempo limite de conexão excedido"` (route.ts:202)
   - `"Client disconnected"` → `"Conexão encerrada pelo cliente"` (route.ts:178)
   - `"Failed to connect to backend"` → `"Erro ao conectar com o servidor"` (route.ts:217)
-- [ ] **AC2:** `analytics.test.ts` — Alinhar mocks/assertions com mensagens reais do proxy
-- [ ] **AC3:** `download.test.ts` — Idem
+- [x] **AC2:** `analytics.test.ts` — Alinhar mocks/assertions com mensagens reais do proxy
+- [x] **AC3:** `download.test.ts` — Idem
 
 ### Padrão B — Error-Messages Mock Localization (18 suites)
 
@@ -41,37 +41,37 @@ Os testes mockam `lib/error-messages` com funções identity que retornam inglê
 
 **Estratégia:** Substituir mocks customizados por `jest.requireActual()` OU atualizar mock return values para PT-BR.
 
-- [ ] **AC4:** `ux-348-align-promise.test.tsx` — Fix mock
-- [ ] **AC5:** `dashboard-retry.test.tsx` — Fix mock
-- [ ] **AC6:** `dashboard.test.tsx` — Fix mock
-- [ ] **AC7:** `crit-031-dashboard-skeleton.test.tsx` — Fix mock
-- [ ] **AC8:** `components/EmptyState.test.tsx` — Fix mock
-- [ ] **AC9:** `components/LandingNavbar.test.tsx` — Fix mock/assertions
-- [ ] **AC10:** `components/LicitacaoCard-deadline-clarity.test.tsx` — Fix mock
-- [ ] **AC11:** `search-resilience.test.tsx` — Fix mock (⚠️ MEMORY.md: must include `isTransientError`)
-- [ ] **AC12:** `source-indicators.test.tsx` — Fix mock
-- [ ] **AC13:** `buscar/operational-state.test.tsx` — Fix mock
-- [ ] **AC14:** `buscar/crit030-state-bleed.test.tsx` — Fix mock
-- [ ] **AC15:** `story-257b/ux-transparente.test.tsx` — Fix mock
-- [ ] **AC16:** `lib/error-messages.test.ts` — Este é O teste do módulo de mensagens. Atualizar expected values para PT-BR.
-- [ ] **AC17:** `landing-header.test.tsx` — Fix mock/assertions
-- [ ] **AC18:** `landing/ProofOfValue.test.tsx` — Fix mock/assertions
-- [ ] **AC19:** `empty-states.test.tsx` — Fix mock
+- [x] **AC4:** `ux-348-align-promise.test.tsx` — Fix mock
+- [x] **AC5:** `dashboard-retry.test.tsx` — Fix mock
+- [x] **AC6:** `dashboard.test.tsx` — Fix mock
+- [x] **AC7:** `crit-031-dashboard-skeleton.test.tsx` — Fix mock
+- [x] **AC8:** `components/EmptyState.test.tsx` — Fix mock
+- [x] **AC9:** `components/LandingNavbar.test.tsx` — Fix mock/assertions
+- [x] **AC10:** `components/LicitacaoCard-deadline-clarity.test.tsx` — Fix mock
+- [x] **AC11:** `search-resilience.test.tsx` — Fix mock (⚠️ MEMORY.md: must include `isTransientError`)
+- [x] **AC12:** `source-indicators.test.tsx` — Fix mock
+- [x] **AC13:** `buscar/operational-state.test.tsx` — Fix mock
+- [x] **AC14:** `buscar/crit030-state-bleed.test.tsx` — Fix mock
+- [x] **AC15:** `story-257b/ux-transparente.test.tsx` — Fix mock
+- [x] **AC16:** `lib/error-messages.test.ts` — Este é O teste do módulo de mensagens. Atualizar expected values para PT-BR.
+- [x] **AC17:** `landing-header.test.tsx` — Fix mock/assertions
+- [x] **AC18:** `landing/ProofOfValue.test.tsx` — Fix mock/assertions
+- [x] **AC19:** `empty-states.test.tsx` — Fix mock
 
 ### Padrão C — Historico React act() (4 suites)
 
 State updates em `useEffect` disparam warnings de React `act()` nos testes.
 
-- [ ] **AC20:** `pages/HistoricoUX351.test.tsx` — Wrap fetch mock resolution em `await act(async () => ...)`
-- [ ] **AC21:** `pages/HistoricoUX354.test.tsx` — Idem
-- [ ] **AC22:** `pages/HistoricoStatusBadges.test.tsx` — Idem
-- [ ] **AC23:** `pages/HistoricoPage.test.tsx` — Idem
+- [x] **AC20:** `pages/HistoricoUX351.test.tsx` — Wrap fetch mock resolution em `await act(async () => ...)`
+- [x] **AC21:** `pages/HistoricoUX354.test.tsx` — Idem
+- [x] **AC22:** `pages/HistoricoStatusBadges.test.tsx` — Idem
+- [x] **AC23:** `pages/HistoricoPage.test.tsx` — Idem
 
 ### Gate Final
 
-- [ ] **AC24:** `npm test` roda com **0 failures** (2613+ passed, 0 failed)
-- [ ] **AC25:** Coverage ≥ 60% mantida
-- [ ] **AC26:** Nenhum teste deletado — apenas corrigido
+- [x] **AC24:** `npm test` roda com **0 failures** (2613+ passed, 0 failed)
+- [x] **AC25:** Coverage ≥ 60% mantida
+- [x] **AC26:** Nenhum teste deletado — apenas corrigido
 
 ---
 

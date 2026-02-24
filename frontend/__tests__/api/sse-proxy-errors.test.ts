@@ -62,7 +62,7 @@ describe("CRIT-012: SSE Proxy Error Handling", () => {
     const body = await response.json();
     expect(body.error_type).toBe("BodyTimeoutError");
     expect(body.search_id).toBe("test-bt-123");
-    expect(body.error).toBe("SSE stream timeout");
+    expect(body.error).toBe("Tempo limite de conexão excedido");
     expect(body.elapsed_ms).toBeGreaterThanOrEqual(0);
   });
 
@@ -97,7 +97,7 @@ describe("CRIT-012: SSE Proxy Error Handling", () => {
 
     expect(response.status).toBe(499);
     const text = await response.text();
-    expect(text).toBe("Client disconnected");
+    expect(text).toBe("Conexão encerrada pelo cliente");
   });
 
   // --------------------------------------------------------------------------
@@ -141,7 +141,7 @@ describe("CRIT-012: SSE Proxy Error Handling", () => {
 
     expect(response.status).toBe(502);
     const text = await response.text();
-    expect(text).toBe("Failed to connect to backend");
+    expect(text).toBe("Erro ao conectar com o servidor");
   });
 
   // --------------------------------------------------------------------------

@@ -12,6 +12,33 @@ from auth import require_auth
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def _prevent_real_api_calls():
+    """Mock ConsolidationService to prevent real HTTP calls + reset rate limiter."""
+    from types import SimpleNamespace
+
+    # Use SimpleNamespace instead of MagicMock to avoid child-mock attribute leaks
+    mock_result = SimpleNamespace(
+        records=[],
+        source_results=[],
+        is_partial=False,
+        degradation_reason=None,
+        duplicates_removed=0,
+        total_before_dedup=0,
+        total_after_dedup=0,
+        elapsed_ms=0,
+    )
+
+    mock_svc = AsyncMock()
+    mock_svc.fetch_all = AsyncMock(return_value=mock_result)
+    mock_svc.close = AsyncMock()
+
+    with patch("consolidation.ConsolidationService", return_value=mock_svc):
+        from rate_limiter import _flexible_limiter
+        _flexible_limiter._memory_store.clear()
+        yield
+
+
 def override_require_auth(user_id: str = "user-123"):
     """Create a dependency override for require_auth."""
     async def _override():
@@ -138,6 +165,9 @@ class TestBuscarFeatureFlagDisabled:
     """Test /api/buscar with ENABLE_NEW_PRICING=false (legacy behavior)."""
 
     @patch("routes.search.ENABLE_NEW_PRICING", False)
+    @patch("routes.search.rate_limiter")
+    @patch("quota.check_and_increment_quota_atomic", return_value=(True, 0, 999999))
+    @patch("quota.check_quota")
     @patch("quota.increment_monthly_quota")
     @patch("quota.save_search_session", new_callable=AsyncMock)
     @patch("routes.search.PNCPClient")
@@ -146,8 +176,13 @@ class TestBuscarFeatureFlagDisabled:
         mock_pncp_client_class,
         mock_save_session,
         mock_increment_quota,
+        mock_check_quota,
+        mock_atomic_increment,
+        mock_rate_limiter,
     ):
         """Should NOT enforce quota when feature flag is disabled."""
+        mock_rate_limiter.check_rate_limit = AsyncMock(return_value=(True, 0))
+
         cleanup = setup_auth_override("user-123")
         try:
             # Mock PNCP client

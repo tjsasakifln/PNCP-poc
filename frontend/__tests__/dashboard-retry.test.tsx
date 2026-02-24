@@ -485,7 +485,7 @@ describe("CRIT-018: Dashboard Retry Storm", () => {
   // AC9/AC10: Skeletons don't persist indefinitely
   // ─────────────────────────────────────────────────────────────────────
   describe("AC9/AC10: Skeleton timeout", () => {
-    it("should show skeletons initially, then transition to error/retry", async () => {
+    it("should show skeletons initially, then transition to error state after timeout", async () => {
       jest.useFakeTimers();
 
       // Fetch that takes forever (until abort)
@@ -506,16 +506,18 @@ describe("CRIT-018: Dashboard Retry Storm", () => {
       // Should show skeletons initially
       expect(document.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
 
-      // After timeout (10s), should transition away from skeletons
+      // After timeout (10s), fetch aborts → allSettled resolves with all errors → empty state
       await act(async () => {
         jest.advanceTimersByTime(11_000);
+        await Promise.resolve();
+        await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
       });
 
       await waitFor(() => {
-        // Should show retrying state (not skeletons)
-        expect(screen.getByTestId("dashboard-retrying")).toBeInTheDocument();
+        // With allSettled, all sections fail after timeout → dashboard-empty-state
+        expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument();
       });
 
       jest.useRealTimers();

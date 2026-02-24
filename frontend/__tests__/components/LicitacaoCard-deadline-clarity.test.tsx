@@ -20,7 +20,7 @@ const mockLicitacao: LicitacaoItem = {
   modalidade: "Pregão Eletrônico",
   data_publicacao: "2026-02-01T10:00:00",
   data_abertura: "2026-02-05T09:00:00",
-  data_encerramento: "2026-02-23T18:00:00",
+  data_encerramento: "2026-04-30T18:00:00",
   link: "https://pncp.gov.br/test",
   status: "recebendo_proposta",
 };
@@ -82,7 +82,7 @@ describe('LicitacaoCard - Deadline Terminology Clarity', () => {
 
       // Should show formatted dates with time
       expect(screen.getByText(/05\/02\/2026 às 09:00/i)).toBeInTheDocument();
-      expect(screen.getByText(/23\/02\/2026 às 18:00/i)).toBeInTheDocument();
+      expect(screen.getByText(/30\/04\/2026 às 18:00/i)).toBeInTheDocument();
     });
   });
 

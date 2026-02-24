@@ -60,12 +60,44 @@ jest.mock('../../app/components/AuthProvider', () => ({
 
 const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: jest.fn(), prefetch: jest.fn(), back: jest.fn() }),
+  usePathname: () => '/historico',
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const mockTrackEvent = jest.fn();
 jest.mock('../../hooks/useAnalytics', () => ({
-  useAnalytics: () => ({ trackEvent: mockTrackEvent }),
+  useAnalytics: () => ({ trackEvent: mockTrackEvent, resetUser: jest.fn() }),
+}));
+
+jest.mock('../../app/components/ThemeProvider', () => ({
+  useTheme: () => ({ theme: 'light', setTheme: jest.fn() }),
+}));
+
+jest.mock('../../app/components/ThemeToggle', () => ({
+  ThemeToggle: () => null,
+}));
+
+jest.mock('../../app/components/UserMenu', () => ({
+  UserMenu: () => null,
+}));
+
+jest.mock('../../app/components/QuotaBadge', () => ({
+  QuotaBadge: () => null,
+}));
+
+jest.mock('../../components/MobileDrawer', () => ({
+  MobileDrawer: () => null,
+}));
+
+jest.mock('../../hooks/useQuota', () => ({
+  useQuota: () => ({ quota: null, loading: false, refresh: jest.fn() }),
+}));
+
+jest.mock('../../lib/error-messages', () => ({
+  getUserFriendlyError: (msg: string) => msg,
+  isTransientError: () => false,
+  getMessageFromErrorCode: () => null,
 }));
 
 function mockFetchWith(sessions: SearchSession[]) {

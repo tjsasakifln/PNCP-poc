@@ -2929,6 +2929,13 @@ sectors:
       - "limpeza de galerias"
       - "desassoreamento"
       - "escavadeira"
+      # Pest control (keep nebulization/fumigation out of facilities)
+      - "nebulização"
+      - "nebulizacao"
+      - "nebulização costal"
+      - "nebulizacao costal"
+      - "fumigação"
+      - "fumigacao"
       # Construction/Engineering (keep in "engenharia")
       - "construção civil"
       - "construcao civil"

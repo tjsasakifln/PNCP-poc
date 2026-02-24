@@ -147,6 +147,7 @@ class TestT2_PartialRevalidationUpdatesCache:
             patch("source_config.sources.get_source_config", return_value=mock_source_config),
             patch("consolidation.ConsolidationService", return_value=mock_svc),
             patch("pncp_client.PNCPLegacyAdapter"),
+            patch("pncp_client.buscar_todas_ufs_paralelo", new_callable=AsyncMock, side_effect=Exception("PNCP down")),
         ):
             from search_cache import _fetch_multi_source_for_revalidation
 

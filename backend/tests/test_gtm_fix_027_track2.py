@@ -1,6 +1,6 @@
 """GTM-FIX-027 Track 2: Status filter date range tests."""
 import pytest
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -47,8 +47,9 @@ async def test_abertas_mode_uses_10_day_window():
         # Call stage_prepare which overrides dates for modo_busca='abertas'
         await pipeline.stage_prepare(ctx)
 
-    expected_start = (date.today() - timedelta(days=10)).isoformat()
-    expected_end = date.today().isoformat()
+    today_utc = datetime.now(timezone.utc).date()
+    expected_start = (today_utc - timedelta(days=10)).isoformat()
+    expected_end = today_utc.isoformat()
     assert ctx.request.data_inicial == expected_start, f"Expected {expected_start}, got {ctx.request.data_inicial}"
     assert ctx.request.data_final == expected_end
 

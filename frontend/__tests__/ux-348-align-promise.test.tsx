@@ -151,7 +151,7 @@ describe("AC14: Official source link in result cards", () => {
     );
     const links = screen.getAllByTestId("link-edital");
     expect(links.length).toBe(2);
-    expect(links[0]).toHaveTextContent("Ver edital completo");
+    expect(links[0]).toHaveTextContent("Ver edital");
     expect(links[0]).toHaveAttribute("href", "https://pncp.gov.br/app/editais/123");
   });
 

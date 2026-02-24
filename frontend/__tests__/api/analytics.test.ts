@@ -239,7 +239,8 @@ describe('GET /api/analytics', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,
         status: 500,
-        text: async () => 'Internal server error',
+        headers: { get: (h: string) => h === 'content-type' ? 'application/json' : null },
+        text: async () => JSON.stringify({ detail: 'Internal server error' }),
       });
 
       const request = new NextRequest('http://localhost:3000/api/analytics?endpoint=summary', {
@@ -282,8 +283,8 @@ describe('GET /api/analytics', () => {
       const response = await GET(request);
       const data = await response.json();
 
-      expect(response.status).toBe(502);
-      expect(data.error).toBe('Falha ao conectar com o servidor');
+      expect(response.status).toBe(503);
+      expect(data.error).toContain('servidores');
     });
   });
 
@@ -292,7 +293,8 @@ describe('GET /api/analytics', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,
         status: 401,
-        text: async () => 'Invalid token',
+        headers: { get: (h: string) => h === 'content-type' ? 'application/json' : null },
+        text: async () => JSON.stringify({ detail: 'Invalid token' }),
       });
 
       const request = new NextRequest('http://localhost:3000/api/analytics?endpoint=summary', {
@@ -308,7 +310,8 @@ describe('GET /api/analytics', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,
         status: 403,
-        text: async () => 'Access denied',
+        headers: { get: (h: string) => h === 'content-type' ? 'application/json' : null },
+        text: async () => JSON.stringify({ detail: 'Access denied' }),
       });
 
       const request = new NextRequest('http://localhost:3000/api/analytics?endpoint=summary', {
@@ -324,7 +327,8 @@ describe('GET /api/analytics', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: false,
         status: 404,
-        text: async () => 'Analytics data not found',
+        headers: { get: (h: string) => h === 'content-type' ? 'application/json' : null },
+        text: async () => JSON.stringify({ detail: 'Analytics data not found' }),
       });
 
       const request = new NextRequest('http://localhost:3000/api/analytics?endpoint=summary', {

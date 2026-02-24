@@ -57,7 +57,7 @@ describe('getUserFriendlyError', () => {
     });
 
     it('should map 502 errors', () => {
-      expect(getUserFriendlyError('502')).toBe('O portal PNCP está temporariamente indisponível. Tente novamente em instantes.');
+      expect(getUserFriendlyError('502')).toBe('O servidor está temporariamente indisponível. Tente novamente em instantes.');
     });
 
     it('should map 504 errors', () => {

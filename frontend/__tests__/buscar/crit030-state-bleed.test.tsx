@@ -35,6 +35,14 @@ jest.mock("../../app/components/EmptyState", () => ({
   ),
 }));
 
+jest.mock("../../app/buscar/components/ZeroResultsSuggestions", () => ({
+  ZeroResultsSuggestions: ({ sectorName }: any) => (
+    <div data-testid="zero-results-suggestions">
+      Nenhuma oportunidade para {sectorName}
+    </div>
+  ),
+}));
+
 jest.mock("../../app/buscar/components/CacheBanner", () => ({
   CacheBanner: () => <div data-testid="cache-banner">Cache Banner</div>,
 }));
@@ -68,6 +76,10 @@ jest.mock("../../app/buscar/components/PartialResultsPrompt", () => ({
 
 jest.mock("../../app/buscar/components/SourcesUnavailable", () => ({
   SourcesUnavailable: () => <div data-testid="sources-unavailable">Unavailable</div>,
+}));
+
+jest.mock("../../app/buscar/components/DataQualityBanner", () => ({
+  DataQualityBanner: () => <div data-testid="data-quality-banner">Data Quality</div>,
 }));
 
 jest.mock("../../app/buscar/components/TruncationWarningBanner", () => ({
@@ -280,8 +292,8 @@ describe("CRIT-030 AC3: Empty state guard conditions", () => {
       />
     );
 
-    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
-    expect(screen.getByText(/302 editais/)).toBeInTheDocument();
+    // Zero results renders ZeroResultsSuggestions (data-testid="zero-results-suggestions")
+    expect(screen.getByTestId("zero-results-suggestions")).toBeInTheDocument();
   });
 
   it("does NOT show empty state when loading=true", () => {
@@ -294,6 +306,7 @@ describe("CRIT-030 AC3: Empty state guard conditions", () => {
       />
     );
 
+    expect(screen.queryByTestId("zero-results-suggestions")).not.toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 
@@ -306,6 +319,7 @@ describe("CRIT-030 AC3: Empty state guard conditions", () => {
       />
     );
 
+    expect(screen.queryByTestId("zero-results-suggestions")).not.toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
   });
 });
@@ -410,8 +424,8 @@ describe("CRIT-030 AC6: Stale content cleanup", () => {
       />
     );
 
-    // Verify it's visible first
-    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+    // Verify zero-results-suggestions is visible first (renders for !is_partial && total === 0)
+    expect(screen.getByTestId("zero-results-suggestions")).toBeInTheDocument();
 
     // Simulate new search: result=null, loading=true
     rerender(
@@ -423,12 +437,12 @@ describe("CRIT-030 AC6: Stale content cleanup", () => {
       />
     );
 
-    // Empty state gone
+    // Zero results suggestions gone
+    expect(screen.queryByTestId("zero-results-suggestions")).not.toBeInTheDocument();
     expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
-    expect(screen.queryByText(/302 editais/)).not.toBeInTheDocument();
   });
 
-  it("cached banner disappears when new search starts", () => {
+  it("data quality banner disappears when new search starts", () => {
     const cachedResult = {
       ...makeResultWithOpportunities(3),
       cached: true,
@@ -444,8 +458,8 @@ describe("CRIT-030 AC6: Stale content cleanup", () => {
       />
     );
 
-    // Cache banner should be visible
-    expect(screen.getByTestId("cache-banner")).toBeInTheDocument();
+    // DataQualityBanner (replaced CacheBanner) should be visible when there are results
+    expect(screen.getByTestId("data-quality-banner")).toBeInTheDocument();
 
     // New search starts
     rerender(
@@ -457,7 +471,8 @@ describe("CRIT-030 AC6: Stale content cleanup", () => {
       />
     );
 
-    // Cache banner gone
+    // Data quality banner gone (loading guard)
+    expect(screen.queryByTestId("data-quality-banner")).not.toBeInTheDocument();
     expect(screen.queryByTestId("cache-banner")).not.toBeInTheDocument();
   });
 });

@@ -54,7 +54,7 @@ describe('LandingNavbar Component', () => {
       const { container } = render(<LandingNavbar />);
 
       // Check for placeholder div with width
-      const placeholder = container.querySelector('.w-\\[180px\\]');
+      const placeholder = container.querySelector('.w-\\[160px\\]');
       expect(placeholder).toBeInTheDocument();
 
       // Should NOT show Entrar or Comece Gratis during loading
@@ -133,7 +133,7 @@ describe('LandingNavbar Component', () => {
       expect(className).toContain('bg-brand-navy');
       expect(className).toContain('text-white');
       expect(className).toContain('rounded-button');
-      expect(className).toContain('font-semibold');
+      expect(className).toContain('font-medium');
     });
   });
 

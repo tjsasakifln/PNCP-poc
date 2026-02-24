@@ -98,78 +98,80 @@ describe("OperationalStateBanner", () => {
       />
     );
 
-    expect(screen.getByText("agora")).toBeInTheDocument();
+    // FreshnessIndicator renders "Dados de agora" for fresh live data
+    expect(screen.getByText(/Dados de agora|agora/)).toBeInTheDocument();
   });
 });
 
 // ============================================================================
-// AC17: CoverageBar renders segments
+// AC17: CoverageBar renders progress bar
 // ============================================================================
 
+import type { CoverageMetadata } from "../../app/types";
+
 describe("CoverageBar", () => {
-  it("AC17: 5 OK + 2 error -> 7 segments, text '71% de cobertura'", () => {
-    const ufs: UfStatusDetailItem[] = [
-      { uf: "SP", status: "ok", results_count: 20 },
-      { uf: "RJ", status: "ok", results_count: 15 },
-      { uf: "MG", status: "ok", results_count: 10 },
-      { uf: "RS", status: "ok", results_count: 8 },
-      { uf: "PR", status: "ok", results_count: 5 },
-      { uf: "BA", status: "error", results_count: 0 },
-      { uf: "CE", status: "timeout", results_count: 0 },
-    ];
+  it("AC17: 5 OK + 2 failed -> renders coverage bar with progress", () => {
+    const coverageMetadata: CoverageMetadata = {
+      ufs_requested: ["SP", "RJ", "MG", "RS", "PR", "BA", "CE"],
+      ufs_processed: ["SP", "RJ", "MG", "RS", "PR"],
+      ufs_failed: ["BA", "CE"],
+      coverage_pct: 71.4,
+      data_timestamp: new Date().toISOString(),
+      freshness: "live",
+    };
 
     const { container } = render(
-      <CoverageBar coveragePct={71} ufsStatusDetail={ufs} />
+      <CoverageBar coverageMetadata={coverageMetadata} />
     );
 
-    // 7 segments total
-    const segments = container.querySelectorAll("[role='img']");
-    expect(segments).toHaveLength(7);
+    // Progress bar renders
+    const progressBar = container.querySelector("[role='progressbar']");
+    expect(progressBar).toBeTruthy();
 
-    // 5 green segments (OK)
-    const greenSegments = container.querySelectorAll(".bg-green-500");
-    expect(greenSegments).toHaveLength(5);
-
-    // 2 gray segments (failed)
-    const graySegments = container.querySelectorAll(".bg-gray-300");
-    expect(graySegments).toHaveLength(2);
-
-    // Coverage text
-    expect(screen.getByText(/71% de cobertura/)).toBeInTheDocument();
-    expect(screen.getByText(/5 de 7 estados processados/)).toBeInTheDocument();
+    // Coverage text label
+    expect(screen.getByText(/Cobertura:.*5 de 7 UFs/)).toBeInTheDocument();
   });
 
-  it("renders tooltip with UF name and status", () => {
-    const ufs: UfStatusDetailItem[] = [
-      { uf: "SP", status: "ok", results_count: 45 },
-      { uf: "BA", status: "timeout", results_count: 0 },
-    ];
+  it("renders with 2 UFs, shows processed and failed", () => {
+    const coverageMetadata: CoverageMetadata = {
+      ufs_requested: ["SP", "BA"],
+      ufs_processed: ["SP"],
+      ufs_failed: ["BA"],
+      coverage_pct: 50,
+      data_timestamp: new Date().toISOString(),
+      freshness: "live",
+    };
 
     const { container } = render(
-      <CoverageBar coveragePct={50} ufsStatusDetail={ufs} />
+      <CoverageBar coverageMetadata={coverageMetadata} />
     );
 
-    const spSegment = container.querySelector("[title='SP: OK (45 resultados)']");
-    expect(spSegment).toBeTruthy();
-
-    const baSegment = container.querySelector("[title='BA: Timeout']");
-    expect(baSegment).toBeTruthy();
+    // Progress bar renders with the correct percentage
+    const progressBar = container.querySelector("[role='progressbar']");
+    expect(progressBar).toBeTruthy();
+    expect(progressBar?.getAttribute("aria-valuenow")).toBe("50");
   });
 
-  it("all UFs OK -> all segments green", () => {
-    const ufs: UfStatusDetailItem[] = [
-      { uf: "SP", status: "ok", results_count: 20 },
-      { uf: "RJ", status: "ok", results_count: 15 },
-    ];
+  it("all UFs OK -> coverage bar shows 100%", () => {
+    const coverageMetadata: CoverageMetadata = {
+      ufs_requested: ["SP", "RJ"],
+      ufs_processed: ["SP", "RJ"],
+      ufs_failed: [],
+      coverage_pct: 100,
+      data_timestamp: new Date().toISOString(),
+      freshness: "live",
+    };
 
     const { container } = render(
-      <CoverageBar coveragePct={100} ufsStatusDetail={ufs} />
+      <CoverageBar coverageMetadata={coverageMetadata} />
     );
 
-    const greenSegments = container.querySelectorAll(".bg-green-500");
-    expect(greenSegments).toHaveLength(2);
+    // Progress bar at 100%
+    const progressBar = container.querySelector("[role='progressbar']");
+    expect(progressBar?.getAttribute("aria-valuenow")).toBe("100");
 
-    const graySegments = container.querySelectorAll(".bg-gray-300");
-    expect(graySegments).toHaveLength(0);
+    // Bar fill should use green color for 100%
+    const barFill = container.querySelector(".bg-green-500");
+    expect(barFill).toBeTruthy();
   });
 });

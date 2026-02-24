@@ -18,12 +18,17 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Ensure arq is mockable even if not installed locally
-if "arq" not in sys.modules:
-    arq_mock = MagicMock()
-    arq_mock.connections.RedisSettings = MagicMock
-    sys.modules["arq"] = arq_mock
-    sys.modules["arq.connections"] = arq_mock.connections
+# Ensure arq is mockable even if not installed locally.
+# CRIT-036: Always ensure connections.RedisSettings is MagicMock class,
+# even if another test file already installed a partial arq mock
+# (e.g. test_cache_global_warmup only sets .cron, not .connections).
+_arq_mod = sys.modules.get("arq")
+if _arq_mod is None:
+    _arq_mod = MagicMock()
+    sys.modules["arq"] = _arq_mod
+_arq_mod.connections = MagicMock()
+_arq_mod.connections.RedisSettings = MagicMock
+sys.modules["arq.connections"] = _arq_mod.connections
 
 
 # ============================================================================
@@ -203,8 +208,27 @@ class TestWorkerSettings:
 # AC6: Redis settings parsing
 # ============================================================================
 
+class _FakeRedisSettings:
+    """Minimal stand-in for arq.connections.RedisSettings (not installed locally)."""
+    def __init__(self, host="localhost", port=6379, password=None, database=0):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.database = database
+
+
 class TestRedisSettings:
     """AC6: _get_redis_settings parses REDIS_URL correctly."""
+
+    @pytest.fixture(autouse=True)
+    def _ensure_arq_connections(self):
+        """Ensure arq.connections module has a proper RedisSettings, even if
+        other test files replaced sys.modules['arq.connections'] with a plain MagicMock."""
+        import types
+        fake_mod = types.ModuleType("arq.connections")
+        fake_mod.RedisSettings = _FakeRedisSettings
+        with patch.dict(sys.modules, {"arq.connections": fake_mod}):
+            yield
 
     def test_parses_full_url(self):
         from job_queue import _get_redis_settings

@@ -438,9 +438,8 @@ describe("T7-T10: SearchResults retry countdown UI", () => {
       />
     );
 
-    // Should show the countdown number
-    expect(screen.getByText("15")).toBeInTheDocument();
-    expect(screen.getByText(/Tentando novamente em 15s/)).toBeInTheDocument();
+    // Should show the countdown text
+    expect(screen.getByText(/Tentando em 15s/)).toBeInTheDocument();
 
     // Rerender with decremented countdown
     rerender(
@@ -453,8 +452,7 @@ describe("T7-T10: SearchResults retry countdown UI", () => {
       />
     );
 
-    expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getByText(/Tentando novamente em 10s/)).toBeInTheDocument();
+    expect(screen.getByText(/Tentando em 10s/)).toBeInTheDocument();
   });
 
   it('T8: "Tentar agora" button triggers immediate retry', () => {

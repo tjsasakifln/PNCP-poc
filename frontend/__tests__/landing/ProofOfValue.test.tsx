@@ -47,7 +47,8 @@ describe('ProofOfValue', () => {
       render(<ProofOfValue />);
 
       expect(screen.getByText(/R\$ 380\.000,00/i)).toBeInTheDocument();
-      expect(screen.getByText('SP')).toBeInTheDocument();
+      // Both recommended and rejected bids use SP — getAllByText handles multiple matches
+      expect(screen.getAllByText('SP').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/18 dias restantes/i)).toBeInTheDocument();
       // "Pregão Eletrônico" appears in both title and badge — use getAllByText
       const pregaoMatches = screen.getAllByText(/Pregão Eletrônico/);
@@ -171,7 +172,7 @@ describe('ProofOfValue', () => {
       render(<ProofOfValue />);
 
       expect(screen.getByText(/R\$ 380\.000,00/i)).toBeInTheDocument();
-      expect(screen.getByText(/R\$ 42\.000,00/i)).toBeInTheDocument();
+      expect(screen.getByText(/R\$ 420\.000,00/i)).toBeInTheDocument();
     });
   });
 

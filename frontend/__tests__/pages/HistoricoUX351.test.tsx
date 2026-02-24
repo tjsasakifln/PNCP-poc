@@ -446,10 +446,10 @@ describe('UX-351: Historico Funcional', () => {
         render(<HistoricoPage />);
       });
 
+      // UX-357: timed_out always shows the canonical timeout message regardless of error_message
       await waitFor(() => {
         const errorEl = screen.getByTestId('error-message');
-        // getUserFriendlyError should translate this
-        expect(errorEl).toHaveTextContent(/servidor reiniciou|Server restart/);
+        expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
       });
     });
   });
@@ -458,6 +458,15 @@ describe('UX-351: Historico Funcional', () => {
   // AC15: Regression checks
   // =========================================================================
   describe('AC15: Regression checks', () => {
+    // AC15 tests do not use polling/timers — switch to real timers so waitFor
+    // retry callbacks can fire (fake timers block waitFor's internal setTimeout).
+    beforeEach(() => {
+      jest.useRealTimers();
+    });
+    afterEach(() => {
+      jest.useFakeTimers();
+    });
+
     test('completed session shows result count and value', async () => {
       setupFetch([{
         sessions: [createSession({

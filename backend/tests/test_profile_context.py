@@ -199,7 +199,7 @@ class TestSaveProfileContext:
             "experiencia_licitacoes": "INICIANTE",
         })
 
-        assert response.status_code == 500
+        assert response.status_code == 500, f"Expected 500, got {response.status_code}: {response.text[:300]}"
 
 
 class TestGetProfileContext:
@@ -211,7 +211,7 @@ class TestGetProfileContext:
         )
 
         response = client.get("/v1/profile/context")
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text[:300]}"
         data = response.json()
         assert data["completed"] is True
         assert data["context_data"]["porte_empresa"] == "ME"
