@@ -407,6 +407,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "SECTOR_RED_FLAGS_ENABLED": ("SECTOR_RED_FLAGS_ENABLED", "true"),
     "CACHE_REFRESH_ENABLED": ("CACHE_REFRESH_ENABLED", "false"),
     "SEARCH_ASYNC_ENABLED": ("SEARCH_ASYNC_ENABLED", "false"),
+    "BID_ANALYSIS_ENABLED": ("BID_ANALYSIS_ENABLED", "true"),
 }
 
 # ============================================
@@ -434,6 +435,30 @@ USER_FEEDBACK_RATE_LIMIT: int = int(os.getenv("USER_FEEDBACK_RATE_LIMIT", "50"))
 # ============================================
 PROXIMITY_CONTEXT_ENABLED: bool = str_to_bool(os.getenv("PROXIMITY_CONTEXT_ENABLED", "true"))
 PROXIMITY_WINDOW_SIZE: int = int(os.getenv("PROXIMITY_WINDOW_SIZE", "8"))
+
+# ============================================
+# STORY-259: Bid Analysis
+# ============================================
+DEEP_ANALYSIS_RATE_LIMIT: int = int(os.getenv("DEEP_ANALYSIS_RATE_LIMIT", "20"))  # per user per hour
+BID_ANALYSIS_ENABLED: bool = str_to_bool(os.getenv("BID_ANALYSIS_ENABLED", "true"))
+
+# ============================================
+# STORY-260: Atestados/Certificações Catalog
+# ============================================
+ATESTADOS_DISPONIVEIS: list[dict] = [
+    {"id": "crea", "label": "CREA (Engenharia)", "sectors": ["engenharia", "manutencao_predial", "engenharia_rodoviaria"]},
+    {"id": "crf", "label": "CRF (Farmácia)", "sectors": ["saude"]},
+    {"id": "inmetro", "label": "INMETRO", "sectors": ["vestuario", "materiais_eletricos"]},
+    {"id": "iso_9001", "label": "ISO 9001 (Qualidade)", "sectors": ["*"]},
+    {"id": "iso_14001", "label": "ISO 14001 (Ambiental)", "sectors": ["*"]},
+    {"id": "pgr_pcmso", "label": "PGR/PCMSO (Segurança do Trabalho)", "sectors": ["facilities", "vigilancia"]},
+    {"id": "alvara_sanitario", "label": "Alvará Sanitário", "sectors": ["alimentos", "saude"]},
+    {"id": "registro_anvisa", "label": "Registro ANVISA", "sectors": ["saude"]},
+    {"id": "habilitacao_antt", "label": "Habilitação ANTT", "sectors": ["transporte"]},
+    {"id": "registro_cfq", "label": "Registro CRQ (Química)", "sectors": ["saude", "materiais_hidraulicos"]},
+    {"id": "licenca_ambiental", "label": "Licença Ambiental", "sectors": ["engenharia", "engenharia_rodoviaria"]},
+    {"id": "crt", "label": "CRT (Técnico)", "sectors": ["informatica", "software"]},
+]
 
 
 def get_feature_flag(name: str, default: bool | None = None) -> bool:

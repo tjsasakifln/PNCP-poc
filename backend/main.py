@@ -72,6 +72,8 @@ from routes.auth_email import router as auth_email_router  # GTM-FIX-009: Email 
 from routes.health import router as cache_health_router  # UX-303: Cache health endpoint
 from routes.feedback import router as feedback_router  # GTM-RESILIENCE-D05: User feedback loop
 from routes.admin_trace import router as admin_trace_router  # CRIT-004 AC21: Search trace endpoint
+from routes.auth_check import router as auth_check_router  # STORY-258: Email/phone pre-signup checks
+from routes.bid_analysis import router as bid_analysis_router  # STORY-259: Deep bid analysis
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -549,6 +551,8 @@ app.include_router(auth_email_router, prefix="/v1")  # GTM-FIX-009: Email confir
 app.include_router(cache_health_router, prefix="/v1")  # UX-303: Cache health
 app.include_router(feedback_router, prefix="/v1")  # GTM-RESILIENCE-D05: User feedback loop
 app.include_router(admin_trace_router)  # CRIT-004 AC21: Search trace (already has /v1/admin prefix)
+app.include_router(auth_check_router, prefix="/v1")  # STORY-258: Email/phone check
+app.include_router(bid_analysis_router, prefix="/v1")  # STORY-259: Deep bid analysis
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -573,6 +577,8 @@ app.include_router(onboarding_router)  # GTM-004: First analysis
 app.include_router(auth_email_router)  # GTM-FIX-009: Email confirmation recovery
 app.include_router(cache_health_router)  # UX-303: Cache health
 app.include_router(feedback_router)  # GTM-RESILIENCE-D05: User feedback loop
+app.include_router(auth_check_router)  # STORY-258: Email/phone check
+app.include_router(bid_analysis_router)  # STORY-259: Deep bid analysis
 
 # ============================================================================
 # GTM-PROXY-001 AC9-AC11: Global exception handlers for error sanitization

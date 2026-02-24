@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics, getStoredUTMParams } from "../../hooks/useAnalytics";
 import { translateAuthError } from "../../lib/error-messages";
@@ -11,7 +11,16 @@ import InstitutionalSidebar from "../components/InstitutionalSidebar";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
-// Helper constants and functions removed - no longer needed for simplified form
+// STORY-258: Email type result
+type EmailCheckResult = {
+  is_disposable: boolean;
+  is_corporate: boolean;
+} | null;
+
+// STORY-258: Phone check result
+type PhoneCheckResult = {
+  already_registered: boolean;
+} | null;
 
 export default function SignupPage() {
   const { signUpWithEmail, signInWithGoogle } = useAuth();
@@ -19,6 +28,7 @@ export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -26,6 +36,17 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // STORY-258: Email validation state
+  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
+  const [emailCheckResult, setEmailCheckResult] = useState<EmailCheckResult>(null);
+  const [emailCheckError, setEmailCheckError] = useState<string | null>(null);
+
+  // STORY-258: Phone validation state
+  const [phoneCheckLoading, setPhoneCheckLoading] = useState(false);
+  const [phoneCheckResult, setPhoneCheckResult] = useState<PhoneCheckResult>(null);
+  const [phoneCheckError, setPhoneCheckError] = useState<string | null>(null);
+  const phoneDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // GTM-FIX-009: Confirmation screen state
   const [countdown, setCountdown] = useState(60);
@@ -88,6 +109,67 @@ export default function SignupPage() {
   };
 
 
+  // STORY-258: Email check on blur
+  const handleEmailBlur = useCallback(async () => {
+    setEmailTouched(true);
+    const trimmed = email.trim();
+    const basicValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    if (!basicValid || !trimmed) return;
+
+    setEmailCheckLoading(true);
+    setEmailCheckError(null);
+    setEmailCheckResult(null);
+    try {
+      const res = await fetch(
+        `/api/auth/check-email?email=${encodeURIComponent(trimmed)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setEmailCheckResult(data);
+        if (data.is_disposable) {
+          setEmailCheckError(
+            "Emails descartáveis não são aceitos. Use um email corporativo ou permanente."
+          );
+        }
+      }
+    } catch {
+      // silent — do not block signup on check failure
+    } finally {
+      setEmailCheckLoading(false);
+    }
+  }, [email]);
+
+  // STORY-258: Phone check with 300ms debounce on blur
+  const handlePhoneBlur = useCallback(() => {
+    const trimmed = phone.trim();
+    if (!trimmed) return;
+
+    if (phoneDebounceRef.current) clearTimeout(phoneDebounceRef.current);
+    phoneDebounceRef.current = setTimeout(async () => {
+      setPhoneCheckLoading(true);
+      setPhoneCheckError(null);
+      setPhoneCheckResult(null);
+      try {
+        const res = await fetch(
+          `/api/auth/check-phone?phone=${encodeURIComponent(trimmed)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setPhoneCheckResult(data);
+          if (data.already_registered) {
+            setPhoneCheckError(
+              "Este telefone já está associado a uma conta. Tente fazer login."
+            );
+          }
+        }
+      } catch {
+        // silent
+      } finally {
+        setPhoneCheckLoading(false);
+      }
+    }, 300);
+  }, [phone]);
+
   // STORY-226 AC17: Enforce password policy (8+ chars, 1 uppercase, 1 digit)
   const passwordMeetsPolicy =
     password.length >= 8 &&
@@ -102,7 +184,9 @@ export default function SignupPage() {
     fullName.trim() !== "" &&
     email.trim() !== "" &&
     isEmailValid &&
-    passwordMeetsPolicy;
+    passwordMeetsPolicy &&
+    !emailCheckError &&
+    !phoneCheckError;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,23 +383,104 @@ export default function SignupPage() {
             <label htmlFor="email" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
               Email
             </label>
+            <div className="relative">
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setFormTouched(true);
+                  // Reset check result on change
+                  setEmailCheckResult(null);
+                  setEmailCheckError(null);
+                }}
+                onBlur={handleEmailBlur}
+                className={`w-full px-4 py-3 rounded-input border
+                           bg-[var(--surface-0)] text-[var(--ink)]
+                           focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
+                           focus:ring-[var(--brand-blue-subtle)]
+                           ${showEmailError || emailCheckError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
+                placeholder="seu@email.com"
+              />
+              {/* STORY-258: Loading spinner */}
+              {emailCheckLoading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="animate-spin h-4 w-4 text-[var(--ink-muted)]" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            {/* STORY-258: Format error */}
+            {showEmailError && !emailCheckError && (
+              <p className="mt-1 text-xs text-[var(--error)]" data-testid="email-error">
+                Digite um email válido
+              </p>
+            )}
+            {/* STORY-258: Disposable email error */}
+            {emailCheckError && (
+              <p className="mt-1 text-xs text-[var(--error)]" data-testid="email-disposable-error">
+                {emailCheckError}
+              </p>
+            )}
+            {/* STORY-258: Email type badge */}
+            {emailCheckResult && !emailCheckError && (
+              <span
+                className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                  emailCheckResult.is_corporate
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                }`}
+                data-testid="email-type-badge"
+              >
+                <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  {emailCheckResult.is_corporate ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  )}
+                </svg>
+                {emailCheckResult.is_corporate ? "Email corporativo" : "Email pessoal"}
+              </span>
+            )}
+          </div>
+
+          {/* Phone (STORY-258) */}
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">
+              Telefone <span className="text-[var(--ink-muted)] font-normal">(opcional)</span>
+            </label>
             <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setFormTouched(true); }}
-              onBlur={() => setEmailTouched(true)}
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setPhoneCheckResult(null);
+                setPhoneCheckError(null);
+              }}
+              onBlur={handlePhoneBlur}
               className={`w-full px-4 py-3 rounded-input border
                          bg-[var(--surface-0)] text-[var(--ink)]
                          focus:border-[var(--brand-blue)] focus:outline-none focus:ring-2
                          focus:ring-[var(--brand-blue-subtle)]
-                         ${showEmailError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
-              placeholder="seu@email.com"
+                         ${phoneCheckError ? 'border-[var(--error)]' : 'border-[var(--border)]'}`}
+              placeholder="+55 11 91234-5678"
             />
-            {showEmailError && (
-              <p className="mt-1 text-xs text-[var(--error)]" data-testid="email-error">
-                Digite um email válido
+            {phoneCheckLoading && (
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">Verificando...</p>
+            )}
+            {phoneCheckError && (
+              <p className="mt-1 text-xs text-[var(--error)]" data-testid="phone-error">
+                {phoneCheckError}
+              </p>
+            )}
+            {phoneCheckResult && !phoneCheckError && (
+              <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400" data-testid="phone-ok">
+                Telefone disponível
               </p>
             )}
           </div>

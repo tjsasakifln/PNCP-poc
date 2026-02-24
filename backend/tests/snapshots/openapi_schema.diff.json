@@ -1515,6 +1515,108 @@
           "title": "DebugPNCPResponse",
           "type": "object"
         },
+        "DeepAnalysisRequest": {
+          "description": "Request body for deep analysis.",
+          "properties": {
+            "bid_data": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bid Data"
+            },
+            "search_id": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "search_id"
+          ],
+          "title": "DeepAnalysisRequest",
+          "type": "object"
+        },
+        "DeepBidAnalysis": {
+          "description": "Level 2: Deep on-demand analysis (STORY-259 AC8).",
+          "properties": {
+            "analise_competitividade": {
+              "default": "",
+              "title": "Analise Competitividade",
+              "type": "string"
+            },
+            "analise_prazo": {
+              "default": "",
+              "title": "Analise Prazo",
+              "type": "string"
+            },
+            "analise_requisitos": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Analise Requisitos",
+              "type": "array"
+            },
+            "bid_id": {
+              "title": "Bid Id",
+              "type": "string"
+            },
+            "compatibilidade_pct": {
+              "default": 50,
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "title": "Compatibilidade Pct",
+              "type": "integer"
+            },
+            "decisao_sugerida": {
+              "default": "AVALIAR COM CAUTELA",
+              "title": "Decisao Sugerida",
+              "type": "string"
+            },
+            "justificativas_contra": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Justificativas Contra",
+              "type": "array"
+            },
+            "justificativas_favoraveis": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Justificativas Favoraveis",
+              "type": "array"
+            },
+            "recomendacao_final": {
+              "default": "",
+              "title": "Recomendacao Final",
+              "type": "string"
+            },
+            "riscos": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Riscos",
+              "type": "array"
+            },
+            "score": {
+              "default": 5.0,
+              "maximum": 10.0,
+              "minimum": 0.0,
+              "title": "Score",
+              "type": "number"
+            }
+          },
+          "required": [
+            "bid_id"
+          ],
+          "title": "DeepBidAnalysis",
+          "type": "object"
+        },
         "DeleteAccountResponse": {
           "description": "Response for DELETE /me.",
           "properties": {
@@ -1568,10 +1670,11 @@
           "type": "string"
         },
         "ExperienciaLicitacoes": {
-          "description": "Procurement experience level.",
+          "description": "Procurement experience level (STORY-260: added INTERMEDIARIO).",
           "enum": [
             "PRIMEIRA_VEZ",
             "INICIANTE",
+            "INTERMEDIARIO",
             "EXPERIENTE"
           ],
           "title": "ExperienciaLicitacoes",
@@ -2687,6 +2790,34 @@
         "PerfilContexto": {
           "description": "Business context profile collected during onboarding wizard.\n\nUsed to personalize search defaults and LLM recommendations.\nStored as JSONB in profiles.context_data.",
           "properties": {
+            "atestados": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Certifications held (e.g., ['crea', 'iso_9001'])",
+              "title": "Atestados"
+            },
+            "capacidade_funcionarios": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of employees",
+              "title": "Capacidade Funcionarios"
+            },
             "cnae": {
               "anyOf": [
                 {
@@ -2729,6 +2860,19 @@
               ],
               "description": "Minimum contract value of interest (BRL)",
               "title": "Faixa Valor Min"
+            },
+            "faturamento_anual": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Annual revenue in BRL",
+              "title": "Faturamento Anual"
             },
             "modalidades_interesse": {
               "anyOf": [
@@ -3219,8 +3363,9 @@
           "type": "object"
         },
         "PorteEmpresa": {
-          "description": "Company size classification.",
+          "description": "Company size classification (STORY-260: added MEI).",
           "enum": [
+            "MEI",
             "ME",
             "EPP",
             "MEDIO",
@@ -3228,6 +3373,55 @@
           ],
           "title": "PorteEmpresa",
           "type": "string"
+        },
+        "ProfileCompletenessResponse": {
+          "description": "STORY-260 AC3: Response for GET /v1/profile/completeness.",
+          "properties": {
+            "completeness_pct": {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "title": "Completeness Pct",
+              "type": "integer"
+            },
+            "filled_fields": {
+              "title": "Filled Fields",
+              "type": "integer"
+            },
+            "is_complete": {
+              "default": false,
+              "title": "Is Complete",
+              "type": "boolean"
+            },
+            "missing_fields": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Missing Fields",
+              "type": "array"
+            },
+            "next_question": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Next Question"
+            },
+            "total_fields": {
+              "title": "Total Fields",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "completeness_pct",
+            "total_fields",
+            "filled_fields"
+          ],
+          "title": "ProfileCompletenessResponse",
+          "type": "object"
         },
         "Recomendacao": {
           "description": "Actionable recommendation for a specific procurement opportunity.\n\nGenerated by the LLM consultant or heuristic fallback.\nEach recommendation includes a concrete action and justification.",
@@ -5924,6 +6118,109 @@
           ]
         }
       },
+      "/auth/check-email": {
+        "get": {
+          "description": "AC15: Pre-signup email validation.\n\nReturns { available: bool, disposable: bool, corporate: bool }.\n\nSecurity:\n- Does NOT reveal if email already exists (always available=true for disposable).\n- Rate limited: 10 req/min/IP.",
+          "operationId": "check_email_auth_check_email_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "email",
+              "required": true,
+              "schema": {
+                "maxLength": 320,
+                "minLength": 5,
+                "title": "Email",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Email",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
+      "/auth/check-phone": {
+        "get": {
+          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
+          "operationId": "check_phone_auth_check_phone_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "phone",
+              "required": true,
+              "schema": {
+                "maxLength": 20,
+                "minLength": 8,
+                "title": "Phone",
+                "type": "string"
+              }
+            },
+            {
+              "in": "query",
+              "name": "company",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Phone",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
       "/auth/resend-confirmation": {
         "post": {
           "description": "Resend signup confirmation email with 60s rate limiting.\n\nAC4: Calls Supabase auth.resend({ type: 'signup', email }).\nAC1-AC6: Frontend uses this with countdown timer.",
@@ -6008,6 +6305,104 @@
           "summary": "Auth Status",
           "tags": [
             "auth-email"
+          ]
+        }
+      },
+      "/auth/validate-signup-email": {
+        "post": {
+          "description": "STORY-258 AC3: Backend disposable email validation (defense-in-depth).\n\nReturns 422 if email domain is disposable.",
+          "operationId": "validate_signup_email_auth_validate_signup_email_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Validate Signup Email",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/bid-analysis/{bid_id}": {
+        "post": {
+          "description": "AC7: Deep on-demand analysis for a single bid.\n\nChecks cache first (AC11), then calls LLM.\nRate limited: 20/hour/user (AC10).",
+          "operationId": "analyze_bid_bid_analysis__bid_id__post",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bid_id",
+              "required": true,
+              "schema": {
+                "title": "Bid Id",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAnalysisRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeepBidAnalysis"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Analyze Bid",
+          "tags": [
+            "bid-analysis"
           ]
         }
       },
@@ -6915,6 +7310,33 @@
           "summary": "Get Plans",
           "tags": [
             "billing"
+          ]
+        }
+      },
+      "/profile/completeness": {
+        "get": {
+          "description": "STORY-260 AC3: Calculate profile completeness and suggest next question.",
+          "operationId": "get_profile_completeness_profile_completeness_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProfileCompletenessResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Profile Completeness",
+          "tags": [
+            "user"
           ]
         }
       },
@@ -8737,6 +9159,109 @@
           ]
         }
       },
+      "/v1/auth/check-email": {
+        "get": {
+          "description": "AC15: Pre-signup email validation.\n\nReturns { available: bool, disposable: bool, corporate: bool }.\n\nSecurity:\n- Does NOT reveal if email already exists (always available=true for disposable).\n- Rate limited: 10 req/min/IP.",
+          "operationId": "check_email_v1_auth_check_email_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "email",
+              "required": true,
+              "schema": {
+                "maxLength": 320,
+                "minLength": 5,
+                "title": "Email",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Email",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
+      "/v1/auth/check-phone": {
+        "get": {
+          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
+          "operationId": "check_phone_v1_auth_check_phone_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "phone",
+              "required": true,
+              "schema": {
+                "maxLength": 20,
+                "minLength": 8,
+                "title": "Phone",
+                "type": "string"
+              }
+            },
+            {
+              "in": "query",
+              "name": "company",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Phone",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
       "/v1/auth/resend-confirmation": {
         "post": {
           "description": "Resend signup confirmation email with 60s rate limiting.\n\nAC4: Calls Supabase auth.resend({ type: 'signup', email }).\nAC1-AC6: Frontend uses this with countdown timer.",
@@ -8821,6 +9346,104 @@
           "summary": "Auth Status",
           "tags": [
             "auth-email"
+          ]
+        }
+      },
+      "/v1/auth/validate-signup-email": {
+        "post": {
+          "description": "STORY-258 AC3: Backend disposable email validation (defense-in-depth).\n\nReturns 422 if email domain is disposable.",
+          "operationId": "validate_signup_email_v1_auth_validate_signup_email_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Validate Signup Email",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/v1/bid-analysis/{bid_id}": {
+        "post": {
+          "description": "AC7: Deep on-demand analysis for a single bid.\n\nChecks cache first (AC11), then calls LLM.\nRate limited: 20/hour/user (AC10).",
+          "operationId": "analyze_bid_v1_bid_analysis__bid_id__post",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bid_id",
+              "required": true,
+              "schema": {
+                "title": "Bid Id",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAnalysisRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeepBidAnalysis"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Analyze Bid",
+          "tags": [
+            "bid-analysis"
           ]
         }
       },
@@ -9668,6 +10291,33 @@
           "summary": "Get Plans",
           "tags": [
             "billing"
+          ]
+        }
+      },
+      "/v1/profile/completeness": {
+        "get": {
+          "description": "STORY-260 AC3: Calculate profile completeness and suggest next question.",
+          "operationId": "get_profile_completeness_v1_profile_completeness_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProfileCompletenessResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Profile Completeness",
+          "tags": [
+            "user"
           ]
         }
       },
@@ -11056,6 +11706,12 @@
               ],
               "description": "Breakdown of filter rejection reasons"
             },
+            "from_cache": {
+              "default": false,
+              "description": "GTM-INFRA-003 AC6: True when response came 100% from cache (quota was NOT consumed)",
+              "title": "From Cache",
+              "type": "boolean"
+            },
             "hidden_by_min_match": {
               "anyOf": [
                 {
@@ -11790,6 +12446,108 @@
           "title": "DebugPNCPResponse",
           "type": "object"
         },
+        "DeepAnalysisRequest": {
+          "description": "Request body for deep analysis.",
+          "properties": {
+            "bid_data": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bid Data"
+            },
+            "search_id": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "search_id"
+          ],
+          "title": "DeepAnalysisRequest",
+          "type": "object"
+        },
+        "DeepBidAnalysis": {
+          "description": "Level 2: Deep on-demand analysis (STORY-259 AC8).",
+          "properties": {
+            "analise_competitividade": {
+              "default": "",
+              "title": "Analise Competitividade",
+              "type": "string"
+            },
+            "analise_prazo": {
+              "default": "",
+              "title": "Analise Prazo",
+              "type": "string"
+            },
+            "analise_requisitos": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Analise Requisitos",
+              "type": "array"
+            },
+            "bid_id": {
+              "title": "Bid Id",
+              "type": "string"
+            },
+            "compatibilidade_pct": {
+              "default": 50,
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "title": "Compatibilidade Pct",
+              "type": "integer"
+            },
+            "decisao_sugerida": {
+              "default": "AVALIAR COM CAUTELA",
+              "title": "Decisao Sugerida",
+              "type": "string"
+            },
+            "justificativas_contra": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Justificativas Contra",
+              "type": "array"
+            },
+            "justificativas_favoraveis": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Justificativas Favoraveis",
+              "type": "array"
+            },
+            "recomendacao_final": {
+              "default": "",
+              "title": "Recomendacao Final",
+              "type": "string"
+            },
+            "riscos": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Riscos",
+              "type": "array"
+            },
+            "score": {
+              "default": 5.0,
+              "maximum": 10.0,
+              "minimum": 0.0,
+              "title": "Score",
+              "type": "number"
+            }
+          },
+          "required": [
+            "bid_id"
+          ],
+          "title": "DeepBidAnalysis",
+          "type": "object"
+        },
         "DeleteAccountResponse": {
           "description": "Response for DELETE /me.",
           "properties": {
@@ -11843,10 +12601,11 @@
           "type": "string"
         },
         "ExperienciaLicitacoes": {
-          "description": "Procurement experience level.",
+          "description": "Procurement experience level (STORY-260: added INTERMEDIARIO).",
           "enum": [
             "PRIMEIRA_VEZ",
             "INICIANTE",
+            "INTERMEDIARIO",
             "EXPERIENTE"
           ],
           "title": "ExperienciaLicitacoes",
@@ -12962,6 +13721,34 @@
         "PerfilContexto": {
           "description": "Business context profile collected during onboarding wizard.\n\nUsed to personalize search defaults and LLM recommendations.\nStored as JSONB in profiles.context_data.",
           "properties": {
+            "atestados": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Certifications held (e.g., ['crea', 'iso_9001'])",
+              "title": "Atestados"
+            },
+            "capacidade_funcionarios": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Number of employees",
+              "title": "Capacidade Funcionarios"
+            },
             "cnae": {
               "anyOf": [
                 {
@@ -13004,6 +13791,19 @@
               ],
               "description": "Minimum contract value of interest (BRL)",
               "title": "Faixa Valor Min"
+            },
+            "faturamento_anual": {
+              "anyOf": [
+                {
+                  "minimum": 0.0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Annual revenue in BRL",
+              "title": "Faturamento Anual"
             },
             "modalidades_interesse": {
               "anyOf": [
@@ -13494,8 +14294,9 @@
           "type": "object"
         },
         "PorteEmpresa": {
-          "description": "Company size classification.",
+          "description": "Company size classification (STORY-260: added MEI).",
           "enum": [
+            "MEI",
             "ME",
             "EPP",
             "MEDIO",
@@ -13503,6 +14304,55 @@
           ],
           "title": "PorteEmpresa",
           "type": "string"
+        },
+        "ProfileCompletenessResponse": {
+          "description": "STORY-260 AC3: Response for GET /v1/profile/completeness.",
+          "properties": {
+            "completeness_pct": {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "title": "Completeness Pct",
+              "type": "integer"
+            },
+            "filled_fields": {
+              "title": "Filled Fields",
+              "type": "integer"
+            },
+            "is_complete": {
+              "default": false,
+              "title": "Is Complete",
+              "type": "boolean"
+            },
+            "missing_fields": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Missing Fields",
+              "type": "array"
+            },
+            "next_question": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Next Question"
+            },
+            "total_fields": {
+              "title": "Total Fields",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "completeness_pct",
+            "total_fields",
+            "filled_fields"
+          ],
+          "title": "ProfileCompletenessResponse",
+          "type": "object"
         },
         "Recomendacao": {
           "description": "Actionable recommendation for a specific procurement opportunity.\n\nGenerated by the LLM consultant or heuristic fallback.\nEach recommendation includes a concrete action and justification.",
@@ -14564,6 +15414,13 @@
         },
         "ValidationError": {
           "properties": {
+            "ctx": {
+              "title": "Context",
+              "type": "object"
+            },
+            "input": {
+              "title": "Input"
+            },
             "loc": {
               "items": {
                 "anyOf": [
@@ -16192,6 +17049,92 @@
           ]
         }
       },
+      "/auth/check-email": {
+        "get": {
+          "description": "AC15: Pre-signup email validation.\n\nReturns { available: bool, disposable: bool, corporate: bool }.\n\nSecurity:\n- Does NOT reveal if email already exists (always available=true for disposable).\n- Rate limited: 10 req/min/IP.",
+          "operationId": "check_email_auth_check_email_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "email",
+              "required": true,
+              "schema": {
+                "maxLength": 320,
+                "minLength": 5,
+                "title": "Email",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Email",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
+      "/auth/check-phone": {
+        "get": {
+          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nRate limited: 10 req/min/IP.",
+          "operationId": "check_phone_auth_check_phone_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "phone",
+              "required": true,
+              "schema": {
+                "maxLength": 20,
+                "minLength": 8,
+                "title": "Phone",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Phone",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
       "/auth/resend-confirmation": {
         "post": {
           "description": "Resend signup confirmation email with 60s rate limiting.\n\nAC4: Calls Supabase auth.resend({ type: 'signup', email }).\nAC1-AC6: Frontend uses this with countdown timer.",
@@ -16276,6 +17219,104 @@
           "summary": "Auth Status",
           "tags": [
             "auth-email"
+          ]
+        }
+      },
+      "/auth/validate-signup-email": {
+        "post": {
+          "description": "STORY-258 AC3: Backend disposable email validation (defense-in-depth).\n\nReturns 422 if email domain is disposable.",
+          "operationId": "validate_signup_email_auth_validate_signup_email_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Validate Signup Email",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/bid-analysis/{bid_id}": {
+        "post": {
+          "description": "AC7: Deep on-demand analysis for a single bid.\n\nChecks cache first (AC11), then calls LLM.\nRate limited: 20/hour/user (AC10).",
+          "operationId": "analyze_bid_bid_analysis__bid_id__post",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bid_id",
+              "required": true,
+              "schema": {
+                "title": "Bid Id",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAnalysisRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeepBidAnalysis"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Analyze Bid",
+          "tags": [
+            "bid-analysis"
           ]
         }
       },
@@ -16818,7 +17859,7 @@
       },
       "/health/ready": {
         "get": {
-          "description": "Lightweight readiness probe for Railway health checks.\n\nCRIT-001 AC1: Zero I/O, zero dependency checks. Just reads _startup_time.\nReturns in <50ms guaranteed.",
+          "description": "Lightweight liveness + readiness probe for Railway health checks.\n\nSLA-002: ALWAYS returns 200 if the process is running. Railway uses this\nas healthcheckPath \u2014 returning non-200 or timing out causes Railway to\npull the container from the load balancer (\"train not arrived\" 404).\n\nThe `ready` field indicates whether full initialization completed,\nbut HTTP 200 is returned regardless to keep the container alive.",
           "operationId": "health_ready_health_ready_get",
           "responses": {
             "200": {
@@ -17183,6 +18224,33 @@
           "summary": "Get Plans",
           "tags": [
             "billing"
+          ]
+        }
+      },
+      "/profile/completeness": {
+        "get": {
+          "description": "STORY-260 AC3: Calculate profile completeness and suggest next question.",
+          "operationId": "get_profile_completeness_profile_completeness_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProfileCompletenessResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Profile Completeness",
+          "tags": [
+            "user"
           ]
         }
       },
@@ -19005,6 +20073,92 @@
           ]
         }
       },
+      "/v1/auth/check-email": {
+        "get": {
+          "description": "AC15: Pre-signup email validation.\n\nReturns { available: bool, disposable: bool, corporate: bool }.\n\nSecurity:\n- Does NOT reveal if email already exists (always available=true for disposable).\n- Rate limited: 10 req/min/IP.",
+          "operationId": "check_email_v1_auth_check_email_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "email",
+              "required": true,
+              "schema": {
+                "maxLength": 320,
+                "minLength": 5,
+                "title": "Email",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Email",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
+      "/v1/auth/check-phone": {
+        "get": {
+          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nRate limited: 10 req/min/IP.",
+          "operationId": "check_phone_v1_auth_check_phone_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "phone",
+              "required": true,
+              "schema": {
+                "maxLength": 20,
+                "minLength": 8,
+                "title": "Phone",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Check Phone",
+          "tags": [
+            "auth-check"
+          ]
+        }
+      },
       "/v1/auth/resend-confirmation": {
         "post": {
           "description": "Resend signup confirmation email with 60s rate limiting.\n\nAC4: Calls Supabase auth.resend({ type: 'signup', email }).\nAC1-AC6: Frontend uses this with countdown timer.",
@@ -19089,6 +20243,104 @@
           "summary": "Auth Status",
           "tags": [
             "auth-email"
+          ]
+        }
+      },
+      "/v1/auth/validate-signup-email": {
+        "post": {
+          "description": "STORY-258 AC3: Backend disposable email validation (defense-in-depth).\n\nReturns 422 if email domain is disposable.",
+          "operationId": "validate_signup_email_v1_auth_validate_signup_email_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Validate Signup Email",
+          "tags": [
+            "auth-email"
+          ]
+        }
+      },
+      "/v1/bid-analysis/{bid_id}": {
+        "post": {
+          "description": "AC7: Deep on-demand analysis for a single bid.\n\nChecks cache first (AC11), then calls LLM.\nRate limited: 20/hour/user (AC10).",
+          "operationId": "analyze_bid_v1_bid_analysis__bid_id__post",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "bid_id",
+              "required": true,
+              "schema": {
+                "title": "Bid Id",
+                "type": "string"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeepAnalysisRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeepBidAnalysis"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Analyze Bid",
+          "tags": [
+            "bid-analysis"
           ]
         }
       },
@@ -19936,6 +21188,33 @@
           "summary": "Get Plans",
           "tags": [
             "billing"
+          ]
+        }
+      },
+      "/v1/profile/completeness": {
+        "get": {
+          "description": "STORY-260 AC3: Calculate profile completeness and suggest next question.",
+          "operationId": "get_profile_completeness_v1_profile_completeness_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ProfileCompletenessResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Profile Completeness",
+          "tags": [
+            "user"
           ]
         }
       },

@@ -38,6 +38,36 @@ class AuthStatusResponse(BaseModel):
     user_id: str | None = None
 
 
+@router.post("/validate-signup-email")
+async def validate_signup_email(request: ResendRequest):
+    """STORY-258 AC3: Backend disposable email validation (defense-in-depth).
+
+    Returns 422 if email domain is disposable.
+    """
+    from utils.disposable_emails import is_disposable_email
+    from audit import log_audit_event
+
+    email_lower = request.email.lower().strip()
+
+    if is_disposable_email(email_lower):
+        # AC14: Log to audit
+        try:
+            log_audit_event(
+                event_type="signup_disposable_blocked",
+                details={"email_domain": email_lower.split("@")[1]},
+                level="WARNING",
+            )
+        except Exception:
+            logger.warning(f"AUDIT: Disposable email signup attempt: {email_lower.split('@')[1]}")
+
+        raise HTTPException(
+            status_code=422,
+            detail="Este provedor de email não é aceito. Use um email corporativo ou pessoal (Gmail, Outlook, etc.)",
+        )
+
+    return {"valid": True}
+
+
 @router.post("/resend-confirmation", response_model=ResendResponse)
 async def resend_confirmation(request: ResendRequest):
     """Resend signup confirmation email with 60s rate limiting.
