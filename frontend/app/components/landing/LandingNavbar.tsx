@@ -65,6 +65,12 @@ export default function LandingNavbar({ className = '' }: LandingNavbarProps) {
               Como Funciona
             </button>
             <Link
+              href="/blog"
+              className="text-sm text-ink-secondary/80 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
+            >
+              Blog
+            </Link>
+            <Link
               href="/sobre"
               className="text-sm text-ink-secondary/80 hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ring)] rounded px-2 py-1"
             >

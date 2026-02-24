@@ -1,6 +1,6 @@
 # STORY-261: Blog Platform & SEO Content Infrastructure
 
-**Status:** Draft
+**Status:** Done
 **Priority:** P0 — Critical (prerequisite for STORY-262 e STORY-263)
 **Track:** GTM — Content Marketing & SEO Authority
 **Created:** 2026-02-24
@@ -62,7 +62,7 @@ frontend/app/
 
 ### Frontend — Blog Article Layout
 
-- [ ] **AC1:** Criar `BlogArticleLayout.tsx` baseado no `ContentPageLayout.tsx` mas com campos adicionais:
+- [x] **AC1:** Criar `BlogArticleLayout.tsx` baseado no `ContentPageLayout.tsx` mas com campos adicionais:
   - `category` (badge: "Empresas B2G" | "Consultorias de Licitação")
   - `publishDate` (formatado "24 de fevereiro de 2026")
   - `readingTime` (calculado automaticamente: ~200 palavras/minuto)
@@ -73,7 +73,7 @@ frontend/app/
   - Reading progress bar no topo (sutil, cor brand-blue, height 3px)
   - Botões de share (LinkedIn, WhatsApp, copiar link) — sem dependências externas
 
-- [ ] **AC2:** `BlogArticleLayout` deve renderizar structured data JSON-LD:
+- [x] **AC2:** `BlogArticleLayout` deve renderizar structured data JSON-LD:
   ```json
   {
     "@context": "https://schema.org",
@@ -91,7 +91,7 @@ frontend/app/
   }
   ```
 
-- [ ] **AC3:** `BlogArticleLayout` deve incluir Breadcrumb schema:
+- [x] **AC3:** `BlogArticleLayout` deve incluir Breadcrumb schema:
   ```
   Início > Blog > [Categoria] > [Título do Artigo]
   ```
@@ -99,7 +99,7 @@ frontend/app/
 
 ### Frontend — Blog Listing Page
 
-- [ ] **AC4:** Criar `/blog/page.tsx` com:
+- [x] **AC4:** Criar `/blog/page.tsx` com:
   - Hero section: título "Inteligência em Licitações", subtítulo "Artigos, guias e análises para empresas e consultorias que disputam contratos públicos"
   - Filtros: "Todos" | "Empresas B2G" | "Consultorias" (tabs ou toggle pills)
   - Grid de cards responsivo: 1 col (mobile), 2 cols (tablet), 3 cols (desktop)
@@ -108,7 +108,7 @@ frontend/app/
   - Sem paginação inicial (30 artigos cabem em 1 página com lazy loading)
   - CTA banner entre os cards (a cada 6 artigos): "Experimente o SmartLic gratuitamente"
 
-- [ ] **AC5:** Metadata da listing page:
+- [x] **AC5:** Metadata da listing page:
   ```typescript
   export const metadata: Metadata = {
     title: 'Blog — Inteligência em Licitações Públicas',
@@ -124,7 +124,7 @@ frontend/app/
 
 ### Frontend — Article Data Index
 
-- [ ] **AC6:** Criar `frontend/app/lib/blog.ts` com:
+- [x] **AC6:** Criar `frontend/app/lib/blog.ts` com:
   - Interface `BlogArticleMeta`: slug, title, description, category, tags, publishDate, readingTime, keywords (SEO), relatedSlugs
   - Array `BLOG_ARTICLES: BlogArticleMeta[]` com metadados de todos os artigos
   - Funções utilitárias:
@@ -136,19 +136,19 @@ frontend/app/
 
 ### Frontend — Dynamic Article Route
 
-- [ ] **AC7:** Criar `/blog/[slug]/page.tsx` com:
+- [x] **AC7:** Criar `/blog/[slug]/page.tsx` com:
   - `generateStaticParams()` retornando todos os slugs do blog index
   - `generateMetadata()` retornando metadata dinâmica por slug (title, description, canonical, OG)
   - Importação dinâmica do conteúdo via lazy component: `const ArticleContent = dynamic(() => import(\`@/app/blog/content/${slug}\`))`
   - Fallback: `notFound()` para slugs inexistentes
 
-- [ ] **AC8:** Criar diretório `frontend/app/blog/content/` para armazenar conteúdo de cada artigo como componentes React exportados. Cada arquivo:
+- [x] **AC8:** Criar diretório `frontend/app/blog/content/` para armazenar conteúdo de cada artigo como componentes React exportados. Cada arquivo:
   - Exporta default function com JSX do conteúdo (segue padrão das como-* pages)
   - Nome do arquivo = slug do artigo (ex: `como-aumentar-taxa-vitoria-licitacoes.tsx`)
 
 ### Frontend — RSS Feed
 
-- [ ] **AC9:** Criar `/blog/rss.xml/route.ts` (Next.js Route Handler) que gera RSS 2.0 feed:
+- [x] **AC9:** Criar `/blog/rss.xml/route.ts` (Next.js Route Handler) que gera RSS 2.0 feed:
   - Content-Type: `application/rss+xml; charset=utf-8`
   - Inclui todos os artigos de `BLOG_ARTICLES`
   - Campos: title, link, description, pubDate, guid, category
@@ -156,33 +156,33 @@ frontend/app/
 
 ### Frontend — Sitemap & Navigation Updates
 
-- [ ] **AC10:** Atualizar `sitemap.ts` para incluir:
+- [x] **AC10:** Atualizar `sitemap.ts` para incluir:
   - `/blog` (priority 0.9, changeFrequency weekly)
   - Cada artigo `/blog/{slug}` (priority 0.7, changeFrequency monthly)
   - Importar slugs de `lib/blog.ts` para geração dinâmica
 
-- [ ] **AC11:** Atualizar navegação:
+- [x] **AC11:** Atualizar navegação:
   - `LandingNavbar`: adicionar link "Blog" entre "Como Funciona" e "Sobre"
   - `Footer`: adicionar seção "Blog" com links para categorias
   - `<link rel="alternate" type="application/rss+xml">` no layout.tsx head
 
 ### Frontend — SEO & Performance
 
-- [ ] **AC12:** Cada artigo individual deve:
+- [x] **AC12:** Cada artigo individual deve:
   - Ter canonical URL: `https://smartlic.tech/blog/{slug}`
   - Ter OG image dinâmica (pode usar `/api/og?title={title}&category={category}`)
   - Ter Twitter Card (summary_large_image)
   - Passar Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1)
   - Ser statically generated (ISR não é necessário — conteúdo é estático)
 
-- [ ] **AC13:** Links internos obrigatórios entre artigos:
+- [x] **AC13:** Links internos obrigatórios entre artigos:
   - Cada artigo deve linkar para pelo menos 2 outros artigos do blog
   - Cada artigo deve linkar para pelo menos 1 página de produto (/features, /planos, /buscar)
   - Sidebar "Artigos Relacionados" deve mostrar 3 artigos da mesma categoria
 
 ### Frontend — Visual & Brand Standards
 
-- [ ] **AC14:** Estilo visual deve transmitir:
+- [x] **AC14:** Estilo visual deve transmitir:
   - **Rigor institucional**: tipografia serif para títulos de artigo (font-family: Georgia, 'Times New Roman'), sans-serif para corpo
   - **Elegância**: espaçamento generoso (prose-lg), margens amplas, hierarquia visual clara
   - **Sobriedade**: paleta neutra com acentos brand-blue, sem animações excessivas
@@ -191,7 +191,7 @@ frontend/app/
 
 ### Testes
 
-- [ ] **AC15:** Frontend tests ≥20 em `__tests__/blog-infrastructure.test.tsx`:
+- [x] **AC15:** Frontend tests ≥20 em `__tests__/blog-infrastructure.test.tsx`:
   - BlogArticleLayout renderiza schema JSON-LD correto
   - BlogArticleLayout renderiza breadcrumbs corretos
   - Blog listing page renderiza cards de artigos
@@ -203,13 +203,13 @@ frontend/app/
   - generateStaticParams retorna todos os slugs
   - Share buttons renderizam e copiam link
 
-- [ ] **AC16:** Zero regressões nos testes existentes (baseline: 2681 pass / 0 fail)
+- [x] **AC16:** Zero regressões nos testes existentes (baseline: 2681 pass / 0 fail)
 
 ### Backward Compatibility
 
-- [ ] **AC17:** As 4 páginas existentes (`/como-*`) continuam funcionando sem alteração
-- [ ] **AC18:** ContentPageLayout.tsx não é modificado (BlogArticleLayout é componente novo)
-- [ ] **AC19:** Sitemap existente mantém todas as URLs atuais (apenas adições)
+- [x] **AC17:** As 4 páginas existentes (`/como-*`) continuam funcionando sem alteração
+- [x] **AC18:** ContentPageLayout.tsx não é modificado (BlogArticleLayout é componente novo)
+- [x] **AC19:** Sitemap existente mantém todas as URLs atuais (apenas adições)
 
 ---
 

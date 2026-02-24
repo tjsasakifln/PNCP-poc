@@ -124,6 +124,8 @@ export default function RootLayout({
         <GoogleAnalytics />
         {/* Schema.org Structured Data for Google AI Search */}
         <StructuredData />
+        {/* STORY-261 AC11: RSS feed discovery */}
+        <link rel="alternate" type="application/rss+xml" title="SmartLic Blog" href="/blog/rss.xml" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -27,7 +27,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Main Footer Grid */}
-        <div className="grid md:grid-cols-5 gap-8 mb-8">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-8">
           {/* Sobre */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-ink">Sobre</h3>
@@ -59,6 +59,22 @@ export default function Footer() {
               </li>
               <li>
                 <FooterLink href="/como-priorizar-oportunidades">Priorizar oportunidades</FooterLink>
+              </li>
+            </ul>
+          </div>
+
+          {/* STORY-261 AC11: Blog section */}
+          <div>
+            <h3 className="font-bold text-lg mb-4 text-ink">Blog</h3>
+            <ul className="space-y-2 text-sm text-ink-secondary">
+              <li>
+                <FooterLink href="/blog">Todos os artigos</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/blog?category=Empresas+B2G">Empresas B2G</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/blog?category=Consultorias+de+Licita%C3%A7%C3%A3o">Consultorias</FooterLink>
               </li>
             </ul>
           </div>

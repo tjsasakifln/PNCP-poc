@@ -1,12 +1,22 @@
 import { MetadataRoute } from 'next';
+import { getAllSlugs } from '@/lib/blog';
 
 /**
  * GTM-COPY-006 AC10: Dynamic sitemap with all public pages
+ * STORY-261 AC10: Includes /blog and /blog/{slug} routes
  *
  * Next.js generates sitemap.xml automatically from this file.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_CANONICAL_URL || 'https://smartlic.tech';
+
+  // STORY-261 AC10: Blog article routes
+  const blogArticleRoutes: MetadataRoute.Sitemap = getAllSlugs().map((slug) => ({
+    url: `${baseUrl}/blog/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
 
   return [
     {
@@ -63,6 +73,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.2,
     },
+    // STORY-261 AC10: Blog listing page
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    // STORY-261 AC10: Individual blog articles
+    ...blogArticleRoutes,
     {
       url: `${baseUrl}/como-avaliar-licitacao`,
       lastModified: new Date(),
