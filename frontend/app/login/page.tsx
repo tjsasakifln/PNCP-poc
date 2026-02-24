@@ -169,6 +169,16 @@ function LoginContent() {
     }
   };
 
+  // UX-359 AC3/AC5: Auto-scroll to form via URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('scroll') === 'form' || params.get('source')?.includes('cta')) {
+      setTimeout(() => {
+        document.getElementById('login-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, []);
+
   // Show loading while checking initial auth state
   if (authLoading) {
     return (
@@ -245,10 +255,10 @@ function LoginContent() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left: Institutional Sidebar */}
-      <InstitutionalSidebar variant="login" className="w-full md:w-1/2" />
+      <InstitutionalSidebar variant="login" className="w-full md:w-1/2" scrollTargetId="login-form" />
 
       {/* Right: Login Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4">
+      <div id="login-form" className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4 py-4 md:py-8 scroll-mt-4">
         <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
           <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
             Acesse suas análises

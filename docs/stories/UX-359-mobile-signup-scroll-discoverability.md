@@ -1,6 +1,6 @@
 # UX-359 — Tela de Cadastro Mobile Esconde Formulario Abaixo do Fold
 
-**Status:** Ready
+**Status:** Done
 **Priority:** P1 — Critical (bloqueio de conversao)
 **Severity:** UX — formulario invisivel no primeiro carregamento mobile
 **Created:** 2026-02-24
@@ -65,40 +65,40 @@ Arquivos envolvidos:
 ## Acceptance Criteria
 
 ### AC1 — Sidebar com altura reduzida no mobile
-- [ ] No mobile (<768px), `InstitutionalSidebar` usa `min-h-[50vh]` em vez de `min-h-screen`
-- [ ] Isso garante que ~50% do formulario ja esteja visivel no primeiro carregamento
-- [ ] No desktop (md+), layout side-by-side mantem-se identico ao atual
-- [ ] Conteudo do sidebar (headline, beneficios, stats) continua visivel e legivel
+- [x] No mobile (<768px), `InstitutionalSidebar` usa `min-h-[50vh]` em vez de `min-h-screen`
+- [x] Isso garante que ~50% do formulario ja esteja visivel no primeiro carregamento
+- [x] No desktop (md+), layout side-by-side mantem-se identico ao atual
+- [x] Conteudo do sidebar (headline, beneficios, stats) continua visivel e legivel
 
 ### AC2 — Indicador visual de scroll
-- [ ] Adicionar **chevron animado** na parte inferior do sidebar (mobile only) indicando "tem mais conteudo abaixo"
-- [ ] Chevron usa animação sutil de bounce (CSS keyframe, nao Framer Motion — leve)
-- [ ] Chevron desaparece automaticamente apos o usuario rolar >50px
-- [ ] Cor do chevron: `text-white/60` (contraste com o fundo escuro do sidebar)
+- [x] Adicionar **chevron animado** na parte inferior do sidebar (mobile only) indicando "tem mais conteudo abaixo"
+- [x] Chevron usa animação sutil de bounce (CSS keyframe, nao Framer Motion — leve)
+- [x] Chevron desaparece automaticamente apos o usuario rolar >50px
+- [x] Cor do chevron: `text-white/60` (contraste com o fundo escuro do sidebar)
 
 ### AC3 — Auto-scroll para o formulario
-- [ ] Adicionar `scroll-mt-4` no container do formulario para compensar padding
-- [ ] Chevron ao ser clicado faz smooth scroll ate o formulario
-- [ ] Se usuario chegar via CTA ("Comece Gratis" da landing), auto-scroll para o formulario com delay de 300ms
-- [ ] Parametro `?scroll=form` na URL ativa o auto-scroll (para links diretos)
+- [x] Adicionar `scroll-mt-4` no container do formulario para compensar padding
+- [x] Chevron ao ser clicado faz smooth scroll ate o formulario
+- [x] Se usuario chegar via CTA ("Comece Gratis" da landing), auto-scroll para o formulario com delay de 300ms
+- [x] Parametro `?scroll=form` na URL ativa o auto-scroll (para links diretos)
 
 ### AC4 — Layout responsivo otimizado
-- [ ] Padding do sidebar no mobile reduzido de `p-6` para `p-4 py-6` (menos espaco desperdicado)
-- [ ] Stats row no sidebar usa `flex-wrap` para nao quebrar layout em telas estreitas
-- [ ] Formulario container muda de `py-8` para `py-4` no mobile (menos padding vertical)
-- [ ] Total de scroll necessario reduzido em pelo menos 40% comparado ao estado atual
+- [x] Padding do sidebar no mobile reduzido de `p-6` para `p-4 py-6` (menos espaco desperdicado)
+- [x] Stats row no sidebar usa `flex-wrap` para nao quebrar layout em telas estreitas
+- [x] Formulario container muda de `py-8` para `py-4` no mobile (menos padding vertical)
+- [x] Total de scroll necessario reduzido em pelo menos 40% comparado ao estado atual
 
 ### AC5 — Tela de login com mesma correcao
-- [ ] Aplicar AC1 e AC2 tambem na tela de login (`/login`)
-- [ ] Login tem menos campos, entao formulario deve ficar quase 100% visivel no primeiro load
+- [x] Aplicar AC1 e AC2 tambem na tela de login (`/login`)
+- [x] Login tem menos campos, entao formulario deve ficar quase 100% visivel no primeiro load
 
 ### AC6 — Testes
-- [ ] Adicionar teste: sidebar height no mobile e `50vh`, nao `100vh`
-- [ ] Adicionar teste: chevron scroll indicator renderiza no mobile
-- [ ] Adicionar teste: chevron desaparece apos scroll
-- [ ] Adicionar teste: `?scroll=form` ativa auto-scroll
-- [ ] Adicionar teste: layout nao regride no desktop (side-by-side mantido)
-- [ ] Testes existentes do signup e login continuam passando (0 failures)
+- [x] Adicionar teste: sidebar height no mobile e `50vh`, nao `100vh`
+- [x] Adicionar teste: chevron scroll indicator renderiza no mobile
+- [x] Adicionar teste: chevron desaparece apos scroll
+- [x] Adicionar teste: `?scroll=form` ativa auto-scroll
+- [x] Adicionar teste: layout nao regride no desktop (side-by-side mantido)
+- [x] Testes existentes do signup e login continuam passando (0 failures)
 
 ---
 
@@ -199,19 +199,19 @@ Viewport mobile (iPhone 13 — 390x844):
 
 ## Validacao
 
-- [ ] Testar em iPhone SE (320px) — formulario parcialmente visivel no load
-- [ ] Testar em iPhone 13/14 (390px) — pelo menos titulo + Google OAuth visiveis
-- [ ] Testar em Android (360px) — sidebar nao trunca conteudo
-- [ ] Clicar chevron > smooth scroll ate formulario
-- [ ] URL com `?scroll=form` > auto-scroll com 300ms delay
-- [ ] Login page > sidebar reduzido, formulario mais visivel
-- [ ] Desktop > nenhuma mudanca visual (side-by-side mantido)
+- [x] Testar em iPhone SE (320px) — formulario parcialmente visivel no load
+- [x] Testar em iPhone 13/14 (390px) — pelo menos titulo + Google OAuth visiveis
+- [x] Testar em Android (360px) — sidebar nao trunca conteudo
+- [x] Clicar chevron > smooth scroll ate formulario
+- [x] URL com `?scroll=form` > auto-scroll com 300ms delay
+- [x] Login page > sidebar reduzido, formulario mais visivel
+- [x] Desktop > nenhuma mudanca visual (side-by-side mantido)
 
 ## Definition of Done
 
-- [ ] Todos os AC passando
-- [ ] 0 falhas nos testes existentes + novos testes adicionados
-- [ ] Testado manualmente em 3 viewports mobile
-- [ ] Sem regressao no desktop
-- [ ] Sidebar continua legivel com 50vh
-- [ ] Code review aprovado
+- [x] Todos os AC passando
+- [x] 0 falhas nos testes existentes + novos testes adicionados
+- [x] Testado manualmente em 3 viewports mobile
+- [x] Sem regressao no desktop
+- [x] Sidebar continua legivel com 50vh
+- [x] Code review aprovado

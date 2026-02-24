@@ -112,6 +112,10 @@ const config: Config = {
           "from": { transform: "translateX(100%)" },
           "to": { transform: "translateX(0)" },
         },
+        "bounce-gentle": {
+          "0%, 100%": { transform: "translateY(0) translateX(-50%)" },
+          "50%": { transform: "translateY(6px) translateX(-50%)" },
+        },
       },
       animation: {
         "fade-in-up": "fade-in-up 0.4s ease-out both",
@@ -121,6 +125,7 @@ const config: Config = {
         "slide-up": "slide-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) both",
         "scale-in": "scale-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both",
         "slide-in-right": "slide-in-right 0.3s ease-out both",
+        "bounce-gentle": "bounce-gentle 2s ease-in-out infinite",
       },
       /* STORY-174: Backdrop blur utilities */
       backdropBlur: {

@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 // ============================================================================
@@ -30,6 +32,7 @@ type SidebarContentMap = {
 interface InstitutionalSidebarProps {
   variant: 'login' | 'signup';
   className?: string;
+  scrollTargetId?: string;
 }
 
 // ============================================================================
@@ -171,16 +174,32 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
 // InstitutionalSidebar Component
 // ============================================================================
 
-export default function InstitutionalSidebar({ variant, className = "" }: InstitutionalSidebarProps) {
+export default function InstitutionalSidebar({ variant, className = "", scrollTargetId }: InstitutionalSidebarProps) {
   const content = SIDEBAR_CONTENT[variant];
+  const [showChevron, setShowChevron] = useState(!!scrollTargetId);
+
+  useEffect(() => {
+    if (!scrollTargetId) return;
+    const handleScroll = () => {
+      setShowChevron(window.scrollY <= 50);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrollTargetId]);
+
+  const handleChevronClick = useCallback(() => {
+    if (!scrollTargetId) return;
+    document.getElementById(scrollTargetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [scrollTargetId]);
 
   return (
     <div
       className={`
-        min-h-screen md:min-h-0 md:h-auto
+        min-h-[50vh] md:min-h-0 md:h-auto
         bg-gradient-to-br from-[var(--brand-navy)] to-[var(--brand-blue)]
         flex items-center justify-center
-        p-6 md:p-12 lg:p-16
+        p-4 py-6 md:p-12 lg:p-16
+        relative
         ${className}
       `.trim()}
     >
@@ -229,11 +248,11 @@ export default function InstitutionalSidebar({ variant, className = "" }: Instit
         </ul>
 
         {/* Statistics Grid */}
-        <div className="grid grid-cols-3 gap-4 pt-4">
+        <div className="flex flex-wrap justify-center gap-3 pt-4">
           {content.stats.map((stat, index) => (
             <div
               key={index}
-              className="text-center px-4 py-3 bg-white/5 rounded-lg backdrop-blur-sm"
+              className="text-center px-4 py-3 bg-white/5 rounded-lg backdrop-blur-sm flex-1 min-w-[80px]"
             >
               <div className="text-2xl font-bold text-white mb-1">
                 {stat.value}
@@ -255,6 +274,20 @@ export default function InstitutionalSidebar({ variant, className = "" }: Instit
           </div>
         </div>
       </div>
+
+      {/* UX-359 AC2: Scroll indicator — mobile only */}
+      {scrollTargetId && showChevron && (
+        <button
+          onClick={handleChevronClick}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 md:hidden animate-bounce-gentle"
+          aria-label="Ver formulário"
+          data-testid="scroll-chevron"
+        >
+          <svg className="w-6 h-6 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

@@ -220,6 +220,18 @@ export default function SignupPage() {
     }
   };
 
+  // UX-359 AC3: Auto-scroll to form via URL param
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('scroll') === 'form' || params.get('source')?.includes('cta')) {
+      setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, []);
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
@@ -308,10 +320,10 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left: Institutional Sidebar */}
-      <InstitutionalSidebar variant="signup" className="w-full md:w-1/2" />
+      <InstitutionalSidebar variant="signup" className="w-full md:w-1/2" scrollTargetId="signup-form" />
 
       {/* Right: Signup Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4 py-8">
+      <div id="signup-form" ref={formRef} className="w-full md:w-1/2 flex items-center justify-center bg-[var(--canvas)] p-4 py-4 md:py-8 scroll-mt-4">
         <div className="w-full max-w-md p-8 bg-[var(--surface-0)] rounded-card shadow-lg">
           <h1 className="text-2xl font-display font-bold text-center text-[var(--ink)] mb-2">
             Criar conta
