@@ -173,14 +173,6 @@ function HomePageContent() {
     }
   }, [isTrialExpired, fetchTrialValue]);
 
-  // STORY-265 AC13: Show TrialConversionScreen when API returns 403 trial_expired
-  useEffect(() => {
-    if (search.quotaError === "trial_expired") {
-      setShowTrialConversion(true);
-      fetchTrialValue();
-    }
-  }, [search.quotaError, fetchTrialValue]);
-
   // CRIT-008 AC9-AC10: Backend connectivity status
   const backendStatus = useBackendStatusContext();
   const queuedSearchRef = useRef<(() => void) | null>(null);
@@ -258,6 +250,14 @@ function HomePageContent() {
   const filters = useSearchFilters(() => clearResultRef.current());
   const search = useSearch(filters);
   clearResultRef.current = () => search.setResult(null);
+
+  // STORY-265 AC13: Show TrialConversionScreen when API returns 403 trial_expired
+  useEffect(() => {
+    if (search.quotaError === "trial_expired") {
+      setShowTrialConversion(true);
+      fetchTrialValue();
+    }
+  }, [search.quotaError, fetchTrialValue]);
 
   // GTM-UX-004 AC7: Load last search results from cache
   const handleLoadLastSearch = useCallback(() => {
