@@ -2,15 +2,17 @@
 Lead Scorer - Calculate dependency and qualification scores.
 
 This module implements:
-1. Dependency Score: % of company revenue from public contracts
-2. Qualification Score: Multi-factor scoring (dependency + activity + sector + contact)
+1. Dependency Score: % of company revenue from public contracts (deprecated)
+2. Qualification Score: Multi-factor scoring (deprecated)
+3. Buy-Intent Score: 6-factor model (primary)
+4. Growth Metrics: Computed procurement activity metrics
 
 STORY-184: Lead Prospecting Workflow
 """
 
 import logging
-from typing import List
-from datetime import date
+from typing import List, Optional
+from datetime import date, timedelta
 from decimal import Decimal
 
 from schemas_lead_prospecting import (
@@ -19,6 +21,8 @@ from schemas_lead_prospecting import (
     ContactData,
     DependencyScore,
     QualificationScore,
+    BuyIntentScore,
+    GrowthMetrics,
 )
 
 logger = logging.getLogger(__name__)
@@ -232,3 +236,308 @@ class LeadScorer:
             return 7.0
         else:
             return 4.0
+
+    # ------------------------------------------------------------------
+    # Buy-Intent Score — 6-factor model (primary scoring)
+    # ------------------------------------------------------------------
+
+    def calculate_buy_intent_score(
+        self,
+        contracts: List[ContractData],
+        company_data: CompanyData,
+        contact_data: ContactData,
+        participation_count: int,
+        win_count: int,
+        months: int = 12,
+        buy_signals: Optional[List[str]] = None,
+    ) -> BuyIntentScore:
+        """
+        Calculate 6-factor buy-intent score (0-10).
+
+        This is the primary scoring model, replacing the legacy
+        DependencyScore + QualificationScore combination.
+
+        Factors and weights:
+            operational_intensity  25%
+            recent_growth          20%
+            portfolio_complexity   15%
+            bottleneck_signal      20%
+            public_dependency      10%
+            contact_quality        10%
+
+        Args:
+            contracts: Contracts won by the company.
+            company_data: Receita Federal company data.
+            contact_data: Contact information.
+            participation_count: Total bid participations in the time window.
+            win_count: Total wins (should equal ``len(contracts)`` when
+                all wins are provided, but may differ if only a sample is
+                available).
+            months: Analysis time window in months (default 12).
+            buy_signals: Optional list of external signals detected.
+
+        Returns:
+            BuyIntentScore with all 6 factors and weighted overall.
+        """
+        oi = self._score_operational_intensity(participation_count, months)
+        rg = self._score_recent_growth(contracts, months)
+        pc = self._score_portfolio_complexity(contracts)
+        bs = self._score_bottleneck_signal(participation_count, win_count)
+        pd = self._score_public_dependency(contracts, company_data)
+        cq = self._score_buy_intent_contact_quality(contact_data)
+
+        overall = (
+            oi * 0.25
+            + rg * 0.20
+            + pc * 0.15
+            + bs * 0.20
+            + pd * 0.10
+            + cq * 0.10
+        )
+
+        return BuyIntentScore(
+            operational_intensity=oi,
+            recent_growth=rg,
+            portfolio_complexity=pc,
+            bottleneck_signal=bs,
+            public_dependency=pd,
+            contact_quality=cq,
+            overall_score=round(overall, 2),
+            buy_signals=buy_signals or [],
+        )
+
+    def calculate_growth_metrics(
+        self,
+        contracts: List[ContractData],
+        participation_count: int,
+        months: int = 12,
+    ) -> GrowthMetrics:
+        """
+        Compute growth metrics from contract history.
+
+        Args:
+            contracts: List of contracts in the analysis window.
+            participation_count: Total bid participations (wins + losses).
+            months: Analysis time window in months.
+
+        Returns:
+            GrowthMetrics with computed fields.
+        """
+        win_count = len(contracts)
+        win_rate = win_count / participation_count if participation_count > 0 else 0.0
+
+        total_value = sum(c.contract_value for c in contracts)
+        avg_value = total_value / win_count if win_count > 0 else Decimal("0")
+
+        # Unique organs and segments (approximate from contract objects)
+        unique_organs = len({c.municipality for c in contracts})
+        unique_segments = len({c.uf for c in contracts})
+
+        # Quarter-over-quarter growth
+        quarter_growth = self._calculate_quarter_growth(contracts)
+
+        return GrowthMetrics(
+            participation_count=participation_count,
+            win_count=win_count,
+            win_rate=round(win_rate, 4),
+            avg_contract_value=avg_value,
+            quarter_growth_pct=round(quarter_growth, 2),
+            unique_organs=unique_organs,
+            unique_segments=unique_segments,
+        )
+
+    # ------------------------------------------------------------------
+    # Private helpers — buy-intent factor calculators
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _score_operational_intensity(
+        participation_count: int, months: int  # noqa: ARG004
+    ) -> float:
+        """
+        Score operational intensity (0-10).
+
+        0 participations   -> 0
+        1-3 participations -> 3
+        4-8 participations -> 5
+        9-15 participations -> 7
+        16+ participations -> 10
+        """
+        if participation_count <= 0:
+            return 0.0
+        elif participation_count <= 3:
+            return 3.0
+        elif participation_count <= 8:
+            return 5.0
+        elif participation_count <= 15:
+            return 7.0
+        else:
+            return 10.0
+
+    def _score_recent_growth(
+        self, contracts: List[ContractData], months: int  # noqa: ARG002
+    ) -> float:
+        """
+        Score recent growth (0-10).
+
+        Compares last quarter contract value vs previous quarter.
+        >=50% growth -> 10
+        >=20% growth -> 8
+        >=10% growth -> 6
+        0-10% growth -> 3
+        negative     -> 1
+        No data      -> 0
+        """
+        growth = self._calculate_quarter_growth(contracts)
+        if growth is None:
+            return 0.0
+        elif growth >= 50:
+            return 10.0
+        elif growth >= 20:
+            return 8.0
+        elif growth >= 10:
+            return 6.0
+        elif growth >= 0:
+            return 3.0
+        else:
+            return 1.0
+
+    @staticmethod
+    def _score_portfolio_complexity(contracts: List[ContractData]) -> float:
+        """
+        Score portfolio complexity (0-10).
+
+        Counts unique contracting organs (approximated by municipality)
+        and unique segments (approximated by UF).
+
+        1 organ      -> 2
+        2-3 organs   -> 5
+        4-6 organs   -> 7
+        7+ organs    -> 10
+        """
+        if not contracts:
+            return 0.0
+
+        unique_organs = len({c.municipality for c in contracts})
+
+        if unique_organs <= 1:
+            return 2.0
+        elif unique_organs <= 3:
+            return 5.0
+        elif unique_organs <= 6:
+            return 7.0
+        else:
+            return 10.0
+
+    @staticmethod
+    def _score_bottleneck_signal(
+        participation_count: int, win_count: int
+    ) -> float:
+        """
+        Score bottleneck signal (0-10).
+
+        Low win rate = high score (company needs help).
+        win_rate < 15%  -> 10 (huge bottleneck)
+        15-30%          -> 8
+        30-50%          -> 5
+        > 50%           -> 2
+        No participations -> 0
+        """
+        if participation_count <= 0:
+            return 0.0
+
+        win_rate = win_count / participation_count
+
+        if win_rate < 0.15:
+            return 10.0
+        elif win_rate < 0.30:
+            return 8.0
+        elif win_rate < 0.50:
+            return 5.0
+        else:
+            return 2.0
+
+    def _score_public_dependency(
+        self,
+        contracts: List[ContractData],
+        company_data: CompanyData,
+    ) -> float:
+        """
+        Score public dependency (0-10) using a linear scale.
+
+        0% dependency  -> 0
+        100% dependency -> 10
+        Linear interpolation between.
+        """
+        total_value = sum(c.contract_value for c in contracts)
+        estimated_revenue = REVENUE_ESTIMATES.get(
+            company_data.porte, REVENUE_ESTIMATES["N/A"]
+        )
+
+        if estimated_revenue <= 0:
+            return 0.0
+
+        dependency_pct = float((total_value / estimated_revenue) * 100)
+        # Clamp to [0, 100] then scale to [0, 10]
+        clamped = max(0.0, min(dependency_pct, 100.0))
+        return round(clamped / 10.0, 2)
+
+    @staticmethod
+    def _score_buy_intent_contact_quality(contact_data: ContactData) -> float:
+        """
+        Score contact quality for buy-intent model (0-10).
+
+        email + phone  -> 10
+        email only     -> 7
+        phone only     -> 5
+        neither        -> 0
+
+        WhatsApp is not required (relaxed from legacy scorer).
+        """
+        has_email = bool(contact_data.email)
+        has_phone = bool(contact_data.phone)
+
+        if has_email and has_phone:
+            return 10.0
+        elif has_email:
+            return 7.0
+        elif has_phone:
+            return 5.0
+        else:
+            return 0.0
+
+    @staticmethod
+    def _calculate_quarter_growth(
+        contracts: List[ContractData],
+    ) -> Optional[float]:
+        """
+        Calculate quarter-over-quarter growth in total contract value.
+
+        Compares the most recent 90-day period against the preceding 90
+        days. Returns percentage growth (e.g. 25.0 means +25%), or None
+        if there is insufficient data.
+        """
+        if not contracts:
+            return None
+
+        today = date.today()
+        q_recent_start = today - timedelta(days=90)
+        q_prev_start = today - timedelta(days=180)
+
+        recent_value = sum(
+            c.contract_value
+            for c in contracts
+            if c.contract_date >= q_recent_start
+        )
+        prev_value = sum(
+            c.contract_value
+            for c in contracts
+            if q_prev_start <= c.contract_date < q_recent_start
+        )
+
+        if prev_value <= 0:
+            # No previous-quarter data — can't compute growth
+            return 0.0 if recent_value <= 0 else 100.0
+
+        growth = float((recent_value - prev_value) / prev_value * 100)
+        return growth
