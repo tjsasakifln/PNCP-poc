@@ -10,7 +10,7 @@ interface TrialCountdownProps {
 
 /**
  * Color-coded countdown badge for active trial.
- * GTM-010 AC10: Badge showing "X dias restantes no trial"
+ * STORY-264 AC7: Badge showing "X dia(s) de acesso completo"
  * Colors: green (5-7), yellow (3-4), red (1-2)
  */
 export function TrialCountdown({ daysRemaining, className = "" }: TrialCountdownProps) {
@@ -53,7 +53,7 @@ export function TrialCountdown({ daysRemaining, className = "" }: TrialCountdown
       title="Ver níveis de compromisso"
     >
       <span className={`w-1.5 h-1.5 rounded-full ${dotColor} ${daysRemaining <= 2 ? "animate-pulse" : ""}`} />
-      {daysRemaining} dia{daysRemaining === 1 ? "" : "s"} restante{daysRemaining === 1 ? "" : "s"}
+      {daysRemaining} dia{daysRemaining === 1 ? "" : "s"} de acesso completo
     </Link>
   );
 }

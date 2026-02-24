@@ -205,25 +205,25 @@ describe('QuotaCounter', () => {
   });
 
   describe('Unlimited quota (FREE trial)', () => {
-    it('shows "Buscas ilimitadas" for trial users', () => {
+    it('shows "Acesso completo" for active trial users (STORY-264 AC10)', () => {
       render(
         <QuotaCounter
           quotaUsed={5}
-          quotaLimit={999999}
+          quotaLimit={1000}
           resetDate={mockResetDate}
           planId="free_trial"
         />
       );
 
-      expect(screen.getByText(/Buscas ilimitadas/i)).toBeInTheDocument();
-      expect(screen.getByText(/Durante o trial/i)).toBeInTheDocument();
+      expect(screen.getByText(/Acesso completo/i)).toBeInTheDocument();
+      expect(screen.getByText(/Durante seu trial/i)).toBeInTheDocument();
     });
 
-    it('does not show progress bar for unlimited quota', () => {
+    it('does not show progress bar for trial quota (STORY-264 AC10)', () => {
       const { container } = render(
         <QuotaCounter
           quotaUsed={5}
-          quotaLimit={999999}
+          quotaLimit={1000}
           resetDate={mockResetDate}
           planId="free_trial"
         />

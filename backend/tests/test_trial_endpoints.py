@@ -172,9 +172,14 @@ def test_trial_status_active_trial(client, mock_db):
     assert data["plan"] == "free_trial"
     assert data["days_remaining"] >= 4  # ~5 days
     assert data["searches_used"] == 2
-    assert data["searches_limit"] == 3  # free_trial limit
+    assert data["searches_limit"] == 1000  # STORY-264 AC5: full access
     assert data["expires_at"] is not None
     assert data["is_expired"] is False
+    # STORY-264 AC6: plan_features
+    assert "busca_ilimitada" in data["plan_features"]
+    assert "excel_export" in data["plan_features"]
+    assert "pipeline" in data["plan_features"]
+    assert "ia_resumo" in data["plan_features"]
 
 
 def test_trial_status_expired_trial(client, mock_db):

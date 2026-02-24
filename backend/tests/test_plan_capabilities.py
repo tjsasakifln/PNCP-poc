@@ -53,8 +53,8 @@ class TestPlanCapabilities:
 
     def test_quota_limits_make_sense(self):
         """Monthly quotas should be reasonable and progressive."""
-        # FREE trial should have limited quota (3 free searches)
-        assert PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"] == 3
+        # STORY-264: FREE trial has full access (1000 searches, same as smartlic_pro)
+        assert PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"] == 1000
 
         # Paid plans should progress
         consultor = PLAN_CAPABILITIES["consultor_agil"]["max_requests_per_month"]
@@ -266,7 +266,7 @@ class TestCheckQuota:
     @patch("quota.get_monthly_quota_used")
     def test_free_trial_user_within_trial_period(self, mock_get_used, mock_get_supabase):
         """FREE trial user within trial period and under quota should be allowed."""
-        mock_get_used.return_value = 1  # Under 3-search limit
+        mock_get_used.return_value = 1  # Under 1000-search limit (STORY-264)
         mock_sb = MagicMock()
         mock_get_supabase.return_value = mock_sb
 
@@ -285,7 +285,7 @@ class TestCheckQuota:
         assert result.allowed is True
         assert result.plan_id == "free_trial"
         assert result.quota_used == 1
-        assert result.quota_remaining == 2  # 3 - 1 = 2 remaining
+        assert result.quota_remaining == 999  # 1000 - 1 = 999 remaining (STORY-264)
         assert result.trial_expires_at is not None
 
     @patch("supabase_client.get_supabase")

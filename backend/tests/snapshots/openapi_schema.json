@@ -4138,6 +4138,14 @@
             "title": "Plan",
             "type": "string"
           },
+          "plan_features": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Plan Features",
+            "type": "array"
+          },
           "searches_limit": {
             "title": "Searches Limit",
             "type": "integer"

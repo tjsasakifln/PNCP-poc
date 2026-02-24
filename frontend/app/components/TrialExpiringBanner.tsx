@@ -46,10 +46,10 @@ export function TrialExpiringBanner({ daysRemaining, onConvert }: TrialExpiringB
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
-              Seu acesso ao SmartLic expira amanhã.
+              Seu acesso completo ao SmartLic termina amanhã.
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-              Continue tendo vantagem competitiva a partir de R$ 1.599/mês.
+              Mantenha acesso a todas as funcionalidades a partir de R$ 1.599/mês.
             </p>
           </div>
         </div>

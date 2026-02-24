@@ -112,7 +112,7 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
             </div>
             <div className="bg-surface-1 rounded-2xl p-6 text-center">
               <p className="text-sm text-ink-secondary mb-1">Análises Executadas</p>
-              <p className="text-3xl font-bold text-ink">{trialValue!.searches_executed}/3</p>
+              <p className="text-3xl font-bold text-ink">{trialValue!.searches_executed}</p>
             </div>
           </div>
         ) : null}

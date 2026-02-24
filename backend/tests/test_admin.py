@@ -249,7 +249,7 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
         # Users without subscriptions should now have synthetic subscription with credits
         for user in data["users"]:
             assert len(user["user_subscriptions"]) == 1
-            assert user["user_subscriptions"][0]["credits_remaining"] == 3  # free_trial limit
+            assert user["user_subscriptions"][0]["credits_remaining"] == 1000  # STORY-264: free_trial full access
 
     def test_list_users_respects_limit_and_offset(self, admin_client):
         """Should respect limit and offset query parameters."""
@@ -314,10 +314,10 @@ class TestListUsersEndpoint(TestAdminEndpointsBase):
         assert response.status_code == 200
         data = response.json()
 
-        # User 1: free_trial (3 max) - 1 used = 2 remaining
+        # User 1: free_trial (1000 max, STORY-264) - 1 used = 999 remaining
         user1 = data["users"][0]
         assert len(user1["user_subscriptions"]) == 1
-        assert user1["user_subscriptions"][0]["credits_remaining"] == 2
+        assert user1["user_subscriptions"][0]["credits_remaining"] == 999
         assert user1["user_subscriptions"][0]["plan_id"] == "free_trial"
 
         # User 2: maquina (300 max) - 1 used = 299 remaining

@@ -350,6 +350,11 @@ ITEM_INSPECTION_PHASE_TIMEOUT: float = float(
 ITEM_INSPECTION_CONCURRENCY: int = int(os.getenv("ITEM_INSPECTION_CONCURRENCY", "5"))
 
 # ============================================
+# STORY-264: Trial Duration
+# ============================================
+TRIAL_DURATION_DAYS: int = int(os.getenv("TRIAL_DURATION_DAYS", "7"))
+
+# ============================================
 # D-04: Viability Assessment
 # ============================================
 VIABILITY_WEIGHT_MODALITY: float = float(os.getenv("VIABILITY_WEIGHT_MODALITY", "0.30"))

@@ -40,15 +40,15 @@ class TestPlanCapabilities:
         assert all(plan in PLAN_CAPABILITIES for plan in expected_plans)
 
     def test_free_trial_capabilities(self):
-        """GTM-003: FREE Trial should have full product capabilities."""
+        """STORY-264 AC1-AC3: FREE Trial should have full product capabilities."""
         from quota import PLAN_CAPABILITIES
 
         caps = PLAN_CAPABILITIES["free_trial"]
         assert caps["max_history_days"] == 365  # GTM-003: 1 year
         assert caps["allow_excel"] is True  # GTM-003: Full product
         assert caps["allow_pipeline"] is True  # GTM-003: Full product
-        assert caps["max_requests_per_month"] == 3  # Keep limited
-        assert caps["max_requests_per_min"] == 2
+        assert caps["max_requests_per_month"] == 1000  # STORY-264 AC1: Full access
+        assert caps["max_requests_per_min"] == 2  # STORY-264 AC2: Anti-abuse kept
         assert caps["max_summary_tokens"] == 10000  # GTM-003: Full AI
         assert caps["priority"] == "normal"  # GTM-003: Normal speed
 
@@ -204,8 +204,9 @@ class TestCheckQuotaFreeTrial:
 
         assert result.allowed is True
         assert result.quota_used == 0
-        # Free trial has limited searches (3 searches as per plan config)
+        # STORY-264: Free trial has full access (1000 searches same as smartlic_pro)
         assert result.quota_remaining == PLAN_CAPABILITIES["free_trial"]["max_requests_per_month"]
+        assert result.quota_remaining == 1000
 
     def test_free_trial_capabilities_applied(self):
         """GTM-003: Free trial should have full product capabilities."""
@@ -231,6 +232,69 @@ class TestCheckQuotaFreeTrial:
         assert result.capabilities["max_history_days"] == 365
         assert result.capabilities["allow_excel"] is True
         assert result.capabilities["max_summary_tokens"] == 10000
+
+
+class TestFreeTrialFullAccess:
+    """STORY-264: Verify free trial has full access (1000 searches)."""
+
+    def test_trial_with_50_searches_not_blocked(self):
+        """STORY-264 AC12: Trial user with 50 searches is NOT blocked (regression guard)."""
+        from quota import check_quota
+
+        mock_supabase = Mock()
+
+        # No active subscription → defaults to free_trial
+        subscription_result = Mock()
+        subscription_result.data = []
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
+
+        # 50 searches used (old limit was 3 — must NOT block now)
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 50}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            result = check_quota("user-123")
+
+        assert result.allowed is True
+        assert result.plan_id == "free_trial"
+        assert result.quota_used == 50
+        assert result.quota_remaining == 950  # 1000 - 50
+
+    def test_expired_trial_still_blocks(self):
+        """STORY-264 AC13: Expired trial blocks regardless of remaining searches."""
+        from quota import check_quota
+
+        mock_supabase = Mock()
+
+        # Active subscription with plan_id=free_trial but EXPIRED
+        past_date = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        subscription_result = Mock()
+        subscription_result.data = [{
+            "id": "sub-trial",
+            "plan_id": "free_trial",
+            "expires_at": past_date,
+        }]
+
+        mock_table = Mock()
+        mock_table.select.return_value.eq.return_value.eq.return_value.order.return_value.limit.return_value.execute.return_value = subscription_result
+
+        # Only 1 search used (plenty remaining under 1000 limit)
+        monthly_result = Mock()
+        monthly_result.data = [{"searches_count": 1}]
+        mock_table.select.return_value.eq.return_value.eq.return_value.execute.return_value = monthly_result
+
+        mock_supabase.table.return_value = mock_table
+
+        with patch("supabase_client.get_supabase", return_value=mock_supabase):
+            result = check_quota("user-123")
+
+        assert result.allowed is False
+        assert "expir" in (result.error_message or "").lower() or "trial" in (result.error_message or "").lower()
 
 
 class TestCheckQuotaPaidPlans:

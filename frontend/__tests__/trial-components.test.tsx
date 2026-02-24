@@ -55,7 +55,9 @@ describe('TrialConversionScreen', () => {
 
     // Check for trial value data displayed in stats cards
     expect(screen.getByText('47')).toBeInTheDocument(); // total_opportunities
-    expect(screen.getByText('3/3')).toBeInTheDocument(); // searches_executed
+    // STORY-264 AC9: searches_executed no longer shows /3
+    expect(screen.getByText('3')).toBeInTheDocument(); // searches_executed (no "/3")
+    expect(screen.queryByText('3/3')).not.toBeInTheDocument(); // Old format removed
     // Check value is formatted as currency
     expect(screen.getByText(/12\.450\.000/)).toBeInTheDocument(); // total_value in BRL
   });
@@ -139,8 +141,8 @@ describe('TrialExpiringBanner', () => {
   it('renders when daysRemaining is 1', () => {
     render(<TrialExpiringBanner daysRemaining={1} />);
 
-    // Should show the expiry warning message
-    expect(screen.getByText(/expira amanhã/i)).toBeInTheDocument();
+    // STORY-264 AC8: Emphasizes full access ending
+    expect(screen.getByText(/acesso completo.*termina amanhã/i)).toBeInTheDocument();
   });
 
   it('does not render when daysRemaining > 1', () => {
@@ -186,8 +188,8 @@ describe('TrialCountdown', () => {
   it('shows green/emerald colors for 5+ days', () => {
     const { container } = render(<TrialCountdown daysRemaining={5} />);
 
-    // Check text content
-    expect(screen.getByText(/5 dias restantes/)).toBeInTheDocument();
+    // STORY-264 AC7: "de acesso completo" instead of "restantes"
+    expect(screen.getByText(/5 dias de acesso completo/)).toBeInTheDocument();
 
     // Check for emerald color classes on the link element
     const link = container.querySelector('a');
@@ -198,7 +200,7 @@ describe('TrialCountdown', () => {
   it('shows amber/yellow colors for 3-4 days', () => {
     const { container } = render(<TrialCountdown daysRemaining={3} />);
 
-    expect(screen.getByText(/3 dias restantes/)).toBeInTheDocument();
+    expect(screen.getByText(/3 dias de acesso completo/)).toBeInTheDocument();
 
     const link = container.querySelector('a');
     expect(link).not.toBeNull();
@@ -208,7 +210,7 @@ describe('TrialCountdown', () => {
   it('shows red colors with pulse for 1-2 days', () => {
     const { container } = render(<TrialCountdown daysRemaining={1} />);
 
-    expect(screen.getByText(/1 dia restante$/)).toBeInTheDocument();
+    expect(screen.getByText(/1 dia de acesso completo/)).toBeInTheDocument();
 
     const link = container.querySelector('a');
     expect(link).not.toBeNull();

@@ -40,6 +40,7 @@ class TrialStatusResponse(BaseModel):
     searches_limit: int
     expires_at: str | None = None
     is_expired: bool
+    plan_features: list[str] = []  # STORY-264 AC6
 
 # STORY-210 AC12: Per-user rate limiting for /change-password
 # 5 attempts per 15 minutes (900 seconds)
@@ -192,13 +193,25 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
         is_expired = False
         days_remaining = 999  # Sentinel for "not applicable"
 
+    # STORY-264 AC6: Build plan_features list from capabilities
+    plan_features: list[str] = []
+    if caps.get("max_requests_per_month", 0) >= 1000:
+        plan_features.append("busca_ilimitada")
+    if caps.get("allow_excel"):
+        plan_features.append("excel_export")
+    if caps.get("allow_pipeline"):
+        plan_features.append("pipeline")
+    if caps.get("max_summary_tokens", 0) >= 10000:
+        plan_features.append("ia_resumo")
+
     return TrialStatusResponse(
         plan=plan_id,
         days_remaining=days_remaining,
         searches_used=quota_info.quota_used,
-        searches_limit=caps.get("max_requests_per_month", 3),
+        searches_limit=caps.get("max_requests_per_month", 1000),  # STORY-264 AC5
         expires_at=expires_at_str,
         is_expired=is_expired,
+        plan_features=plan_features,  # STORY-264 AC6
     )
 
 

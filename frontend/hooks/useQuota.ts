@@ -22,7 +22,7 @@ interface UseQuotaReturn {
   refresh: () => Promise<void>;
 }
 
-const FREE_SEARCHES_LIMIT = 3;
+const FREE_SEARCHES_LIMIT = 1000; // STORY-264: Full access during trial
 const UNLIMITED_THRESHOLD = 999990; // Lowered threshold to catch near-unlimited values
 const CACHE_KEY = "smartlic_cached_quota";
 const CACHE_TTL = 3600000; // 1 hour in milliseconds
@@ -113,8 +113,8 @@ export function useQuota(): UseQuotaReturn {
       // - Paid users: Show actual quotaRemaining from backend
       let creditsRemaining: number | null = null;
       if (isFreeUser) {
-        // Free users always get 3 free searches, calculate remaining based on usage
-        // This handles both correctly configured backend (max=3) and stale data (max=999999)
+        // STORY-264: Free trial users get 1000 searches (full access during trial)
+        // Calculate remaining based on usage, handles stale backend data
         creditsRemaining = Math.max(0, FREE_SEARCHES_LIMIT - quotaUsed);
       } else if (!isUnlimited) {
         creditsRemaining = quotaRemaining;

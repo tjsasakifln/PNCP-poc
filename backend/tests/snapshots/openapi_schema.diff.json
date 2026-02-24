@@ -4139,6 +4139,14 @@
               "title": "Plan",
               "type": "string"
             },
+            "plan_features": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Plan Features",
+              "type": "array"
+            },
             "searches_limit": {
               "title": "Searches Limit",
               "type": "integer"
@@ -17094,7 +17102,7 @@
       },
       "/auth/check-phone": {
         "get": {
-          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nRate limited: 10 req/min/IP.",
+          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
           "operationId": "check_phone_auth_check_phone_get",
           "parameters": [
             {
@@ -17106,6 +17114,23 @@
                 "minLength": 8,
                 "title": "Phone",
                 "type": "string"
+              }
+            },
+            {
+              "in": "query",
+              "name": "company",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company"
               }
             }
           ],
@@ -20118,7 +20143,7 @@
       },
       "/v1/auth/check-phone": {
         "get": {
-          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nRate limited: 10 req/min/IP.",
+          "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
           "operationId": "check_phone_v1_auth_check_phone_get",
           "parameters": [
             {
@@ -20130,6 +20155,23 @@
                 "minLength": 8,
                 "title": "Phone",
                 "type": "string"
+              }
+            },
+            {
+              "in": "query",
+              "name": "company",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Company"
               }
             }
           ],

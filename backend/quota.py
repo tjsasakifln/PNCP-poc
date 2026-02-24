@@ -64,8 +64,8 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
         "max_history_days": 365,  # GTM-003: 1 year (same as smartlic_pro)
         "allow_excel": True,  # GTM-003: Full product during trial
         "allow_pipeline": True,  # GTM-003: Full product during trial
-        "max_requests_per_month": 3,  # Keep: 3 complete analyses
-        "max_requests_per_min": 2,
+        "max_requests_per_month": 1000,  # STORY-264 AC1: Full access (same as smartlic_pro)
+        "max_requests_per_min": 2,  # STORY-264 AC2: Anti-abuse rate limit kept
         "max_summary_tokens": 10000,  # GTM-003: Full AI analysis (same as smartlic_pro)
         "priority": PlanPriority.NORMAL.value,  # GTM-003: Normal speed (same as smartlic_pro)
     },

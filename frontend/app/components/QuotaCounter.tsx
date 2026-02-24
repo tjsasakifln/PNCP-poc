@@ -53,6 +53,20 @@ export function QuotaCounter({
   // Detect free tier (planId "free" or quotaLimit <= 5)
   const isFreeTier = planId === "free" || quotaLimit <= 5;
 
+  // STORY-264 AC10: Hide quota progress bar during active trial
+  const isActiveTrial = planId === "free_trial";
+
+  if (isActiveTrial) {
+    return (
+      <div className="p-4 bg-surface-1 rounded-card border border-border">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-ink">Acesso completo</span>
+          <span className="text-xs text-ink-muted">Durante seu trial</span>
+        </div>
+      </div>
+    );
+  }
+
   if (isUnlimited) {
     return (
       <div className="p-4 bg-surface-1 rounded-card border border-border">

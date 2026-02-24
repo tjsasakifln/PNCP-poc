@@ -133,7 +133,7 @@ describe('Balance Deduction Verification', () => {
   });
 
   describe('AC2: Frontend useQuota hook calculates correctly', () => {
-    it('should calculate creditsRemaining as 3 - quota_used for free users', async () => {
+    it('should calculate creditsRemaining as 1000 - quota_used for free users (STORY-264)', async () => {
       // Mock /api/me response
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -153,8 +153,8 @@ describe('Balance Deduction Verification', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      // Frontend should calculate: 3 - 1 = 2 (ignoring stale quota_remaining)
-      expect(result.current.quota?.creditsRemaining).toBe(2);
+      // STORY-264: Frontend calculates: 1000 - 1 = 999 (ignoring stale quota_remaining)
+      expect(result.current.quota?.creditsRemaining).toBe(999);
       expect(result.current.quota?.isFreeUser).toBe(true);
     });
 
@@ -164,7 +164,7 @@ describe('Balance Deduction Verification', () => {
         json: () => Promise.resolve({
           plan_id: 'free',
           plan_name: 'Gratuito',
-          quota_remaining: 3,
+          quota_remaining: 1000,
           quota_used: 0,
           is_admin: false,
         }),
@@ -177,17 +177,18 @@ describe('Balance Deduction Verification', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(result.current.quota?.creditsRemaining).toBe(3);
+      // STORY-264: 1000 - 0 = 1000
+      expect(result.current.quota?.creditsRemaining).toBe(1000);
     });
 
-    it('should handle quota_used: 3 (exhausted)', async () => {
+    it('should handle quota_used: 1000 (exhausted)', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           plan_id: 'free',
           plan_name: 'Gratuito',
           quota_remaining: 0,
-          quota_used: 3,
+          quota_used: 1000,
           is_admin: false,
         }),
       });
@@ -210,7 +211,7 @@ describe('Balance Deduction Verification', () => {
           plan_id: 'free',
           plan_name: 'Gratuito',
           quota_remaining: 0,
-          quota_used: 5, // More than 3 (shouldn't happen, but test edge case)
+          quota_used: 1005, // More than 1000 (shouldn't happen, but test edge case)
           is_admin: false,
         }),
       });
@@ -222,7 +223,7 @@ describe('Balance Deduction Verification', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      // Should be Math.max(0, 3 - 5) = 0
+      // Should be Math.max(0, 1000 - 1005) = 0
       expect(result.current.quota?.creditsRemaining).toBe(0);
     });
   });
@@ -539,7 +540,7 @@ describe('Balance Deduction Verification', () => {
         ok: true,
         json: () => Promise.resolve({
           plan_id: 'free',
-          quota_remaining: 3,
+          quota_remaining: 1000,
           quota_used: 0,
         }),
       });
@@ -551,14 +552,15 @@ describe('Balance Deduction Verification', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(result.current.quota?.creditsRemaining).toBe(3);
+      // STORY-264: 1000 - 0 = 1000
+      expect(result.current.quota?.creditsRemaining).toBe(1000);
 
       // Trigger refresh
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           plan_id: 'free',
-          quota_remaining: 2,
+          quota_remaining: 999,
           quota_used: 1,
         }),
       });
@@ -568,7 +570,8 @@ describe('Balance Deduction Verification', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.quota?.creditsRemaining).toBe(2);
+        // STORY-264: 1000 - 1 = 999
+        expect(result.current.quota?.creditsRemaining).toBe(999);
       });
     });
   });
