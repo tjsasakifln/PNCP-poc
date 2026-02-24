@@ -210,6 +210,13 @@ EVIDENCE_PREFIX_STRIPPED = _create_counter(
 )
 
 # CRIT-032: Periodic cache refresh metrics
+# STORY-266: Trial email delivery tracking
+TRIAL_EMAILS_SENT = _create_counter(
+    "smartlic_trial_emails_sent_total",
+    "Trial reminder emails sent",
+    labelnames=["type"],  # midpoint, expiring, last_day, expired
+)
+
 CACHE_REFRESH_TOTAL = _create_counter(
     "smartlic_cache_refresh_total",
     "Cache refresh job outcomes",

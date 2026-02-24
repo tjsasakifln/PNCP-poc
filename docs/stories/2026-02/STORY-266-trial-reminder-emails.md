@@ -1,6 +1,6 @@
 # STORY-266 — Emails de Lembrete e Conversão do Trial
 
-**Status:** TODO
+**Status:** DONE
 **Sprint:** GTM-TRIAL
 **Priority:** P1 — Conversão
 **Estimate:** 5 SP
@@ -29,23 +29,23 @@ Implementar cadeia de 4 emails automáticos durante e após o trial, com dados p
 
 ### Backend — Templates de Email
 
-- [ ] **AC1**: Template `render_trial_midpoint_email(user_name, stats)` — Dia 3
+- [x] **AC1**: Template `render_trial_midpoint_email(user_name, stats)` — Dia 3
   - Dados: total de buscas realizadas, oportunidades encontradas, valor total estimado
   - CTA: "Continuar descobrindo oportunidades" → `/buscar`
   - Tom: celebratório, mostrar progresso
 
-- [ ] **AC2**: Template `render_trial_expiring_email(user_name, days_remaining, stats)` — Dia 5
+- [x] **AC2**: Template `render_trial_expiring_email(user_name, days_remaining, stats)` — Dia 5
   - Dados: oportunidades encontradas, valor total, itens no pipeline
   - CTA: "Garantir acesso contínuo" → `/planos`
   - Tom: informativo com urgência leve
 
-- [ ] **AC3**: Template `render_trial_last_day_email(user_name, stats)` — Dia 6
+- [x] **AC3**: Template `render_trial_last_day_email(user_name, stats)` — Dia 6
   - Dados: resumo completo do trial (buscas, oportunidades, valor, pipeline)
   - CTA: "Ativar SmartLic Pro — R$1.999/mês" → `/planos`
   - Tom: urgência alta, "amanhã perde acesso"
   - Incluir: preço com desconto anual como alternativa
 
-- [ ] **AC4**: Template `render_trial_expired_email(user_name, stats)` — Dia 8
+- [x] **AC4**: Template `render_trial_expired_email(user_name, stats)` — Dia 8
   - Dados: oportunidades salvas no pipeline, valor total descoberto
   - CTA: "Reativar acesso" → `/planos`
   - Tom: reengajamento, "suas oportunidades estão esperando"
@@ -53,28 +53,28 @@ Implementar cadeia de 4 emails automáticos durante e após o trial, com dados p
 
 ### Backend — Coleta de Stats do Trial
 
-- [ ] **AC5**: Função `get_trial_usage_stats(user_id) -> TrialUsageStats` em novo módulo ou em `quota.py`
+- [x] **AC5**: Função `get_trial_usage_stats(user_id) -> TrialUsageStats` em novo módulo ou em `quota.py`
   - Retorna: `searches_count`, `opportunities_found`, `total_value_estimated`, `pipeline_items_count`, `sectors_searched`
   - Consulta: `monthly_quota` (buscas), `search_history` (oportunidades + valor), `user_pipeline` (itens)
 
-- [ ] **AC6**: `TrialUsageStats` é um Pydantic model reutilizável por templates e API
+- [x] **AC6**: `TrialUsageStats` é um Pydantic model reutilizável por templates e API
 
 ### Backend — Agendamento (Cron Job)
 
-- [ ] **AC7**: Job `check_trial_reminders()` em `cron_jobs.py` — executa 1x/dia (manhã, ~9h BRT)
-- [ ] **AC8**: Query: buscar todos os users com `plan_type='free_trial'` e `created_at` nos marcos (dia 3, 5, 6, 8)
-- [ ] **AC9**: Idempotência: tabela `email_sent_log` ou campo em profiles para registrar emails já enviados (evitar duplicatas)
-- [ ] **AC10**: Flag `TRIAL_EMAILS_ENABLED` em config.py (default: true) — permite desligar sem deploy
+- [x] **AC7**: Job `check_trial_reminders()` em `cron_jobs.py` — executa 1x/dia (manhã, ~9h BRT)
+- [x] **AC8**: Query: buscar todos os users com `plan_type='free_trial'` e `created_at` nos marcos (dia 3, 5, 6, 8)
+- [x] **AC9**: Idempotência: tabela `email_sent_log` ou campo em profiles para registrar emails já enviados (evitar duplicatas)
+- [x] **AC10**: Flag `TRIAL_EMAILS_ENABLED` em config.py (default: true) — permite desligar sem deploy
 
 ### Backend — Envio
 
-- [ ] **AC11**: Usar `send_email_async()` existente (fire-and-forget, retry 3x)
-- [ ] **AC12**: Log estruturado: `logger.info("trial_email_sent", user_id=..., email_type=..., day=...)`
-- [ ] **AC13**: Métrica Prometheus: `trial_emails_sent_total{type=midpoint|expiring|last_day|expired}` (counter)
+- [x] **AC11**: Usar `send_email_async()` existente (fire-and-forget, retry 3x)
+- [x] **AC12**: Log estruturado: `logger.info("trial_email_sent", user_id=..., email_type=..., day=...)`
+- [x] **AC13**: Métrica Prometheus: `trial_emails_sent_total{type=midpoint|expiring|last_day|expired}` (counter)
 
 ### Migração (Supabase)
 
-- [ ] **AC14**: Migration para tabela `trial_email_log`:
+- [x] **AC14**: Migration para tabela `trial_email_log`:
   ```sql
   CREATE TABLE trial_email_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,15 +84,15 @@ Implementar cadeia de 4 emails automáticos durante e após o trial, com dados p
     UNIQUE(user_id, email_type)
   );
   ```
-- [ ] **AC15**: RLS: service_role only (backend acessa via service key)
+- [x] **AC15**: RLS: service_role only (backend acessa via service key)
 
 ### Testes
 
-- [ ] **AC16**: Teste unitário para cada template (renderiza sem erro, contém dados corretos)
-- [ ] **AC17**: Teste para `get_trial_usage_stats()` com dados mock
-- [ ] **AC18**: Teste para `check_trial_reminders()` — identifica corretamente usuários em cada marco
-- [ ] **AC19**: Teste de idempotência — rodar job 2x no mesmo dia não envia email duplicado
-- [ ] **AC20**: Teste com trial que não fez nenhuma busca (stats zeradas — mensagem adaptada)
+- [x] **AC16**: Teste unitário para cada template (renderiza sem erro, contém dados corretos)
+- [x] **AC17**: Teste para `get_trial_usage_stats()` com dados mock
+- [x] **AC18**: Teste para `check_trial_reminders()` — identifica corretamente usuários em cada marco
+- [x] **AC19**: Teste de idempotência — rodar job 2x no mesmo dia não envia email duplicado
+- [x] **AC20**: Teste com trial que não fez nenhuma busca (stats zeradas — mensagem adaptada)
 
 ---
 

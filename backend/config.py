@@ -354,6 +354,9 @@ ITEM_INSPECTION_CONCURRENCY: int = int(os.getenv("ITEM_INSPECTION_CONCURRENCY", 
 # ============================================
 TRIAL_DURATION_DAYS: int = int(os.getenv("TRIAL_DURATION_DAYS", "7"))
 
+# STORY-266: Trial Reminder Emails
+TRIAL_EMAILS_ENABLED: bool = str_to_bool(os.getenv("TRIAL_EMAILS_ENABLED", "true"))
+
 # ============================================
 # D-04: Viability Assessment
 # ============================================
@@ -410,6 +413,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "PROXIMITY_CONTEXT_ENABLED": ("PROXIMITY_CONTEXT_ENABLED", "true"),
     "RATE_LIMITING_ENABLED": ("RATE_LIMITING_ENABLED", "true"),
     "SECTOR_RED_FLAGS_ENABLED": ("SECTOR_RED_FLAGS_ENABLED", "true"),
+    "TRIAL_EMAILS_ENABLED": ("TRIAL_EMAILS_ENABLED", "true"),
     "CACHE_REFRESH_ENABLED": ("CACHE_REFRESH_ENABLED", "false"),
     "SEARCH_ASYNC_ENABLED": ("SEARCH_ASYNC_ENABLED", "false"),
     "BID_ANALYSIS_ENABLED": ("BID_ANALYSIS_ENABLED", "true"),

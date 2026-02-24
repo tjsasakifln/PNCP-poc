@@ -4490,13 +4490,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -6440,7 +6433,6 @@
     },
     "/buscar": {
       "post": {
-        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)",
         "operationId": "buscar_licitacoes_buscar_post",
         "requestBody": {
           "content": {
@@ -6866,7 +6858,7 @@
     },
     "/first-analysis": {
       "post": {
-        "description": "Execute first automatic analysis based on onboarding profile.\n\nGTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,\nexecutes search in background, and returns search_id for SSE tracking.",
+        "description": "Execute first automatic analysis based on onboarding profile.\n\nSTORY-265 AC5: Trial expired cannot initiate analysis.\nGTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,\nexecutes search in background, and returns search_id for SSE tracking.",
         "operationId": "first_analysis_first_analysis_post",
         "requestBody": {
           "content": {
@@ -7046,7 +7038,7 @@
     },
     "/pipeline": {
       "get": {
-        "description": "List pipeline items for the authenticated user (AC3).\n\nSupports filtering by stage and pagination via limit/offset.",
+        "description": "List pipeline items for the authenticated user (AC3).\n\nSTORY-265 AC3: Trial expired can VIEW pipeline (read-only).\nSupports filtering by stage and pagination via limit/offset.",
         "operationId": "list_pipeline_items_pipeline_get",
         "parameters": [
           {
@@ -7128,7 +7120,7 @@
         ]
       },
       "post": {
-        "description": "Add a procurement opportunity to the user's pipeline (AC2).\n\nReturns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).",
+        "description": "Add a procurement opportunity to the user's pipeline (AC2).\n\nSTORY-265 AC2: Trial expired cannot add items.\nReturns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).",
         "operationId": "create_pipeline_item_pipeline_post",
         "requestBody": {
           "content": {
@@ -7173,7 +7165,7 @@
     },
     "/pipeline/alerts": {
       "get": {
-        "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
+        "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nSTORY-265 AC3: Trial expired can view alerts (read-only).\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
         "operationId": "get_pipeline_alerts_pipeline_alerts_get",
         "responses": {
           "200": {
@@ -7200,7 +7192,7 @@
     },
     "/pipeline/{item_id}": {
       "delete": {
-        "description": "Remove an item from the pipeline (AC5).\n\nReturns 404 if item doesn't exist or doesn't belong to user.",
+        "description": "Remove an item from the pipeline (AC5).\n\nSTORY-265 AC2: Trial expired cannot delete items.\nReturns 404 if item doesn't exist or doesn't belong to user.",
         "operationId": "delete_pipeline_item_pipeline__item_id__delete",
         "parameters": [
           {
@@ -7244,7 +7236,7 @@
         ]
       },
       "patch": {
-        "description": "Update stage and/or notes of a pipeline item (AC4).\n\nValidates that stage is a valid enum value.\nReturns 404 if item doesn't exist or doesn't belong to user.",
+        "description": "Update stage and/or notes of a pipeline item (AC4).\n\nSTORY-265 AC2: Trial expired cannot modify items.\nValidates that stage is a valid enum value.\nReturns 404 if item doesn't exist or doesn't belong to user.",
         "operationId": "update_pipeline_item_pipeline__item_id__patch",
         "parameters": [
           {
@@ -9481,7 +9473,6 @@
     },
     "/v1/buscar": {
       "post": {
-        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)",
         "operationId": "buscar_licitacoes_v1_buscar_post",
         "requestBody": {
           "content": {
@@ -9883,7 +9874,7 @@
     },
     "/v1/first-analysis": {
       "post": {
-        "description": "Execute first automatic analysis based on onboarding profile.\n\nGTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,\nexecutes search in background, and returns search_id for SSE tracking.",
+        "description": "Execute first automatic analysis based on onboarding profile.\n\nSTORY-265 AC5: Trial expired cannot initiate analysis.\nGTM-004 AC1-4: Maps CNAE to sector, builds BuscaRequest automatically,\nexecutes search in background, and returns search_id for SSE tracking.",
         "operationId": "first_analysis_v1_first_analysis_post",
         "requestBody": {
           "content": {
@@ -10027,7 +10018,7 @@
     },
     "/v1/pipeline": {
       "get": {
-        "description": "List pipeline items for the authenticated user (AC3).\n\nSupports filtering by stage and pagination via limit/offset.",
+        "description": "List pipeline items for the authenticated user (AC3).\n\nSTORY-265 AC3: Trial expired can VIEW pipeline (read-only).\nSupports filtering by stage and pagination via limit/offset.",
         "operationId": "list_pipeline_items_v1_pipeline_get",
         "parameters": [
           {
@@ -10109,7 +10100,7 @@
         ]
       },
       "post": {
-        "description": "Add a procurement opportunity to the user's pipeline (AC2).\n\nReturns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).",
+        "description": "Add a procurement opportunity to the user's pipeline (AC2).\n\nSTORY-265 AC2: Trial expired cannot add items.\nReturns 409 if the item already exists (UNIQUE constraint on user_id + pncp_id).",
         "operationId": "create_pipeline_item_v1_pipeline_post",
         "requestBody": {
           "content": {
@@ -10154,7 +10145,7 @@
     },
     "/v1/pipeline/alerts": {
       "get": {
-        "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
+        "description": "Get pipeline items with deadlines within 3 days (AC6).\n\nSTORY-265 AC3: Trial expired can view alerts (read-only).\nReturns items where data_encerramento < now() + 3 days\nand stage is NOT in ('enviada', 'resultado').",
         "operationId": "get_pipeline_alerts_v1_pipeline_alerts_get",
         "responses": {
           "200": {
@@ -10181,7 +10172,7 @@
     },
     "/v1/pipeline/{item_id}": {
       "delete": {
-        "description": "Remove an item from the pipeline (AC5).\n\nReturns 404 if item doesn't exist or doesn't belong to user.",
+        "description": "Remove an item from the pipeline (AC5).\n\nSTORY-265 AC2: Trial expired cannot delete items.\nReturns 404 if item doesn't exist or doesn't belong to user.",
         "operationId": "delete_pipeline_item_v1_pipeline__item_id__delete",
         "parameters": [
           {
@@ -10225,7 +10216,7 @@
         ]
       },
       "patch": {
-        "description": "Update stage and/or notes of a pipeline item (AC4).\n\nValidates that stage is a valid enum value.\nReturns 404 if item doesn't exist or doesn't belong to user.",
+        "description": "Update stage and/or notes of a pipeline item (AC4).\n\nSTORY-265 AC2: Trial expired cannot modify items.\nValidates that stage is a valid enum value.\nReturns 404 if item doesn't exist or doesn't belong to user.",
         "operationId": "update_pipeline_item_v1_pipeline__item_id__patch",
         "parameters": [
           {

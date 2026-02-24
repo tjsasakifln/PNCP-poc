@@ -309,3 +309,227 @@ async def _cache_refresh_loop() -> None:
         except Exception as e:
             logger.error(f"Cache refresh loop error: {e}", exc_info=True)
             await asyncio.sleep(60)
+
+
+# ============================================================================
+# STORY-266: Trial Reminder Emails
+# ============================================================================
+
+# Trial reminder check interval: every 6 hours (runs ~4x/day for robustness)
+TRIAL_REMINDER_INTERVAL_SECONDS = 6 * 60 * 60
+
+# Day milestones for email triggers (days since account creation)
+TRIAL_EMAIL_MILESTONES = {
+    3: "midpoint",
+    5: "expiring",
+    6: "last_day",
+    8: "expired",
+}
+
+
+async def start_trial_reminder_task() -> asyncio.Task:
+    """STORY-266 AC7: Start the periodic trial reminder email background task.
+
+    Runs once on startup (after 60s delay), then every 6 hours.
+    Returns the Task so it can be cancelled during shutdown.
+    """
+    task = asyncio.create_task(_trial_reminder_loop(), name="trial_reminders")
+    logger.info("Trial reminder background task started (interval: 6h)")
+    return task
+
+
+async def check_trial_reminders() -> dict:
+    """STORY-266 AC7-AC9: Check and send trial reminder emails.
+
+    AC7: Identifies users at each trial milestone day.
+    AC8: Queries profiles with plan_type='free_trial' at day milestones.
+    AC9: Idempotent — checks trial_email_log before sending.
+    AC11: Uses send_email_async() for fire-and-forget delivery.
+    AC12: Structured logging for each sent email.
+
+    Returns:
+        dict with counts: {"sent": N, "skipped": M, "errors": E}
+    """
+    from config import TRIAL_EMAILS_ENABLED
+
+    if not TRIAL_EMAILS_ENABLED:
+        logger.debug("Trial emails disabled (TRIAL_EMAILS_ENABLED=false)")
+        return {"sent": 0, "skipped": 0, "errors": 0, "disabled": True}
+
+    try:
+        from supabase_client import get_supabase
+        from services.trial_stats import get_trial_usage_stats
+        from templates.emails.trial import (
+            render_trial_midpoint_email,
+            render_trial_expiring_email,
+            render_trial_last_day_email,
+            render_trial_expired_email,
+        )
+        from email_service import send_email_async
+        from metrics import TRIAL_EMAILS_SENT
+
+        sb = get_supabase()
+        now = datetime.now(timezone.utc)
+
+        sent = 0
+        skipped = 0
+        errors = 0
+
+        for day, email_type in TRIAL_EMAIL_MILESTONES.items():
+            try:
+                # Calculate target date range: users created exactly `day` days ago
+                # Use a 24h window to handle timezone differences
+                target_start = (now - timedelta(days=day, hours=12)).isoformat()
+                target_end = (now - timedelta(days=day - 1, hours=-12)).isoformat()
+
+                # AC8: Find trial users at this milestone
+                users_result = (
+                    sb.table("profiles")
+                    .select("id, email, full_name")
+                    .eq("plan_type", "free_trial")
+                    .gte("created_at", target_start)
+                    .lt("created_at", target_end)
+                    .execute()
+                )
+
+                if not users_result.data:
+                    continue
+
+                for user in users_result.data:
+                    user_id = user["id"]
+                    email = user.get("email", "")
+                    user_name = user.get("full_name") or email.split("@")[0] if email else "Usuário"
+
+                    if not email:
+                        continue
+
+                    # AC9: Idempotency check — skip if already sent
+                    try:
+                        existing = (
+                            sb.table("trial_email_log")
+                            .select("id")
+                            .eq("user_id", user_id)
+                            .eq("email_type", email_type)
+                            .limit(1)
+                            .execute()
+                        )
+                        if existing.data and len(existing.data) > 0:
+                            skipped += 1
+                            continue
+                    except Exception:
+                        pass  # If check fails, proceed (better to send than skip)
+
+                    # Collect stats for personalization
+                    try:
+                        stats = get_trial_usage_stats(user_id)
+                        stats_dict = stats.model_dump()
+                    except Exception:
+                        stats_dict = {}
+
+                    # Render appropriate template
+                    try:
+                        if email_type == "midpoint":
+                            subject = f"Você já analisou {_format_value(stats_dict.get('total_value_estimated', 0))} em oportunidades"
+                            html = render_trial_midpoint_email(user_name, stats_dict)
+                        elif email_type == "expiring":
+                            subject = "Seu acesso completo ao SmartLic acaba em 2 dias"
+                            html = render_trial_expiring_email(user_name, 2, stats_dict)
+                        elif email_type == "last_day":
+                            subject = "Amanhã seu acesso expira — não perca o que você construiu"
+                            html = render_trial_last_day_email(user_name, stats_dict)
+                        elif email_type == "expired":
+                            opps = stats_dict.get("opportunities_found", 0)
+                            pipeline = stats_dict.get("pipeline_items_count", 0)
+                            count = pipeline if pipeline > 0 else opps
+                            if count > 0:
+                                subject = f"Suas {count} oportunidades estão esperando por você"
+                            else:
+                                subject = "As oportunidades de licitação continuam surgindo"
+                            html = render_trial_expired_email(user_name, stats_dict)
+                        else:
+                            continue
+
+                        # AC11: Fire-and-forget send
+                        send_email_async(
+                            to=email,
+                            subject=subject,
+                            html=html,
+                            tags=[
+                                {"name": "category", "value": "trial_reminder"},
+                                {"name": "type", "value": email_type},
+                            ],
+                        )
+
+                        # Record in log for idempotency (AC9)
+                        try:
+                            sb.table("trial_email_log").insert({
+                                "user_id": user_id,
+                                "email_type": email_type,
+                            }).execute()
+                        except Exception as log_err:
+                            # UNIQUE constraint violation = already sent (race condition safe)
+                            logger.debug(f"trial_email_log insert failed (likely dup): {log_err}")
+
+                        # AC13: Prometheus metric
+                        try:
+                            TRIAL_EMAILS_SENT.labels(type=email_type).inc()
+                        except Exception:
+                            pass
+
+                        # AC12: Structured logging
+                        logger.info(
+                            "trial_email_sent",
+                            extra={
+                                "user_id": user_id[:8] + "***",
+                                "email_type": email_type,
+                                "day": day,
+                            },
+                        )
+                        sent += 1
+
+                    except Exception as render_err:
+                        errors += 1
+                        logger.error(f"Failed to send trial email ({email_type}) to {user_id[:8]}***: {render_err}")
+
+            except Exception as milestone_err:
+                errors += 1
+                logger.error(f"Failed to process trial milestone day={day}: {milestone_err}")
+
+        logger.info(f"Trial reminders: sent={sent}, skipped={skipped}, errors={errors}")
+        return {"sent": sent, "skipped": skipped, "errors": errors}
+
+    except Exception as e:
+        logger.error(f"Trial reminder check failed: {e}", exc_info=True)
+        return {"sent": 0, "skipped": 0, "errors": 1, "error": str(e)}
+
+
+def _format_value(value: float) -> str:
+    """Format value for email subject lines."""
+    if value >= 1_000_000:
+        return f"R$ {value / 1_000_000:.1f}M"
+    if value >= 1_000:
+        return f"R$ {value / 1_000:.0f}k"
+    if value > 0:
+        return f"R$ {value:,.0f}".replace(",", ".")
+    return "oportunidades"
+
+
+async def _trial_reminder_loop() -> None:
+    """STORY-266 AC7: Run trial reminder check periodically."""
+    # Delay 60s after startup to avoid overloading
+    await asyncio.sleep(60)
+
+    while True:
+        try:
+            result = await check_trial_reminders()
+            logger.info(
+                f"Trial reminder cycle: {result} "
+                f"at {datetime.now(timezone.utc).isoformat()}"
+            )
+            await asyncio.sleep(TRIAL_REMINDER_INTERVAL_SECONDS)
+        except asyncio.CancelledError:
+            logger.info("Trial reminder task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Trial reminder loop error: {e}", exc_info=True)
+            await asyncio.sleep(60)
