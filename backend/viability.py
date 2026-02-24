@@ -212,10 +212,44 @@ def _score_geography(uf_licitacao: str, ufs_busca: set[str]) -> tuple[int, str]:
 # =============================================================================
 
 
+def _porte_modality_bonus(porte: str | None, modalidade: str | None) -> int:
+    """STORY-260 AC7: Bonus/penalty based on company size × modality match.
+
+    Returns an adjustment (-10 to +15) to the modality score.
+    """
+    if not porte or not modalidade:
+        return 0
+
+    mod_lower = (modalidade or "").strip().lower()
+    porte_lower = (porte or "").strip().lower()
+
+    # MEI/ME: bonus for Dispensa, small Pregão
+    if porte_lower in ("mei", "me"):
+        if "dispensa" in mod_lower:
+            return 15
+        if "pregão" in mod_lower or "pregao" in mod_lower:
+            return 10
+
+    # EPP: bonus for cota reservada (indicated by modality text)
+    if porte_lower == "epp":
+        if "cota" in mod_lower or "reserv" in mod_lower:
+            return 15
+        if "pregão" in mod_lower or "pregao" in mod_lower:
+            return 5
+
+    # Médio/Grande: bonus for Concorrência high value
+    if porte_lower in ("medio", "grande"):
+        if "concorrência" in mod_lower or "concorrencia" in mod_lower:
+            return 10
+
+    return 0
+
+
 def calculate_viability(
     bid: dict,
     ufs_busca: set[str],
     value_range: tuple[float, float] | None = None,
+    user_profile: dict | None = None,
 ) -> ViabilityAssessment:
     """Calculate viability assessment for a single accepted bid.
 
@@ -223,11 +257,24 @@ def calculate_viability(
         bid: Raw bid dictionary (internal format with PNCP/PCP field names).
         ufs_busca: Set of UF codes the user selected for the search.
         value_range: (min, max) value range for the sector. Uses DEFAULT_VALUE_RANGE if None.
+        user_profile: STORY-260: User profile for personalized scoring.
 
     Returns:
         ViabilityAssessment with composite score, level, and factor breakdown.
     """
-    vr = value_range or DEFAULT_VALUE_RANGE
+    # STORY-260 AC6: User value range takes priority over sector range
+    # AC8: Track whether user profile range was used for attribution labels
+    _using_profile_value_range = False
+    if user_profile:
+        user_min = user_profile.get("faixa_valor_min")
+        user_max = user_profile.get("faixa_valor_max")
+        if user_min is not None and user_max is not None and user_min >= 0 and user_max > 0:
+            vr = (float(user_min), float(user_max))
+            _using_profile_value_range = True
+        else:
+            vr = value_range or DEFAULT_VALUE_RANGE
+    else:
+        vr = value_range or DEFAULT_VALUE_RANGE
 
     # Get weights from config
     w_mod = getattr(config, "VIABILITY_WEIGHT_MODALITY", 0.30)
@@ -247,7 +294,29 @@ def calculate_viability(
     valor = float(bid.get("valorTotalEstimado") or bid.get("valorEstimado") or 0)
     vf_score, vf_label = _score_value_fit(valor, vr)
 
+    # AC8: Append attribution suffix to value_fit label based on range source
+    if vf_label not in ("Não informado",):
+        _attribution = "do seu perfil" if _using_profile_value_range else "do setor"
+        if vf_label == "Ideal":
+            vf_label = f"Valor dentro da faixa {_attribution}"
+        elif vf_label == "Acima":
+            vf_label = f"Valor acima da faixa {_attribution}"
+        elif vf_label == "Muito acima":
+            vf_label = f"Valor muito acima da faixa {_attribution}"
+        elif vf_label == "Abaixo":
+            vf_label = f"Valor abaixo da faixa {_attribution}"
+        elif vf_label == "Muito abaixo":
+            vf_label = f"Valor muito abaixo da faixa {_attribution}"
+
     geo_score, geo_label = _score_geography(bid.get("uf", ""), ufs_busca)
+
+    # STORY-260 AC7: Porte-modality bonus
+    porte_bonus = 0
+    if user_profile:
+        porte_bonus = _porte_modality_bonus(
+            user_profile.get("porte_empresa"),
+            bid.get("modalidadeNome") or bid.get("modalidade"),
+        )
 
     # Composite score
     raw_score = (
@@ -255,7 +324,7 @@ def calculate_viability(
         + tl_score * w_tl
         + vf_score * w_vf
         + geo_score * w_geo
-    )
+    ) + porte_bonus
     composite = max(0, min(100, round(raw_score)))
 
     # Map to level
@@ -286,6 +355,7 @@ def assess_batch(
     bids: list[dict],
     ufs_busca: set[str],
     value_range: tuple[float, float] | None = None,
+    user_profile: dict | None = None,
 ) -> None:
     """Calculate viability for a batch of bids, enriching them in-place.
 
@@ -295,9 +365,10 @@ def assess_batch(
         bids: List of bid dicts (modified in-place).
         ufs_busca: UFs selected by user.
         value_range: Sector-specific value range.
+        user_profile: STORY-260: User profile for personalized scoring (porte, faixa_valor, etc.).
     """
     for bid in bids:
-        assessment = calculate_viability(bid, ufs_busca, value_range)
+        assessment = calculate_viability(bid, ufs_busca, value_range, user_profile=user_profile)
         bid["_viability_score"] = assessment.viability_score
         bid["_viability_level"] = assessment.viability_level
         bid["_viability_factors"] = assessment.factors.model_dump()

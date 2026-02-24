@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { usePlan } from "../../hooks/usePlan";
 import { PageHeader } from "../../components/PageHeader";
@@ -9,6 +9,71 @@ import { getPlanDisplayName } from "../../lib/plans";
 import Link from "next/link";
 import { toast } from "sonner";
 import { CancelSubscriptionModal } from "../../components/account/CancelSubscriptionModal";
+
+// ─── Certifications catalog (mirrors backend ATESTADOS_DISPONIVEIS) ───────────
+const ATESTADOS_CATALOG: Array<{ id: string; label: string }> = [
+  { id: "crea", label: "CREA (Engenharia)" },
+  { id: "crf", label: "CRF (Farmácia)" },
+  { id: "inmetro", label: "INMETRO" },
+  { id: "iso_9001", label: "ISO 9001 (Qualidade)" },
+  { id: "iso_14001", label: "ISO 14001 (Ambiental)" },
+  { id: "pgr_pcmso", label: "PGR/PCMSO (Segurança do Trabalho)" },
+  { id: "alvara_sanitario", label: "Alvará Sanitário" },
+  { id: "registro_anvisa", label: "Registro ANVISA" },
+  { id: "habilitacao_antt", label: "Habilitação ANTT" },
+  { id: "registro_cfq", label: "Registro CRQ (Química)" },
+  { id: "licenca_ambiental", label: "Licença Ambiental" },
+  { id: "crt", label: "CRT (Técnico)" },
+];
+
+const PORTE_OPTIONS = [
+  { value: "mei", label: "MEI — Microempreendedor Individual" },
+  { value: "me", label: "ME — Microempresa" },
+  { value: "epp", label: "EPP — Empresa de Pequeno Porte" },
+  { value: "medio", label: "Médio Porte" },
+  { value: "grande", label: "Grande Empresa" },
+];
+
+const EXPERIENCIA_OPTIONS = [
+  { value: "iniciante", label: "Iniciante — nunca participei" },
+  { value: "basico", label: "Básico — já participei de algumas" },
+  { value: "intermediario", label: "Intermediário — participo regularmente" },
+  { value: "avancado", label: "Avançado — processo sistematizado" },
+];
+
+const ALL_UFS = [
+  "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO",
+  "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR",
+  "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+];
+
+// ─── Profile context type ─────────────────────────────────────────────────────
+interface ProfileContext {
+  ufs_atuacao?: string[];
+  setor_principal?: string;
+  faixa_valor_min?: number | null;
+  faixa_valor_max?: number | null;
+  porte_empresa?: string;
+  experiencia_licitacoes?: string;
+  capacidade_funcionarios?: number | null;
+  faturamento_anual?: number | null;
+  atestados?: string[];
+}
+
+function completenessCount(ctx: ProfileContext): number {
+  const fields = [
+    ctx.ufs_atuacao?.length ? ctx.ufs_atuacao : null,
+    ctx.porte_empresa || null,
+    ctx.experiencia_licitacoes || null,
+    ctx.faixa_valor_min != null ? ctx.faixa_valor_min : null,
+    ctx.capacidade_funcionarios != null ? ctx.capacidade_funcionarios : null,
+    ctx.faturamento_anual != null ? ctx.faturamento_anual : null,
+    ctx.atestados?.length ? ctx.atestados : null,
+  ];
+  return fields.filter(Boolean).length;
+}
+
+const TOTAL_PROFILE_FIELDS = 7;
 
 export default function ContaPage() {
   const { user, session, loading: authLoading, signOut } = useAuth();
@@ -33,6 +98,94 @@ export default function ContaPage() {
   // Subscription cancellation state
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellingEndsAt, setCancellingEndsAt] = useState<string | null>(null);
+
+  // STORY-260: Profile de Licitante state
+  const [profileCtx, setProfileCtx] = useState<ProfileContext | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileEdit, setProfileEdit] = useState(false);
+  // Editable form state (populated when editing starts)
+  const [editUfs, setEditUfs] = useState<string[]>([]);
+  const [editPorte, setEditPorte] = useState("");
+  const [editExperiencia, setEditExperiencia] = useState("");
+  const [editValorMin, setEditValorMin] = useState("");
+  const [editValorMax, setEditValorMax] = useState("");
+  const [editFuncionarios, setEditFuncionarios] = useState("");
+  const [editFaturamento, setEditFaturamento] = useState("");
+  const [editAtestados, setEditAtestados] = useState<string[]>([]);
+
+  const fetchProfileCtx = useCallback(async () => {
+    if (!session?.access_token) return;
+    setProfileLoading(true);
+    try {
+      const res = await fetch("/api/profile-context", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfileCtx(data.context_data ?? {});
+      }
+    } catch {
+      // silent
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [session?.access_token]);
+
+  useEffect(() => {
+    fetchProfileCtx();
+  }, [fetchProfileCtx]);
+
+  const startEdit = () => {
+    if (!profileCtx) return;
+    setEditUfs(profileCtx.ufs_atuacao ?? []);
+    setEditPorte(profileCtx.porte_empresa ?? "");
+    setEditExperiencia(profileCtx.experiencia_licitacoes ?? "");
+    setEditValorMin(profileCtx.faixa_valor_min != null ? String(profileCtx.faixa_valor_min) : "");
+    setEditValorMax(profileCtx.faixa_valor_max != null ? String(profileCtx.faixa_valor_max) : "");
+    setEditFuncionarios(profileCtx.capacidade_funcionarios != null ? String(profileCtx.capacidade_funcionarios) : "");
+    setEditFaturamento(profileCtx.faturamento_anual != null ? String(profileCtx.faturamento_anual) : "");
+    setEditAtestados(profileCtx.atestados ?? []);
+    setProfileEdit(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!session?.access_token) return;
+    setProfileSaving(true);
+    try {
+      const payload: ProfileContext = {
+        ...(profileCtx ?? {}),
+        ufs_atuacao: editUfs.length ? editUfs : undefined,
+        porte_empresa: editPorte || undefined,
+        experiencia_licitacoes: editExperiencia || undefined,
+        faixa_valor_min: editValorMin ? Number(editValorMin) : null,
+        faixa_valor_max: editValorMax ? Number(editValorMax) : null,
+        capacidade_funcionarios: editFuncionarios ? Number(editFuncionarios) : null,
+        faturamento_anual: editFaturamento ? Number(editFaturamento) : null,
+        atestados: editAtestados.length ? editAtestados : undefined,
+      };
+      const res = await fetch("/api/profile-context", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfileCtx(data.context_data ?? payload);
+        setProfileEdit(false);
+        toast.success("Perfil de licitante atualizado!");
+      } else {
+        toast.error("Erro ao salvar perfil. Tente novamente.");
+      }
+    } catch {
+      toast.error("Erro ao salvar perfil. Tente novamente.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -524,6 +677,272 @@ export default function ContaPage() {
               <div className="h-4 w-32 bg-[var(--surface-1)] rounded" />
               <div className="h-4 w-48 bg-[var(--surface-1)] rounded" />
               <div className="h-10 w-full bg-[var(--surface-1)] rounded-button" />
+            </div>
+          )}
+        </div>
+
+        {/* STORY-260: Perfil de Licitante section */}
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6" data-testid="profile-licitante-section">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--ink)]">Perfil de Licitante</h2>
+              {profileCtx !== null && (
+                <p className="text-xs text-[var(--ink-muted)] mt-0.5">
+                  {completenessCount(profileCtx)}/{TOTAL_PROFILE_FIELDS} campos preenchidos
+                  {completenessCount(profileCtx) === TOTAL_PROFILE_FIELDS && (
+                    <span className="ml-2 text-emerald-600 dark:text-emerald-400 font-medium">Completo!</span>
+                  )}
+                </p>
+              )}
+              {/* AC15: Impact message — completeness percentage + benefit */}
+              {profileCtx !== null && completenessCount(profileCtx) < TOTAL_PROFILE_FIELDS && (
+                <p className="text-sm text-[var(--ink-muted)] mt-1">
+                  Seu perfil está {Math.floor((completenessCount(profileCtx) / TOTAL_PROFILE_FIELDS) * 100)}% completo.
+                  Campos preenchidos melhoram a precisão da análise de compatibilidade.
+                </p>
+              )}
+            </div>
+            {!profileEdit && !profileLoading && (
+              <button
+                onClick={startEdit}
+                className="text-sm text-[var(--brand-blue)] hover:underline font-medium"
+                data-testid="edit-profile-btn"
+              >
+                Editar
+              </button>
+            )}
+          </div>
+
+          {profileLoading && (
+            <div className="space-y-3 animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 bg-[var(--surface-1)] rounded" />
+              ))}
+            </div>
+          )}
+
+          {!profileLoading && !profileEdit && profileCtx !== null && (
+            <div className="space-y-3">
+              {/* UFs */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Estados de atuacao</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {profileCtx.ufs_atuacao?.length
+                    ? profileCtx.ufs_atuacao.join(", ")
+                    : <span className="text-[var(--ink-muted)] italic">Nao informado</span>}
+                </span>
+              </div>
+              {/* Porte */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Porte da empresa</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {PORTE_OPTIONS.find((o) => o.value === profileCtx.porte_empresa)?.label
+                    ?? (profileCtx.porte_empresa || <span className="text-[var(--ink-muted)] italic">Nao informado</span>)}
+                </span>
+              </div>
+              {/* Experiencia */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Experiencia</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {EXPERIENCIA_OPTIONS.find((o) => o.value === profileCtx.experiencia_licitacoes)?.label
+                    ?? (profileCtx.experiencia_licitacoes || <span className="text-[var(--ink-muted)] italic">Nao informado</span>)}
+                </span>
+              </div>
+              {/* Faixa de valor */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Faixa de valor</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {profileCtx.faixa_valor_min != null && profileCtx.faixa_valor_max != null
+                    ? `R$ ${Number(profileCtx.faixa_valor_min).toLocaleString("pt-BR")} – R$ ${Number(profileCtx.faixa_valor_max).toLocaleString("pt-BR")}`
+                    : <span className="text-[var(--ink-muted)] italic">Nao informado</span>}
+                </span>
+              </div>
+              {/* Capacidade */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Funcionarios</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {profileCtx.capacidade_funcionarios != null
+                    ? profileCtx.capacidade_funcionarios
+                    : <span className="text-[var(--ink-muted)] italic">Nao informado</span>}
+                </span>
+              </div>
+              {/* Faturamento */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Faturamento anual</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {profileCtx.faturamento_anual != null
+                    ? `R$ ${Number(profileCtx.faturamento_anual).toLocaleString("pt-BR")}`
+                    : <span className="text-[var(--ink-muted)] italic">Nao informado</span>}
+                </span>
+              </div>
+              {/* Atestados */}
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-[var(--ink-muted)] w-36 flex-shrink-0">Atestados</span>
+                <span className="text-sm text-[var(--ink)] text-right">
+                  {profileCtx.atestados?.length
+                    ? profileCtx.atestados
+                        .map((id) => ATESTADOS_CATALOG.find((a) => a.id === id)?.label ?? id)
+                        .join(", ")
+                    : <span className="text-[var(--ink-muted)] italic">Nao informado</span>}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {!profileLoading && profileEdit && (
+            <div className="space-y-5">
+              {/* UFs multi-select */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-2">Estados de atuacao</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {ALL_UFS.map((uf) => (
+                    <button
+                      key={uf}
+                      type="button"
+                      onClick={() =>
+                        setEditUfs((prev) =>
+                          prev.includes(uf) ? prev.filter((u) => u !== uf) : [...prev, uf]
+                        )
+                      }
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                        editUfs.includes(uf)
+                          ? "border-[var(--brand-blue)] bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)] font-medium"
+                          : "border-[var(--border)] text-[var(--ink-secondary)] hover:border-[var(--border-strong)]"
+                      }`}
+                    >
+                      {uf}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Porte select */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">Porte da empresa</label>
+                <select
+                  value={editPorte}
+                  onChange={(e) => setEditPorte(e.target.value)}
+                  className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
+                >
+                  <option value="">Selecione...</option>
+                  {PORTE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Experiencia select */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">Experiencia com licitacoes</label>
+                <select
+                  value={editExperiencia}
+                  onChange={(e) => setEditExperiencia(e.target.value)}
+                  className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
+                >
+                  <option value="">Selecione...</option>
+                  {EXPERIENCIA_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Faixa de valor */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">Valor minimo (R$)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editValorMin}
+                    onChange={(e) => setEditValorMin(e.target.value)}
+                    placeholder="Ex: 50000"
+                    className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">Valor maximo (R$)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editValorMax}
+                    onChange={(e) => setEditValorMax(e.target.value)}
+                    placeholder="Ex: 5000000"
+                    className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Funcionarios + Faturamento */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">Funcionarios</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editFuncionarios}
+                    onChange={(e) => setEditFuncionarios(e.target.value)}
+                    placeholder="Ex: 15"
+                    className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-1">Faturamento anual (R$)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editFaturamento}
+                    onChange={(e) => setEditFaturamento(e.target.value)}
+                    placeholder="Ex: 500000"
+                    className="w-full px-3 py-2 rounded-input border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] text-sm focus:border-[var(--brand-blue)] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Atestados multi-select */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-2">Atestados e certificacoes</label>
+                <div className="space-y-1.5">
+                  {ATESTADOS_CATALOG.map((cert) => (
+                    <button
+                      key={cert.id}
+                      type="button"
+                      onClick={() =>
+                        setEditAtestados((prev) =>
+                          prev.includes(cert.id)
+                            ? prev.filter((id) => id !== cert.id)
+                            : [...prev, cert.id]
+                        )
+                      }
+                      className={`w-full text-left px-3 py-2 rounded-input border text-sm transition-colors ${
+                        editAtestados.includes(cert.id)
+                          ? "border-[var(--brand-blue)] bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)]"
+                          : "border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] hover:bg-[var(--surface-1)]"
+                      }`}
+                    >
+                      {cert.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={profileSaving}
+                  className="flex-1 py-2.5 bg-[var(--brand-navy)] text-white rounded-button font-semibold text-sm hover:bg-[var(--brand-blue)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  data-testid="save-profile-btn"
+                >
+                  {profileSaving ? "Salvando..." : "Salvar perfil"}
+                </button>
+                <button
+                  onClick={() => setProfileEdit(false)}
+                  disabled={profileSaving}
+                  className="px-4 py-2.5 border border-[var(--border)] rounded-button text-sm text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           )}
         </div>

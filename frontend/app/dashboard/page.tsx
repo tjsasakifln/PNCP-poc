@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useAuth } from "../components/AuthProvider";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useBackendStatusContext } from "../../components/BackendStatusIndicator";
@@ -8,6 +8,9 @@ import { useFetchWithBackoff } from "../../hooks/useFetchWithBackoff";
 import { PageHeader } from "../../components/PageHeader";
 import { ErrorStateWithRetry } from "../../components/ErrorStateWithRetry";
 import { AuthLoadingScreen } from "../../components/AuthLoadingScreen";
+import ProfileCompletionPrompt from "../../components/ProfileCompletionPrompt";
+import ProfileProgressBar from "../../components/ProfileProgressBar";
+import ProfileCongratulations from "../../components/ProfileCongratulations";
 import Link from "next/link";
 import {
   BarChart,
@@ -214,6 +217,28 @@ export default function DashboardPage() {
   const { status: backendStatus } = useBackendStatusContext();
 
   const [period, setPeriod] = useState<Period>("week");
+  const [profilePct, setProfilePct] = useState<number | null>(null);
+
+  // STORY-260: Fetch profile completeness on mount (for header ring + conditional components)
+  useEffect(() => {
+    if (!session?.access_token) return;
+    let cancelled = false;
+    fetch("/api/profile-completeness", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.completeness_pct !== undefined) {
+          setProfilePct(data.completeness_pct as number);
+        }
+      })
+      .catch(() => {
+        // best-effort: don't show profile section if fetch fails
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.access_token]);
 
   // Stable fetch helper — always uses proxy to avoid CORS issues
   const fetchAnalytics = useCallback(
@@ -564,6 +589,18 @@ export default function DashboardPage() {
         title="Dashboard"
         extraControls={
           <>
+            {/* STORY-260: Profile progress ring in header */}
+            {profilePct !== null && profilePct < 100 && (
+              <ProfileProgressBar
+                percentage={profilePct}
+                size={40}
+                onClickNext={() => {
+                  // Scroll to the profile prompt below the header
+                  const el = document.querySelector("[data-testid='profile-completion-prompt']");
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                }}
+              />
+            )}
             <button
               onClick={handleExportCSV}
               className="hidden sm:flex px-3 py-1.5 text-sm border border-[var(--border)] rounded-button
@@ -583,6 +620,27 @@ export default function DashboardPage() {
           <p className="text-sm text-[var(--ink-muted)] mb-6">
             Membro desde {formatDate(summary.member_since)}
           </p>
+        )}
+
+        {/* STORY-260: Profile completion — congratulations when 100%, prompt otherwise */}
+        {session && profilePct === 100 && (
+          <div className="mb-6">
+            <ProfileCongratulations />
+          </div>
+        )}
+        {session && profilePct !== null && profilePct !== 100 && (
+          <div className="mb-6">
+            {/* AC13: "Completar perfil" link above the prompt */}
+            <div className="flex items-center justify-end mb-2">
+              <a href="/conta#perfil" className="text-sm text-[var(--brand-blue)] hover:underline">
+                Completar perfil →
+              </a>
+            </div>
+            <ProfileCompletionPrompt
+              accessToken={session.access_token}
+              onProfileUpdated={(pct) => setProfilePct(pct)}
+            />
+          </div>
         )}
 
         {/* AC4/AC5: Stat Cards — show per-card error if summary fetch failed */}

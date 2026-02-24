@@ -94,6 +94,12 @@ class SearchContext:
     llm_status: Optional[str] = None  # "ready" | "processing" | None
     excel_status: Optional[str] = None  # "ready" | "processing" | "skipped" | "failed" | None
 
+    # === STORY-259: Bid analysis ===
+    bid_analysis_status: Optional[str] = None  # "ready" | "processing" | None
+
+    # === STORY-260: User profile for LLM analysis ===
+    user_profile: Optional[dict] = None  # Profile context data from profiles.context_data
+
     # === Stage 7: Persist outputs ===
     session_id: Optional[str] = None
     response: Any = None  # schemas.BuscaResponse

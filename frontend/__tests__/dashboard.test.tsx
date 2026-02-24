@@ -218,6 +218,8 @@ describe("DashboardPage — UX-338", () => {
           return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
         if (url.includes("top-dimensions"))
           return Promise.resolve({ ok: true, json: async () => ({ top_ufs: [], top_sectors: [] }) });
+        // Default: return empty OK response for other requests (e.g. profile-completeness)
+        return Promise.resolve({ ok: true, json: async () => ({}) });
       });
 
       render(<DashboardPage />);

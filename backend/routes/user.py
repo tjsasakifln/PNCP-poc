@@ -19,7 +19,7 @@ from config import ENABLE_NEW_PRICING
 from database import get_db
 from schemas import (
     UserProfileResponse, SuccessResponse, DeleteAccountResponse,
-    PerfilContexto, PerfilContextoResponse, validate_password,
+    PerfilContexto, PerfilContextoResponse, ProfileCompletenessResponse, validate_password,
 )
 from log_sanitizer import mask_user_id, log_user_action
 from pydantic import BaseModel
@@ -171,7 +171,7 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
         logger.error(f"Failed to check quota for trial status: {e}")
         raise HTTPException(
             status_code=503,
-            detail="Informacao de trial temporariamente indisponivel"
+            detail="Informação de trial temporariamente indisponível"
         )
 
     plan_id = quota_info.plan_id
@@ -252,6 +252,80 @@ async def get_profile_context(
     except Exception as e:
         logger.error(f"Failed to get profile context for {mask_user_id(user_id)}: {e}")
         raise HTTPException(status_code=500, detail="Erro ao buscar perfil de contexto")
+
+
+# ============================================================================
+# STORY-260: Profile Completeness
+# ============================================================================
+
+# Fields tracked for completeness (priority order)
+_PROFILE_FIELDS = [
+    "ufs_atuacao",
+    "porte_empresa",
+    "experiencia_licitacoes",
+    "faixa_valor_min",
+    "capacidade_funcionarios",
+    "faturamento_anual",
+    "atestados",
+]
+
+# Priority order for next_question (highest impact first)
+_QUESTION_PRIORITY = [
+    "porte_empresa",
+    "experiencia_licitacoes",
+    "capacidade_funcionarios",
+    "atestados",
+]
+
+
+@router.get("/profile/completeness", response_model=ProfileCompletenessResponse)
+async def get_profile_completeness(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """STORY-260 AC3: Calculate profile completeness and suggest next question."""
+    user_id = user["id"]
+
+    try:
+        result = db.table("profiles").select("context_data").eq("id", user_id).single().execute()
+        context_data = (result.data or {}).get("context_data") or {}
+    except Exception as e:
+        logger.error(f"Failed to get profile for completeness: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao calcular completude do perfil")
+
+    total_fields = len(_PROFILE_FIELDS)
+    filled = 0
+    missing = []
+
+    for field_name in _PROFILE_FIELDS:
+        val = context_data.get(field_name)
+        if val is not None and val != "" and val != []:
+            filled += 1
+        else:
+            missing.append(field_name)
+
+    completeness_pct = round((filled / total_fields) * 100) if total_fields > 0 else 0
+    is_complete = filled == total_fields
+
+    # Determine next question based on priority order
+    next_question = None
+    if not is_complete:
+        for q in _QUESTION_PRIORITY:
+            if q in missing:
+                next_question = q
+                break
+        # Fallback to first missing field
+        if not next_question and missing:
+            next_question = missing[0]
+
+    return ProfileCompletenessResponse(
+        completeness_pct=completeness_pct,
+        total_fields=total_fields,
+        filled_fields=filled,
+        missing_fields=missing,
+        next_question=next_question,
+        is_complete=is_complete,
+    )
 
 
 @router.delete("/me", response_model=DeleteAccountResponse)
