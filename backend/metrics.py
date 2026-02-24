@@ -151,7 +151,7 @@ LLM_CALLS = _create_counter(
 SEARCHES = _create_counter(
     "smartlic_searches_total",
     "Total searches executed",
-    labelnames=["sector", "result_status"],
+    labelnames=["sector", "result_status", "search_mode"],
 )
 
 # CRIT-002 AC21: Search session status transitions
@@ -240,6 +240,24 @@ SEARCH_JOB_DURATION = _create_histogram(
     "smartlic_search_job_duration_seconds",
     "Async search job duration in ARQ Worker",
     buckets=[5, 10, 15, 30, 60, 120, 300],
+)
+
+# STORY-267 AC16: Term search quality metrics
+TERM_SEARCH_LLM_ACCEPTS = _create_counter(
+    "smartlic_term_search_llm_accepts_total",
+    "LLM accepts for term-based searches",
+    labelnames=["zone"],  # zero_match, arbiter, recovery
+)
+
+TERM_SEARCH_LLM_REJECTS = _create_counter(
+    "smartlic_term_search_llm_rejects_total",
+    "LLM rejects for term-based searches",
+    labelnames=["zone"],
+)
+
+TERM_SEARCH_SYNONYM_RECOVERIES = _create_counter(
+    "smartlic_term_search_synonym_recoveries_total",
+    "Synonym-based recoveries for term-based searches",
 )
 
 # ============================================================================

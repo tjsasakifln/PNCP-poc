@@ -2040,6 +2040,7 @@ def aplicar_todos_filtros(
     min_match_floor: Optional[int] = None,
     setor: Optional[str] = None,  # STORY-179 AC1: sector ID for max_contract_value check
     modo_busca: str = "publicacao",  # STORY-240 AC4: "publicacao" or "abertas"
+    custom_terms: Optional[List[str]] = None,  # STORY-267: user's free search terms
 ) -> Tuple[List[dict], Dict[str, int]]:
     """
     Aplica todos os filtros em sequência otimizada (fail-fast).
@@ -2383,7 +2384,14 @@ def aplicar_todos_filtros(
     # STORY-179 AC1.3: Camada 1A - Value Threshold (Anti-False Positive)
     # Apply sector-specific max_contract_value check BEFORE keyword matching
     # to reject obvious false positives (e.g., R$ 47.6M "melhorias urbanas" + uniformes)
-    if setor:
+    # STORY-267 AC12: Disable sector ceiling for custom_terms searches
+    _skip_sector_ceiling = False
+    if custom_terms:
+        from config import get_feature_flag as _gff_ac12
+        if _gff_ac12("TERM_SEARCH_FILTER_CONTEXT"):
+            _skip_sector_ceiling = True
+
+    if setor and not _skip_sector_ceiling:
         from sectors import get_sector
 
         try:
@@ -2494,7 +2502,9 @@ def aplicar_todos_filtros(
 
     stats["proximity_rejections"] = 0
 
-    if get_feature_flag("PROXIMITY_CONTEXT_ENABLED") and setor:
+    # STORY-267 AC13: Disable proximity filter for custom_terms searches
+    _skip_proximity = bool(custom_terms) and get_feature_flag("TERM_SEARCH_FILTER_CONTEXT")
+    if get_feature_flag("PROXIMITY_CONTEXT_ENABLED") and setor and not _skip_proximity:
         from sectors import SECTORS as _SECTORS_PROX
 
         # Build other_sectors_signatures: all sectors except current
@@ -2554,7 +2564,9 @@ def aplicar_todos_filtros(
     stats["co_occurrence_rejections"] = 0
     stats["co_occurrence_rejections_by_sector"] = {}
 
-    if get_feature_flag("CO_OCCURRENCE_RULES_ENABLED") and setor:
+    # STORY-267 AC13: Disable co-occurrence rules for custom_terms searches
+    _skip_co_occurrence = bool(custom_terms) and get_feature_flag("TERM_SEARCH_FILTER_CONTEXT")
+    if get_feature_flag("CO_OCCURRENCE_RULES_ENABLED") and setor and not _skip_co_occurrence:
         from sectors import get_sector as _get_sector_co
 
         try:
@@ -2615,6 +2627,12 @@ def aplicar_todos_filtros(
     stats["llm_zero_match_rejeitadas"] = 0
     stats["llm_zero_match_skipped_short"] = 0
 
+    # STORY-267 AC2: When custom_terms present + TERM_SEARCH_LLM_AWARE, use term-aware prompt
+    _use_term_prompt_zm = False
+    if custom_terms:
+        from config import get_feature_flag as _gff_ac2
+        _use_term_prompt_zm = _gff_ac2("TERM_SEARCH_LLM_AWARE")
+
     if LLM_ZERO_MATCH_ENABLED and setor:
         # Collect bids that were rejected by keyword gate (in resultado_valor but not in resultado_keyword)
         keyword_approved_ids = {id(lic) for lic in resultado_keyword}
@@ -2653,13 +2671,24 @@ def aplicar_todos_filtros(
                         val = 0.0
                 else:
                     val = float(val) if val else 0.0
-                result = _classify_zm(
-                    objeto=obj,
-                    valor=val,
-                    setor_name=setor_name_zm,
-                    prompt_level="zero_match",
-                    setor_id=setor,
-                )
+                # STORY-267 AC2: Use term-aware prompt when custom_terms present
+                if _use_term_prompt_zm and custom_terms:
+                    result = _classify_zm(
+                        objeto=obj,
+                        valor=val,
+                        setor_name=None,
+                        termos_busca=custom_terms,
+                        prompt_level="zero_match",
+                        setor_id=None,
+                    )
+                else:
+                    result = _classify_zm(
+                        objeto=obj,
+                        valor=val,
+                        setor_name=setor_name_zm,
+                        prompt_level="zero_match",
+                        setor_id=setor,
+                    )
                 return lic_item, result
 
             with ThreadPoolExecutor(max_workers=10) as executor:
@@ -2674,6 +2703,10 @@ def aplicar_todos_filtros(
                         is_relevant = llm_result.get("is_primary", False) if isinstance(llm_result, dict) else llm_result
                         if is_relevant:
                             stats["llm_zero_match_aprovadas"] += 1
+                            # STORY-267 AC16: Track term search metrics
+                            if custom_terms:
+                                from metrics import TERM_SEARCH_LLM_ACCEPTS
+                                TERM_SEARCH_LLM_ACCEPTS.labels(zone="zero_match").inc()
                             # AC8: Tag relevance source
                             lic_item["_relevance_source"] = "llm_zero_match"
                             lic_item["_term_density"] = 0.0
@@ -2693,6 +2726,10 @@ def aplicar_todos_filtros(
                             )
                         else:
                             stats["llm_zero_match_rejeitadas"] += 1
+                            # STORY-267 AC16: Track term search metrics
+                            if custom_terms:
+                                from metrics import TERM_SEARCH_LLM_REJECTS
+                                TERM_SEARCH_LLM_REJECTS.labels(zone="zero_match").inc()
                             # D-02 AC6: Store rejection reason for audit
                             if isinstance(llm_result, dict):
                                 lic_item["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
@@ -2928,13 +2965,19 @@ def aplicar_todos_filtros(
     stats["rejeitadas_llm_arbiter"] = 0
     stats["llm_arbiter_calls"] = 0
 
+    # STORY-267 AC3: When custom_terms present + TERM_SEARCH_LLM_AWARE, use term-aware prompt
+    _use_term_prompt_arbiter = False
+    if custom_terms:
+        from config import get_feature_flag as _gff_ac3
+        _use_term_prompt_arbiter = _gff_ac3("TERM_SEARCH_LLM_AWARE")
+
     if resultado_llm_candidates:
         from llm_arbiter import classify_contract_primary_match
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
         # CRIT-FLT-002: Resolve sector name ONCE before dispatching threads
         _arbiter_setor_name = None
-        if setor:
+        if setor and not _use_term_prompt_arbiter:
             from sectors import get_sector
             try:
                 _arbiter_setor_config = get_sector(setor)
@@ -2960,18 +3003,29 @@ def aplicar_todos_filtros(
             else:
                 valor = float(valor) if valor else 0.0
 
-            termos = None
-            if not _arbiter_setor_name:
-                termos = lic_item.get("_matched_terms", [])
+            # STORY-267 AC3: Use term-aware prompt when custom_terms present
+            if _use_term_prompt_arbiter and custom_terms:
+                llm_result = classify_contract_primary_match(
+                    objeto=objeto,
+                    valor=valor,
+                    setor_name=None,
+                    termos_busca=custom_terms,
+                    prompt_level=prompt_level,
+                    setor_id=None,
+                )
+            else:
+                termos = None
+                if not _arbiter_setor_name:
+                    termos = lic_item.get("_matched_terms", [])
 
-            llm_result = classify_contract_primary_match(
-                objeto=objeto,
-                valor=valor,
-                setor_name=_arbiter_setor_name,
-                termos_busca=termos,
-                prompt_level=prompt_level,
-                setor_id=setor if _arbiter_setor_name else None,
-            )
+                llm_result = classify_contract_primary_match(
+                    objeto=objeto,
+                    valor=valor,
+                    setor_name=_arbiter_setor_name,
+                    termos_busca=termos,
+                    prompt_level=prompt_level,
+                    setor_id=setor if _arbiter_setor_name else None,
+                )
             return lic_item, llm_result, valor
 
         # CRIT-FLT-002 AC1+AC5: Parallel execution with timing
@@ -3272,15 +3326,26 @@ def aplicar_todos_filtros(
             f"{stats['llm_zero_match_calls']} bids"
         )
 
-    # Only run recovery when we have a sector (synonym dictionaries are sector-specific)
-    if setor and not _skip_fluxo_2:
+    # STORY-267 AC4+AC7: Term-aware recovery for custom_terms searches
+    _use_term_prompt_recovery = False
+    _use_term_synonyms = False
+    if custom_terms:
+        from config import get_feature_flag as _gff_ac4
+        _use_term_prompt_recovery = _gff_ac4("TERM_SEARCH_LLM_AWARE")
+        _use_term_synonyms = _gff_ac4("TERM_SEARCH_SYNONYMS")
+
+    # Run recovery when we have a sector OR when we have custom_terms with term synonyms enabled
+    _run_fluxo_2 = (setor or (_use_term_synonyms and custom_terms)) and not _skip_fluxo_2
+    if _run_fluxo_2:
         from synonyms import find_synonym_matches, should_auto_approve_by_synonyms
+        if _use_term_synonyms and custom_terms:
+            from synonyms import find_term_synonym_matches
         from sectors import get_sector as _get_sector
 
         try:
-            setor_config = _get_sector(setor)
-            setor_keywords = setor_config.keywords
-            setor_name = setor_config.name
+            setor_config = _get_sector(setor) if setor else None
+            setor_keywords = setor_config.keywords if setor_config else set()
+            setor_name = setor_config.name if setor_config else None
 
             # Collect IDs of already-approved contracts to avoid duplicates
             aprovadas_ids = {id(lic) for lic in aprovadas}
@@ -3309,25 +3374,39 @@ def aplicar_todos_filtros(
                 if not objeto:
                     continue
 
-                # Camada 2B: Check synonym matches
-                synonym_matches = find_synonym_matches(
-                    objeto=objeto,
-                    setor_keywords=setor_keywords,
-                    setor_id=setor,
-                )
+                # STORY-267 AC7: Use term synonym matching when custom_terms present
+                if _use_term_synonyms and custom_terms:
+                    synonym_matches = find_term_synonym_matches(
+                        custom_terms=custom_terms,
+                        objeto=objeto,
+                    )
+                elif setor:
+                    # Camada 2B: Check synonym matches (original sector-based)
+                    synonym_matches = find_synonym_matches(
+                        objeto=objeto,
+                        setor_keywords=setor_keywords,
+                        setor_id=setor,
+                    )
+                else:
+                    synonym_matches = []
 
                 if not synonym_matches:
                     continue  # No synonyms found, skip
 
                 # Check if auto-approve threshold is met (2+ synonyms)
-                should_approve, matches = should_auto_approve_by_synonyms(
-                    objeto=objeto,
-                    setor_keywords=setor_keywords,
-                    setor_id=setor,
-                    min_synonyms=2,
-                )
+                if _use_term_synonyms and custom_terms:
+                    # For term searches, auto-approve with 2+ matches directly
+                    should_approve_flag = len(synonym_matches) >= 2
+                    matches = synonym_matches
+                else:
+                    should_approve_flag, matches = should_auto_approve_by_synonyms(
+                        objeto=objeto,
+                        setor_keywords=setor_keywords,
+                        setor_id=setor,
+                        min_synonyms=2,
+                    )
 
-                if should_approve:
+                if should_approve_flag:
                     # High confidence: 2+ distinct synonym matches → auto-approve
                     stats["aprovadas_synonym_match"] += 1
                     stats["synonyms_auto_approved"] += 1  # CRIT-FLT-006 AC3
@@ -3336,6 +3415,10 @@ def aplicar_todos_filtros(
                         f"{canon}≈{syn}" for canon, syn in matches
                     ]
                     recuperadas.append(lic)
+                    # STORY-267 AC16: Track term search synonym recoveries
+                    if custom_terms:
+                        from metrics import TERM_SEARCH_SYNONYM_RECOVERIES
+                        TERM_SEARCH_SYNONYM_RECOVERIES.inc()
                     logger.debug(
                         f"  Recuperada por sinônimos (auto): {matches} "
                         f"objeto={objeto[:80]}"
@@ -3368,13 +3451,23 @@ def aplicar_todos_filtros(
                     )
 
                     stats["llm_arbiter_calls_fn_flow"] += 1
-                    should_recover = classify_contract_recovery(
-                        objeto=objeto,
-                        valor=valor,
-                        rejection_reason="keyword_no_match + synonym_near_miss",
-                        setor_name=setor_name,
-                        near_miss_info=near_miss_info,
-                    )
+                    # STORY-267 AC4: Use term-aware recovery when custom_terms present
+                    if _use_term_prompt_recovery and custom_terms:
+                        should_recover = classify_contract_recovery(
+                            objeto=objeto,
+                            valor=valor,
+                            rejection_reason="keyword_no_match + synonym_near_miss",
+                            termos_busca=custom_terms,
+                            near_miss_info=near_miss_info,
+                        )
+                    else:
+                        should_recover = classify_contract_recovery(
+                            objeto=objeto,
+                            valor=valor,
+                            rejection_reason="keyword_no_match + synonym_near_miss",
+                            setor_name=setor_name,
+                            near_miss_info=near_miss_info,
+                        )
 
                     if should_recover:
                         stats["recuperadas_llm_fn"] += 1
@@ -3415,11 +3508,20 @@ def aplicar_todos_filtros(
                     if not objeto:
                         continue
 
-                    synonym_matches = find_synonym_matches(
-                        objeto=objeto,
-                        setor_keywords=setor_keywords,
-                        setor_id=setor,
-                    )
+                    # STORY-267: Use term synonyms in relaxation when custom_terms present
+                    if _use_term_synonyms and custom_terms:
+                        synonym_matches = find_term_synonym_matches(
+                            custom_terms=custom_terms,
+                            objeto=objeto,
+                        )
+                    elif setor:
+                        synonym_matches = find_synonym_matches(
+                            objeto=objeto,
+                            setor_keywords=setor_keywords,
+                            setor_id=setor,
+                        )
+                    else:
+                        synonym_matches = []
 
                     if synonym_matches:
                         stats["recuperadas_zero_results"] += 1

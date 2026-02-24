@@ -417,7 +417,24 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "CACHE_REFRESH_ENABLED": ("CACHE_REFRESH_ENABLED", "false"),
     "SEARCH_ASYNC_ENABLED": ("SEARCH_ASYNC_ENABLED", "false"),
     "BID_ANALYSIS_ENABLED": ("BID_ANALYSIS_ENABLED", "true"),
+    # STORY-267: Term search quality parity flags (gradual opt-in)
+    "TERM_SEARCH_LLM_AWARE": ("TERM_SEARCH_LLM_AWARE", "false"),
+    "TERM_SEARCH_SYNONYMS": ("TERM_SEARCH_SYNONYMS", "false"),
+    "TERM_SEARCH_VIABILITY_GENERIC": ("TERM_SEARCH_VIABILITY_GENERIC", "false"),
+    "TERM_SEARCH_FILTER_CONTEXT": ("TERM_SEARCH_FILTER_CONTEXT", "false"),
 }
+
+# ============================================
+# STORY-267: Term Search Quality Parity
+# ============================================
+TERM_SEARCH_LLM_AWARE: bool = str_to_bool(os.getenv("TERM_SEARCH_LLM_AWARE", "false"))
+TERM_SEARCH_SYNONYMS: bool = str_to_bool(os.getenv("TERM_SEARCH_SYNONYMS", "false"))
+TERM_SEARCH_VIABILITY_GENERIC: bool = str_to_bool(os.getenv("TERM_SEARCH_VIABILITY_GENERIC", "false"))
+TERM_SEARCH_FILTER_CONTEXT: bool = str_to_bool(os.getenv("TERM_SEARCH_FILTER_CONTEXT", "false"))
+
+# Generic value range for term-based searches without sector context
+TERM_SEARCH_VALUE_RANGE_MIN: float = float(os.getenv("TERM_SEARCH_VALUE_RANGE_MIN", "10000"))
+TERM_SEARCH_VALUE_RANGE_MAX: float = float(os.getenv("TERM_SEARCH_VALUE_RANGE_MAX", "50000000"))
 
 # ============================================
 # CRIT-032: Periodic Cache Refresh (ARQ Cron)

@@ -1093,6 +1093,11 @@ class BuscaResponse(BaseModel):
         default=None,
         description="CRIT-005 AC13: Source of the summary — 'ai' (GPT-generated), 'fallback' (heuristic), 'processing' (in progress)"
     )
+    # STORY-267 AC15: Inform frontend when min_match_floor was relaxed
+    match_relaxed: bool = Field(
+        default=False,
+        description="STORY-267 AC15: True when min_match_floor was relaxed, enabling 'expanded matching' badge in frontend"
+    )
 
     class Config:
         """Pydantic configuration."""

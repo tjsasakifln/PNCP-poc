@@ -213,6 +213,32 @@ Objeto: {objeto_truncated}
 Este contrato é PRIMARIAMENTE sobre {setor_name}?{suffix}"""
 
 
+def _build_term_search_prompt(
+    termos: list[str],
+    objeto_truncated: str,
+    valor: float,
+    structured: bool = False,
+) -> str:
+    """STORY-267 AC1: Build term-aware prompt for custom search terms.
+
+    Focuses exclusively on user's search terms — does NOT mention any sector name.
+    Asks: "Is this contract relevant for someone searching these terms?"
+    """
+    termos_display = ", ".join(termos)
+    valor_display = f"R$ {valor:,.2f}" if valor > 0 else "Não informado"
+    suffix = _STRUCTURED_JSON_INSTRUCTION if structured else "\nResponda APENAS: SIM ou NAO"
+
+    return f"""Você classifica licitações públicas. O usuário buscou os seguintes termos:
+Termos buscados: {termos_display}
+
+CONTRATO:
+Valor: {valor_display}
+Objeto: {objeto_truncated}
+
+Este contrato é RELEVANTE para alguém que busca "{termos_display}"?
+Considere: o objeto deve ser PRIMARIAMENTE sobre os termos buscados, não apenas mencioná-los de forma tangencial.{suffix}"""
+
+
 def _build_zero_match_prompt(
     setor_id: Optional[str],
     setor_name: str,

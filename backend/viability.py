@@ -250,6 +250,7 @@ def calculate_viability(
     ufs_busca: set[str],
     value_range: tuple[float, float] | None = None,
     user_profile: dict | None = None,
+    custom_terms: list[str] | None = None,
 ) -> ViabilityAssessment:
     """Calculate viability assessment for a single accepted bid.
 
@@ -275,6 +276,17 @@ def calculate_viability(
             vr = value_range or DEFAULT_VALUE_RANGE
     else:
         vr = value_range or DEFAULT_VALUE_RANGE
+
+    # STORY-267 AC9: For term-based searches without user faixa_valor and without
+    # sector range, use broad generic range to avoid wrong sector-based scoring
+    if custom_terms and not _using_profile_value_range and value_range is None:
+        from config import get_feature_flag, TERM_SEARCH_VALUE_RANGE_MIN, TERM_SEARCH_VALUE_RANGE_MAX
+        if get_feature_flag("TERM_SEARCH_VIABILITY_GENERIC"):
+            vr = (TERM_SEARCH_VALUE_RANGE_MIN, TERM_SEARCH_VALUE_RANGE_MAX)
+            logger.debug(
+                f"STORY-267 AC9: Using generic value range R${TERM_SEARCH_VALUE_RANGE_MIN:,.0f}"
+                f"-R${TERM_SEARCH_VALUE_RANGE_MAX:,.0f} for term search"
+            )
 
     # Get weights from config
     w_mod = getattr(config, "VIABILITY_WEIGHT_MODALITY", 0.30)
@@ -356,6 +368,7 @@ def assess_batch(
     ufs_busca: set[str],
     value_range: tuple[float, float] | None = None,
     user_profile: dict | None = None,
+    custom_terms: list[str] | None = None,
 ) -> None:
     """Calculate viability for a batch of bids, enriching them in-place.
 
@@ -368,7 +381,7 @@ def assess_batch(
         user_profile: STORY-260: User profile for personalized scoring (porte, faixa_valor, etc.).
     """
     for bid in bids:
-        assessment = calculate_viability(bid, ufs_busca, value_range, user_profile=user_profile)
+        assessment = calculate_viability(bid, ufs_busca, value_range, user_profile=user_profile, custom_terms=custom_terms)
         bid["_viability_score"] = assessment.viability_score
         bid["_viability_level"] = assessment.viability_level
         bid["_viability_factors"] = assessment.factors.model_dump()

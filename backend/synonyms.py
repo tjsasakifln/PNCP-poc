@@ -497,6 +497,90 @@ def find_synonym_matches(
     return near_misses
 
 
+def find_term_synonym_matches(
+    custom_terms: List[str],
+    objeto: str,
+) -> List[Tuple[str, str]]:
+    """STORY-267 AC6: Find synonym matches for custom search terms across ALL sectors.
+
+    Unlike find_synonym_matches() which is sector-specific, this searches
+    synonym dictionaries of ALL 15 sectors for matches against user's custom terms.
+    Supports reverse matching: if user searched "guarda-po" and "jaleco" is a
+    synonym of "guarda-po" in some sector, find "jaleco" in the objeto.
+
+    Args:
+        custom_terms: User's custom search terms (e.g., ["guarda-po", "avental"])
+        objeto: Procurement object description
+
+    Returns:
+        List of (custom_term, matched_synonym) tuples
+    """
+    objeto_norm = normalize_text(objeto)
+    near_misses: List[Tuple[str, str]] = []
+    matched_synonyms: Set[str] = set()
+
+    for term in custom_terms:
+        term_norm = normalize_text(term)
+
+        # Skip if term itself already matches in objeto (not a near-miss)
+        if term_norm in objeto_norm:
+            continue
+
+        # Search ALL sector synonym dicts for this term
+        for _setor_id, synonyms_dict in SECTOR_SYNONYMS.items():
+            # Case 1: term is a canonical keyword → check its synonyms in objeto
+            if term in synonyms_dict or term_norm in {normalize_text(k) for k in synonyms_dict}:
+                # Find the matching canonical key
+                canonical_key = None
+                for k in synonyms_dict:
+                    if normalize_text(k) == term_norm:
+                        canonical_key = k
+                        break
+                if canonical_key:
+                    for synonym in sorted(synonyms_dict[canonical_key], key=len, reverse=True):
+                        syn_norm = normalize_text(synonym)
+                        if syn_norm in matched_synonyms:
+                            continue
+                        if syn_norm in objeto_norm:
+                            near_misses.append((term, synonym))
+                            matched_synonyms.add(syn_norm)
+
+            # Case 2: term is a synonym → check if canonical or other synonyms match in objeto
+            for canonical_keyword, syns in synonyms_dict.items():
+                syns_normalized = {normalize_text(s) for s in syns}
+                if term_norm in syns_normalized:
+                    # Check if canonical keyword matches
+                    canon_norm = normalize_text(canonical_keyword)
+                    if canon_norm not in matched_synonyms and canon_norm in objeto_norm:
+                        near_misses.append((term, canonical_keyword))
+                        matched_synonyms.add(canon_norm)
+                    # Check if other synonyms match
+                    for other_syn in sorted(syns, key=len, reverse=True):
+                        other_norm = normalize_text(other_syn)
+                        if other_norm == term_norm:
+                            continue  # Skip self
+                        if other_norm in matched_synonyms:
+                            continue
+                        if other_norm in objeto_norm:
+                            near_misses.append((term, other_syn))
+                            matched_synonyms.add(other_norm)
+
+    if near_misses:
+        logger.info(
+            "term_synonym_matches_audit",
+            extra={
+                "term_synonym_matches": [
+                    f"{term}→{syn}" for term, syn in near_misses
+                ],
+                "custom_terms": custom_terms,
+                "distinct_count": len(near_misses),
+                "objeto_preview": objeto[:120],
+            },
+        )
+
+    return near_misses
+
+
 def count_synonym_matches(
     objeto: str,
     setor_keywords: Set[str],

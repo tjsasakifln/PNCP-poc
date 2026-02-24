@@ -533,9 +533,11 @@ class SearchPipeline:
                 else "empty" if not ctx.is_partial
                 else "partial"
             )
+            _search_mode = "terms" if ctx.custom_terms else "sector"
             SEARCHES.labels(
                 sector=ctx.request.setor_id or "unknown",
                 result_status=result_status,
+                search_mode=_search_mode,
             ).inc()
             # F-02 AC12: Record final status on root span
             root_span.set_attribute("search.result_status", result_status)
@@ -828,6 +830,7 @@ class SearchPipeline:
             logger.debug(f"Using sector keywords ({len(ctx.active_keywords)} terms)")
 
         # Determine exclusions
+        # STORY-267 AC11: Partial exclusions for custom_terms + vestuario
         if ctx.request.exclusion_terms:
             ctx.active_exclusions = set(ctx.request.exclusion_terms)
             ctx.active_context_required = None
@@ -838,7 +841,28 @@ class SearchPipeline:
             ctx.active_exclusions = ctx.sector.exclusions
             ctx.active_context_required = ctx.sector.context_required_keywords
         else:
-            ctx.active_exclusions = set()
+            # STORY-267 AC11: custom_terms + vestuario — apply PARTIAL exclusions
+            # Remove exclusions that contain any of the user's custom terms (avoid self-exclusion)
+            # Keep exclusions unrelated to custom terms (reduce noise)
+            from config import get_feature_flag
+            if get_feature_flag("TERM_SEARCH_FILTER_CONTEXT"):
+                all_exclusions = ctx.sector.exclusions
+                terms_lower = {t.lower() for t in ctx.custom_terms}
+                partial_exclusions = set()
+                for exc in all_exclusions:
+                    exc_lower = exc.lower()
+                    # Keep exclusion only if it does NOT contain any custom term
+                    if not any(term in exc_lower for term in terms_lower):
+                        partial_exclusions.add(exc)
+                removed_count = len(all_exclusions) - len(partial_exclusions)
+                if removed_count > 0:
+                    logger.debug(
+                        f"STORY-267 AC11: Removed {removed_count} self-exclusions "
+                        f"for custom terms {ctx.custom_terms}"
+                    )
+                ctx.active_exclusions = partial_exclusions
+            else:
+                ctx.active_exclusions = set()
             ctx.active_context_required = None
 
         # STORY-260 AC5: Load user profile for LLM analysis
@@ -1613,6 +1637,7 @@ class SearchPipeline:
             min_match_floor=ctx.min_match_floor_value,
             setor=ctx.request.setor_id,  # CRIT-019 AC1: pass sector to enable 6 classification paths
             modo_busca=request.modo_busca or "publicacao",
+            custom_terms=ctx.custom_terms or None,  # STORY-267: pass custom terms for quality parity
         )
 
         # Min-match relaxation
@@ -1646,6 +1671,7 @@ class SearchPipeline:
                 min_match_floor=None,
                 setor=ctx.request.setor_id,  # CRIT-019 AC2: pass sector in relaxed retry too
                 modo_busca=request.modo_busca or "publicacao",
+                custom_terms=ctx.custom_terms or None,  # STORY-267: pass custom terms in relaxed retry too
             )
             ctx.hidden_by_min_match = 0
 
@@ -1719,7 +1745,7 @@ class SearchPipeline:
             if ctx.sector and hasattr(ctx.sector, "viability_value_range"):
                 vr = ctx.sector.viability_value_range
             ufs_busca = set(ctx.request.ufs) if ctx.request.ufs else set()
-            viability_assess_batch(ctx.licitacoes_filtradas, ufs_busca, vr, user_profile=ctx.user_profile)
+            viability_assess_batch(ctx.licitacoes_filtradas, ufs_busca, vr, user_profile=ctx.user_profile, custom_terms=ctx.custom_terms or None)
             # CRIT-FLT-003 AC4: Log zero-value proportion
             total = len(ctx.licitacoes_filtradas)
             zero_count = sum(
@@ -1881,6 +1907,7 @@ class SearchPipeline:
                 source_stats=ctx.source_stats_data,
                 hidden_by_min_match=ctx.hidden_by_min_match if ctx.custom_terms else None,
                 filter_relaxed=ctx.filter_relaxed if ctx.custom_terms else None,
+                match_relaxed=ctx.filter_relaxed,  # STORY-267 AC15
                 is_partial=ctx.is_partial,
                 data_sources=ctx.data_sources,
                 degradation_reason=ctx.degradation_reason,
@@ -2108,6 +2135,7 @@ class SearchPipeline:
             source_stats=ctx.source_stats_data,
             hidden_by_min_match=ctx.hidden_by_min_match if ctx.custom_terms else None,
             filter_relaxed=ctx.filter_relaxed if ctx.custom_terms else None,
+            match_relaxed=ctx.filter_relaxed,  # STORY-267 AC15
             ultima_atualizacao=datetime.now(_tz.utc).isoformat(),
             is_partial=ctx.is_partial,
             data_sources=ctx.data_sources,

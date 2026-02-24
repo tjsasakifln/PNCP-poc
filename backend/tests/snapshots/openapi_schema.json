@@ -847,6 +847,12 @@
             "description": "LLM summary status: 'ready' (inline), 'processing' (background job running), None (legacy)",
             "title": "Llm Status"
           },
+          "match_relaxed": {
+            "default": false,
+            "description": "STORY-267 AC15: True when min_match_floor was relaxed, enabling 'expanded matching' badge in frontend",
+            "title": "Match Relaxed",
+            "type": "boolean"
+          },
           "quota_remaining": {
             "description": "Monthly searches remaining",
             "minimum": 0.0,
@@ -4490,6 +4496,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [

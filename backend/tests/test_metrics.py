@@ -246,7 +246,7 @@ class TestMetricsIntegration:
         m.API_ERRORS.labels(source="pncp", error_type="timeout").inc()
         m.FILTER_DECISIONS.labels(stage="uf", decision="reject").inc()
         m.LLM_CALLS.labels(model="integ", decision="SIM", zone="standard").inc()
-        m.SEARCHES.labels(sector="integ", result_status="success").inc()
+        m.SEARCHES.labels(sector="integ", result_status="success", search_mode="sector").inc()
         m.CIRCUIT_BREAKER_STATE.labels(source="pncp").set(0)
         m.ACTIVE_SEARCHES.inc()
 
@@ -275,10 +275,10 @@ class TestMetricsIntegration:
         m.ACTIVE_SEARCHES.dec()
 
     def test_searches_counter_labels(self):
-        m.SEARCHES.labels(sector="facilities", result_status="success").inc()
-        m.SEARCHES.labels(sector="facilities", result_status="empty").inc()
-        m.SEARCHES.labels(sector="facilities", result_status="partial").inc()
-        m.SEARCHES.labels(sector="facilities", result_status="error").inc()
+        m.SEARCHES.labels(sector="facilities", result_status="success", search_mode="sector").inc()
+        m.SEARCHES.labels(sector="facilities", result_status="empty", search_mode="sector").inc()
+        m.SEARCHES.labels(sector="facilities", result_status="partial", search_mode="terms").inc()
+        m.SEARCHES.labels(sector="facilities", result_status="error", search_mode="sector").inc()
 
     def test_fetch_duration_per_source(self):
         """FETCH_DURATION tracks per-source latency."""
