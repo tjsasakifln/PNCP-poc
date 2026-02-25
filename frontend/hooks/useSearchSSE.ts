@@ -304,6 +304,7 @@ export function useSearchSSE({
   useEffect(() => {
     if (!enabled || !searchId) {
       cleanup();
+      setSseDisconnected(false);
       return;
     }
 
@@ -340,35 +341,44 @@ export function useSearchSSE({
 
     const es = connectSSE(url);
 
-    // CRIT-006 AC12: Coordinated retry -- single retry for the consolidated connection
-    es.onerror = () => {
-      console.warn(`SSE connection failed (attempt ${retryAttemptRef.current})`);
-      cleanup();
+    // GTM-STAB-006 AC5: Exponential backoff reconnection (3s/6s/12s, max 3 attempts)
+    const SSE_RETRY_DELAYS = [3000, 6000, 12000];
+    const SSE_MAX_RETRIES = 3;
 
-      if (retryAttemptRef.current < 1 && searchId) {
-        retryAttemptRef.current += 1;
-        setTimeout(() => {
-          if (!eventSourceRef.current && searchId) {
-            let retryUrl = `/api/buscar-progress?search_id=${encodeURIComponent(searchId)}`;
-            if (authToken) {
-              retryUrl += `&token=${encodeURIComponent(authToken)}`;
-            }
-            const retryEs = connectSSE(retryUrl);
-            retryEs.onerror = () => {
-              console.warn('SSE retry failed -- falling back to simulated progress');
-              retryEs.close();
-              eventSourceRef.current = null;
-              setSseAvailable(false);
-              setSseDisconnected(true);
-              onErrorRef.current?.();
-            };
-          }
-        }, 2000);
-      } else {
+    const scheduleRetry = () => {
+      if (retryAttemptRef.current >= SSE_MAX_RETRIES || !searchId) {
+        console.warn(`SSE all ${SSE_MAX_RETRIES} retries exhausted — falling back to simulated progress`);
         setSseAvailable(false);
         setSseDisconnected(true);
         onErrorRef.current?.();
+        return;
       }
+
+      const delay = SSE_RETRY_DELAYS[retryAttemptRef.current] ?? 12000;
+      retryAttemptRef.current += 1;
+      console.info(`SSE reconnecting in ${delay}ms (attempt ${retryAttemptRef.current}/${SSE_MAX_RETRIES})`);
+
+      setTimeout(() => {
+        if (!eventSourceRef.current && searchId) {
+          let retryUrl = `/api/buscar-progress?search_id=${encodeURIComponent(searchId)}`;
+          if (authToken) {
+            retryUrl += `&token=${encodeURIComponent(authToken)}`;
+          }
+          const retryEs = connectSSE(retryUrl);
+          retryEs.onerror = () => {
+            console.warn(`SSE retry ${retryAttemptRef.current}/${SSE_MAX_RETRIES} failed`);
+            retryEs.close();
+            eventSourceRef.current = null;
+            scheduleRetry(); // Recursive: schedule next retry with backoff
+          };
+        }
+      }, delay);
+    };
+
+    es.onerror = () => {
+      console.warn(`SSE initial connection failed`);
+      cleanup();
+      scheduleRetry();
     };
 
     return () => {

@@ -1303,19 +1303,28 @@ class SearchPipeline:
                 # B-01: Background revalidation
                 await _maybe_trigger_revalidation(ctx.user["id"], request, stale_cache)
             else:
-                # AC3: No cache — emit error and raise 504
-                if ctx.tracker:
-                    await ctx.tracker.emit_error("Busca expirou por tempo")
-                    from progress import remove_tracker
-                    await remove_tracker(ctx.request.search_id)
-                raise HTTPException(
-                    status_code=504,
-                    detail=(
-                        f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos "
-                        f"e não há resultados em cache disponíveis. "
-                        f"Tente com menos estados ou um período menor."
-                    ),
+                # GTM-STAB-004 AC5+AC6: No cache — return empty with degradation guidance
+                # instead of HTTP 504. Never 5xx when we can degrade gracefully.
+                logger.warning(
+                    f"No stale cache available after timeout ({fetch_timeout}s) — "
+                    f"returning empty results with guidance"
                 )
+                if ctx.tracker:
+                    await ctx.tracker.emit_degraded(
+                        "timeout_no_cache",
+                        {"timeout_s": fetch_timeout, "cache_available": False},
+                    )
+                ctx.licitacoes_raw = []
+                ctx.is_partial = True
+                ctx.response_state = "empty_failure"
+                ctx.degradation_guidance = (
+                    f"A busca excedeu o tempo limite de {fetch_timeout // 60} minutos "
+                    f"e não há resultados em cache disponíveis. "
+                    f"Tente com menos estados ou um período menor."
+                )
+                ctx.degradation_reason = f"Pipeline timeout after {fetch_timeout}s, no cache"
+                ctx.data_sources = []
+                ctx.source_stats_data = []
         except Exception as e:
             # CRIT-002 AC13: Update session on unexpected error
             if ctx.session_id:
