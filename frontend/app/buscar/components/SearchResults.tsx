@@ -21,6 +21,7 @@ import { LlmSourceBadge } from "./LlmSourceBadge";
 import { ErrorDetail } from "./ErrorDetail";
 import type { SearchError } from "../hooks/useSearch";
 import { ZeroResultsSuggestions } from "./ZeroResultsSuggestions";
+import { FilterRelaxedBanner } from "./FilterRelaxedBanner";
 // GTM-UX-001: PartialTimeoutBanner replaced by DataQualityBanner
 
 export interface SearchResultsProps {
@@ -440,7 +441,7 @@ export default function SearchResults({
         </>
       )}
 
-      {/* GTM-UX-002 AC10-12: Zero results with actionable suggestions — legitimate zero results (not caused by API failure) */}
+      {/* GTM-UX-002 AC10-12 + STAB-005 AC2: Zero results with actionable suggestions — legitimate zero results (not caused by API failure) */}
       {!loading && result && !result.is_partial && result.response_state !== "empty_failure" && result.resumo.total_oportunidades === 0 && (
         <ZeroResultsSuggestions
           sectorName={sectorName}
@@ -451,6 +452,17 @@ export default function SearchResults({
           onChangeSector={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           nearbyResultsCount={nearbyResultsCount}
           onViewNearbyResults={onViewNearbyResults}
+          totalFromSources={result.total_raw}
+          filterStats={result.filter_stats}
+        />
+      )}
+
+      {/* STAB-005 AC4: Filter relaxation banner — shown when filter was relaxed and we have results */}
+      {!loading && result && result.filter_relaxed && result.resumo.total_oportunidades > 0 && (
+        <FilterRelaxedBanner
+          relaxationLevel={result.hidden_by_min_match != null && result.hidden_by_min_match > 0 ? "min_match_lowered" : undefined}
+          originalCount={0}
+          relaxedCount={result.resumo.total_oportunidades}
         />
       )}
 
