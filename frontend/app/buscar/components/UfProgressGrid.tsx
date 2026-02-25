@@ -22,6 +22,35 @@ interface StatusConfig {
   label: (status: UfStatus) => string;
 }
 
+// STAB-005 AC1: Config for success with results (count > 0)
+const successWithResultsConfig: StatusConfig = {
+  bg: "bg-emerald-50 dark:bg-emerald-900/20",
+  text: "text-emerald-700 dark:text-emerald-400",
+  border: "border-emerald-200 dark:border-emerald-700/40",
+  icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  ),
+  label: (status: UfStatus) => {
+    const count = status.count || 0;
+    return count === 1 ? "1 oportunidade" : `${count} oportunidades`;
+  },
+};
+
+// STAB-005 AC1: Config for success with 0 results — distinct amber/yellow state
+const successZeroConfig: StatusConfig = {
+  bg: "bg-amber-50 dark:bg-amber-900/20",
+  text: "text-amber-600 dark:text-amber-400",
+  border: "border-amber-200 dark:border-amber-700/40",
+  icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+    </svg>
+  ),
+  label: () => "Sem oportunidades",
+};
+
 const statusConfigs: Record<UfStatusType, StatusConfig> = {
   pending: {
     bg: "bg-gray-50 dark:bg-gray-900/30",
@@ -47,31 +76,18 @@ const statusConfigs: Record<UfStatusType, StatusConfig> = {
     label: () => "Consultando...",
   },
   retrying: {
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-    text: "text-amber-600 dark:text-amber-400",
-    border: "border-amber-200 dark:border-amber-700/40",
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    text: "text-blue-600 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-700/40",
     icon: (
       <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
       </svg>
     ),
-    label: (status: UfStatus) => status.attempt ? `Tentativa ${status.attempt}...` : "Tentando novamente...",
+    label: (status: UfStatus) => status.attempt ? `Tentativa ${status.attempt}...` : "Retentando...",
   },
-  success: {
-    bg: "bg-emerald-50 dark:bg-emerald-900/20",
-    text: "text-emerald-700 dark:text-emerald-400",
-    border: "border-emerald-200 dark:border-emerald-700/40",
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    ),
-    label: (status: UfStatus) => {
-      const count = status.count || 0;
-      return count === 1 ? "1 oportunidade" : `${count} oportunidades`;
-    },
-  },
+  success: successWithResultsConfig,
   failed: {
     bg: "bg-red-50 dark:bg-red-900/20",
     text: "text-red-400 dark:text-red-500",
@@ -130,7 +146,11 @@ export function UfProgressGrid({ ufStatuses, totalFound }: UfProgressGridProps) 
         aria-atomic="false"
       >
         {ufArray.map(([uf, status]) => {
-          const config = statusConfigs[status.status] ?? statusConfigs.pending;
+          // STAB-005 AC1: success + count=0 → distinct amber state; success + count>0 → green
+          const isSuccessZero = status.status === "success" && (status.count ?? 0) === 0;
+          const config = isSuccessZero
+            ? successZeroConfig
+            : (statusConfigs[status.status] ?? statusConfigs.pending);
 
           return (
             <div

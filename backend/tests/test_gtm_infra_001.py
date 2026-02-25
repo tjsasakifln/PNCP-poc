@@ -252,13 +252,13 @@ class TestGunicornTimeout:
     """T4: Gunicorn timeout configured at 180s in start.sh."""
 
     def test_start_sh_timeout_is_180(self):
-        """start.sh must set Gunicorn timeout default to 180s (was 900s)."""
+        """start.sh must set Gunicorn timeout default to 120s (STAB-003: aligned with Railway's ~120s hard cutoff)."""
         start_sh_path = Path(__file__).parent.parent / "start.sh"
         content = start_sh_path.read_text(encoding="utf-8")
 
-        # Check the --timeout line uses 180 as default
-        assert "GUNICORN_TIMEOUT:-180" in content, (
-            f"start.sh must use GUNICORN_TIMEOUT:-180 (was 900). "
+        # Check the --timeout line uses 120 as default
+        assert "GUNICORN_TIMEOUT:-120" in content, (
+            f"start.sh must use GUNICORN_TIMEOUT:-120 (STAB-003: aligned with Railway's ~120s hard cutoff). "
             f"GTM-INFRA-001 AC7/AC8."
         )
 
@@ -268,15 +268,15 @@ class TestGunicornTimeout:
         )
 
     def test_start_sh_echo_line_shows_180(self):
-        """The echo/log line in start.sh must also show 180 default."""
+        """The echo/log line in start.sh must show 120 default (STAB-003: aligned with Railway's ~120s hard cutoff)."""
         start_sh_path = Path(__file__).parent.parent / "start.sh"
         content = start_sh_path.read_text(encoding="utf-8")
 
         # The echo line that logs the timeout
         echo_lines = [line for line in content.split("\n") if "timeout=" in line and "echo" in line]
         assert echo_lines, "No echo line with timeout found in start.sh"
-        assert "180" in echo_lines[0], (
-            f"Echo line should show 180s default: {echo_lines[0]}"
+        assert "120" in echo_lines[0], (
+            f"Echo line should show 120s default: {echo_lines[0]}"
         )
 
     def test_railway_timeout_documented_in_claude_md(self):

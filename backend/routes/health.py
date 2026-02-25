@@ -15,6 +15,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["health"])
 
 
+@router.get("/health")
+async def system_health():
+    """GTM-STAB-008 AC3: Comprehensive system health endpoint.
+
+    Returns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)
+    and overall health classification (healthy / degraded / unhealthy).
+    """
+    from health import get_system_health
+    return await get_system_health()
+
+
 @router.get("/health/cache")
 async def cache_health():
     """AC7: Health check for all cache levels.

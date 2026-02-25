@@ -96,11 +96,12 @@ class TestQuotaLimitReached:
 
             assert response.status_code == 403
             detail = response.json()["detail"]
-            # CRIT-009: detail is now a structured dict
+            # STORY-265 AC8: require_active_plan (called before try/except) returns
+            # {"error": "plan_expired", "message": ..., "upgrade_url": "/planos"}
             if isinstance(detail, dict):
-                assert detail.get("error_code") == "QUOTA_EXCEEDED"
-                assert "1000 buscas" in detail["detail"]
-                assert "15 dias" in detail["detail"]
+                assert detail.get("error") == "plan_expired"
+                assert "1000 buscas" in detail["message"]
+                assert "15 dias" in detail["message"]
             else:
                 # Fallback for non-structured (should not happen, but defensive)
                 assert "1000 buscas" in detail
@@ -117,7 +118,7 @@ class TestQuotaLimitReached:
         """Should return 403 with structured error when FREE trial expires.
 
         The error_message from QuotaInfo is passed through to the response.
-        CRIT-009 wraps it with error_code=QUOTA_EXCEEDED.
+        STORY-265 AC8: require_active_plan returns {"error": "trial_expired", "message": ...}.
         """
         cleanup = setup_auth_override("user-trial-expired")
         try:
@@ -148,10 +149,10 @@ class TestQuotaLimitReached:
 
             assert response.status_code == 403
             detail = response.json()["detail"]
-            # CRIT-009: detail is now a structured dict
+            # STORY-265 AC8: require_active_plan returns {"error": "trial_expired", "message": ...}
             if isinstance(detail, dict):
-                assert detail.get("error_code") == "QUOTA_EXCEEDED"
-                assert "trial expirou" in detail["detail"]
+                assert detail.get("error") == "trial_expired"
+                assert "trial expirou" in detail["message"].lower() or "expirou" in detail["message"].lower()
             else:
                 # Fallback for non-structured
                 assert "trial expirou" in detail

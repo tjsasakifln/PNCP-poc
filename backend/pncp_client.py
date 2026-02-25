@@ -2,10 +2,10 @@
 
 # TIMEOUT CHAIN (strict decreasing, validated at startup):
 # FE Proxy(480s) > Pipeline(360s) > Consolidation(300s) > PerSource(180s)
-#   > PerUF(90s) > PerModality(60s) > HTTP(30s)
+#   > PerUF(30s) > PerModality(20s) > HTTP(10s)
 # Invariants:
 #   - Each level must be strictly greater than the next
-#   - PerUF - PerModality >= 30s (margin for parallel modality completion)
+#   - PerUF - PerModality >= 10s (margin for parallel modality completion)
 #   - PerSource > 2 * PerUF (margin for multi-UF batches)
 
 import asyncio
@@ -61,11 +61,10 @@ PCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
 )
 
 # Per-modality timeout (STORY-252 AC6, GTM-RESILIENCE-F03 AC1) — configurable
-# PerModality=60s: max ~120 pages (50 items/page) at ~0.5s/req.
-# Sufficient for 6000 items per modality. Rarely exceeded.
-# Hierarchy: PerModality(60s) < PerUF(90s) — margin 30s.
+# PerModality=20s: GTM-STAB — tighter budget per modality under new PerUF=30s.
+# Hierarchy: PerModality(20s) < PerUF(30s) — margin 10s.
 PNCP_TIMEOUT_PER_MODALITY: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "60")
+    os.environ.get("PNCP_TIMEOUT_PER_MODALITY", "20")
 )
 
 # Modality retry on timeout (STORY-252 AC9)
@@ -76,16 +75,16 @@ PNCP_MODALITY_RETRY_BACKOFF: float = float(
 # Per-UF timeout (GTM-FIX-029 AC1/AC5) — configurable
 # Calculation: 4 modalities × ~15s/mod (with retry) = ~60s + 30s margin = 90s
 PNCP_TIMEOUT_PER_UF: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_UF", "90")
+    os.environ.get("PNCP_TIMEOUT_PER_UF", "30")
 )
 # Degraded mode per-UF timeout (GTM-FIX-029 AC2)
 PNCP_TIMEOUT_PER_UF_DEGRADED: float = float(
-    os.environ.get("PNCP_TIMEOUT_PER_UF_DEGRADED", "120")
+    os.environ.get("PNCP_TIMEOUT_PER_UF_DEGRADED", "15")
 )
 
 # GTM-FIX-031: Phased UF batching — reduces PNCP API pressure
 PNCP_BATCH_SIZE: int = int(os.environ.get("PNCP_BATCH_SIZE", "5"))
-PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "0.5"))
+PNCP_BATCH_DELAY_S: float = float(os.environ.get("PNCP_BATCH_DELAY_S", "2.0"))
 
 # B-06: Redis-backed circuit breaker toggle (rollback: set to "false")
 USE_REDIS_CIRCUIT_BREAKER: bool = os.environ.get(
@@ -98,8 +97,8 @@ CB_REDIS_TTL: int = int(os.environ.get("CB_REDIS_TTL", "300"))  # 5 minutes
 # Startup Timeout Chain Validation (GTM-RESILIENCE-F03 AC7-AC12)
 # ============================================================================
 
-_SAFE_PER_MODALITY = 60.0
-_SAFE_PER_UF = 90.0
+_SAFE_PER_MODALITY = 20.0
+_SAFE_PER_UF = 30.0
 
 
 def validate_timeout_chain() -> None:

@@ -76,6 +76,12 @@ class SearchContext:
     filter_stats: dict = field(default_factory=dict)
     hidden_by_min_match: int = 0
     filter_relaxed: bool = False
+    # GTM-STAB-005 AC4: Auto-relaxation level (0=normal, 1=no floor, 2=no density, 3=top by value)
+    relaxation_level: Optional[int] = None
+    # GTM-STAB-003 AC4: True when time budget forced simplified processing
+    is_simplified: bool = False
+    # GTM-STAB-005 AC3: Human-readable filter summary when results=0
+    filter_summary: Optional[str] = None
 
     # === Stage 5: EnrichResults (modifies licitacoes_filtradas in-place) ===
 

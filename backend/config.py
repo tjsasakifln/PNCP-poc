@@ -422,6 +422,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "TERM_SEARCH_SYNONYMS": ("TERM_SEARCH_SYNONYMS", "false"),
     "TERM_SEARCH_VIABILITY_GENERIC": ("TERM_SEARCH_VIABILITY_GENERIC", "false"),
     "TERM_SEARCH_FILTER_CONTEXT": ("TERM_SEARCH_FILTER_CONTEXT", "false"),
+    "CACHE_WARMING_ENABLED": ("CACHE_WARMING_ENABLED", "false"),
 }
 
 # ============================================
@@ -435,6 +436,25 @@ TERM_SEARCH_FILTER_CONTEXT: bool = str_to_bool(os.getenv("TERM_SEARCH_FILTER_CON
 # Generic value range for term-based searches without sector context
 TERM_SEARCH_VALUE_RANGE_MIN: float = float(os.getenv("TERM_SEARCH_VALUE_RANGE_MIN", "10000"))
 TERM_SEARCH_VALUE_RANGE_MAX: float = float(os.getenv("TERM_SEARCH_VALUE_RANGE_MAX", "50000000"))
+
+# ============================================
+# GTM-STAB-003: Timeout Chain (Railway 300s hard limit, conservative for pre-async mode)
+# ============================================
+PIPELINE_TIMEOUT: int = int(os.getenv("PIPELINE_TIMEOUT", "110"))
+CONSOLIDATION_TIMEOUT: int = int(os.getenv("CONSOLIDATION_TIMEOUT", "100"))
+PNCP_TIMEOUT_PER_SOURCE: int = int(os.getenv("PNCP_TIMEOUT_PER_SOURCE", "80"))
+PNCP_TIMEOUT_PER_UF: int = int(os.getenv("PNCP_TIMEOUT_PER_UF", "30"))
+PNCP_TIMEOUT_PER_UF_DEGRADED: int = int(os.getenv("PNCP_TIMEOUT_PER_UF_DEGRADED", "15"))
+PIPELINE_SKIP_LLM_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_LLM_AFTER_S", "90"))
+PIPELINE_SKIP_VIABILITY_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_VIABILITY_AFTER_S", "100"))
+
+# ============================================
+# GTM-STAB-007: Cache Warming
+# ============================================
+CACHE_WARMING_ENABLED: bool = str_to_bool(os.getenv("CACHE_WARMING_ENABLED", "false"))
+CACHE_WARMING_INTERVAL_HOURS: int = int(os.getenv("CACHE_WARMING_INTERVAL_HOURS", "4"))
+CACHE_WARMING_CONCURRENCY: int = int(os.getenv("CACHE_WARMING_CONCURRENCY", "2"))
+CACHE_WARMING_BUDGET_MINUTES: int = int(os.getenv("CACHE_WARMING_BUDGET_MINUTES", "30"))
 
 # ============================================
 # CRIT-032: Periodic Cache Refresh (ARQ Cron)

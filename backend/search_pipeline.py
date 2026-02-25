@@ -502,6 +502,15 @@ class SearchPipeline:
             await sm.transition_to(SearchState.FILTERING, stage="filter")
         await self._traced_stage(ctx, "pipeline.filter", self.stage_filter)
 
+        # GTM-STAB-003 AC4: Time budget guard — skip expensive stages if over budget
+        _elapsed_after_filter = sync_time_module.time() - ctx.start_time
+        if _elapsed_after_filter > 90:
+            logger.warning(
+                f"[STAB-003] Time budget exceeded after filter ({_elapsed_after_filter:.1f}s > 90s) — "
+                f"skipping LLM and viability, marking is_simplified=True"
+            )
+            ctx.is_simplified = True
+
         if sm:
             await sm.transition_to(SearchState.ENRICHING, stage="enrich")
         await self._traced_stage(ctx, "pipeline.enrich", self.stage_enrich)
@@ -1723,6 +1732,82 @@ class SearchPipeline:
             if keyword_rejected_sample:
                 logger.debug(f"  - Sample keyword-rejected objects: {keyword_rejected_sample}")
 
+        # GTM-STAB-005 AC3: Build human-readable filter summary when results=0
+        if len(ctx.licitacoes_filtradas) == 0 and stats:
+            _fs_parts = []
+            for label, key in [
+                ("UF", "rejeitadas_uf"),
+                ("valor", "rejeitadas_valor"),
+                ("keyword", "rejeitadas_keyword"),
+                ("min_match", "rejeitadas_min_match"),
+                ("prazo", "rejeitadas_prazo"),
+                ("outros", "rejeitadas_outros"),
+            ]:
+                count = stats.get(key, 0)
+                if count > 0:
+                    _fs_parts.append(f"{count} por {label}")
+            ctx.filter_summary = (
+                "Nenhum resultado: " + ", ".join(_fs_parts) if _fs_parts else "Nenhum resultado encontrado"
+            )
+            logger.info(f"[STAB-005] filter_summary: {ctx.filter_summary}")
+
+        # GTM-STAB-005 AC4: Auto-relaxation for term searches with zero results
+        # Level 0 = normal (no relaxation), 1 = no min_match_floor, 2 = no keyword filter
+        # NOTE: level 1 is already handled above via the min_match relaxation block (ctx.filter_relaxed)
+        ctx.relaxation_level = 0
+        if ctx.filter_relaxed:
+            ctx.relaxation_level = 1
+        if (
+            ctx.custom_terms
+            and len(ctx.licitacoes_filtradas) == 0
+            and len(ctx.licitacoes_raw) > 0
+        ):
+            # Level 2: re-run without any keyword exclusions (accept any UF/valor match)
+            logger.info(
+                f"[STAB-005] Zero results with custom_terms — "
+                f"attempting keyword-free relaxation (level 2)"
+            )
+            _l2_filtered, _l2_stats = deps.aplicar_todos_filtros(
+                ctx.licitacoes_raw,
+                ufs_selecionadas=set(request.ufs),
+                status=status_filter,
+                modalidades=request.modalidades,
+                valor_min=request.valor_minimo,
+                valor_max=request.valor_maximo,
+                esferas=esferas_values,
+                municipios=request.municipios,
+                keywords=None,  # STAB-005 AC4 level 2: remove keyword filter
+                exclusions=None,
+                context_required=None,
+                min_match_floor=None,
+                setor=ctx.request.setor_id,
+                modo_busca=request.modo_busca or "publicacao",
+                custom_terms=None,  # no keyword matching
+            )
+            if _l2_filtered:
+                ctx.licitacoes_filtradas = _l2_filtered
+                ctx.filter_stats = _l2_stats
+                ctx.relaxation_level = 2
+                logger.info(
+                    f"[STAB-005] Level-2 relaxation recovered {len(_l2_filtered)} results"
+                )
+            else:
+                # Level 3: return top 10 by value without any filter
+                logger.info(
+                    f"[STAB-005] Level-3 relaxation: top 10 by value (no keyword filter)"
+                )
+                _l3_candidates = sorted(
+                    ctx.licitacoes_raw,
+                    key=lambda l: float(l.get("valorTotalEstimado") or l.get("valorEstimado") or 0),
+                    reverse=True,
+                )[:10]
+                if _l3_candidates:
+                    ctx.licitacoes_filtradas = _l3_candidates
+                    ctx.relaxation_level = 3
+                    logger.info(
+                        f"[STAB-005] Level-3 relaxation returned {len(_l3_candidates)} results by value"
+                    )
+
         # SSE: Filtering complete
         if ctx.tracker:
             await ctx.tracker.emit(
@@ -1739,7 +1824,7 @@ class SearchPipeline:
 
         # D-04 AC7: Viability assessment (Stage 4.5 — post-filter, pre-ranking)
         from config import get_feature_flag
-        if get_feature_flag("VIABILITY_ASSESSMENT_ENABLED") and ctx.licitacoes_filtradas:
+        if get_feature_flag("VIABILITY_ASSESSMENT_ENABLED") and ctx.licitacoes_filtradas and not ctx.is_simplified:
             # Get sector-specific value range
             vr = None
             if ctx.sector and hasattr(ctx.sector, "viability_value_range"):
@@ -1932,6 +2017,10 @@ class SearchPipeline:
                 llm_status=None,
                 excel_status=None,
                 llm_source=None,  # CRIT-005 AC13: No LLM for empty results
+                # GTM-STAB new fields
+                filter_summary=ctx.filter_summary,
+                is_simplified=ctx.is_simplified,
+                relaxation_level=ctx.relaxation_level,
             )
             return  # Skip stages 6b-7 (handled here for early return)
 
@@ -2163,6 +2252,10 @@ class SearchPipeline:
             excel_status=ctx.excel_status,
             # CRIT-005 AC13: LLM summary provenance
             llm_source=ctx.llm_source,
+            # GTM-STAB new fields
+            filter_summary=ctx.filter_summary,
+            is_simplified=ctx.is_simplified,
+            relaxation_level=ctx.relaxation_level,
         )
 
         logger.info(

@@ -210,11 +210,16 @@ class TestWorkerSettings:
 
 class _FakeRedisSettings:
     """Minimal stand-in for arq.connections.RedisSettings (not installed locally)."""
-    def __init__(self, host="localhost", port=6379, password=None, database=0):
+    def __init__(self, host="localhost", port=6379, password=None, database=0,
+                 conn_timeout=None, conn_retries=None, conn_retry_delay=None, ssl=False):
         self.host = host
         self.port = port
         self.password = password
         self.database = database
+        self.conn_timeout = conn_timeout
+        self.conn_retries = conn_retries
+        self.conn_retry_delay = conn_retry_delay
+        self.ssl = ssl
 
 
 class TestRedisSettings:
@@ -232,10 +237,14 @@ class TestRedisSettings:
 
     def test_parses_full_url(self):
         from job_queue import _get_redis_settings
-        with patch.dict("os.environ", {"REDIS_URL": "redis://:secret@redis.example.com:6380/2"}):
+        with patch.dict("os.environ", {"REDIS_URL": "rediss://:secret@redis.example.com:6380/2"}):
             settings = _get_redis_settings()
             assert settings.host == "redis.example.com"
             assert settings.port == 6380
+            assert settings.conn_timeout == 10
+            assert settings.conn_retries == 5
+            assert settings.conn_retry_delay == 2.0
+            assert settings.ssl is True
 
     def test_parses_minimal_url(self):
         from job_queue import _get_redis_settings
@@ -243,6 +252,10 @@ class TestRedisSettings:
             settings = _get_redis_settings()
             assert settings.host == "localhost"
             assert settings.port == 6379
+            assert settings.conn_timeout == 10
+            assert settings.conn_retries == 5
+            assert settings.conn_retry_delay == 2.0
+            assert settings.ssl is False
 
     def test_raises_without_redis_url(self):
         from job_queue import _get_redis_settings

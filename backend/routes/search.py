@@ -1054,6 +1054,50 @@ async def buscar_licitacoes(
                     pipeline_stage=None, response_state=None,
                 )
             )
+
+        # GTM-STAB-004 AC6: If partial results were collected before failure, return
+        # them as HTTP 200 with is_partial=True instead of raising HTTP 5xx.
+        if ctx.response and getattr(ctx.response, "licitacoes", None):
+            logger.warning(
+                f"STAB-004: Exception after partial results — returning {len(ctx.response.licitacoes)} "
+                f"results as partial (error: {type(e).__name__}: {e})"
+            )
+            if tracker:
+                from search_pipeline import _build_degraded_detail
+                await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
+                await remove_tracker(request.search_id)
+            ctx.response.is_partial = True
+            ctx.response.degradation_reason = (
+                ctx.response.degradation_reason
+                or f"Resultado parcial — erro interno: {type(e).__name__}"
+            )
+            http_response.headers["X-Response-State"] = "degraded"
+            http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
+            return ctx.response
+        elif ctx.licitacoes_filtradas:
+            # Pipeline generated filtered results but stage_generate/persist failed;
+            # build a minimal partial response so the user gets something useful.
+            logger.warning(
+                f"STAB-004: Exception with {len(ctx.licitacoes_filtradas)} filtered results — "
+                f"building minimal partial response (error: {type(e).__name__}: {e})"
+            )
+            if tracker:
+                from search_pipeline import _build_degraded_detail
+                await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
+                await remove_tracker(request.search_id)
+            from search_pipeline import _convert_to_licitacao_items
+            items = _convert_to_licitacao_items(ctx.licitacoes_filtradas)
+            partial_response = BuscaResponse(
+                licitacoes=items,
+                total_encontrado=len(ctx.licitacoes_filtradas),
+                total_filtrado=len(ctx.licitacoes_filtradas),
+                is_partial=True,
+                degradation_reason=f"Resultado parcial — erro interno: {type(e).__name__}",
+            )
+            http_response.headers["X-Response-State"] = "degraded"
+            http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
+            return partial_response
+
         if tracker:
             await tracker.emit_error("Erro interno do servidor")
             await remove_tracker(request.search_id)

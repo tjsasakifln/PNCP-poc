@@ -244,7 +244,7 @@ class TestAutomaticFailover:
 
     @pytest.mark.asyncio
     async def test_failover_increases_alt_source_timeout_when_pncp_degraded(self):
-        """When PNCP is degraded, alternative sources get 120s timeout instead of 25s (GTM-FIX-029)."""
+        """When PNCP is degraded, alternative sources get FAILOVER_TIMEOUT_PER_SOURCE (80s) instead of 25s (STAB-003: reduced from 120s)."""
         # Mark PNCP as degraded
         for _ in range(3):
             source_health_registry.record_failure("PNCP")
@@ -273,8 +273,8 @@ class TestAutomaticFailover:
 
         # PNCP should keep its original timeout (25)
         assert captured_timeouts["PNCP"] == 25
-        # Portal should get increased timeout (120, GTM-FIX-029 AC9)
-        assert captured_timeouts["Portal"] == 120
+        # Portal should get FAILOVER_TIMEOUT_PER_SOURCE (80s, STAB-003: reduced from 120s)
+        assert captured_timeouts["Portal"] == 80
 
     @pytest.mark.asyncio
     async def test_no_failover_when_pncp_healthy(self):
@@ -633,7 +633,7 @@ class TestGlobalTimeoutAdjustment:
 
     @pytest.mark.asyncio
     async def test_global_timeout_increases_when_pncp_degraded(self):
-        """Global timeout goes from 60s to 360s when PNCP is degraded (GTM-FIX-029 AC8)."""
+        """Global timeout goes from 60s to DEGRADED_GLOBAL_TIMEOUT (110s) when PNCP is degraded (STAB-003: reduced from 360s)."""
         # Mark PNCP as degraded
         for _ in range(3):
             source_health_registry.record_failure("PNCP")
@@ -659,8 +659,8 @@ class TestGlobalTimeoutAdjustment:
         with patch("consolidation.asyncio.wait_for", side_effect=patched_wait_for):
             await svc.fetch_all("2026-01-01", "2026-01-31")
 
-        # GTM-FIX-029 AC8: DEGRADED_GLOBAL_TIMEOUT raised from 90 to 360
-        assert captured_global_timeout == 360
+        # STAB-003: DEGRADED_GLOBAL_TIMEOUT reduced from 360s to 110s (stay below Railway's ~120s hard cutoff)
+        assert captured_global_timeout == 110
 
     @pytest.mark.asyncio
     async def test_global_timeout_normal_when_pncp_healthy(self):
@@ -714,8 +714,8 @@ class TestGlobalTimeoutAdjustment:
         with patch("consolidation.asyncio.wait_for", side_effect=patched_wait_for):
             await svc.fetch_all("2026-01-01", "2026-01-31")
 
-        # GTM-FIX-029 AC8: DEGRADED_GLOBAL_TIMEOUT raised from 90 to 360
-        assert captured_global_timeout == 360
+        # STAB-003: DEGRADED_GLOBAL_TIMEOUT reduced from 360s to 110s (stay below Railway's ~120s hard cutoff)
+        assert captured_global_timeout == 110
 
 
 # ============ Integration-style Tests ============

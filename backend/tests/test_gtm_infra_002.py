@@ -159,9 +159,9 @@ class TestT4BatchDelayConfigurable:
     """GTM-INFRA-002 T4: PNCP_BATCH_DELAY_S configurable via env."""
 
     def test_default_batch_delay_is_0_5(self):
-        """Default PNCP_BATCH_DELAY_S must be 0.5s (was 2.0s)."""
+        """Default PNCP_BATCH_DELAY_S must be 2.0s (STAB-003: increased to reduce PNCP rate-limit risk)."""
         from pncp_client import PNCP_BATCH_DELAY_S
-        assert PNCP_BATCH_DELAY_S == 0.5
+        assert PNCP_BATCH_DELAY_S == 2.0
 
     def test_batch_delay_env_override(self):
         """PNCP_BATCH_DELAY_S can be overridden via environment variable."""

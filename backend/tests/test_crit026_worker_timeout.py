@@ -149,13 +149,13 @@ class TestSSEGeneratorAbruptLogging:
 class TestStartShConfig:
     """Validate start.sh configuration values."""
 
-    def test_start_sh_has_180s_timeout(self):
-        """GTM-INFRA-001 AC7: GUNICORN_TIMEOUT default is 180s (was 900s)."""
+    def test_start_sh_has_120s_timeout(self):
+        """GTM-STAB-002 AC3: GUNICORN_TIMEOUT default is 120s (was 180s, aligned with Railway proxy)."""
         import os
         start_sh_path = os.path.join(os.path.dirname(__file__), "..", "start.sh")
         with open(start_sh_path) as f:
             content = f.read()
-        assert "GUNICORN_TIMEOUT:-180" in content, "Default timeout should be 180s (GTM-INFRA-001)"
+        assert "GUNICORN_TIMEOUT:-120" in content, "Default timeout should be 120s (GTM-STAB-002)"
 
     def test_start_sh_has_2_workers(self):
         """SLA-002: WEB_CONCURRENCY default is 2."""
@@ -173,10 +173,10 @@ class TestStartShConfig:
             content = f.read()
         assert "--keep-alive" in content, "start.sh should have --keep-alive flag"
 
-    def test_start_sh_has_graceful_timeout_120(self):
-        """AC2: GUNICORN_GRACEFUL_TIMEOUT default is 120s."""
+    def test_start_sh_has_graceful_timeout_30(self):
+        """GTM-STAB-002: GUNICORN_GRACEFUL_TIMEOUT default is 30s (was 120s)."""
         import os
         start_sh_path = os.path.join(os.path.dirname(__file__), "..", "start.sh")
         with open(start_sh_path) as f:
             content = f.read()
-        assert "GUNICORN_GRACEFUL_TIMEOUT:-120" in content, "Graceful timeout should be 120s"
+        assert "GUNICORN_GRACEFUL_TIMEOUT:-30" in content, "Graceful timeout should be 30s (GTM-STAB-002)"

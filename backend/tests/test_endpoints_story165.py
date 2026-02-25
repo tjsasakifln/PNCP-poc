@@ -202,9 +202,9 @@ class TestBuscarEndpointQuotaValidation:
             )
 
             assert response.status_code == 403
-            # CRIT-009: detail may be structured dict
+            # STORY-265 AC8: require_active_plan returns {"error": ..., "message": ..., "upgrade_url": ...}
             detail = response.json()["detail"]
-            detail_msg = detail.get("detail", "") if isinstance(detail, dict) else detail
+            detail_msg = detail.get("message", "") if isinstance(detail, dict) else detail
             assert "Limite" in detail_msg or "expirou" in detail_msg or "quota" in detail_msg.lower()
         finally:
             cleanup()
@@ -243,9 +243,9 @@ class TestBuscarEndpointQuotaValidation:
             )
 
             assert response.status_code == 403
-            # CRIT-009: detail may be structured dict
+            # STORY-265 AC8: require_active_plan returns {"error": ..., "message": ..., "upgrade_url": ...}
             detail = response.json()["detail"]
-            detail_msg = detail.get("detail", "") if isinstance(detail, dict) else detail
+            detail_msg = detail.get("message", "") if isinstance(detail, dict) else detail
             assert "Trial expirado" in detail_msg or "expirou" in detail_msg or "Limite" in detail_msg
         finally:
             cleanup()

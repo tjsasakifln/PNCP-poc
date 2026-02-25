@@ -71,10 +71,10 @@ class ConsolidationService:
     - Progress callback support
     """
 
-    # GTM-FIX-029 AC9: Failover timeout raised from 40→120 for slower pagination
-    FAILOVER_TIMEOUT_PER_SOURCE = 120
-    # GTM-FIX-029 AC8: Degraded global timeout raised from 90→360
-    DEGRADED_GLOBAL_TIMEOUT = 360
+    # GTM-STAB: Failover timeout reduced from 120→80 — tighter per-source budget
+    FAILOVER_TIMEOUT_PER_SOURCE = 80
+    # GTM-STAB: Degraded global timeout reduced from 360→110 — fits Railway 120s limit
+    DEGRADED_GLOBAL_TIMEOUT = 110
     # Timeout for ComprasGov last-resort fallback (AC15)
     FALLBACK_TIMEOUT = 40
 
@@ -228,8 +228,18 @@ class ConsolidationService:
                     )
         except asyncio.TimeoutError:
             logger.warning(
-                f"[CONSOLIDATION] Global timeout ({effective_global_timeout}s) reached"
+                f"[CONSOLIDATION] Global timeout ({effective_global_timeout}s) reached — collecting partial results"
             )
+            # GTM-STAB-003 AC3 + STAB-004 AC5: Collect whatever completed before timeout
+            for code, adapter in self._adapters.items():
+                if code not in source_results_map:
+                    source_results_map[code] = {
+                        "code": code,
+                        "records": [],
+                        "duration_ms": int((time.time() - start_time) * 1000),
+                        "status": "timeout",
+                        "error": f"Global timeout ({effective_global_timeout}s)",
+                    }
 
         # Collect results and metrics, update health registry (AC12)
         all_records: List[UnifiedProcurement] = []

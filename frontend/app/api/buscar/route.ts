@@ -7,13 +7,15 @@ import { getRefreshedToken } from "../../../lib/serverAuth";
 import { sanitizeProxyError, sanitizeNetworkError } from "../../../lib/proxy-error-handler";
 
 // CRIT-002 AC3: Contextual error messages based on HTTP status code
+// STAB-006 AC1: Improved messages for pipe/timeout errors
 function getContextualErrorMessage(status: number, detail?: string): string {
   if (typeof detail === "string" && detail.length > 0) return detail;
   switch (status) {
     case 429: return "Muitas consultas simultâneas. Aguarde alguns segundos e tente novamente.";
     case 500: return "Ocorreu um erro interno. Tente novamente em alguns segundos.";
-    case 502: return "O servidor está reiniciando. Aguarde ~30 segundos e tente novamente.";
-    case 503: return "O servidor está temporariamente indisponível. Tente novamente em 1 minuto.";
+    case 502: return "Nossos servidores estão se atualizando. Tente novamente em 30 segundos.";
+    case 503: return "Nossos servidores estão se atualizando. Tente novamente em 30 segundos.";
+    case 524: return "A busca demorou mais que o esperado. Tente com menos estados ou um período menor.";
     default: return "Erro inesperado. Tente novamente ou reduza o número de UFs selecionadas.";
   }
 }
@@ -104,10 +106,10 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // GTM-FIX-029 AC19/AC20: Timeout hierarchy (outermost → innermost):
-        // FE proxy (480s) > Pipeline FETCH_TIMEOUT (360s) > Consolidation (300s) > Per-Source (180s) > Per-UF (90s)
+        // STAB-003 AC5: Proxy timeout reduced to 115s to stay below Railway's ~120s hard cutoff.
+        // Backend must respond within 115s; longer searches should use SSE/async mode.
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8 * 60 * 1000);
+        const timeout = setTimeout(() => controller.abort(), 115 * 1000);
 
         response = await fetch(`${backendUrl}/v1/buscar`, {
           method: "POST",
@@ -161,8 +163,8 @@ export async function POST(request: NextRequest) {
           // Timeout: keep specific message; Network error: use sanitizer
           if (isTimeout) {
             return NextResponse.json(
-              { message: "A consulta excedeu o tempo limite (8 min). Tente com menos estados ou um período menor." },
-              { status: 504 }
+              { message: "A busca demorou mais que o esperado. Tente com menos estados ou um período menor." },
+              { status: 524 }
             );
           }
           // CRIT-017: Sanitize network error

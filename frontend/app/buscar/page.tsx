@@ -523,6 +523,48 @@ function HomePageContent() {
               />
             )}
 
+            {/* STAB-005 AC2: Educative empty state — shown when search is done with 0 results */}
+            {!search.loading && !search.error && search.result && (search.result.total_filtrado ?? 0) === 0 && !showOnboardingBanner && (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-8 text-center mt-4 mb-4">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                  Nenhuma oportunidade encontrada
+                </h3>
+                <div className="text-sm text-amber-600 dark:text-amber-400 mb-6 space-y-1">
+                  <p>Possíveis motivos:</p>
+                  <ul className="list-disc list-inside text-left max-w-md mx-auto mt-2">
+                    <li>Período muito curto (10 dias)</li>
+                    <li>Termos de busca muito específicos</li>
+                    <li>Poucos editais abertos neste momento</li>
+                  </ul>
+                </div>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button
+                    onClick={() => {
+                      const hoje = filters.dataFinal;
+                      const thirtyDaysAgo = new Date(new Date(hoje).getTime() - 30 * 24 * 60 * 60 * 1000)
+                        .toISOString().slice(0, 10);
+                      filters.setDataInicial(thirtyDaysAgo);
+                    }}
+                    className="px-4 py-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors text-sm font-medium"
+                  >
+                    Ampliar período para 30 dias
+                  </button>
+                  <button
+                    onClick={filters.selecionarTodos}
+                    className="px-4 py-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors text-sm font-medium"
+                  >
+                    Incluir mais estados
+                  </button>
+                </div>
+                {search.result.filter_relaxed && (
+                  <p className="mt-4 text-xs text-amber-500 dark:text-amber-500">
+                    Resultados com filtro ampliado — seus termos podem não aparecer diretamente
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* GTM-FIX-035 AC1: Scroll target for progress area */}
             <div ref={progressAreaRef} />
 

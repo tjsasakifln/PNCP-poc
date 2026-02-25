@@ -33,24 +33,16 @@ class TestTimeoutChainInvariant:
     """Verify the strict ordering: FE > Pipeline > Consolidation > Per-Source > Per-UF."""
 
     def test_chain_ordering_defaults(self):
-        """AC20: Default timeout chain must be strictly decreasing."""
+        """AC20: STAB-003 timeout chain — inner chain (Consolidation > Per-Source > Per-UF) is strictly decreasing.
+        Note: FE proxy (115s) is now intentionally BELOW pipeline FETCH_TIMEOUT (360s) because Railway
+        hard-kills at ~120s. The FE proxy is the effective cutoff for users; pipeline runs independently.
+        """
         from pncp_client import PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED
         from source_config.sources import ConsolidationConfig
 
         config = ConsolidationConfig.from_env()
 
-        # Pipeline FETCH_TIMEOUT (default 360)
-        fetch_timeout = int(os.environ.get("SEARCH_FETCH_TIMEOUT", "360"))
-
-        # Frontend proxy timeout (hardcoded 480 in route.ts — assert as constant here)
-        fe_proxy_timeout = 480
-
-        assert fe_proxy_timeout > fetch_timeout, (
-            f"FE proxy ({fe_proxy_timeout}) must be > Pipeline FETCH_TIMEOUT ({fetch_timeout})"
-        )
-        assert fetch_timeout > config.timeout_global, (
-            f"Pipeline ({fetch_timeout}) must be > Consolidation global ({config.timeout_global})"
-        )
+        # Inner chain must still be strictly decreasing: Consolidation global > per-source > per-UF
         assert config.timeout_global > config.timeout_per_source, (
             f"Consolidation global ({config.timeout_global}) must be > per-source ({config.timeout_per_source})"
         )
@@ -58,12 +50,34 @@ class TestTimeoutChainInvariant:
             f"Per-source ({config.timeout_per_source}) must be > per-UF ({PNCP_TIMEOUT_PER_UF})"
         )
 
+        # FE proxy (115s) must be below Railway's hard cutoff (~120s)
+        fe_proxy_timeout = 115
+        railway_hard_cutoff = 120
+        assert fe_proxy_timeout < railway_hard_cutoff, (
+            f"FE proxy ({fe_proxy_timeout}s) must be < Railway hard cutoff ({railway_hard_cutoff}s)"
+        )
+
+        # Per-UF must be well below FE proxy (per-UF = 30s, FE = 115s)
+        assert PNCP_TIMEOUT_PER_UF < fe_proxy_timeout, (
+            f"Per-UF ({PNCP_TIMEOUT_PER_UF}s) must be < FE proxy ({fe_proxy_timeout}s)"
+        )
+
     def test_degraded_timeout_greater_than_normal(self):
-        """AC2: Degraded per-UF timeout must be >= normal per-UF timeout."""
+        """AC2: STAB-003 — In degraded mode, abort per-UF FASTER (15s) than normal (30s).
+        Rationale: degraded mode = PNCP is struggling; cut losses quickly, don't wait as long.
+        """
         from pncp_client import PNCP_TIMEOUT_PER_UF, PNCP_TIMEOUT_PER_UF_DEGRADED
 
-        assert PNCP_TIMEOUT_PER_UF_DEGRADED >= PNCP_TIMEOUT_PER_UF, (
-            f"Degraded ({PNCP_TIMEOUT_PER_UF_DEGRADED}) must be >= normal ({PNCP_TIMEOUT_PER_UF})"
+        # STAB-003: degraded(15) < normal(30) — abort stale UFs faster under degraded conditions
+        assert PNCP_TIMEOUT_PER_UF == 30, (
+            f"Normal per-UF timeout expected 30s, got {PNCP_TIMEOUT_PER_UF}"
+        )
+        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 15, (
+            f"Degraded per-UF timeout expected 15s, got {PNCP_TIMEOUT_PER_UF_DEGRADED}"
+        )
+        assert PNCP_TIMEOUT_PER_UF_DEGRADED < PNCP_TIMEOUT_PER_UF, (
+            f"Degraded ({PNCP_TIMEOUT_PER_UF_DEGRADED}) must be < normal ({PNCP_TIMEOUT_PER_UF}) — "
+            f"cut losses faster in degraded mode (STAB-003)"
         )
 
     def test_per_modality_fits_within_per_uf(self):
@@ -84,14 +98,14 @@ class TestPerUfTimeout:
     """AC1, AC2, AC5: PER_UF_TIMEOUT values and env var configurability."""
 
     def test_normal_mode_default_90s(self):
-        """AC1: Normal mode PER_UF_TIMEOUT = 90s."""
+        """AC1: Normal mode PER_UF_TIMEOUT = 30s (STAB-003: reduced from 90s)."""
         from pncp_client import PNCP_TIMEOUT_PER_UF
-        assert PNCP_TIMEOUT_PER_UF == 90.0
+        assert PNCP_TIMEOUT_PER_UF == 30.0
 
     def test_degraded_mode_default_120s(self):
-        """AC2: Degraded mode PER_UF_TIMEOUT = 120s."""
+        """AC2: Degraded mode PER_UF_TIMEOUT = 15s (STAB-003: reduced from 120s, abort faster under degraded conditions)."""
         from pncp_client import PNCP_TIMEOUT_PER_UF_DEGRADED
-        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 120.0
+        assert PNCP_TIMEOUT_PER_UF_DEGRADED == 15.0
 
     def test_env_var_override(self):
         """AC5: PNCP_TIMEOUT_PER_UF env var overrides default."""
@@ -122,14 +136,14 @@ class TestConsolidationTimeouts:
         assert config.timeout_global == 300
 
     def test_degraded_global_timeout_360(self):
-        """AC8: DEGRADED_GLOBAL_TIMEOUT = 360s."""
+        """AC8: DEGRADED_GLOBAL_TIMEOUT = 110s (STAB-003: reduced from 360s to stay below Railway's ~120s hard cutoff)."""
         from consolidation import ConsolidationService
-        assert ConsolidationService.DEGRADED_GLOBAL_TIMEOUT == 360
+        assert ConsolidationService.DEGRADED_GLOBAL_TIMEOUT == 110
 
     def test_failover_timeout_per_source_120(self):
-        """AC9: FAILOVER_TIMEOUT_PER_SOURCE = 120s."""
+        """AC9: FAILOVER_TIMEOUT_PER_SOURCE = 80s (STAB-003: reduced from 120s)."""
         from consolidation import ConsolidationService
-        assert ConsolidationService.FAILOVER_TIMEOUT_PER_SOURCE == 120
+        assert ConsolidationService.FAILOVER_TIMEOUT_PER_SOURCE == 80
 
     def test_near_inversion_warning(self, caplog):
         """AC10: Log warning when timeout_per_source > 80% of timeout_global."""
@@ -236,23 +250,23 @@ class TestFrontendProxyTimeout:
     """AC19: Frontend proxy timeout = 480s (8 minutes)."""
 
     def test_frontend_proxy_8min(self):
-        """AC19: route.ts uses 8 * 60 * 1000 timeout."""
+        """AC19: STAB-003 — route.ts uses 115 * 1000 timeout (115s, below Railway's ~120s hard cutoff)."""
         route_ts = Path(__file__).resolve().parents[2] / "frontend" / "app" / "api" / "buscar" / "route.ts"
         if not route_ts.exists():
             pytest.skip("Frontend route.ts not found")
         content = route_ts.read_text(encoding="utf-8")
-        assert "8 * 60 * 1000" in content, (
-            "Frontend proxy should use 8-minute timeout (8 * 60 * 1000)"
+        assert "115 * 1000" in content, (
+            "Frontend proxy should use 115s timeout (115 * 1000) — STAB-003 reduced from 8 * 60 * 1000"
         )
 
     def test_frontend_error_message_8min(self):
-        """AC19: Error message references 8 min."""
+        """AC19: STAB-003 — Timeout error message is user-friendly (no hard-coded minute reference)."""
         route_ts = Path(__file__).resolve().parents[2] / "frontend" / "app" / "api" / "buscar" / "route.ts"
         if not route_ts.exists():
             pytest.skip("Frontend route.ts not found")
         content = route_ts.read_text(encoding="utf-8")
-        assert "8 min" in content, (
-            "Frontend timeout error message should reference 8 minutes"
+        assert "A busca demorou mais que o esperado" in content, (
+            "Frontend timeout error message should contain 'A busca demorou mais que o esperado'"
         )
 
 
@@ -264,13 +278,13 @@ class TestHierarchyComment:
     """AC20: Comment documenting timeout hierarchy exists in route.ts."""
 
     def test_hierarchy_comment_in_route(self):
-        """AC20: route.ts contains timeout hierarchy comment."""
+        """AC20: route.ts contains timeout comment (STAB-003: 115s, aligned with Railway's ~120s hard cutoff)."""
         route_ts = Path(__file__).resolve().parents[2] / "frontend" / "app" / "api" / "buscar" / "route.ts"
         if not route_ts.exists():
             pytest.skip("Frontend route.ts not found")
         content = route_ts.read_text(encoding="utf-8")
-        assert "480" in content or "FE proxy" in content, (
-            "Frontend route.ts should document the timeout hierarchy"
+        assert "115" in content or "STAB-003" in content or "Railway" in content, (
+            "Frontend route.ts should document the timeout (115s) or reference STAB-003/Railway"
         )
 
 
@@ -301,16 +315,16 @@ class TestPerModalityRecalibration:
     """GTM-RESILIENCE-F03 AC1-AC6, AC13-AC20: PerModality timeout hierarchy."""
 
     def test_per_modality_default_60s(self):
-        """F03-AC14: Default PerModality is 60s."""
+        """F03-AC14: Default PerModality is 20s (STAB-003: reduced from 60s)."""
         from pncp_client import PNCP_TIMEOUT_PER_MODALITY
-        assert PNCP_TIMEOUT_PER_MODALITY == 60.0
+        assert PNCP_TIMEOUT_PER_MODALITY == 20.0
 
     def test_per_modality_margin_30s(self):
-        """F03-AC15: Margin between PerUF and PerModality >= 30s."""
+        """F03-AC15: Margin between PerUF and PerModality >= 10s (STAB-003: reduced from 30s)."""
         from pncp_client import PNCP_TIMEOUT_PER_MODALITY, PNCP_TIMEOUT_PER_UF
         margin = PNCP_TIMEOUT_PER_UF - PNCP_TIMEOUT_PER_MODALITY
-        assert margin >= 30, (
-            f"Margin ({margin}s) must be >= 30s. "
+        assert margin >= 10, (
+            f"Margin ({margin}s) must be >= 10s (PerUF - PerModality >= 10s). "
             f"PerUF={PNCP_TIMEOUT_PER_UF}, PerModality={PNCP_TIMEOUT_PER_MODALITY}"
         )
 
@@ -327,10 +341,10 @@ class TestPerModalityRecalibration:
         assert any("TIMEOUT MISCONFIGURATION" in r.message for r in caplog.records), (
             "Expected CRITICAL log with 'TIMEOUT MISCONFIGURATION'"
         )
-        # Verify fallback to safe defaults
+        # Verify fallback to safe defaults (STAB-003: _SAFE_PER_MODALITY=20, _SAFE_PER_UF=30)
         import pncp_client
-        assert pncp_client.PNCP_TIMEOUT_PER_MODALITY == 60.0
-        assert pncp_client.PNCP_TIMEOUT_PER_UF == 90.0
+        assert pncp_client.PNCP_TIMEOUT_PER_MODALITY == 20.0
+        assert pncp_client.PNCP_TIMEOUT_PER_UF == 30.0
 
     def test_startup_validation_warns_near_inversion(self, caplog):
         """F03-AC17: validate_timeout_chain() warns when PerModality > 80% of PerUF."""

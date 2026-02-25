@@ -358,3 +358,78 @@ async def get_detailed_health() -> Dict[str, Any]:
     }
 
     return result
+
+
+async def get_system_health() -> Dict[str, Any]:
+    """GTM-STAB-008 AC3: Comprehensive system health check.
+
+    Returns component-level statuses for Redis, Supabase, ARQ Worker, and PNCP,
+    plus overall health classification (healthy / degraded / unhealthy).
+    Designed for monitoring dashboards and uptime checks.
+    """
+    components: Dict[str, Any] = {}
+
+    # Redis check
+    try:
+        from redis_pool import get_redis_pool
+        redis = await get_redis_pool()
+        if redis:
+            start = time.monotonic()
+            await redis.ping()
+            latency = int((time.monotonic() - start) * 1000)
+            components["redis"] = {"status": "up", "latency_ms": latency}
+        else:
+            components["redis"] = {"status": "down", "latency_ms": 0}
+    except Exception as e:
+        components["redis"] = {"status": "down", "error": str(e)[:100]}
+
+    # Supabase check
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+        start = time.monotonic()
+        sb.table("profiles").select("id").limit(1).execute()
+        latency = int((time.monotonic() - start) * 1000)
+        components["supabase"] = {"status": "up", "latency_ms": latency}
+    except Exception as e:
+        components["supabase"] = {"status": "down", "error": str(e)[:100]}
+
+    # ARQ Worker check
+    try:
+        from job_queue import is_queue_available
+        worker_ok = await is_queue_available()
+        components["arq_worker"] = {"status": "up" if worker_ok else "down"}
+    except Exception:
+        components["arq_worker"] = {"status": "unknown"}
+
+    # PNCP circuit breaker
+    try:
+        from pncp_client import get_circuit_breaker
+        cb = get_circuit_breaker()
+        cb_state = getattr(cb, "state", "unknown")
+        if hasattr(cb_state, "value"):
+            cb_state = cb_state.value
+        components["pncp"] = {"status": "degraded" if str(cb_state) == "open" else "up", "circuit_breaker": str(cb_state)}
+    except Exception:
+        components["pncp"] = {"status": "unknown"}
+
+    # Overall status
+    redis_down = components.get("redis", {}).get("status") == "down"
+    supabase_down = components.get("supabase", {}).get("status") == "down"
+    pncp_degraded = components.get("pncp", {}).get("status") in ("degraded", "down")
+
+    if redis_down or supabase_down:
+        overall = "unhealthy"
+    elif pncp_degraded:
+        overall = "degraded"
+    else:
+        overall = "healthy"
+
+    return {
+        "status": overall,
+        "components": components,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": __version__,
+        "uptime_seconds": get_uptime_seconds(),
+        "environment": os.getenv("ENVIRONMENT", "development"),
+    }

@@ -670,7 +670,7 @@ class TestPerUFTimeout:
 
     @pytest.mark.asyncio
     async def test_per_uf_timeout_is_90s(self):
-        """Verify the per-UF timeout value in buscar_todas_ufs_paralelo is 90s (GTM-FIX-029 AC1)."""
+        """Verify the per-UF timeout value in buscar_todas_ufs_paralelo is 30s (STAB-003: reduced from 90s to abort faster)."""
         # We verify by checking the timeout passed to asyncio.wait_for
         async with AsyncPNCPClient(max_concurrent=10) as client:
             timeout_seen = None
@@ -697,8 +697,8 @@ class TestPerUFTimeout:
                     data_final="2026-01-31",
                 )
 
-            # GTM-FIX-029 AC1: PER_UF_TIMEOUT raised from 30s to 90s
-            assert timeout_seen == 90
+            # STAB-003: PER_UF_TIMEOUT reduced from 90s to 30s to abort stale UFs faster
+            assert timeout_seen == 30
 
 
 # ---------------------------------------------------------------------------
@@ -777,8 +777,8 @@ class TestEnvironmentConfiguration:
     """Test that module-level constants read from environment variables."""
 
     def test_default_per_modality_timeout(self):
-        """Default per-modality timeout is 60s (GTM-RESILIENCE-F03)."""
-        assert PNCP_TIMEOUT_PER_MODALITY == 60.0
+        """Default per-modality timeout is 20s (STAB-003: reduced from 60s to abort faster)."""
+        assert PNCP_TIMEOUT_PER_MODALITY == 20.0
 
     def test_default_modality_retry_backoff(self):
         """Default modality retry backoff is 3s."""

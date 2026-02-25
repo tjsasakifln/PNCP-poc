@@ -32,7 +32,7 @@ _pool_lock = asyncio.Lock()
 
 # CRIT-033: Worker liveness cache (monotonic_time, is_alive)
 _worker_alive_cache: tuple[float, bool] = (0.0, False)
-_WORKER_CHECK_INTERVAL = 60  # seconds — avoid Redis round-trip every call
+_WORKER_CHECK_INTERVAL = 15  # GTM-STAB-002 AC4: faster failover detection
 
 
 def _get_redis_settings():
@@ -51,19 +51,23 @@ def _get_redis_settings():
         raise ValueError("REDIS_URL not set — ARQ worker cannot start without Redis")
 
     parsed = urlparse(redis_url)
+    ssl = parsed.scheme == "rediss"
     return RedisSettings(
         host=parsed.hostname or "localhost",
         port=parsed.port or 6379,
         password=parsed.password,
         database=int(parsed.path.lstrip("/") or 0),
+        conn_timeout=10,
+        conn_retries=5,
+        conn_retry_delay=2.0,
+        ssl=ssl,
     )
 
 
 async def get_arq_pool():
     """Get or create the ARQ connection pool (singleton).
 
-    Returns:
-        ArqRedis instance or None if Redis unavailable.
+    GTM-STAB-002 AC2: Retry with exponential backoff on connection failure.
     """
     global _arq_pool
 
@@ -75,18 +79,28 @@ async def get_arq_pool():
             _arq_pool = None
 
     async with _pool_lock:
-        # Double-check after acquiring lock
         if _arq_pool is not None:
             return _arq_pool
-        try:
-            from arq import create_pool
-            settings = _get_redis_settings()
-            _arq_pool = await create_pool(settings)
-            logger.info("ARQ connection pool created")
-            return _arq_pool
-        except Exception as e:
-            logger.warning(f"Failed to create ARQ pool: {e}")
-            return None
+
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                from arq import create_pool
+                settings = _get_redis_settings()
+                _arq_pool = await create_pool(settings)
+                logger.info(f"ARQ connection pool created (attempt {attempt})")
+                return _arq_pool
+            except Exception as e:
+                delay = 2 ** attempt
+                logger.warning(
+                    f"redis_pool_reconnect attempt={attempt}/{max_attempts} "
+                    f"delay={delay}s error={type(e).__name__}: {e}"
+                )
+                if attempt < max_attempts:
+                    await asyncio.sleep(delay)
+
+        logger.warning("ARQ pool creation failed after all retries")
+        return None
 
 
 async def close_arq_pool() -> None:
@@ -207,7 +221,7 @@ async def enqueue_job(
         logger.info(f"Enqueued job: {function_name} (id={job.job_id})")
         return job
     except Exception as e:
-        logger.error(f"Failed to enqueue {function_name}: {e}")
+        logger.warning(f"Failed to enqueue {function_name}: {e}")
         return None
 
 
@@ -709,6 +723,114 @@ async def bid_analysis_job(
 
 
 # ==========================================================================
+# GTM-STAB-007: Cache Warming Job
+# ==========================================================================
+
+async def cache_warming_job(ctx: dict) -> dict:
+    """GTM-STAB-007 AC1: Pre-warm cache for popular search combinations.
+
+    Queries search_sessions for top combinations by frequency,
+    then executes searches to populate cache. Rate-limited to avoid
+    interfering with user searches.
+    """
+    import uuid
+    from config import (
+        CACHE_WARMING_ENABLED,
+        CACHE_WARMING_CONCURRENCY,
+        CACHE_WARMING_BUDGET_MINUTES,
+    )
+    from metrics import ACTIVE_SEARCHES
+
+    cycle_id = str(uuid.uuid4())[:8]
+    start = time.monotonic()
+
+    if not CACHE_WARMING_ENABLED:
+        logger.info(f"[CacheWarming {cycle_id}] Skipped — CACHE_WARMING_ENABLED=false")
+        return {"status": "disabled", "cycle_id": cycle_id}
+
+    stats = {"cycle_id": cycle_id, "warmed": 0, "skipped": 0, "failed": 0}
+    budget_s = CACHE_WARMING_BUDGET_MINUTES * 60
+
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+        result = sb.table("search_sessions").select(
+            "search_params"
+        ).eq("status", "completed").order(
+            "created_at", desc=True
+        ).limit(200).execute()
+
+        if not result.data:
+            return {"status": "no_data", **stats}
+
+        # Count frequency of setor+ufs combinations
+        combo_counts: dict[str, dict] = {}
+        for row in result.data:
+            params = row.get("search_params") or {}
+            setor = params.get("setor_id", "")
+            ufs = tuple(sorted(params.get("ufs", [])))
+            key = f"{setor}:{','.join(ufs)}"
+            if key not in combo_counts:
+                combo_counts[key] = {"setor_id": setor, "ufs": list(ufs), "count": 0}
+            combo_counts[key]["count"] += 1
+
+        # Sort by frequency, take top 50
+        top_combos = sorted(combo_counts.values(), key=lambda x: x["count"], reverse=True)[:50]
+
+        from datetime import date, timedelta
+        today = date.today()
+        data_final = today.isoformat()
+        data_inicial = (today - timedelta(days=10)).isoformat()
+
+        for combo in top_combos:
+            if time.monotonic() - start > budget_s:
+                logger.info(f"[CacheWarming {cycle_id}] Budget exhausted ({CACHE_WARMING_BUDGET_MINUTES}min)")
+                break
+
+            # Skip if active user searches running
+            try:
+                active = ACTIVE_SEARCHES._value.get()
+                if active > 0:
+                    stats["skipped"] += 1
+                    await asyncio.sleep(5)
+                    continue
+            except Exception:
+                pass
+
+            try:
+                from search_cache import trigger_background_revalidation
+                request_data = {
+                    "ufs": combo["ufs"],
+                    "data_inicial": data_inicial,
+                    "data_final": data_final,
+                    "setor_id": combo["setor_id"],
+                }
+                dispatched = await trigger_background_revalidation(
+                    user_id=None,
+                    params=request_data,
+                    request_data=request_data,
+                )
+                if dispatched:
+                    stats["warmed"] += 1
+                else:
+                    stats["skipped"] += 1
+            except Exception as e:
+                stats["failed"] += 1
+                logger.debug(f"[CacheWarming {cycle_id}] Failed: {e}")
+
+            await asyncio.sleep(5)  # Rate limit: 5s between warming calls
+
+    except Exception as e:
+        logger.warning(f"[CacheWarming {cycle_id}] Error: {e}")
+        return {"status": "error", "error": str(e), **stats}
+
+    duration_ms = int((time.monotonic() - start) * 1000)
+    stats["duration_ms"] = duration_ms
+    logger.info(json.dumps({"event": "cache_warming_cycle", **stats}))
+    return {"status": "completed", **stats}
+
+
+# ==========================================================================
 # ARQ Worker Settings (AC5)
 # ==========================================================================
 
@@ -729,6 +851,13 @@ try:
     _worker_cron_jobs = [
         _arq_cron(cache_refresh_job, hour=_cron_hours, minute=0, timeout=_cron_timeout),
     ]
+
+    from config import CACHE_WARMING_ENABLED, CACHE_WARMING_INTERVAL_HOURS as _warming_hours
+    if CACHE_WARMING_ENABLED:
+        _warming_cron_hours = set(range(0, 24, _warming_hours))
+        _worker_cron_jobs.append(
+            _arq_cron(cache_warming_job, hour=_warming_cron_hours, minute=30, timeout=1800),
+        )
 except Exception:
     _worker_cron_jobs = []
 
@@ -743,7 +872,7 @@ class WorkerSettings:
         cd backend && arq job_queue.WorkerSettings
     """
 
-    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job]
+    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job]
     cron_jobs = _worker_cron_jobs  # CRIT-032 AC2: periodic cache refresh
     redis_settings = _worker_redis_settings
     max_jobs = 10

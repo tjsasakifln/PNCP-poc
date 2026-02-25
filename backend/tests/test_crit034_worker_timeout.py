@@ -45,16 +45,16 @@ class TestAC1WebConcurrency:
 
 
 # ============================================================================
-# AC2: GUNICORN_TIMEOUT = 180s (GTM-INFRA-001: reduced from 900s)
+# AC2: GUNICORN_TIMEOUT = 120s (GTM-STAB-002: reduced from 180s, aligned with Railway proxy)
 # ============================================================================
 
 
 class TestAC2Timeout:
-    """AC2: GUNICORN_TIMEOUT reduced to 180s (GTM-INFRA-001)."""
+    """AC2: GUNICORN_TIMEOUT reduced to 120s (GTM-STAB-002, was 180s)."""
 
-    def test_timeout_180s(self):
+    def test_timeout_120s(self):
         content = _read_start_sh()
-        assert "GUNICORN_TIMEOUT:-180" in content
+        assert "GUNICORN_TIMEOUT:-120" in content
 
 
 # ============================================================================
@@ -75,16 +75,16 @@ class TestAC3KeepAlive:
 
 
 # ============================================================================
-# AC4: GUNICORN_GRACEFUL_TIMEOUT >= 120s (unchanged, verify still present)
+# AC4: GUNICORN_GRACEFUL_TIMEOUT = 30s (GTM-STAB-002: reduced from 120s)
 # ============================================================================
 
 
 class TestAC4GracefulTimeout:
-    """AC4: GUNICORN_GRACEFUL_TIMEOUT remains 120s."""
+    """AC4: GUNICORN_GRACEFUL_TIMEOUT reduced to 30s (GTM-STAB-002)."""
 
-    def test_graceful_timeout_120s(self):
+    def test_graceful_timeout_30s(self):
         content = _read_start_sh()
-        assert "GUNICORN_GRACEFUL_TIMEOUT:-120" in content
+        assert "GUNICORN_GRACEFUL_TIMEOUT:-30" in content
 
 
 # ============================================================================

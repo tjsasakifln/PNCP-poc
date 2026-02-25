@@ -774,6 +774,18 @@
             ],
             "description": "Breakdown of filter rejection reasons"
           },
+          "filter_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GTM-STAB-005 AC3: Human-readable filter summary (e.g. '3 rejeitadas por UF, 12 por keyword')",
+            "title": "Filter Summary"
+          },
           "from_cache": {
             "default": false,
             "description": "GTM-INFRA-003 AC6: True when response came 100% from cache (quota was NOT consumed)",
@@ -796,6 +808,12 @@
             "default": false,
             "description": "True when not all configured data sources responded successfully (some timed out/failed)",
             "title": "Is Partial",
+            "type": "boolean"
+          },
+          "is_simplified": {
+            "default": false,
+            "description": "GTM-STAB-003 AC4: True when time budget forced simplified (LLM/viability skipped)",
+            "title": "Is Simplified",
             "type": "boolean"
           },
           "is_truncated": {
@@ -864,6 +882,18 @@
             "minimum": 0.0,
             "title": "Quota Used",
             "type": "integer"
+          },
+          "relaxation_level": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "GTM-STAB-005 AC4: 0=normal, 1=no floor, 2=no density, 3=top by value",
+            "title": "Relaxation Level"
           },
           "response_state": {
             "default": "live",
@@ -9929,6 +9959,26 @@
         "summary": "First Analysis",
         "tags": [
           "onboarding"
+        ]
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "description": "GTM-STAB-008 AC3: Comprehensive system health endpoint.\n\nReturns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)\nand overall health classification (healthy / degraded / unhealthy).",
+        "operationId": "system_health_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "System Health",
+        "tags": [
+          "health"
         ]
       }
     },

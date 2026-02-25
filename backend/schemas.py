@@ -1098,6 +1098,21 @@ class BuscaResponse(BaseModel):
         default=False,
         description="STORY-267 AC15: True when min_match_floor was relaxed, enabling 'expanded matching' badge in frontend"
     )
+    # GTM-STAB-005 AC3: Human-readable filter summary when results=0
+    filter_summary: Optional[str] = Field(
+        default=None,
+        description="GTM-STAB-005 AC3: Human-readable filter summary (e.g. '3 rejeitadas por UF, 12 por keyword')"
+    )
+    # GTM-STAB-003 AC4: True when time budget forced simplified processing
+    is_simplified: bool = Field(
+        default=False,
+        description="GTM-STAB-003 AC4: True when time budget forced simplified (LLM/viability skipped)"
+    )
+    # GTM-STAB-005 AC4: Auto-relaxation level applied when results=0
+    relaxation_level: Optional[int] = Field(
+        default=None,
+        description="GTM-STAB-005 AC4: 0=normal, 1=no floor, 2=no density, 3=top by value"
+    )
 
     class Config:
         """Pydantic configuration."""
