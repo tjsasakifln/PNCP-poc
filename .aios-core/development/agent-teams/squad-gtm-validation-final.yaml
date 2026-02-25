@@ -1,0 +1,172 @@
+# Squad: GTM Validation Final — GO/NO-GO/CONDITIONAL-GO
+# Purpose: Full-stack GTM readiness audit with extreme rigor
+# Created: 2026-02-25
+# Context: GTM atrasado, precisa ocorrer ASAP sem queimar primeiros usuários
+# Decision: GO / NO-GO / CONDITIONAL-GO (com prazo e condições)
+
+name: squad-gtm-validation-final
+icon: "\U0001F6A6"
+description: |
+  Squad multidisciplinar de validação GTM do SmartLic.
+  7 tracks paralelas cobrindo: mercado, produto, tech, infra, business model, UX, legal.
+  Cada track emite veredicto independente. Consolidação final = GO/NO-GO/CONDITIONAL-GO.
+
+  Rigor: EXTREMO. Qualquer issue que cause churn nos primeiros 30 dias = BLOCKER.
+  Filosofia: "Melhor atrasar 3 dias do que perder 30 early adopters."
+
+# ════════════════════════════════════════════════════════════════
+# DECISION FRAMEWORK
+# ════════════════════════════════════════════════════════════════
+
+decision_framework:
+  GO:
+    criteria: "Zero BLOCKERs + zero HIGH across all tracks"
+    action: "Launch immediately"
+
+  CONDITIONAL_GO:
+    criteria: "Zero BLOCKERs + up to 3 HIGH items with <72h fix timeline"
+    action: "Launch with known issues list + fix sprint commitment"
+
+  NO_GO:
+    criteria: "Any BLOCKER exists OR >3 HIGH items"
+    action: "Fix BLOCKERs first, re-validate, new GO/NO-GO in N days"
+
+  severity_levels:
+    BLOCKER: "First user WILL churn or WILL lose trust (broken core flow, data loss, security)"
+    HIGH: "First user MAY churn (bad UX, slow performance, confusing pricing)"
+    MEDIUM: "Degrades experience but doesn't cause churn (minor UX, missing polish)"
+    LOW: "Nice-to-have (cosmetic, minor copy issues)"
+
+# ════════════════════════════════════════════════════════════════
+# SQUAD COMPOSITION — 7 TRACKS
+# ════════════════════════════════════════════════════════════════
+
+agents:
+
+  # ── TRACK A: Market Intelligence & Competitive Positioning ────
+  - role: analyst
+    name: "Analyst — Market Intel"
+    track: A
+    focus: |
+      Web research: competitors brasileiros de licitação (Licitanet, LicitaWeb,
+      Licitar Digital, ComprasNet, Portal de Compras Públicas, BLL, etc.)
+      Benchmark: preços, features, diferenciais, market positioning.
+      Validar: R$1.999/mês é competitivo? Quais features são table-stakes?
+      Output: Competitive matrix + pricing benchmark + positioning gaps
+    tools: [WebSearch, WebFetch, Read]
+    deliverable: "Competitive analysis report with pricing benchmark"
+
+  # ── TRACK B: Production UX Audit (Real User Journey) ──────────
+  - role: ux-design-expert
+    name: "UX — Production Audit"
+    track: B
+    focus: |
+      Test smartlic.tech end-to-end como first-time user:
+      1. Landing page → First impression, value prop clarity, CTA
+      2. Signup → Friction, error handling, OAuth
+      3. Onboarding → CNAE wizard, UF selection, first search
+      4. Core flow → Search, results, filters, Excel download
+      5. Pipeline → Kanban, drag-drop, opportunity management
+      6. Billing → Pricing page, checkout, plan comparison
+      7. Mobile → Responsive, touch targets, critical flows
+      Analyze gtm-audit/ screenshots for known issues.
+    tools: [mcp__browser, Read, WebFetch]
+    deliverable: "UX audit report with severity-tagged issues"
+
+  # ── TRACK C: Technical Readiness (Codebase Health) ────────────
+  - role: qa
+    name: "QA — Technical Health"
+    track: C
+    focus: |
+      1. Run full backend test suite (pytest) — must be 0 failures
+      2. Run full frontend test suite (npm test) — must be 0 failures
+      3. Audit known bugs in Sentry/GitHub issues
+      4. Check test coverage thresholds (70% BE, 60% FE)
+      5. Verify critical paths have test coverage:
+         - Search pipeline (PNCP + PCP + ComprasGov)
+         - Billing (Stripe checkout, webhook, cancellation)
+         - Auth (signup, login, OAuth, password reset)
+         - Cache (SWR, stale fallback, invalidation)
+      6. Check for TODO/FIXME/HACK in codebase
+    tools: [Bash, Read, Grep, Glob]
+    deliverable: "Test suite results + coverage report + known issues"
+
+  # ── TRACK D: Infrastructure & Performance ─────────────────────
+  - role: devops
+    name: "DevOps — Infra Audit"
+    track: D
+    focus: |
+      1. Railway service status (web, worker, frontend)
+      2. curl production endpoints — latency, error rates
+      3. Health endpoint validation (/health, /health/cache)
+      4. PNCP API availability (canary request)
+      5. Redis connectivity + ARQ worker status
+      6. Sentry error rates (last 7 days)
+      7. SSL certificate validity
+      8. Environment variables completeness audit
+    tools: [Bash, Read, Grep]
+    deliverable: "Infrastructure readiness report"
+
+  # ── TRACK E: Business Model & GTM Strategy ───────────────────
+  - role: po
+    name: "PO — Business Model"
+    track: E
+    focus: |
+      1. Pricing validation: R$1.999 mensal vs market
+      2. Trial flow: 7-day trial → conversion UX → payment
+      3. Value proposition clarity: landing → signup → aha moment
+      4. Feature completeness vs minimum viable for target audience
+      5. Onboarding → first value delivery time (time-to-value)
+      6. Churn risk factors in first 30 days
+      7. Support/documentation readiness (help center, FAQ)
+      8. Marketing assets readiness (landing copy, SEO)
+    tools: [WebSearch, WebFetch, Read, Glob]
+    deliverable: "Business model validation + churn risk assessment"
+
+  # ── TRACK F: Security & Compliance ───────────────────────────
+  - role: architect
+    name: "Architect — Security & Compliance"
+    track: F
+    focus: |
+      1. LGPD compliance: privacy policy, data handling, consent
+      2. Auth security: RLS, token handling, session management
+      3. API security: rate limiting, input validation, CORS
+      4. Secrets audit: no hardcoded keys, .env.example complete
+      5. Stripe PCI compliance (client-side only, no card data)
+      6. Terms of service completeness
+      7. Error messages don't leak internal details
+      8. Log sanitization (no PII in logs)
+    tools: [Read, Grep, Glob, Bash]
+    deliverable: "Security & compliance audit report"
+
+  # ── TRACK G: Consolidation & Decision ────────────────────────
+  - role: pm
+    name: "PM — GTM Decision"
+    track: G
+    focus: |
+      Consolidate all track reports into final GO/NO-GO/CONDITIONAL-GO.
+      Weight each finding by severity and blast radius.
+      If CONDITIONAL-GO: specify exact conditions + timeline.
+      If NO-GO: specify minimum fix list + estimated days to re-evaluate.
+      Produce executive summary for stakeholder decision.
+    tools: [Read, Write]
+    deliverable: "Final GTM decision report with action items"
+
+# ════════════════════════════════════════════════════════════════
+# EXECUTION STRATEGY
+# ════════════════════════════════════════════════════════════════
+
+execution:
+  mode: parallel_then_consolidate
+
+  phase_1_parallel:
+    description: "All 6 investigation tracks run simultaneously"
+    tracks: [A, B, C, D, E, F]
+    duration: "~30-45 min"
+
+  phase_2_consolidate:
+    description: "PM consolidates all findings into decision"
+    track: G
+    duration: "~15 min"
+    input: "All track deliverables"
+    output: "GO/NO-GO/CONDITIONAL-GO + action plan"
