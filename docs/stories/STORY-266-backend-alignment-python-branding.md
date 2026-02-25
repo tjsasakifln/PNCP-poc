@@ -15,19 +15,19 @@ O Dockerfile usa `python:3.11-slim` mas `pyproject.toml` targeta Python 3.12, cr
 
 ## Acceptance Criteria
 
-- [ ] AC1: Dockerfile e pyproject.toml concordam na versao Python (ambos 3.12 ou ambos 3.11)
-- [ ] AC2: Build Docker funciona sem erros com a versao alinhada
-- [ ] AC3: Full backend test suite passa com a versao alinhada
-- [ ] AC4: User-Agent em todas as requests HTTP externas diz "SmartLic" (nao "BidIQ")
-- [ ] AC5: `grep -r "BidIQ" backend/` retorna zero resultados em arquivos de producao (testes podem manter referencias historicas)
+- [x] AC1: Dockerfile e pyproject.toml concordam na versao Python (ambos 3.12 ou ambos 3.11)
+- [x] AC2: Build Docker funciona sem erros com a versao alinhada
+- [x] AC3: Full backend test suite passa com a versao alinhada
+- [x] AC4: User-Agent em todas as requests HTTP externas diz "SmartLic" (nao "BidIQ")
+- [x] AC5: `grep -r "BidIQ" backend/` retorna zero resultados em arquivos de producao (testes podem manter referencias historicas)
 
 ## Tasks
 
-- [ ] Task 1: Alinhar `backend/Dockerfile` para `python:3.12-slim` (ou atualizar pyproject.toml para target 3.11)
-- [ ] Task 2: Rebuild Docker image e verificar que compila sem erros
-- [ ] Task 3: Em `backend/pncp_client.py`: substituir User-Agent "BidIQ" por "SmartLic"
-- [ ] Task 4: Grep por "BidIQ" em todo o backend — corrigir qualquer referencia em codigo de producao
-- [ ] Task 5: Rodar full `pytest`
+- [x] Task 1: Alinhar `backend/Dockerfile` para `python:3.12-slim` (ou atualizar pyproject.toml para target 3.11)
+- [x] Task 2: Rebuild Docker image e verificar que compila sem erros
+- [x] Task 3: Em `backend/pncp_client.py`: substituir User-Agent "BidIQ" por "SmartLic"
+- [x] Task 4: Grep por "BidIQ" em todo o backend — corrigir qualquer referencia em codigo de producao
+- [x] Task 5: Rodar full `pytest`
 
 ## Test Plan
 
@@ -43,13 +43,22 @@ O Dockerfile usa `python:3.11-slim` mas `pyproject.toml` targeta Python 3.12, cr
 
 ## Files Changed
 
-- `backend/Dockerfile` (EDIT — base image version)
-- `backend/pncp_client.py` (EDIT — User-Agent strings)
-- Possiveis outros arquivos com referencia "BidIQ"
+- `backend/Dockerfile` (EDIT — python:3.11→3.12, BidIQ→SmartLic)
+- `backend/pyproject.toml` (EDIT — name, description, requires-python)
+- `backend/config.py` (EDIT — CORS origins updated to smartlic hostnames)
+- `backend/job_queue.py` (EDIT — Redis key prefix bidiq:→smartlic:)
+- `backend/progress.py` (EDIT — Redis key prefix bidiq:→smartlic:)
+- `backend/routes/bid_analysis.py` (EDIT — Redis cache key prefix)
+- `backend/routes/emails.py` (EDIT — default backend URL)
+- `backend/railway.toml` (EDIT — comments BidIQ→SmartLic)
+- `backend/railway-worker.toml` (EDIT — comments BidIQ→SmartLic)
+- `backend/README.md` (EDIT — title BidIQ→SmartLic)
+- `backend/tests/test_job_queue.py` (EDIT — Redis key assertion)
+- `backend/tests/test_progress.py` (EDIT — Redis key assertions)
 
 ## Definition of Done
 
-- [ ] Versao Python alinhada entre Dockerfile e pyproject.toml
-- [ ] Docker build funcional
-- [ ] Zero "BidIQ" em codigo de producao
-- [ ] Full pytest suite passing
+- [x] Versao Python alinhada entre Dockerfile e pyproject.toml
+- [x] Docker build funcional
+- [x] Zero "BidIQ" em codigo de producao
+- [x] Full pytest suite passing

@@ -227,7 +227,7 @@ class TestProgressTracker:
             channel = call_args[0][0]
             event_json = call_args[0][1]
 
-            assert channel == "bidiq:progress:test-redis-123:events"
+            assert channel == "smartlic:progress:test-redis-123:events"
             event_data = json.loads(event_json)
             assert event_data["stage"] == "fetching"
             assert event_data["progress"] == 30
@@ -289,7 +289,7 @@ class TestTrackerManagement:
             # Check Redis metadata was stored
             mock_redis_client.hset.assert_called_once()
             call_args = mock_redis_client.hset.call_args
-            assert call_args[0][0] == "bidiq:progress:search-redis-001"
+            assert call_args[0][0] == "smartlic:progress:search-redis-001"
             assert "uf_count" in call_args[1]["mapping"]
 
             mock_redis_client.expire.assert_called_once()
@@ -359,7 +359,7 @@ class TestTrackerManagement:
 
             # Check Redis delete was called
             mock_redis_client.delete.assert_called_once_with(
-                "bidiq:progress:search-redis-003"
+                "smartlic:progress:search-redis-003"
             )
 
     @pytest.mark.asyncio
@@ -691,7 +691,7 @@ class TestEmitDegraded:
             channel = call_args[0][0]
             event_json = call_args[0][1]
 
-            assert channel == "bidiq:progress:test-degraded-redis:events"
+            assert channel == "smartlic:progress:test-degraded-redis:events"
             event_data = json.loads(event_json)
             assert event_data["stage"] == "degraded"
             assert event_data["progress"] == 100

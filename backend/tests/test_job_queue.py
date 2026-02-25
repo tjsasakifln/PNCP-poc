@@ -331,7 +331,7 @@ class TestResultPersistence:
 
         mock_redis.set.assert_awaited_once()
         call_args = mock_redis.set.call_args
-        assert call_args[0][0] == "bidiq:job_result:search-1:resumo_json"
+        assert call_args[0][0] == "smartlic:job_result:search-1:resumo_json"
         assert call_args[1].get("ex") == 3600 or (len(call_args[0]) > 2 and call_args[0][2] == 3600)
 
     @pytest.mark.asyncio

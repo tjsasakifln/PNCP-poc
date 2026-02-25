@@ -43,7 +43,7 @@ def _generate_unsubscribe_token(user_id: str) -> str:
 def get_unsubscribe_url(user_id: str) -> str:
     """Build unsubscribe URL for email footer."""
     token = _generate_unsubscribe_token(user_id)
-    backend_url = os.getenv("BACKEND_URL", "https://bidiq-backend-production.up.railway.app")
+    backend_url = os.getenv("BACKEND_URL", "https://smartlic-backend-production.up.railway.app")
     return f"{backend_url}/emails/unsubscribe?user_id={user_id}&token={token}"
 
 

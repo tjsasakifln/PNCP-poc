@@ -69,7 +69,7 @@ async def analyze_bid(
     _check_rate_limit(user_id)
 
     # AC11: Check Redis cache first
-    cache_key = f"bidiq:deep_analysis:{user_id}:{bid_id}"
+    cache_key = f"smartlic:deep_analysis:{user_id}:{bid_id}"
     cached_result = await _get_cached_analysis(cache_key)
     if cached_result:
         logger.debug(f"Deep analysis cache hit: {bid_id}")

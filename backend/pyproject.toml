@@ -3,10 +3,10 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bidiq-uniformes-backend"
-version = "0.2.0"
-description = "BidIQ Uniformes POC - Backend API"
-requires-python = ">=3.11"
+name = "smartlic-backend"
+version = "0.5.0"
+description = "SmartLic - Backend API"
+requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
 # Test discovery

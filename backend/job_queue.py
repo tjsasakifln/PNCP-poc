@@ -255,7 +255,7 @@ async def persist_job_result(search_id: str, field: str, value: Any) -> None:
         return
 
     try:
-        key = f"bidiq:job_result:{search_id}:{field}"
+        key = f"smartlic:job_result:{search_id}:{field}"
         serialized = json.dumps(value) if not isinstance(value, str) else value
         await redis.set(key, serialized, ex=3600)  # 1 hour TTL
     except Exception as e:
@@ -278,7 +278,7 @@ async def get_job_result(search_id: str, field: str) -> Optional[Any]:
         return None
 
     try:
-        key = f"bidiq:job_result:{search_id}:{field}"
+        key = f"smartlic:job_result:{search_id}:{field}"
         raw = await redis.get(key)
         if raw is None:
             return None

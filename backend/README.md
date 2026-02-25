@@ -1,4 +1,4 @@
-# Backend - BidIQ Uniformes POC
+# Backend - SmartLic
 
 ## Estrutura
 

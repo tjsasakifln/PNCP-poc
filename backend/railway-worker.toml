@@ -1,7 +1,7 @@
 # =============================================================================
-# BidIQ Uniformes - Worker Railway Configuration
+# SmartLic - Worker Railway Configuration
 # =============================================================================
-# Service: bidiq-worker (ARQ background job processor)
+# Service: smartlic-worker (ARQ background job processor)
 # Process: arq job_queue.WorkerSettings
 # NOTE: No healthcheck — worker is NOT an HTTP server
 # =============================================================================

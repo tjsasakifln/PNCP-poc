@@ -1,10 +1,10 @@
 # =============================================================================
-# BidIQ Uniformes - Backend Dockerfile
+# SmartLic - Backend Dockerfile
 # =============================================================================
 # Production-ready Python FastAPI application for Railway deployment
-# Base: Python 3.11 slim for smaller image size
+# Base: Python 3.12 slim for smaller image size
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # CACHE BUST - This label forces Railway to rebuild when changed
 # Update timestamp to invalidate all cached layers: 2026-02-20T12:00:00

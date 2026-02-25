@@ -93,7 +93,7 @@ class ProgressTracker:
         if redis is None:
             return
 
-        channel = f"bidiq:progress:{self.search_id}:events"
+        channel = f"smartlic:progress:{self.search_id}:events"
         try:
             event_json = json.dumps(event.to_dict())
             await redis.publish(channel, event_json)
@@ -357,7 +357,7 @@ async def get_tracker(search_id: str) -> Optional[ProgressTracker]:
     redis = await get_redis_pool()
     if redis:
         try:
-            key = f"bidiq:progress:{search_id}"
+            key = f"smartlic:progress:{search_id}"
             metadata = await redis.hgetall(key)
             if metadata and "uf_count" in metadata:
                 uf_count = int(metadata["uf_count"])
@@ -383,7 +383,7 @@ async def remove_tracker(search_id: str) -> None:
     redis = await get_redis_pool()
     if redis:
         try:
-            key = f"bidiq:progress:{search_id}"
+            key = f"smartlic:progress:{search_id}"
             await redis.delete(key)
         except Exception as e:
             logger.warning(f"Failed to remove tracker from Redis: {e}")
@@ -426,7 +426,7 @@ async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
         return
 
     try:
-        key = f"bidiq:progress:{search_id}"
+        key = f"smartlic:progress:{search_id}"
         metadata = {
             "uf_count": str(uf_count),
             "created_at": str(time.time()),
@@ -449,7 +449,7 @@ async def subscribe_to_events(search_id: str) -> Optional["redis.asyncio.client.
 
     try:
         pubsub = redis.pubsub()
-        channel = f"bidiq:progress:{search_id}:events"
+        channel = f"smartlic:progress:{search_id}:events"
         await pubsub.subscribe(channel)
         logger.debug(f"Subscribed to Redis channel: {channel}")
         return pubsub

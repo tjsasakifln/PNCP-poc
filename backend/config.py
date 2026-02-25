@@ -628,11 +628,12 @@ DEFAULT_CORS_ORIGINS: list[str] = [
 
 # Production allowed origins (always included when CORS_ORIGINS is set)
 # STORY-210 AC14: Added smartlic.tech custom domain
+# STORY-266: Legacy Railway hostnames kept for backward compat until Railway service rename
 PRODUCTION_ORIGINS: list[str] = [
-    "https://bidiq-frontend-production.up.railway.app",
-    "https://bidiq-uniformes-production.up.railway.app",
     "https://smartlic.tech",
     "https://www.smartlic.tech",
+    "https://smartlic-frontend-production.up.railway.app",
+    "https://smartlic-backend-production.up.railway.app",
 ]
 
 
@@ -657,15 +658,17 @@ def get_cors_origins() -> list[str]:
         # Production (Railway environment detected):
         >>> get_cors_origins()
         ['http://localhost:3000', 'http://127.0.0.1:3000',
-         'https://bidiq-frontend-production.up.railway.app',
-         'https://bidiq-uniformes-production.up.railway.app']
+         'https://smartlic.tech', 'https://www.smartlic.tech',
+         'https://smartlic-frontend-production.up.railway.app',
+         'https://smartlic-backend-production.up.railway.app']
 
         # Production (env var set):
         >>> # CORS_ORIGINS=https://myapp.com,https://api.myapp.com
         >>> get_cors_origins()
         ['https://myapp.com', 'https://api.myapp.com',
-         'https://bidiq-frontend-production.up.railway.app',
-         'https://bidiq-uniformes-production.up.railway.app']
+         'https://smartlic.tech', 'https://www.smartlic.tech',
+         'https://smartlic-frontend-production.up.railway.app',
+         'https://smartlic-backend-production.up.railway.app']
 
     Returns:
         List of allowed origin URLs

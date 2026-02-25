@@ -1,8 +1,8 @@
 # =============================================================================
-# BidIQ Uniformes - Backend Railway Configuration
+# SmartLic - Backend Railway Configuration
 # =============================================================================
-# Service: bidiq-backend
-# Framework: FastAPI + Python 3.11
+# Service: smartlic-backend
+# Framework: FastAPI + Python 3.12
 # =============================================================================
 
 [build]
