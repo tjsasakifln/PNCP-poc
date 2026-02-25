@@ -1,0 +1,54 @@
+name: Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+
+jobs:
+  check-migrations:
+    name: Check Unapplied Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check for unapplied migrations
+        run: |
+          echo "Checking migration status..."
+          OUTPUT=$(supabase migration list --linked 2>&1)
+          echo "$OUTPUT"
+
+          # Check if any migration shows as NOT applied (local only)
+          if echo "$OUTPUT" | grep -q "Not applied"; then
+            echo ""
+            echo "::error::Found unapplied migrations! Run 'supabase db push' before deploying."
+            echo ""
+            echo "To fix this:"
+            echo "  1. export SUPABASE_ACCESS_TOKEN=<your-token>"
+            echo "  2. supabase link --project-ref <project-ref>"
+            echo "  3. supabase db push"
+            exit 1
+          fi
+
+          echo "All migrations are applied to production."
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
