@@ -344,3 +344,134 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
+  notify-slack:
+    name: Slack Deploy Notification
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-backend-staging, deploy-frontend-staging, smoke-tests-staging]
+    if: always()
+    steps:
+      - name: Check for Slack webhook
+        id: check_webhook
+        run: |
+          if [ -z "$SLACK_WEBHOOK" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "SLACK_DEPLOY_WEBHOOK not set, skipping notification"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_DEPLOY_WEBHOOK }}
+
+      - name: Prepare notification payload
+        if: steps.check_webhook.outputs.skip != 'true'
+        id: payload
+        run: |
+          # Determine overall status
+          BACKEND_STATUS="${{ needs.deploy-backend-staging.result }}"
+          FRONTEND_STATUS="${{ needs.deploy-frontend-staging.result }}"
+          SMOKE_STATUS="${{ needs.smoke-tests-staging.result }}"
+
+          # Overall status: failure if any deploy failed, success if all succeeded/skipped
+          if [ "$BACKEND_STATUS" = "failure" ] || [ "$FRONTEND_STATUS" = "failure" ]; then
+            OVERALL="failure"
+            EMOJI="❌"
+            COLOR="#dc3545"
+          elif [ "$SMOKE_STATUS" = "failure" ]; then
+            OVERALL="warning"
+            EMOJI="⚠️"
+            COLOR="#ffc107"
+          else
+            OVERALL="success"
+            EMOJI="✅"
+            COLOR="#28a745"
+          fi
+
+          # Determine which services were deployed
+          SERVICES=""
+          if [ "$BACKEND_STATUS" = "success" ]; then
+            SERVICES="Backend"
+          fi
+          if [ "$FRONTEND_STATUS" = "success" ]; then
+            if [ -n "$SERVICES" ]; then
+              SERVICES="$SERVICES + Frontend"
+            else
+              SERVICES="Frontend"
+            fi
+          fi
+          if [ -z "$SERVICES" ]; then
+            SERVICES="None (all skipped or failed)"
+          fi
+
+          # Short SHA
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+
+          # Commit message (first line only, escape special chars for JSON)
+          COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -1 | sed 's/"/\\"/g' | sed "s/'/\\\\'/g" | cut -c1-100)
+
+          # Build services detail
+          BACKEND_EMOJI="⏭️"
+          FRONTEND_EMOJI="⏭️"
+          SMOKE_EMOJI="⏭️"
+          [ "$BACKEND_STATUS" = "success" ] && BACKEND_EMOJI="✅"
+          [ "$BACKEND_STATUS" = "failure" ] && BACKEND_EMOJI="❌"
+          [ "$FRONTEND_STATUS" = "success" ] && FRONTEND_EMOJI="✅"
+          [ "$FRONTEND_STATUS" = "failure" ] && FRONTEND_EMOJI="❌"
+          [ "$SMOKE_STATUS" = "success" ] && SMOKE_EMOJI="✅"
+          [ "$SMOKE_STATUS" = "failure" ] && SMOKE_EMOJI="❌"
+
+          echo "overall=$OVERALL" >> $GITHUB_OUTPUT
+          echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
+          echo "color=$COLOR" >> $GITHUB_OUTPUT
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "backend_emoji=$BACKEND_EMOJI" >> $GITHUB_OUTPUT
+          echo "frontend_emoji=$FRONTEND_EMOJI" >> $GITHUB_OUTPUT
+          echo "smoke_emoji=$SMOKE_EMOJI" >> $GITHUB_OUTPUT
+
+      - name: Send Slack notification
+        if: steps.check_webhook.outputs.skip != 'true'
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_DEPLOY_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.payload.outputs.emoji }} SmartLic Staging Deploy — ${{ steps.payload.outputs.overall }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "*Branch:*\n`${{ github.ref_name }}`" },
+                    { "type": "mrkdwn", "text": "*Services:*\n${{ steps.payload.outputs.services }}" },
+                    { "type": "mrkdwn", "text": "*Commit:*\n`${{ steps.payload.outputs.short_sha }}` — ${{ steps.payload.outputs.commit_msg }}" },
+                    { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "${{ steps.payload.outputs.backend_emoji }} Backend" },
+                    { "type": "mrkdwn", "text": "${{ steps.payload.outputs.frontend_emoji }} Frontend" },
+                    { "type": "mrkdwn", "text": "${{ steps.payload.outputs.smoke_emoji }} Smoke Tests" }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
