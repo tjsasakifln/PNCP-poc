@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { BuscaResult } from "../../types";
 import type { StatusLicitacao } from "../../../components/StatusFilter";
 import type { Esfera } from "../../components/EsferaFilter";
@@ -13,9 +13,10 @@ import { useQuota } from "../../../hooks/useQuota";
 import { useSearchSSE, type SearchProgressEvent, type PartialProgress, type RefreshAvailableInfo, type UfStatus, type BatchProgress } from "../../../hooks/useSearchSSE";
 import { useSearchPolling } from "../../../hooks/useSearchPolling";
 import { useSavedSearches } from "../../../hooks/useSavedSearches";
-import { getUserFriendlyError, getMessageFromErrorCode, isTransientError, getRetryMessage } from "../../../lib/error-messages";
+import { getUserFriendlyError, getMessageFromErrorCode, isTransientError, getRetryMessage, getHumanizedError, type HumanizedError } from "../../../lib/error-messages";
 import { saveSearchState, restoreSearchState } from "../../../lib/searchStatePersistence";
 import { saveLastSearch } from "../../../lib/lastSearchCache";
+import { savePartialSearch, recoverPartialSearch, clearPartialSearch, cleanupExpiredPartials } from "../../../lib/searchPartialCache";
 import { toast } from "sonner";
 import { dateDiffInDays } from "../../../lib/utils/dateDiffInDays";
 import { getCorrelationId, logCorrelatedRequest } from "../../../lib/utils/correlationId";
@@ -147,6 +148,18 @@ export interface UseSearchReturn {
   retryNow: () => void;
   /** CRIT-008 AC5: Cancel auto-retry countdown */
   cancelRetry: () => void;
+  /** STAB-006 AC2: Humanized error with action suggestions */
+  humanizedError: HumanizedError | null;
+  /** STAB-006 AC3: True when showing partial results from localStorage */
+  showingPartialResults: boolean;
+  /** STAB-006 AC3: Dismiss partial results banner */
+  dismissPartialResults: () => void;
+  /** STAB-003 AC5: True when search elapsed >100s (finalizing) */
+  isFinalizing: boolean;
+  /** STAB-009 AC5: True when async 202 mode is active */
+  asyncSearchActive: boolean;
+  /** STAB-009 AC7: Number of SSE reconnection attempts */
+  sseReconnectAttempts: number;
 }
 
 export function useSearch(filters: UseSearchParams): UseSearchReturn {
@@ -206,6 +219,22 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   // UX-350 AC1-AC4: LLM summary timeout — show fallback after 30s if AI summary not ready
   const llmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // STAB-006 AC3: Partial results recovery from localStorage
+  const [showingPartialResults, setShowingPartialResults] = useState(false);
+
+  // STAB-003 AC5: Finalizing indicator (>100s elapsed)
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const searchStartTimeRef = useRef<number>(0);
+  const finalizingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // STAB-009 AC7: SSE reconnection tracking
+  const sseReconnectAttemptsRef = useRef(0);
+
+  // STAB-006 AC4: Clean up expired partials on mount
+  useEffect(() => {
+    cleanupExpiredPartials();
+  }, []);
 
   // F-01 AC21: Handle background job completion via SSE
   // GTM-ARCH-001 AC3/AC4: Also handles search_complete from async Worker
@@ -271,6 +300,14 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         download_url: event.detail.download_url || null,
         excel_status: (event.detail.excel_status === 'failed' ? 'failed' : 'ready') as BuscaResult['excel_status'],
       } : prev);
+    } else if (event.stage === 'uf_complete' || event.stage === 'partial_results') {
+      // STAB-006 AC4: Save partial results to localStorage on each SSE update
+      const sid = asyncSearchIdRef.current || searchId;
+      if (sid) {
+        const ufsCompleted = event.detail.ufs_completed ?? [];
+        const totalUfs = event.detail.uf_total ?? filters.ufsSelecionadas.size;
+        savePartialSearch(sid, result, ufsCompleted, totalUfs);
+      }
     } else if (event.stage === 'error' && asyncSearchActive) {
       // GTM-ARCH-001: Worker error during async search
       setAsyncSearchActive(false);
@@ -304,7 +341,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     authToken: session?.access_token,
     selectedUfs: Array.from(filters.ufsSelecionadas),
     onEvent: handleSseEvent,
-    onError: () => setUseRealProgress(false),
+    onError: () => {
+      setUseRealProgress(false);
+      // STAB-009 AC7: Track SSE reconnection attempts
+      sseReconnectAttemptsRef.current += 1;
+    },
   });
 
   // CRIT-003 AC12-AC13, AC21: Polling fallback when SSE disconnects
@@ -341,6 +382,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     abortControllerRef.current?.abort();
     // UX-350: Clear LLM timeout on cancel
     if (llmTimeoutRef.current) { clearTimeout(llmTimeoutRef.current); llmTimeoutRef.current = null; }
+    // STAB-003: Clear finalizing state on cancel
+    if (finalizingTimerRef.current) { clearTimeout(finalizingTimerRef.current); finalizingTimerRef.current = null; }
+    setIsFinalizing(false);
     // CRIT-006 AC16: Notify backend of cancellation
     const activeId = asyncSearchIdRef.current || searchId;
     if (activeId && session?.access_token) {
@@ -426,9 +470,24 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     const newSearchId = crypto.randomUUID();
     setSearchId(newSearchId);
     setUseRealProgress(true);
+    setShowingPartialResults(false);
+    setIsFinalizing(false);
+    sseReconnectAttemptsRef.current = 0;
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
+
+    // STAB-003 AC1: Client-side 115s timeout (pipeline 110s + 5s margin)
+    const clientTimeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 115_000);
+
+    // STAB-003 AC5: Show "Finalizando busca..." after 100s
+    searchStartTimeRef.current = Date.now();
+    if (finalizingTimerRef.current) clearTimeout(finalizingTimerRef.current);
+    finalizingTimerRef.current = setTimeout(() => {
+      setIsFinalizing(true);
+    }, 100_000);
 
     const searchStartTime = Date.now();
     const totalStates = filters.ufsSelecionadas.size;
@@ -598,6 +657,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       setResult(data);
       setRawCount(data.total_raw || 0);
 
+      // STAB-006 AC4: Clear partial cache on successful complete search
+      clearPartialSearch(newSearchId);
+
       // GTM-UX-004 AC5: Persist last successful search for SourcesUnavailable fallback
       if (data.licitacoes?.length > 0) {
         saveLastSearch(data);
@@ -649,7 +711,17 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       });
 
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return;
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        // STAB-006 AC3: On timeout/abort, try to recover partial results from localStorage
+        const partial = recoverPartialSearch(newSearchId);
+        if (partial && partial.partialResult) {
+          setResult(partial.partialResult as BuscaResult);
+          setShowingPartialResults(true);
+          setLoading(false);
+          toast.info("Mostrando resultados parciais salvos");
+        }
+        return;
+      }
       // CRIT-009 AC6: Build structured SearchError preserving all metadata
       const rawMsg = e instanceof Error ? e.message : String(e);
       const errMeta = (e as any)?._searchErrorMeta as {
@@ -675,6 +747,20 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         setError(null);
         toast.info("Nao foi possivel atualizar os dados. Mostrando resultados anteriores.");
       } else {
+        // STAB-006 AC3: On timeout, check localStorage for partial results
+        const isTimeoutError = searchError.httpStatus === 524 || searchError.httpStatus === 504 ||
+          searchError.rawMessage?.toLowerCase().includes('timeout') ||
+          searchError.rawMessage?.toLowerCase().includes('demorou');
+        if (isTimeoutError) {
+          const partial = recoverPartialSearch(newSearchId);
+          if (partial && partial.partialResult) {
+            setResult(partial.partialResult as BuscaResult);
+            setShowingPartialResults(true);
+            setError(null);
+            toast.info("Mostrando resultados parciais salvos");
+            return;
+          }
+        }
         // CRIT-005 AC23: On error, if we have previous results, show them with error toast
         if (previousResultFallback && previousResultFallback.licitacoes?.length > 0) {
           setResult(previousResultFallback);
@@ -720,6 +806,13 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
       trackEvent('search_failed', { error_message: friendlyMessage, error_code: errorCode, search_mode: filters.searchMode, force_fresh: forceFresh });
     } finally {
       cleanupInterval();
+      // STAB-003: Clear client timeout and finalizing timer
+      clearTimeout(clientTimeoutId);
+      if (finalizingTimerRef.current) {
+        clearTimeout(finalizingTimerRef.current);
+        finalizingTimerRef.current = null;
+      }
+      setIsFinalizing(false);
       // GTM-ARCH-001: Keep loading active for async mode (SSE will complete it)
       if (!asyncSearchActive && !asyncSearchIdRef.current) {
         setLoading(false);
@@ -956,6 +1049,16 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   const buscarForceFresh = async () => buscar({ forceFresh: true });
 
+  /** STAB-006 AC3: Dismiss partial results banner */
+  const dismissPartialResults = () => {
+    setShowingPartialResults(false);
+  };
+
+  /** STAB-006 AC2: Compute humanized error from current error state */
+  const humanizedError: HumanizedError | null = error
+    ? getHumanizedError(error.httpStatus, error.rawMessage)
+    : null;
+
   return {
     loading, loadingStep, statesProcessed, error, quotaError,
     result, setResult, setError, rawCount,
@@ -977,5 +1080,11 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     retryExhausted,
     retryNow,
     cancelRetry,
+    humanizedError,
+    showingPartialResults,
+    dismissPartialResults,
+    isFinalizing,
+    asyncSearchActive,
+    sseReconnectAttempts: sseReconnectAttemptsRef.current,
   };
 }
