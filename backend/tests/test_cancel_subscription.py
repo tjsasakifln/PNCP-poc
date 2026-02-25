@@ -77,8 +77,9 @@ class TestCancelSubscriptionSuccess:
 class TestCancelSubscriptionNoActive:
     """AC15: test_cancel_subscription_no_active_subscription"""
 
+    @patch("routes.subscriptions.os.getenv", return_value="sk_test_fake")
     @patch("supabase_client.get_supabase")
-    def test_cancel_no_active_subscription(self, mock_get_supabase, client):
+    def test_cancel_no_active_subscription(self, mock_get_supabase, mock_getenv, client):
         """Returns 404 when user has no active subscription."""
         sb_mock = MagicMock()
         mock_get_supabase.return_value = sb_mock
@@ -93,8 +94,9 @@ class TestCancelSubscriptionNoActive:
         assert response.status_code == 404
         assert "ativa" in response.json()["detail"].lower() or "assinatura" in response.json()["detail"].lower()
 
+    @patch("routes.subscriptions.os.getenv", return_value="sk_test_fake")
     @patch("supabase_client.get_supabase")
-    def test_cancel_no_stripe_subscription_id(self, mock_get_supabase, client):
+    def test_cancel_no_stripe_subscription_id(self, mock_get_supabase, mock_getenv, client):
         """Returns 400 when subscription has no Stripe ID."""
         sb_mock = MagicMock()
         mock_get_supabase.return_value = sb_mock

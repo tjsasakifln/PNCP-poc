@@ -107,6 +107,9 @@ class TestMeEndpoint:
             mock_sb = MagicMock()
             mock_get_supabase.return_value = mock_sb
 
+            # Override get_db to prevent real Supabase initialization
+            app.dependency_overrides[get_db] = lambda: mock_sb
+
             # Mock user email
             mock_user_data = MagicMock()
             mock_user_data.user.email = "trial@example.com"
@@ -135,18 +138,34 @@ class TestMeEndpoint:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("quota.create_fallback_quota_info")
     @patch("quota.check_quota")
     @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
-        self, mock_get_supabase, mock_check_quota, mock_check_roles
+        self, mock_get_supabase, mock_check_quota, mock_create_fallback, mock_check_roles
     ):
         """Should return safe fallback if quota check fails."""
         cleanup = setup_auth_override("user-123")
         try:
             mock_check_quota.side_effect = Exception("Database error")
 
+            # Mock fallback quota info
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+            mock_create_fallback.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="free_trial",
+                plan_name="FREE Trial",
+                capabilities=PLAN_CAPABILITIES["free_trial"],
+                quota_used=0,
+                quota_remaining=999999,
+                quota_reset_date=datetime.now(timezone.utc),
+            )
+
             mock_sb = MagicMock()
             mock_get_supabase.return_value = mock_sb
+
+            # Override get_db to prevent real Supabase initialization
+            app.dependency_overrides[get_db] = lambda: mock_sb
 
             # Mock user email
             mock_user_data = MagicMock()

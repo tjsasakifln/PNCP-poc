@@ -516,13 +516,13 @@ class TestMigrationStructure:
     def test_migration_file_exists(self):
         """Migration 031 SQL file exists."""
         from pathlib import Path
-        migration = Path("D:/pncp-poc/supabase/migrations/031_cache_health_metadata.sql")
+        migration = Path(__file__).parent.parent.parent / "supabase" / "migrations" / "031_cache_health_metadata.sql"
         assert migration.exists(), "Migration file 031_cache_health_metadata.sql not found"
 
     def test_migration_contains_all_fields(self):
         """Migration adds all 6 required fields."""
         from pathlib import Path
-        sql = Path("D:/pncp-poc/supabase/migrations/031_cache_health_metadata.sql").read_text()
+        sql = (Path(__file__).parent.parent.parent / "supabase" / "migrations" / "031_cache_health_metadata.sql").read_text()
 
         required_fields = [
             "last_success_at",
@@ -538,6 +538,6 @@ class TestMigrationStructure:
     def test_migration_contains_index(self):
         """AC10: Migration creates degraded index."""
         from pathlib import Path
-        sql = Path("D:/pncp-poc/supabase/migrations/031_cache_health_metadata.sql").read_text()
+        sql = (Path(__file__).parent.parent.parent / "supabase" / "migrations" / "031_cache_health_metadata.sql").read_text()
         assert "idx_search_cache_degraded" in sql
         assert "degraded_until" in sql

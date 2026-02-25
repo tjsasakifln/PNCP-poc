@@ -19,7 +19,8 @@ def override_require_auth(user_id: str = "test-user-123"):
 def setup_auth():
     """Setup auth override for all tests in this module."""
     app.dependency_overrides[require_auth] = override_require_auth()
-    yield
+    with patch("quota.require_active_plan", new_callable=AsyncMock, return_value=None):
+        yield
     app.dependency_overrides.clear()
 
 

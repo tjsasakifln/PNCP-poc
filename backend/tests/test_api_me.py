@@ -5,6 +5,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timezone, timedelta
 from main import app
 from auth import require_auth
+from database import get_db
 
 
 client = TestClient(app)
@@ -17,12 +18,23 @@ def override_require_auth(user_id: str = "user-123"):
     return _override
 
 
-def setup_auth_override(user_id="user-123"):
-    """Setup auth override and return cleanup function."""
+def setup_auth_and_db(user_id="user-123"):
+    """Setup auth + get_db dependency overrides. Returns (mock_db, cleanup).
+
+    The /me endpoint uses ``db=Depends(get_db)`` for Supabase access.
+    Overriding ``get_db`` via ``app.dependency_overrides`` is the correct
+    pattern (patching ``supabase_client.get_supabase`` does NOT intercept
+    the FastAPI dependency-injection chain and causes
+    ``ModuleNotFoundError: No module named 'websockets.asyncio'``).
+    """
+    mock_sb = MagicMock()
     app.dependency_overrides[require_auth] = override_require_auth(user_id)
+    app.dependency_overrides[get_db] = lambda: mock_sb
+
     def cleanup():
         app.dependency_overrides.clear()
-    return cleanup
+
+    return mock_sb, cleanup
 
 
 class TestMeEndpointFeatureFlagEnabled:
@@ -30,13 +42,12 @@ class TestMeEndpointFeatureFlagEnabled:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_user_profile_with_capabilities(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return complete user profile with plan capabilities."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -50,10 +61,6 @@ class TestMeEndpointFeatureFlagEnabled:
                 quota_remaining=27,
                 quota_reset_date=datetime.now(timezone.utc),
             )
-
-            # Mock Supabase
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             # Mock user email
             mock_user_data = MagicMock()
@@ -81,13 +88,12 @@ class TestMeEndpointFeatureFlagEnabled:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_trial_info_for_free_users(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should include trial_expires_at for FREE trial users."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -102,9 +108,6 @@ class TestMeEndpointFeatureFlagEnabled:
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=future_date,
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "trial@example.com"
@@ -124,13 +127,12 @@ class TestMeEndpointFeatureFlagEnabled:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_expired_status_for_expired_trial(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return 'expired' subscription_status for expired trial."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -145,9 +147,6 @@ class TestMeEndpointFeatureFlagEnabled:
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=past_date,
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "expired@example.com"
@@ -164,13 +163,13 @@ class TestMeEndpointFeatureFlagEnabled:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
-    @patch("supabase_client.get_supabase")
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.check_quota")
     def test_returns_active_status_for_paid_plan(
-        self, mock_check_quota, mock_get_supabase
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return 'active' subscription_status for paid plans."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -184,9 +183,6 @@ class TestMeEndpointFeatureFlagEnabled:
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=None,  # No trial
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "paid@example.com"
@@ -208,16 +204,12 @@ class TestMeEndpointFeatureFlagDisabled:
 
     @patch("routes.user.ENABLE_NEW_PRICING", False)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     def test_returns_legacy_plan_when_disabled(
-        self, mock_get_supabase, mock_check_roles
+        self, mock_check_roles
     ):
         """Should return legacy plan info when feature flag is disabled."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
-
             mock_user_data = MagicMock()
             mock_user_data.user.email = "legacy@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
@@ -241,13 +233,12 @@ class TestMeEndpointDifferentPlanTiers:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_free_trial_plan_capabilities(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return correct capabilities for FREE Trial plan."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -261,9 +252,6 @@ class TestMeEndpointDifferentPlanTiers:
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=datetime.now(timezone.utc) + timedelta(days=5),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "free@example.com"
@@ -285,13 +273,12 @@ class TestMeEndpointDifferentPlanTiers:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_consultor_agil_plan_capabilities(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return correct capabilities for Consultor Ágil plan."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -304,9 +291,6 @@ class TestMeEndpointDifferentPlanTiers:
                 quota_remaining=25,
                 quota_reset_date=datetime.now(timezone.utc),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "consultor@example.com"
@@ -326,13 +310,12 @@ class TestMeEndpointDifferentPlanTiers:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_maquina_plan_capabilities(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return correct capabilities for Máquina plan."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -345,9 +328,6 @@ class TestMeEndpointDifferentPlanTiers:
                 quota_remaining=150,
                 quota_reset_date=datetime.now(timezone.utc),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "maquina@example.com"
@@ -371,13 +351,12 @@ class TestMeEndpointQuotaInfo:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_quota_used_and_remaining(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return quota_used and quota_remaining."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -390,9 +369,6 @@ class TestMeEndpointQuotaInfo:
                 quota_remaining=35,
                 quota_reset_date=datetime.now(timezone.utc),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "quota@example.com"
@@ -411,13 +387,12 @@ class TestMeEndpointQuotaInfo:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_quota_reset_date(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return quota_reset_date in ISO format."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -431,9 +406,6 @@ class TestMeEndpointQuotaInfo:
                 quota_remaining=200,
                 quota_reset_date=reset_date,
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "reset@example.com"
@@ -454,18 +426,31 @@ class TestMeEndpointErrorHandling:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
+    @patch("quota.create_fallback_quota_info")
     @patch("quota.check_quota")
-    @patch("supabase_client.get_supabase")
     def test_handles_quota_check_failure_gracefully(
-        self, mock_get_supabase, mock_check_quota, mock_check_roles
+        self, mock_check_quota, mock_create_fallback, mock_check_roles
     ):
         """Should return safe fallback if quota check fails."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
+            from quota import QuotaInfo, PLAN_CAPABILITIES
+
             mock_check_quota.side_effect = Exception("Database error")
 
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
+            # Mock the fallback function that is called when check_quota fails.
+            # create_fallback_quota_info internally calls get_supabase() via
+            # get_plan_from_profile, so it must also be mocked.
+            mock_create_fallback.return_value = QuotaInfo(
+                allowed=True,
+                plan_id="free_trial",
+                plan_name="FREE Trial",
+                capabilities=PLAN_CAPABILITIES["free_trial"],
+                quota_used=0,
+                quota_remaining=999999,
+                quota_reset_date=datetime.now(timezone.utc),
+                trial_expires_at=None,
+            )
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "error@example.com"
@@ -484,13 +469,13 @@ class TestMeEndpointErrorHandling:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.check_quota")
-    @patch("supabase_client.get_supabase")
     def test_handles_user_email_fetch_failure(
-        self, mock_get_supabase, mock_check_quota
+        self, mock_check_quota, mock_check_roles
     ):
         """Should use fallback email if user fetch fails."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -503,9 +488,6 @@ class TestMeEndpointErrorHandling:
                 quota_remaining=40,
                 quota_reset_date=datetime.now(timezone.utc),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             # Simulate email fetch failure
             mock_sb.auth.admin.get_user_by_id.side_effect = Exception("Auth API error")
@@ -521,13 +503,13 @@ class TestMeEndpointErrorHandling:
             cleanup()
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
+    @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
     @patch("quota.check_quota")
-    @patch("supabase_client.get_supabase")
     def test_handles_null_user_data(
-        self, mock_get_supabase, mock_check_quota
+        self, mock_check_quota, mock_check_roles
     ):
         """Should handle null user data gracefully."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -541,9 +523,6 @@ class TestMeEndpointErrorHandling:
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             # Simulate null user data
             mock_sb.auth.admin.get_user_by_id.return_value = None
@@ -564,16 +543,12 @@ class TestMeEndpointAdminStatus:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(True, True))  # is_admin=True
-    @patch("supabase_client.get_supabase")
     def test_returns_is_admin_true_for_admin_users(
-        self, mock_get_supabase, mock_check_roles
+        self, mock_check_roles
     ):
         """Should return is_admin=true for admin users."""
-        cleanup = setup_auth_override("admin-123")
+        mock_sb, cleanup = setup_auth_and_db("admin-123")
         try:
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
-
             mock_user_data = MagicMock()
             mock_user_data.user.email = "admin@example.com"
             mock_sb.auth.admin.get_user_by_id.return_value = mock_user_data
@@ -591,13 +566,12 @@ class TestMeEndpointAdminStatus:
 
     @patch("routes.user.ENABLE_NEW_PRICING", True)
     @patch("routes.user.check_user_roles", new_callable=AsyncMock, return_value=(False, False))
-    @patch("supabase_client.get_supabase")
     @patch("quota.check_quota")
     def test_returns_is_admin_false_for_regular_users(
-        self, mock_check_quota, mock_get_supabase, mock_check_roles
+        self, mock_check_quota, mock_check_roles
     ):
         """Should return is_admin=false for regular users."""
-        cleanup = setup_auth_override("user-123")
+        mock_sb, cleanup = setup_auth_and_db("user-123")
         try:
             from quota import QuotaInfo, PLAN_CAPABILITIES
 
@@ -610,9 +584,6 @@ class TestMeEndpointAdminStatus:
                 quota_remaining=40,
                 quota_reset_date=datetime.now(timezone.utc),
             )
-
-            mock_sb = MagicMock()
-            mock_get_supabase.return_value = mock_sb
 
             mock_user_data = MagicMock()
             mock_user_data.user.email = "user@example.com"

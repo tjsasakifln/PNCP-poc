@@ -97,7 +97,8 @@ class TestClassifyPriority:
 
     def test_boundary_exactly_24h(self):
         """Access at exactly 24h boundary → still within window."""
-        boundary = datetime.now(timezone.utc) - timedelta(hours=24)
+        # Use small buffer to avoid race between test's now() and function's now()
+        boundary = datetime.now(timezone.utc) - timedelta(hours=23, minutes=59)
         assert classify_priority(1, boundary) == CachePriority.WARM
 
     def test_saved_search_old_access_cold(self):
