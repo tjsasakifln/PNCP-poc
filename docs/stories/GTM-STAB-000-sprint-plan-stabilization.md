@@ -4,6 +4,7 @@
 **Priority:** P0 — Sprint inteira é blocker para GTM
 **Created:** 2026-02-24
 **Revised:** 2026-02-24 (post full-squad review: @architect, @qa, @devops)
+**Last Updated:** 2026-02-24 (commit 899ee07 — STAB-002/003/004/005/007/008 code shipped)
 **Sprint Owner:** Tiago Sasaki
 **Goal:** Garantir experiência premium enterprise para GTM launch
 
@@ -71,18 +72,18 @@ Filtro agressivo para termos livres
 
 | # | Task | Esforço | Squad |
 |---|------|---------|-------|
-| 0a | Commit STORY-267 com feature flags off | 15min | @dev |
-| 0b | Verificar `railway service list` — criar worker se não existir | 15min | @devops |
-| 0c | Verificar orphan user_ids em search_results_cache | 5min | @devops |
+| 0a | ~~Commit STORY-267 com feature flags off~~ | 15min | @dev | ✅ b6d69c4 |
+| 0b | Verificar `railway service list` — criar worker se não existir | 15min | @devops | ❓ pending |
+| 0c | Verificar orphan user_ids em search_results_cache | 5min | @devops | ❓ pending |
 
-**Gate 0:** STORY-267 commitado. Worker service existe. Sem orphan user_ids.
+**Gate 0:** STORY-267 commitado ✅. Worker service ❓. Orphan user_ids ❓.
 
 ### Fase 1: Infra Crítica (Dia 1) — DESBLOQUEIA TUDO
 
 | # | Story | Esforço | Squad | Depende de |
 |---|-------|---------|-------|------------|
-| 1 | **GTM-STAB-001** Apply Missing Migrations | 1-2h | @devops + @qa | Gate 0 |
-| 2 | **GTM-STAB-002** Redis/ARQ Worker Stability | 3-4h | @devops + @dev | Gate 0 |
+| 1 | **GTM-STAB-001** Apply Missing Migrations | 1-2h | @devops + @qa | Gate 0 | Migration file committed (d233ab8), needs `supabase db push` |
+| 2 | **GTM-STAB-002** Redis/ARQ Worker Stability | 3-4h | @devops + @dev | Gate 0 | ✅ Code shipped (899ee07) — ARQ retry, ssl, restart loop, cache warming |
 
 **Atualizações pós-review:**
 - STAB-001: Adicionar check de orphan user_ids ANTES de FK migration
@@ -100,9 +101,9 @@ Filtro agressivo para termos livres
 
 | # | Story | Esforço | Squad | Depende de |
 |---|-------|---------|-------|------------|
-| 3 | **GTM-STAB-009** Enable Async Search (reclassificado P0) | 4-6h | @dev + @qa | Gate 1 |
-| 4 | **GTM-STAB-003** Timeout Chain Railway Fit (defense-in-depth) | 4-6h | @dev + @qa | Gate 1 |
-| 5 | **GTM-STAB-005** Filter Zero Results UX | 6-8h | @ux + @dev + @qa | Gate 0 (STORY-267 commitado) |
+| 3 | **GTM-STAB-009** Enable Async Search (reclassificado P0) | 4-6h | @dev + @qa | Gate 1 | Not started — NEXT PRIORITY |
+| 4 | **GTM-STAB-003** Timeout Chain Railway Fit (defense-in-depth) | 4-6h | @dev + @qa | Gate 1 | ✅ Code shipped (899ee07) — 110s pipeline, skip LLM/viab after budget |
+| 5 | **GTM-STAB-005** Filter Zero Results UX | 6-8h | @ux + @dev + @qa | Gate 0 | ✅ Code shipped (899ee07) — filter_summary, auto-relaxation, FE empty state |
 
 **Reordenamento crítico (@architect):** STAB-009 é a solução REAL (POST retorna em <1s, pipeline no worker sem timeout de proxy). STAB-003 vira defense-in-depth caso async falhe. STAB-009 é 80% pronto — habilitar flag + testar E2E + fix edge cases.
 
@@ -125,9 +126,9 @@ Filtro agressivo para termos livres
 
 | # | Story | Esforço | Squad | Depende de |
 |---|-------|---------|-------|------------|
-| 6 | **GTM-STAB-006** SSE Proxy Resilience | 6-8h | @dev + @ux + @qa | 003 |
-| 7 | **GTM-STAB-007** Cache Warming | 4-6h | @dev + @data + @qa | 001, 002 |
-| 8 | **GTM-STAB-008** Monitoring + Alertas | 4-6h | @devops + @dev | Gate 2 |
+| 6 | **GTM-STAB-006** SSE Proxy Resilience | 6-8h | @dev + @ux + @qa | 003 | Not started |
+| 7 | **GTM-STAB-007** Cache Warming | 4-6h | @dev + @data + @qa | 001, 002 | ✅ Code shipped (899ee07) — config + job impl |
+| 8 | **GTM-STAB-008** Monitoring + Alertas | 4-6h | @devops + @dev | Gate 2 | ✅ Code shipped (899ee07) — GET /health endpoint |
 
 **Atualizações pós-review:**
 - STAB-006: SSE reconnection deve ser no `useSearchSSE.ts` hook customizado (NÃO native EventSource)
