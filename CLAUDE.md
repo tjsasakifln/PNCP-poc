@@ -977,6 +977,7 @@ Use conventional commits:
 - Check linting if configured
 - Update relevant documentation
 - Follow co-authoring convention from README if using AI assistance
+- Migration CI guard (`migration-check.yml`) checks that all local migrations in `supabase/migrations/` are applied to production on every PR touching that path and before every deploy. Requires GitHub secrets: `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF`.
 
 ---
 

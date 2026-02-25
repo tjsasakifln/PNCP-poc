@@ -60,10 +60,42 @@ jobs:
             fi
           fi
 
+  check-migrations:
+    name: Check Unapplied Migrations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check for unapplied migrations
+        run: |
+          echo "Checking migration status..."
+          OUTPUT=$(supabase migration list --linked 2>&1)
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Not applied"; then
+            echo "::error::Found unapplied migrations! Run 'supabase db push' before deploying."
+            exit 1
+          fi
+
+          echo "All migrations are applied."
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
   deploy-backend-staging:
     name: Deploy Backend (Staging)
     runs-on: ubuntu-latest
-    needs: detect-changes
+    needs: [detect-changes, check-migrations]
     if: needs.detect-changes.outputs.backend == 'true'
     environment: staging
 
@@ -119,9 +151,10 @@ jobs:
   deploy-frontend-staging:
     name: Deploy Frontend (Staging)
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-backend-staging]
+    needs: [detect-changes, check-migrations, deploy-backend-staging]
     if: |
       always() &&
+      needs.check-migrations.result == 'success' &&
       needs.detect-changes.outputs.frontend == 'true' &&
       (needs.deploy-backend-staging.result == 'success' || needs.deploy-backend-staging.result == 'skipped')
     environment: staging
