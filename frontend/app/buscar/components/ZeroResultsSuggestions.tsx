@@ -1,5 +1,8 @@
 "use client";
 
+import type { FilterStats } from "../../types";
+import { FilterStatsBreakdown } from "./FilterStatsBreakdown";
+
 interface ZeroResultsSuggestionsProps {
   sectorName: string;
   ufCount: number;
@@ -10,6 +13,9 @@ interface ZeroResultsSuggestionsProps {
   // AC11: nearby results from cache
   nearbyResultsCount?: number;
   onViewNearbyResults?: () => void;
+  // STAB-005 AC2: Total from sources + filter stats
+  totalFromSources?: number;
+  filterStats?: FilterStats | null;
 }
 
 export function ZeroResultsSuggestions({
@@ -21,7 +27,11 @@ export function ZeroResultsSuggestions({
   onChangeSector,
   nearbyResultsCount,
   onViewNearbyResults,
+  totalFromSources,
+  filterStats,
 }: ZeroResultsSuggestionsProps) {
+  const hasSourceData = totalFromSources != null && totalFromSources > 0;
+
   return (
     <div className="mt-6 sm:mt-8 animate-fade-in-up" data-testid="zero-results-suggestions">
       <div className="text-center py-10 px-4">
@@ -36,11 +46,29 @@ export function ZeroResultsSuggestions({
         <h3 className="text-lg font-display font-semibold text-[var(--ink)] mb-2">
           Nenhuma oportunidade encontrada
         </h3>
-        <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">
-          para <span className="font-medium">{sectorName}</span> em{" "}
-          <span className="font-medium">{ufCount} {ufCount === 1 ? "estado" : "estados"}</span>{" "}
-          nos ultimos <span className="font-medium">{dayRange} dias</span>.
-        </p>
+
+        {/* STAB-005 AC2: Show total from sources when available */}
+        {hasSourceData ? (
+          <p className="text-sm text-[var(--ink-secondary)] mb-4 max-w-lg mx-auto" data-testid="source-total-message">
+            <span className="font-semibold text-[var(--ink)]">{totalFromSources}</span>{" "}
+            {totalFromSources === 1 ? "licitacao encontrada" : "licitacoes encontradas"}{" "}
+            nas fontes oficiais, mas nenhuma corresponde ao setor{" "}
+            <span className="font-medium">{sectorName}</span>.
+          </p>
+        ) : (
+          <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">
+            para <span className="font-medium">{sectorName}</span> em{" "}
+            <span className="font-medium">{ufCount} {ufCount === 1 ? "estado" : "estados"}</span>{" "}
+            nos ultimos <span className="font-medium">{dayRange} dias</span>.
+          </p>
+        )}
+
+        {/* STAB-005 AC2/AC3: Filter stats breakdown when available */}
+        {filterStats && (
+          <div className="max-w-md mx-auto mb-6 text-left">
+            <FilterStatsBreakdown stats={filterStats} />
+          </div>
+        )}
 
         {/* AC11: Nearby results from cache */}
         {nearbyResultsCount != null && nearbyResultsCount > 0 && onViewNearbyResults && (
