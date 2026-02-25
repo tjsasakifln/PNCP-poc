@@ -244,3 +244,34 @@ O git diff mostra 375 linhas de mudanças em 8 arquivos para STORY-267 (paridade
 - `CACHE_WARMING_ENABLED=false` → desliga warming instantaneamente
 - `REDIS_URL` revert → volta para Railway Redis addon (se não removido)
 - `GUNICORN_TIMEOUT=180` → volta timeout antigo sem redeploy
+
+---
+
+## E2E Production Validation (2026-02-25)
+
+### Test 1: Sector search — Vestuário, 4 UFs (ES, MG, RJ, SP)
+- **Result:** Pipeline completed ~120s, no 524 error
+- **UF Status:** All 4 UFs showed "Indisponível" (PNCP likely rate-limiting)
+- **Filter Stats:** "132 licitações encontradas nas fontes oficiais, mas nenhuma corresponde ao setor"
+- **Empty State:** "Verificar setor" action button shown
+- **Async:** search_job() confirmed via Railway logs (STAB-009 working)
+
+### Test 2: Terms search — "calibração de equipamentos metrológicos industriais especializados"
+- **Result:** 10 results from 132 analyzed in ~3s (cache hit from previous session)
+- **Auto-relaxation:** Working (specific terms → broad results via level 3)
+- **Filter Stats:** "10 oportunidades selecionadas de 132 analisadas"
+- **SSE:** Initial connection fails, reconnection succeeds (consistent pattern)
+
+### Health Endpoint
+- Redis: UP (2ms), Supabase: UP (272ms), ARQ Worker: UP, PNCP: UP
+
+### Bugs Found During Validation
+1. **Error alert persists alongside results** — "Não foi possível obter os resultados" shown alongside 10 results
+2. **AI summary uses sector name for terms search** — "licitações de Vestuário e Uniformes" even on terms mode
+3. **Negative days in urgency** — "encerra em -21 dia(s)" for expired bids still displayed
+4. **SSE initial connection always fails** — Every search shows SSE failure then reconnection success
+
+### Test Results (Automated)
+- Backend: 933/933 pass, 5 skip, 0 fail
+- Frontend: 335/336 pass, 1 fail (fixed: useSearchSSE sseAvailable reset)
+- New tests: test_stab005_auto_relaxation.py (8 tests, pass)

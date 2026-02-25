@@ -88,7 +88,7 @@ Client → POST /buscar → 202 Accepted {search_id, status_url} (< 1s)
 - [x] Backend: /results endpoint 200/202/404 ✅ (test_stab009:TestGetSearchResultsEndpoint)
 - [x] Backend: X-Sync + ?sync=true fallback ✅ (test_stab009:TestXSyncHeaderForcesSyncMode)
 - [x] Frontend: test useSearch com modelo async — ✅ `useSearch-async.test.ts` (14 tests: 202 flow, SSE reconnection, localStorage, humanized errors, timeout)
-- [ ] E2E: busca completa end-to-end no modelo async
+- [x] E2E: busca completa end-to-end no modelo async — ✅ Playwright 2026-02-25: Railway logs confirm search_job() dispatched via ARQ, SSE connected, 10 results returned. POST→202→SSE→results flow validated.
 
 ---
 

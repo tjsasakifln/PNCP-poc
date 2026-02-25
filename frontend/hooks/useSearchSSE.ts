@@ -314,6 +314,7 @@ export function useSearchSSE({
     setPartialProgress(null);
     setRefreshAvailable(null);
     setSseDisconnected(false);
+    setSseAvailable(true);
     retryAttemptRef.current = 0;
 
     // Build SSE URL through Next.js proxy

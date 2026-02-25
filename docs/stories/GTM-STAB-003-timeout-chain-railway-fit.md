@@ -81,9 +81,9 @@ Gunicorn worker:       180s  ← Worker sobrevive, Railway não
 - [x] Elimina WORKER TIMEOUT/SIGABRT ✅
 
 ### AC7: Validação em produção
-- [ ] Busca com 4 UFs (ES, MG, RJ, SP), setor vestuario, 10 dias
+- [x] Busca com 4 UFs (ES, MG, RJ, SP), setor vestuario, 10 dias — ✅ Playwright 2026-02-25: completed ~120s, no 524
 - [ ] Request completa em <110s (verificar via Railway logs)
-- [ ] Se alguma UF timeout, resultado parcial exibido (não 524)
+- [x] Se alguma UF timeout, resultado parcial exibido (não 524) — ✅ 4 UFs "Indisponível" but HTTP 200 returned with filter_stats (132 analyzed)
 - [ ] Sentry: 0 novos WORKER TIMEOUT em 24h
 - [ ] Sentry: 0 novos "failed to pipe response" em 24h
 

@@ -17,6 +17,8 @@ import asyncio
 import time as sync_time
 import uuid as _uuid
 
+import sentry_sdk
+
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
@@ -795,6 +797,15 @@ async def buscar_licitacoes(
     state_machine = None
     from middleware import search_id_var
     search_id_var.set(request.search_id)
+
+    # GTM-STAB-008 AC6: Sentry context tags for triaging
+    _search_start = sync_time.time()
+    _search_mode = "terms" if request.termos_busca else "sector"
+    sentry_sdk.set_tag("search_mode", _search_mode)
+    sentry_sdk.set_tag("uf_count", len(request.ufs))
+    if not request.termos_busca:
+        sentry_sdk.set_tag("setor", request.setor_id)
+
     tracker = await create_tracker(request.search_id, len(request.ufs))
     await tracker.emit("connecting", 3, "Iniciando busca...")
     # CRIT-003 AC2: Create state machine for deterministic lifecycle tracking
@@ -1012,6 +1023,8 @@ async def buscar_licitacoes(
                 # CRIT-005 AC1-2: Observability headers (cache-first path)
                 http_response.headers["X-Response-State"] = ctx.response_state or "live"
                 http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
+                # GTM-STAB-008 AC6: elapsed_s tag (cache-first path)
+                sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
                 return response
 
         except Exception as cache_err:
@@ -1058,9 +1071,13 @@ async def buscar_licitacoes(
         # CRIT-005 AC1-2: Observability headers (synchronous path)
         http_response.headers["X-Response-State"] = ctx.response_state or "live"
         http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
+        # GTM-STAB-008 AC6: elapsed_s tag (synchronous path)
+        sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         return response
 
     except PNCPRateLimitError as e:
+        # GTM-STAB-008 AC6: elapsed_s tag on rate limit error
+        sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         # CRIT-003: Transition state machine on rate limit
         if state_machine:
             await state_machine.rate_limited(retry_after=getattr(e, "retry_after", 60))
@@ -1102,6 +1119,8 @@ async def buscar_licitacoes(
         )
 
     except PNCPAPIError as e:
+        # GTM-STAB-008 AC6: elapsed_s tag on API error
+        sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         # CRIT-003: Transition state machine on API error
         if state_machine:
             await state_machine.fail(str(e)[:300], error_code="sources_unavailable")
@@ -1143,6 +1162,8 @@ async def buscar_licitacoes(
         )
 
     except HTTPException as exc:
+        # GTM-STAB-008 AC6: elapsed_s tag on HTTP error
+        sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         # CRIT-003: Transition state machine on HTTP error
         if state_machine:
             if exc.status_code == 504:
@@ -1195,6 +1216,8 @@ async def buscar_licitacoes(
         raise
 
     except Exception as e:
+        # GTM-STAB-008 AC6: elapsed_s tag on error path
+        sentry_sdk.set_tag("elapsed_s", round(sync_time.time() - _search_start, 1))
         # CRIT-003: Transition state machine on unexpected error
         if state_machine:
             await state_machine.fail(f"{type(e).__name__}: {str(e)[:200]}", error_code="unknown")

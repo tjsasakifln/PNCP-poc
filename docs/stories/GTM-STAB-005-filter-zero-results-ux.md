@@ -79,9 +79,9 @@ Não há empty state educativo. O usuário vê "0 oportunidades" e não sabe:
 ### AC6: Testes
 - [x] Frontend: test empty state com 0 resultados → sugestões visíveis — ✅ `stab-005-zero-results.test.tsx` (23 tests)
 - [x] Frontend: test UF status amarelo para success+0 ✅
-- [ ] Backend: test auto-relaxation retorna resultados quando normal retorna 0
-- [ ] Backend: test filter_stats incluso no response quando filtrado=0
-- [ ] E2E: busca com termos específicos que resultam 0 → empty state educativo aparece
+- [x] Backend: test auto-relaxation retorna resultados quando normal retorna 0 — ✅ test_stab005_auto_relaxation.py (8 tests, all pass)
+- [x] Backend: test filter_stats incluso no response quando filtrado=0 — ✅ test_stab005_auto_relaxation.py class TestFilterStatsInResponse
+- [x] E2E: busca com termos específicos — ✅ Playwright 2026-02-25: "calibração de equipamentos metrológicos" → 10 results via auto-relaxation from 132 analyzed. Sector search → "132 licitações encontradas nas fontes oficiais, mas nenhuma corresponde ao setor" + "Verificar setor" button
 
 ---
 

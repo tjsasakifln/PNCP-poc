@@ -75,7 +75,7 @@ Não existe:
 - [x] Resolver todos os 11 issues atuais no Sentry — ✅ bulk resolved via Playwright
 - [x] Definir baseline: 0 unresolved issues = clean slate ✅
 - [x] Configurar Sentry para auto-resolve issues após 30 dias — ✅ 720h auto-resolve for both smartlic-backend and smartlic-frontend
-- [ ] Tags: adicionar `search_mode: sector|terms`, `uf_count: N`, `elapsed_s: N` para melhor triaging
+- [x] Tags: adicionar `search_mode: sector|terms`, `uf_count: N`, `elapsed_s: N` para melhor triaging — ✅ routes/search.py: sentry_sdk.set_tag() at entry + all exit paths (commit pending)
 
 ---
 
@@ -87,6 +87,7 @@ Não existe:
 | `backend/metrics.py` | AC2: garantir todas métricas expostas |
 | `docs/guides/metrics-setup.md` | AC2: atualizar com Grafana config |
 | `.github/workflows/deploy.yml` | AC5: post-deploy notification |
+| `backend/routes/search.py` | AC6: Sentry context tags (search_mode, uf_count, setor, elapsed_s) |
 | Sentry UI | AC1: alert rules, AC6: cleanup |
 | Grafana Cloud | AC2: dashboard creation |
 | UptimeRobot | AC4: monitor config |

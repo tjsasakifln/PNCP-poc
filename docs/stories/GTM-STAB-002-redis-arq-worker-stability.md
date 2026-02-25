@@ -94,8 +94,10 @@ O ARQ worker em produção está em **crash loop**. Os logs do Railway mostram a
 - [x] Log local mantido para debugging ✅
 - [x] Fallback inline failure → WARNING em search_pipeline.py:2071/2091 ✅
 
+**Production health check (2026-02-25):** Redis UP (2ms latency), ARQ Worker UP per /health endpoint.
+
 ### AC6: Validação end-to-end
-- [ ] Deploy web + worker
+- [ ] Deploy web + worker — ⚠️ Worker confirmed UP via /health, search_job() confirmed dispatched via Railway logs
 - [ ] Fazer 5 buscas consecutivas, todas devem retornar LLM summary via SSE `llm_ready`
 - [ ] Matar worker manualmente (`railway service restart worker`), fazer busca → fallback inline funciona
 - [ ] Monitorar Sentry por 2h → 0 novos eventos de enqueue failure
