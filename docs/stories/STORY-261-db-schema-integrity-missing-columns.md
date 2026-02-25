@@ -34,7 +34,7 @@
 - [x] Task 1: Criar migration `supabase/migrations/20260225100000_add_missing_profile_columns.sql`
 - [x] Task 2: Aplicar migration em ambiente de teste
 - [x] Task 3: Rodar full backend test suite (`pytest`) — 5489 passed, 31 pre-existing failures, 0 regressions
-- [x] Task 4: Verificar que migration e no-op em producao (colunas ja existem) — migration idempotente confirmada (IF NOT EXISTS); `supabase db push` pendente registro na history table
+- [x] Task 4: Aplicar migration em producao via SQL Editor — 4 colunas criadas + 2 constraints + 1 index (apenas email_unsubscribed* pre-existiam)
 
 ## Migration SQL
 
@@ -106,7 +106,7 @@ COMMIT;
 
 **Schema review (@architect):** Migration SQL approved — idempotent, constraints match code, no conflicts with 43 prior migrations.
 
-**Production push:** Pending `supabase db push` (requires `SUPABASE_ACCESS_TOKEN`). Migration is no-op since columns already exist.
+**Production push:** Applied via Supabase SQL Editor (2026-02-25). Correction: only 2 of 6 columns pre-existed (email_unsubscribed*). Migration CREATED 4 columns + 2 CHECK constraints + 1 partial index. All 6 columns verified post-apply (6 rows returned).
 
 ## Regression Risks
 
