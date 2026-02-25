@@ -63,11 +63,30 @@ jest.mock("../../lib/error-messages", () => ({
   getUserFriendlyError: (e: unknown) =>
     e instanceof Error ? e.message : String(e),
   getMessageFromErrorCode: () => null,
+  isTransientError: () => false,
+  getRetryMessage: () => "Tentando novamente...",
+  getHumanizedError: (httpStatus: number | null, rawMessage: string | null) => ({
+    message: rawMessage || "Erro generico",
+    actionLabel: "Tentar novamente",
+    tone: "blue",
+    suggestReduceScope: false,
+  }),
 }));
 
 jest.mock("../../lib/searchStatePersistence", () => ({
   saveSearchState: jest.fn(),
   restoreSearchState: jest.fn(() => null),
+}));
+
+jest.mock("../../lib/searchPartialCache", () => ({
+  savePartialSearch: jest.fn(),
+  recoverPartialSearch: jest.fn(() => null),
+  clearPartialSearch: jest.fn(),
+  cleanupExpiredPartials: jest.fn(),
+}));
+
+jest.mock("../../lib/lastSearchCache", () => ({
+  saveLastSearch: jest.fn(),
 }));
 
 jest.mock("sonner", () => ({

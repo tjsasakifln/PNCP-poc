@@ -300,6 +300,100 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
   INTERNAL_ERROR: "Erro interno. Nossa equipe foi notificada.",
 };
 
+// =============================================================================
+// STAB-006 AC2: Humanized error messages with action suggestions
+// =============================================================================
+
+export interface HumanizedError {
+  /** User-friendly message (blue/yellow tone, never red) */
+  message: string;
+  /** Suggested action label for primary button */
+  actionLabel: string;
+  /** Secondary action label (optional) */
+  secondaryActionLabel?: string;
+  /** Color tone: 'blue' for informational, 'yellow' for warning */
+  tone: "blue" | "yellow";
+  /** Whether to suggest scope reduction */
+  suggestReduceScope: boolean;
+}
+
+/**
+ * STAB-006 AC2: Get humanized error with action suggestions.
+ * Uses blue/yellow colors ONLY (never red) per UX guidelines.
+ */
+export function getHumanizedError(
+  httpStatus: number | null,
+  rawMessage: string | null,
+  partialCount?: number,
+  totalCount?: number
+): HumanizedError {
+  const msg = (rawMessage || "").toLowerCase();
+
+  // Timeout / 524
+  if (httpStatus === 524 || httpStatus === 504 || msg.includes("timeout") || msg.includes("demorou")) {
+    return {
+      message: "A busca demorou mais que o esperado. Tente reduzir o numero de estados.",
+      actionLabel: "Tentar novamente",
+      secondaryActionLabel: "Reduzir escopo",
+      tone: "yellow",
+      suggestReduceScope: true,
+    };
+  }
+
+  // Partial failure (some UFs responded)
+  if (partialCount != null && totalCount != null && partialCount > 0 && partialCount < totalCount) {
+    return {
+      message: `Resultados parciais: ${partialCount} de ${totalCount} estados responderam`,
+      actionLabel: "Tentar novamente",
+      tone: "blue",
+      suggestReduceScope: false,
+    };
+  }
+
+  // Backend down (502/503)
+  if (httpStatus === 502 || httpStatus === 503) {
+    return {
+      message: "Nossos servidores estao se atualizando.",
+      actionLabel: "Tentar novamente",
+      tone: "blue",
+      suggestReduceScope: false,
+    };
+  }
+
+  // Rate limit
+  if (httpStatus === 429) {
+    return {
+      message: "Muitas consultas simultaneas. Aguarde alguns segundos.",
+      actionLabel: "Tentar novamente",
+      tone: "yellow",
+      suggestReduceScope: false,
+    };
+  }
+
+  // Network errors
+  if (
+    msg.includes("fetch failed") ||
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror") ||
+    msg.includes("network error")
+  ) {
+    return {
+      message: "Erro de conexao. Verifique sua internet e tente novamente.",
+      actionLabel: "Tentar novamente",
+      tone: "yellow",
+      suggestReduceScope: false,
+    };
+  }
+
+  // Default
+  return {
+    message: "Algo inesperado aconteceu. Tente novamente.",
+    actionLabel: "Tentar novamente",
+    tone: "blue",
+    suggestReduceScope: false,
+  };
+}
+
 /**
  * CRIT-009 AC11: Get user-friendly message from error_code, with fallback to generic mapping.
  */
