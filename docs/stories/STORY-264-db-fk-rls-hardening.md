@@ -1,5 +1,7 @@
 # STORY-264: Database FK & RLS Hardening
 
+**Status:** Done
+
 ## Metadata
 - **Epic:** Enterprise Readiness (EPIC-ENT-001)
 - **Priority:** P1 (Stability)
@@ -36,7 +38,7 @@
 - [x] Task 6: Migrations ready to apply (supabase db push)
 - [x] Task 7: CASCADE defined in FK constraints — automatic on DELETE
 - [x] Task 8: RLS policies scoped with TO service_role — verified via code grep
-- [ ] Task 9: Deploy em producao (pending push + supabase db push)
+- [x] Task 9: Migrations applied to production via Supabase SQL Editor (2026-02-25)
 
 ## Migration SQL
 
