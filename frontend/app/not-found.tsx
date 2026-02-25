@@ -16,11 +16,11 @@ export default function NotFound() {
         </div>
 
         <h1 className="text-2xl font-bold text-[var(--ink)] mb-2">
-          Pagina nao encontrada
+          Página não encontrada
         </h1>
 
         <p className="text-[var(--ink-secondary)] mb-8">
-          A pagina que voce procura nao existe ou foi movida.
+          A página que você procura não existe ou foi movida.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -28,7 +28,7 @@ export default function NotFound() {
             href="/"
             className="inline-flex items-center justify-center bg-[var(--brand-navy)] hover:bg-[var(--brand-blue)] text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            Voltar ao inicio
+            Voltar ao início
           </Link>
           <Link
             href="/buscar"

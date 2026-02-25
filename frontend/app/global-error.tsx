@@ -7,6 +7,9 @@ import { useEffect } from "react";
  * STORY-211 AC9: Root layout error boundary.
  * Catches errors that `error.tsx` cannot (e.g., root layout crashes).
  * Must define its own <html> and <body> tags since the root layout has failed.
+ *
+ * STORY-267 AC12-14: Brand alignment + dark mode.
+ * Cannot use Tailwind/CSS imports (root layout failed). Uses inline styles + <style> tag.
  */
 export default function GlobalError({
   error,
@@ -21,6 +24,34 @@ export default function GlobalError({
 
   return (
     <html lang="pt-BR">
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --ge-bg: #f8fafc;
+            --ge-card-bg: #ffffff;
+            --ge-text: #0f172a;
+            --ge-text-secondary: #64748b;
+            --ge-brand-navy: #1e3a5f;
+            --ge-brand-blue: #2563eb;
+            --ge-brand-blue-hover: #1d4ed8;
+            --ge-shadow: rgba(0, 0, 0, 0.1);
+            --ge-link: #2563eb;
+          }
+          @media (prefers-color-scheme: dark) {
+            :root {
+              --ge-bg: #0f172a;
+              --ge-card-bg: #1e293b;
+              --ge-text: #f1f5f9;
+              --ge-text-secondary: #94a3b8;
+              --ge-brand-navy: #3b82f6;
+              --ge-brand-blue: #60a5fa;
+              --ge-brand-blue-hover: #3b82f6;
+              --ge-shadow: rgba(0, 0, 0, 0.3);
+              --ge-link: #60a5fa;
+            }
+          }
+        `}} />
+      </head>
       <body>
         <div
           style={{
@@ -30,15 +61,15 @@ export default function GlobalError({
             justifyContent: "center",
             fontFamily: "system-ui, -apple-system, sans-serif",
             padding: "1rem",
-            backgroundColor: "#f9fafb",
+            backgroundColor: "var(--ge-bg)",
           }}
         >
           <div
             style={{
               maxWidth: "28rem",
               width: "100%",
-              backgroundColor: "white",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+              backgroundColor: "var(--ge-card-bg)",
+              boxShadow: "0 4px 6px var(--ge-shadow)",
               borderRadius: "0.5rem",
               padding: "2rem",
               textAlign: "center",
@@ -52,20 +83,20 @@ export default function GlobalError({
                 fontSize: "1.5rem",
                 fontWeight: "bold",
                 marginBottom: "0.5rem",
-                color: "#111827",
+                color: "var(--ge-text)",
               }}
             >
               Ops! Algo deu errado
             </h1>
-            <p style={{ color: "#6b7280", marginBottom: "1.5rem" }}>
-              Ocorreu um erro inesperado na aplica&ccedil;&atilde;o. Por favor,
+            <p style={{ color: "var(--ge-text-secondary)", marginBottom: "1.5rem" }}>
+              Ocorreu um erro inesperado na aplicação. Por favor,
               tente novamente.
             </p>
             <button
               onClick={reset}
               style={{
                 width: "100%",
-                backgroundColor: "#16a34a",
+                backgroundColor: "var(--ge-brand-navy)",
                 color: "white",
                 fontWeight: 500,
                 padding: "0.75rem 1.5rem",
@@ -73,17 +104,20 @@ export default function GlobalError({
                 border: "none",
                 cursor: "pointer",
                 fontSize: "1rem",
+                transition: "background-color 0.2s",
               }}
+              onMouseOver={(e) => { (e.target as HTMLButtonElement).style.backgroundColor = "var(--ge-brand-blue-hover)"; }}
+              onMouseOut={(e) => { (e.target as HTMLButtonElement).style.backgroundColor = "var(--ge-brand-navy)"; }}
             >
               Tentar novamente
             </button>
-            <p style={{ marginTop: "1rem", fontSize: "0.875rem", color: "#6b7280" }}>
+            <p style={{ marginTop: "1rem", fontSize: "0.875rem", color: "var(--ge-text-secondary)" }}>
               Se o problema persistir,{" "}
-              <a href="/mensagens" style={{ color: "#2563eb", textDecoration: "underline" }}>
+              <a href="/mensagens" style={{ color: "var(--ge-link)", textDecoration: "underline" }}>
                 entre em contato com o suporte
               </a>{" "}
               ou consulte a{" "}
-              <a href="/ajuda" style={{ color: "#2563eb", textDecoration: "underline" }}>
+              <a href="/ajuda" style={{ color: "var(--ge-link)", textDecoration: "underline" }}>
                 Central de Ajuda
               </a>.
             </p>

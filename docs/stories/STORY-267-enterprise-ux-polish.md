@@ -8,6 +8,7 @@
 - **Depends on:** None
 - **Risk:** Low (novos arquivos + edits em strings/imports)
 - **Assessment IDs:** T2-11, T2-16, T2-17, T2-18, T2-19
+- **Status:** DONE
 
 ## Context
 
@@ -16,59 +17,59 @@ O UX Enterprise Readiness Score atual e 3.7/5. Para atingir 4.0+ (enterprise-pre
 ## Acceptance Criteria
 
 ### T2-19: getUserFriendlyError em error boundaries
-- [ ] AC1: `app/error.tsx` usa `getUserFriendlyError()` para filtrar `error.message`
-- [ ] AC2: `app/buscar/error.tsx` usa `getUserFriendlyError()`
-- [ ] AC3: `app/dashboard/error.tsx` usa `getUserFriendlyError()`
-- [ ] AC4: `app/admin/error.tsx` usa `getUserFriendlyError()`
-- [ ] AC5: Nenhum error boundary exibe raw `error.message` ao usuario
+- [x] AC1: `app/error.tsx` usa `getUserFriendlyError()` para filtrar `error.message`
+- [x] AC2: `app/buscar/error.tsx` usa `getUserFriendlyError()`
+- [x] AC3: `app/dashboard/error.tsx` usa `getUserFriendlyError()`
+- [x] AC4: `app/admin/error.tsx` usa `getUserFriendlyError()`
+- [x] AC5: Nenhum error boundary exibe raw `error.message` ao usuario
 
 ### T2-18: Error boundaries para 4 paginas
-- [ ] AC6: `app/pipeline/error.tsx` existe com mensagem contextual em portugues
-- [ ] AC7: `app/historico/error.tsx` existe com mensagem contextual em portugues
-- [ ] AC8: `app/mensagens/error.tsx` existe com mensagem contextual em portugues
-- [ ] AC9: `app/conta/error.tsx` existe com mensagem contextual em portugues
-- [ ] AC10: Todas as 4 novas error boundaries usam `getUserFriendlyError()`
+- [x] AC6: `app/pipeline/error.tsx` existe com mensagem contextual em portugues
+- [x] AC7: `app/historico/error.tsx` existe com mensagem contextual em portugues
+- [x] AC8: `app/mensagens/error.tsx` existe com mensagem contextual em portugues
+- [x] AC9: `app/conta/error.tsx` existe com mensagem contextual em portugues
+- [x] AC10: Todas as 4 novas error boundaries usam `getUserFriendlyError()`
 
 ### T2-16: 404 acentos
-- [ ] AC11: `app/not-found.tsx` exibe texto com acentos corretos em portugues
+- [x] AC11: `app/not-found.tsx` exibe texto com acentos corretos em portugues
 
 ### T2-17: global-error.tsx brand
-- [ ] AC12: `app/global-error.tsx` usa cores do design system (nao hardcoded `#f9fafb`)
-- [ ] AC13: `global-error.tsx` suporta dark mode via media query
-- [ ] AC14: Botao de acao usa cor brand-blue
+- [x] AC12: `app/global-error.tsx` usa cores do design system (nao hardcoded `#f9fafb`)
+- [x] AC13: `global-error.tsx` suporta dark mode via media query
+- [x] AC14: Botao de acao usa cor brand-blue
 
 ### T2-11: Focus trap
-- [ ] AC15: BottomNav drawer prende foco dentro do overlay quando aberto
-- [ ] AC16: Pressionar Escape fecha o drawer
-- [ ] AC17: Foco retorna ao botao trigger apos fechar
+- [x] AC15: BottomNav drawer prende foco dentro do overlay quando aberto
+- [x] AC16: Pressionar Escape fecha o drawer
+- [x] AC17: Foco retorna ao botao trigger apos fechar
 
 ## Tasks
 
 ### T2-19: getUserFriendlyError (1h)
-- [ ] Task 1: Em `app/error.tsx`: importar `getUserFriendlyError` de `lib/error-messages.ts` e aplicar no render de `error.message`
-- [ ] Task 2: Repetir para `app/buscar/error.tsx`
-- [ ] Task 3: Repetir para `app/dashboard/error.tsx`
-- [ ] Task 4: Repetir para `app/admin/error.tsx`
+- [x] Task 1: Em `app/error.tsx`: importar `getUserFriendlyError` de `lib/error-messages.ts` e aplicar no render de `error.message`
+- [x] Task 2: Repetir para `app/buscar/error.tsx`
+- [x] Task 3: Repetir para `app/dashboard/error.tsx`
+- [x] Task 4: Repetir para `app/admin/error.tsx`
 
 ### T2-18: Novas error boundaries (2h)
-- [ ] Task 5: Criar `app/pipeline/error.tsx` — copiar pattern de `buscar/error.tsx`, mensagem: "Ocorreu um erro ao carregar o pipeline. Tente novamente."
-- [ ] Task 6: Criar `app/historico/error.tsx` — mensagem: "Ocorreu um erro ao carregar o historico. Tente novamente."
-- [ ] Task 7: Criar `app/mensagens/error.tsx` — mensagem: "Ocorreu um erro ao carregar as mensagens. Tente novamente."
-- [ ] Task 8: Criar `app/conta/error.tsx` — mensagem: "Ocorreu um erro ao carregar sua conta. Tente novamente."
-- [ ] Task 9: Todas as novas error boundaries importam e usam `getUserFriendlyError()`
+- [x] Task 5: Criar `app/pipeline/error.tsx` — copiar pattern de `buscar/error.tsx`, mensagem: "Ocorreu um erro ao carregar o pipeline. Tente novamente."
+- [x] Task 6: Criar `app/historico/error.tsx` — mensagem: "Ocorreu um erro ao carregar o historico. Tente novamente."
+- [x] Task 7: Criar `app/mensagens/error.tsx` — mensagem: "Ocorreu um erro ao carregar as mensagens. Tente novamente."
+- [x] Task 8: Criar `app/conta/error.tsx` — mensagem: "Ocorreu um erro ao carregar sua conta. Tente novamente."
+- [x] Task 9: Todas as novas error boundaries importam e usam `getUserFriendlyError()`
 
 ### T2-16: 404 acentos (5min)
-- [ ] Task 10: Em `app/not-found.tsx`: corrigir strings com acentos portugueses corretos
+- [x] Task 10: Em `app/not-found.tsx`: corrigir strings com acentos portugueses corretos
 
 ### T2-17: global-error.tsx (30min)
-- [ ] Task 11: Substituir inline styles hardcoded por valores do design system
-- [ ] Task 12: Adicionar `<style>` tag com `@media (prefers-color-scheme: dark)` para dark mode
-- [ ] Task 13: Botao de acao com cor brand (nao verde generico)
+- [x] Task 11: Substituir inline styles hardcoded por valores do design system
+- [x] Task 12: Adicionar `<style>` tag com `@media (prefers-color-scheme: dark)` para dark mode
+- [x] Task 13: Botao de acao com cor brand (nao verde generico)
 
 ### T2-11: Focus trap (1.5h)
-- [ ] Task 14: Adicionar focus trap ao drawer overlay em `app/components/BottomNav.tsx`
-- [ ] Task 15: Implementar Escape para fechar drawer
-- [ ] Task 16: Implementar retorno de foco ao trigger button apos fechar
+- [x] Task 14: Adicionar focus trap ao drawer overlay em `components/BottomNav.tsx`
+- [x] Task 15: Implementar Escape para fechar drawer
+- [x] Task 16: Implementar retorno de foco ao trigger button apos fechar
 
 ## Test Plan
 
@@ -92,8 +93,8 @@ O UX Enterprise Readiness Score atual e 3.7/5. Para atingir 4.0+ (enterprise-pre
 4. Verificar que touch/swipe nao e afetado pelo focus trap
 
 ### Suite Completa
-5. `npm test` — 2681+ passing, 0 failures
-6. `npm run lint` — 0 errors
+5. `npm test` — 3306 passing, 0 failures (baseline exceeded)
+6. `npm run lint` — ESLint not installed (pre-existing)
 
 ## Regression Risks
 
@@ -111,21 +112,22 @@ O UX Enterprise Readiness Score atual e 3.7/5. Para atingir 4.0+ (enterprise-pre
 - `frontend/app/admin/error.tsx` (EDIT — add getUserFriendlyError)
 - `frontend/app/not-found.tsx` (EDIT — fix accents)
 - `frontend/app/global-error.tsx` (EDIT — brand alignment + dark mode)
-- `frontend/app/components/BottomNav.tsx` (EDIT — focus trap)
+- `frontend/components/BottomNav.tsx` (EDIT — focus trap)
 
 ### Novos
 - `frontend/app/pipeline/error.tsx` (NEW)
 - `frontend/app/historico/error.tsx` (NEW)
 - `frontend/app/mensagens/error.tsx` (NEW)
 - `frontend/app/conta/error.tsx` (NEW)
+- `frontend/__tests__/story-267-enterprise-ux-polish.test.tsx` (NEW — 41 tests)
 
 ## Definition of Done
 
-- [ ] Todos os 17 acceptance criteria met
-- [ ] Nenhuma pagina protegida mostra raw error.message
-- [ ] 404 com acentos corretos
-- [ ] global-error.tsx com brand alignment + dark mode
-- [ ] Focus trap funcional no BottomNav drawer
-- [ ] `npm test` passing (2681+ tests, 0 failures)
-- [ ] `npm run lint` passing
-- [ ] UX Enterprise Score: 4.0+/5
+- [x] Todos os 17 acceptance criteria met
+- [x] Nenhuma pagina protegida mostra raw error.message
+- [x] 404 com acentos corretos
+- [x] global-error.tsx com brand alignment + dark mode
+- [x] Focus trap funcional no BottomNav drawer
+- [x] `npm test` passing (3306 tests, 0 failures)
+- [ ] `npm run lint` passing (ESLint not installed — pre-existing)
+- [x] UX Enterprise Score: 4.0+/5

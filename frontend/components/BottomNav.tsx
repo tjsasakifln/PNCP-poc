@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../app/components/AuthProvider";
@@ -73,10 +73,14 @@ const DRAWER_ITEMS: { href: string; label: string; icon: React.ReactNode }[] = [
   { href: "/ajuda", label: "Ajuda", icon: icons.help },
 ];
 
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function BottomNav() {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const isActive = (href: string) => {
     if (href === "/buscar") return pathname === "/buscar";
@@ -86,7 +90,63 @@ export function BottomNav() {
   // Check if "Mais" should be highlighted (any drawer route is active)
   const moreActive = DRAWER_ITEMS.some((item) => isActive(item.href));
 
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
+
+  // STORY-267 AC17: Return focus to trigger button after closing
+  useEffect(() => {
+    if (!drawerOpen) {
+      triggerRef.current?.focus();
+    }
+  }, [drawerOpen]);
+
+  // STORY-267 AC15-16: Focus trap + Escape to close
+  useEffect(() => {
+    if (!drawerOpen) return;
+
+    const drawer = drawerRef.current;
+    if (!drawer) return;
+
+    // Focus first focusable element in drawer
+    const focusableElements = drawer.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    if (focusableElements.length > 0) {
+      focusableElements[0].focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // AC16: Escape closes drawer
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeDrawer();
+        return;
+      }
+
+      // AC15: Trap Tab within drawer
+      if (e.key === "Tab") {
+        const focusable = drawer.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [drawerOpen, closeDrawer]);
 
   return (
     <>
@@ -122,6 +182,7 @@ export function BottomNav() {
 
           {/* "Mais" button */}
           <button
+            ref={triggerRef}
             onClick={() => setDrawerOpen(true)}
             data-testid="bottom-nav-more"
             className={`
@@ -142,7 +203,13 @@ export function BottomNav() {
 
       {/* Drawer Overlay */}
       {drawerOpen && (
-        <div className="lg:hidden fixed inset-0 z-[60]" data-testid="bottom-nav-drawer">
+        <div
+          className="lg:hidden fixed inset-0 z-[60]"
+          data-testid="bottom-nav-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu adicional"
+        >
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 transition-opacity"
@@ -151,7 +218,10 @@ export function BottomNav() {
           />
 
           {/* Drawer Panel */}
-          <div className="absolute bottom-0 left-0 right-0 bg-[var(--surface-0)] rounded-t-2xl shadow-2xl animate-slide-up">
+          <div
+            ref={drawerRef}
+            className="absolute bottom-0 left-0 right-0 bg-[var(--surface-0)] rounded-t-2xl shadow-2xl animate-slide-up"
+          >
             {/* Handle */}
             <div className="flex justify-center py-3">
               <div className="w-10 h-1 rounded-full bg-[var(--ink-faint)]" />

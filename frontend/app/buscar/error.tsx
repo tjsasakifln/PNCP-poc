@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import Link from "next/link";
+import { getUserFriendlyError } from "../../lib/error-messages";
 
 export default function BuscarError({
   error,
@@ -44,13 +45,11 @@ export default function BuscarError({
           Ocorreu um erro ao processar sua busca de licitações. Seus filtros foram preservados — tente novamente.
         </p>
 
-        {error.message && (
-          <div className="mb-6 p-4 bg-surface-2 rounded-md text-left">
-            <p className="text-sm text-ink-secondary font-mono break-words">
-              {error.message}
-            </p>
-          </div>
-        )}
+        <div className="mb-6 p-4 bg-surface-2 rounded-md text-left">
+          <p className="text-sm text-ink-secondary break-words">
+            {getUserFriendlyError(error)}
+          </p>
+        </div>
 
         <div className="space-y-3">
           <button

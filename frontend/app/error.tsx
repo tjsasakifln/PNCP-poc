@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 import { useAnalytics } from "../hooks/useAnalytics";
+import { getUserFriendlyError } from "../lib/error-messages";
 
 export default function Error({
   error,
@@ -54,13 +55,11 @@ export default function Error({
           Ocorreu um erro inesperado. Por favor, tente novamente.
         </p>
 
-        {error.message && (
-          <div className="mb-6 p-4 bg-[var(--surface-2)] rounded-md text-left">
-            <p className="text-sm text-[var(--ink-secondary)] font-mono break-words">
-              {error.message}
-            </p>
-          </div>
-        )}
+        <div className="mb-6 p-4 bg-[var(--surface-2)] rounded-md text-left">
+          <p className="text-sm text-[var(--ink-secondary)] break-words">
+            {getUserFriendlyError(error)}
+          </p>
+        </div>
 
         <button
           onClick={reset}
