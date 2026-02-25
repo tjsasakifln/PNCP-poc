@@ -550,12 +550,16 @@ STATUS_PNCP_MAP = {
 
 class DateFormat:
     """Supported PNCP date formats for 422 retry rotation."""
-    YYYYMMDD = "YYYYMMDD"       # 20260218 (current default)
-    ISO_DASH = "YYYY-MM-DD"     # 2026-02-18
-    BR_SLASH = "DD/MM/YYYY"     # 18/02/2026
-    BR_DASH = "DD-MM-YYYY"      # 18-02-2026
+    YYYYMMDD = "YYYYMMDD"       # 20260218 (only format accepted by PNCP)
+    ISO_DASH = "YYYY-MM-DD"     # 2026-02-18 (NOT accepted by PNCP)
+    BR_SLASH = "DD/MM/YYYY"     # 18/02/2026 (NOT accepted by PNCP)
+    BR_DASH = "DD-MM-YYYY"      # 18-02-2026 (NOT accepted by PNCP)
 
-    ALL = [YYYYMMDD, ISO_DASH, BR_SLASH, BR_DASH]
+    # PNCP API only accepts yyyyMMdd. Format rotation to other formats
+    # wastes retries and guarantees failure. Confirmed in production
+    # 2026-02-25: rotating to ISO_DASH/BR_SLASH/BR_DASH always returns
+    # "Data Inicial inválida". Keep only the correct format.
+    ALL = [YYYYMMDD]
 
 
 # UX-336 AC3: In-memory cache of accepted date format (TTL 24h)

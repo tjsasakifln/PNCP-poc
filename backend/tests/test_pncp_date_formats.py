@@ -31,14 +31,12 @@ from exceptions import PNCPAPIError
 # ============================================================================
 
 class TestDateFormat:
-    """AC1: 4 date formats supported."""
+    """AC1: Only YYYYMMDD format — PNCP rejects all others."""
 
-    def test_all_contains_four_formats(self):
-        assert len(DateFormat.ALL) == 4
+    def test_all_contains_only_yyyymmdd(self):
+        """PNCP API only accepts yyyyMMdd. No format rotation."""
+        assert len(DateFormat.ALL) == 1
         assert DateFormat.YYYYMMDD in DateFormat.ALL
-        assert DateFormat.ISO_DASH in DateFormat.ALL
-        assert DateFormat.BR_SLASH in DateFormat.ALL
-        assert DateFormat.BR_DASH in DateFormat.ALL
 
     def test_format_yyyymmdd(self):
         assert format_date("2026-02-18", DateFormat.YYYYMMDD) == "20260218"
@@ -101,13 +99,13 @@ class TestFormatCache:
         assert _get_cached_date_format() == DateFormat.BR_DASH
 
     def test_format_rotation_with_cache(self):
-        """Cached format should be first in rotation."""
+        """Cached format should be first in rotation, but only YYYYMMDD is in ALL."""
         _set_cached_date_format(DateFormat.BR_SLASH)
         rotation = _get_format_rotation()
         assert rotation[0] == DateFormat.BR_SLASH
-        assert len(rotation) == 4
-        # No duplicates
-        assert len(set(rotation)) == 4
+        # BR_SLASH (cached) + YYYYMMDD (from ALL) = 2
+        assert len(rotation) == 2
+        assert len(set(rotation)) == 2
 
     def test_format_rotation_without_cache(self):
         """Without cache, default order is used."""
@@ -188,22 +186,14 @@ class TestAsyncFormatRotation:
         return client
 
     @pytest.mark.asyncio
-    async def test_422_retries_with_iso_dash_format(self):
-        """422 on YYYYMMDD → retry with YYYY-MM-DD → success."""
+    async def test_422_date_range_returns_empty_gracefully(self):
+        """422 'Período > 365 dias' on YYYYMMDD → graceful empty result (no format rotation)."""
         response_422 = MagicMock()
         response_422.status_code = 422
         response_422.text = '{"message":"Período inicial e final maior que 365 dias."}'
 
-        response_200 = MagicMock()
-        response_200.status_code = 200
-        response_200.headers = {"content-type": "application/json"}
-        response_200.json = MagicMock(return_value={
-            "data": [{"id": 1}], "totalRegistros": 1,
-            "totalPaginas": 1, "paginaAtual": 1, "temProximaPagina": False,
-        })
-
         mock_client = AsyncMock()
-        mock_client.get = AsyncMock(side_effect=[response_422, response_200])
+        mock_client.get = AsyncMock(return_value=response_422)
 
         client = self._make_client()
         client._client = mock_client
@@ -213,12 +203,9 @@ class TestAsyncFormatRotation:
                 "2026-02-08", "2026-02-18", 6, uf="SP"
             )
 
-        assert result["totalRegistros"] == 1
-        # Second call should use ISO_DASH format
-        second_call = mock_client.get.call_args_list[1]
-        sent_params = second_call.kwargs.get("params") or second_call[1].get("params")
-        assert sent_params["dataInicial"] == "2026-02-08"
-        assert sent_params["dataFinal"] == "2026-02-18"
+        # With only YYYYMMDD format, 422 date_range returns empty immediately
+        assert result["data"] == []
+        assert result["totalRegistros"] == 0
 
     @pytest.mark.asyncio
     async def test_422_tries_all_formats_then_categorizes(self):
@@ -263,25 +250,14 @@ class TestAsyncFormatRotation:
                 )
 
     @pytest.mark.asyncio
-    async def test_success_on_third_format_caches_it(self):
-        """Success on BR_SLASH format caches it for future use."""
+    async def test_422_date_range_with_only_yyyymmdd_returns_empty(self):
+        """With only YYYYMMDD format, date_range 422 returns empty without retrying wrong formats."""
         response_422 = MagicMock()
         response_422.status_code = 422
         response_422.text = '{"message":"Período inicial e final maior que 365 dias."}'
 
-        response_200 = MagicMock()
-        response_200.status_code = 200
-        response_200.headers = {"content-type": "application/json"}
-        response_200.json = MagicMock(return_value={
-            "data": [{"id": 1}], "totalRegistros": 1,
-            "totalPaginas": 1, "paginaAtual": 1, "temProximaPagina": False,
-        })
-
         mock_client = AsyncMock()
-        # 422, 422, success on 3rd attempt (BR_SLASH)
-        mock_client.get = AsyncMock(side_effect=[
-            response_422, response_422, response_200
-        ])
+        mock_client.get = AsyncMock(return_value=response_422)
 
         client = self._make_client()
         client._client = mock_client
@@ -292,10 +268,11 @@ class TestAsyncFormatRotation:
                 "2026-02-08", "2026-02-18", 6, uf="SP"
             )
 
-        assert result["totalRegistros"] == 1
-        # Should have cached the format (BR_SLASH is index 2)
-        cached = _get_cached_date_format()
-        assert cached is not None  # Some non-default format was cached
+        # Returns empty instead of crashing — graceful degradation
+        assert result["data"] == []
+        assert result["totalRegistros"] == 0
+        # Only 1 attempt since there's only 1 format
+        assert mock_client.get.call_count == 1
 
     @pytest.mark.asyncio
     async def test_cached_format_used_first(self):
