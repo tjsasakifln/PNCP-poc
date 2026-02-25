@@ -275,6 +275,18 @@ ACTIVE_SEARCHES = _create_gauge(
     "Number of currently running search pipelines",
 )
 
+# STAB-007 AC4: Cache warming non-interference metrics
+WARMING_COMBINATIONS_TOTAL = _create_counter(
+    "smartlic_warming_combinations_total",
+    "Cache warming outcomes per combination",
+    labelnames=["result"],  # warmed, skipped_active, skipped_cb_open, skipped_rate_limit, failed, skipped_budget
+)
+
+WARMING_PAUSES_TOTAL = _create_counter(
+    "smartlic_warming_pauses_total",
+    "Times cache warming paused for active user searches",
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

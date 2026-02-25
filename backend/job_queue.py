@@ -726,20 +726,76 @@ async def bid_analysis_job(
 # GTM-STAB-007: Cache Warming Job
 # ==========================================================================
 
-async def cache_warming_job(ctx: dict) -> dict:
-    """GTM-STAB-007 AC1: Pre-warm cache for popular search combinations.
+async def _get_active_search_count() -> int:
+    """Read the current value of the ACTIVE_SEARCHES Prometheus gauge.
 
-    Queries search_sessions for top combinations by frequency,
-    then executes searches to populate cache. Rate-limited to avoid
-    interfering with user searches.
+    Returns 0 if the gauge is not available or reading fails.
+    """
+    try:
+        from metrics import ACTIVE_SEARCHES
+        return int(ACTIVE_SEARCHES._value.get())
+    except Exception:
+        return 0
+
+
+async def _warming_wait_for_idle(
+    cycle_id: str,
+    combo_label: str,
+    pause_delay: float,
+    max_cycles: int,
+) -> bool:
+    """Wait until no active user searches are running.
+
+    Returns True if idle was reached, False if max pause cycles exhausted.
+    """
+    from metrics import WARMING_PAUSES_TOTAL
+
+    for pause_i in range(max_cycles):
+        active = await _get_active_search_count()
+        if active <= 0:
+            return True
+
+        WARMING_PAUSES_TOTAL.inc()
+        logger.info(
+            "warming_paused",
+            extra={
+                "reason": "active_user_search",
+                "combo": combo_label,
+                "cycle_id": cycle_id,
+                "active_searches": active,
+                "pause_cycle": pause_i + 1,
+                "max_cycles": max_cycles,
+            },
+        )
+        await asyncio.sleep(pause_delay)
+
+    # Exhausted all pause cycles — still active
+    return False
+
+
+async def cache_warming_job(ctx: dict) -> dict:
+    """GTM-STAB-007 AC1+AC4: Pre-warm cache for popular search combinations.
+
+    AC4 non-interference guarantees:
+      1. Low-priority batching: WARMING_BATCH_DELAY_S (3s) between each request,
+         sequential processing (one combo at a time).
+      2. Pause on active searches: checks ACTIVE_SEARCHES gauge before each
+         request; waits up to WARMING_MAX_PAUSE_CYCLES * WARMING_PAUSE_ON_ACTIVE_S.
+      3. PNCP rate limit awareness: stops on circuit breaker OPEN or 429.
+      4. Budget timeout: WARMING_BUDGET_TIMEOUT_S (30 min) hard cap.
+      5. System UUID: WARMING_USER_ID avoids counting against real user quotas.
     """
     import uuid
     from config import (
         CACHE_WARMING_ENABLED,
-        CACHE_WARMING_CONCURRENCY,
-        CACHE_WARMING_BUDGET_MINUTES,
+        WARMING_BATCH_DELAY_S,
+        WARMING_BUDGET_TIMEOUT_S,
+        WARMING_PAUSE_ON_ACTIVE_S,
+        WARMING_MAX_PAUSE_CYCLES,
+        WARMING_USER_ID,
+        WARMING_RATE_LIMIT_BACKOFF_S,
     )
-    from metrics import ACTIVE_SEARCHES
+    from metrics import WARMING_COMBINATIONS_TOTAL
 
     cycle_id = str(uuid.uuid4())[:8]
     start = time.monotonic()
@@ -748,8 +804,15 @@ async def cache_warming_job(ctx: dict) -> dict:
         logger.info(f"[CacheWarming {cycle_id}] Skipped — CACHE_WARMING_ENABLED=false")
         return {"status": "disabled", "cycle_id": cycle_id}
 
-    stats = {"cycle_id": cycle_id, "warmed": 0, "skipped": 0, "failed": 0}
-    budget_s = CACHE_WARMING_BUDGET_MINUTES * 60
+    stats = {
+        "cycle_id": cycle_id,
+        "warmed": 0,
+        "skipped_active": 0,
+        "skipped_cb_open": 0,
+        "skipped_rate_limit": 0,
+        "skipped_budget": 0,
+        "failed": 0,
+    }
 
     try:
         from supabase_client import get_supabase
@@ -774,7 +837,7 @@ async def cache_warming_job(ctx: dict) -> dict:
                 combo_counts[key] = {"setor_id": setor, "ufs": list(ufs), "count": 0}
             combo_counts[key]["count"] += 1
 
-        # Sort by frequency, take top 50
+        # Sort by frequency, take top 50 — sequential processing (one at a time)
         top_combos = sorted(combo_counts.values(), key=lambda x: x["count"], reverse=True)[:50]
 
         from datetime import date, timedelta
@@ -782,21 +845,57 @@ async def cache_warming_job(ctx: dict) -> dict:
         data_final = today.isoformat()
         data_inicial = (today - timedelta(days=10)).isoformat()
 
-        for combo in top_combos:
-            if time.monotonic() - start > budget_s:
-                logger.info(f"[CacheWarming {cycle_id}] Budget exhausted ({CACHE_WARMING_BUDGET_MINUTES}min)")
+        for i, combo in enumerate(top_combos):
+            combo_label = f"{combo['setor_id']}:{','.join(combo['ufs'])}"
+
+            # --- Guard 1: Budget timeout ---
+            elapsed = time.monotonic() - start
+            if elapsed > WARMING_BUDGET_TIMEOUT_S:
+                remaining = len(top_combos) - i
+                stats["skipped_budget"] += remaining
+                WARMING_COMBINATIONS_TOTAL.labels(result="skipped_budget").inc(remaining)
+                logger.info(
+                    f"[CacheWarming {cycle_id}] Budget exhausted "
+                    f"({elapsed:.0f}s > {WARMING_BUDGET_TIMEOUT_S:.0f}s) — "
+                    f"{remaining} combos skipped"
+                )
                 break
 
-            # Skip if active user searches running
+            # --- Guard 2: Circuit breaker check ---
             try:
-                active = ACTIVE_SEARCHES._value.get()
-                if active > 0:
-                    stats["skipped"] += 1
-                    await asyncio.sleep(5)
-                    continue
+                from pncp_client import get_circuit_breaker
+                cb = get_circuit_breaker("pncp")
+                if cb.is_degraded:
+                    remaining = len(top_combos) - i
+                    stats["skipped_cb_open"] += remaining
+                    WARMING_COMBINATIONS_TOTAL.labels(result="skipped_cb_open").inc(remaining)
+                    logger.warning(
+                        f"[CacheWarming {cycle_id}] PNCP circuit breaker OPEN — "
+                        f"stopping warming ({remaining} combos skipped)"
+                    )
+                    break
             except Exception:
                 pass
 
+            # --- Guard 3: Pause on active user searches ---
+            idle = await _warming_wait_for_idle(
+                cycle_id=cycle_id,
+                combo_label=combo_label,
+                pause_delay=WARMING_PAUSE_ON_ACTIVE_S,
+                max_cycles=WARMING_MAX_PAUSE_CYCLES,
+            )
+            if not idle:
+                stats["skipped_active"] += 1
+                WARMING_COMBINATIONS_TOTAL.labels(result="skipped_active").inc()
+                logger.info(
+                    f"[CacheWarming {cycle_id}] Skipping {combo_label} — "
+                    f"active searches after {WARMING_MAX_PAUSE_CYCLES} pause cycles"
+                )
+                # Still apply batch delay before next combo
+                await asyncio.sleep(WARMING_BATCH_DELAY_S)
+                continue
+
+            # --- Dispatch warming request ---
             try:
                 from search_cache import trigger_background_revalidation
                 request_data = {
@@ -806,19 +905,37 @@ async def cache_warming_job(ctx: dict) -> dict:
                     "setor_id": combo["setor_id"],
                 }
                 dispatched = await trigger_background_revalidation(
-                    user_id=None,
+                    user_id=WARMING_USER_ID,
                     params=request_data,
                     request_data=request_data,
                 )
                 if dispatched:
                     stats["warmed"] += 1
+                    WARMING_COMBINATIONS_TOTAL.labels(result="warmed").inc()
                 else:
-                    stats["skipped"] += 1
+                    stats["failed"] += 1
+                    WARMING_COMBINATIONS_TOTAL.labels(result="failed").inc()
             except Exception as e:
-                stats["failed"] += 1
-                logger.debug(f"[CacheWarming {cycle_id}] Failed: {e}")
+                error_str = str(e).lower()
+                # --- Guard 4: Rate limit (429) detection ---
+                if "429" in error_str or "rate limit" in error_str or "too many" in error_str:
+                    remaining = len(top_combos) - i - 1
+                    stats["skipped_rate_limit"] += 1 + remaining
+                    WARMING_COMBINATIONS_TOTAL.labels(result="skipped_rate_limit").inc(1 + remaining)
+                    logger.warning(
+                        f"[CacheWarming {cycle_id}] PNCP 429 rate limit hit — "
+                        f"stopping warming for {WARMING_RATE_LIMIT_BACKOFF_S}s "
+                        f"({remaining} combos skipped)"
+                    )
+                    break
+                else:
+                    stats["failed"] += 1
+                    WARMING_COMBINATIONS_TOTAL.labels(result="failed").inc()
+                    logger.debug(f"[CacheWarming {cycle_id}] {combo_label} failed: {e}")
 
-            await asyncio.sleep(5)  # Rate limit: 5s between warming calls
+            # --- Low-priority batch delay (skip after last combo) ---
+            if i < len(top_combos) - 1:
+                await asyncio.sleep(WARMING_BATCH_DELAY_S)
 
     except Exception as e:
         logger.warning(f"[CacheWarming {cycle_id}] Error: {e}")

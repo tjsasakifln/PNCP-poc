@@ -448,6 +448,10 @@ PNCP_TIMEOUT_PER_UF_DEGRADED: int = int(os.getenv("PNCP_TIMEOUT_PER_UF_DEGRADED"
 PIPELINE_SKIP_LLM_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_LLM_AFTER_S", "90"))
 PIPELINE_SKIP_VIABILITY_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_VIABILITY_AFTER_S", "100"))
 
+# GTM-STAB-003 AC3: Consolidation early return — return partial results when most UFs responded
+EARLY_RETURN_THRESHOLD_PCT: float = float(os.getenv("EARLY_RETURN_THRESHOLD_PCT", "0.8"))  # 80% of UFs
+EARLY_RETURN_TIME_S: float = float(os.getenv("EARLY_RETURN_TIME_S", "80.0"))  # seconds elapsed
+
 # ============================================
 # GTM-STAB-007: Cache Warming
 # ============================================
@@ -455,6 +459,14 @@ CACHE_WARMING_ENABLED: bool = str_to_bool(os.getenv("CACHE_WARMING_ENABLED", "fa
 CACHE_WARMING_INTERVAL_HOURS: int = int(os.getenv("CACHE_WARMING_INTERVAL_HOURS", "4"))
 CACHE_WARMING_CONCURRENCY: int = int(os.getenv("CACHE_WARMING_CONCURRENCY", "2"))
 CACHE_WARMING_BUDGET_MINUTES: int = int(os.getenv("CACHE_WARMING_BUDGET_MINUTES", "30"))
+
+# STAB-007 AC4: Cache warming non-interference with user searches
+WARMING_BATCH_DELAY_S: float = float(os.getenv("WARMING_BATCH_DELAY_S", "3.0"))
+WARMING_BUDGET_TIMEOUT_S: float = float(os.getenv("WARMING_BUDGET_TIMEOUT_S", "1800"))
+WARMING_PAUSE_ON_ACTIVE_S: float = float(os.getenv("WARMING_PAUSE_ON_ACTIVE_S", "10.0"))
+WARMING_MAX_PAUSE_CYCLES: int = int(os.getenv("WARMING_MAX_PAUSE_CYCLES", "3"))
+WARMING_USER_ID: str = "00000000-0000-0000-0000-000000000000"
+WARMING_RATE_LIMIT_BACKOFF_S: float = float(os.getenv("WARMING_RATE_LIMIT_BACKOFF_S", "60.0"))
 
 # ============================================
 # CRIT-032: Periodic Cache Refresh (ARQ Cron)
