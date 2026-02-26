@@ -451,29 +451,42 @@ async def save_to_cache(
     Cascade: Supabase → Redis/InMemory → Local file.
     B-03 AC2/AC6/AC7: Accepts fetch_duration_ms and coverage for health metadata.
     Returns dict with {level, success}.
+
+    STORY-271: System warming user (WARMING_USER_ID) skips L1 Supabase because
+    the nil UUID cannot have a profiles row (profiles.id FK → auth.users).
     """
     params_hash = compute_search_hash(params)
     start = time.monotonic()
 
+    # STORY-271: Skip L1 Supabase for system warming user (nil UUID has no profiles row)
+    from config import WARMING_USER_ID
+    skip_supabase = (user_id == WARMING_USER_ID)
+
     # Level 1: Supabase
-    try:
-        await _save_to_supabase(
-            user_id, params_hash, params, results, sources,
-            fetch_duration_ms=fetch_duration_ms, coverage=coverage,
+    if skip_supabase:
+        logger.debug(
+            f"Cache SAVE skipping L1/supabase for warming user "
+            f"(key={params_hash[:12]}, n={len(results)})"
         )
-        elapsed = (time.monotonic() - start) * 1000
-        logger.info(
-            f"Cache SAVE L1/supabase: {len(results)} results "
-            f"for hash {params_hash[:12]}... ({elapsed:.0f}ms, sources: {sources})"
-        )
-        _track_cache_operation("save", True, CacheLevel.SUPABASE, len(results), elapsed)
-        return {"level": CacheLevel.SUPABASE, "success": True}
-    except Exception as e:
-        # GTM-RESILIENCE-E02: centralized reporting (cache save is expected/transient)
-        report_error(
-            e, f"Supabase cache save failed (key={params_hash[:12]}, n={len(results)})",
-            expected=True, tags={"cache_operation": "save", "cache_level": "supabase"}, log=logger,
-        )
+    else:
+        try:
+            await _save_to_supabase(
+                user_id, params_hash, params, results, sources,
+                fetch_duration_ms=fetch_duration_ms, coverage=coverage,
+            )
+            elapsed = (time.monotonic() - start) * 1000
+            logger.info(
+                f"Cache SAVE L1/supabase: {len(results)} results "
+                f"for hash {params_hash[:12]}... ({elapsed:.0f}ms, sources: {sources})"
+            )
+            _track_cache_operation("save", True, CacheLevel.SUPABASE, len(results), elapsed)
+            return {"level": CacheLevel.SUPABASE, "success": True}
+        except Exception as e:
+            # GTM-RESILIENCE-E02: centralized reporting (cache save is expected/transient)
+            report_error(
+                e, f"Supabase cache save failed (key={params_hash[:12]}, n={len(results)})",
+                expected=True, tags={"cache_operation": "save", "cache_level": "supabase"}, log=logger,
+            )
 
     # Level 2: Redis/InMemory
     try:

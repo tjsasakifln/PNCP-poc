@@ -216,6 +216,7 @@ export function useSearchSSE({
       }
 
       // Handle batch progress dispatched via generic onmessage
+      // STORY-268: Also set as currentEvent so progress bar advances during batch processing
       if (event.stage === 'batch_progress') {
         const detail = event.detail as Record<string, unknown>;
         setBatchProgress({
@@ -223,7 +224,7 @@ export function useSearchSSE({
           totalBatches: (detail.total_batches as number) || 0,
           ufsInBatch: (detail.ufs_in_batch as string[]) || [],
         });
-        return;
+        // Fall through to setCurrentEvent — batch_progress carries progress=10-55%
       }
 
       // Set as current event for all other stages
