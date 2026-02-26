@@ -287,6 +287,19 @@ WARMING_PAUSES_TOTAL = _create_counter(
     "Times cache warming paused for active user searches",
 )
 
+# STORY-281 AC4: Inline fallback counter — tracks how often worker didn't complete in time
+SEARCH_INLINE_FALLBACK = _create_counter(
+    "smartlic_search_inline_fallback_total",
+    "Inline fallback executions when ARQ worker did not complete in time",
+)
+
+# STORY-281 AC4: Worker completion time histogram — observe actual worker duration
+SEARCH_WORKER_COMPLETION = _create_histogram(
+    "smartlic_search_worker_completion_seconds",
+    "Time for ARQ worker to complete search (observed by watchdog)",
+    buckets=[5, 10, 15, 30, 60, 90, 120, 180, 300],
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

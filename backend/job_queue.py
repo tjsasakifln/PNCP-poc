@@ -236,6 +236,82 @@ async def get_queue_health() -> str:
 
 
 # ==========================================================================
+# STORY-281 AC2: Search Job Cancellation via Redis Flag
+# ==========================================================================
+
+_CANCEL_KEY_PREFIX = "smartlic:search_cancel:"
+_CANCEL_TTL = 600  # 10 minutes — safety net for stale flags
+
+
+async def set_cancel_flag(search_id: str) -> bool:
+    """STORY-281 AC2: Signal worker to stop processing a search.
+
+    Called by the inline fallback watchdog when it takes over execution.
+    The worker checks this flag periodically and aborts if set.
+
+    Args:
+        search_id: The search UUID to cancel.
+
+    Returns:
+        True if flag was set successfully, False if Redis unavailable.
+    """
+    from redis_pool import get_redis_pool
+    redis = await get_redis_pool()
+    if redis is None:
+        logger.debug(f"STORY-281: Cannot set cancel flag for {search_id} — Redis unavailable")
+        return False
+
+    try:
+        key = f"{_CANCEL_KEY_PREFIX}{search_id}"
+        await redis.set(key, "1", ex=_CANCEL_TTL)
+        logger.info(f"STORY-281: Cancel flag SET for search_id={search_id}")
+        return True
+    except Exception as e:
+        logger.warning(f"STORY-281: Failed to set cancel flag for {search_id}: {e}")
+        return False
+
+
+async def check_cancel_flag(search_id: str) -> bool:
+    """STORY-281 AC2: Check if a search has been cancelled.
+
+    Called by search_job worker periodically (after each source fetch).
+
+    Args:
+        search_id: The search UUID to check.
+
+    Returns:
+        True if the search should be cancelled, False otherwise.
+    """
+    from redis_pool import get_redis_pool
+    redis = await get_redis_pool()
+    if redis is None:
+        return False
+
+    try:
+        key = f"{_CANCEL_KEY_PREFIX}{search_id}"
+        result = await redis.get(key)
+        if result:
+            logger.info(f"STORY-281: Cancel flag DETECTED for search_id={search_id} — aborting worker")
+        return result is not None
+    except Exception:
+        return False
+
+
+async def clear_cancel_flag(search_id: str) -> None:
+    """STORY-281 AC2: Clean up cancel flag after processing completes."""
+    from redis_pool import get_redis_pool
+    redis = await get_redis_pool()
+    if redis is None:
+        return
+
+    try:
+        key = f"{_CANCEL_KEY_PREFIX}{search_id}"
+        await redis.delete(key)
+    except Exception:
+        pass
+
+
+# ==========================================================================
 # Job Result Persistence (Redis-backed, 1h TTL)
 # ==========================================================================
 
@@ -466,6 +542,12 @@ async def search_job(
     status = "completed"
 
     try:
+        # STORY-281 AC2: Check cancel flag before starting heavy work
+        if await check_cancel_flag(search_id):
+            status = "cancelled"
+            logger.info(f"[Search Job] Cancelled before start: search_id={search_id}")
+            return {"status": "cancelled", "total_results": 0}
+
         response = await executar_busca_completa(
             search_id=search_id,
             request_data=request_data,
@@ -473,6 +555,17 @@ async def search_job(
             tracker=tracker,
             quota_pre_consumed=True,  # AC8: Quota consumed in POST before enqueue
         )
+
+        # STORY-281 AC2: Check cancel flag after pipeline completes
+        # If cancelled while running, discard results — inline fallback is handling it
+        if await check_cancel_flag(search_id):
+            status = "cancelled"
+            logger.info(
+                f"[Search Job] Cancelled after completion: search_id={search_id} "
+                f"(inline fallback took over)"
+            )
+            await clear_cancel_flag(search_id)
+            return {"status": "cancelled", "total_results": 0}
 
         total_results = response.total_filtrado if response else 0
 
@@ -489,6 +582,7 @@ async def search_job(
             await remove_tracker(search_id)
 
         logger.info(f"[Search Job] Completed: search_id={search_id}, results={total_results}")
+        await clear_cancel_flag(search_id)
         return {"status": "completed", "total_results": total_results}
 
     except Exception as e:
@@ -519,6 +613,7 @@ async def search_job(
             "duration_ms": duration_ms,
             "status": status,
         }))
+        await clear_cancel_flag(search_id)
 
 
 # ==========================================================================

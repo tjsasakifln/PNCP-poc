@@ -697,33 +697,55 @@ async def _search_fallback_watchdog(
     deps: "SimpleNamespace",
     tracker,
     state_machine,
-    fallback_timeout: int = 30,
+    fallback_timeout: int = 120,
 ) -> None:
-    """AC13: If Worker doesn't produce results within fallback_timeout, run inline.
+    """STORY-281: If Worker doesn't produce results within fallback_timeout, run inline.
 
     Spawned as asyncio.create_task() after enqueue. Sleeps for fallback_timeout
-    seconds, then checks if the Worker already completed. If not, executes the
-    pipeline inline so the user never loses their search.
+    seconds, then checks if the Worker already completed. If not, sets a cancel
+    flag (AC2) to stop the worker and executes the pipeline inline.
+
+    STORY-281 AC1: Default timeout increased from 30s to 120s.
+    STORY-281 AC2: Sets Redis cancel flag so worker aborts.
+    STORY-281 AC4: Emits inline_fallback metric and structured log.
     """
+    from metrics import SEARCH_INLINE_FALLBACK, SEARCH_WORKER_COMPLETION
+
+    wait_start = sync_time.time()
     await asyncio.sleep(fallback_timeout)
 
     # Check if Worker already completed (via Redis)
-    from job_queue import get_job_result
+    from job_queue import get_job_result, set_cancel_flag
     result = await get_job_result(search_id, "search_result")
     if result:
+        # STORY-281 AC4: Record worker completion time
+        worker_duration = sync_time.time() - wait_start
+        SEARCH_WORKER_COMPLETION.observe(worker_duration)
         logger.debug(f"ARCH-001: Watchdog — Worker completed for {search_id}, no fallback needed")
         return
 
     # Check if tracker already completed (Worker emitted terminal event)
     existing_tracker = await get_tracker(search_id)
     if existing_tracker and existing_tracker._is_complete:
+        worker_duration = sync_time.time() - wait_start
+        SEARCH_WORKER_COMPLETION.observe(worker_duration)
         logger.debug(f"ARCH-001: Watchdog — tracker complete for {search_id}, no fallback needed")
         return
 
-    logger.warning(
-        f"ARCH-001: Worker didn't complete within {fallback_timeout}s for {search_id} — "
-        f"executing inline fallback"
-    )
+    # STORY-281 AC4: Record inline fallback event
+    SEARCH_INLINE_FALLBACK.inc()
+
+    # STORY-281 AC4: Structured log for inline fallback
+    import json as _json
+    logger.warning(_json.dumps({
+        "event": "inline_fallback",
+        "search_id": search_id,
+        "wait_timeout": fallback_timeout,
+        "message": f"Worker didn't complete within {fallback_timeout}s — executing inline",
+    }))
+
+    # STORY-281 AC2: Signal worker to stop (avoids double execution)
+    await set_cancel_flag(search_id)
 
     try:
         pipeline = SearchPipeline(deps)
@@ -829,7 +851,7 @@ async def buscar_licitacoes(
     # -----------------------------------------------------------------------
     # GTM-ARCH-001: Async search — enqueue to ARQ Worker, return 202
     # -----------------------------------------------------------------------
-    from config import get_feature_flag, SEARCH_WORKER_FALLBACK_TIMEOUT
+    from config import get_feature_flag, SEARCH_ASYNC_WAIT_TIMEOUT
     from job_queue import is_queue_available, enqueue_job
 
     # GTM-STAB-009 AC6: X-Sync header forces synchronous mode (backward compat)
@@ -898,7 +920,7 @@ async def buscar_licitacoes(
                 )
 
                 if job:
-                    # AC13: Start watchdog — fallback to inline if Worker doesn't complete in 30s
+                    # STORY-281 AC1: Watchdog with 120s timeout (was 30s)
                     asyncio.create_task(
                         _search_fallback_watchdog(
                             search_id=request.search_id,
@@ -907,7 +929,7 @@ async def buscar_licitacoes(
                             deps=deps,
                             tracker=tracker,
                             state_machine=state_machine,
-                            fallback_timeout=SEARCH_WORKER_FALLBACK_TIMEOUT,
+                            fallback_timeout=SEARCH_ASYNC_WAIT_TIMEOUT,
                         )
                     )
 

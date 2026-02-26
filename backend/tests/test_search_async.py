@@ -719,9 +719,11 @@ class TestFeatureFlagConfig:
         assert SEARCH_ASYNC_ENABLED is False
 
     def test_fallback_timeout_default(self):
-        """SEARCH_WORKER_FALLBACK_TIMEOUT default is 30s."""
-        from config import SEARCH_WORKER_FALLBACK_TIMEOUT
-        assert SEARCH_WORKER_FALLBACK_TIMEOUT == 30
+        """STORY-281: SEARCH_ASYNC_WAIT_TIMEOUT default is 120s (was 30s)."""
+        from config import SEARCH_ASYNC_WAIT_TIMEOUT, SEARCH_WORKER_FALLBACK_TIMEOUT
+        assert SEARCH_ASYNC_WAIT_TIMEOUT == 120
+        # Legacy alias follows new default
+        assert SEARCH_WORKER_FALLBACK_TIMEOUT == 120
 
 
 class TestSearchQueuedResponse:

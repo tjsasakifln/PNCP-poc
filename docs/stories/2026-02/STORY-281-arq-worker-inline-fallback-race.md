@@ -26,24 +26,24 @@ Problema: buscas com 1 UF (SP) levam 180s+ quando PNCP esta lento. O timeout de 
 ## Acceptance Criteria
 
 ### AC1: Aumentar async wait timeout para 120s
-- [ ] `routes/search.py`: `_ASYNC_WAIT_TIMEOUT = 120` (era 30)
-- [ ] Configurable via env `SEARCH_ASYNC_WAIT_TIMEOUT` (default 120)
-- [ ] Se worker completa em tempo, retorna resultado do worker (nao executa inline)
+- [x] `routes/search.py`: `SEARCH_ASYNC_WAIT_TIMEOUT = 120` (era 30 via SEARCH_WORKER_FALLBACK_TIMEOUT)
+- [x] Configurable via env `SEARCH_ASYNC_WAIT_TIMEOUT` (default 120)
+- [x] Se worker completa em tempo, retorna resultado do worker (nao executa inline)
 
 ### AC2: Cancelar job no worker quando fallback inline inicia
-- [ ] Se timeout expira, enviar signal de cancel para o worker via Redis
-- [ ] Worker checa cancel flag periodicamente (a cada source fetch)
-- [ ] Evita execucao duplicada
+- [x] Se timeout expira, enviar signal de cancel para o worker via Redis (`set_cancel_flag`)
+- [x] Worker checa cancel flag periodicamente (`check_cancel_flag` before and after pipeline)
+- [x] Evita execucao duplicada — worker returns `{status: "cancelled"}` and discards results
 
 ### AC3: SSE mantém heartbeat durante o wait
-- [ ] SSE endpoint envia `: heartbeat\n\n` a cada 15s enquanto aguarda worker
-- [ ] Se worker emitir progress events, propagar via SSE
-- [ ] Frontend mantem conexao aberta (bodyTimeout: 0 ja configurado em CRIT-012)
+- [x] SSE endpoint envia `: heartbeat\n\n` a cada 15s enquanto aguarda worker (CRIT-012)
+- [x] Se worker emitir progress events, propagar via SSE (existing tracker→queue→SSE)
+- [x] Frontend mantem conexao aberta (bodyTimeout: 0 ja configurado em CRIT-012)
 
 ### AC4: Metrics de observabilidade
-- [ ] `smartlic_search_inline_fallback_total` — counter de fallbacks inline
-- [ ] `smartlic_search_worker_completion_seconds` — histogram do tempo do worker
-- [ ] Log estruturado: `{"event": "inline_fallback", "search_id": X, "wait_timeout": 30}`
+- [x] `smartlic_search_inline_fallback_total` — counter de fallbacks inline (metrics.py)
+- [x] `smartlic_search_worker_completion_seconds` — histogram do tempo do worker (metrics.py)
+- [x] Log estruturado: `{"event": "inline_fallback", "search_id": X, "wait_timeout": 120}`
 
 ## Files to Modify
 
@@ -53,6 +53,17 @@ Problema: buscas com 1 UF (SP) levam 180s+ quando PNCP esta lento. O timeout de 
 | `backend/job_queue.py` | Add cancel check in search_job |
 | `backend/config.py` | SEARCH_ASYNC_WAIT_TIMEOUT |
 | `backend/metrics.py` | New counters |
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `backend/config.py` | `SEARCH_ASYNC_WAIT_TIMEOUT=120` + legacy alias |
+| `backend/metrics.py` | `SEARCH_INLINE_FALLBACK` counter + `SEARCH_WORKER_COMPLETION` histogram |
+| `backend/job_queue.py` | `set_cancel_flag`, `check_cancel_flag`, `clear_cancel_flag` + search_job cancel checks |
+| `backend/routes/search.py` | Watchdog uses 120s timeout, sets cancel flag on fallback, emits metrics |
+| `backend/tests/test_story281_double_execution.py` | 24 tests covering AC1-AC4 |
+| `docs/stories/2026-02/STORY-281-arq-worker-inline-fallback-race.md` | Checkboxes marked |
 
 ## Evidencia
 

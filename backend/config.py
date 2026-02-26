@@ -521,7 +521,17 @@ CACHE_REFRESH_STAGGER_SECONDS: int = int(os.getenv("CACHE_REFRESH_STAGGER_SECOND
 # GTM-ARCH-001: Async Search via ARQ Worker
 # ============================================
 SEARCH_ASYNC_ENABLED: bool = str_to_bool(os.getenv("SEARCH_ASYNC_ENABLED", "false"))
-SEARCH_WORKER_FALLBACK_TIMEOUT: int = int(os.getenv("SEARCH_WORKER_FALLBACK_TIMEOUT", "30"))
+
+# STORY-281 AC1: Increased from 30s to 120s to prevent double execution.
+# PNCP searches for 1 UF can take 180s+ when API is slow. 30s always expired,
+# causing every async search to also run inline (double load on PNCP, Redis, CPU).
+# 120s covers >95% of single-UF searches. Multi-UF may still fallback but that's rare.
+SEARCH_ASYNC_WAIT_TIMEOUT: int = int(os.getenv("SEARCH_ASYNC_WAIT_TIMEOUT", "120"))
+
+# Legacy alias — kept for backward compatibility (reads same env var if set, else uses new default)
+SEARCH_WORKER_FALLBACK_TIMEOUT: int = int(
+    os.getenv("SEARCH_WORKER_FALLBACK_TIMEOUT", str(SEARCH_ASYNC_WAIT_TIMEOUT))
+)
 
 # ============================================
 # D-05: User Feedback Loop
