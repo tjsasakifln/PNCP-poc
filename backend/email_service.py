@@ -119,6 +119,75 @@ def send_email(
     return None
 
 
+def send_batch_email(
+    messages: list[dict],
+    idempotency_key: str | None = None,
+) -> list[dict] | None:
+    """
+    Send a batch of emails via Resend Batch API.
+
+    STORY-278 AC4: Batch sending for daily digest.
+    Max 100 emails per call (Resend limit).
+
+    Args:
+        messages: List of email dicts, each with keys: to, subject, html, tags (optional).
+        idempotency_key: Optional key to prevent duplicate sends on retry.
+
+    Returns:
+        List of send results on success, None on failure.
+        Never raises — logs errors instead.
+    """
+    if not _is_configured():
+        logger.debug(f"Batch email not sent (disabled/unconfigured): count={len(messages)}")
+        return None
+
+    if not messages:
+        return []
+
+    import resend
+    resend.api_key = RESEND_API_KEY
+
+    # Build batch params
+    batch_params = []
+    for msg in messages:
+        param: dict = {
+            "from": EMAIL_FROM,
+            "to": [msg["to"]] if isinstance(msg["to"], str) else msg["to"],
+            "subject": msg["subject"],
+            "html": msg["html"],
+        }
+        if msg.get("tags"):
+            param["tags"] = msg["tags"]
+        batch_params.append(param)
+
+    last_error = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            headers = {}
+            if idempotency_key:
+                headers["Idempotency-Key"] = f"{idempotency_key}-{attempt}"
+            result = resend.Batch.send(batch_params)
+            result_list = result if isinstance(result, list) else [result]
+            logger.info(f"Batch email sent: count={len(messages)}, results={len(result_list)}")
+            return result_list
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_RETRIES - 1:
+                delay = min(BASE_DELAY * (2 ** attempt), MAX_DELAY)
+                logger.warning(
+                    f"Batch email send failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}. "
+                    f"Retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+            else:
+                logger.error(
+                    f"Batch email send failed after {MAX_RETRIES} attempts: "
+                    f"count={len(messages)}, error={last_error}"
+                )
+
+    return None
+
+
 def send_email_async(
     to: str,
     subject: str,

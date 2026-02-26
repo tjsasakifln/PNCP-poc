@@ -287,6 +287,19 @@ WARMING_PAUSES_TOTAL = _create_counter(
     "Times cache warming paused for active user searches",
 )
 
+# STORY-278 AC7: Daily digest email metrics
+DIGEST_EMAILS_SENT = _create_counter(
+    "smartlic_digest_emails_sent_total",
+    "Daily digest emails sent",
+    labelnames=["status"],  # success, failed, skipped
+)
+
+DIGEST_JOB_DURATION = _create_histogram(
+    "smartlic_digest_job_duration_seconds",
+    "Daily digest job duration",
+    buckets=[10, 30, 60, 120, 300, 600, 1800],
+)
+
 # STORY-281 AC4: Inline fallback counter — tracks how often worker didn't complete in time
 SEARCH_INLINE_FALLBACK = _create_counter(
     "smartlic_search_inline_fallback_total",

@@ -341,6 +341,88 @@ async def get_profile_completeness(
     )
 
 
+# ============================================================================
+# STORY-278: Alert Preferences
+# ============================================================================
+
+class AlertPreferencesRequest(BaseModel):
+    frequency: str = "daily"  # daily, twice_weekly, weekly, off
+    enabled: bool = True
+
+
+class AlertPreferencesResponse(BaseModel):
+    frequency: str
+    enabled: bool
+    last_digest_sent_at: str | None = None
+
+
+@router.get("/profile/alert-preferences", response_model=AlertPreferencesResponse)
+async def get_alert_preferences(
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """Get user's alert preferences (STORY-278 AC6)."""
+    user_id = user["id"]
+
+    try:
+        result = db.table("alert_preferences").select(
+            "frequency, enabled, last_digest_sent_at"
+        ).eq("user_id", user_id).single().execute()
+
+        if result.data:
+            return AlertPreferencesResponse(
+                frequency=result.data["frequency"],
+                enabled=result.data["enabled"],
+                last_digest_sent_at=result.data.get("last_digest_sent_at"),
+            )
+    except Exception:
+        pass
+
+    # Default if no record exists
+    return AlertPreferencesResponse(
+        frequency="daily",
+        enabled=True,
+        last_digest_sent_at=None,
+    )
+
+
+@router.put("/profile/alert-preferences", response_model=AlertPreferencesResponse)
+async def update_alert_preferences(
+    prefs: AlertPreferencesRequest,
+    user: dict = Depends(require_auth),
+    db=Depends(get_db),
+):
+    """Update user's alert preferences (STORY-278 AC6)."""
+    user_id = user["id"]
+
+    valid_frequencies = ("daily", "twice_weekly", "weekly", "off")
+    if prefs.frequency not in valid_frequencies:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Frequencia invalida. Opcoes: {', '.join(valid_frequencies)}"
+        )
+
+    try:
+        # Upsert: insert or update
+        result = db.table("alert_preferences").upsert({
+            "user_id": user_id,
+            "frequency": prefs.frequency,
+            "enabled": prefs.enabled,
+        }, on_conflict="user_id").execute()
+
+        data = result.data[0] if result.data else {}
+
+        log_user_action(logger, "alert_preferences_updated", user_id)
+        return AlertPreferencesResponse(
+            frequency=data.get("frequency", prefs.frequency),
+            enabled=data.get("enabled", prefs.enabled),
+            last_digest_sent_at=data.get("last_digest_sent_at"),
+        )
+    except Exception as e:
+        logger.error(f"Failed to update alert preferences for {mask_user_id(user_id)}: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao salvar preferencias de alerta")
+
+
 @router.delete("/me", response_model=DeleteAccountResponse)
 async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db)):
     """Delete entire user account and all associated data (LGPD Art. 18 VI).

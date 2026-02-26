@@ -99,6 +99,12 @@ export default function ContaPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellingEndsAt, setCancellingEndsAt] = useState<string | null>(null);
 
+  // STORY-278: Alert Preferences state
+  const [alertEnabled, setAlertEnabled] = useState(true);
+  const [alertFrequency, setAlertFrequency] = useState("daily");
+  const [alertLoading, setAlertLoading] = useState(false);
+  const [alertSaving, setAlertSaving] = useState(false);
+
   // STORY-260: Profile de Licitante state
   const [profileCtx, setProfileCtx] = useState<ProfileContext | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -132,9 +138,57 @@ export default function ContaPage() {
     }
   }, [session?.access_token]);
 
+  // STORY-278: Fetch alert preferences
+  const fetchAlertPrefs = useCallback(async () => {
+    if (!session?.access_token) return;
+    setAlertLoading(true);
+    try {
+      const res = await fetch("/api/alert-preferences", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlertEnabled(data.enabled ?? true);
+        setAlertFrequency(data.frequency ?? "daily");
+      }
+    } catch {
+      // silent — defaults are fine
+    } finally {
+      setAlertLoading(false);
+    }
+  }, [session?.access_token]);
+
+  const handleSaveAlertPrefs = useCallback(async (enabled: boolean, frequency: string) => {
+    if (!session?.access_token) return;
+    setAlertSaving(true);
+    try {
+      const res = await fetch("/api/alert-preferences", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled, frequency }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlertEnabled(data.enabled);
+        setAlertFrequency(data.frequency);
+        toast.success("Preferencias de alerta atualizadas");
+      } else {
+        toast.error("Erro ao salvar preferencias");
+      }
+    } catch {
+      toast.error("Erro de conexao");
+    } finally {
+      setAlertSaving(false);
+    }
+  }, [session?.access_token]);
+
   useEffect(() => {
     fetchProfileCtx();
-  }, [fetchProfileCtx]);
+    fetchAlertPrefs();
+  }, [fetchProfileCtx, fetchAlertPrefs]);
 
   const startEdit = () => {
     if (!profileCtx) return;
@@ -943,6 +997,78 @@ export default function ContaPage() {
                   Cancelar
                 </button>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* STORY-278: Alert Preferences section */}
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6" data-testid="alert-preferences-section">
+          <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Alertas por Email</h2>
+          <p className="text-sm text-[var(--ink-secondary)] mb-4">
+            Receba oportunidades de licitacao filtradas para seu perfil diretamente no seu email.
+          </p>
+
+          {alertLoading ? (
+            <div className="h-16 bg-[var(--surface-1)] rounded animate-pulse" />
+          ) : (
+            <div className="space-y-4">
+              {/* Toggle on/off */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-[var(--ink)]">Receber alerta por email</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={alertEnabled}
+                  disabled={alertSaving}
+                  data-testid="alert-toggle"
+                  onClick={() => {
+                    const newEnabled = !alertEnabled;
+                    setAlertEnabled(newEnabled);
+                    handleSaveAlertPrefs(newEnabled, alertFrequency);
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--brand-blue)] ${
+                    alertEnabled ? "bg-[var(--brand-navy)]" : "bg-[var(--surface-2)]"
+                  } ${alertSaving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      alertEnabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Frequency selector — only shown when enabled */}
+              {alertEnabled && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--ink-secondary)] mb-2">Frequencia</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "daily", label: "Diario" },
+                      { value: "twice_weekly", label: "2x por semana" },
+                      { value: "weekly", label: "Semanal" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={alertSaving}
+                        data-testid={`alert-freq-${opt.value}`}
+                        onClick={() => {
+                          setAlertFrequency(opt.value);
+                          handleSaveAlertPrefs(alertEnabled, opt.value);
+                        }}
+                        className={`px-4 py-2 rounded-button text-sm font-medium transition-colors ${
+                          alertFrequency === opt.value
+                            ? "bg-[var(--brand-navy)] text-white"
+                            : "border border-[var(--border)] bg-[var(--surface-0)] text-[var(--ink)] hover:bg-[var(--surface-1)]"
+                        } ${alertSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

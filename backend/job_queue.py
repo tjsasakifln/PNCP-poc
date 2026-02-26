@@ -818,6 +818,146 @@ async def bid_analysis_job(
 
 
 # ==========================================================================
+# STORY-278: Daily Digest Email Job
+# ==========================================================================
+
+async def daily_digest_job(ctx: dict) -> dict:
+    """STORY-278 AC5: Send daily digest emails to eligible users.
+
+    Runs as ARQ cron job at DIGEST_HOUR_UTC (default 10:00 = 7:00 BRT).
+    Queries users with digest_enabled=true, builds per-user digests,
+    sends via Resend Batch API, and updates last_digest_sent_at.
+
+    Returns:
+        Dict with job stats (users_queried, emails_sent, failed, skipped).
+    """
+    import uuid as _uuid
+    from config import DIGEST_ENABLED, DIGEST_MAX_PER_EMAIL, DIGEST_BATCH_SIZE
+    from metrics import DIGEST_EMAILS_SENT, DIGEST_JOB_DURATION
+
+    cycle_id = str(_uuid.uuid4())[:8]
+    start = time.monotonic()
+
+    if not DIGEST_ENABLED:
+        logger.info(f"[Digest {cycle_id}] Skipped — DIGEST_ENABLED=false")
+        return {"status": "disabled", "cycle_id": cycle_id}
+
+    stats = {
+        "cycle_id": cycle_id,
+        "users_queried": 0,
+        "emails_sent": 0,
+        "emails_failed": 0,
+        "emails_skipped": 0,
+    }
+
+    try:
+        from supabase_client import get_supabase
+        db = get_supabase()
+    except Exception as e:
+        logger.error(f"[Digest {cycle_id}] Supabase unavailable: {e}")
+        return {"status": "db_unavailable", **stats}
+
+    try:
+        from services.digest_service import (
+            get_digest_eligible_users,
+            build_digest_for_user,
+            mark_digest_sent,
+        )
+        from templates.emails.digest import render_daily_digest_email
+        from email_service import send_batch_email
+
+        eligible = await get_digest_eligible_users(db)
+        stats["users_queried"] = len(eligible)
+
+        if not eligible:
+            logger.info(f"[Digest {cycle_id}] No eligible users")
+            duration_s = time.monotonic() - start
+            DIGEST_JOB_DURATION.observe(duration_s)
+            return {"status": "no_users", **stats}
+
+        # Build digests for all eligible users
+        batch_messages = []
+        user_ids_in_batch = []
+
+        for user_prefs in eligible:
+            user_id = user_prefs["user_id"]
+
+            try:
+                digest = await build_digest_for_user(
+                    user_id=user_id,
+                    db=db,
+                    max_items=DIGEST_MAX_PER_EMAIL,
+                )
+
+                if not digest or not digest.get("email"):
+                    stats["emails_skipped"] += 1
+                    DIGEST_EMAILS_SENT.labels(status="skipped").inc()
+                    continue
+
+                html = render_daily_digest_email(
+                    user_name=digest["user_name"],
+                    opportunities=digest["opportunities"],
+                    stats=digest["stats"],
+                )
+
+                batch_messages.append({
+                    "to": digest["email"],
+                    "subject": f"{digest['stats']['total_novas']} oportunidades no seu setor — SmartLic",
+                    "html": html,
+                    "tags": [
+                        {"name": "category", "value": "digest"},
+                        {"name": "cycle_id", "value": cycle_id},
+                    ],
+                })
+                user_ids_in_batch.append(user_id)
+
+            except Exception as e:
+                stats["emails_failed"] += 1
+                DIGEST_EMAILS_SENT.labels(status="failed").inc()
+                logger.warning(f"[Digest {cycle_id}] Failed to build digest for {user_id[:8]}: {e}")
+
+        if not batch_messages:
+            logger.info(f"[Digest {cycle_id}] No messages to send after building")
+            duration_s = time.monotonic() - start
+            DIGEST_JOB_DURATION.observe(duration_s)
+            return {"status": "no_messages", **stats}
+
+        # Send in batches of DIGEST_BATCH_SIZE (Resend max 100)
+        for batch_start in range(0, len(batch_messages), DIGEST_BATCH_SIZE):
+            batch_end = min(batch_start + DIGEST_BATCH_SIZE, len(batch_messages))
+            batch_slice = batch_messages[batch_start:batch_end]
+            batch_user_ids = user_ids_in_batch[batch_start:batch_end]
+
+            idempotency_key = f"digest-{cycle_id}-{batch_start}"
+            result = send_batch_email(batch_slice, idempotency_key=idempotency_key)
+
+            if result is not None:
+                stats["emails_sent"] += len(batch_slice)
+                DIGEST_EMAILS_SENT.labels(status="success").inc(len(batch_slice))
+
+                # Update last_digest_sent_at for each user in this batch
+                for uid in batch_user_ids:
+                    await mark_digest_sent(uid, db)
+            else:
+                stats["emails_failed"] += len(batch_slice)
+                DIGEST_EMAILS_SENT.labels(status="failed").inc(len(batch_slice))
+                logger.error(f"[Digest {cycle_id}] Batch send failed: {batch_start}-{batch_end}")
+
+    except Exception as e:
+        logger.error(f"[Digest {cycle_id}] Unexpected error: {e}", exc_info=True)
+        return {"status": "error", "error": str(e), **stats}
+
+    duration_s = time.monotonic() - start
+    duration_ms = int(duration_s * 1000)
+    stats["duration_ms"] = duration_ms
+    DIGEST_JOB_DURATION.observe(duration_s)
+
+    logger.info(json.dumps({"event": "digest_sent", **stats}))
+
+    return {"status": "completed", **stats}
+
+
+# ==========================================================================
 # GTM-STAB-007: Cache Warming Job
 # ==========================================================================
 
@@ -1070,6 +1210,13 @@ try:
         _worker_cron_jobs.append(
             _arq_cron(cache_warming_job, hour=_warming_cron_hours, minute=30, timeout=1800),
         )
+
+    # STORY-278 AC5: Daily digest cron job
+    from config import DIGEST_ENABLED, DIGEST_HOUR_UTC
+    if DIGEST_ENABLED:
+        _worker_cron_jobs.append(
+            _arq_cron(daily_digest_job, hour={DIGEST_HOUR_UTC}, minute=0, timeout=1800),
+        )
 except Exception:
     _worker_cron_jobs = []
 
@@ -1084,7 +1231,7 @@ class WorkerSettings:
         cd backend && arq job_queue.WorkerSettings
     """
 
-    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job]
+    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job]
     cron_jobs = _worker_cron_jobs  # CRIT-032 AC2: periodic cache refresh
     redis_settings = _worker_redis_settings
     max_jobs = 10
