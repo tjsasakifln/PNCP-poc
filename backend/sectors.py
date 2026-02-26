@@ -119,10 +119,11 @@ def _load_sectors_from_yaml() -> Dict[str, SectorConfig]:
                 positive_signals=pos,
             ))
             # AC1: Validate trigger is subset of sector keywords (warning if not)
-            # Check if any keyword starts with the trigger (prefix match)
+            # STORY-283 AC3: prefix OR substring match (aligned with test_sector_coverage_audit)
             trigger_lower = trigger.lower()
             has_matching_keyword = any(
-                kw.lower().startswith(trigger_lower) for kw in keywords
+                kw.lower().startswith(trigger_lower) or trigger_lower in kw.lower()
+                for kw in keywords
             )
             if not has_matching_keyword:
                 _logger.warning(

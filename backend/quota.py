@@ -105,6 +105,25 @@ PLAN_CAPABILITIES: dict[str, PlanCapabilities] = {
         "max_summary_tokens": 10000,
         "priority": PlanPriority.NORMAL.value,
     },
+    # STORY-283 AC1: Map plan_ids found in production database
+    "free": {
+        "max_history_days": 7,
+        "allow_excel": False,
+        "allow_pipeline": False,
+        "max_requests_per_month": 10,
+        "max_requests_per_min": 2,
+        "max_summary_tokens": 200,
+        "priority": PlanPriority.LOW.value,
+    },
+    "master": {
+        "max_history_days": 99999,
+        "allow_excel": True,
+        "allow_pipeline": True,
+        "max_requests_per_month": 99999,
+        "max_requests_per_min": 120,
+        "max_summary_tokens": 10000,
+        "priority": PlanPriority.HIGH.value,
+    },
 }
 
 # Display names for UI
@@ -114,6 +133,8 @@ PLAN_NAMES: dict[str, str] = {
     "maquina": "Máquina (legacy)",
     "sala_guerra": "Sala de Guerra (legacy)",
     "smartlic_pro": "SmartLic Pro",
+    "free": "Free",
+    "master": "Master",
 }
 
 # Pricing for error messages

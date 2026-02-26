@@ -467,16 +467,8 @@ sectors:
           - "uniforme"
           - "roupa"
           - "vestimenta"
-      # Rule 5: "padronizacao" + non-clothing context
-      - trigger: "padronizacao"
-        negative_contexts:
-          - "visual"
-          - "layout"
-          - "sistema"
-          - "software"
-          - "digital"
-        positive_signals:
-          - "vestuario"
+      # Rule 5: Removed — "padronizacao" trigger had no matching keyword prefix.
+      # False positives covered by exclusions: "padronizacao de uniforme escolar".
           - "textil"
           - "confeccao"
     # GTM-RESILIENCE-D01 AC4: Domain signals for item-level inspection
@@ -908,6 +900,8 @@ sectors:
       - "monitores"
       - "mouse"
       - "mouses"
+      - "rede"
+      - "redes"
       - "switch"
       - "switches"
       - "hd"
