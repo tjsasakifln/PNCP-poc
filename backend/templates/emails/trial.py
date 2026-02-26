@@ -182,8 +182,8 @@ def render_trial_last_day_email(user_name: str, stats: dict) -> str:
             Ative hoje e não perca nenhuma oportunidade
           </p>
           <p style="color: #555; font-size: 14px; margin: 8px 0 0;">
-            SmartLic Pro — R$ 1.999/mês &nbsp;|&nbsp;
-            Economia de 20% no plano anual
+            SmartLic Pro — R$ 397/mês &nbsp;|&nbsp;
+            Economia de 25% no plano anual
           </p>
         </td>
       </tr>
@@ -192,7 +192,7 @@ def render_trial_last_day_email(user_name: str, stats: dict) -> str:
     <p style="text-align: center; margin: 24px 0 16px;">
       <a href="{FRONTEND_URL}/planos" class="btn"
          style="display: inline-block; padding: 14px 32px; background-color: #d32f2f; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        Ativar SmartLic Pro — R$ 1.999/mês
+        Ativar SmartLic Pro — R$ 397/mês
       </a>
     </p>
     """

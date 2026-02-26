@@ -24,9 +24,9 @@ const formatCurrency = (val: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val);
 
 const BILLING_PRICES: Record<BillingPeriod, { monthly: number; label: string; subtitle: string }> = {
-  monthly: { monthly: 1999, label: "Mensal", subtitle: "Avaliação constante de oportunidades" },
-  semiannual: { monthly: 1799, label: "Semestral", subtitle: "Consistência competitiva" },
-  annual: { monthly: 1599, label: "Anual", subtitle: "Domínio do mercado" },
+  monthly: { monthly: 397, label: "Mensal", subtitle: "Avaliação constante de oportunidades" },
+  semiannual: { monthly: 357, label: "Semestral", subtitle: "Consistência competitiva" },
+  annual: { monthly: 297, label: "Anual", subtitle: "Domínio do mercado" },
 };
 
 export function TrialConversionScreen({ trialValue, onClose, loading }: TrialConversionScreenProps) {
@@ -80,7 +80,7 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
       <GlassCard variant="pricing" hoverable={false} className="max-w-4xl w-full p-8 md:p-12 my-8">
         {/* Hero */}
         <h1 className="text-3xl md:text-4xl font-bold font-display text-center mb-2 text-ink">
-          {hasData ? "Veja o que você descobriu em 7 dias" : "Descubra oportunidades para seu negócio"}
+          {hasData ? "Veja o que você descobriu no período Beta" : "Descubra oportunidades para seu negócio"}
         </h1>
         <p className="text-center text-ink-secondary mb-8">
           {hasData

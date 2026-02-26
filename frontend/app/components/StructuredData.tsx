@@ -66,8 +66,8 @@ export function StructuredData() {
     operatingSystem: 'Web',
     offers: {
       '@type': 'AggregateOffer',
-      lowPrice: '1599.00',
-      highPrice: '1999.00',
+      lowPrice: '297.00',
+      highPrice: '397.00',
       priceCurrency: 'BRL',
       offerCount: 3,
     },

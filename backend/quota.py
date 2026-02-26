@@ -142,7 +142,7 @@ PLAN_PRICES: dict[str, str] = {
     "consultor_agil": "R$ 297/mês",
     "maquina": "R$ 597/mês",
     "sala_guerra": "R$ 1.497/mês",
-    "smartlic_pro": "R$ 1.999/mês",
+    "smartlic_pro": "R$ 397/mês",
 }
 
 # Upgrade path suggestions (for error messages)

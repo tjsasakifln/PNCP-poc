@@ -209,8 +209,8 @@ export const pricing = {
       defaultWinRate: 0.05,
       exampleCalculation: {
         missedOpportunityCost: 200_000,
-        smartLicInvestment: 1_999,
-        potentialReturn: "100x",
+        smartLicInvestment: 397,
+        potentialReturn: "500x",
       },
     },
     tagline: "Uma única licitação ganha paga o investimento do ano inteiro.",
@@ -232,7 +232,7 @@ export const pricing = {
     },
     guarantee: {
       traditional: "Raro",
-      smartlic: "7 dias do produto completo",
+      smartlic: "30 dias do produto completo (Beta)",
     },
   },
 
@@ -240,7 +240,7 @@ export const pricing = {
   guarantee: {
     headline: "Avalie Sem Compromisso",
     description:
-      "Produto completo por 7 dias para você conhecer o poder da inteligência de decisão. Sem cartão, sem compromisso.",
+      "Produto completo por 30 dias para você conhecer o poder da inteligência de decisão. Sem cartão, sem compromisso.",
   },
 
   // Transparency statement

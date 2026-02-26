@@ -189,7 +189,7 @@ def render_payment_failed_email(
     Args:
         user_name: User's display name.
         plan_name: Current plan name.
-        amount: Formatted amount (e.g. "R$ 1.999,00").
+        amount: Formatted amount (e.g. "R$ 397,00").
         failure_reason: Stripe failure message.
         days_until_cancellation: Days remaining before subscription cancels.
     """

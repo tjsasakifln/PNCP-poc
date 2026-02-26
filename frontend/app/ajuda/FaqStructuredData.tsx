@@ -34,11 +34,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "Qual a diferença entre o período de avaliação e o SmartLic Pro?",
-    a: "Durante os 7 dias de avaliação gratuita, você usa o produto completo sem restrições: Excel, Pipeline, IA completa e histórico. Após o período de avaliação, assine o SmartLic Pro para continuar com acesso completo.",
+    a: "Durante os 30 dias de avaliação gratuita (Beta), você usa o produto completo sem restrições: Excel, Pipeline, IA completa e histórico. Após o período de avaliação, assine o SmartLic Pro para continuar com acesso completo.",
   },
   {
     q: "Posso testar antes de assinar?",
-    a: "Sim! Ao criar sua conta, você experimenta o produto completo por 7 dias gratuitamente, sem limites. Não é necessário informar dados de pagamento.",
+    a: "Sim! Ao criar sua conta, você experimenta o produto completo por 30 dias gratuitamente durante o período Beta, sem limites. Não é necessário informar dados de pagamento.",
   },
   {
     q: "Posso cancelar a qualquer momento?",
@@ -46,11 +46,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "O que acontece se eu cancelar meu acesso?",
-    a: "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 7 dias após o cadastro inicial e não é reativado.",
+    a: "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 30 dias após o cadastro inicial e não é reativado.",
   },
   {
     q: "Existe desconto para pagamento anual?",
-    a: "Sim! O acesso anual tem economia de 20% em relação ao mensal — R$ 1.599/mês em vez de R$ 1.999/mês.",
+    a: "Sim! O acesso anual tem economia de 25% em relação ao mensal — R$ 297/mês em vez de R$ 397/mês.",
   },
   {
     q: "O pagamento é seguro?",

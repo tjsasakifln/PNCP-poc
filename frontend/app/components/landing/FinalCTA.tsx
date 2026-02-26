@@ -61,7 +61,7 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
             isInView ? 'opacity-100' : 'opacity-0'
           }`}
         >
-          Produto completo por 7 dias. Sem cartão. Se não analisar hoje, pode perder.
+          Produto completo por 30 dias. Sem cartão. Se não analisar hoje, pode perder.
         </p>
       </div>
     </section>

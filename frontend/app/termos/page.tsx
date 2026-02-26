@@ -14,7 +14,7 @@ export default function TermosPage() {
             Termos de Serviço
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
-            Última atualização: 07 de fevereiro de 2026
+            Última atualização: 26 de fevereiro de 2026
           </p>
 
           <div className="prose prose-gray dark:prose-invert max-w-none">
@@ -69,8 +69,8 @@ export default function TermosPage() {
                 3.2 Tipos de Conta
               </h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
-                <li><strong>Período de Avaliação:</strong> 7 dias de acesso completo a todas as funcionalidades da plataforma, sem compromisso</li>
-                <li><strong>SmartLic Pro:</strong> Acesso completo à plataforma, incluindo busca multi-fonte, classificação por IA, relatórios em Excel, pipeline de oportunidades e suporte prioritário — R$&nbsp;1.999/mês</li>
+                <li><strong>Período de Avaliação (Beta):</strong> 30 dias de acesso completo a todas as funcionalidades da plataforma, sem compromisso e sem necessidade de cartão de crédito</li>
+                <li><strong>SmartLic Pro:</strong> Acesso completo à plataforma, incluindo busca multi-fonte, classificação por IA, relatórios em Excel, pipeline de oportunidades e suporte prioritário — R$&nbsp;397/mês (mensal), R$&nbsp;357/mês (semestral) ou R$&nbsp;297/mês (anual)</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 text-gray-800 dark:text-gray-200">

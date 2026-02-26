@@ -492,7 +492,7 @@ class TestPlanPricing:
 
     def test_smartlic_pro_price(self):
         """SmartLic Pro should have correct price."""
-        assert PLAN_PRICES["smartlic_pro"] == "R$ 1.999/mês"
+        assert PLAN_PRICES["smartlic_pro"] == "R$ 397/mês"
 
     def test_free_trial_has_no_price(self):
         """FREE trial should not be in pricing (it's free)."""

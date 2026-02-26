@@ -518,8 +518,8 @@ export default function InteligenciaArtificialConsultoriaLicitacao2026() {
             <strong>Exemplo numérico:</strong> Consultoria com 2 analistas, custo-hora
             de R$ 85,00, 4 horas/dia de triagem cada. Custo mensal de triagem:
             R$ 14.960. Com IA, triagem cai para 1 hora/dia cada -- custo residual
-            de R$ 3.740 + ferramenta R$ 1.999 = R$ 5.739. Economia direta:
-            R$ 9.221/mês. Horas liberadas: 132h/mês -- se convertidas em serviço
+            de R$ 3.740 + ferramenta R$ 397 = R$ 4.137. Economia direta:
+            R$ 10.823/mês. Horas liberadas: 132h/mês -- se convertidas em serviço
             consultivo a R$ 150/hora, receita potencial adicional de R$ 19.800/mês.
           </li>
         </ul>

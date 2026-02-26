@@ -17,11 +17,11 @@ interface UserProfile {
   is_admin?: boolean;
 }
 
-// GTM-002: Single plan pricing by billing period
+// STORY-277: Repricing — R$397/mês (market-aligned) with 30-day beta
 const PRICING: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
-  monthly: { monthly: 1999, total: 1999, period: "mês" },
-  semiannual: { monthly: 1799, total: 10794, period: "semestre", discount: 10 },
-  annual: { monthly: 1599, total: 19188, period: "ano", discount: 20 },
+  monthly: { monthly: 397, total: 397, period: "mês" },
+  semiannual: { monthly: 357, total: 2142, period: "semestre", discount: 10 },
+  annual: { monthly: 297, total: 3564, period: "ano", discount: 25 },
 };
 
 // GTM-002: Features list — ALL enabled (no comparison needed)
@@ -39,7 +39,7 @@ const FEATURES = [
 const FAQ_ITEMS = [
   {
     question: "Posso cancelar a qualquer momento?",
-    answer: "Sim. Sem contrato de fidelidade, mesmo no acesso anual. Cancele quando quiser e mantenha o acesso até o fim do período já pago. Após o encerramento, o acesso ao sistema é suspenso.",
+    answer: "Sim. Sem contrato de fidelidade, mesmo no acesso anual. Cancele quando quiser e mantenha o acesso até o fim do período já pago.",
   },
   {
     question: "Existe contrato de fidelidade?",
@@ -47,11 +47,11 @@ const FAQ_ITEMS = [
   },
   {
     question: "O que acontece se eu cancelar?",
-    answer: "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 7 dias após o cadastro inicial e não é reativado.",
+    answer: "Você mantém acesso completo até o fim do período já pago. Após essa data, o acesso ao sistema é encerrado. O período de avaliação gratuita é exclusivo para os primeiros 30 dias após o cadastro inicial e não é reativado.",
   },
   {
     question: "Como funciona a cobrança semestral e anual?",
-    answer: "No acesso semestral, o valor é cobrado a cada 6 meses com 10% de economia. No anual, a cada 12 meses com 20% de economia. Stripe processa tudo com segurança.",
+    answer: "No acesso semestral, o valor é cobrado a cada 6 meses com 10% de economia. No anual, a cada 12 meses com 25% de economia. Stripe processa tudo com segurança.",
   },
 ];
 
@@ -287,9 +287,12 @@ export default function PlanosPage() {
         {/* Single Plan Card — Centered */}
         <div className="max-w-lg mx-auto">
           <div className="backdrop-blur-xl bg-white/50 dark:bg-gray-900/40 border-2 border-[var(--brand-blue)] rounded-card p-8 shadow-gem-amethyst">
-            {/* Plan Name */}
+            {/* Plan Name + Beta Badge */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-[var(--ink)] mb-1">SmartLic Pro</h2>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <h2 className="text-2xl font-bold text-[var(--ink)]">SmartLic Pro</h2>
+                <span className="inline-block px-2 py-0.5 bg-[var(--brand-blue)] text-white text-xs font-bold rounded-full uppercase tracking-wide">Beta</span>
+              </div>
               <p className="text-sm text-[var(--ink-secondary)]">
                 Inteligência de decisão completa para licitações
               </p>

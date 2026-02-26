@@ -154,30 +154,30 @@ describe('UpgradeModal - GTM-002 Single Plan Model', () => {
   });
 
   describe('Pricing display', () => {
-    it('displays monthly price correctly (R$ 1.999/mês)', () => {
+    it('displays monthly price correctly (R$ 397/mês)', () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
-      expect(screen.getByText(/R\$\s*1\.999,00/)).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s*397,00/)).toBeInTheDocument();
       expect(screen.getByText('/mês')).toBeInTheDocument();
     });
 
-    it('updates price to semiannual (R$ 1.799/mês)', () => {
+    it('updates price to semiannual (R$ 357/mês)', () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
       fireEvent.click(screen.getByText('Semestral'));
 
-      expect(screen.getByText(/R\$\s*1\.799,00/)).toBeInTheDocument();
-      expect(screen.getByText(/Total: R\$\s*10\.794,00/)).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s*357,00/)).toBeInTheDocument();
+      expect(screen.getByText(/Total: R\$\s*2\.142,00/)).toBeInTheDocument();
       expect(screen.getByText(/por semestre/i)).toBeInTheDocument();
     });
 
-    it('updates price to annual (R$ 1.599/mês)', () => {
+    it('updates price to annual (R$ 297/mês)', () => {
       render(<UpgradeModal isOpen={true} onClose={mockOnClose} />);
 
       fireEvent.click(screen.getByText('Anual'));
 
-      expect(screen.getByText(/R\$\s*1\.599,00/)).toBeInTheDocument();
-      expect(screen.getByText(/Total: R\$\s*19\.188,00/)).toBeInTheDocument();
+      expect(screen.getByText(/R\$\s*297,00/)).toBeInTheDocument();
+      expect(screen.getByText(/Total: R\$\s*3\.564,00/)).toBeInTheDocument();
       expect(screen.getByText(/por ano/i)).toBeInTheDocument();
     });
 

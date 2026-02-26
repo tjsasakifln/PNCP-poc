@@ -167,7 +167,7 @@ class TestTrialLastDayEmail:
     def test_contains_price(self):
         """AC3: Includes SmartLic Pro price."""
         html = render_trial_last_day_email("Test", {})
-        assert "1.999" in html
+        assert "397" in html
 
     def test_contains_annual_discount_mention(self):
         """AC3: Mentions annual discount alternative."""

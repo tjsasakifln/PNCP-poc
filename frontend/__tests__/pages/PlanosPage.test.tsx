@@ -157,15 +157,15 @@ describe('PlanosPage Component', () => {
         expect(monthlyRadio).toHaveAttribute('aria-checked', 'true');
       });
 
-      // Default price should be monthly R$ 1.999
-      expect(screen.getByText(/R\$\s*1\.999/)).toBeInTheDocument();
+      // Default price should be monthly R$ 397
+      expect(screen.getByText(/R\$\s*397/)).toBeInTheDocument();
     });
 
     it('should change price when billing period changes', async () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/R\$\s*1\.999/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$\s*397/)).toBeInTheDocument();
       });
 
       // Click semiannual toggle
@@ -173,8 +173,8 @@ describe('PlanosPage Component', () => {
       fireEvent.click(semiannualRadio);
 
       await waitFor(() => {
-        // Semiannual price should be R$ 1.799/mês
-        expect(screen.getByText(/R\$\s*1\.799/)).toBeInTheDocument();
+        // Semiannual price should be R$ 357/mês
+        expect(screen.getByText(/R\$\s*357/)).toBeInTheDocument();
         // Check for multiple "Economize 10%" elements (toggle + badge)
         const saveElements = screen.getAllByText(/Economize 10%/);
         expect(saveElements.length).toBeGreaterThan(0);
@@ -189,8 +189,8 @@ describe('PlanosPage Component', () => {
       fireEvent.click(annualRadio);
 
       await waitFor(() => {
-        // Annual price should be R$ 1.599/mês
-        expect(screen.getByText(/R\$\s*1\.599/)).toBeInTheDocument();
+        // Annual price should be R$ 297/mês
+        expect(screen.getByText(/R\$\s*297/)).toBeInTheDocument();
         // Check for multiple "Economize 20%" elements (toggle + badge)
         const saveElements = screen.getAllByText(/Economize 20%/);
         expect(saveElements.length).toBeGreaterThan(0);
@@ -204,7 +204,7 @@ describe('PlanosPage Component', () => {
       fireEvent.click(semiannualRadio);
 
       await waitFor(() => {
-        expect(screen.getByText(/Cobrado R\$\s*10\.794 a cada 6 meses/i)).toBeInTheDocument();
+        expect(screen.getByText(/Cobrado R\$\s*2\.142 a cada 6 meses/i)).toBeInTheDocument();
       });
     });
 
@@ -215,7 +215,7 @@ describe('PlanosPage Component', () => {
       fireEvent.click(annualRadio);
 
       await waitFor(() => {
-        expect(screen.getByText(/Cobrado R\$\s*19\.188 por ano/i)).toBeInTheDocument();
+        expect(screen.getByText(/Cobrado R\$\s*3\.564 por ano/i)).toBeInTheDocument();
       });
     });
 
@@ -227,7 +227,7 @@ describe('PlanosPage Component', () => {
       await waitFor(() => {
         const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 20%/i });
         expect(annualRadio).toHaveAttribute('aria-checked', 'true');
-        expect(screen.getByText(/R\$\s*1\.599/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$\s*297/)).toBeInTheDocument();
       });
     });
 
@@ -239,7 +239,7 @@ describe('PlanosPage Component', () => {
       await waitFor(() => {
         const semiannualRadio = screen.getByRole('radio', { name: /Semestral.*Economize 10%/i });
         expect(semiannualRadio).toHaveAttribute('aria-checked', 'true');
-        expect(screen.getByText(/R\$\s*1\.799/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$\s*357/)).toBeInTheDocument();
       });
     });
   });

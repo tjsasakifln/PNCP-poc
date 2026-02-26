@@ -122,7 +122,7 @@ describe("AC1 — Sidebar with reduced mobile height", () => {
   it("sidebar content (headline, benefits, stats) renders correctly", () => {
     render(<InstitutionalSidebar variant="signup" />);
     expect(screen.getByText(/melhores oportunidades/i)).toBeInTheDocument();
-    expect(screen.getByText(/7 dias do produto completo/i)).toBeInTheDocument();
+    expect(screen.getByText(/30 dias do produto completo/i)).toBeInTheDocument();
     expect(screen.getByText("27")).toBeInTheDocument();
   });
 });

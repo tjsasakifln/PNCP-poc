@@ -1,7 +1,7 @@
 /**
  * Pricing Page with ROI Calculator
  *
- * GTM-002: Single plan model — SmartLic Pro R$1.999/mês
+ * STORY-277: Repriced — SmartLic Pro R$397/mês (market-aligned)
  * ROI calculator justifies SmartLic cost vs. manual search time cost
  *
  * @page
@@ -20,7 +20,7 @@ import {
 } from '@/lib/copy/roi';
 import Footer from '../components/Footer';
 
-const SMARTLIC_PRO_PRICE = 1999;
+const SMARTLIC_PRO_PRICE = 397;
 
 export default function PricingPage() {
   const [hoursPerWeek, setHoursPerWeek] = useState(DEFAULT_VALUES.hoursPerWeek);
@@ -122,7 +122,7 @@ export default function PricingPage() {
                 {formatCurrency(SMARTLIC_PRO_PRICE)}<span className="text-sm font-normal text-[var(--ink-muted)]">/mês</span>
               </p>
               <p className="text-xs text-[var(--ink-muted)] mt-1">
-                A partir de {formatCurrency(1599)}/mês no compromisso anual
+                A partir de {formatCurrency(297)}/mês no compromisso anual
               </p>
             </div>
 

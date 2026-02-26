@@ -30,9 +30,9 @@ export function UpgradeModal({ isOpen, onClose, source }: UpgradeModalProps) {
   }, [isOpen, source]);
 
   const prices: Record<BillingPeriod, { monthly: number; total: number; label: string }> = {
-    monthly: { monthly: 1999, total: 1999, label: "/mês" },
-    semiannual: { monthly: 1799, total: 10794, label: "/mês" },
-    annual: { monthly: 1599, total: 19188, label: "/mês" },
+    monthly: { monthly: 397, total: 397, label: "/mês" },
+    semiannual: { monthly: 357, total: 2142, label: "/mês" },
+    annual: { monthly: 297, total: 3564, label: "/mês" },
   };
 
   const currentPrice = prices[billingPeriod];

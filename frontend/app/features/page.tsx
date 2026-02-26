@@ -113,7 +113,7 @@ export default function FeaturesPage() {
             Comece a filtrar o que realmente vale a pena
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            Produto completo por 7 dias. Se uma única licitação ganha pagar o investimento do ano inteiro, por que esperar?
+            Produto completo por 30 dias. Se uma única licitação ganha pagar o investimento do ano inteiro, por que esperar?
           </p>
           <a
             href="/signup?source=features-bottom-cta"

@@ -70,7 +70,7 @@ describe('InstitutionalSidebar', () => {
     it('renders correct signup benefits', () => {
       render(<InstitutionalSidebar variant="signup" />);
 
-      expect(screen.getByText('7 dias do produto completo — sem limites')).toBeInTheDocument();
+      expect(screen.getByText('30 dias do produto completo — sem limites (Beta)')).toBeInTheDocument();
       expect(screen.getByText('Sem necessidade de cartão de crédito')).toBeInTheDocument();
       expect(screen.getByText('Configuração em menos de 2 minutos')).toBeInTheDocument();
       expect(screen.getByText('Suporte dedicado via plataforma')).toBeInTheDocument();
@@ -194,7 +194,7 @@ describe('InstitutionalSidebar', () => {
     it('does not render signup content in login variant', () => {
       render(<InstitutionalSidebar variant="login" />);
 
-      expect(screen.queryByText('7 dias do produto completo — sem limites')).not.toBeInTheDocument();
+      expect(screen.queryByText('30 dias do produto completo — sem limites (Beta)')).not.toBeInTheDocument();
     });
 
     it('does not render login content in signup variant', () => {

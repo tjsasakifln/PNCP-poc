@@ -49,7 +49,7 @@ export function TrialExpiringBanner({ daysRemaining, onConvert }: TrialExpiringB
               Seu acesso completo ao SmartLic termina amanhã.
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-              Mantenha acesso a todas as funcionalidades a partir de R$ 1.599/mês.
+              Mantenha acesso a todas as funcionalidades a partir de R$ 297/mês.
             </p>
           </div>
         </div>

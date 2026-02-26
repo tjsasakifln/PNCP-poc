@@ -42,7 +42,7 @@ class TestBillingPeriodUpdateSuccess:
         )
 
         plan_data = {
-            "price_brl": 1999.00,
+            "price_brl": 397.00,
             "stripe_price_id_annual": "price_annual123",
         }
         sb_mock.table().select().eq().single().execute.return_value = Mock(data=plan_data)
@@ -92,7 +92,7 @@ class TestBillingPeriodUpdateSuccess:
             data=[subscription_data]
         )
 
-        plan_data = {"price_brl": 1999.00, "stripe_price_id_semiannual": "price_semi123"}
+        plan_data = {"price_brl": 397.00, "stripe_price_id_semiannual": "price_semi123"}
         sb_mock.table().select().eq().single().execute.return_value = Mock(data=plan_data)
 
         next_billing = datetime.now(timezone.utc) + timedelta(days=5)

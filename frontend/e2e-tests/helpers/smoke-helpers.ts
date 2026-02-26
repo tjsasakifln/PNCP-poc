@@ -485,7 +485,7 @@ export async function mockPaymentAPIs(page: Page): Promise<void> {
       body: JSON.stringify({
         plans: [
           { id: 'free', name: 'Gratuito', price: 0, searches_per_month: 3 },
-          { id: 'smartlic_pro', name: 'SmartLic Pro', price: 1999, searches_per_month: null },
+          { id: 'smartlic_pro', name: 'SmartLic Pro', price: 397, searches_per_month: null },
         ],
       }),
     });
@@ -498,7 +498,7 @@ export async function mockPaymentAPIs(page: Page): Promise<void> {
       contentType: 'application/json',
       body: JSON.stringify({
         plans: [
-          { id: 'smartlic_pro', name: 'SmartLic Pro', price_monthly: 1999, price_semiannual: 10794, price_annual: 19188 },
+          { id: 'smartlic_pro', name: 'SmartLic Pro', price_monthly: 397, price_semiannual: 2142, price_annual: 3564 },
         ],
       }),
     });

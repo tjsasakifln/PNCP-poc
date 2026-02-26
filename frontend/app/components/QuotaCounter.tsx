@@ -118,7 +118,7 @@ export function QuotaCounter({
             className="w-full px-4 py-2 bg-brand-navy text-white rounded-button
                        font-medium hover:bg-brand-blue-hover transition-colors"
           >
-            Continuar com SmartLic Pro — R$ 1.999/mês
+            Continuar com SmartLic Pro — R$ 397/mês
           </button>
         </div>
       )}

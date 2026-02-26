@@ -41,7 +41,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     id: "consultor_agil",
     displayName: "SmartLic Pro",
     displayNamePt: "SmartLic Pro",
-    price: "R$ 1.999/mês",
+    price: "R$ 397/mês",
     badge: {
       bg: "bg-brand-navy",
       icon: "star",
@@ -52,7 +52,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     id: "maquina",
     displayName: "SmartLic Pro",
     displayNamePt: "SmartLic Pro",
-    price: "R$ 1.999/mês",
+    price: "R$ 397/mês",
     badge: {
       bg: "bg-brand-navy",
       icon: "star",
@@ -63,7 +63,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     id: "sala_guerra",
     displayName: "SmartLic Pro",
     displayNamePt: "SmartLic Pro",
-    price: "R$ 1.999/mês",
+    price: "R$ 397/mês",
     badge: {
       bg: "bg-brand-navy",
       icon: "star",
@@ -74,7 +74,7 @@ export const PLAN_CONFIGS: Record<string, PlanConfig> = {
     id: "smartlic_pro",
     displayName: "SmartLic Pro",
     displayNamePt: "SmartLic Pro",
-    price: "R$ 1.999/mês",
+    price: "R$ 397/mês",
     badge: {
       bg: "bg-brand-navy",
       icon: "star",

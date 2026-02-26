@@ -357,7 +357,7 @@ ITEM_INSPECTION_CONCURRENCY: int = int(os.getenv("ITEM_INSPECTION_CONCURRENCY", 
 # ============================================
 # STORY-264: Trial Duration
 # ============================================
-TRIAL_DURATION_DAYS: int = int(os.getenv("TRIAL_DURATION_DAYS", "7"))
+TRIAL_DURATION_DAYS: int = int(os.getenv("TRIAL_DURATION_DAYS", "30"))  # STORY-277: 30-day beta
 
 # STORY-266: Trial Reminder Emails
 TRIAL_EMAILS_ENABLED: bool = str_to_bool(os.getenv("TRIAL_EMAILS_ENABLED", "true"))

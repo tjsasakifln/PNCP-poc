@@ -42,7 +42,7 @@ class TestInvoicePaymentFailedWebhook:
         event.data.object = {
             "customer": "cus_stripe123",
             "subscription": "sub_stripe123",
-            "amount_due": 199900,  # R$ 1,999.00 in cents
+            "amount_due": 39700,  # R$ 397.00 in cents
             "attempt_count": 1,
         }
 
@@ -86,7 +86,7 @@ class TestInvoicePaymentFailedWebhook:
         event.data.object = {
             "customer": "cus_stripe123",
             "subscription": "sub_stripe123",
-            "amount_due": 199900,
+            "amount_due": 39700,
             "attempt_count": 2,
         }
 
@@ -116,7 +116,7 @@ class TestInvoicePaymentFailedWebhook:
         event.data.object = {
             "customer": "cus_unknown",
             "subscription": "sub_unknown",
-            "amount_due": 199900,
+            "amount_due": 39700,
             "attempt_count": 1,
         }
 
@@ -152,7 +152,7 @@ class TestInvoicePaymentFailedWebhook:
         event.data.object = {
             "customer": "cus_stripe123",
             "subscription": "sub_stripe123",
-            "amount_due": 199900,
+            "amount_due": 39700,
             "attempt_count": 3,  # 3rd retry attempt
         }
 
@@ -188,7 +188,7 @@ class TestInvoicePaymentFailedWebhook:
         event.data.object = {
             "customer": "cus_stripe123",
             "subscription": None,  # No subscription
-            "amount_due": 199900,
+            "amount_due": 39700,
             "attempt_count": 1,
         }
 
@@ -210,7 +210,7 @@ class TestPaymentFailedEmailTemplate:
         html = render_payment_failed_email(
             user_name="João Silva",
             plan_name="SmartLic Pro",
-            amount="R$ 1.999,00",
+            amount="R$ 397,00",
             failure_reason="Cartão recusado",
             days_until_cancellation=11,
         )
@@ -218,7 +218,7 @@ class TestPaymentFailedEmailTemplate:
         # Verify email contains key elements (AC5-AC6)
         assert "João Silva" in html
         assert "SmartLic Pro" in html
-        assert "R$ 1.999,00" in html
+        assert "R$ 397,00" in html
         assert "Cartão recusado" in html
         assert "11 dias" in html
         assert "Atualizar Forma de Pagamento" in html
@@ -231,7 +231,7 @@ class TestPaymentFailedEmailTemplate:
         html = render_payment_failed_email(
             user_name="Maria Santos",
             plan_name="SmartLic Pro",
-            amount="R$ 1.999,00",
+            amount="R$ 397,00",
             failure_reason="Saldo insuficiente",
             days_until_cancellation=1,
         )

@@ -168,9 +168,9 @@ export function formatHours(value: number): string {
 // ============================================================================
 
 /**
- * Calculate monthly savings for default scenario (10h/week @ R$100/h, R$1999/month plan)
+ * Calculate monthly savings for default scenario (10h/week @ R$100/h, R$397/month plan)
  */
-export function getDefaultROI(planPrice: number = 1999): ROIOutputs {
+export function getDefaultROI(planPrice: number = 397): ROIOutputs {
   return calculateROI({
     hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
     costPerHour: DEFAULT_VALUES.costPerHour,
@@ -383,9 +383,9 @@ export const COMPETITOR_COSTS: CompetitorCost[] = [
   },
   {
     name: "SmartLic (All-Inclusive)",
-    baseFee: 1999,
+    baseFee: 397,
     perSearchFee: 0,
-    estimatedTotalCost: 1999, // R$ 1.999/month — SmartLic Pro
+    estimatedTotalCost: 397, // R$ 397/month — SmartLic Pro (STORY-277)
   },
 ];
 

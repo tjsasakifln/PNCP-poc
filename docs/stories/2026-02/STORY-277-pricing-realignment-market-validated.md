@@ -64,25 +64,26 @@
 ## Acceptance Criteria
 
 ### AC1: Decisao de Pricing (Dia 1 — Timebox 24h)
-- [ ] PO escolhe opcao (1, 2, ou 3) com justificativa
-- [ ] Se nenhuma decisao em 24h: **default = Opcao 1** (beta gratuito + R$297-397)
+- [x] PO escolhe opcao (1, 2, ou 3) com justificativa
+  - **Decisao: Opcao 1 (default)** — Beta Gratuito 30 dias + SmartLic Pro R$397/mes (mensal) / R$357/mes (semestral, -10%) / R$297/mes (anual, -25%)
+- [x] Se nenhuma decisao em 24h: **default = Opcao 1** (beta gratuito + R$297-397) ✅ aplicado
 
 ### AC2: Implementar Pricing Escolhido (Dia 2)
-- [ ] Atualizar `billing.py`: novo(s) price_id(s) no Stripe
-- [ ] Atualizar `frontend/app/planos/page.tsx`: novos precos e copy
-- [ ] Atualizar `frontend/app/termos/page.tsx` secao 3.2: remover phantom plans (E-HIGH-001)
-- [ ] Atualizar quota.py: limites do novo plano
+- [x] Atualizar `billing.py`: novo(s) price_id(s) no Stripe (routes/billing.py lê do DB — Stripe price IDs são configurados no Stripe Dashboard)
+- [x] Atualizar `frontend/app/planos/page.tsx`: novos precos e copy (R$397/357/297 + Beta badge)
+- [x] Atualizar `frontend/app/termos/page.tsx` secao 3.2: remover phantom plans (E-HIGH-001) — agora reflete planos reais com precos corretos
+- [x] Atualizar quota.py: limites do novo plano (PLAN_PRICES atualizado para R$ 397/mês)
 
 ### AC3: Remover Phantom Plans do ToS
-- [ ] Secao 3.2 de `/termos` referencia planos que NAO EXISTEM:
-  - "Free: 5 buscas/mes" (nao existe)
-  - "Professional: buscas ilimitadas" (nao existe)
-  - "Enterprise: API access, white-label, SLA 24/7" (nao existe)
-- [ ] Reescrever para refletir planos reais
+- [x] Secao 3.2 de `/termos` referencia planos que NAO EXISTEM:
+  - ~~"Free: 5 buscas/mes"~~ (já removido em STORY-272)
+  - ~~"Professional: buscas ilimitadas"~~ (já removido em STORY-272)
+  - ~~"Enterprise: API access, white-label, SLA 24/7"~~ (já removido em STORY-272)
+- [x] Reescrever para refletir planos reais — agora mostra "Período de Avaliação (Beta): 30 dias" + "SmartLic Pro: R$397/mês (mensal), R$357/mês (semestral), R$297/mês (anual)"
 
 ### AC4: Landing Page Pricing Section
-- [ ] Atualizar comparativo de precos se visivel na landing
-- [ ] Adicionar badge "Beta" se Opcao 1
+- [x] Atualizar comparativo de precos se visivel na landing (StructuredData, UpgradeModal, TrialConversionScreen, TrialExpiringBanner, QuotaCounter, FinalCTA, InstitutionalSidebar, pricing page, ajuda FAQ, blog posts, signup metadata)
+- [x] Adicionar badge "Beta" se Opcao 1 — badge adicionado no planos/page.tsx
 
 ## Fontes dos Dados
 - Licitei: https://www.licitei.com.br/planos

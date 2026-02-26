@@ -4,7 +4,7 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Investimento SmartLic Pro — Quanto Custa Filtrar com Inteligência",
   description:
-    "SmartLic Pro a partir de R$ 1.599/mês. Avaliação de viabilidade, exportação Excel e pipeline de oportunidades. Sem contrato. 7 dias de acesso completo.",
+    "SmartLic Pro a partir de R$ 297/mês. Avaliação de viabilidade, exportação Excel e pipeline de oportunidades. Sem contrato. 30 dias de acesso completo no Beta.",
   alternates: {
     canonical: "https://smartlic.tech/planos",
   },

@@ -283,7 +283,7 @@ export default function SobrePage() {
               Experimente com seus próprios dados
             </h2>
             <p className="text-[var(--ink-secondary)] mb-6 max-w-lg mx-auto">
-              Produto completo por 7 dias. Veja as oportunidades reais do seu setor analisadas com os critérios acima.
+              Produto completo por 30 dias. Veja as oportunidades reais do seu setor analisadas com os critérios acima.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link

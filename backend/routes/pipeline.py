@@ -61,7 +61,7 @@ async def _check_pipeline_read_access(user: dict) -> None:
                 "upgrade_cta": "Assinar SmartLic Pro",
                 "suggested_plan": "smartlic_pro",
                 "suggested_plan_name": "SmartLic Pro",
-                "suggested_plan_price": "R$ 1.999/mês",
+                "suggested_plan_price": "R$ 397/mês",
             },
         )
 
@@ -101,7 +101,7 @@ async def _check_pipeline_write_access(user: dict) -> None:
                 "upgrade_cta": "Assinar SmartLic Pro",
                 "suggested_plan": "smartlic_pro",
                 "suggested_plan_name": "SmartLic Pro",
-                "suggested_plan_price": "R$ 1.999/mês",
+                "suggested_plan_price": "R$ 397/mês",
             },
         )
 
