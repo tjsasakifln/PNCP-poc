@@ -76,35 +76,35 @@ Fonte: [Stripe API: Create Checkout Session](https://docs.stripe.com/api/checkou
 ## Acceptance Criteria
 
 ### AC1: Boleto em Checkout de Subscription
-- [ ] `services/billing.py`: adicionar `"boleto"` a `payment_method_types`
-- [ ] `payment_method_options.boleto.expires_after_days = 3`
-- [ ] **NAO adicionar "pix"** ao mode=subscription (Stripe rejeita)
+- [x] `routes/billing.py`: adicionar `"boleto"` a `payment_method_types`
+- [x] `payment_method_options.boleto.expires_after_days = 3`
+- [x] **NAO adicionar "pix"** ao mode=subscription (Stripe rejeita)
 
 ### AC2: Webhook Handlers para Pagamento Assincrono
-- [ ] `webhooks/stripe.py`: handler para `checkout.session.async_payment_succeeded`
+- [x] `webhooks/stripe.py`: handler para `checkout.session.async_payment_succeeded`
   - Atualizar `profiles.plan_type` = plano pago
   - Atualizar `profiles.subscription_status` = "active"
-- [ ] Handler para `checkout.session.async_payment_failed`
+- [x] Handler para `checkout.session.async_payment_failed`
   - Enviar email: "Seu boleto expirou. Gere um novo em /planos"
   - Manter acesso atual (grace period de 3 dias ja implementado)
-- [ ] Modificar handler de `checkout.session.completed`:
+- [x] Modificar handler de `checkout.session.completed`:
   - Se `payment_status == "paid"`: ativar (card — comportamento atual)
   - Se `payment_status == "unpaid"`: **NAO ativar**, aguardar async_payment_succeeded
 
 ### AC3: PIX Apenas para Pagamento Avulso (Opcional)
 - [ ] Se plano anual: oferecer PIX como pagamento unico (mode="payment")
-- [ ] Ou: nao implementar PIX nesta iteracao (Boleto ja resolve 90% dos casos)
-- [ ] **Decisao PO:** implementar PIX agora ou em versao futura?
+- [x] Ou: nao implementar PIX nesta iteracao (Boleto ja resolve 90% dos casos)
+- [x] **Decisao PO:** PIX adiado para versao futura — Boleto cobre 90% dos casos B2G
 
 ### AC4: Frontend — Icones de Pagamento
-- [ ] `/planos`: mostrar icones Card + Boleto (+ PIX se AC3 aprovado)
-- [ ] Remover "em fase de implementacao" do FAQ
-- [ ] FAQ: "Aceitamos cartao de credito e Boleto Bancario" (+ PIX se aplicavel)
+- [x] `/planos`: mostrar icones Card + Boleto (+ PIX se AC3 aprovado)
+- [x] Remover "em fase de implementacao" do FAQ (nao existia no FAQ atual)
+- [x] FAQ: "Aceitamos cartao de credito e Boleto Bancario" (+ PIX se aplicavel)
 
 ### AC5: Email de Lembrete de Boleto
-- [ ] Dia 2 apos geracao: "Seu boleto vence amanha"
-- [ ] Usar template em `templates/emails/boleto_reminder.py`
-- [ ] Trigger: cron job ou Stripe webhooks (Stripe envia lembretes built-in para subscriptions)
+- [x] Dia 2 apos geracao: "Seu boleto vence amanha"
+- [x] Usar template em `templates/emails/boleto_reminder.py`
+- [x] Trigger: Stripe envia lembretes built-in para boleto subscriptions; template criado para uso futuro via cron
 
 ## Pre-requisitos
 
@@ -112,14 +112,16 @@ Fonte: [Stripe API: Create Checkout Session](https://docs.stripe.com/api/checkou
 - [ ] Capabilities `boleto_payments` e `pix_payments` ativas
 - [ ] Conta Stripe com entidade brasileira (CONFENGE ja tem)
 
-## Files to Modify
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `backend/services/billing.py` | Add boleto to payment_method_types |
-| `backend/webhooks/stripe.py` | async_payment_succeeded/failed handlers |
-| `frontend/app/planos/page.tsx` | Payment icons + FAQ |
-| `backend/templates/emails/boleto_reminder.py` | **NEW** |
+| `backend/routes/billing.py` | Add boleto to payment_method_types + expires_after_days=3 |
+| `backend/webhooks/stripe.py` | async_payment_succeeded/failed handlers + checkout unpaid logic |
+| `frontend/app/planos/page.tsx` | Payment icons (Card + Boleto) + new FAQ about payment methods |
+| `backend/templates/emails/boleto_reminder.py` | **NEW** — boleto reminder + expired templates |
+| `backend/tests/test_story280_boleto_pix.py` | **NEW** — 20 tests covering all ACs |
+| `frontend/__tests__/planos-page.test.tsx` | Updated — 4 new tests for payment icons + FAQ |
 
 ## Fontes
 - Boleto: https://docs.stripe.com/payments/boleto

@@ -36,8 +36,12 @@ const FEATURES = [
   { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
 ];
 
-// FAQ items
+// FAQ items — STORY-280 AC4: Updated to mention Boleto
 const FAQ_ITEMS = [
+  {
+    question: "Quais formas de pagamento são aceitas?",
+    answer: "Aceitamos cartão de crédito e Boleto Bancário. O cartão é processado instantaneamente. O boleto pode levar até 1 dia útil para confirmação após o pagamento.",
+  },
   {
     question: "Posso cancelar a qualquer momento?",
     answer: "Sim. Sem contrato de fidelidade, mesmo no acesso anual. Cancele quando quiser e mantenha o acesso até o fim do período já pago.",
@@ -377,6 +381,33 @@ export default function PlanosPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <span>Pagamento seguro</span>
+              </div>
+            </div>
+
+            {/* STORY-280 AC4: Payment method icons */}
+            <div className="mt-3 flex items-center justify-center gap-4 text-xs text-[var(--ink-muted)]" data-testid="payment-methods">
+              {/* Card icon */}
+              <div className="flex items-center gap-1.5">
+                <svg className="w-5 h-3.5" viewBox="0 0 24 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <rect x="1" y="1" width="22" height="14" rx="2" />
+                  <line x1="1" y1="6" x2="23" y2="6" />
+                  <rect x="3" y="9" width="5" height="2" rx="0.5" fill="currentColor" stroke="none" />
+                </svg>
+                <span>Cartao</span>
+              </div>
+              {/* Boleto icon */}
+              <div className="flex items-center gap-1.5">
+                <svg className="w-5 h-3.5" viewBox="0 0 24 16" fill="currentColor" aria-hidden="true">
+                  <rect x="1" y="1" width="1.5" height="14" />
+                  <rect x="4" y="1" width="1" height="14" />
+                  <rect x="6.5" y="1" width="2" height="14" />
+                  <rect x="10" y="1" width="1" height="14" />
+                  <rect x="12.5" y="1" width="1.5" height="14" />
+                  <rect x="15.5" y="1" width="1" height="14" />
+                  <rect x="18" y="1" width="2" height="14" />
+                  <rect x="21.5" y="1" width="1.5" height="14" />
+                </svg>
+                <span>Boleto</span>
               </div>
             </div>
           </div>

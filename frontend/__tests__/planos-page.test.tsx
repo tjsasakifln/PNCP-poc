@@ -383,6 +383,7 @@ describe("AC7: FAQ visible", () => {
   it("shows all FAQ questions", async () => {
     setupMocks({ session: false });
     render(<PlanosPage />);
+    expect(screen.getByText("Quais formas de pagamento são aceitas?")).toBeInTheDocument();
     expect(screen.getByText("Posso cancelar a qualquer momento?")).toBeInTheDocument();
     expect(screen.getByText("Existe contrato de fidelidade?")).toBeInTheDocument();
     expect(screen.getByText("O que acontece se eu cancelar?")).toBeInTheDocument();
@@ -463,5 +464,48 @@ describe("AC9: Non-logged user (anonymous)", () => {
     expect(screen.getByText("SmartLic Pro")).toBeInTheDocument();
     expect(screen.getByText(/1\.000 análises por mês/)).toBeInTheDocument();
     expect(screen.getByText("Perguntas Frequentes")).toBeInTheDocument();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+// STORY-280 AC4: Payment method icons + FAQ update
+// ──────────────────────────────────────────────────────────────
+
+describe("STORY-280 AC4: Payment method icons", () => {
+  it("shows payment methods section with Card and Boleto", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const paymentMethods = screen.getByTestId("payment-methods");
+    expect(paymentMethods).toBeInTheDocument();
+    expect(paymentMethods.textContent).toContain("Cartao");
+    expect(paymentMethods.textContent).toContain("Boleto");
+  });
+
+  it("payment methods visible for logged-in users too", async () => {
+    setupMocks({
+      session: true,
+      planInfo: makePlanInfo({ plan_id: "free_trial", subscription_status: "active" }),
+    });
+    render(<PlanosPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId("payment-methods")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("STORY-280 AC4: FAQ includes payment methods question", () => {
+  it("shows payment methods FAQ question", () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    expect(screen.getByText("Quais formas de pagamento são aceitas?")).toBeInTheDocument();
+  });
+
+  it("FAQ answer mentions cartão and Boleto", async () => {
+    setupMocks({ session: false });
+    render(<PlanosPage />);
+    const user = userEvent.setup();
+    const faqBtn = screen.getByText("Quais formas de pagamento são aceitas?");
+    await user.click(faqBtn);
+    expect(screen.getByText(/cartão de crédito e Boleto Bancário/)).toBeInTheDocument();
   });
 });
