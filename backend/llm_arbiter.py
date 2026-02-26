@@ -21,7 +21,7 @@ import os
 import time as _time_module
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from openai import OpenAI
 from metrics import LLM_CALLS, LLM_DURATION, EVIDENCE_PREFIX_STRIPPED
@@ -80,9 +80,25 @@ class LLMClassification(BaseModel):
     """
     classe: Literal["SIM", "NAO"]
     confianca: int = Field(ge=0, le=100)
-    evidencias: list[str] = Field(default_factory=list, max_length=3)
-    motivo_exclusao: Optional[str] = Field(default=None, max_length=200)
+    evidencias: list[str] = Field(default_factory=list)
+    motivo_exclusao: Optional[str] = Field(default=None)
     precisa_mais_dados: bool = False
+
+    @field_validator("evidencias", mode="before")
+    @classmethod
+    def _cap_evidencias(cls, v: list[str]) -> list[str]:
+        """Truncate to 3 items — LLM occasionally returns 4+."""
+        if isinstance(v, list) and len(v) > 3:
+            return v[:3]
+        return v
+
+    @field_validator("motivo_exclusao", mode="before")
+    @classmethod
+    def _cap_motivo(cls, v: str | None) -> str | None:
+        """Truncate to 500 chars — LLM occasionally exceeds limits."""
+        if isinstance(v, str) and len(v) > 500:
+            return v[:497] + "..."
+        return v
 
 
 # ============================================================================
