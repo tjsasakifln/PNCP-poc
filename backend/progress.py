@@ -1,8 +1,13 @@
 """Distributed progress tracking for SSE-based real-time search progress.
 
 Supports two modes:
-1. Redis pub/sub (horizontal scaling): Shares progress events across backend instances
+1. Redis Streams (horizontal scaling): Append-only log with replay for cross-worker SSE
 2. In-memory fallback (single instance): Uses asyncio.Queue when Redis unavailable
+
+STORY-276: Migrated from Redis Pub/Sub to Redis Streams for at-least-once delivery.
+Pub/Sub was fire-and-forget (at-most-once) — events published before subscriber connected
+were permanently lost, causing "stuck at 10%" progress bars with multi-worker Gunicorn.
+Redis Streams provides persistent append-only log with replay from any point.
 
 The mode is determined by REDIS_URL environment variable and connection health.
 """
@@ -19,6 +24,13 @@ from typing import Any, Dict, Optional
 from redis_pool import get_redis_pool, is_redis_available
 
 logger = logging.getLogger(__name__)
+
+# STORY-276: Terminal stages that trigger stream EXPIRE
+_TERMINAL_STAGES = frozenset({
+    "complete", "error", "degraded", "refresh_available", "search_complete",
+})
+# STORY-276 AC1: TTL for stream key after terminal event (5 minutes)
+_STREAM_EXPIRE_TTL = 300
 
 
 @dataclass
@@ -88,17 +100,37 @@ class ProgressTracker:
             await self._publish_to_redis(event)
 
     async def _publish_to_redis(self, event: ProgressEvent) -> None:
-        """Publish event to Redis pub/sub channel."""
+        """Publish event to Redis Stream (STORY-276 AC1).
+
+        Uses XADD to append to an append-only log instead of Pub/Sub PUBLISH.
+        This ensures events are persisted and can be replayed by late subscribers.
+        """
         redis = await get_redis_pool()
         if redis is None:
             return
 
-        channel = f"smartlic:progress:{self.search_id}:events"
+        stream_key = f"smartlic:progress:{self.search_id}:stream"
         try:
-            event_json = json.dumps(event.to_dict())
-            await redis.publish(channel, event_json)
+            event_dict = event.to_dict()
+            fields: Dict[str, str] = {
+                "stage": event.stage,
+                "progress": str(event.progress),
+                "message": event.message,
+                "detail_json": json.dumps(event.detail),
+            }
+            # Preserve correlation fields
+            for key in ("trace_id", "search_id", "request_id"):
+                if key in event_dict:
+                    fields[key] = event_dict[key]
+
+            await redis.xadd(stream_key, fields)
+
+            # AC1: Set EXPIRE after terminal events (5 min cleanup)
+            if event.stage in _TERMINAL_STAGES:
+                await redis.expire(stream_key, _STREAM_EXPIRE_TTL)
+
         except Exception as e:
-            logger.warning(f"Failed to publish progress event to Redis: {e}")
+            logger.warning(f"Failed to publish progress event to Redis Stream: {e}")
 
     async def emit_uf_complete(self, uf: str, items_count: int) -> None:
         """Emit progress for a single UF completion."""
@@ -200,6 +232,10 @@ class ProgressTracker:
             message="Busca concluida!",
         )
         await self.queue.put(event)
+
+        # STORY-276: Publish terminal event to stream for cross-worker visibility
+        if self._use_redis:
+            await self._publish_to_redis(event)
 
     async def emit_revalidated(self, total_results: int, fetched_at: str) -> None:
         """B-01 AC7: Notify connected user that background revalidation completed.
@@ -312,6 +348,10 @@ class ProgressTracker:
         )
         await self.queue.put(event)
 
+        # STORY-276: Publish terminal event to stream for cross-worker visibility
+        if self._use_redis:
+            await self._publish_to_redis(event)
+
 
 # Global registry of active progress trackers (in-memory mode only)
 _active_trackers: Dict[str, ProgressTracker] = {}
@@ -375,7 +415,7 @@ async def get_tracker(search_id: str) -> Optional[ProgressTracker]:
 async def remove_tracker(search_id: str) -> None:
     """Remove a tracker after search completes.
 
-    Cleans up both in-memory and Redis state.
+    Cleans up both in-memory and Redis state (metadata + stream).
     """
     _active_trackers.pop(search_id, None)
 
@@ -383,8 +423,9 @@ async def remove_tracker(search_id: str) -> None:
     redis = await get_redis_pool()
     if redis:
         try:
-            key = f"smartlic:progress:{search_id}"
-            await redis.delete(key)
+            metadata_key = f"smartlic:progress:{search_id}"
+            stream_key = f"smartlic:progress:{search_id}:stream"
+            await redis.delete(metadata_key, stream_key)
         except Exception as e:
             logger.warning(f"Failed to remove tracker from Redis: {e}")
 
@@ -437,22 +478,5 @@ async def _store_tracker_metadata(search_id: str, uf_count: int) -> None:
         logger.warning(f"Failed to store tracker metadata in Redis: {e}")
 
 
-async def subscribe_to_events(search_id: str) -> Optional["redis.asyncio.client.PubSub"]:  # noqa: F821
-    """Subscribe to Redis pub/sub channel for progress events.
-
-    Returns:
-        redis.asyncio.client.PubSub instance or None if Redis unavailable.
-    """
-    redis = await get_redis_pool()
-    if redis is None:
-        return None
-
-    try:
-        pubsub = redis.pubsub()
-        channel = f"smartlic:progress:{search_id}:events"
-        await pubsub.subscribe(channel)
-        logger.debug(f"Subscribed to Redis channel: {channel}")
-        return pubsub
-    except Exception as e:
-        logger.warning(f"Failed to subscribe to Redis channel: {e}")
-        return None
+# STORY-276 AC4: subscribe_to_events() removed — Redis Pub/Sub replaced by Streams.
+# SSE consumer now uses XREAD BLOCK directly in routes/search.py.

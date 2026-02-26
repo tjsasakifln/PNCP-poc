@@ -49,6 +49,7 @@ class TestWaitForTrackerHeartbeat:
 
         call_count = 0
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         mock_tracker.queue = asyncio.Queue()
         await mock_tracker.queue.put(
             ProgressEvent(stage="complete", progress=100, message="Done")
@@ -63,7 +64,7 @@ class TestWaitForTrackerHeartbeat:
             return mock_tracker
 
         with patch("routes.search.get_tracker", side_effect=delayed_get_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("asyncio.sleep", new_callable=AsyncMock):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -84,13 +85,14 @@ class TestWaitForTrackerHeartbeat:
         from progress import ProgressEvent
 
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         mock_tracker.queue = asyncio.Queue()
         await mock_tracker.queue.put(
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
         with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None):
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.get("/buscar-progress/test-immediate")
@@ -153,6 +155,7 @@ class TestMainLoopHeartbeat:
         from progress import ProgressEvent
 
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         mock_tracker.queue = asyncio.Queue()
 
         get_count = 0
@@ -169,7 +172,7 @@ class TestMainLoopHeartbeat:
 
         # Use very short heartbeat interval for fast test
         with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -178,44 +181,48 @@ class TestMainLoopHeartbeat:
         assert response.status_code == 200
         assert ": heartbeat" in response.text
 
-    async def test_redis_heartbeat_on_timeout(self, mock_auth, mock_sse_limits):
-        """AC10: Redis mode also emits heartbeat on timeout."""
+    async def test_redis_streams_heartbeat_on_timeout(self, mock_auth, mock_sse_limits):
+        """AC10: Redis Streams mode emits heartbeat when XREAD times out."""
         from main import app
 
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = True
         mock_tracker.queue = asyncio.Queue()
 
-        # Mock Redis pubsub
-        mock_pubsub = AsyncMock()
-        get_msg_count = 0
+        # Mock Redis client with XREAD
+        mock_redis = AsyncMock()
+        xread_count = 0
 
-        async def mock_get_message(**kwargs):
-            nonlocal get_msg_count
-            get_msg_count += 1
-            if get_msg_count == 1:
-                # First call: block long enough to trigger timeout
-                await asyncio.sleep(999)
+        async def mock_xread(streams, block=None, count=None):
+            nonlocal xread_count
+            xread_count += 1
+            if xread_count == 1:
+                # First call: return None (timeout) → heartbeat
+                return None
             # Second call: return complete event
-            return {
-                "type": "message",
-                "data": json.dumps({
-                    "stage": "complete", "progress": 100, "message": "Done"
-                }),
-            }
+            stream_key = list(streams.keys())[0]
+            return [
+                [stream_key, [("1-0", {
+                    "stage": "complete",
+                    "progress": "100",
+                    "message": "Done",
+                    "detail_json": "{}",
+                })]]
+            ]
 
-        mock_pubsub.get_message = mock_get_message
-        mock_pubsub.unsubscribe = AsyncMock()
-        mock_pubsub.close = AsyncMock()
+        mock_redis.xread = mock_xread
 
         with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=mock_pubsub), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=mock_redis), \
              patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
-                response = await client.get("/buscar-progress/test-hb-redis")
+                response = await client.get("/buscar-progress/test-hb-streams")
 
         assert response.status_code == 200
         assert ": heartbeat" in response.text
+        # Should also contain the complete event
+        assert '"stage": "complete"' in response.text or '"complete"' in response.text
 
     async def test_heartbeat_interval_is_15s(self):
         """AC2: Verify heartbeat interval constant is 15s (was 30s)."""
@@ -241,6 +248,7 @@ class TestHeartbeatTelemetry:
 
         call_count = 0
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         mock_tracker.queue = asyncio.Queue()
         await mock_tracker.queue.put(
             ProgressEvent(stage="complete", progress=100, message="Done")
@@ -254,7 +262,7 @@ class TestHeartbeatTelemetry:
             return mock_tracker
 
         with patch("routes.search.get_tracker", side_effect=delayed_get_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("asyncio.sleep", new_callable=AsyncMock), \
              caplog.at_level(logging.DEBUG, logger="routes.search"):
             transport = ASGITransport(app=app)
@@ -276,6 +284,7 @@ class TestHeartbeatTelemetry:
         from progress import ProgressEvent
 
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         mock_tracker.queue = asyncio.Queue()
 
         get_count = 0
@@ -290,7 +299,7 @@ class TestHeartbeatTelemetry:
         mock_tracker.queue.get = mock_queue_get
 
         with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
              caplog.at_level(logging.DEBUG, logger="routes.search"):
             transport = ASGITransport(app=app)

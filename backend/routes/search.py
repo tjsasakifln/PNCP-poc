@@ -49,7 +49,8 @@ from rate_limiter import (
     release_sse_connection,
     SEARCH_RATE_LIMIT_PER_MINUTE,
 )
-from progress import create_tracker, get_tracker, remove_tracker, subscribe_to_events
+from progress import create_tracker, get_tracker, remove_tracker
+from redis_pool import get_redis_pool
 from log_sanitizer import get_sanitized_logger
 from search_pipeline import SearchPipeline
 from search_context import SearchContext
@@ -286,72 +287,104 @@ async def buscar_progress_stream(
                 # so we can't stream further. Just return.
                 return
 
-            # Try Redis pub/sub first, fallback to in-memory queue
-            pubsub = await subscribe_to_events(search_id)
+            # STORY-276: Try Redis Streams first, fallback to in-memory queue
+            _use_streams = tracker._use_redis
+            _redis = None
+            if _use_streams:
+                _redis = await get_redis_pool()
+                if not _redis:
+                    _use_streams = False
+                    logger.warning(
+                        f"Redis unavailable for SSE {search_id}, falling back to queue"
+                    )
 
-            if pubsub:
-                # Redis mode: Stream from pub/sub channel
-                logger.debug(f"SSE using Redis pub/sub for {search_id}")
-                try:
-                    while True:
-                        try:
-                            # CRIT-012 AC2: Reduced heartbeat interval from 30s to 15s
-                            message = await _asyncio.wait_for(
-                                pubsub.get_message(ignore_subscribe_messages=True),
-                                timeout=_SSE_HEARTBEAT_INTERVAL,
-                            )
-                            if message and message["type"] == "message":
-                                event_data = _json.loads(message["data"])
-                                yield f"data: {_json.dumps(event_data)}\n\n"
+            if _use_streams:
+                # STORY-276 AC2: Redis Streams mode — XREAD BLOCK with replay
+                _stream_key = f"smartlic:progress:{search_id}:stream"
+                _last_id = "0"  # AC2: id=0 reads ALL history since beginning
+                logger.debug(f"SSE using Redis Streams for {search_id}")
 
-                                if event_data.get("stage") in ("complete", "degraded", "error", "refresh_available", "search_complete"):
-                                    break
+                while True:
+                    try:
+                        result = await _redis.xread(
+                            {_stream_key: _last_id},
+                            block=int(_SSE_HEARTBEAT_INTERVAL * 1000),
+                            count=100,
+                        )
 
-                        except _asyncio.TimeoutError:
-                            # CRIT-012 AC2: Heartbeat every 15s
+                        if not result:
+                            # XREAD timed out — send heartbeat
                             heartbeat_count += 1
                             yield ": heartbeat\n\n"
-                            # CRIT-012 AC3: Telemetry logging
                             logger.debug(
-                                f"CRIT-012: Heartbeat #{heartbeat_count} for {search_id} (redis)"
+                                f"CRIT-012: Heartbeat #{heartbeat_count} "
+                                f"for {search_id} (streams)"
                             )
+                            continue
 
-                        except _asyncio.CancelledError:
-                            from metrics import SSE_CONNECTION_ERRORS
-                            SSE_CONNECTION_ERRORS.labels(error_type="cancelled", phase="streaming").inc()
-                            break
+                        # AC2: Process entries, updating last_id for subsequent reads
+                        for _stream_name, entries in result:
+                            for entry_id, fields in entries:
+                                _last_id = entry_id
+                                event_data = {
+                                    "stage": fields["stage"],
+                                    "progress": int(fields["progress"]),
+                                    "message": fields["message"],
+                                }
+                                detail_json = fields.get("detail_json", "{}")
+                                if detail_json and detail_json != "{}":
+                                    event_data["detail"] = _json.loads(detail_json)
+                                # Preserve correlation fields
+                                for _extra in ("trace_id", "search_id", "request_id"):
+                                    if _extra in fields:
+                                        event_data[_extra] = fields[_extra]
 
-                finally:
-                    await pubsub.unsubscribe()
-                    await pubsub.close()
+                                yield f"data: {_json.dumps(event_data)}\n\n"
+
+                                if fields["stage"] in (
+                                    "complete", "degraded", "error",
+                                    "refresh_available", "search_complete",
+                                ):
+                                    return
+
+                    except _asyncio.CancelledError:
+                        from metrics import SSE_CONNECTION_ERRORS
+                        SSE_CONNECTION_ERRORS.labels(
+                            error_type="cancelled", phase="streaming"
+                        ).inc()
+                        break
 
             else:
-                # In-memory mode: Stream from local queue
+                # AC3: In-memory mode — fallback asyncio.Queue (no Redis)
                 logger.debug(f"SSE using in-memory queue for {search_id}")
                 while True:
                     try:
-                        # CRIT-012 AC2: Reduced heartbeat interval from 30s to 15s
+                        # CRIT-012 AC2: Heartbeat interval as timeout
                         event = await _asyncio.wait_for(
                             tracker.queue.get(),
                             timeout=_SSE_HEARTBEAT_INTERVAL,
                         )
                         yield f"data: {_json.dumps(event.to_dict())}\n\n"
 
-                        if event.stage in ("complete", "degraded", "error", "refresh_available", "search_complete"):
+                        if event.stage in (
+                            "complete", "degraded", "error",
+                            "refresh_available", "search_complete",
+                        ):
                             break
 
                     except _asyncio.TimeoutError:
-                        # CRIT-012 AC2: Heartbeat every 15s
                         heartbeat_count += 1
                         yield ": heartbeat\n\n"
-                        # CRIT-012 AC3: Telemetry logging
                         logger.debug(
-                            f"CRIT-012: Heartbeat #{heartbeat_count} for {search_id} (in-memory)"
+                            f"CRIT-012: Heartbeat #{heartbeat_count} "
+                            f"for {search_id} (in-memory)"
                         )
 
                     except _asyncio.CancelledError:
                         from metrics import SSE_CONNECTION_ERRORS
-                        SSE_CONNECTION_ERRORS.labels(error_type="cancelled", phase="streaming").inc()
+                        SSE_CONNECTION_ERRORS.labels(
+                            error_type="cancelled", phase="streaming"
+                        ).inc()
                         break
         except Exception as gen_exc:
             # CRIT-026 AC8: Log when SSE generator finishes abruptly (unexpected exception)

@@ -72,13 +72,14 @@ class TestSSEGeneratorAbruptLogging:
         from progress import ProgressEvent
 
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         # Queue that raises an exception to simulate abrupt failure
         mock_queue = AsyncMock()
         mock_queue.get = AsyncMock(side_effect=RuntimeError("Simulated crash"))
         mock_tracker.queue = mock_queue
 
         with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
              caplog.at_level(logging.ERROR, logger="routes.search"):
 
@@ -100,13 +101,14 @@ class TestSSEGeneratorAbruptLogging:
         from progress import ProgressEvent
 
         mock_tracker = MagicMock()
+        mock_tracker._use_redis = False
         mock_tracker.queue = asyncio.Queue()
         await mock_tracker.queue.put(
             ProgressEvent(stage="complete", progress=100, message="Done")
         )
 
         with patch("routes.search.get_tracker", new_callable=AsyncMock, return_value=mock_tracker), \
-             patch("routes.search.subscribe_to_events", new_callable=AsyncMock, return_value=None), \
+             patch("routes.search.get_redis_pool", new_callable=AsyncMock, return_value=None), \
              patch("routes.search._SSE_HEARTBEAT_INTERVAL", 0.01), \
              caplog.at_level(logging.DEBUG, logger="routes.search"):
 

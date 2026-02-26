@@ -53,33 +53,33 @@ ARQ nao tera novos fixes ([Issue #437](https://github.com/python-arq/arq/issues/
 ## Acceptance Criteria
 
 ### AC1: ProgressTracker usa Redis Streams (nao Pub/Sub)
-- [ ] `progress.py`: `_publish_to_redis()` usa `XADD` em vez de `PUBLISH`
-- [ ] Channel format: `smartlic:progress:{search_id}:stream`
-- [ ] Cada evento = um entry no stream com campos: `stage`, `progress`, `message`, `detail_json`
-- [ ] `EXPIRE` no stream key com TTL de 5 minutos apos `complete`/`error`/`degraded`
+- [x] `progress.py`: `_publish_to_redis()` usa `XADD` em vez de `PUBLISH`
+- [x] Channel format: `smartlic:progress:{search_id}:stream`
+- [x] Cada evento = um entry no stream com campos: `stage`, `progress`, `message`, `detail_json`
+- [x] `EXPIRE` no stream key com TTL de 5 minutos apos `complete`/`error`/`degraded`
 
 ### AC2: SSE Consumer usa XREAD BLOCK (nao subscribe)
-- [ ] `routes/search.py`: SSE endpoint usa `XREAD BLOCK 15000` em vez de `pubsub.get_message()`
-- [ ] Primeiro XREAD com `id=0` (le TODO o historico desde o inicio)
-- [ ] Subsequent XREADs com `id=$last_received_id`
-- [ ] Se subscriber conecta tarde, recebe TODOS os eventos acumulados (replay)
-- [ ] Heartbeat: se XREAD retorna vazio (timeout), yield `: heartbeat\n\n`
+- [x] `routes/search.py`: SSE endpoint usa `XREAD BLOCK 15000` em vez de `pubsub.get_message()`
+- [x] Primeiro XREAD com `id=0` (le TODO o historico desde o inicio)
+- [x] Subsequent XREADs com `id=$last_received_id`
+- [x] Se subscriber conecta tarde, recebe TODOS os eventos acumulados (replay)
+- [x] Heartbeat: se XREAD retorna vazio (timeout), yield `: heartbeat\n\n`
 
 ### AC3: Fallback in-memory preservado
-- [ ] Se Redis indisponivel, continua usando asyncio.Queue (comportamento atual)
-- [ ] `use_redis` flag decide entre Streams e Queue
-- [ ] Sem regressao para deploy single-worker sem Redis
+- [x] Se Redis indisponivel, continua usando asyncio.Queue (comportamento atual)
+- [x] `use_redis` flag decide entre Streams e Queue
+- [x] Sem regressao para deploy single-worker sem Redis
 
 ### AC4: Eliminado `subscribe_to_events()` e toda logica pub/sub
-- [ ] Remover `subscribe_to_events()` de progress.py
-- [ ] Remover bloco `if pubsub:` do SSE endpoint
-- [ ] Simplificar para: "try Streams first, fallback to queue"
+- [x] Remover `subscribe_to_events()` de progress.py
+- [x] Remover bloco `if pubsub:` do SSE endpoint
+- [x] Simplificar para: "try Streams first, fallback to queue"
 
 ### AC5: Teste end-to-end cross-worker
-- [ ] Teste simula: tracker created in "worker A", SSE reads from "worker B"
-- [ ] Verifica que TODOS os eventos sao recebidos (zero perda)
-- [ ] Verifica que subscriber tardio recebe historico completo
-- [ ] Verifica cleanup: stream key removido apos TTL
+- [x] Teste simula: tracker created in "worker A", SSE reads from "worker B"
+- [x] Verifica que TODOS os eventos sao recebidos (zero perda)
+- [x] Verifica que subscriber tardio recebe historico completo
+- [x] Verifica cleanup: stream key removido apos TTL
 
 ## Impacto Esperado
 

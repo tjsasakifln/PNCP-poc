@@ -205,9 +205,10 @@ class TestProgressTracker:
 
     @pytest.mark.asyncio
     async def test_emit_with_redis_enabled(self):
-        """AC2: Test emit() publishes to Redis when use_redis=True."""
+        """AC2: Test emit() publishes to Redis Stream when use_redis=True."""
         mock_redis_client = AsyncMock()
-        mock_redis_client.publish = AsyncMock()
+        mock_redis_client.xadd = AsyncMock(return_value="1-0")
+        mock_redis_client.expire = AsyncMock()
 
         with patch("progress.get_redis_pool", new_callable=AsyncMock) as mock_pool:
             mock_pool.return_value = mock_redis_client
@@ -221,23 +222,26 @@ class TestProgressTracker:
             # Check local queue
             assert tracker.queue.qsize() == 1
 
-            # Check Redis publish was called
-            mock_redis_client.publish.assert_called_once()
-            call_args = mock_redis_client.publish.call_args
-            channel = call_args[0][0]
-            event_json = call_args[0][1]
+            # Check Redis XADD was called (STORY-276)
+            mock_redis_client.xadd.assert_called_once()
+            call_args = mock_redis_client.xadd.call_args
+            stream_key = call_args[0][0]
+            fields = call_args[0][1]
 
-            assert channel == "smartlic:progress:test-redis-123:events"
-            event_data = json.loads(event_json)
-            assert event_data["stage"] == "fetching"
-            assert event_data["progress"] == 30
-            assert event_data["message"] == "Fetching..."
+            assert stream_key == "smartlic:progress:test-redis-123:stream"
+            assert fields["stage"] == "fetching"
+            assert fields["progress"] == "30"
+            assert fields["message"] == "Fetching..."
+            assert "detail_json" in fields
+
+            # Non-terminal event should NOT set EXPIRE
+            mock_redis_client.expire.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_emit_redis_publish_failure_graceful(self):
-        """AC2: Test emit() handles Redis publish failure gracefully."""
+        """AC2: Test emit() handles Redis Stream failure gracefully."""
         mock_redis_client = AsyncMock()
-        mock_redis_client.publish = AsyncMock(
+        mock_redis_client.xadd = AsyncMock(
             side_effect=Exception("Redis connection lost")
         )
 
@@ -249,7 +253,7 @@ class TestProgressTracker:
             )
 
             # Should not raise exception
-            await tracker.emit(stage="error", progress=0, message="Testing")
+            await tracker.emit(stage="fetching", progress=0, message="Testing")
 
             # Local queue should still have event
             assert tracker.queue.qsize() == 1
@@ -343,7 +347,7 @@ class TestTrackerManagement:
 
     @pytest.mark.asyncio
     async def test_remove_tracker_from_redis(self):
-        """AC4: Test remove_tracker() cleans up Redis state."""
+        """AC4: Test remove_tracker() cleans up Redis state (metadata + stream)."""
         mock_redis_client = AsyncMock()
         mock_redis_client.delete = AsyncMock()
         mock_redis_client.hset = AsyncMock()
@@ -357,9 +361,10 @@ class TestTrackerManagement:
             await create_tracker(search_id="search-redis-003", uf_count=2)
             await remove_tracker("search-redis-003")
 
-            # Check Redis delete was called
+            # STORY-276: Check Redis delete was called for BOTH metadata and stream keys
             mock_redis_client.delete.assert_called_once_with(
-                "smartlic:progress:search-redis-003"
+                "smartlic:progress:search-redis-003",
+                "smartlic:progress:search-redis-003:stream",
             )
 
     @pytest.mark.asyncio
@@ -666,9 +671,10 @@ class TestEmitDegraded:
 
     @pytest.mark.asyncio
     async def test_emit_degraded_publishes_to_redis(self):
-        """Test emit_degraded() publishes to Redis when use_redis=True."""
+        """Test emit_degraded() publishes to Redis Stream when use_redis=True."""
         mock_redis_client = AsyncMock()
-        mock_redis_client.publish = AsyncMock()
+        mock_redis_client.xadd = AsyncMock(return_value="1-0")
+        mock_redis_client.expire = AsyncMock()
 
         with patch("progress.get_redis_pool", new_callable=AsyncMock) as mock_pool:
             mock_pool.return_value = mock_redis_client
@@ -685,15 +691,18 @@ class TestEmitDegraded:
             # Check local queue
             assert tracker.queue.qsize() == 1
 
-            # Check Redis publish was called
-            mock_redis_client.publish.assert_called_once()
-            call_args = mock_redis_client.publish.call_args
-            channel = call_args[0][0]
-            event_json = call_args[0][1]
+            # STORY-276: Check Redis XADD was called
+            mock_redis_client.xadd.assert_called_once()
+            call_args = mock_redis_client.xadd.call_args
+            stream_key = call_args[0][0]
+            fields = call_args[0][1]
 
-            assert channel == "smartlic:progress:test-degraded-redis:events"
-            event_data = json.loads(event_json)
-            assert event_data["stage"] == "degraded"
-            assert event_data["progress"] == 100
-            assert event_data["detail"]["reason"] == "timeout"
-            assert event_data["detail"]["cache_age_hours"] == 1.5
+            assert stream_key == "smartlic:progress:test-degraded-redis:stream"
+            assert fields["stage"] == "degraded"
+            assert fields["progress"] == "100"
+            detail = json.loads(fields["detail_json"])
+            assert detail["reason"] == "timeout"
+            assert detail["cache_age_hours"] == 1.5
+
+            # Terminal event should set EXPIRE
+            mock_redis_client.expire.assert_called_once()
