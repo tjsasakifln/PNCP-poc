@@ -751,6 +751,8 @@ class PNCPClient:
         """
         Create HTTP session with automatic retry strategy.
 
+        STORY-282 AC1: Uses aggressive timeout defaults from config.
+
         Returns:
             Configured requests.Session with retry adapter
         """
@@ -1185,7 +1187,7 @@ class PNCPClient:
         modalidade: int,
         uf: str | None,
         on_progress: Callable[[int, int, int], None] | None,
-        max_pages: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500 (10,000 records per UF+modality)
+        max_pages: int | None = None,  # STORY-282 AC2: Defaults to PNCP_MAX_PAGES (5)
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Fetch all pages for a specific modality and UF combination.
@@ -1205,6 +1207,9 @@ class PNCPClient:
         Yields:
             Dict[str, Any]: Individual procurement record
         """
+        from config import PNCP_MAX_PAGES
+        if max_pages is None:
+            max_pages = PNCP_MAX_PAGES
         pagina = 1
         items_fetched = 0
         total_pages = None
@@ -1326,10 +1331,18 @@ class AsyncPNCPClient:
         self._last_request_time = 0.0
 
     async def __aenter__(self) -> "AsyncPNCPClient":
-        """Async context manager entry."""
+        """Async context manager entry.
+
+        STORY-282 AC1: Uses split connect/read timeouts for fail-fast behavior.
+        """
         self._semaphore = asyncio.Semaphore(self.max_concurrent)
         self._client = httpx.AsyncClient(
-            timeout=httpx.Timeout(self.config.timeout),
+            timeout=httpx.Timeout(
+                connect=self.config.connect_timeout,
+                read=self.config.read_timeout,
+                write=self.config.read_timeout,
+                pool=self.config.connect_timeout,
+            ),
             headers={
                 "User-Agent": "SmartLic/1.0 (procurement-search; contato@smartlic.tech)",
                 "Accept": "application/json",
@@ -1765,12 +1778,15 @@ class AsyncPNCPClient:
         data_final: str,
         modalidade: int,
         status: str | None = None,
-        max_pages: int = 500,
+        max_pages: int | None = None,
     ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch all pages for a single UF + single modality.
 
         This is the inner loop extracted from ``_fetch_uf_all_pages`` so that
         each modality can be wrapped with its own timeout (STORY-252 AC6).
+
+        STORY-282 AC2: Default max_pages reduced from 500 to PNCP_MAX_PAGES (5).
+        SP/mod6 has 1463 items (30 pages) — 5 pages = 250 items covers the most recent.
 
         Args:
             uf: State code (e.g. "SP").
@@ -1778,12 +1794,15 @@ class AsyncPNCPClient:
             data_final: End date YYYY-MM-DD.
             modalidade: Modality code.
             status: Optional PNCP status filter value.
-            max_pages: Maximum pages per modality.
+            max_pages: Maximum pages per modality (default from PNCP_MAX_PAGES env).
 
         Returns:
             Tuple of (items, was_truncated). was_truncated is True when
             max_pages was hit while more pages remained (GTM-FIX-004).
         """
+        from config import PNCP_MAX_PAGES
+        if max_pages is None:
+            max_pages = PNCP_MAX_PAGES
         items: List[Dict[str, Any]] = []
         seen_ids: set[str] = set()
         pagina = 1
@@ -1816,13 +1835,15 @@ class AsyncPNCPClient:
                 if paginas_restantes <= 0:
                     break
 
-                # GTM-FIX-004: Detect truncation when max_pages reached
+                # STORY-282 AC2 + GTM-FIX-004: Detect truncation when max_pages reached
+                total_records = response.get("totalRegistros", 0)
                 if pagina >= max_pages and paginas_restantes > 0:
                     was_truncated = True
                     logger.warning(
-                        f"MAX_PAGES ({max_pages}) reached for UF={uf}, "
-                        f"modalidade={modalidade}. Fetched {len(items)} items. "
-                        f"Remaining pages: {paginas_restantes}"
+                        f"STORY-282: MAX_PAGES ({max_pages}) reached for UF={uf}, "
+                        f"modalidade={modalidade}. Fetched {len(items)}/{total_records} items. "
+                        f"Remaining pages: {paginas_restantes}. "
+                        f"Truncating to cap latency (set PNCP_MAX_PAGES to increase)."
                     )
 
                 pagina += 1
@@ -1844,7 +1865,7 @@ class AsyncPNCPClient:
         data_final: str,
         modalidade: int,
         status: str | None = None,
-        max_pages: int = 500,
+        max_pages: int | None = None,
     ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch a single modality with per-modality timeout and 1 retry (STORY-252 AC6/AC9).
 
@@ -1898,7 +1919,7 @@ class AsyncPNCPClient:
         data_final: str,
         modalidades: List[int],
         status: str | None = None,
-        max_pages: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
+        max_pages: int | None = None,  # STORY-282 AC2: Defaults to PNCP_MAX_PAGES (5)
     ) -> tuple[List[Dict[str, Any]], bool]:
         """Fetch all pages for a single UF across all modalities in parallel.
 
@@ -1968,7 +1989,7 @@ class AsyncPNCPClient:
         data_final: str,
         modalidades: List[int] | None = None,
         status: str | None = None,
-        max_pages_per_uf: int = 500,  # HOTFIX STORY-183: Increased from 50 to 500
+        max_pages_per_uf: int | None = None,  # STORY-282 AC2: Defaults to PNCP_MAX_PAGES (5)
         on_uf_complete: Callable[[str, int], Any] | None = None,
         on_uf_status: Callable[..., Any] | None = None,
     ) -> List[Dict[str, Any]]:
@@ -2001,7 +2022,12 @@ class AsyncPNCPClient:
             1523
         """
         import time as sync_time
+        from config import PNCP_MAX_PAGES
         start_time = sync_time.time()
+
+        # STORY-282 AC2: Resolve default page limit
+        if max_pages_per_uf is None:
+            max_pages_per_uf = PNCP_MAX_PAGES
 
         # Use default modalities if not specified; always filter out excluded
         modalidades = modalidades or DEFAULT_MODALIDADES

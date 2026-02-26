@@ -46,14 +46,19 @@ MODALIDADES_EXCLUIDAS: List[int] = [
 
 @dataclass
 class RetryConfig:
-    """Configuration for HTTP retry logic."""
+    """Configuration for HTTP retry logic.
 
-    max_retries: int = 3
+    STORY-282 AC1: Defaults updated to use PNCP-specific env vars when available.
+    """
+
+    max_retries: int = int(os.getenv("PNCP_MAX_RETRIES", "1"))  # STORY-282: was 3, now 1
     base_delay: float = 1.5  # seconds
     max_delay: float = 15.0  # seconds
     exponential_base: int = 2
     jitter: bool = True
-    timeout: int = 30  # seconds
+    timeout: int = int(os.getenv("PNCP_READ_TIMEOUT", "15"))  # STORY-282: was 30, now 15
+    connect_timeout: float = float(os.getenv("PNCP_CONNECT_TIMEOUT", "10"))  # STORY-282: was 30, now 10
+    read_timeout: float = float(os.getenv("PNCP_READ_TIMEOUT", "15"))  # STORY-282: was 30, now 15
 
     # HTTP status codes that should trigger retry
     # GTM-FIX-029 AC12: 422 added — PNCP returns 422 for certain UF+modality combos
@@ -447,6 +452,18 @@ PNCP_TIMEOUT_PER_UF: int = int(os.getenv("PNCP_TIMEOUT_PER_UF", "30"))
 PNCP_TIMEOUT_PER_UF_DEGRADED: int = int(os.getenv("PNCP_TIMEOUT_PER_UF_DEGRADED", "15"))
 PIPELINE_SKIP_LLM_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_LLM_AFTER_S", "90"))
 PIPELINE_SKIP_VIABILITY_AFTER_S: int = int(os.getenv("PIPELINE_SKIP_VIABILITY_AFTER_S", "100"))
+
+# ============================================
+# STORY-282: PNCP Timeout Resilience
+# ============================================
+# AC1: Aggressive PNCP timeouts — fail fast, don't waste time retrying slow API
+PNCP_CONNECT_TIMEOUT: float = float(os.getenv("PNCP_CONNECT_TIMEOUT", "10"))  # was 30
+PNCP_READ_TIMEOUT: float = float(os.getenv("PNCP_READ_TIMEOUT", "15"))  # was 30
+PNCP_MAX_RETRIES: int = int(os.getenv("PNCP_MAX_RETRIES", "1"))  # was 3
+# AC2: Page limit per modality — SP/mod6 has 30 pages, cap at 5 (250 items max)
+PNCP_MAX_PAGES: int = int(os.getenv("PNCP_MAX_PAGES", "5"))
+# AC3: Cache-first user search timeout — max seconds for fresh fetch before serving cache
+CACHE_FIRST_FRESH_TIMEOUT: int = int(os.getenv("CACHE_FIRST_FRESH_TIMEOUT", "60"))
 
 # GTM-STAB-003 AC3: Consolidation early return — return partial results when most UFs responded
 EARLY_RETURN_THRESHOLD_PCT: float = float(os.getenv("EARLY_RETURN_THRESHOLD_PCT", "0.8"))  # 80% of UFs

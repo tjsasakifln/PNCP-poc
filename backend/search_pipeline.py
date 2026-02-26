@@ -921,6 +921,59 @@ class SearchPipeline:
             else:
                 CACHE_MISSES.labels(level="memory").inc()
 
+            # STORY-282 AC3: Cache-first — check Supabase/cascade for stale cache
+            # If stale cache exists, return it IMMEDIATELY and dispatch background refresh
+            if ctx.user and ctx.user.get("id"):
+                try:
+                    from search_cache import trigger_background_revalidation
+                    _cache_params = {
+                        "setor_id": request.setor_id,
+                        "ufs": request.ufs,
+                        "status": request.status.value if request.status else None,
+                        "modalidades": request.modalidades,
+                        "modo_busca": request.modo_busca if hasattr(request, "modo_busca") else None,
+                    }
+                    _stale = await get_from_cache_cascade(
+                        user_id=ctx.user["id"],
+                        params=_cache_params,
+                    )
+                    if _stale and _stale.get("results"):
+                        _age_h = _stale.get("cache_age_hours", 0)
+                        logger.info(
+                            f"STORY-282: Cache-first — serving {len(_stale['results'])} results "
+                            f"from {_stale.get('cache_level', 'unknown')} ({_age_h:.1f}h old). "
+                            f"Background revalidation dispatched."
+                        )
+                        ctx.licitacoes_raw = _stale["results"]
+                        ctx.cached = True
+                        ctx.cached_at = _stale.get("cached_at")
+                        ctx.cached_sources = _stale.get("cached_sources", ["PNCP"])
+                        ctx.cache_status = _stale.get("cache_status", "stale")
+                        ctx.cache_level = _stale.get("cache_level", "supabase")
+                        ctx.response_state = "cached"
+                        CACHE_HITS.labels(
+                            level=_stale.get("cache_level", "supabase"),
+                            freshness=_stale.get("cache_status", "stale"),
+                        ).inc()
+
+                        # Dispatch background revalidation (fire-and-forget)
+                        _request_data = {
+                            "ufs": request.ufs,
+                            "data_inicial": request.data_inicial,
+                            "data_final": request.data_final,
+                            "modalidades": request.modalidades,
+                        }
+                        asyncio.create_task(
+                            trigger_background_revalidation(
+                                user_id=ctx.user["id"],
+                                params=_cache_params,
+                                request_data=_request_data,
+                            )
+                        )
+                        return
+                except Exception as cache_first_err:
+                    logger.debug(f"STORY-282: Cache-first check failed (proceeding with fresh fetch): {cache_first_err}")
+
         enable_multi_source = os.getenv("ENABLE_MULTI_SOURCE", "true").lower() == "true"
         ctx.source_stats_data = None
 

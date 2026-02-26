@@ -63,11 +63,17 @@ class TestPNCPClient:
     """Test PNCPClient initialization and session configuration."""
 
     def test_client_initialization_default_config(self):
-        """Test client initializes with default config."""
+        """Test client initializes with default config.
+
+        STORY-282 AC1: Default retries reduced to 1 (was 3), timeout to 15 (was 30).
+        """
         client = PNCPClient()
 
-        assert client.config.max_retries == 3
+        assert client.config.max_retries == 1  # STORY-282 AC1: was 3
         assert client.config.base_delay == 1.5
+        assert client.config.timeout == 15  # STORY-282 AC1: was 30
+        assert client.config.connect_timeout == 10.0  # STORY-282 AC1: new
+        assert client.config.read_timeout == 15.0  # STORY-282 AC1: new
         assert client.session is not None
         assert client._request_count == 0
 

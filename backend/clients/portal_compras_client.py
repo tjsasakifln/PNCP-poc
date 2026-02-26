@@ -366,8 +366,17 @@ class PortalComprasAdapter(SourceAdapter):
                     continue
 
                 # Client-side UF filtering (v2 API has no server-side UF filter)
-                if ufs and record.uf and record.uf not in ufs:
-                    continue
+                # STORY-282 AC5: Records with empty/missing UF are skipped when UF filter
+                # is active — previously they passed through and inflated raw counts.
+                if ufs:
+                    if not record.uf:
+                        logger.debug(
+                            f"[PCP] Skipping record {record.source_id}: empty UF "
+                            f"(UF filter active: {ufs})"
+                        )
+                        continue
+                    if record.uf.upper() not in {u.upper() for u in ufs}:
+                        continue
 
                 if record.source_id in seen_ids:
                     continue

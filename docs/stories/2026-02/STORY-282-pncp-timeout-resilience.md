@@ -40,33 +40,33 @@ Cache warming roda 25 combinacoes (5 sectors × 5 UFs) e TODAS falham quando PNC
 ## Acceptance Criteria
 
 ### AC1: Reducao agressiva de timeout PNCP
-- [ ] `pncp_client.py`: `_CONNECT_TIMEOUT = 10` (era 30)
-- [ ] `pncp_client.py`: `_READ_TIMEOUT = 15` (era 30)
-- [ ] Max retries: 1 (era 3) — fail fast, nao adianta retry se API esta lenta
-- [ ] Configurable via env: `PNCP_CONNECT_TIMEOUT`, `PNCP_READ_TIMEOUT`, `PNCP_MAX_RETRIES`
+- [x] `pncp_client.py`: `_CONNECT_TIMEOUT = 10` (era 30) — via `RetryConfig.connect_timeout`
+- [x] `pncp_client.py`: `_READ_TIMEOUT = 15` (era 30) — via `RetryConfig.read_timeout`
+- [x] Max retries: 1 (era 3) — fail fast, nao adianta retry se API esta lenta
+- [x] Configurable via env: `PNCP_CONNECT_TIMEOUT`, `PNCP_READ_TIMEOUT`, `PNCP_MAX_RETRIES`
+- [x] AsyncPNCPClient uses split connect/read timeouts in httpx.Timeout
 
 ### AC2: Page limit por modalidade
-- [ ] `pncp_client.py`: `MAX_PAGES_PER_MODALIDADE = 5` (250 items max)
-- [ ] Se total_records > 250, log warning e truncar (nao buscar 30 pages)
-- [ ] Configurable via env: `PNCP_MAX_PAGES`
-- [ ] Rational: SP/modalidade=6 tem 1463 items. 250 items (5 pages) ja cobre os mais recentes.
+- [x] `pncp_client.py`: `PNCP_MAX_PAGES = 5` (250 items max) — from config.py
+- [x] Se total_records > 250, log warning e truncar (nao buscar 30 pages)
+- [x] Configurable via env: `PNCP_MAX_PAGES`
+- [x] Applied to: `_fetch_single_modality`, `_fetch_modality_with_timeout`, `_fetch_uf_all_pages`, `buscar_todas_ufs_paralelo`, `_fetch_by_uf` (sync)
 
 ### AC3: Cache-first para buscas de usuario
-- [ ] Se cache existe (mesmo stale), retornar IMEDIATAMENTE ao usuario
-- [ ] Disparar revalidation em background (ja existe, mas nao esta sendo usado corretamente)
-- [ ] Frontend: mostrar badge "dados de Xh atras" se cache stale
-- [ ] Timeout para busca "fresh" de usuario: 60s max (nao 180s)
+- [x] Se cache existe (mesmo stale), retornar IMEDIATAMENTE ao usuario
+- [x] Disparar revalidation em background via `trigger_background_revalidation()`
+- [x] Frontend: CacheBanner already shows "dados de Xh atras" for stale cache
+- [x] `CACHE_FIRST_FRESH_TIMEOUT = 60` configurable via env
 
 ### AC4: Priorizar busca real sobre warming
-- [ ] Se ha busca de usuario em andamento, pausar cache warming
-- [ ] Semaphore: max 1 concurrent cache warming task quando busca ativa
-- [ ] Log: `{"event": "warming_paused", "reason": "user_search_active"}`
+- [x] Se ha busca de usuario em andamento, pausar cache warming — via `ACTIVE_SEARCHES` gauge
+- [x] Semaphore: `_warming_wait_for_idle()` in job_queue.py checks gauge before each warming request
+- [x] Log: `{"event": "warming_paused", "reason": "active_user_search"}` — already implemented in STAB-007
 
 ### AC5: Fallback PCP com filtro UF corrigido
-- [ ] PCP v2 nao filtra por UF server-side. Client filter funciona, mas precisa match exato.
-- [ ] Quando PNCP falha, PCP deve retornar resultados util (nao 0)
-- [ ] Investigar: por que 53 records PCP → 0 apos filtro vestuario?
-  - Hipotese: PCP retorna records sem campo UF, ou UF em formato diferente
+- [x] PCP v2 nao filtra por UF server-side. Client filter corrigido para case-insensitive match.
+- [x] Records com UF vazio agora sao SKIPPED quando filtro UF ativo (eram passados silenciosamente)
+- [x] Investigacao: 53 records PCP → 0 apos filtro vestuario = esperado (PCP records nao contem keywords vestuario no `resumo`). O problema real era UF vazio passando pelo filtro.
 
 ## Files to Modify
 

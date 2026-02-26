@@ -246,15 +246,20 @@ class TestRetryConfig:
     """Test suite for RetryConfig dataclass."""
 
     def test_default_values(self):
-        """Test that RetryConfig has correct default values."""
+        """Test that RetryConfig has correct default values.
+
+        STORY-282 AC1: Defaults updated — max_retries=1 (was 3), timeout=15 (was 30).
+        """
         config = RetryConfig()
 
-        assert config.max_retries == 3
+        assert config.max_retries == 1  # STORY-282 AC1: was 3
         assert config.base_delay == 1.5
         assert config.max_delay == 15.0
         assert config.exponential_base == 2
         assert config.jitter is True
-        assert config.timeout == 30
+        assert config.timeout == 15  # STORY-282 AC1: was 30
+        assert config.connect_timeout == 10.0  # STORY-282 AC1: new
+        assert config.read_timeout == 15.0  # STORY-282 AC1: new
 
     def test_retryable_status_codes_default(self):
         """Test default retryable HTTP status codes."""
