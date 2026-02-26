@@ -45,11 +45,15 @@ END
 $$;
 
 -- Step 2: Insert the corresponding profile row.
-INSERT INTO profiles (id, full_name, plan_type, is_admin)
+-- profiles.email has NOT NULL constraint, so we must provide it.
+-- profiles_plan_type_check allows: free_trial, consultor_agil, maquina, sala_guerra, master, smartlic_pro
+-- Using 'master' for system account (no quota limits, internal use only).
+INSERT INTO profiles (id, email, full_name, plan_type, is_admin)
 VALUES (
     '00000000-0000-0000-0000-000000000000',
+    'system-cache-warmer@internal.smartlic.tech',
     'System Cache Warmer',
-    'system',
+    'master',
     false
 )
 ON CONFLICT (id) DO NOTHING;
