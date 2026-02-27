@@ -971,9 +971,6 @@ async def _update_session_on_complete(
         if not db:
             return
 
-        total_filtrado = getattr(response, "total_filtrado", 0) if not isinstance(response, dict) else response.get("total_filtrado", 0)
-        total_raw = getattr(response, "total_encontrado", 0) if not isinstance(response, dict) else response.get("total_encontrado", 0)
-
         await sb_execute(
             db.table("search_sessions")
             .update({

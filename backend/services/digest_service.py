@@ -10,7 +10,6 @@ Usage:
     opportunities = await build_digest_for_user(user_id, max_items=10)
 """
 
-import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional

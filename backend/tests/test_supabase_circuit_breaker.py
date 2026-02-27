@@ -14,11 +14,9 @@ Also tests:
   - Prometheus metrics emission (AC6, AC7)
 """
 
-import asyncio
 import time
 import threading
-from collections import deque
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -434,7 +432,6 @@ class TestQuotaWithCB:
 
         # Clear plan capabilities cache
         try:
-            from quota import _plan_capabilities_cache
             import quota
             quota._plan_capabilities_cache = None
             quota._plan_capabilities_cache_time = 0
@@ -541,8 +538,7 @@ class TestPlanStatusCache:
         assert _get_cached_plan_status("nonexistent") is None
 
     def test_cache_expires_after_ttl(self):
-        from quota import _cache_plan_status, _get_cached_plan_status, _plan_status_cache, _plan_status_cache_lock
-        import quota
+        from quota import _get_cached_plan_status, _plan_status_cache, _plan_status_cache_lock
 
         # Manually insert an entry with a past timestamp so it's already expired
         with _plan_status_cache_lock:
@@ -570,7 +566,7 @@ class TestRequireActivePlanWithCB:
     @pytest.mark.asyncio
     async def test_require_active_plan_allows_when_cb_open(self):
         """AC4: When CB open, require_active_plan allows user through."""
-        from supabase_client import supabase_cb, CircuitBreakerOpenError
+        from supabase_client import CircuitBreakerOpenError
         from quota import require_active_plan
 
         user = {"id": "test-user-123", "email": "test@test.com"}
@@ -614,7 +610,7 @@ class TestRequireActivePlanPosition:
                 transport=ASGITransport(app=app),
                 base_url="http://test",
             ) as client:
-                response = await client.post(
+                await client.post(
                     "/buscar",
                     json={
                         "setor_id": "tecnologia",
