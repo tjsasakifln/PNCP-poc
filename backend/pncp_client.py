@@ -1334,6 +1334,7 @@ class AsyncPNCPClient:
         """Async context manager entry.
 
         STORY-282 AC1: Uses split connect/read timeouts for fail-fast behavior.
+        STORY-296 AC2: Isolated connection pool via httpx.Limits.
         """
         self._semaphore = asyncio.Semaphore(self.max_concurrent)
         self._client = httpx.AsyncClient(
@@ -1342,6 +1343,10 @@ class AsyncPNCPClient:
                 read=self.config.read_timeout,
                 write=self.config.read_timeout,
                 pool=self.config.connect_timeout,
+            ),
+            limits=httpx.Limits(
+                max_connections=self.max_concurrent + 2,
+                max_keepalive_connections=self.max_concurrent,
             ),
             headers={
                 "User-Agent": "SmartLic/1.0 (procurement-search; contato@smartlic.tech)",

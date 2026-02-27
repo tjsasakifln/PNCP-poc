@@ -353,6 +353,10 @@ async def lifespan(app_instance: FastAPI):
     # STORY-217: Initialize Redis pool
     await startup_redis()
 
+    # STORY-296: Initialize per-source bulkheads
+    from bulkhead import initialize_bulkheads
+    initialize_bulkheads()
+
     # GTM-RESILIENCE-F01: Initialize ARQ job queue pool
     from job_queue import get_arq_pool
     await get_arq_pool()
@@ -891,6 +895,12 @@ async def health():
     is_ready = _startup_time is not None
     uptime = round(time.monotonic() - _startup_time, 3) if is_ready else 0.0
 
+    # STORY-296 AC6: Per-source bulkhead status
+    from bulkhead import get_all_bulkheads
+    bulkhead_status = {}
+    for bh_name, bh in get_all_bulkheads().items():
+        bulkhead_status[bh_name] = bh.to_dict()
+
     response_data = {
         "status": status,
         "ready": is_ready,
@@ -899,6 +909,7 @@ async def health():
         "version": app.version,
         "dependencies": dependencies,
         "sources": sources,
+        "bulkheads": bulkhead_status,
     }
 
     # Always return 200 for Railway health checks — report status in body

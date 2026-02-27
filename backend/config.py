@@ -792,6 +792,16 @@ def validate_env_vars() -> None:
 
 
 # ============================================================================
+# STORY-296: Bulkhead Per Source — concurrency & timeout isolation
+# ============================================================================
+PNCP_BULKHEAD_CONCURRENCY: int = int(os.getenv("PNCP_BULKHEAD_CONCURRENCY", "5"))
+PCP_BULKHEAD_CONCURRENCY: int = int(os.getenv("PCP_BULKHEAD_CONCURRENCY", "3"))
+COMPRASGOV_BULKHEAD_CONCURRENCY: int = int(os.getenv("COMPRASGOV_BULKHEAD_CONCURRENCY", "3"))
+PNCP_SOURCE_TIMEOUT: float = float(os.getenv("PNCP_SOURCE_TIMEOUT", "80"))
+PCP_SOURCE_TIMEOUT: float = float(os.getenv("PCP_SOURCE_TIMEOUT", "30"))
+COMPRASGOV_SOURCE_TIMEOUT: float = float(os.getenv("COMPRASGOV_SOURCE_TIMEOUT", "30"))
+
+# ============================================================================
 # STORY-294: State Externalization to Redis
 # ============================================================================
 # TTLs for externalized state stores (seconds)

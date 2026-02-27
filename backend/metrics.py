@@ -261,6 +261,29 @@ TERM_SEARCH_SYNONYM_RECOVERIES = _create_counter(
 )
 
 # ============================================================================
+# STORY-296: Per-source bulkhead metrics
+# ============================================================================
+
+SOURCE_ACTIVE_REQUESTS = _create_gauge(
+    "smartlic_source_active_requests",
+    "Number of currently active requests per data source (bulkhead)",
+    labelnames=["source"],
+)
+
+SOURCE_POOL_EXHAUSTED = _create_counter(
+    "smartlic_source_pool_exhausted_total",
+    "Times a source bulkhead pool was exhausted (caller had to wait)",
+    labelnames=["source"],
+)
+
+SOURCE_SEMAPHORE_WAIT_SECONDS = _create_histogram(
+    "smartlic_source_semaphore_wait_seconds",
+    "Time spent waiting for a bulkhead semaphore slot",
+    labelnames=["source"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10],
+)
+
+# ============================================================================
 # Gauges
 # ============================================================================
 

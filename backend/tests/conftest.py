@@ -201,3 +201,16 @@ def _reset_supabase_circuit_breaker():
     supabase_cb.reset()
     yield
     supabase_cb.reset()
+
+
+@pytest.fixture(autouse=True)
+def _reset_bulkhead_registry():
+    """STORY-296: Reset bulkhead registry between tests.
+
+    The global bulkhead registry retains state across tests. Clear it to
+    prevent one test's bulkheads from leaking into another.
+    """
+    from bulkhead import reset_registry
+    reset_registry()
+    yield
+    reset_registry()
