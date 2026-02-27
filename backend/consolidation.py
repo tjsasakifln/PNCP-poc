@@ -16,6 +16,7 @@ from clients.base import SourceAdapter, SourceStatus, UnifiedProcurement, Source
 from source_config.sources import source_health_registry
 from metrics import FETCH_DURATION, API_ERRORS
 from telemetry import get_tracer, optional_span
+from bulkhead import SourceBulkhead, get_bulkhead
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ class ConsolidationService:
         timeout_global: int = 60,
         fail_on_all_errors: bool = True,
         fallback_adapter: Optional[SourceAdapter] = None,
+        bulkheads: Optional[Dict[str, SourceBulkhead]] = None,
     ):
         """
         Initialize ConsolidationService.
@@ -99,6 +101,10 @@ class ConsolidationService:
             fallback_adapter: Optional ComprasGov adapter used as last-resort
                 fallback when all other sources fail (AC15). This adapter is
                 tried even if ComprasGov is disabled in env config.
+            bulkheads: Optional dict mapping source code to SourceBulkhead.
+                When provided, each source fetch is wrapped with the
+                bulkhead's semaphore for concurrency isolation (STORY-296).
+                Falls back to global registry if not provided.
         """
         # GTM-FIX-024 T5: Fail-fast contract validation
         required_attrs = ("code", "metadata", "fetch", "health_check", "close")
@@ -122,6 +128,8 @@ class ConsolidationService:
         self._timeout_global = timeout_global
         self._fail_on_all_errors = fail_on_all_errors
         self._fallback_adapter = fallback_adapter
+        # STORY-296: Per-source bulkheads for concurrency isolation
+        self._bulkheads = bulkheads or {}
         # GTM-STAB-003 AC3: Exposes last effective global timeout for testing
         self._last_effective_global_timeout: Optional[int] = None
 
@@ -597,13 +605,15 @@ class ConsolidationService:
         effective_timeout, start, partial_records, src_span,
     ):
         try:
-            await asyncio.wait_for(
-                self._fetch_source(
-                    adapter, data_inicial, data_final, ufs,
-                    partial_collector=partial_records,
-                ),
-                timeout=effective_timeout,
+            fetch_coro = self._fetch_source(
+                adapter, data_inicial, data_final, ufs,
+                partial_collector=partial_records,
             )
+            # STORY-296: Wrap with bulkhead semaphore if available
+            bulkhead = self._bulkheads.get(code) or get_bulkhead(code)
+            if bulkhead:
+                fetch_coro = bulkhead.execute(fetch_coro)
+            await asyncio.wait_for(fetch_coro, timeout=effective_timeout)
             duration = int((time.time() - start) * 1000)
             FETCH_DURATION.labels(source=code).observe(duration / 1000.0)
             src_span.set_attribute("duration_ms", duration)

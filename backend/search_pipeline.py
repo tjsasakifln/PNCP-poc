@@ -1139,12 +1139,17 @@ class SearchPipeline:
         # Will be restored when ComprasGov v3 migration is ready (GTM-FIX-026).
         fallback_adapter = None
 
+        # STORY-296: Inject per-source bulkheads for concurrency isolation
+        from bulkhead import get_all_bulkheads
+        bulkheads = get_all_bulkheads()
+
         consolidation_svc = ConsolidationService(
             adapters=adapters,
             timeout_per_source=source_config.consolidation.timeout_per_source,
             timeout_global=source_config.consolidation.timeout_global,
             fail_on_all_errors=source_config.consolidation.fail_on_all_errors,
             fallback_adapter=fallback_adapter,
+            bulkheads=bulkheads,
         )
 
         source_complete_cb = None

@@ -105,11 +105,19 @@ class ComprasGovAdapter(SourceAdapter):
         return self._metadata
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create HTTP client."""
+        """Get or create HTTP client.
+
+        STORY-296 AC2: Isolated connection pool via httpx.Limits.
+        """
         if self._client is None or self._client.is_closed:
+            from config import COMPRASGOV_BULKHEAD_CONCURRENCY
             self._client = httpx.AsyncClient(
                 base_url=self.BASE_URL,
                 timeout=httpx.Timeout(self._timeout),
+                limits=httpx.Limits(
+                    max_connections=COMPRASGOV_BULKHEAD_CONCURRENCY + 2,
+                    max_keepalive_connections=COMPRASGOV_BULKHEAD_CONCURRENCY,
+                ),
                 headers={
                     "Accept": "application/json",
                     "User-Agent": "SmartLic/1.0 (contato@smartlic.com.br)",
