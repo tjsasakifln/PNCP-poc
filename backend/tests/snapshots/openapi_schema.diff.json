@@ -1363,6 +1363,61 @@
           "title": "BuscaResponse",
           "type": "object"
         },
+        "CancelFeedbackRequest": {
+          "description": "Post-cancellation feedback (UX-308 AC6).",
+          "properties": {
+            "feedback": {
+              "description": "Free-text cancellation feedback",
+              "maxLength": 2000,
+              "minLength": 1,
+              "title": "Feedback",
+              "type": "string"
+            }
+          },
+          "required": [
+            "feedback"
+          ],
+          "title": "CancelFeedbackRequest",
+          "type": "object"
+        },
+        "CancelFeedbackResponse": {
+          "description": "Response for cancellation feedback.",
+          "properties": {
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "success": {
+              "title": "Success",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "success",
+            "message"
+          ],
+          "title": "CancelFeedbackResponse",
+          "type": "object"
+        },
+        "CancelSubscriptionRequest": {
+          "description": "Request body for subscription cancellation (UX-308).",
+          "properties": {
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Cancellation reason: too_expensive, not_using, missing_features, found_alternative, other",
+              "title": "Reason"
+            }
+          },
+          "title": "CancelSubscriptionRequest",
+          "type": "object"
+        },
         "CancelSubscriptionResponse": {
           "description": "Response for subscription cancellation.",
           "properties": {
@@ -6816,8 +6871,25 @@
       },
       "/api/subscriptions/cancel": {
         "post": {
-          "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
+          "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nUX-308: Accepts optional cancellation reason for retention analytics.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
           "operationId": "cancel_subscription_api_subscriptions_cancel_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CancelSubscriptionRequest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Request"
+                }
+              }
+            }
+          },
           "responses": {
             "200": {
               "content": {
@@ -6828,6 +6900,16 @@
                 }
               },
               "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
             }
           },
           "security": [
@@ -6836,6 +6918,53 @@
             }
           ],
           "summary": "Cancel Subscription",
+          "tags": [
+            "subscriptions"
+          ]
+        }
+      },
+      "/api/subscriptions/cancel-feedback": {
+        "post": {
+          "description": "Submit post-cancellation feedback (UX-308 AC6).\n\nLogs feedback as a user action for analytics. Fire-and-forget \u2014 never blocks UX.",
+          "operationId": "submit_cancel_feedback_api_subscriptions_cancel_feedback_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelFeedbackRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CancelFeedbackResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Submit Cancel Feedback",
           "tags": [
             "subscriptions"
           ]
@@ -10332,8 +10461,25 @@
       },
       "/v1/api/subscriptions/cancel": {
         "post": {
-          "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
+          "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nUX-308: Accepts optional cancellation reason for retention analytics.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
           "operationId": "cancel_subscription_v1_api_subscriptions_cancel_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CancelSubscriptionRequest"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Request"
+                }
+              }
+            }
+          },
           "responses": {
             "200": {
               "content": {
@@ -10344,6 +10490,16 @@
                 }
               },
               "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
             }
           },
           "security": [
@@ -10352,6 +10508,53 @@
             }
           ],
           "summary": "Cancel Subscription",
+          "tags": [
+            "subscriptions"
+          ]
+        }
+      },
+      "/v1/api/subscriptions/cancel-feedback": {
+        "post": {
+          "description": "Submit post-cancellation feedback (UX-308 AC6).\n\nLogs feedback as a user action for analytics. Fire-and-forget \u2014 never blocks UX.",
+          "operationId": "submit_cancel_feedback_v1_api_subscriptions_cancel_feedback_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelFeedbackRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CancelFeedbackResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Submit Cancel Feedback",
           "tags": [
             "subscriptions"
           ]
@@ -15856,6 +16059,11 @@
                 }
               ],
               "title": "Valor Estimado"
+            },
+            "version": {
+              "default": 1,
+              "title": "Version",
+              "type": "integer"
             }
           },
           "required": [
@@ -15897,6 +16105,18 @@
               ],
               "description": "New pipeline stage",
               "title": "Stage"
+            },
+            "version": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Current version for optimistic locking (STORY-307)",
+              "title": "Version"
             }
           },
           "title": "PipelineItemUpdate",

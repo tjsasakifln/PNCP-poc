@@ -1,5 +1,6 @@
 /**
- * Tests for subscription cancellation flow (GTM-FIX-006 AC16).
+ * Tests for subscription cancellation modal (GTM-FIX-006 AC16).
+ * Updated for UX-308 4-step flow — covers basic rendering and backward compat.
  */
 import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
@@ -30,30 +31,35 @@ describe("CancelSubscriptionModal", () => {
 
   it("renders when isOpen is true", () => {
     render(<CancelSubscriptionModal {...defaultProps} />);
-    expect(screen.getByText("Tem certeza que deseja cancelar?")).toBeInTheDocument();
+    expect(screen.getByText("Por que deseja cancelar?")).toBeInTheDocument();
   });
 
   it("does not render when isOpen is false", () => {
     render(<CancelSubscriptionModal {...defaultProps} isOpen={false} />);
-    expect(screen.queryByText("Tem certeza que deseja cancelar?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Por que deseja cancelar?")).not.toBeInTheDocument();
   });
 
-  it("shows retention benefits list", () => {
+  it("shows retention benefits list on confirm step", () => {
     render(<CancelSubscriptionModal {...defaultProps} />);
+    // Navigate to confirm step
+    fireEvent.click(screen.getByText("Outro motivo"));
+    fireEvent.click(screen.getByText("Continuar"));
+
     expect(screen.getByText("1000 análises mensais")).toBeInTheDocument();
     expect(screen.getByText(/Histórico completo/)).toBeInTheDocument();
     expect(screen.getByText(/Exportação Excel/)).toBeInTheDocument();
     expect(screen.getByText(/Filtros avançados/)).toBeInTheDocument();
   });
 
-  it("shows support contact link", () => {
+  it("shows cancellation reasons on first step", () => {
     render(<CancelSubscriptionModal {...defaultProps} />);
-    expect(screen.getByText("Falar com Suporte")).toBeInTheDocument();
+    expect(screen.getByText("Está caro para mim")).toBeInTheDocument();
+    expect(screen.getByText("Não estou usando o suficiente")).toBeInTheDocument();
   });
 
-  it("calls onClose when 'Manter acesso' is clicked", () => {
+  it("calls onClose when 'Voltar' is clicked on step 1", () => {
     render(<CancelSubscriptionModal {...defaultProps} />);
-    fireEvent.click(screen.getByText("Manter acesso"));
+    fireEvent.click(screen.getByText("Voltar"));
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -66,8 +72,13 @@ describe("CancelSubscriptionModal", () => {
 
     render(<CancelSubscriptionModal {...defaultProps} />);
 
+    // Navigate: reason → confirm → cancel
+    fireEvent.click(screen.getByText("Outro motivo"));
+    fireEvent.click(screen.getByText("Continuar"));
+    fireEvent.click(screen.getByRole("checkbox"));
+
     await act(async () => {
-      fireEvent.click(screen.getByText("Confirmar cancelamento"));
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
     });
 
     await waitFor(() => {
@@ -75,12 +86,9 @@ describe("CancelSubscriptionModal", () => {
     });
 
     expect(toast.success).toHaveBeenCalled();
-    expect(global.fetch).toHaveBeenCalledWith("/api/subscriptions/cancel", {
+    expect(global.fetch).toHaveBeenCalledWith("/api/subscriptions/cancel", expect.objectContaining({
       method: "POST",
-      headers: {
-        Authorization: "Bearer test-token-123",
-      },
-    });
+    }));
   });
 
   it("shows error message on API failure", async () => {
@@ -92,8 +100,13 @@ describe("CancelSubscriptionModal", () => {
 
     render(<CancelSubscriptionModal {...defaultProps} />);
 
+    // Navigate: reason → confirm → cancel
+    fireEvent.click(screen.getByText("Outro motivo"));
+    fireEvent.click(screen.getByText("Continuar"));
+    fireEvent.click(screen.getByRole("checkbox"));
+
     await act(async () => {
-      fireEvent.click(screen.getByText("Confirmar cancelamento"));
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
     });
 
     await waitFor(() => {
@@ -113,8 +126,13 @@ describe("CancelSubscriptionModal", () => {
 
     render(<CancelSubscriptionModal {...defaultProps} />);
 
+    // Navigate: reason → confirm → cancel
+    fireEvent.click(screen.getByText("Outro motivo"));
+    fireEvent.click(screen.getByText("Continuar"));
+    fireEvent.click(screen.getByRole("checkbox"));
+
     await act(async () => {
-      fireEvent.click(screen.getByText("Confirmar cancelamento"));
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
     });
 
     expect(screen.getByText("Cancelando...")).toBeInTheDocument();

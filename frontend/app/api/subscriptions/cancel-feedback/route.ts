@@ -25,40 +25,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // CRIT-004 AC4: Forward X-Correlation-ID for end-to-end tracing
-    const correlationId = request.headers.get("X-Correlation-ID");
+    const body = await request.text();
 
-    // UX-308: Forward request body (reason field) to backend
-    let body: string | undefined;
-    try {
-      const text = await request.text();
-      if (text) body = text;
-    } catch {
-      // No body — acceptable for backward compat
-    }
-
-    const res = await fetch(`${backendUrl}/v1/api/subscriptions/cancel`, {
+    const res = await fetch(`${backendUrl}/v1/api/subscriptions/cancel-feedback`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
         "Content-Type": "application/json",
-        ...(correlationId && { "X-Correlation-ID": correlationId }),
       },
-      ...(body && { body }),
+      body,
     });
 
-    const body = await res.text();
-    const sanitized = sanitizeProxyError(res.status, body, res.headers.get("content-type"));
+    const resBody = await res.text();
+    const sanitized = sanitizeProxyError(res.status, resBody, res.headers.get("content-type"));
     if (sanitized) return sanitized;
 
     try {
-      const data = JSON.parse(body);
+      const data = JSON.parse(resBody);
       return NextResponse.json(data, { status: res.status });
     } catch {
       return NextResponse.json({ message: "Erro temporário de comunicação" }, { status: res.status });
     }
   } catch (error) {
-    console.error("[api/subscriptions/cancel] Network error:", error instanceof Error ? error.message : error);
+    console.error("[api/subscriptions/cancel-feedback] Network error:", error instanceof Error ? error.message : error);
     return sanitizeNetworkError(error);
   }
 }

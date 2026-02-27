@@ -2,11 +2,12 @@
 
 Handles billing period updates and subscription modifications.
 GTM-002: Removed pro-rata calculations — Stripe handles proration automatically.
+UX-308: Cancel flow with reason selection, retention offers, and post-cancel feedback.
 """
 
 import logging
 import os
-from typing import Literal
+from typing import Literal, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -40,10 +41,32 @@ class UpdateBillingPeriodResponse(BaseModel):
     message: str
 
 
+CANCEL_REASONS = {"too_expensive", "not_using", "missing_features", "found_alternative", "other"}
+
+
+class CancelSubscriptionRequest(BaseModel):
+    """Request body for subscription cancellation (UX-308)."""
+    reason: Optional[str] = Field(
+        None,
+        description="Cancellation reason: too_expensive, not_using, missing_features, found_alternative, other"
+    )
+
+
 class CancelSubscriptionResponse(BaseModel):
     """Response for subscription cancellation."""
     success: bool
     ends_at: str
+    message: str
+
+
+class CancelFeedbackRequest(BaseModel):
+    """Post-cancellation feedback (UX-308 AC6)."""
+    feedback: str = Field(..., min_length=1, max_length=2000, description="Free-text cancellation feedback")
+
+
+class CancelFeedbackResponse(BaseModel):
+    """Response for cancellation feedback."""
+    success: bool
     message: str
 
 
@@ -168,17 +191,22 @@ async def update_billing_period(
 
 @router.post("/cancel", response_model=CancelSubscriptionResponse)
 async def cancel_subscription(
+    request: Optional[CancelSubscriptionRequest] = None,
     user: dict = Depends(require_auth),
 ):
     """Cancel subscription at period end.
 
     GTM-FIX-006: User-initiated cancellation flow.
+    UX-308: Accepts optional cancellation reason for retention analytics.
     Sets cancel_at_period_end=True in Stripe, updates status to 'canceling'.
     """
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
-    logger.info(f"Cancellation requested for user {mask_user_id(user_id)}")
+    reason = request.reason if request else None
+    if reason and reason not in CANCEL_REASONS:
+        reason = "other"
+    logger.info(f"Cancellation requested for user {mask_user_id(user_id)}, reason={reason}")
 
     sb = get_supabase()
     stripe_key = os.getenv("STRIPE_SECRET_KEY")
@@ -251,7 +279,7 @@ async def cancel_subscription(
         )
         raise HTTPException(status_code=500, detail="Erro ao atualizar status de cancelamento")
 
-    # Step 4: Log the action
+    # Step 4: Log the action (includes reason for UX-308 analytics)
     log_user_action(
         logger,
         "subscription-cancel-requested",
@@ -259,6 +287,7 @@ async def cancel_subscription(
         details={
             "stripe_subscription_id": stripe_subscription_id,
             "ends_at": ends_at_iso,
+            "reason": reason,
         }
     )
 
@@ -266,4 +295,30 @@ async def cancel_subscription(
         success=True,
         ends_at=ends_at_iso,
         message=f"Sua assinatura foi cancelada e permanecerá ativa até {datetime.fromisoformat(ends_at_iso).strftime('%d/%m/%Y')}.",
+    )
+
+
+@router.post("/cancel-feedback", response_model=CancelFeedbackResponse)
+async def submit_cancel_feedback(
+    request: CancelFeedbackRequest,
+    user: dict = Depends(require_auth),
+):
+    """Submit post-cancellation feedback (UX-308 AC6).
+
+    Logs feedback as a user action for analytics. Fire-and-forget — never blocks UX.
+    """
+    user_id = user["id"]
+
+    log_user_action(
+        logger,
+        "subscription-cancel-feedback",
+        user_id,
+        details={"feedback": request.feedback[:2000]},
+    )
+
+    logger.info(f"Cancel feedback received from user {mask_user_id(user_id)}")
+
+    return CancelFeedbackResponse(
+        success=True,
+        message="Obrigado pelo feedback!",
     )

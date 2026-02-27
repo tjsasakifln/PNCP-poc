@@ -576,7 +576,7 @@
           },
           "itens_por_pagina": {
             "default": 20,
-            "description": "Quantidade de itens por p\u00e1gina. Valores permitidos: 10, 20, 50, 100. Padr\u00e3o: 20.",
+            "description": "Quantidade de itens por página. Valores permitidos: 10, 20, 50, 100. Padrão: 20.",
             "examples": [
               10,
               20,
@@ -600,7 +600,7 @@
                 "type": "null"
               }
             ],
-            "description": "Lista de c\u00f3digos de modalidade conforme API PNCP. C\u00f3digos v\u00e1lidos: 1 (Leil\u00e3o Eletr\u00f4nico), 2 (Di\u00e1logo Competitivo), 3 (Concurso), 4 (Concorr\u00eancia Eletr\u00f4nica), 5 (Concorr\u00eancia Presencial), 6 (Preg\u00e3o Eletr\u00f4nico), 7 (Preg\u00e3o Presencial), 8 (Dispensa), 10 (Manifesta\u00e7\u00e3o de Interesse), 11 (Pr\u00e9-qualifica\u00e7\u00e3o), 12 (Credenciamento), 13 (Leil\u00e3o Presencial), 15 (Chamada P\u00fablica). None = modalidades padr\u00e3o [4, 5, 6, 7]. EXCLU\u00cdDOS: 9 (Inexigibilidade) e 14 (Inaplicabilidade) \u2014 vencedor pr\u00e9-definido.",
+            "description": "Lista de códigos de modalidade conforme API PNCP. Códigos válidos: 1 (Leilão Eletrônico), 2 (Diálogo Competitivo), 3 (Concurso), 4 (Concorrência Eletrônica), 5 (Concorrência Presencial), 6 (Pregão Eletrônico), 7 (Pregão Presencial), 8 (Dispensa), 10 (Manifestação de Interesse), 11 (Pré-qualificação), 12 (Credenciamento), 13 (Leilão Presencial), 15 (Chamada Pública). None = modalidades padrão [4, 5, 6, 7]. EXCLUÍDOS: 9 (Inexigibilidade) e 14 (Inaplicabilidade) — vencedor pré-definido.",
             "examples": [
               [
                 4,
@@ -621,7 +621,7 @@
               }
             ],
             "default": "abertas",
-            "description": "Modo de busca: 'abertas' (padr\u00e3o) busca licita\u00e7\u00f5es com prazo aberto nos \u00faltimos 180 dias; 'publicacao' usa datas enviadas pelo frontend.",
+            "description": "Modo de busca: 'abertas' (padrão) busca licitações com prazo aberto nos últimos 180 dias; 'publicacao' usa datas enviadas pelo frontend.",
             "examples": [
               "abertas",
               "publicacao"
@@ -640,7 +640,7 @@
                 "type": "null"
               }
             ],
-            "description": "Lista de c\u00f3digos IBGE de munic\u00edpios para filtrar. None = todos os munic\u00edpios das UFs selecionadas.",
+            "description": "Lista de códigos IBGE de municípios para filtrar. None = todos os municípios das UFs selecionadas.",
             "examples": [
               [
                 "3550308",
@@ -651,7 +651,7 @@
           },
           "ordenacao": {
             "default": "data_desc",
-            "description": "Crit\u00e9rio de ordena\u00e7\u00e3o dos resultados: 'data_desc' (mais recente), 'data_asc' (mais antigo), 'valor_desc' (maior valor), 'valor_asc' (menor valor), 'prazo_asc' (prazo mais pr\u00f3ximo), 'relevancia' (score de matching).",
+            "description": "Critério de ordenação dos resultados: 'data_desc' (mais recente), 'data_asc' (mais antigo), 'valor_desc' (maior valor), 'valor_asc' (menor valor), 'prazo_asc' (prazo mais próximo), 'relevancia' (score de matching).",
             "examples": [
               "data_desc",
               "valor_desc",
@@ -672,18 +672,18 @@
                 "type": "null"
               }
             ],
-            "description": "Lista de nomes de \u00f3rg\u00e3os/entidades para filtrar (busca parcial). None = todos os \u00f3rg\u00e3os.",
+            "description": "Lista de nomes de órgãos/entidades para filtrar (busca parcial). None = todos os órgãos.",
             "examples": [
               [
-                "Prefeitura de S\u00e3o Paulo",
-                "Minist\u00e9rio da Sa\u00fade"
+                "Prefeitura de São Paulo",
+                "Ministério da Saúde"
               ]
             ],
             "title": "Orgaos"
           },
           "pagina": {
             "default": 1,
-            "description": "N\u00famero da p\u00e1gina de resultados (1-indexed). Padr\u00e3o: 1.",
+            "description": "Número da página de resultados (1-indexed). Padrão: 1.",
             "examples": [
               1,
               2,
@@ -731,7 +731,7 @@
           "status": {
             "$ref": "#/components/schemas/StatusLicitacao",
             "default": "todos",
-            "description": "Status da licita\u00e7\u00e3o para filtrar. Padr\u00e3o: 'todos' (sem filtro de status). IMPORTANTE: Filtro de status desabilitado por padr\u00e3o devido a valores inconsistentes na API PNCP. Use 'todos' para m\u00e1xima cobertura de resultados.",
+            "description": "Status da licitação para filtrar. Padrão: 'todos' (sem filtro de status). IMPORTANTE: Filtro de status desabilitado por padrão devido a valores inconsistentes na API PNCP. Use 'todos' para máxima cobertura de resultados.",
             "examples": [
               "todos",
               "recebendo_proposta",
@@ -748,10 +748,10 @@
                 "type": "null"
               }
             ],
-            "description": "Custom search terms. Use commas to separate multi-word phrases (e.g., 'levantamento topogr\u00e1fico, terraplenagem, drenagem'). Without commas, spaces separate individual keywords (legacy mode).",
+            "description": "Custom search terms. Use commas to separate multi-word phrases (e.g., 'levantamento topográfico, terraplenagem, drenagem'). Without commas, spaces separate individual keywords (legacy mode).",
             "examples": [
               "jaleco avental",
-              "levantamento topogr\u00e1fico, terraplenagem, drenagem"
+              "levantamento topográfico, terraplenagem, drenagem"
             ],
             "title": "Termos Busca"
           },
@@ -780,7 +780,7 @@
                 "type": "null"
               }
             ],
-            "description": "Valor m\u00e1ximo estimado da licita\u00e7\u00e3o em BRL. None = sem limite superior.",
+            "description": "Valor máximo estimado da licitação em BRL. None = sem limite superior.",
             "examples": [
               5000000.0
             ],
@@ -796,7 +796,7 @@
                 "type": "null"
               }
             ],
-            "description": "Valor m\u00ednimo estimado da licita\u00e7\u00e3o em BRL. None = sem limite inferior.",
+            "description": "Valor mínimo estimado da licitação em BRL. None = sem limite inferior.",
             "examples": [
               50000.0
             ],
@@ -822,7 +822,7 @@
             "destaques": [
               "3 urgentes"
             ],
-            "resumo_executivo": "Encontradas 15 licita\u00e7\u00f5es.",
+            "resumo_executivo": "Encontradas 15 licitações.",
             "total_oportunidades": 15,
             "valor_total": 2300000.0
           },
@@ -858,7 +858,7 @@
                 "type": "null"
               }
             ],
-            "description": "UX-303 AC2: Which cache level served the data \u2014 'supabase', 'redis', or 'local'",
+            "description": "UX-303 AC2: Which cache level served the data — 'supabase', 'redis', or 'local'",
             "title": "Cache Level"
           },
           "cache_status": {
@@ -870,7 +870,7 @@
                 "type": "null"
               }
             ],
-            "description": "UX-303 AC5: Cache freshness status \u2014 'fresh' (0-6h) or 'stale' (6-24h)",
+            "description": "UX-303 AC5: Cache freshness status — 'fresh' (0-6h) or 'stale' (6-24h)",
             "title": "Cache Status"
           },
           "cached": {
@@ -961,7 +961,7 @@
                 "type": "null"
               }
             ],
-            "description": "Human-readable explanation of partial results (e.g., 'PNCP indispon\u00edvel, resultados de fontes alternativas')",
+            "description": "Human-readable explanation of partial results (e.g., 'PNCP indisponível, resultados de fontes alternativas')",
             "title": "Degradation Reason"
           },
           "download_url": {
@@ -1119,7 +1119,7 @@
                 "type": "null"
               }
             ],
-            "description": "CRIT-005 AC13: Source of the summary \u2014 'ai' (GPT-generated), 'fallback' (heuristic), 'processing' (in progress)",
+            "description": "CRIT-005 AC13: Source of the summary — 'ai' (GPT-generated), 'fallback' (heuristic), 'processing' (in progress)",
             "title": "Llm Source"
           },
           "llm_status": {
@@ -1360,6 +1360,61 @@
           "total_filtrado"
         ],
         "title": "BuscaResponse",
+        "type": "object"
+      },
+      "CancelFeedbackRequest": {
+        "description": "Post-cancellation feedback (UX-308 AC6).",
+        "properties": {
+          "feedback": {
+            "description": "Free-text cancellation feedback",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Feedback",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feedback"
+        ],
+        "title": "CancelFeedbackRequest",
+        "type": "object"
+      },
+      "CancelFeedbackResponse": {
+        "description": "Response for cancellation feedback.",
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "success": {
+            "title": "Success",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ],
+        "title": "CancelFeedbackResponse",
+        "type": "object"
+      },
+      "CancelSubscriptionRequest": {
+        "description": "Request body for subscription cancellation (UX-308).",
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cancellation reason: too_expensive, not_using, missing_features, found_alternative, other",
+            "title": "Reason"
+          }
+        },
+        "title": "CancelSubscriptionRequest",
         "type": "object"
       },
       "CancelSubscriptionResponse": {
@@ -1985,7 +2040,7 @@
         "type": "object"
       },
       "EsferaGovernamental": {
-        "description": "Esfera governamental para filtro de busca.\n\nDefine o n\u00edvel de governo do \u00f3rg\u00e3o contratante:\n- FEDERAL (F): Uni\u00e3o, minist\u00e9rios, autarquias federais\n- ESTADUAL (E): Estados, DF, secretarias estaduais\n- MUNICIPAL (M): Prefeituras, c\u00e2maras municipais",
+        "description": "Esfera governamental para filtro de busca.\n\nDefine o nível de governo do órgão contratante:\n- FEDERAL (F): União, ministérios, autarquias federais\n- ESTADUAL (E): Estados, DF, secretarias estaduais\n- MUNICIPAL (M): Prefeituras, câmaras municipais",
         "enum": [
           "F",
           "E",
@@ -2667,7 +2722,7 @@
                 "type": "null"
               }
             ],
-            "description": "GTM-RESILIENCE-F01 AC4: ARQ job queue status \u2014 'healthy' or 'unavailable'",
+            "description": "GTM-RESILIENCE-F01 AC4: ARQ job queue status — 'healthy' or 'unavailable'",
             "title": "Queue"
           },
           "redis": {
@@ -2753,10 +2808,10 @@
           "data_abertura": "2026-02-15",
           "data_publicacao": "2026-02-01",
           "link": "https://pncp.gov.br/app/editais/12345678000190/2026/1",
-          "modalidade": "Preg\u00e3o Eletr\u00f4nico",
-          "municipio": "S\u00e3o Paulo",
-          "objeto": "Aquisi\u00e7\u00e3o de uniformes para funcion\u00e1rios",
-          "orgao": "Prefeitura Municipal de S\u00e3o Paulo",
+          "modalidade": "Pregão Eletrônico",
+          "municipio": "São Paulo",
+          "objeto": "Aquisição de uniformes para funcionários",
+          "orgao": "Prefeitura Municipal de São Paulo",
           "pncp_id": "12345678000190-1-000001/2026",
           "uf": "SP",
           "valor": 150000.0
@@ -3771,7 +3826,7 @@
           "acao_sugerida": {
             "description": "Concrete suggested action",
             "examples": [
-              "Prepare documenta\u00e7\u00e3o at\u00e9 17/02. Prazo final para propostas em 3 dias."
+              "Prepare documentação até 17/02. Prazo final para propostas em 3 dias."
             ],
             "title": "Acao Sugerida",
             "type": "string"
@@ -3779,7 +3834,7 @@
           "justificativa": {
             "description": "Why this opportunity is relevant",
             "examples": [
-              "Valor compat\u00edvel com seu porte, \u00f3rg\u00e3o federal com bom hist\u00f3rico de pagamento."
+              "Valor compatível com seu porte, órgão federal com bom histórico de pagamento."
             ],
             "title": "Justificativa",
             "type": "string"
@@ -3916,28 +3971,28 @@
         "type": "object"
       },
       "ResumoEstrategico": {
-        "description": "Strategic executive summary with actionable recommendations.\n\nExtends ResumoLicitacoes for backward compatibility \u2014 all original fields\n(resumo_executivo, total_oportunidades, valor_total, destaques, alerta_urgencia)\nremain present. New fields provide actionable intelligence.\n\nFields:\n    recomendacoes: Prioritized list of recommended opportunities with actions\n    alertas_urgencia: Multiple urgency alerts (replaces single alerta_urgencia)\n    insight_setorial: Sector-level market context and trends",
+        "description": "Strategic executive summary with actionable recommendations.\n\nExtends ResumoLicitacoes for backward compatibility — all original fields\n(resumo_executivo, total_oportunidades, valor_total, destaques, alerta_urgencia)\nremain present. New fields provide actionable intelligence.\n\nFields:\n    recomendacoes: Prioritized list of recommended opportunities with actions\n    alertas_urgencia: Multiple urgency alerts (replaces single alerta_urgencia)\n    insight_setorial: Sector-level market context and trends",
         "example": {
-          "alerta_urgencia": "\u26a0\ufe0f 5 licita\u00e7\u00f5es encerram em 24 horas",
+          "alerta_urgencia": "⚠️ 5 licitações encerram em 24 horas",
           "alertas_urgencia": [
-            "\u26a0\ufe0f 2 licita\u00e7\u00f5es encerram em 48h \u2014 a\u00e7\u00e3o imediata necess\u00e1ria",
-            "\ud83d\udccb Edital de SP exige certid\u00e3o FGTS atualizada (verificar validade)"
+            "⚠️ 2 licitações encerram em 48h — ação imediata necessária",
+            "📋 Edital de SP exige certidão FGTS atualizada (verificar validade)"
           ],
           "destaques": [
-            "3 licita\u00e7\u00f5es encerram em menos de 72h",
+            "3 licitações encerram em menos de 72h",
             "Maior valor: R$ 500k em SP"
           ],
-          "insight_setorial": "O setor de vestu\u00e1rio apresenta 15 oportunidades esta semana, 25% acima da m\u00e9dia mensal. Concentra\u00e7\u00e3o em SP e RJ sugere demanda sazonal por uniformes escolares.",
+          "insight_setorial": "O setor de vestuário apresenta 15 oportunidades esta semana, 25% acima da média mensal. Concentração em SP e RJ sugere demanda sazonal por uniformes escolares.",
           "recomendacoes": [
             {
-              "acao_sugerida": "Prepare documenta\u00e7\u00e3o at\u00e9 16/02. Exige certid\u00e3o negativa atualizada.",
-              "justificativa": "Maior valor do lote, \u00f3rg\u00e3o municipal com bom hist\u00f3rico de pagamento.",
-              "oportunidade": "Prefeitura de S\u00e3o Paulo - Uniformes Escolares",
+              "acao_sugerida": "Prepare documentação até 16/02. Exige certidão negativa atualizada.",
+              "justificativa": "Maior valor do lote, órgão municipal com bom histórico de pagamento.",
+              "oportunidade": "Prefeitura de São Paulo - Uniformes Escolares",
               "urgencia": "alta",
               "valor": 500000.0
             }
           ],
-          "resumo_executivo": "Encontradas 15 licita\u00e7\u00f5es de vestu\u00e1rio em SP e RJ, totalizando R$ 2.3M. Recomendamos aten\u00e7\u00e3o imediata a 3 oportunidades com prazo curto.",
+          "resumo_executivo": "Encontradas 15 licitações de vestuário em SP e RJ, totalizando R$ 2.3M. Recomendamos atenção imediata a 3 oportunidades com prazo curto.",
           "total_oportunidades": 15,
           "valor_total": 2300000.0
         },
@@ -3953,7 +4008,7 @@
             ],
             "description": "Optional urgency alert for time-sensitive opportunities",
             "examples": [
-              "\u26a0\ufe0f 5 licita\u00e7\u00f5es encerram em 24 horas"
+              "⚠️ 5 licitações encerram em 24 horas"
             ],
             "title": "Alerta Urgencia"
           },
@@ -3961,8 +4016,8 @@
             "description": "Multiple urgency alerts for time-sensitive opportunities",
             "examples": [
               [
-                "\u26a0\ufe0f 2 licita\u00e7\u00f5es encerram em 48h",
-                "\ud83d\udccb 3 editais exigem certid\u00e3o atualizada"
+                "⚠️ 2 licitações encerram em 48h",
+                "📋 3 editais exigem certidão atualizada"
               ]
             ],
             "items": {
@@ -3975,7 +4030,7 @@
             "description": "Key highlights (2-5 bullet points)",
             "examples": [
               [
-                "3 licita\u00e7\u00f5es com prazo at\u00e9 48h",
+                "3 licitações com prazo até 48h",
                 "Maior valor: R$ 500k em SP"
               ]
             ],
@@ -3989,7 +4044,7 @@
             "default": "",
             "description": "Sector-level market context and trend insight",
             "examples": [
-              "Este m\u00eas h\u00e1 20% mais oportunidades de vestu\u00e1rio que o m\u00eas anterior no RS."
+              "Este mês há 20% mais oportunidades de vestuário que o mês anterior no RS."
             ],
             "title": "Insight Setorial",
             "type": "string"
@@ -4005,7 +4060,7 @@
           "resumo_executivo": {
             "description": "1-2 sentence executive summary",
             "examples": [
-              "Encontradas 15 licita\u00e7\u00f5es de uniformes em SP e RJ, totalizando R$ 2.3M."
+              "Encontradas 15 licitações de uniformes em SP e RJ, totalizando R$ 2.3M."
             ],
             "title": "Resumo Executivo",
             "type": "string"
@@ -4140,7 +4195,7 @@
         "type": "object"
       },
       "SearchStatusResponse": {
-        "description": "GTM-STAB-009 AC3: Enriched status response for /v1/search/{id}/status.\n\nPopulated from in-memory progress tracker + state machine (lightweight, <50ms).\nNo database queries \u2014 reads only from in-memory state.",
+        "description": "GTM-STAB-009 AC3: Enriched status response for /v1/search/{id}/status.\n\nPopulated from in-memory progress tracker + state machine (lightweight, <50ms).\nNo database queries — reads only from in-memory state.",
         "properties": {
           "created_at": {
             "anyOf": [
@@ -4379,7 +4434,7 @@
         "type": "object"
       },
       "StatusLicitacao": {
-        "description": "Status da licita\u00e7\u00e3o para filtro de busca.\n\nDefine o est\u00e1gio atual do processo licitat\u00f3rio:\n- RECEBENDO_PROPOSTA: Licita\u00e7\u00f5es abertas para envio de propostas (padr\u00e3o)\n- EM_JULGAMENTO: Propostas encerradas, em an\u00e1lise pelo \u00f3rg\u00e3o\n- ENCERRADA: Processo finalizado (com ou sem vencedor)\n- TODOS: Sem filtro de status (retorna todas)",
+        "description": "Status da licitação para filtro de busca.\n\nDefine o estágio atual do processo licitatório:\n- RECEBENDO_PROPOSTA: Licitações abertas para envio de propostas (padrão)\n- EM_JULGAMENTO: Propostas encerradas, em análise pelo órgão\n- ENCERRADA: Processo finalizado (com ou sem vencedor)\n- TODOS: Sem filtro de status (retorna todas)",
         "enum": [
           "recebendo_proposta",
           "em_julgamento",
@@ -4674,7 +4729,7 @@
         "type": "object"
       },
       "UpdateAlertRequest": {
-        "description": "Partial update \u2014 all fields optional.",
+        "description": "Partial update — all fields optional.",
         "properties": {
           "active": {
             "anyOf": [
@@ -4894,7 +4949,7 @@
             "type": "string"
           },
           "plan_name": {
-            "description": "Display name (e.g., 'Consultor \u00c1gil')",
+            "description": "Display name (e.g., 'Consultor Ágil')",
             "title": "Plan Name",
             "type": "string"
           },
@@ -5018,7 +5073,7 @@
     }
   },
   "info": {
-    "description": "API para busca e an\u00e1lise de licita\u00e7\u00f5es em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relat\u00f3rios Excel e avalia\u00e7\u00e3o estrat\u00e9gica via IA.",
+    "description": "API para busca e análise de licitações em fontes oficiais. Permite filtrar oportunidades por estado, valor e setor, gerando relatórios Excel e avaliação estratégica via IA.",
     "title": "SmartLic API",
     "version": "dev"
   },
@@ -5988,7 +6043,7 @@
     },
     "/alerts/{alert_id}/unsubscribe": {
       "get": {
-        "description": "One-click unsubscribe from an email alert (RFC 8058).\n\nAC9: No authentication required \u2014 uses HMAC token verification.\nSets the alert's active flag to false.\nReturns an HTML confirmation page.",
+        "description": "One-click unsubscribe from an email alert (RFC 8058).\n\nAC9: No authentication required — uses HMAC token verification.\nSets the alert's active flag to false.\nReturns an HTML confirmation page.",
         "operationId": "unsubscribe_alert_alerts__alert_id__unsubscribe_get",
         "parameters": [
           {
@@ -6234,7 +6289,7 @@
         ]
       },
       "get": {
-        "description": "Initiate Google OAuth 2.0 flow.\n\nRedirects user to Google consent screen to authorize Google Sheets access.\n\nQuery Parameters:\n    redirect: Frontend path to return to after authorization\n\nReturns:\n    302 Redirect to Google OAuth consent screen\n\nSecurity:\n    - CSRF protection via state parameter\n    - State encodes user_id + redirect path\n    - Validates state on callback\n\nExample:\n    GET /api/auth/google?redirect=/buscar\n    \u2192 Redirects to https://accounts.google.com/o/oauth2/auth?...",
+        "description": "Initiate Google OAuth 2.0 flow.\n\nRedirects user to Google consent screen to authorize Google Sheets access.\n\nQuery Parameters:\n    redirect: Frontend path to return to after authorization\n\nReturns:\n    302 Redirect to Google OAuth consent screen\n\nSecurity:\n    - CSRF protection via state parameter\n    - State encodes user_id + redirect path\n    - Validates state on callback\n\nExample:\n    GET /api/auth/google?redirect=/buscar\n    → Redirects to https://accounts.google.com/o/oauth2/auth?...",
         "operationId": "google_oauth_initiate_api_auth_google_get",
         "parameters": [
           {
@@ -6283,7 +6338,7 @@
     },
     "/api/auth/google/callback": {
       "get": {
-        "description": "Handle OAuth callback from Google.\n\nThis endpoint is called by Google after user authorizes access.\n\nQuery Parameters:\n    code: Authorization code (exchanged for tokens), absent on error\n    state: CSRF state token (contains user_id + redirect path)\n    error: OAuth error code (if authorization failed)\n\nReturns:\n    302 Redirect to frontend with success/error status\n\nFlow:\n    1. Decode state param to get user_id and redirect path\n    2. Exchange code for tokens (access + refresh)\n    3. Encrypt and save tokens to database\n    4. Redirect to frontend with success flag\n\nError Handling:\n    - Invalid state \u2192 Redirect with error=invalid_state\n    - Code exchange failed \u2192 Redirect with error=oauth_failed\n    - Database error \u2192 Redirect with error=storage_failed",
+        "description": "Handle OAuth callback from Google.\n\nThis endpoint is called by Google after user authorizes access.\n\nQuery Parameters:\n    code: Authorization code (exchanged for tokens), absent on error\n    state: CSRF state token (contains user_id + redirect path)\n    error: OAuth error code (if authorization failed)\n\nReturns:\n    302 Redirect to frontend with success/error status\n\nFlow:\n    1. Decode state param to get user_id and redirect path\n    2. Exchange code for tokens (access + refresh)\n    3. Encrypt and save tokens to database\n    4. Redirect to frontend with success flag\n\nError Handling:\n    - Invalid state → Redirect with error=invalid_state\n    - Code exchange failed → Redirect with error=oauth_failed\n    - Database error → Redirect with error=storage_failed",
         "operationId": "google_oauth_callback_api_auth_google_callback_get",
         "parameters": [
           {
@@ -6815,8 +6870,25 @@
     },
     "/api/subscriptions/cancel": {
       "post": {
-        "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
+        "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nUX-308: Accepts optional cancellation reason for retention analytics.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
         "operationId": "cancel_subscription_api_subscriptions_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CancelSubscriptionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -6827,6 +6899,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -6840,9 +6922,56 @@
         ]
       }
     },
+    "/api/subscriptions/cancel-feedback": {
+      "post": {
+        "description": "Submit post-cancellation feedback (UX-308 AC6).\n\nLogs feedback as a user action for analytics. Fire-and-forget — never blocks UX.",
+        "operationId": "submit_cancel_feedback_api_subscriptions_cancel_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelFeedbackResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Cancel Feedback",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/api/subscriptions/update-billing-period": {
       "post": {
-        "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow \u2014 Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
+        "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow — Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
         "operationId": "update_billing_period_api_subscriptions_update_billing_period_post",
         "requestBody": {
           "content": {
@@ -6932,7 +7061,7 @@
     },
     "/auth/check-phone": {
       "get": {
-        "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
+        "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only — no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
         "operationId": "check_phone_auth_check_phone_get",
         "parameters": [
           {
@@ -7202,7 +7331,7 @@
     },
     "/buscar": {
       "post": {
-        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo \u2014 POST\nfailed but SSE was waiting for a tracker that never existed.",
+        "description": "Main search endpoint — thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError → 503, PNCPAPIError → 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo — POST\nfailed but SSE was waiting for a tracker that never existed.",
         "operationId": "buscar_licitacoes_buscar_post",
         "requestBody": {
           "content": {
@@ -7249,7 +7378,7 @@
     },
     "/buscar-progress/{search_id}": {
       "get": {
-        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nGTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
+        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nGTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal — intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
         "operationId": "buscar_progress_stream_buscar_progress__search_id__get",
         "parameters": [
           {
@@ -7533,7 +7662,7 @@
     },
     "/feedback": {
       "post": {
-        "description": "AC1: Submit classification feedback for a search result.\n\nAC5: Upserts \u2014 if user already gave feedback for this search_id + bid_id, update it.\nAC3: Captures context fields (setor_id, bid_objeto, etc.) from the request body.",
+        "description": "AC1: Submit classification feedback for a search result.\n\nAC5: Upserts — if user already gave feedback for this search_id + bid_id, update it.\nAC3: Captures context fields (setor_id, bid_objeto, etc.) from the request body.",
         "operationId": "submit_feedback_feedback_post",
         "requestBody": {
           "content": {
@@ -7714,7 +7843,7 @@
     },
     "/health/ready": {
       "get": {
-        "description": "Lightweight liveness + readiness probe for Railway health checks.\n\nSLA-002: ALWAYS returns 200 if the process is running. Railway uses this\nas healthcheckPath \u2014 returning non-200 or timing out causes Railway to\npull the container from the load balancer (\"train not arrived\" 404).\n\nThe `ready` field indicates whether full initialization completed,\nbut HTTP 200 is returned regardless to keep the container alive.",
+        "description": "Lightweight liveness + readiness probe for Railway health checks.\n\nSLA-002: ALWAYS returns 200 if the process is running. Railway uses this\nas healthcheckPath — returning non-200 or timing out causes Railway to\npull the container from the load balancer (\"train not arrived\" 404).\n\nThe `ready` field indicates whether full initialization completed,\nbut HTTP 200 is returned regardless to keep the container alive.",
         "operationId": "health_ready_health_ready_get",
         "responses": {
           "200": {
@@ -7783,7 +7912,7 @@
     },
     "/me/export": {
       "get": {
-        "description": "Export all user data as JSON file (LGPD Art. 18 V \u2014 data portability).\n\nReturns a downloadable JSON file containing:\n- Profile information\n- Search history (sessions)\n- Subscription history\n- Messages",
+        "description": "Export all user data as JSON file (LGPD Art. 18 V — data portability).\n\nReturns a downloadable JSON file containing:\n- Profile information\n- Search history (sessions)\n- Subscription history\n- Messages",
         "operationId": "export_user_data_me_export_get",
         "responses": {
           "200": {
@@ -9504,7 +9633,7 @@
     },
     "/v1/alerts/{alert_id}/unsubscribe": {
       "get": {
-        "description": "One-click unsubscribe from an email alert (RFC 8058).\n\nAC9: No authentication required \u2014 uses HMAC token verification.\nSets the alert's active flag to false.\nReturns an HTML confirmation page.",
+        "description": "One-click unsubscribe from an email alert (RFC 8058).\n\nAC9: No authentication required — uses HMAC token verification.\nSets the alert's active flag to false.\nReturns an HTML confirmation page.",
         "operationId": "unsubscribe_alert_v1_alerts__alert_id__unsubscribe_get",
         "parameters": [
           {
@@ -9750,7 +9879,7 @@
         ]
       },
       "get": {
-        "description": "Initiate Google OAuth 2.0 flow.\n\nRedirects user to Google consent screen to authorize Google Sheets access.\n\nQuery Parameters:\n    redirect: Frontend path to return to after authorization\n\nReturns:\n    302 Redirect to Google OAuth consent screen\n\nSecurity:\n    - CSRF protection via state parameter\n    - State encodes user_id + redirect path\n    - Validates state on callback\n\nExample:\n    GET /api/auth/google?redirect=/buscar\n    \u2192 Redirects to https://accounts.google.com/o/oauth2/auth?...",
+        "description": "Initiate Google OAuth 2.0 flow.\n\nRedirects user to Google consent screen to authorize Google Sheets access.\n\nQuery Parameters:\n    redirect: Frontend path to return to after authorization\n\nReturns:\n    302 Redirect to Google OAuth consent screen\n\nSecurity:\n    - CSRF protection via state parameter\n    - State encodes user_id + redirect path\n    - Validates state on callback\n\nExample:\n    GET /api/auth/google?redirect=/buscar\n    → Redirects to https://accounts.google.com/o/oauth2/auth?...",
         "operationId": "google_oauth_initiate_v1_api_auth_google_get",
         "parameters": [
           {
@@ -9799,7 +9928,7 @@
     },
     "/v1/api/auth/google/callback": {
       "get": {
-        "description": "Handle OAuth callback from Google.\n\nThis endpoint is called by Google after user authorizes access.\n\nQuery Parameters:\n    code: Authorization code (exchanged for tokens), absent on error\n    state: CSRF state token (contains user_id + redirect path)\n    error: OAuth error code (if authorization failed)\n\nReturns:\n    302 Redirect to frontend with success/error status\n\nFlow:\n    1. Decode state param to get user_id and redirect path\n    2. Exchange code for tokens (access + refresh)\n    3. Encrypt and save tokens to database\n    4. Redirect to frontend with success flag\n\nError Handling:\n    - Invalid state \u2192 Redirect with error=invalid_state\n    - Code exchange failed \u2192 Redirect with error=oauth_failed\n    - Database error \u2192 Redirect with error=storage_failed",
+        "description": "Handle OAuth callback from Google.\n\nThis endpoint is called by Google after user authorizes access.\n\nQuery Parameters:\n    code: Authorization code (exchanged for tokens), absent on error\n    state: CSRF state token (contains user_id + redirect path)\n    error: OAuth error code (if authorization failed)\n\nReturns:\n    302 Redirect to frontend with success/error status\n\nFlow:\n    1. Decode state param to get user_id and redirect path\n    2. Exchange code for tokens (access + refresh)\n    3. Encrypt and save tokens to database\n    4. Redirect to frontend with success flag\n\nError Handling:\n    - Invalid state → Redirect with error=invalid_state\n    - Code exchange failed → Redirect with error=oauth_failed\n    - Database error → Redirect with error=storage_failed",
         "operationId": "google_oauth_callback_v1_api_auth_google_callback_get",
         "parameters": [
           {
@@ -10331,8 +10460,25 @@
     },
     "/v1/api/subscriptions/cancel": {
       "post": {
-        "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
+        "description": "Cancel subscription at period end.\n\nGTM-FIX-006: User-initiated cancellation flow.\nUX-308: Accepts optional cancellation reason for retention analytics.\nSets cancel_at_period_end=True in Stripe, updates status to 'canceling'.",
         "operationId": "cancel_subscription_v1_api_subscriptions_cancel_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CancelSubscriptionRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -10343,6 +10489,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -10356,9 +10512,56 @@
         ]
       }
     },
+    "/v1/api/subscriptions/cancel-feedback": {
+      "post": {
+        "description": "Submit post-cancellation feedback (UX-308 AC6).\n\nLogs feedback as a user action for analytics. Fire-and-forget — never blocks UX.",
+        "operationId": "submit_cancel_feedback_v1_api_subscriptions_cancel_feedback_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelFeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelFeedbackResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit Cancel Feedback",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/v1/api/subscriptions/update-billing-period": {
       "post": {
-        "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow \u2014 Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
+        "description": "Update subscription billing period (monthly / semiannual / annual).\n\nGTM-002: Simplified flow — Stripe handles proration automatically.\nNo deferral logic, no manual credit calculations.",
         "operationId": "update_billing_period_v1_api_subscriptions_update_billing_period_post",
         "requestBody": {
           "content": {
@@ -10448,7 +10651,7 @@
     },
     "/v1/auth/check-phone": {
       "get": {
-        "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only \u2014 no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
+        "description": "AC11-AC12: Pre-signup phone uniqueness check.\n\nReturns { available: bool } only — no data leakage.\nAC13: Optional company param triggers fingerprint abuse detection (non-blocking).\nRate limited: 10 req/min/IP.",
         "operationId": "check_phone_v1_auth_check_phone_get",
         "parameters": [
           {
@@ -10718,7 +10921,7 @@
     },
     "/v1/buscar": {
       "post": {
-        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo \u2014 POST\nfailed but SSE was waiting for a tracker that never existed.",
+        "description": "Main search endpoint — thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError → 503, PNCPAPIError → 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo — POST\nfailed but SSE was waiting for a tracker that never existed.",
         "operationId": "buscar_licitacoes_v1_buscar_post",
         "requestBody": {
           "content": {
@@ -10765,7 +10968,7 @@
     },
     "/v1/buscar-progress/{search_id}": {
       "get": {
-        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nGTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal \u2014 intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
+        "description": "SSE endpoint for real-time search progress updates.\n\nThe client opens this connection simultaneously with POST /buscar,\nusing the same search_id to correlate progress events.\n\nGTM-GO-002 AC6: Max 3 simultaneous SSE connections per user.\n\nEvents:\n    - connecting (5%): Initial setup\n    - fetching (10-55%): Per-UF progress with uf_index/uf_total\n    - filtering (60-70%): Filter application\n    - llm (75-90%): LLM summary generation\n    - excel (92-98%): Excel report generation\n    - complete (100%): Search finished\n    - partial_results: Non-terminal — intermediate results during background fetch (A-04)\n    - refresh_available (100%): Background fetch complete, new data available (A-04)\n    - error: Search failed",
         "operationId": "buscar_progress_stream_v1_buscar_progress__search_id__get",
         "parameters": [
           {
@@ -11025,7 +11228,7 @@
     },
     "/v1/feedback": {
       "post": {
-        "description": "AC1: Submit classification feedback for a search result.\n\nAC5: Upserts \u2014 if user already gave feedback for this search_id + bid_id, update it.\nAC3: Captures context fields (setor_id, bid_objeto, etc.) from the request body.",
+        "description": "AC1: Submit classification feedback for a search result.\n\nAC5: Upserts — if user already gave feedback for this search_id + bid_id, update it.\nAC3: Captures context fields (setor_id, bid_objeto, etc.) from the request body.",
         "operationId": "submit_feedback_v1_feedback_post",
         "requestBody": {
           "content": {
@@ -11259,7 +11462,7 @@
     },
     "/v1/me/export": {
       "get": {
-        "description": "Export all user data as JSON file (LGPD Art. 18 V \u2014 data portability).\n\nReturns a downloadable JSON file containing:\n- Profile information\n- Search history (sessions)\n- Subscription history\n- Messages",
+        "description": "Export all user data as JSON file (LGPD Art. 18 V — data portability).\n\nReturns a downloadable JSON file containing:\n- Profile information\n- Search history (sessions)\n- Subscription history\n- Messages",
         "operationId": "export_user_data_v1_me_export_get",
         "responses": {
           "200": {
