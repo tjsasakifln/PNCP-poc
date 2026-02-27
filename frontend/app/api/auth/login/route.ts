@@ -5,16 +5,7 @@
  * Proxies to Supabase Auth /auth/v1/token?grant_type=password.
  */
 import { NextRequest, NextResponse } from "next/server";
-
-// ---------------------------------------------------------------------------
-// In-memory IP rate limiter (per-process; sufficient for single-instance POC)
-// ---------------------------------------------------------------------------
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-const rateLimitStore = new Map<string, RateLimitEntry>();
+import { checkRateLimit, loginRateLimitStore } from "@/lib/rate-limiter";
 
 const AUTH_LIMIT = Number(process.env.AUTH_RATE_LIMIT_PER_5MIN ?? 5);
 const AUTH_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
@@ -27,50 +18,12 @@ function getClientIp(request: NextRequest): string {
   );
 }
 
-function checkRateLimit(
-  ip: string,
-  limit: number,
-  windowMs: number
-): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-  const entry = rateLimitStore.get(ip);
-
-  if (!entry || now >= entry.resetAt) {
-    rateLimitStore.set(ip, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, retryAfter: 0 };
-  }
-
-  if (entry.count >= limit) {
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    return { allowed: false, retryAfter: Math.max(1, retryAfter) };
-  }
-
-  entry.count++;
-  return { allowed: true, retryAfter: 0 };
-}
-
-// Periodically clean expired entries (every 60 s)
-if (typeof globalThis !== "undefined") {
-  const _cleanup = setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of rateLimitStore.entries()) {
-      if (now >= value.resetAt) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }, 60_000);
-  // Prevent timer from keeping the process alive
-  if (_cleanup && typeof _cleanup === "object" && "unref" in _cleanup) {
-    (_cleanup as NodeJS.Timeout).unref();
-  }
-}
-
 // ---------------------------------------------------------------------------
 // POST handler
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const { allowed, retryAfter } = checkRateLimit(ip, AUTH_LIMIT, AUTH_WINDOW_MS);
+  const { allowed, retryAfter } = checkRateLimit(loginRateLimitStore, ip, AUTH_LIMIT, AUTH_WINDOW_MS);
 
   if (!allowed) {
     return NextResponse.json(
@@ -122,6 +75,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Export rate limit store for testing
-export { rateLimitStore };

@@ -5,6 +5,7 @@
  * Proxies to Supabase Auth /auth/v1/signup.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, signupRateLimitStore } from "@/lib/rate-limiter";
 
 // ---------------------------------------------------------------------------
 // STORY-258 AC2: Disposable email domain blocklist (top 100 for proxy layer)
@@ -46,16 +47,6 @@ const DISPOSABLE_DOMAINS = new Set([
   "guerrillamail.se", "guerrillamail.eu",
 ]);
 
-// ---------------------------------------------------------------------------
-// In-memory IP rate limiter
-// ---------------------------------------------------------------------------
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
-
-const rateLimitStore = new Map<string, RateLimitEntry>();
-
 const SIGNUP_LIMIT = Number(process.env.SIGNUP_RATE_LIMIT_PER_10MIN ?? 3);
 const SIGNUP_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -67,49 +58,13 @@ function getClientIp(request: NextRequest): string {
   );
 }
 
-function checkRateLimit(
-  ip: string,
-  limit: number,
-  windowMs: number
-): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-  const entry = rateLimitStore.get(ip);
-
-  if (!entry || now >= entry.resetAt) {
-    rateLimitStore.set(ip, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, retryAfter: 0 };
-  }
-
-  if (entry.count >= limit) {
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    return { allowed: false, retryAfter: Math.max(1, retryAfter) };
-  }
-
-  entry.count++;
-  return { allowed: true, retryAfter: 0 };
-}
-
-// Periodically clean expired entries (every 60 s)
-if (typeof globalThis !== "undefined") {
-  const _cleanup = setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of rateLimitStore.entries()) {
-      if (now >= value.resetAt) {
-        rateLimitStore.delete(key);
-      }
-    }
-  }, 60_000);
-  if (_cleanup && typeof _cleanup === "object" && "unref" in _cleanup) {
-    (_cleanup as NodeJS.Timeout).unref();
-  }
-}
-
 // ---------------------------------------------------------------------------
 // POST handler
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
   const { allowed, retryAfter } = checkRateLimit(
+    signupRateLimitStore,
     ip,
     SIGNUP_LIMIT,
     SIGNUP_WINDOW_MS
@@ -205,6 +160,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// Export rate limit store for testing
-export { rateLimitStore };

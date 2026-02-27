@@ -53,12 +53,11 @@ describe("T13: Login proxy rate limiting", () => {
 
   it("returns 429 after exceeding 5 login attempts in 5 minutes", async () => {
     // Fresh import to get clean rate limit store
-    const { POST, rateLimitStore } = await import(
-      "../../app/api/auth/login/route"
-    );
+    const { POST } = await import("../../app/api/auth/login/route");
+    const { loginRateLimitStore } = await import("../../lib/rate-limiter");
 
     // Clear store
-    rateLimitStore.clear();
+    loginRateLimitStore.clear();
 
     const makeRequest = () => {
       const { NextRequest } = require("next/server");
@@ -93,11 +92,10 @@ describe("T14: Signup proxy rate limiting", () => {
   });
 
   it("returns 429 after exceeding 3 signup attempts in 10 minutes", async () => {
-    const { POST, rateLimitStore } = await import(
-      "../../app/api/auth/signup/route"
-    );
+    const { POST } = await import("../../app/api/auth/signup/route");
+    const { signupRateLimitStore } = await import("../../lib/rate-limiter");
 
-    rateLimitStore.clear();
+    signupRateLimitStore.clear();
 
     const makeRequest = () => {
       const { NextRequest } = require("next/server");
