@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import type { BuscaResult } from "../../types";
 import type { SearchProgressEvent, RefreshAvailableInfo, SourceStatus, PartialProgress } from "../../../hooks/useSearchSSE";
@@ -24,6 +24,8 @@ import { ZeroResultsSuggestions } from "./ZeroResultsSuggestions";
 import { FilterRelaxedBanner } from "./FilterRelaxedBanner";
 import { ExpiredCacheBanner } from "./ExpiredCacheBanner";
 import SourceStatusGrid from "./SourceStatusGrid";
+import { SearchStateManager } from "./SearchStateManager";
+import { deriveSearchPhase } from "../types/searchPhase";
 // GTM-UX-001: PartialTimeoutBanner replaced by DataQualityBanner
 
 export interface SearchResultsProps {
@@ -218,6 +220,20 @@ export default function SearchResults({
 
   // GTM-UX-001: succeededUfs derivation removed — DataQualityBanner computes internally
 
+  // STORY-298 AC1+AC2: Derive search phase from current state (single source of truth)
+  const searchPhase = useMemo(() => deriveSearchPhase({
+    loading,
+    error,
+    quotaError,
+    result,
+    retryCountdown: retryCountdown ?? null,
+    retryExhausted: !!retryExhausted,
+    sourceStatuses: sourceStatuses ?? new Map(),
+    partialProgress: partialProgress ?? null,
+    ufTotalFound,
+    searchElapsedSeconds,
+  }), [loading, error, quotaError, result, retryCountdown, retryExhausted, sourceStatuses, partialProgress, ufTotalFound, searchElapsedSeconds]);
+
   // STORY-260 AC16: Dismissible profile incomplete banner (localStorage, 3-day TTL)
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -321,120 +337,24 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* GTM-UX-003 AC1/AC8 + GTM-POLISH-002 AC1-AC2: Unified retry — responsive 375px, no overflow */}
-      {error && !quotaError && retryCountdown != null && retryCountdown > 0 && (
-        <div className="mt-4 sm:mt-8 mx-0 p-3 sm:p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-card animate-fade-in-up max-w-full overflow-hidden" role="alert" data-testid="retry-countdown">
-          <p className="text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 mb-1 break-words" data-testid="retry-message">
-            {retryMessage || 'Temporariamente indisponível. Tentando novamente...'}
-          </p>
-          <p className="text-xs sm:text-sm text-blue-600/70 dark:text-blue-400/70 mb-3" data-testid="retry-countdown-text">
-            Tentando em {retryCountdown}s...
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-              onClick={onRetryNow}
-              className="px-4 py-2 bg-blue-600 text-white rounded-button text-sm font-medium hover:bg-blue-700 transition-colors w-full sm:w-auto"
-              type="button"
-              data-testid="retry-now-button"
-            >
-              Tentar agora
-            </button>
-            <button
-              onClick={onCancelRetry}
-              className="px-4 py-2 bg-transparent text-blue-600 dark:text-blue-300 border border-blue-300 dark:border-blue-700 rounded-button text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors w-full sm:w-auto"
-              type="button"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* GTM-UX-003 AC9 + GTM-POLISH-002 AC1: Exhaustion state — responsive 375px */}
-      {error && !quotaError && retryExhausted && (retryCountdown == null || retryCountdown <= 0) && (
-        <div className="mt-4 sm:mt-8 mx-0 p-3 sm:p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-card animate-fade-in-up max-w-full overflow-hidden" role="alert" data-testid="retry-exhausted">
-          <p className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 mb-3 break-words">
-            Busca indisponível no momento.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-              onClick={onSearch}
-              disabled={loading}
-              className="px-4 py-2 bg-amber-600 text-white rounded-button text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50"
-              type="button"
-              data-testid="retry-manual-button"
-            >
-              Tentar novamente
-            </button>
-            {result && result.resumo && result.resumo.total_oportunidades > 0 && (
-              <button
-                onClick={() => {
-                  // AC10: Scroll to existing partial results
-                  const resultsEl = document.querySelector('[data-testid="results-header"]');
-                  resultsEl?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-4 py-2 bg-transparent text-amber-600 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-button text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
-                type="button"
-                data-testid="view-partial-results-button"
-              >
-                Ver resultados parciais
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Error Display with Retry — GTM-UX-003 AC11: No cooldown on manual retry */}
-      {error && !quotaError && (retryCountdown == null || retryCountdown <= 0) && !retryExhausted && (
-        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-error-subtle border border-error/20 rounded-card animate-fade-in-up" role="alert">
-          <p className="text-sm sm:text-base font-medium text-error mb-3">{error.message}</p>
-          <ErrorDetail error={error} />
-          <button
-            onClick={onSearch}
-            disabled={loading}
-            className="mt-3 px-4 py-2 bg-error text-white rounded-button text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Tentando...
-              </>
-            ) : "Tentar novamente"}
-          </button>
-        </div>
-      )}
-
-      {/* Quota Exceeded Display */}
-      {quotaError && (
-        <div className="mt-6 sm:mt-8 p-4 sm:p-5 bg-warning-subtle border border-warning/20 rounded-card animate-fade-in-up" role="alert">
-          <div className="flex items-start gap-3">
-            <svg role="img" aria-label="Aviso" className="w-6 h-6 text-warning flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-              <p className="text-sm sm:text-base font-medium text-warning mb-2">{quotaError}</p>
-              <p className="text-sm text-ink-secondary mb-4">
-                Escolha um plano para continuar buscando oportunidades de licitação.
-              </p>
-              <a
-                href="/planos"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy text-white rounded-button text-sm font-medium
-                           hover:bg-brand-blue-hover transition-colors"
-              >
-                <svg role="img" aria-label="Icone" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-                Ver Planos
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* STORY-298 AC5+AC6: Unified error/offline/quota state manager
+          Replaces 4 separate error conditionals with single SearchStateManager.
+          AC2: Zero limbo states — phase is derived from a single decision tree.
+          AC7: Framer Motion AnimatePresence for smooth transitions. */}
+      <SearchStateManager
+        phase={searchPhase}
+        error={error}
+        quotaError={quotaError}
+        retryCountdown={retryCountdown ?? null}
+        retryMessage={retryMessage ?? null}
+        retryExhausted={!!retryExhausted}
+        onRetry={onSearch}
+        onRetryNow={onRetryNow || onSearch}
+        onCancelRetry={onCancelRetry || (() => {})}
+        onCancel={onCancel}
+        loading={loading}
+        hasPartialResults={!!(result && result.resumo && result.resumo.total_oportunidades > 0)}
+      />
 
       {/* CRIT-027 AC2-AC3: Only show result states AFTER search completes (not during loading) */}
       {/* CRIT-005 AC5-7: Route by response_state — empty_failure gets SourcesUnavailable */}
