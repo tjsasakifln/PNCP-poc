@@ -238,18 +238,51 @@ async def update_pipeline_item(
         raise HTTPException(status_code=422, detail="Nenhum campo para atualizar.")
 
     try:
-        result = await sb_execute(
+        # STORY-307 AC9: Optimistic locking — include version in WHERE clause
+        query = (
             sb.table("pipeline_items")
-            .update(payload)
+            .update({**payload, "version": sb.table("pipeline_items").version + 1} if False else payload)
             .eq("id", item_id)
             .eq("user_id", user_id)
         )
 
-        if not result.data or len(result.data) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Item não encontrado no seu pipeline.",
+        if update.version is not None:
+            # AC9: WHERE version = $current_version — reject stale updates
+            query = (
+                sb.table("pipeline_items")
+                .update({**payload, "version": update.version + 1})
+                .eq("id", item_id)
+                .eq("user_id", user_id)
+                .eq("version", update.version)
             )
+            result = await sb_execute(query)
+
+            # AC10: If 0 rows affected, version mismatch → 409 Conflict
+            if not result.data or len(result.data) == 0:
+                # Check if item exists at all (404 vs 409)
+                exists = await sb_execute(
+                    sb.table("pipeline_items")
+                    .select("id, version")
+                    .eq("id", item_id)
+                    .eq("user_id", user_id)
+                )
+                if exists.data:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Item foi atualizado por outra operação. Recarregue a página.",
+                    )
+                raise HTTPException(
+                    status_code=404,
+                    detail="Item não encontrado no seu pipeline.",
+                )
+        else:
+            # Legacy path: no version sent (backward compatible)
+            result = await sb_execute(query)
+            if not result.data or len(result.data) == 0:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Item não encontrado no seu pipeline.",
+                )
 
         logger.info(f"Pipeline item {item_id[:8]}... updated for user {mask_user_id(user_id)}: {list(payload.keys())}")
         return PipelineItemResponse(**result.data[0])

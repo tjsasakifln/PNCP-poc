@@ -157,12 +157,19 @@ def mock_supabase_client():
 
 
 def configure_idempotency(sb, *, already_processed=False, event_id="evt_test_123"):
-    """Helper: configure idempotency check response on Supabase mock."""
+    """Helper: configure idempotency check response on Supabase mock.
+
+    STORY-307: Now uses INSERT ON CONFLICT (upsert) pattern.
+    - already_processed=False → upsert returns data (event claimed for processing)
+    - already_processed=True → upsert returns empty (event already exists)
+    """
     events_chain = sb.table("stripe_webhook_events")
     if already_processed:
-        events_chain.execute.return_value = Mock(data=[{"id": event_id}])
-    else:
+        # Event exists — upsert returns empty (ON CONFLICT DO NOTHING)
         events_chain.execute.return_value = Mock(data=[])
+    else:
+        # New event — upsert returns the inserted row (event claimed)
+        events_chain.execute.return_value = Mock(data=[{"id": event_id}])
 
 
 def configure_subscription_lookup(sb, *, found=True, user_id="user_123",
@@ -274,12 +281,43 @@ class TestIdempotency:
     @patch('webhooks.stripe.stripe.Webhook.construct_event')
     async def test_ac4_duplicate_event_returns_already_processed(
         self, mock_construct, mock_get_sb, mock_redis, mock_request,
-        subscription_updated_event, mock_supabase_client
+        subscription_updated_event
     ):
-        """AC4: Duplicate event.id → HTTP 200 with 'already_processed'."""
+        """AC4: Duplicate event.id → HTTP 200 with 'already_processed'.
+        STORY-307: Updated to match new INSERT ON CONFLICT atomic pattern.
+        """
         mock_construct.return_value = subscription_updated_event
-        mock_get_sb.return_value = mock_supabase_client
-        configure_idempotency(mock_supabase_client, already_processed=True)
+
+        # Build isolated mock: upsert returns empty, stuck check returns completed
+        from datetime import datetime, timezone
+        sb = MagicMock()
+
+        upsert_chain = MagicMock()
+        upsert_chain.execute.return_value = Mock(data=[])  # Event already exists
+
+        select_chain = MagicMock()
+        select_chain.eq.return_value = select_chain
+        select_chain.limit.return_value = select_chain
+        select_chain.execute.return_value = Mock(data=[{
+            "id": "evt_test_123",
+            "status": "completed",
+            "received_at": datetime.now(timezone.utc).isoformat(),
+        }])
+
+        call_count = {"n": 0}
+        def table_side_effect(name):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                chain = MagicMock()
+                chain.upsert.return_value = upsert_chain
+                return chain
+            else:
+                chain = MagicMock()
+                chain.select.return_value = select_chain
+                return chain
+
+        sb.table = MagicMock(side_effect=table_side_effect)
+        mock_get_sb.return_value = sb
 
         from webhooks.stripe import stripe_webhook
         result = await stripe_webhook(mock_request)
@@ -319,40 +357,40 @@ class TestIdempotency:
         self, mock_construct, mock_get_sb, mock_redis, mock_request,
         subscription_updated_event, mock_supabase_client
     ):
-        """AC6: Database stores event_id, event_type, processed_at."""
+        """AC6: Database stores event status, processed_at, payload.
+        STORY-307: Updated — now uses upsert (claim) + update (complete) pattern
+        instead of select (check) + insert (record).
+        """
         mock_construct.return_value = subscription_updated_event
         mock_get_sb.return_value = mock_supabase_client
         configure_idempotency(mock_supabase_client, already_processed=False)
         configure_subscription_lookup(mock_supabase_client)
 
-        # Track insert calls
-        insert_calls = []
+        # Track update calls on stripe_webhook_events
+        update_calls = []
         original_table = mock_supabase_client.table
 
-        def track_insert(table_name):
+        def track_update(table_name):
             chain = original_table(table_name)
             if table_name == "stripe_webhook_events":
-                original_insert = chain.insert
+                original_update = chain.update
 
-                def capturing_insert(data):
-                    insert_calls.append(data)
-                    return original_insert(data)
+                def capturing_update(data):
+                    update_calls.append(data)
+                    return original_update(data)
 
-                chain.insert = capturing_insert
+                chain.update = capturing_update
             return chain
 
-        mock_supabase_client.table = MagicMock(side_effect=track_insert)
+        mock_supabase_client.table = MagicMock(side_effect=track_update)
 
         from webhooks.stripe import stripe_webhook
         await stripe_webhook(mock_request)
 
-        # Verify at least one insert was captured for webhook events
-        assert len(insert_calls) >= 1, "Expected insert into stripe_webhook_events"
-        record = insert_calls[0]
-        assert "id" in record, "Record must contain event id"
-        assert record["id"] == "evt_test_123"
-        assert "type" in record, "Record must contain event type"
-        assert record["type"] == "customer.subscription.updated"
+        # STORY-307: After processing, event is updated with status='completed'
+        assert len(update_calls) >= 1, "Expected update on stripe_webhook_events after processing"
+        record = update_calls[0]
+        assert record.get("status") == "completed", "Status must be 'completed' after processing"
         assert "processed_at" in record, "Record must contain processed_at timestamp"
 
 

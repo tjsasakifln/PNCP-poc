@@ -117,10 +117,16 @@ export default function PipelinePage() {
 
     if (item.stage !== originalItem.stage) {
       try {
-        await updateItem(activeId, { stage: item.stage });
-      } catch (err) {
+        await updateItem(activeId, { stage: item.stage, version: originalItem.version });
+      } catch (err: any) {
         setOptimisticItems(items);
-        toast.error(getUserFriendlyError(err));
+        // STORY-307 AC11: On 409 conflict, show specific toast and reload
+        if (err?.isConflict) {
+          toast.error("Item foi atualizado por outra operação. Recarregando...");
+          fetchItems();
+        } else {
+          toast.error(getUserFriendlyError(err));
+        }
       }
     }
   };

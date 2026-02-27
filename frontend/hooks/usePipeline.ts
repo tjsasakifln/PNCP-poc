@@ -60,7 +60,7 @@ export function usePipeline() {
     }
   }, [authHeaders]);
 
-  const addItem = useCallback(async (item: Omit<PipelineItem, "id" | "user_id" | "created_at" | "updated_at">) => {
+  const addItem = useCallback(async (item: Omit<PipelineItem, "id" | "user_id" | "created_at" | "updated_at" | "version">) => {
     try {
       const res = await fetch("/api/pipeline", {
         method: "POST",
@@ -81,15 +81,24 @@ export function usePipeline() {
     }
   }, [authHeaders]);
 
-  const updateItem = useCallback(async (itemId: string, update: { stage?: PipelineStage; notes?: string }) => {
+  const updateItem = useCallback(async (itemId: string, update: { stage?: PipelineStage; notes?: string; version?: number }) => {
     try {
+      // STORY-307 AC12: Send version for optimistic locking
+      const currentItem = items.find((i) => i.id === itemId);
+      const version = update.version ?? currentItem?.version;
       const res = await fetch("/api/pipeline", {
         method: "PATCH",
         headers: authHeaders(),
-        body: JSON.stringify({ item_id: itemId, ...update }),
+        body: JSON.stringify({ item_id: itemId, ...update, version }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // STORY-307 AC11: Handle 409 Conflict — version mismatch
+        if (res.status === 409) {
+          const err = new Error(data.detail || "Item foi atualizado por outra operação. Recarregue a página.");
+          (err as any).isConflict = true;
+          throw err;
+        }
         throw new Error(data.detail || "Erro ao atualizar item.");
       }
       const updated = await res.json();
@@ -98,7 +107,7 @@ export function usePipeline() {
     } catch (err: any) {
       throw err;
     }
-  }, [authHeaders]);
+  }, [authHeaders, items]);
 
   const removeItem = useCallback(async (itemId: string) => {
     try {

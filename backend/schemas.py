@@ -1874,6 +1874,7 @@ class PipelineItemUpdate(BaseModel):
     """Request to update a pipeline item (stage and/or notes)."""
     stage: Optional[str] = Field(default=None, description="New pipeline stage")
     notes: Optional[str] = Field(default=None, max_length=5000, description="Updated notes")
+    version: Optional[int] = Field(default=None, description="Current version for optimistic locking (STORY-307)")
 
     @field_validator('stage')
     @classmethod
@@ -1898,6 +1899,7 @@ class PipelineItemResponse(BaseModel):
     notes: Optional[str] = None
     created_at: str
     updated_at: str
+    version: int = 1  # STORY-307 AC12: Optimistic locking version
 
 
 class PipelineListResponse(BaseModel):

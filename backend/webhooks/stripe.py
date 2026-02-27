@@ -106,18 +106,53 @@ async def stripe_webhook(request: Request):
     sb = get_supabase()
 
     try:
-        # Idempotency check: Has this event already been processed?
-        existing = (
-            sb.table("stripe_webhook_events")
-            .select("id")
-            .eq("id", event.id)
-            .limit(1)
-            .execute()
-        )
+        # STORY-307 AC1: Atomic idempotency — INSERT ON CONFLICT DO NOTHING
+        # If RETURNING is empty, event already exists (skip).
+        # If RETURNING has data, we claimed exclusive processing rights.
+        now = datetime.now(timezone.utc)
+        claim_result = sb.table("stripe_webhook_events").upsert(
+            {
+                "id": event.id,
+                "type": event.type,
+                "status": "processing",
+                "received_at": now.isoformat(),
+            },
+            on_conflict="id",
+            ignore_duplicates=True,
+        ).execute()
 
-        if existing.data:
-            logger.info(f"Webhook already processed: event_id={event.id}")
-            return {"status": "already_processed", "event_id": event.id}
+        # If upsert returned no data, the event already exists
+        if not claim_result.data:
+            # AC6: Check if event is stuck in 'processing' for >5 minutes
+            stuck_check = (
+                sb.table("stripe_webhook_events")
+                .select("id, status, received_at")
+                .eq("id", event.id)
+                .limit(1)
+                .execute()
+            )
+            if stuck_check.data:
+                existing = stuck_check.data[0]
+                if existing.get("status") == "processing" and existing.get("received_at"):
+                    received_at = datetime.fromisoformat(
+                        existing["received_at"].replace("Z", "+00:00")
+                    )
+                    if (now - received_at) > timedelta(minutes=5):
+                        # AC7: Log WARNING and allow reprocessing
+                        logger.warning(
+                            f"Stripe webhook {event.id} stuck in processing "
+                            f"for >5min — reprocessing"
+                        )
+                        sb.table("stripe_webhook_events").update({
+                            "status": "processing",
+                            "received_at": now.isoformat(),
+                        }).eq("id", event.id).execute()
+                    else:
+                        logger.info(f"Webhook already processing: event_id={event.id}")
+                        return {"status": "already_processed", "event_id": event.id}
+                else:
+                    logger.info(f"Webhook already processed: event_id={event.id}")
+                    return {"status": "already_processed", "event_id": event.id}
 
         # Process event based on type
         if event.type == "checkout.session.completed":
@@ -137,18 +172,26 @@ async def stripe_webhook(request: Request):
         else:
             logger.info(f"Unhandled event type: {event.type}")
 
-        # Mark event as processed (prevents duplicate processing)
-        sb.table("stripe_webhook_events").insert({
-            "id": event.id,
-            "type": event.type,
+        # AC2: Mark event as completed after successful processing
+        sb.table("stripe_webhook_events").update({
+            "status": "completed",
             "processed_at": datetime.now(timezone.utc).isoformat(),
             "payload": event.data.object,
-        }).execute()
+        }).eq("id", event.id).execute()
 
         logger.info(f"Webhook processed successfully: event_id={event.id}")
         return {"status": "success", "event_id": event.id}
 
     except Exception as e:
+        # AC3: Mark event as failed on processing error
+        try:
+            sb.table("stripe_webhook_events").update({
+                "status": "failed",
+                "processed_at": datetime.now(timezone.utc).isoformat(),
+                "payload": {"error": str(e)},
+            }).eq("id", event.id).execute()
+        except Exception as update_err:
+            logger.error(f"Failed to mark webhook as failed: {update_err}")
         logger.error(f"Error processing webhook: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Database error")
 

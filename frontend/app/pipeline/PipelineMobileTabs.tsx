@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 interface PipelineMobileTabsProps {
   items: PipelineItem[];
-  onUpdateItem: (id: string, updates: { stage?: PipelineStage; notes?: string }) => Promise<unknown>;
+  onUpdateItem: (id: string, updates: { stage?: PipelineStage; notes?: string; version?: number }) => Promise<unknown>;
   onRemoveItem: (id: string) => void;
 }
 
@@ -24,10 +24,17 @@ export function PipelineMobileTabs({ items, onUpdateItem, onRemoveItem }: Pipeli
   const handleMove = async (itemId: string, targetStage: PipelineStage) => {
     setMovingItemId(null);
     try {
-      await onUpdateItem(itemId, { stage: targetStage });
+      // STORY-307 AC11: Send version for optimistic locking
+      const item = items.find((i) => i.id === itemId);
+      await onUpdateItem(itemId, { stage: targetStage, version: item?.version });
       toast.success(`Movido para ${STAGE_CONFIG[targetStage].label}`);
-    } catch {
-      toast.error("Erro ao mover item");
+    } catch (err: any) {
+      // STORY-307 AC11: Show conflict-specific message on 409
+      if (err?.isConflict) {
+        toast.error("Item foi atualizado por outra operação. Recarregue a página.");
+      } else {
+        toast.error("Erro ao mover item");
+      }
     }
   };
 

@@ -12,6 +12,7 @@ export interface PipelineItem {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  version: number; // STORY-307 AC12: Optimistic locking version
 }
 
 export type PipelineStage = "descoberta" | "analise" | "preparando" | "enviada" | "resultado";
