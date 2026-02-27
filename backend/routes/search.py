@@ -295,6 +295,13 @@ async def buscar_progress_stream(
     import asyncio as _asyncio
     import json as _json
 
+    # STORY-299 AC2: Track total SSE connection attempts for SLI
+    try:
+        from metrics import SSE_CONNECTIONS_TOTAL
+        SSE_CONNECTIONS_TOTAL.inc()
+    except Exception:
+        pass
+
     # GTM-GO-002 AC6: Enforce SSE connection limit per user
     user_id = user.get("id", "unknown")
     if not await acquire_sse_connection(user_id):

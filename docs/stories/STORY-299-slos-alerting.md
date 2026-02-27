@@ -15,7 +15,7 @@ Google SRE estabelece que SLOs são a fundação de toda operação confiável. 
 ## Acceptance Criteria
 
 ### SLO Definitions
-- [ ] AC1: SLOs definidos e documentados:
+- [x] AC1: SLOs definidos e documentados:
   | SLI | SLO | Window |
   |-----|-----|--------|
   | Search success rate | 95% | 7 days rolling |
@@ -24,11 +24,11 @@ Google SRE estabelece que SLOs são a fundação de toda operação confiável. 
   | SSE connection success | 99% | 7 days rolling |
   | API availability (non-5xx) | 99.5% | 30 days rolling |
 
-- [ ] AC2: Prometheus recording rules para cada SLI
-- [ ] AC3: Error budget calculation: `1 - SLO` = budget consumível
+- [x] AC2: Prometheus recording rules para cada SLI
+- [x] AC3: Error budget calculation: `1 - SLO` = budget consumível
 
 ### Alerting
-- [ ] AC4: Alert rules (Prometheus ou Sentry):
+- [x] AC4: Alert rules (Prometheus ou Sentry):
   | Alert | Condition | Severity |
   |-------|-----------|----------|
   | SearchSuccessLow | success rate <90% for 15min | critical |
@@ -37,17 +37,17 @@ Google SRE estabelece que SLOs são a fundação de toda operação confiável. 
   | ErrorBudgetBurn | >50% budget consumed in 1h | critical |
   | WorkerTimeout | any SIGABRT in 5min | critical |
 
-- [ ] AC5: Sentry alerts configurados para erros críticos (worker timeout, circuit breaker open)
-- [ ] AC6: Health endpoint expandido: `GET /health` retorna SLO compliance status
+- [x] AC5: Sentry alerts configurados para erros críticos (worker timeout, circuit breaker open)
+- [x] AC6: Health endpoint expandido: `GET /health` retorna SLO compliance status
 
 ### Dashboard
-- [ ] AC7: `/admin` dashboard com SLO compliance visual (gauge charts)
-- [ ] AC8: Error budget remaining (percentage bar)
-- [ ] AC9: Trend charts: SLI over last 7/30 days
+- [x] AC7: `/admin` dashboard com SLO compliance visual (gauge charts)
+- [x] AC8: Error budget remaining (percentage bar)
+- [x] AC9: Trend charts: SLI over last 7/30 days
 
 ### Quality
-- [ ] AC10: Documentação SLO em `docs/slos.md`
-- [ ] AC11: Testes existentes passando
+- [x] AC10: Documentação SLO em `docs/slos.md`
+- [x] AC11: Testes existentes passando
 
 ## Technical Notes
 
@@ -65,18 +65,26 @@ BURN_RATE_1H = (1 - success_rate_1h) / (1 - SLO_TARGET)
 
 SLOs são conservadores intencionalmente — 95% search success (não 99%) porque estamos saindo de ~0% para um sistema funcional. SLOs serão apertados conforme estabilidade aumenta.
 
-## Files to Change
+## Files Changed
 
-- `backend/metrics.py` — recording rules, SLI calculations
-- `backend/health.py` — SLO compliance status
-- `backend/routes/admin.py` — SLO dashboard data endpoints
-- `frontend/app/admin/page.tsx` — SLO dashboard UI
+- `backend/slo.py` — NEW: SLO definitions, SLI calculations, error budget, alert rules
+- `backend/routes/slo.py` — NEW: GET /v1/admin/slo + /v1/admin/slo/alerts endpoints
+- `backend/metrics.py` — NEW: SSE_CONNECTIONS_TOTAL + HTTP_RESPONSES_TOTAL counters
+- `backend/health.py` — SLO compliance in get_system_health() response
+- `backend/main.py` — SLO router registration + HTTP response counter middleware
+- `backend/routes/search.py` — SSE_CONNECTIONS_TOTAL increment
+- `frontend/app/admin/slo/page.tsx` — NEW: SLO dashboard (gauges, budget bars, alerts)
+- `frontend/app/admin/page.tsx` — SLOs nav link
+- `frontend/app/admin/metrics/page.tsx` — SLOs nav link
 - `docs/slos.md` — NEW: SLO documentation
+- `backend/tests/test_slo.py` — NEW: 38 tests
+- `frontend/__tests__/admin-slo.test.tsx` — NEW: 14 tests
+- `backend/tests/snapshots/openapi_schema.json` — Regenerated (new routes)
 
 ## Definition of Done
 
-- [ ] SLOs definidos e measuráveis
-- [ ] Alerts configurados e testados
-- [ ] Dashboard mostra compliance em tempo real
-- [ ] Todos os testes passando
+- [x] SLOs definidos e measuráveis
+- [x] Alerts configurados e testados
+- [x] Dashboard mostra compliance em tempo real
+- [x] Todos os testes passando
 - [ ] PR merged

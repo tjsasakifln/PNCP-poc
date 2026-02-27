@@ -162,6 +162,12 @@ export default function AdminMetricsPage() {
             >
               Cache
             </Link>
+            <Link
+              href="/admin/slo"
+              className="px-4 py-2 border border-[var(--border)] rounded-button text-sm hover:bg-[var(--surface-1)] text-[var(--ink-secondary)]"
+            >
+              SLOs
+            </Link>
             <button
               onClick={fetchMetrics}
               disabled={loading}

@@ -75,6 +75,7 @@ from routes.feedback import router as feedback_router  # GTM-RESILIENCE-D05: Use
 from routes.admin_trace import router as admin_trace_router  # CRIT-004 AC21: Search trace endpoint
 from routes.auth_check import router as auth_check_router  # STORY-258: Email/phone pre-signup checks
 from routes.bid_analysis import router as bid_analysis_router  # STORY-259: Deep bid analysis
+from routes.slo import router as slo_router  # STORY-299: SLO dashboard
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -559,6 +560,25 @@ app.add_middleware(SecurityHeadersMiddleware)
 # STORY-226 AC14: Add deprecation headers to legacy (non-versioned) routes
 app.add_middleware(DeprecationMiddleware)
 
+# STORY-299 AC2: Track HTTP responses for API availability SLI
+@app.middleware("http")
+async def http_response_counter(request, call_next):
+    """Count HTTP responses by status class for SLO API availability metric."""
+    response = await call_next(request)
+    # Skip /metrics and /health to avoid inflating counts
+    path = request.url.path
+    if not path.startswith("/metrics") and not path.startswith("/health"):
+        try:
+            from metrics import HTTP_RESPONSES_TOTAL
+            status_class = f"{response.status_code // 100}xx"
+            HTTP_RESPONSES_TOTAL.labels(
+                status_class=status_class,
+                method=request.method,
+            ).inc()
+        except Exception:
+            pass
+    return response
+
 # CRIT-023: Instrument FastAPI AFTER all add_middleware() calls.
 # Starlette middleware stack is LIFO — last added = outermost.
 # This makes OTel ASGI middleware the outermost, so the span context
@@ -594,6 +614,7 @@ app.include_router(feedback_router, prefix="/v1")  # GTM-RESILIENCE-D05: User fe
 app.include_router(admin_trace_router)  # CRIT-004 AC21: Search trace (already has /v1/admin prefix)
 app.include_router(auth_check_router, prefix="/v1")  # STORY-258: Email/phone check
 app.include_router(bid_analysis_router, prefix="/v1")  # STORY-259: Deep bid analysis
+app.include_router(slo_router)  # STORY-299: SLO dashboard (already has /v1/admin prefix)
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix

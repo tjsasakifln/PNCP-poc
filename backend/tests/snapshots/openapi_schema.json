@@ -8195,6 +8195,64 @@
         ]
       }
     },
+    "/v1/admin/slo": {
+      "get": {
+        "description": "AC7-AC9: SLO compliance data for admin dashboard.\n\nReturns all SLO statuses, alert evaluations, and metadata.",
+        "operationId": "get_slo_dashboard_v1_admin_slo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Slo Dashboard V1 Admin Slo Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Slo Dashboard",
+        "tags": [
+          "admin-slo"
+        ]
+      }
+    },
+    "/v1/admin/slo/alerts": {
+      "get": {
+        "description": "Return current alert evaluation results.",
+        "operationId": "get_slo_alerts_v1_admin_slo_alerts_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Slo Alerts V1 Admin Slo Alerts Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Slo Alerts",
+        "tags": [
+          "admin-slo"
+        ]
+      }
+    },
     "/v1/admin/users": {
       "get": {
         "description": "List all users with profiles and subscription info.",

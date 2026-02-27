@@ -357,6 +357,19 @@ STATE_STORE_ERRORS = _create_counter(
     labelnames=["store", "operation"],
 )
 
+# STORY-299 AC2: SSE connections total (for SLI: SSE connection success rate)
+SSE_CONNECTIONS_TOTAL = _create_counter(
+    "smartlic_sse_connections_total",
+    "Total SSE connection attempts",
+)
+
+# STORY-299 AC2: HTTP response counter (for SLI: API availability)
+HTTP_RESPONSES_TOTAL = _create_counter(
+    "smartlic_http_responses_total",
+    "Total HTTP responses by status class",
+    labelnames=["status_class", "method"],
+)
+
 # STORY-291 AC6: Supabase circuit breaker state gauge (0=closed, 1=open, 2=half_open)
 SUPABASE_CB_STATE = _create_gauge(
     "smartlic_supabase_cb_state",

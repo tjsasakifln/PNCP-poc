@@ -427,6 +427,15 @@ async def get_system_health() -> Dict[str, Any]:
     else:
         overall = "healthy"
 
+    # STORY-299 AC6: SLO compliance status
+    slo_compliance = None
+    try:
+        from slo import get_slo_compliance_summary
+        slo_compliance = get_slo_compliance_summary()
+    except Exception as e:
+        logger.debug("SLO compliance check failed (non-fatal): %s", e)
+        slo_compliance = {"compliance": "unavailable", "error": str(e)[:100]}
+
     return {
         "status": overall,
         "components": components,
@@ -434,4 +443,5 @@ async def get_system_health() -> Dict[str, Any]:
         "version": __version__,
         "uptime_seconds": get_uptime_seconds(),
         "environment": os.getenv("ENVIRONMENT", "development"),
+        "slo": slo_compliance,
     }
