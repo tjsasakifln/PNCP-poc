@@ -63,6 +63,9 @@ class SearchContext:
     cached_sources: Optional[list] = None  # Source codes in cached data
     cache_status: Optional[str] = None  # UX-303: "fresh" or "stale"
     cache_level: Optional[str] = None  # UX-303: "supabase", "redis", "local"
+    # STORY-306 AC5: Cache fallback from different date range
+    cache_fallback: bool = False
+    cache_date_range: Optional[str] = None
     # GTM-INFRA-003 AC6: Whether response came fully from cache (quota was skipped)
     from_cache: bool = False
     # GTM-RESILIENCE-A01: Semantic response state

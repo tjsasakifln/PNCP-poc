@@ -449,6 +449,9 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "TERM_SEARCH_VIABILITY_GENERIC": ("TERM_SEARCH_VIABILITY_GENERIC", "false"),
     "TERM_SEARCH_FILTER_CONTEXT": ("TERM_SEARCH_FILTER_CONTEXT", "false"),
     "CACHE_WARMING_ENABLED": ("CACHE_WARMING_ENABLED", "false"),
+    # STORY-306: Cache correctness — dual-read for thundering herd mitigation
+    "CACHE_LEGACY_KEY_FALLBACK": ("CACHE_LEGACY_KEY_FALLBACK", "true"),
+    "SHOW_CACHE_FALLBACK_BANNER": ("SHOW_CACHE_FALLBACK_BANNER", "true"),
 }
 
 # ============================================
@@ -537,6 +540,19 @@ CACHE_REFRESH_ENABLED: bool = str_to_bool(os.getenv("CACHE_REFRESH_ENABLED", "fa
 CACHE_REFRESH_INTERVAL_HOURS: int = int(os.getenv("CACHE_REFRESH_INTERVAL_HOURS", "12"))
 CACHE_REFRESH_BATCH_SIZE: int = int(os.getenv("CACHE_REFRESH_BATCH_SIZE", "25"))
 CACHE_REFRESH_STAGGER_SECONDS: int = int(os.getenv("CACHE_REFRESH_STAGGER_SECONDS", "5"))
+
+# ============================================
+# STORY-306: Cache Correctness & Data Integrity
+# ============================================
+# AC12: Dual-read for thundering herd mitigation on deploy — try new key (with dates)
+# first, fall back to legacy key (without dates) if miss. Disable manually after 24h.
+CACHE_LEGACY_KEY_FALLBACK: bool = str_to_bool(os.getenv("CACHE_LEGACY_KEY_FALLBACK", "true"))
+# AC6: Frontend banner visibility when cache_fallback is true
+SHOW_CACHE_FALLBACK_BANNER: bool = str_to_bool(os.getenv("SHOW_CACHE_FALLBACK_BANNER", "true"))
+# AC13: Cache warming post-deploy — revalidate top queries in first 5min after startup
+CACHE_WARMING_POST_DEPLOY_ENABLED: bool = str_to_bool(os.getenv("CACHE_WARMING_POST_DEPLOY_ENABLED", "true"))
+CACHE_WARMING_POST_DEPLOY_TOP_N: int = int(os.getenv("CACHE_WARMING_POST_DEPLOY_TOP_N", "10"))
+CACHE_WARMING_POST_DEPLOY_DELAY_S: int = int(os.getenv("CACHE_WARMING_POST_DEPLOY_DELAY_S", "30"))
 
 # ============================================
 # STORY-292: Async Search via asyncio.create_task (no ARQ dependency)

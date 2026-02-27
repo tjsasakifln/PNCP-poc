@@ -404,6 +404,8 @@ export default function SearchResults({
             cachedAt={result.cached_at}
             cacheStatus={result.cache_status}
             isTruncated={!!result.is_truncated}
+            cacheFallback={result.cache_fallback}
+            cacheDateRange={result.cache_date_range}
             sourcesTotal={result.source_stats?.length ?? 1}
             sourcesAvailable={result.source_stats?.filter((s: { status: string }) => s.status === "success" || s.status === "partial").length ?? (result.source_stats?.length ?? 1)}
             sourceNames={result.source_stats?.map((s: { source_code: string }) => s.source_code)}
@@ -485,6 +487,8 @@ export default function SearchResults({
               cachedAt={result.cached_at}
               cacheStatus={result.cache_status}
               isTruncated={!!result.is_truncated}
+              cacheFallback={result.cache_fallback}
+              cacheDateRange={result.cache_date_range}
               sourcesTotal={result.source_stats?.length ?? 1}
               sourcesAvailable={result.source_stats?.filter((s: { status: string }) => s.status === "success" || s.status === "partial").length ?? (result.source_stats?.length ?? 1)}
               sourceNames={result.source_stats?.map((s: { source_code: string }) => s.source_code)}

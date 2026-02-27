@@ -831,6 +831,24 @@
           "ultima_atualizacao": "2026-02-10T14:30:00Z"
         },
         "properties": {
+          "cache_date_range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "STORY-306 AC5: Date of the cached data when cache_fallback=True (e.g. '2026-02-20')",
+            "title": "Cache Date Range"
+          },
+          "cache_fallback": {
+            "default": false,
+            "description": "STORY-306 AC5: True when serving cached data from a different date range than requested",
+            "title": "Cache Fallback",
+            "type": "boolean"
+          },
           "cache_level": {
             "anyOf": [
               {
@@ -4918,6 +4936,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [

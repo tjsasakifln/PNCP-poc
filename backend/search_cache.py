@@ -8,10 +8,22 @@ Built on GTM-FIX-010 foundation. Adds:
   - Sentry alerting with structured context (AC6)
   - Local file cache management
 
-TTL policy (unchanged from GTM-FIX-010):
-  - Fresh (0-6h): Serve directly
-  - Stale (6-24h): Serve as fallback when live sources fail
-  - Expired (>24h): Not served by default; served when allow_expired=True (P1.3 last-resort fallback)
+STORY-306 — Cache Correctness & Data Integrity:
+  - Cache key now includes date_from/date_to (AC1-AC4)
+  - Dual-read: exact key → legacy key (without dates) for thundering herd mitigation (AC12)
+  - Fallback explicitly marked with cache_fallback=True + cache_date_range (AC5/AC7)
+
+TTL Policy (STORY-306 AC8-AC11 — single source of truth):
+  ┌─────────────────────┬──────┬─────────────┬────────────────────────────────────┐
+  │ Layer               │ TTL  │ Status      │ Behavior                           │
+  ├─────────────────────┼──────┼─────────────┼────────────────────────────────────┤
+  │ L1 InMemory/Redis   │ 4h   │ Fresh 0-4h  │ Serve directly, fastest            │
+  │ L2 Supabase         │ 24h  │ Stale 4-24h │ Serve + trigger SWR revalidation   │
+  │ L3 Local File       │ 24h  │ Emergency   │ Serve only if Supabase down        │
+  └─────────────────────┴──────┴─────────────┴────────────────────────────────────┘
+  - Fresh (0-4h): Serve directly from any layer
+  - Stale (4-24h): Serve from L2/L3 + trigger background revalidation (SWR)
+  - Expired (>24h): Not served; new fetch required (except allow_expired=True for last-resort)
 """
 
 import asyncio
@@ -31,9 +43,10 @@ from metrics import CACHE_HITS as METRICS_CACHE_HITS, CACHE_MISSES as METRICS_CA
 
 logger = logging.getLogger(__name__)
 
-# TTL boundaries (hours)
-CACHE_FRESH_HOURS = 6
-CACHE_STALE_HOURS = 24
+# TTL boundaries (hours) — STORY-306 AC8/AC9: single source of truth
+# AC9: L1 (InMemory) and Redis share the same TTL (4h)
+CACHE_FRESH_HOURS = 4  # STORY-306: was 6, aligned with REDIS_CACHE_TTL_SECONDS
+CACHE_STALE_HOURS = 24  # L2 Supabase / L3 Local file — SWR window
 
 # Local cache directory (platform-aware)
 LOCAL_CACHE_DIR = Path(
@@ -106,11 +119,52 @@ def classify_priority(
     return CachePriority.COLD
 
 
-def compute_search_hash(params: dict) -> str:
-    """Deterministic hash from search params for deduplication.
+def _normalize_date(value) -> str | None:
+    """STORY-306 AC2: Normalize date to ISO 8601 (YYYY-MM-DD) for cache key stability."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    # Accept common formats: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS, DD/MM/YYYY
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s[:10] if "T" in s and fmt == "%Y-%m-%d" else s, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    # Last resort: take first 10 chars if it looks like a date
+    if len(s) >= 10 and s[4] == "-" and s[7] == "-":
+        return s[:10]
+    return s
 
-    Excludes dates intentionally — stale cache should serve regardless of
-    date range since it's better than nothing when all sources are down.
+
+def compute_search_hash(params: dict) -> str:
+    """STORY-306 AC1-AC4: Deterministic hash including ALL params that affect results.
+
+    Now includes date_from/date_to so that different date ranges produce different
+    cache keys. For legacy fallback (thundering herd mitigation), use
+    compute_search_hash_without_dates().
+    """
+    normalized = {
+        "setor_id": params.get("setor_id"),
+        "ufs": sorted(params.get("ufs", [])),
+        "status": params.get("status"),
+        "modalidades": sorted(params.get("modalidades") or []) or None,
+        "modo_busca": params.get("modo_busca"),
+        # STORY-306 AC1/AC2: Include dates, normalized to YYYY-MM-DD
+        "date_from": _normalize_date(params.get("date_from") or params.get("data_inicio") or params.get("data_inicial")),
+        "date_to": _normalize_date(params.get("date_to") or params.get("data_fim") or params.get("data_final")),
+    }
+    params_json = json.dumps(normalized, sort_keys=True)
+    return hashlib.sha256(params_json.encode()).hexdigest()
+
+
+def compute_search_hash_without_dates(params: dict) -> str:
+    """STORY-306 AC12: Legacy hash WITHOUT dates for dual-read thundering herd mitigation.
+
+    Used during deploy transition: if new key (with dates) misses, fall back to
+    old key (without dates) which may still have cached data from before the deploy.
+    Also used for AC5/AC7: fallback when all sources fail — serve any date range.
     """
     normalized = {
         "setor_id": params.get("setor_id"),
@@ -548,18 +602,63 @@ async def get_from_cache(
 ) -> Optional[dict]:
     """Retrieve cached results with 3-level fallback (AC2).
 
-    Cascade: Supabase → Redis/InMemory → Local file.
+    STORY-306 AC7/AC12: Dual-read — tries exact key (with dates) first across all
+    levels, then falls back to legacy key (without dates) if CACHE_LEGACY_KEY_FALLBACK
+    is enabled. Legacy-key results are marked with cache_fallback=True.
+
+    Cascade per key: Supabase → Redis/InMemory → Local file → Global.
     B-02 AC4: Increments access_count on Supabase after each hit.
-    B-02 AC5: Reclassifies priority if it changed.
-    B-02 AC8: Includes cache_priority in result.
-    B-02 AC9: Triggers proactive refresh for hot keys near expiry.
     Returns dict with: results, cached_at, cached_sources, cache_age_hours,
-                       is_stale, cache_level, cache_priority
+                       is_stale, cache_level, cache_priority,
+                       cache_fallback (bool), cache_date_range (str|None)
     Returns None if no valid cache entry exists.
     """
     params_hash = compute_search_hash(params)
     start = time.monotonic()
 
+    # --- Try exact key (with dates) across all levels ---
+    result = await _read_all_levels(user_id, params_hash, params, start)
+    if result:
+        return result
+
+    # --- STORY-306 AC12: Dual-read — try legacy key (without dates) ---
+    from config import CACHE_LEGACY_KEY_FALLBACK
+    if CACHE_LEGACY_KEY_FALLBACK:
+        legacy_hash = compute_search_hash_without_dates(params)
+        if legacy_hash != params_hash:  # Only if key actually differs
+            result = await _read_all_levels(user_id, legacy_hash, params, start)
+            if result:
+                # AC5: Mark as fallback with date range from cached entry
+                result["cache_fallback"] = True
+                cached_at = result.get("cached_at")
+                result["cache_date_range"] = _format_cache_date_range(cached_at)
+                logger.info(
+                    f"Cache HIT via legacy key (without dates) for hash "
+                    f"{legacy_hash[:12]}... (fallback from {params_hash[:12]})"
+                )
+                return result
+
+    # Miss across all levels (including legacy fallback)
+    elapsed = (time.monotonic() - start) * 1000
+    from middleware import search_id_var
+    _search_id_miss = search_id_var.get("-")
+    logger.info(f"Cache MISS all levels [search={_search_id_miss}] for hash {params_hash[:12]}... ({elapsed:.0f}ms)")
+    _track_cache_operation("read", False, CacheLevel.MISS, 0, elapsed)
+    METRICS_CACHE_MISSES.labels(level="all").inc()
+    return None
+
+
+async def _read_all_levels(
+    user_id: str,
+    params_hash: str,
+    params: dict,
+    start: float,
+) -> Optional[dict]:
+    """STORY-306: Read cache across all levels for a given hash key.
+
+    Extracted from get_from_cache to enable dual-read (exact + legacy key).
+    Returns structured cache result or None.
+    """
     # Level 1: Supabase
     try:
         data = await _get_from_supabase(user_id, params_hash)
@@ -574,11 +673,9 @@ async def get_from_cache(
                 )
                 _freshness = result.get("cache_status", "stale")
                 METRICS_CACHE_HITS.labels(level="supabase", freshness=_freshness).inc()
-                # B-02 AC4/AC5: Increment access_count and reclassify
                 await _increment_and_reclassify(user_id, params_hash, params, result)
                 return result
     except Exception as e:
-        # GTM-RESILIENCE-E02: centralized reporting (cache read is expected/transient)
         report_error(
             e, f"Supabase cache read failed (key={params_hash[:12]})",
             expected=True, tags={"cache_operation": "read", "cache_level": "supabase"}, log=logger,
@@ -598,7 +695,6 @@ async def get_from_cache(
                 )
                 _freshness = result.get("cache_status", "stale")
                 METRICS_CACHE_HITS.labels(level="memory", freshness=_freshness).inc()
-                # B-02 AC4/AC5: Track access in Supabase (best-effort)
                 try:
                     await _increment_and_reclassify(user_id, params_hash, params, result)
                 except Exception:
@@ -625,7 +721,7 @@ async def get_from_cache(
     except Exception as e:
         logger.error(f"Local cache read failed: {e}")
 
-    # GTM-ARCH-002 AC1: Global cross-user fallback before final miss
+    # GTM-ARCH-002 AC1: Global cross-user fallback
     try:
         global_data = await _get_global_fallback_from_supabase(params)
         if global_data:
@@ -647,15 +743,18 @@ async def get_from_cache(
     except Exception as e:
         logger.debug(f"Global cache fallback failed: {e}")
 
-    # Miss across all levels (including global)
-    elapsed = (time.monotonic() - start) * 1000
-    # CRIT-004 AC14: Include search_id in cache miss log for correlation
-    from middleware import search_id_var
-    _search_id_miss = search_id_var.get("-")
-    logger.info(f"Cache MISS all levels [search={_search_id_miss}] for hash {params_hash[:12]}... ({elapsed:.0f}ms)")
-    _track_cache_operation("read", False, CacheLevel.MISS, 0, elapsed)
-    METRICS_CACHE_MISSES.labels(level="all").inc()
     return None
+
+
+def _format_cache_date_range(cached_at: str | None) -> str | None:
+    """STORY-306 AC5: Format cache date range for user display."""
+    if not cached_at:
+        return None
+    try:
+        dt = datetime.fromisoformat(cached_at.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        return cached_at
 
 
 # ============================================================================
@@ -675,25 +774,64 @@ async def get_from_cache_cascade(
     A-03 AC4: Returns cache_level as "memory" | "supabase" | "local".
     A-03 AC9: Logs event "cache_l3_served" when L3 provides the data.
 
+    STORY-306 AC7/AC12: Dual-read — tries exact key first, then legacy key
+    (without dates) if CACHE_LEGACY_KEY_FALLBACK is enabled.
+
     P1.3: allow_expired=True — serve entries older than CACHE_STALE_HOURS (>24h) as a
     last-resort fallback when all live sources have failed. Returned dict includes
     is_expired=True so callers can set response_state="degraded_expired".
 
     Returns dict with: results, cached_at, cached_sources, cache_age_hours,
-                       is_stale, is_expired (when allow_expired=True), cache_level, cache_status
+                       is_stale, is_expired (when allow_expired=True), cache_level, cache_status,
+                       cache_fallback (bool), cache_date_range (str|None)
     Returns None if no valid cache entry exists at any level.
     """
     params_hash = compute_search_hash(params)
 
-    # AC4: Map internal enum to story-specified string values
+    # Select the appropriate hit processor
+    _hit_fn = _process_cache_hit_allow_expired if allow_expired else _process_cache_hit
+
+    # --- Try exact key (with dates) across all cascade levels ---
+    result = _cascade_read_levels(user_id, params_hash, params, _hit_fn)
+    if asyncio.iscoroutine(result):
+        result = await result
+    if result:
+        return result
+
+    # --- STORY-306 AC12: Dual-read — try legacy key (without dates) ---
+    from config import CACHE_LEGACY_KEY_FALLBACK
+    if CACHE_LEGACY_KEY_FALLBACK:
+        legacy_hash = compute_search_hash_without_dates(params)
+        if legacy_hash != params_hash:
+            result = _cascade_read_levels(user_id, legacy_hash, params, _hit_fn)
+            if asyncio.iscoroutine(result):
+                result = await result
+            if result:
+                result["cache_fallback"] = True
+                cached_at = result.get("cached_at")
+                result["cache_date_range"] = _format_cache_date_range(cached_at)
+                logger.info(
+                    f"Cascade HIT via legacy key (without dates) for hash "
+                    f"{legacy_hash[:12]}... (fallback from {params_hash[:12]})"
+                )
+                return result
+
+    METRICS_CACHE_MISSES.labels(level="cascade").inc()
+    return None
+
+
+async def _cascade_read_levels(
+    user_id: str,
+    params_hash: str,
+    params: dict,
+    _hit_fn,
+) -> Optional[dict]:
+    """STORY-306: Read cache across cascade levels (L2→L1→L3→Global) for a given hash key."""
     _level_str = {
         CacheLevel.REDIS: "memory",
         CacheLevel.SUPABASE: "supabase",
         CacheLevel.LOCAL: "local",
     }
-
-    # Select the appropriate hit processor
-    _hit_fn = _process_cache_hit_allow_expired if allow_expired else _process_cache_hit
 
     # L2: Redis/InMemory — O(1) lookup, no I/O
     try:
@@ -733,7 +871,6 @@ async def get_from_cache_cascade(
                 result["cache_level"] = _level_str[CacheLevel.LOCAL]
                 _freshness = result.get("cache_status", "stale")
                 METRICS_CACHE_HITS.labels(level="local", freshness=_freshness).inc()
-                # AC9: Specific log when L3 serves data
                 logger.info(json.dumps({
                     "event": "cache_l3_served",
                     "cache_key": params_hash[:12],
@@ -762,7 +899,6 @@ async def get_from_cache_cascade(
     except Exception as e:
         logger.debug(f"Cascade global fallback failed: {e}")
 
-    METRICS_CACHE_MISSES.labels(level="cascade").inc()
     return None
 
 

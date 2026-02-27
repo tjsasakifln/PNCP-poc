@@ -960,6 +960,8 @@ class SearchPipeline:
                         ctx.cached_sources = _stale.get("cached_sources", ["PNCP"])
                         ctx.cache_status = _stale.get("cache_status", "stale")
                         ctx.cache_level = _stale.get("cache_level", "supabase")
+                        ctx.cache_fallback = _stale.get("cache_fallback", False)
+                        ctx.cache_date_range = _stale.get("cache_date_range")
                         ctx.response_state = "cached"
                         CACHE_HITS.labels(
                             level=_stale.get("cache_level", "supabase"),
@@ -1397,6 +1399,8 @@ class SearchPipeline:
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
                 ctx.cache_level = stale_cache.get("cache_level", "supabase")  # AC8: real level from cascade
+                ctx.cache_fallback = stale_cache.get("cache_fallback", False)
+                ctx.cache_date_range = stale_cache.get("cache_date_range")
                 ctx.is_partial = True
                 ctx.degradation_reason = str(e)
                 ctx.data_sources = [
@@ -1497,6 +1501,8 @@ class SearchPipeline:
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else "stale"
                 ctx.cache_level = cache_level_used  # AC8: real level from cascade
+                ctx.cache_fallback = stale_cache.get("cache_fallback", False)
+                ctx.cache_date_range = stale_cache.get("cache_date_range")
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # AC6
                 ctx.degradation_reason = f"Busca expirou após {fetch_timeout}s. Resultados de cache servidos."
@@ -1567,6 +1573,8 @@ class SearchPipeline:
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
                 ctx.cache_level = stale_cache.get("cache_level", "supabase")  # AC8: real level from cascade
+                ctx.cache_fallback = stale_cache.get("cache_fallback", False)
+                ctx.cache_date_range = stale_cache.get("cache_date_range")
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = f"Erro inesperado: {type(e).__name__}: {str(e)[:200]}"
@@ -1720,6 +1728,8 @@ class SearchPipeline:
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else ("stale" if stale_cache.get("is_stale") else "fresh")
                 ctx.cache_level = stale_cache.get("cache_level", "supabase")  # AC8: real level from cascade
+                ctx.cache_fallback = stale_cache.get("cache_fallback", False)
+                ctx.cache_date_range = stale_cache.get("cache_date_range")
                 ctx.is_partial = True
                 ctx.response_state = "cached"  # GTM-RESILIENCE-A01 AC6
                 ctx.degradation_reason = (
@@ -1792,6 +1802,8 @@ class SearchPipeline:
                 ctx.cached_sources = stale_cache.get("cached_sources", ["PNCP"])
                 ctx.cache_status = stale_cache.get("cache_status", "stale") if isinstance(stale_cache.get("cache_status"), str) else "stale"
                 ctx.cache_level = cache_level_used  # AC8: real level from cascade
+                ctx.cache_fallback = stale_cache.get("cache_fallback", False)
+                ctx.cache_date_range = stale_cache.get("cache_date_range")
                 ctx.is_partial = True
                 ctx.response_state = "cached"
                 ctx.degradation_reason = f"PNCP expirou após {fetch_timeout}s. Resultados de cache servidos."
@@ -2216,6 +2228,8 @@ class SearchPipeline:
                 cached_sources=ctx.cached_sources,
                 cache_status=ctx.cache_status,
                 cache_level=ctx.cache_level,
+                cache_fallback=ctx.cache_fallback,
+                cache_date_range=ctx.cache_date_range,
                 is_truncated=ctx.is_truncated,
                 truncated_ufs=ctx.truncated_ufs,
                 truncation_details=ctx.truncation_details,
@@ -2452,6 +2466,8 @@ class SearchPipeline:
             cached_sources=ctx.cached_sources,
             cache_status=ctx.cache_status,
             cache_level=ctx.cache_level,
+            cache_fallback=ctx.cache_fallback,
+            cache_date_range=ctx.cache_date_range,
             is_truncated=ctx.is_truncated,
             truncated_ufs=ctx.truncated_ufs,
             truncation_details=ctx.truncation_details,

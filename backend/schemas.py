@@ -1055,6 +1055,15 @@ class BuscaResponse(BaseModel):
         default=None,
         description="UX-303 AC2: Which cache level served the data — 'supabase', 'redis', or 'local'"
     )
+    # STORY-306 AC5: Cache fallback — serving data from different date range
+    cache_fallback: bool = Field(
+        default=False,
+        description="STORY-306 AC5: True when serving cached data from a different date range than requested"
+    )
+    cache_date_range: Optional[str] = Field(
+        default=None,
+        description="STORY-306 AC5: Date of the cached data when cache_fallback=True (e.g. '2026-02-20')"
+    )
     # GTM-RESILIENCE-A01: Semantic response state
     response_state: Literal["live", "cached", "degraded", "empty_failure", "degraded_expired"] = Field(
         default="live",

@@ -523,6 +523,8 @@ class TestSentryAlerting:
 
     @pytest.mark.asyncio
     async def test_sentry_called_on_supabase_read_failure(self):
+        # STORY-306: dual-read may call Supabase twice (exact key + legacy key),
+        # so capture_exception may be called 1-2 times depending on key divergence
         with patch("supabase_client.get_supabase", side_effect=Exception("read error")), \
              patch("search_cache._get_from_redis", return_value=None), \
              patch("search_cache._get_from_local", return_value=None), \
@@ -533,7 +535,7 @@ class TestSentryAlerting:
                 params={"setor_id": 1, "ufs": ["SP"]},
             )
 
-        mock_sentry.capture_exception.assert_called_once()
+        assert mock_sentry.capture_exception.call_count >= 1
 
 
 # ============================================================================

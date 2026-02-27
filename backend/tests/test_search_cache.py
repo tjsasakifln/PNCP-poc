@@ -431,7 +431,7 @@ class TestGetFromCacheCascade:
     async def test_l1_fail_l3_serve(self, tmp_path):
         """AC10: Supabase fails + Redis miss → L3 local file serves with cache_level='local'."""
         now = datetime.now(timezone.utc)
-        valid_time = (now - timedelta(hours=5)).isoformat()
+        valid_time = (now - timedelta(hours=3)).isoformat()  # STORY-306: 3h (within CACHE_FRESH_HOURS=4)
 
         # Write a local cache file
         params = {"setor_id": 1, "ufs": ["SP"]}

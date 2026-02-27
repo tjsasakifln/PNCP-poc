@@ -157,6 +157,10 @@ export interface BuscaResult {
   excel_status?: "ready" | "processing" | "skipped" | "failed" | null;
   /** CRIT-005 AC13: LLM summary provenance */
   llm_source?: "ai" | "fallback" | "processing" | null;
+  /** STORY-306 AC6: True when serving cached data from a different date range */
+  cache_fallback?: boolean;
+  /** STORY-306 AC6: Original date range of the cached data (e.g. "2026-02-20") */
+  cache_date_range?: string | null;
   /** STORY-259 AC4: Per-bid intelligence analysis results */
   bid_analysis?: BidAnalysisItem[];
   /** STORY-259: Bid analysis status */

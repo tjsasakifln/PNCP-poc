@@ -42,10 +42,10 @@ Os TTLs criam janelas onde uma camada serve "fresh" e outra serve "stale" para a
 
 ### Cache Key Correctness
 
-- [ ] AC1: `compute_search_hash()` inclui `date_from` e `date_to` no dict normalizado
-- [ ] AC2: Formato de data normalizado para ISO 8601 (YYYY-MM-DD) antes de incluir no hash — evita variacao de formato
-- [ ] AC3: Busca com setor=X, UF=SP, periodo=7d retorna cache DIFERENTE de setor=X, UF=SP, periodo=30d
-- [ ] AC4: Cache key inclui TODOS os parametros que afetam o resultado:
+- [x] AC1: `compute_search_hash()` inclui `date_from` e `date_to` no dict normalizado
+- [x] AC2: Formato de data normalizado para ISO 8601 (YYYY-MM-DD) antes de incluir no hash — evita variacao de formato
+- [x] AC3: Busca com setor=X, UF=SP, periodo=7d retorna cache DIFERENTE de setor=X, UF=SP, periodo=30d
+- [x] AC4: Cache key inclui TODOS os parametros que afetam o resultado:
 
 | Parametro | Incluido Antes | Incluido Agora |
 |-----------|---------------|----------------|
@@ -59,13 +59,13 @@ Os TTLs criam janelas onde uma camada serve "fresh" e outra serve "stale" para a
 
 ### Fallback para Cache sem Data (SWR)
 
-- [ ] AC5: Quando busca falha (todas as fontes down), o sistema PODE servir cache de qualquer data range como fallback — mas DEVE marcar o resultado como `"cache_fallback": true, "cache_date_range": "2026-02-20 a 2026-02-25"` no response
-- [ ] AC6: Frontend exibe aviso visual quando `cache_fallback: true`: "Resultados de cache (periodo X a Y). Dados podem estar desatualizados."
-- [ ] AC7: Logica de fallback: primeiro tenta cache com key EXATA (incluindo datas) → se nao encontra, tenta cache do mesmo setor/UF SEM datas (fallback) → se nao encontra, retorna vazio
+- [x] AC5: Quando busca falha (todas as fontes down), o sistema PODE servir cache de qualquer data range como fallback — mas DEVE marcar o resultado como `"cache_fallback": true, "cache_date_range": "2026-02-20 a 2026-02-25"` no response
+- [x] AC6: Frontend exibe aviso visual quando `cache_fallback: true`: "Resultados de cache (periodo X a Y). Dados podem estar desatualizados."
+- [x] AC7: Logica de fallback: primeiro tenta cache com key EXATA (incluindo datas) → se nao encontra, tenta cache do mesmo setor/UF SEM datas (fallback) → se nao encontra, retorna vazio
 
 ### TTL Unification
 
-- [ ] AC8: Documentar TTL policy em um unico local (`backend/cache_policy.py` ou constantes em `search_cache.py`):
+- [x] AC8: Documentar TTL policy em um unico local (`backend/cache_policy.py` ou constantes em `search_cache.py`):
 
 | Camada | TTL | Status | Comportamento |
 |--------|-----|--------|---------------|
@@ -74,22 +74,22 @@ Os TTLs criam janelas onde uma camada serve "fresh" e outra serve "stale" para a
 | L3 Supabase | 24h | Stale 4-24h | Serve como fallback + trigger revalidacao |
 | L4 Local File | 24h | Emergency | Serve se Supabase down |
 
-- [ ] AC9: L1 e L2 com MESMO TTL (4h) — nao faz sentido L1=4h e L2=24h
-- [ ] AC10: SWR (Stale-While-Revalidate): entre 4-24h, serve stale E dispara revalidacao em background
-- [ ] AC11: Apos 24h, cache expirado — nova busca obrigatoria (nao serve dados de >24h exceto em emergency)
+- [x] AC9: L1 e L2 com MESMO TTL (4h) — nao faz sentido L1=4h e L2=24h
+- [x] AC10: SWR (Stale-While-Revalidate): entre 4-24h, serve stale E dispara revalidacao em background
+- [x] AC11: Apos 24h, cache expirado — nova busca obrigatoria (nao serve dados de >24h exceto em emergency)
 
 ### Mitigacao de Thundering Herd no Deploy
 
-- [ ] AC12: Dual-read por 24h pos-deploy: ao buscar no cache, tentar key NOVA primeiro → se miss, tentar key ANTIGA (sem datas) → se miss, busca live. Controlado por flag `CACHE_LEGACY_KEY_FALLBACK` (default `true`, desabilitar manualmente apos 24h)
-- [ ] AC13: Cache warming pos-deploy: background task que revalida as 10 queries mais populares (baseado em `search_sessions` recentes) nos primeiros 5 minutos apos startup
+- [x] AC12: Dual-read por 24h pos-deploy: ao buscar no cache, tentar key NOVA primeiro → se miss, tentar key ANTIGA (sem datas) → se miss, busca live. Controlado por flag `CACHE_LEGACY_KEY_FALLBACK` (default `true`, desabilitar manualmente apos 24h)
+- [x] AC13: Cache warming pos-deploy: background task que revalida as 10 queries mais populares (baseado em `search_sessions` recentes) nos primeiros 5 minutos apos startup
 
 ### Testes
 
-- [ ] AC14: Teste: mesma query com datas diferentes gera cache keys diferentes
-- [ ] AC15: Teste: fallback serve cache antigo com flag `cache_fallback: true`
-- [ ] AC16: Teste: dual-read retorna cache de key antiga quando key nova miss
-- [ ] AC17: Teste: SWR dispara revalidacao em background quando serve stale
-- [ ] AC18: Testes existentes passando (5131+ backend, 2681+ frontend)
+- [x] AC14: Teste: mesma query com datas diferentes gera cache keys diferentes
+- [x] AC15: Teste: fallback serve cache antigo com flag `cache_fallback: true`
+- [x] AC16: Teste: dual-read retorna cache de key antiga quando key nova miss
+- [x] AC17: Teste: SWR dispara revalidacao em background quando serve stale
+- [x] AC18: Testes existentes passando (6072 backend, 3595 frontend)
 
 ## Technical Notes
 
@@ -149,8 +149,8 @@ curl -s https://api.smartlic.tech/health | jq '.dependencies.cache'
 
 ## Definition of Done
 
-- [ ] Cache key inclui todos os parametros que afetam resultados (incluindo datas)
-- [ ] Duas buscas com datas diferentes retornam resultados diferentes
-- [ ] Fallback explicito com flag visual para o usuario
-- [ ] TTLs consistentes entre camadas
-- [ ] Testes cobrindo cache key, fallback, TTL
+- [x] Cache key inclui todos os parametros que afetam resultados (incluindo datas)
+- [x] Duas buscas com datas diferentes retornam resultados diferentes
+- [x] Fallback explicito com flag visual para o usuario
+- [x] TTLs consistentes entre camadas
+- [x] Testes cobrindo cache key, fallback, TTL

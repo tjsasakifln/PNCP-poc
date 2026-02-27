@@ -39,6 +39,10 @@ export interface DataQualityBannerProps {
   responseState?: "live" | "cached" | "degraded" | "empty_failure" | "degraded_expired";
   coveragePct?: number;
 
+  // STORY-306 AC6: Cache fallback from different date range
+  cacheFallback?: boolean;
+  cacheDateRange?: string | null;
+
   // Actions
   onRefresh: () => void;
   onRetry: () => void;
@@ -70,11 +74,12 @@ function deriveSeverity(props: DataQualityBannerProps): BannerSeverity {
     return "error";
   }
 
-  // Priority 2 — warning (amber): partial failures, stale cache, or truncation
+  // Priority 2 — warning (amber): partial failures, stale cache, truncation, or date-range cache fallback
   if (
     props.failedUfs.length > 0 ||
     (props.isCached && props.cacheStatus === "stale") ||
-    props.isTruncated
+    props.isTruncated ||
+    props.cacheFallback
   ) {
     return "warning";
   }
@@ -88,6 +93,7 @@ function hasAnythingToReport(props: DataQualityBannerProps): boolean {
   if (props.failedUfs.length > 0) return true;
   if (props.isCached) return true;
   if (props.isTruncated) return true;
+  if (props.cacheFallback) return true;
   if (props.sourcesAvailable < props.sourcesTotal) return true;
   if (
     props.responseState === "degraded" ||
@@ -192,6 +198,8 @@ export function DataQualityBanner(props: DataQualityBannerProps) {
     cachedAt,
     cacheStatus,
     isTruncated,
+    cacheFallback,
+    cacheDateRange,
     sourcesTotal,
     sourcesAvailable,
     sourceNames,
@@ -239,11 +247,20 @@ export function DataQualityBanner(props: DataQualityBannerProps) {
     segments.push("Resultados truncados");
   }
 
+  // STORY-306 AC6: Cache fallback from a different date range
+  if (cacheFallback) {
+    if (cacheDateRange) {
+      segments.push(`Dados de cache de ${cacheDateRange}`);
+    } else {
+      segments.push("Resultados de cache (período diferente do solicitado). Dados podem estar desatualizados.");
+    }
+  }
+
   const message = segments.join(" | ");
 
   // ---- Action button (AC8) ----
   const isError = severity === "error" || failedUfs.length > 0;
-  const isStale = cacheStatus === "stale";
+  const isStale = cacheStatus === "stale" || !!cacheFallback;
 
   let actionLabel: string | null = null;
   let actionHandler: (() => void) | null = null;
