@@ -371,13 +371,13 @@ class TestExpiredTrialReadOnlyEndpoints:
 class TestPaidPlanBypass:
     """AC21: Verify paid plans are NOT affected by trial block logic."""
 
-    def test_paid_plan_can_post_buscar(self):
+    @pytest.mark.asyncio
+    async def test_paid_plan_can_post_buscar(self):
         """AC21: POST /buscar succeeds for paid plan (not blocked by require_active_plan).
 
         We directly test require_active_plan to confirm paid plans pass through,
         avoiding the full endpoint mock complexity.
         """
-        import asyncio
         from quota import require_active_plan
 
         paid_quota = _make_paid_plan_quota()
@@ -385,7 +385,7 @@ class TestPaidPlanBypass:
 
         with patch("quota.check_quota", return_value=paid_quota), \
              patch("authorization.has_master_access", new_callable=AsyncMock, return_value=False):
-            result = asyncio.get_event_loop().run_until_complete(require_active_plan(user))
+            result = await require_active_plan(user)
 
         # Should pass through without raising HTTPException 403
         assert result == user

@@ -5,7 +5,7 @@
   "description": "Frontend for SmartLic — Inteligência em Licitações",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npm run postbuild",
+    "build": "next build --webpack && npm run postbuild",
     "postbuild": "next-sitemap && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",
     "postbuild:sitemap": "next-sitemap",
     "start": "node .next/standalone/server.js",

@@ -16,7 +16,7 @@ Mocking Strategy:
 
 import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from fastapi import HTTPException
+
 
 
 # ═══════════════════════════════════════════════════════════════════════

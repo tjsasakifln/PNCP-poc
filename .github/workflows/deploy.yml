@@ -117,7 +117,7 @@ jobs:
       - name: Inject APP_VERSION into Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway variables set APP_VERSION=${{ steps.version.outputs.version }} --service bidiq-backend -y
+        run: railway variables set APP_VERSION=${{ steps.version.outputs.version }} --service bidiq-backend
 
       - name: Deploy to Railway
         env:
