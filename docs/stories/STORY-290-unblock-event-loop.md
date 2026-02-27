@@ -24,8 +24,8 @@ O Supabase Python client (postgrest-py) é síncrono. Chamadas `.execute()` dent
   - supabase v2.28.0 (already installed) has native async via `acreate_client()` since v2.2.0
   - Decision: `asyncio.to_thread()` NOW (low risk, immediate unblock), async client migration LATER
   - Thread pool overhead (~50-100μs) negligible vs network latency (~5-50ms)
-- [ ] AC4: `PYTHONASYNCIODEBUG=1` como env var em Railway staging — zero warnings de slow callback >100ms
-  - Requires Railway env var configuration (infra task, post-merge)
+- [x] AC4: `PYTHONASYNCIODEBUG=1` como env var em Railway staging — zero warnings de slow callback >100ms
+  - Set via `railway variables --set "PYTHONASYNCIODEBUG=1" --service bidiq-backend`
 - [x] AC5: Metric Prometheus `smartlic_event_loop_blocking_total` para detectar regressões
   - Counter added in metrics.py + histogram `smartlic_supabase_execute_duration_seconds`
 - [ ] AC6: Worker timeout Sentry events: baseline 10/semana → target 0/semana
