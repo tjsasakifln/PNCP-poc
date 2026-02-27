@@ -805,7 +805,7 @@ async def require_active_plan(user: dict) -> dict:
     except Exception:
         pass
 
-    quota_info = check_quota(user_id)
+    quota_info = await asyncio.to_thread(check_quota, user_id)
 
     if not quota_info.allowed:
         # STORY-265 AC12: Structured logging for trial blocks
@@ -1006,24 +1006,23 @@ async def register_search_session(
     Retry: 1 attempt after 0.3s on transient errors.
     """
     import json as _json
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     sb = get_supabase()
 
-    if not _ensure_profile_exists(user_id, sb):
+    if not await asyncio.to_thread(_ensure_profile_exists, user_id, sb):
         logger.error(f"Cannot register session: profile missing for user {mask_user_id(user_id)}")
         return None
 
     # UX-351 AC1: Prevent duplicate entries — if search_id already registered, return existing
     if search_id:
         try:
-            existing = (
+            existing = await sb_execute(
                 sb.table("search_sessions")
                 .select("id")
                 .eq("search_id", search_id)
                 .eq("user_id", user_id)
                 .limit(1)
-                .execute()
             )
             if existing.data and len(existing.data) > 0:
                 logger.info(f"Session already exists for search_id={search_id[:8]}***, reusing")
@@ -1045,7 +1044,7 @@ async def register_search_session(
         # PostgreSQL array literal: {val1,val2}
         sectors_pg = "{" + ",".join(sorted_sectors) + "}"
         ufs_pg = "{" + ",".join(sorted_ufs) + "}"
-        existing_params = (
+        existing_params = await sb_execute(
             sb.table("search_sessions")
             .select("id, created_at")
             .eq("user_id", user_id)
@@ -1056,7 +1055,6 @@ async def register_search_session(
             .gte("created_at", cutoff)
             .order("created_at", desc=True)
             .limit(1)
-            .execute()
         )
         if existing_params.data and len(existing_params.data) > 0:
             existing_id = existing_params.data[0]["id"]
@@ -1086,7 +1084,7 @@ async def register_search_session(
             if search_id:
                 data["search_id"] = search_id
 
-            result = sb.table("search_sessions").insert(data).execute()
+            result = await sb_execute(sb.table("search_sessions").insert(data))
 
             if not result.data or len(result.data) == 0:
                 raise RuntimeError("Insert returned empty result")
@@ -1150,7 +1148,7 @@ async def update_search_session_status(
     Retry: 1 attempt after 0.3s on transient errors.
     """
     import json as _json
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     update_data = {}
     if status is not None:
@@ -1184,7 +1182,7 @@ async def update_search_session_status(
     for attempt in range(2):
         try:
             sb = get_supabase()
-            sb.table("search_sessions").update(update_data).eq("id", session_id).execute()
+            await sb_execute(sb.table("search_sessions").update(update_data).eq("id", session_id))
 
             # AC21: Prometheus counter
             if status:
@@ -1237,18 +1235,18 @@ async def save_search_session(
     Supabase client handles connection pooling internally. Safe for interleaving
     — no asyncio.Lock needed.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     sb = get_supabase()
 
     # Ensure profile exists (FK constraint requires this)
-    if not _ensure_profile_exists(user_id, sb):
+    if not await asyncio.to_thread(_ensure_profile_exists, user_id, sb):
         logger.error(f"Cannot save session: profile missing for user {mask_user_id(user_id)}")
         return None
 
     for attempt in range(2):  # max 1 retry (0, 1)
         try:
-            result = (
+            result = await sb_execute(
                 sb.table("search_sessions")
                 .insert({
                     "user_id": user_id,
@@ -1263,7 +1261,6 @@ async def save_search_session(
                     "resumo_executivo": resumo_executivo,
                     "destaques": destaques,
                 })
-                .execute()
             )
 
             if not result.data or len(result.data) == 0:

@@ -167,9 +167,9 @@ async def _get_bid_from_session(search_id: str, bid_id: str) -> dict | None:
 async def _get_user_profile(user_id: str) -> dict | None:
     """Load user profile context data."""
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         db = get_supabase()
-        result = db.table("profiles").select("context_data").eq("id", user_id).single().execute()
+        result = await sb_execute(db.table("profiles").select("context_data").eq("id", user_id).single())
         return (result.data or {}).get("context_data") or {}
     except Exception:
         return None

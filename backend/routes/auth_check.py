@@ -102,9 +102,9 @@ async def _check_fingerprint_abuse(phone: str, company: str | None, request: Req
     if not phone or not company:
         return
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         db = get_supabase()
-        result = db.table("profiles").select("id, email").eq("phone_whatsapp", phone).eq("company", company).execute()
+        result = await sb_execute(db.table("profiles").select("id, email").eq("phone_whatsapp", phone).eq("company", company))
         if result.data:
             logger.warning(
                 f"AUDIT: Potential duplicate account detected — "
@@ -135,15 +135,14 @@ async def check_phone(
         return {"available": True}  # Invalid format — don't block, let form validation handle
 
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         db = get_supabase()
 
-        result = (
+        result = await sb_execute(
             db.table("profiles")
             .select("id")
             .eq("phone_whatsapp", normalized)
             .limit(1)
-            .execute()
         )
 
         available = not bool(result.data)

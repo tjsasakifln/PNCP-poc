@@ -4,6 +4,7 @@ Extracted from main.py as part of STORY-202 monolith decomposition.
 STORY-213: Added DELETE /me (account deletion) and GET /me/export (data portability).
 """
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -15,6 +16,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import Response
 from auth import require_auth
 from authorization import check_user_roles, get_admin_ids, get_master_quota_info
+from supabase_client import sb_execute
 from config import ENABLE_NEW_PRICING
 from database import get_db
 from schemas import (
@@ -117,7 +119,7 @@ async def get_profile(user: dict = Depends(require_auth), db=Depends(get_db)):
         quota_info = get_master_quota_info(is_admin=is_admin_flag)
     elif ENABLE_NEW_PRICING:
         try:
-            quota_info = check_quota(user["id"])
+            quota_info = await asyncio.to_thread(check_quota, user["id"])
         except Exception as e:
             logger.error(f"Failed to check quota for user {user['id']}: {e}")
             quota_info = create_fallback_quota_info(user["id"])
@@ -166,7 +168,7 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
     user_id = user["id"]
 
     try:
-        quota_info = check_quota(user_id)
+        quota_info = await asyncio.to_thread(check_quota, user_id)
     except Exception as e:
         # CRIT-005 AC24: Surface error instead of swallowing with defaults
         logger.error(f"Failed to check quota for trial status: {e}")
@@ -229,9 +231,11 @@ async def save_profile_context(
 
     try:
         context_dict = context.model_dump(exclude_none=True)
-        db.table("profiles").update({
-            "context_data": context_dict,
-        }).eq("id", user_id).execute()
+        await sb_execute(
+            db.table("profiles").update({
+                "context_data": context_dict,
+            }).eq("id", user_id)
+        )
 
         log_user_action(logger, "profile_context_saved", user_id)
         return PerfilContextoResponse(
@@ -252,7 +256,9 @@ async def get_profile_context(
     user_id = user["id"]
 
     try:
-        result = db.table("profiles").select("context_data").eq("id", user_id).single().execute()
+        result = await sb_execute(
+            db.table("profiles").select("context_data").eq("id", user_id).single()
+        )
         context_data = (result.data or {}).get("context_data") or {}
 
         # Consider completed if at least porte_empresa is set
@@ -300,7 +306,9 @@ async def get_profile_completeness(
     user_id = user["id"]
 
     try:
-        result = db.table("profiles").select("context_data").eq("id", user_id).single().execute()
+        result = await sb_execute(
+            db.table("profiles").select("context_data").eq("id", user_id).single()
+        )
         context_data = (result.data or {}).get("context_data") or {}
     except Exception as e:
         logger.error(f"Failed to get profile for completeness: {e}")
@@ -365,9 +373,11 @@ async def get_alert_preferences(
     user_id = user["id"]
 
     try:
-        result = db.table("alert_preferences").select(
-            "frequency, enabled, last_digest_sent_at"
-        ).eq("user_id", user_id).single().execute()
+        result = await sb_execute(
+            db.table("alert_preferences").select(
+                "frequency, enabled, last_digest_sent_at"
+            ).eq("user_id", user_id).single()
+        )
 
         if result.data:
             return AlertPreferencesResponse(
@@ -404,11 +414,13 @@ async def update_alert_preferences(
 
     try:
         # Upsert: insert or update
-        result = db.table("alert_preferences").upsert({
-            "user_id": user_id,
-            "frequency": prefs.frequency,
-            "enabled": prefs.enabled,
-        }, on_conflict="user_id").execute()
+        result = await sb_execute(
+            db.table("alert_preferences").upsert({
+                "user_id": user_id,
+                "frequency": prefs.frequency,
+                "enabled": prefs.enabled,
+            }, on_conflict="user_id")
+        )
 
         data = result.data[0] if result.data else {}
 
@@ -443,12 +455,11 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
 
     # Step 1: Cancel active Stripe subscription if any
     try:
-        subs_result = (
+        subs_result = await sb_execute(
             db.table("user_subscriptions")
             .select("stripe_subscription_id, is_active")
             .eq("user_id", user_id)
             .eq("is_active", True)
-            .execute()
         )
         if subs_result.data:
             for sub in subs_result.data:
@@ -476,7 +487,7 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
 
     for table in tables_to_delete:
         try:
-            db.table(table).delete().eq("user_id", user_id).execute()
+            await sb_execute(db.table(table).delete().eq("user_id", user_id))
         except Exception as e:
             logger.error(f"Failed to delete from {table} for user {mask_user_id(user_id)}: {e}")
             raise HTTPException(
@@ -486,7 +497,7 @@ async def delete_account(user: dict = Depends(require_auth), db=Depends(get_db))
 
     # Delete profile (id column, not user_id)
     try:
-        db.table("profiles").delete().eq("id", user_id).execute()
+        await sb_execute(db.table("profiles").delete().eq("id", user_id))
     except Exception as e:
         logger.error(f"Failed to delete profile for user {mask_user_id(user_id)}: {e}")
         raise HTTPException(
@@ -533,7 +544,9 @@ async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db
 
     # Profile
     try:
-        profile_result = db.table("profiles").select("*").eq("id", user_id).execute()
+        profile_result = await sb_execute(
+            db.table("profiles").select("*").eq("id", user_id)
+        )
         export_data["profile"] = profile_result.data[0] if profile_result.data else None
     except Exception as e:
         logger.warning(f"Failed to export profile: {e}")
@@ -541,12 +554,11 @@ async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db
 
     # Search sessions
     try:
-        sessions_result = (
+        sessions_result = await sb_execute(
             db.table("search_sessions")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
-            .execute()
         )
         export_data["search_history"] = sessions_result.data or []
     except Exception as e:
@@ -555,12 +567,11 @@ async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db
 
     # Subscriptions
     try:
-        subs_result = (
+        subs_result = await sb_execute(
             db.table("user_subscriptions")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
-            .execute()
         )
         export_data["subscriptions"] = subs_result.data or []
     except Exception as e:
@@ -569,12 +580,11 @@ async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db
 
     # Messages
     try:
-        messages_result = (
+        messages_result = await sb_execute(
             db.table("messages")
             .select("*")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
-            .execute()
         )
         export_data["messages"] = messages_result.data or []
     except Exception as e:
@@ -583,11 +593,10 @@ async def export_user_data(user: dict = Depends(require_auth), db=Depends(get_db
 
     # Monthly quota
     try:
-        quota_result = (
+        quota_result = await sb_execute(
             db.table("monthly_quota")
             .select("*")
             .eq("user_id", user_id)
-            .execute()
         )
         export_data["quota_history"] = quota_result.data or []
     except Exception as e:

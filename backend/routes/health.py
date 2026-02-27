@@ -57,15 +57,14 @@ async def _check_supabase_cache() -> dict:
     """Probe Supabase search_results_cache table."""
     start = time.monotonic()
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
         # Light probe: count recent entries
-        response = (
+        response = await sb_execute(
             sb.table("search_results_cache")
             .select("id", count="exact")
             .limit(1)
-            .execute()
         )
 
         latency_ms = round((time.monotonic() - start) * 1000)
@@ -144,35 +143,32 @@ async def _check_cache_degradation() -> dict:
     B-02 AC10: Includes priority_distribution {hot, warm, cold}.
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
         # Count keys where degraded_until > now()
         now_iso = datetime.now(timezone.utc).isoformat()
-        degraded_resp = (
+        degraded_resp = await sb_execute(
             sb.table("search_results_cache")
             .select("id", count="exact")
             .gt("degraded_until", now_iso)
             .limit(0)
-            .execute()
         )
         degraded_count = degraded_resp.count if hasattr(degraded_resp, "count") and degraded_resp.count is not None else 0
 
         # Aggregate fail_streak stats (only for keys with fail_streak > 0)
-        streak_resp = (
+        streak_resp = await sb_execute(
             sb.table("search_results_cache")
             .select("fail_streak")
             .gt("fail_streak", 0)
-            .execute()
         )
         streaks = [row.get("fail_streak", 0) for row in (streak_resp.data or [])]
         avg_streak = round(sum(streaks) / len(streaks), 1) if streaks else 0.0
 
         # B-02 AC10: Priority distribution
-        priority_resp = (
+        priority_resp = await sb_execute(
             sb.table("search_results_cache")
             .select("priority")
-            .execute()
         )
         priority_counts = {"hot": 0, "warm": 0, "cold": 0}
         for row in (priority_resp.data or []):

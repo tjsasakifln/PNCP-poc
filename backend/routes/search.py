@@ -963,14 +963,15 @@ async def buscar_licitacoes(
                     _is_admin, _is_master = await check_user_roles(user["id"])
 
                 if not (_is_admin or _is_master):
-                    _quota_info = _quota.check_quota(user["id"])
+                    _quota_info = await asyncio.to_thread(_quota.check_quota, user["id"])
                     if not _quota_info.allowed:
                         if tracker:
                             await tracker.emit_error(_quota_info.error_message)
                             await remove_tracker(request.search_id)
                         raise HTTPException(status_code=403, detail=_quota_info.error_message)
 
-                    _allowed, _new_used, _remaining = _quota.check_and_increment_quota_atomic(
+                    _allowed, _new_used, _remaining = await asyncio.to_thread(
+                        _quota.check_and_increment_quota_atomic,
                         user["id"],
                         _quota_info.capabilities["max_requests_per_month"],
                     )
@@ -1431,16 +1432,16 @@ async def retry_search(
 ):
     """CRIT-006 AC4-5: Retry search with only missing/failed UFs."""
     from database import get_db as _get_db
+    from supabase_client import sb_execute
 
     db = _get_db()
     try:
-        session_result = (
+        session_result = await sb_execute(
             db.table("search_sessions")
             .select("failed_ufs, ufs, status")
             .eq("id", search_id)
             .eq("user_id", user["id"])
             .single()
-            .execute()
         )
     except Exception:
         raise HTTPException(status_code=404, detail="Search session not found")

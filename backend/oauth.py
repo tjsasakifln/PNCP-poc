@@ -28,7 +28,7 @@ from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from google_auth_oauthlib.flow import Flow
 
-from supabase_client import get_supabase
+from supabase_client import get_supabase, sb_execute
 
 logger = logging.getLogger(__name__)
 
@@ -313,15 +313,17 @@ async def save_user_tokens(
         encrypted_refresh = encrypt_aes256(refresh_token) if refresh_token else None
 
         # Upsert (insert or update if exists)
-        sb.table("user_oauth_tokens").upsert({
-            "user_id": user_id,
-            "provider": provider,
-            "access_token": encrypted_access,
-            "refresh_token": encrypted_refresh,
-            "expires_at": expires_at.isoformat(),
-            "scope": scope,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }, on_conflict="user_id,provider").execute()
+        await sb_execute(
+            sb.table("user_oauth_tokens").upsert({
+                "user_id": user_id,
+                "provider": provider,
+                "access_token": encrypted_access,
+                "refresh_token": encrypted_refresh,
+                "expires_at": expires_at.isoformat(),
+                "scope": scope,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }, on_conflict="user_id,provider")
+        )
 
         logger.info(f"Saved {provider} OAuth tokens for user {user_id[:8]}")
 
@@ -354,12 +356,13 @@ async def get_user_google_token(user_id: str) -> Optional[str]:
 
     try:
         # Query token from database
-        result = sb.table("user_oauth_tokens")\
-            .select("*")\
-            .eq("user_id", user_id)\
-            .eq("provider", "google")\
-            .limit(1)\
-            .execute()
+        result = await sb_execute(
+            sb.table("user_oauth_tokens")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("provider", "google")
+            .limit(1)
+        )
 
         if not result.data:
             logger.info(f"No Google OAuth token for user {user_id[:8]}")
@@ -428,11 +431,12 @@ async def revoke_user_google_token(user_id: str) -> bool:
 
     try:
         # Get tokens to revoke
-        result = sb.table("user_oauth_tokens")\
-            .select("access_token")\
-            .eq("user_id", user_id)\
-            .eq("provider", "google")\
-            .execute()
+        result = await sb_execute(
+            sb.table("user_oauth_tokens")
+            .select("access_token")
+            .eq("user_id", user_id)
+            .eq("provider", "google")
+        )
 
         if not result.data:
             return False
@@ -452,11 +456,12 @@ async def revoke_user_google_token(user_id: str) -> bool:
             logger.warning(f"Failed to revoke with Google: {type(e).__name__}")
 
         # Delete from database
-        sb.table("user_oauth_tokens")\
-            .delete()\
-            .eq("user_id", user_id)\
-            .eq("provider", "google")\
-            .execute()
+        await sb_execute(
+            sb.table("user_oauth_tokens")
+            .delete()
+            .eq("user_id", user_id)
+            .eq("provider", "google")
+        )
 
         logger.info(f"Deleted Google OAuth tokens for user {user_id[:8]}")
         return True

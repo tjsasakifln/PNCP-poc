@@ -50,19 +50,18 @@ async def submit_feedback(
     # AC1: Rate limit — max N feedbacks per user per hour
     await _check_rate_limit(user_id)
 
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     db = get_supabase()
 
     now = datetime.now(timezone.utc).isoformat()
 
     # AC5: Upsert — check if feedback already exists
-    existing = (
+    existing = await sb_execute(
         db.table("classification_feedback")
         .select("id")
         .eq("user_id", user_id)
         .eq("search_id", body.search_id)
         .eq("bid_id", body.bid_id)
-        .execute()
     )
 
     record = {
@@ -84,12 +83,12 @@ async def submit_feedback(
     if existing.data and len(existing.data) > 0:
         # AC5: Update existing record
         feedback_id = existing.data[0]["id"]
-        db.table("classification_feedback").update(record).eq("id", feedback_id).execute()
+        await sb_execute(db.table("classification_feedback").update(record).eq("id", feedback_id))
         updated = True
         logger.info(f"Feedback updated: user={user_id[:8]}... bid={body.bid_id} verdict={body.user_verdict.value}")
     else:
         # Insert new record
-        result = db.table("classification_feedback").insert(record).execute()
+        result = await sb_execute(db.table("classification_feedback").insert(record))
         feedback_id = result.data[0]["id"] if result.data else "unknown"
         logger.info(f"Feedback created: user={user_id[:8]}... bid={body.bid_id} verdict={body.user_verdict.value}")
 
@@ -112,15 +111,14 @@ async def delete_feedback(
     if not user_id:
         raise HTTPException(status_code=401, detail="User ID not found in token")
 
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     db = get_supabase()
 
     # Verify ownership
-    existing = (
+    existing = await sb_execute(
         db.table("classification_feedback")
         .select("id, user_id")
         .eq("id", feedback_id)
-        .execute()
     )
 
     if not existing.data or len(existing.data) == 0:
@@ -129,7 +127,7 @@ async def delete_feedback(
     if existing.data[0].get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Cannot delete another user's feedback")
 
-    db.table("classification_feedback").delete().eq("id", feedback_id).execute()
+    await sb_execute(db.table("classification_feedback").delete().eq("id", feedback_id))
     logger.info(f"Feedback deleted: id={feedback_id} user={user_id[:8]}...")
 
     return FeedbackDeleteResponse(deleted=True)
@@ -147,7 +145,7 @@ async def feedback_patterns(
     """
     _check_feedback_enabled()
 
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     db = get_supabase()
 
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
@@ -160,7 +158,7 @@ async def feedback_patterns(
     if setor_id:
         query = query.eq("setor_id", setor_id)
 
-    result = query.execute()
+    result = await sb_execute(query)
     feedbacks = result.data or []
 
     # Load sector keywords if available
@@ -182,17 +180,16 @@ async def feedback_patterns(
 
 async def _check_rate_limit(user_id: str) -> None:
     """AC1: Enforce rate limit of N feedbacks per user per hour."""
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     db = get_supabase()
 
     one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
 
-    count_result = (
+    count_result = await sb_execute(
         db.table("classification_feedback")
         .select("id", count="exact")
         .eq("user_id", user_id)
         .gte("created_at", one_hour_ago)
-        .execute()
     )
 
     count = count_result.count if count_result.count is not None else 0

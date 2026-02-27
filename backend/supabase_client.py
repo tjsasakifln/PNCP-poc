@@ -1,7 +1,9 @@
 """Supabase client singleton for backend operations."""
 
+import asyncio
 import os
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -47,3 +49,26 @@ def get_supabase_url() -> str:
 def get_supabase_anon_key() -> str:
     """Get Supabase anon key (for frontend JWT verification)."""
     return os.getenv("SUPABASE_ANON_KEY", "")
+
+
+async def sb_execute(query):
+    """Non-blocking Supabase query execution (STORY-290).
+
+    Offloads synchronous postgrest-py .execute() to the default
+    thread pool executor, preventing event loop blocking.
+
+    Each call that previously blocked the event loop for ~5-50ms
+    now runs in a background thread while the event loop stays free.
+
+    Usage:
+        # Before (blocks event loop):
+        result = db.table("profiles").select("*").eq("id", uid).execute()
+
+        # After (non-blocking):
+        result = await sb_execute(db.table("profiles").select("*").eq("id", uid))
+    """
+    from metrics import SUPABASE_EXECUTE_DURATION
+    start = time.monotonic()
+    result = await asyncio.to_thread(query.execute)
+    SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
+    return result

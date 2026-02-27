@@ -4,13 +4,14 @@ Provides CRUD endpoints for tracking procurement opportunities
 through pipeline stages: descoberta → analise → preparando → enviada → resultado.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from auth import require_auth
-from supabase_client import get_supabase
+from supabase_client import get_supabase, sb_execute
 from log_sanitizer import mask_user_id
 from schemas import (
     PipelineItemCreate,
@@ -47,7 +48,7 @@ async def _check_pipeline_read_access(user: dict) -> None:
         pass  # Fall through to plan check
 
     # Check plan capabilities
-    quota_info = check_quota(user_id)
+    quota_info = await asyncio.to_thread(check_quota, user_id)
     caps = quota_info.capabilities
 
     # STORY-265 AC3: Allow read access for expired trials (read-only incentive)
@@ -89,7 +90,7 @@ async def _check_pipeline_write_access(user: dict) -> None:
     await require_active_plan(user)
 
     # Check plan capabilities for pipeline access
-    quota_info = check_quota(user_id)
+    quota_info = await asyncio.to_thread(check_quota, user_id)
     caps = quota_info.capabilities
 
     if not caps.get("allow_pipeline", False):
@@ -122,7 +123,7 @@ async def create_pipeline_item(
     sb = get_supabase()
 
     try:
-        result = (
+        result = await sb_execute(
             sb.table("pipeline_items")
             .insert({
                 "user_id": user_id,
@@ -136,7 +137,6 @@ async def create_pipeline_item(
                 "stage": item.stage or "descoberta",
                 "notes": item.notes,
             })
-            .execute()
         )
 
         if not result.data or len(result.data) == 0:
@@ -193,7 +193,7 @@ async def list_pipeline_items(
         if stage:
             query = query.eq("stage", stage)
 
-        result = query.range(offset, offset + limit - 1).execute()
+        result = await sb_execute(query.range(offset, offset + limit - 1))
 
         items = [PipelineItemResponse(**row) for row in (result.data or [])]
         total = result.count if result.count is not None else len(items)
@@ -238,12 +238,11 @@ async def update_pipeline_item(
         raise HTTPException(status_code=422, detail="Nenhum campo para atualizar.")
 
     try:
-        result = (
+        result = await sb_execute(
             sb.table("pipeline_items")
             .update(payload)
             .eq("id", item_id)
             .eq("user_id", user_id)
-            .execute()
         )
 
         if not result.data or len(result.data) == 0:
@@ -278,12 +277,11 @@ async def delete_pipeline_item(
     sb = get_supabase()
 
     try:
-        result = (
+        result = await sb_execute(
             sb.table("pipeline_items")
             .delete()
             .eq("id", item_id)
             .eq("user_id", user_id)
-            .execute()
         )
 
         if not result.data or len(result.data) == 0:
@@ -320,7 +318,7 @@ async def get_pipeline_alerts(
     try:
         deadline = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
 
-        result = (
+        result = await sb_execute(
             sb.table("pipeline_items")
             .select("*")
             .eq("user_id", user_id)
@@ -328,7 +326,6 @@ async def get_pipeline_alerts(
             .not_.is_("data_encerramento", "null")
             .lte("data_encerramento", deadline)
             .order("data_encerramento", desc=False)
-            .execute()
         )
 
         items = [PipelineItemResponse(**row) for row in (result.data or [])]

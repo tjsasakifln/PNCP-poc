@@ -56,7 +56,7 @@ async def send_welcome_email(user: dict = Depends(require_auth)):
     Frontend calls this after signup confirmation.
     Idempotent: checks profiles.welcome_email_sent_at before sending.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     from email_service import send_email_async
     from templates.emails.welcome import render_welcome_email
     from quota import PLAN_NAMES
@@ -66,12 +66,11 @@ async def send_welcome_email(user: dict = Depends(require_auth)):
 
     # Idempotency check: don't send if already sent
     try:
-        profile = (
+        profile = await sb_execute(
             sb.table("profiles")
             .select("email, full_name, plan_type, welcome_email_sent_at")
             .eq("id", user_id)
             .single()
-            .execute()
         )
 
         if not profile.data:
@@ -96,9 +95,9 @@ async def send_welcome_email(user: dict = Depends(require_auth)):
 
     # Mark as sent BEFORE sending (prevents duplicates on retry)
     try:
-        sb.table("profiles").update({
+        await sb_execute(sb.table("profiles").update({
             "welcome_email_sent_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", user_id).execute()
+        }).eq("id", user_id))
     except Exception as e:
         logger.warning(f"Failed to mark welcome email as sent: {e}")
         # Continue anyway — better to send twice than never
@@ -139,14 +138,14 @@ async def unsubscribe_email(
             status_code=400,
         )
 
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     try:
         sb = get_supabase()
-        sb.table("profiles").update({
+        await sb_execute(sb.table("profiles").update({
             "email_unsubscribed": True,
             "email_unsubscribed_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", user_id).execute()
+        }).eq("id", user_id))
 
         logger.info(f"User {mask_user_id(user_id)} unsubscribed from marketing emails")
 

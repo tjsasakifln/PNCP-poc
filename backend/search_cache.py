@@ -185,7 +185,7 @@ async def _save_to_supabase(
     B-03 AC2: On successful fetch, also writes health metadata fields.
     GTM-ARCH-002 AC3: Also stores params_hash_global for cross-user fallback.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
     now = datetime.now(timezone.utc).isoformat()
@@ -245,9 +245,11 @@ async def _save_to_supabase(
     except ImportError:
         pass
 
-    sb.table("search_results_cache").upsert(
-        row, on_conflict="user_id,params_hash"
-    ).execute()
+    await sb_execute(
+        sb.table("search_results_cache").upsert(
+            row, on_conflict="user_id,params_hash"
+        )
+    )
 
 
 async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
@@ -255,17 +257,16 @@ async def _get_from_supabase(user_id: str, params_hash: str) -> Optional[dict]:
 
     B-02 AC8: Also returns priority, access_count, last_accessed_at for classification.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
-    response = (
+    response = await sb_execute(
         sb.table("search_results_cache")
         .select("results, total_results, sources_json, fetched_at, created_at, priority, access_count, last_accessed_at")
         .eq("user_id", user_id)
         .eq("params_hash", params_hash)
         .order("created_at", desc=True)
         .limit(1)
-        .execute()
     )
 
     if not response.data:
@@ -308,18 +309,17 @@ async def _get_global_fallback_from_supabase(params: dict) -> Optional[dict]:
     Used when a user (especially trial) has no personal cache.
     Read-only: does NOT write to the user's own cache.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
     global_hash = compute_global_hash(params)
 
-    response = (
+    response = await sb_execute(
         sb.table("search_results_cache")
         .select("results, total_results, sources_json, fetched_at, created_at, priority, access_count, last_accessed_at")
         .eq("params_hash_global", global_hash)
         .order("created_at", desc=True)
         .limit(1)
-        .execute()
     )
 
     if not response.data:
@@ -757,19 +757,18 @@ async def record_cache_fetch_failure(user_id: str, params_hash: str) -> dict:
 
     Returns dict with {fail_streak, degraded_until} or empty dict if key not found.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
     now = datetime.now(timezone.utc)
 
     # Read current fail_streak
-    response = (
+    response = await sb_execute(
         sb.table("search_results_cache")
         .select("fail_streak")
         .eq("user_id", user_id)
         .eq("params_hash", params_hash)
         .limit(1)
-        .execute()
     )
 
     if not response.data:
@@ -782,11 +781,13 @@ async def record_cache_fetch_failure(user_id: str, params_hash: str) -> dict:
     degraded_until = (now + timedelta(minutes=backoff_min)).isoformat()
 
     # Update with new values
-    sb.table("search_results_cache").update({
-        "fail_streak": new_streak,
-        "last_attempt_at": now.isoformat(),
-        "degraded_until": degraded_until,
-    }).eq("user_id", user_id).eq("params_hash", params_hash).execute()
+    await sb_execute(
+        sb.table("search_results_cache").update({
+            "fail_streak": new_streak,
+            "last_attempt_at": now.isoformat(),
+            "degraded_until": degraded_until,
+        }).eq("user_id", user_id).eq("params_hash", params_hash)
+    )
 
     logger.info(
         f"Cache key {params_hash[:12]} fail_streak={new_streak}, "
@@ -802,16 +803,15 @@ async def is_cache_key_degraded(user_id: str, params_hash: str) -> bool:
     Returns True if degraded_until > now(), meaning callers should
     avoid triggering a new fetch for this key.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
-    response = (
+    response = await sb_execute(
         sb.table("search_results_cache")
         .select("degraded_until")
         .eq("user_id", user_id)
         .eq("params_hash", params_hash)
         .limit(1)
-        .execute()
     )
 
     if not response.data:
@@ -1068,7 +1068,7 @@ async def _increment_and_reclassify(
       - priority (if reclassified)
     AC9: If hot key is within 30min of expiry, dispatches proactive revalidation.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     now = datetime.now(timezone.utc)
 
@@ -1076,13 +1076,12 @@ async def _increment_and_reclassify(
         sb = get_supabase()
 
         # Read current state
-        resp = (
+        resp = await sb_execute(
             sb.table("search_results_cache")
             .select("access_count, last_accessed_at, priority")
             .eq("user_id", user_id)
             .eq("params_hash", params_hash)
             .limit(1)
-            .execute()
         )
 
         if not resp.data:
@@ -1109,9 +1108,11 @@ async def _increment_and_reclassify(
                 f"{old_priority} → {new_priority.value} (access_count={new_count})"
             )
 
-        sb.table("search_results_cache").update(update_data).eq(
-            "user_id", user_id
-        ).eq("params_hash", params_hash).execute()
+        await sb_execute(
+            sb.table("search_results_cache").update(update_data).eq(
+                "user_id", user_id
+            ).eq("params_hash", params_hash)
+        )
 
         # Update result dict with current priority
         result["cache_priority"] = new_priority
@@ -1536,7 +1537,7 @@ async def get_cache_metrics() -> dict:
     total_entries, priority_distribution, age_distribution, degraded_keys,
     avg_fetch_duration_ms, top_keys.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     from redis_pool import get_fallback_cache
 
     metrics: dict = {}
@@ -1574,10 +1575,9 @@ async def get_cache_metrics() -> dict:
         sb = get_supabase()
 
         # Total entries
-        all_entries = (
+        all_entries = await sb_execute(
             sb.table("search_results_cache")
             .select("params_hash, priority, fetched_at, access_count, fail_streak, degraded_until, fetch_duration_ms")
-            .execute()
         )
         rows = all_entries.data or []
         metrics["total_entries"] = len(rows)
@@ -1683,9 +1683,9 @@ async def invalidate_cache_entry(params_hash: str) -> dict:
 
     # Level 1: Supabase
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
-        sb.table("search_results_cache").delete().eq("params_hash", params_hash).execute()
+        await sb_execute(sb.table("search_results_cache").delete().eq("params_hash", params_hash))
         deleted_levels.append("supabase")
     except Exception as e:
         logger.warning(f"Supabase invalidation failed for {params_hash[:12]}: {e}")
@@ -1721,12 +1721,12 @@ async def invalidate_all_cache() -> dict:
 
     # Level 1: Supabase — delete all rows
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
         # Delete all cache entries (use gte on created_at to match all)
-        result = sb.table("search_results_cache").delete().gte(
-            "created_at", "2000-01-01"
-        ).execute()
+        result = await sb_execute(
+            sb.table("search_results_cache").delete().gte("created_at", "2000-01-01")
+        )
         counts["supabase"] = len(result.data) if result.data else 0
     except Exception as e:
         logger.warning(f"Supabase bulk invalidation failed: {e}")
@@ -1763,10 +1763,10 @@ async def inspect_cache_entry(params_hash: str) -> Optional[dict]:
     priority, fail_streak, degraded_until, coverage, access_count, last_accessed_at.
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
-        response = (
+        response = await sb_execute(
             sb.table("search_results_cache")
             .select(
                 "params_hash, user_id, search_params, total_results, sources_json, "
@@ -1776,7 +1776,6 @@ async def inspect_cache_entry(params_hash: str) -> Optional[dict]:
             )
             .eq("params_hash", params_hash)
             .limit(1)
-            .execute()
         )
 
         if not response.data:
@@ -1843,36 +1842,33 @@ async def get_stale_entries_for_refresh(batch_size: int = 25) -> list[dict]:
 
     Returns list of dicts with: user_id, params_hash, search_params, total_results, priority.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     sb = get_supabase()
     now = datetime.now(timezone.utc)
     stale_cutoff = (now - timedelta(hours=CACHE_FRESH_HOURS)).isoformat()
 
     # Query 1: Empty entries (total_results = 0), any priority
-    empty_resp = (
+    empty_resp = await sb_execute(
         sb.table("search_results_cache")
         .select("user_id, params_hash, search_params, total_results, priority, access_count, degraded_until")
         .eq("total_results", 0)
-        .execute()
     )
 
     # Query 2: HOT + WARM stale entries (fetched_at < stale_cutoff)
-    hot_resp = (
+    hot_resp = await sb_execute(
         sb.table("search_results_cache")
         .select("user_id, params_hash, search_params, total_results, priority, access_count, degraded_until")
         .eq("priority", "hot")
         .lt("fetched_at", stale_cutoff)
         .gt("total_results", 0)
-        .execute()
     )
-    warm_resp = (
+    warm_resp = await sb_execute(
         sb.table("search_results_cache")
         .select("user_id, params_hash, search_params, total_results, priority, access_count, degraded_until")
         .eq("priority", "warm")
         .lt("fetched_at", stale_cutoff)
         .gt("total_results", 0)
-        .execute()
     )
 
     # Merge and deduplicate by params_hash
@@ -1925,15 +1921,14 @@ async def get_top_popular_params(limit: int = 10) -> list[dict]:
     Queries search_results_cache for the most accessed search_params combinations,
     ordered by access_count DESC. Returns deduplicated list of search_params.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
     sb = get_supabase()
 
-    response = (
+    response = await sb_execute(
         sb.table("search_results_cache")
         .select("search_params, access_count, params_hash")
         .order("access_count", desc=True)
         .limit(limit * 3)  # Over-fetch to deduplicate
-        .execute()
     )
 
     if not response.data:

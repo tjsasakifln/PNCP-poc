@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from auth import require_auth
 from database import get_db
 from log_sanitizer import mask_user_id
+from supabase_client import sb_execute
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +72,11 @@ async def get_analytics_summary(user: dict = Depends(require_auth), db=Depends(g
 
     try:
         # STORY-202 DB-M07: Use RPC to avoid full-table scan (single optimized query)
-        result = db.rpc("get_analytics_summary", {
+        result = await sb_execute(db.rpc("get_analytics_summary", {
             "p_user_id": user_id,
             "p_start_date": None,
             "p_end_date": None,
-        }).execute()
+        }))
 
         if not result.data or len(result.data) == 0:
             # No data - return zeros with current timestamp
@@ -145,13 +146,12 @@ async def get_searches_over_time(
     try:
         start_date = (datetime.now(timezone.utc) - timedelta(days=range_days)).date()
 
-        sessions_result = (
+        sessions_result = await sb_execute(
             db.table("search_sessions")
             .select("created_at, total_filtered, valor_total")
             .eq("user_id", user_id)
             .gte("created_at", start_date.isoformat())
             .order("created_at")
-            .execute()
         )
         sessions = sessions_result.data or []
 
@@ -205,11 +205,10 @@ async def get_top_dimensions(
     user_id = user["id"]
 
     try:
-        sessions_result = (
+        sessions_result = await sb_execute(
             db.table("search_sessions")
             .select("ufs, sectors, valor_total")
             .eq("user_id", user_id)
-            .execute()
         )
         sessions = sessions_result.data or []
 
@@ -275,7 +274,7 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
 
     try:
         # Get user's trial period dates from profile
-        profile_result = db.table("profiles").select("created_at, trial_expires_at").eq("id", user_id).single().execute()
+        profile_result = await sb_execute(db.table("profiles").select("created_at, trial_expires_at").eq("id", user_id).single())
         profile = profile_result.data if profile_result.data else {}
         trial_start = profile.get("created_at")
         trial_end = profile.get("trial_expires_at")
@@ -290,7 +289,7 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
         if trial_end:
             query = query.lte("created_at", trial_end)
 
-        sessions_result = query.order("valor_total", desc=True).execute()
+        sessions_result = await sb_execute(query.order("valor_total", desc=True))
         sessions = sessions_result.data or []
 
         if not sessions:

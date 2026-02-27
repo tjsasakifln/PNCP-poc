@@ -22,7 +22,7 @@ from schemas import (
     GoogleSheetsExportHistory,
     GoogleSheetsExportHistoryResponse
 )
-from supabase_client import get_supabase
+from supabase_client import get_supabase, sb_execute
 
 logger = logging.getLogger(__name__)
 
@@ -183,12 +183,13 @@ async def get_export_history(
         # Query export history
         sb = get_supabase()
 
-        result = sb.table("google_sheets_exports")\
-            .select("*")\
-            .eq("user_id", user["id"])\
-            .order("created_at", desc=True)\
-            .limit(limit)\
-            .execute()
+        result = await sb_execute(
+            sb.table("google_sheets_exports")
+            .select("*")
+            .eq("user_id", user["id"])
+            .order("created_at", desc=True)
+            .limit(limit)
+        )
 
         # Map to response model
         exports = [
@@ -246,7 +247,7 @@ async def _save_export_history(
     try:
         sb = get_supabase()
 
-        sb.table("google_sheets_exports").insert({
+        await sb_execute(sb.table("google_sheets_exports").insert({
             "user_id": user_id,
             "spreadsheet_id": spreadsheet_id,
             "spreadsheet_url": spreadsheet_url,
@@ -254,7 +255,7 @@ async def _save_export_history(
             "total_rows": total_rows,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "last_updated_at": datetime.now(timezone.utc).isoformat()
-        }).execute()
+        }))
 
         logger.debug(f"Saved export history for spreadsheet {spreadsheet_id}")
 

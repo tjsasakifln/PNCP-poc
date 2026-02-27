@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 from auth import require_auth
 from admin import require_admin, _is_admin_from_supabase
+from supabase_client import sb_execute
 from schemas import (
     validate_uuid,
     CreateConversationRequest,
@@ -51,14 +52,13 @@ async def create_conversation(
     user_id = user["id"]
 
     # Insert conversation
-    conv_result = (
+    conv_result = await sb_execute(
         sb.table("conversations")
         .insert({
             "user_id": user_id,
             "subject": req.subject,
             "category": req.category.value,
         })
-        .execute()
     )
     if not conv_result.data:
         raise HTTPException(status_code=500, detail="Erro ao criar conversa")
@@ -66,14 +66,16 @@ async def create_conversation(
     conv = conv_result.data[0]
 
     # Insert first message
-    sb.table("messages").insert({
-        "conversation_id": conv["id"],
-        "sender_id": user_id,
-        "body": req.body,
-        "is_admin_reply": False,
-        "read_by_user": True,   # sender already read it
-        "read_by_admin": False,
-    }).execute()
+    await sb_execute(
+        sb.table("messages").insert({
+            "conversation_id": conv["id"],
+            "sender_id": user_id,
+            "body": req.body,
+            "is_admin_reply": False,
+            "read_by_user": True,   # sender already read it
+            "read_by_admin": False,
+        })
+    )
 
     logger.info("Conversation %s created by user %s", conv["id"], user_id[:8])
     return {"id": conv["id"], "status": "aberto"}
@@ -95,13 +97,15 @@ async def list_conversations(
 
     # STORY-202 DB-M06: Use RPC to eliminate N+1 query (one query instead of N+1)
     try:
-        result = sb.rpc("get_conversations_with_unread_count", {
-            "p_user_id": user_id,
-            "p_is_admin": admin,
-            "p_status": status,
-            "p_limit": limit,
-            "p_offset": offset,
-        }).execute()
+        result = await sb_execute(
+            sb.rpc("get_conversations_with_unread_count", {
+                "p_user_id": user_id,
+                "p_is_admin": admin,
+                "p_status": status,
+                "p_limit": limit,
+                "p_offset": offset,
+            })
+        )
 
         if not result.data:
             return ConversationsListResponse(conversations=[], total=0)
@@ -153,12 +157,11 @@ async def get_conversation(
     admin = _is_admin(user_id)
 
     # Fetch conversation
-    conv_result = (
+    conv_result = await sb_execute(
         sb.table("conversations")
         .select("*, profiles!conversations_user_id_fkey(email)")
         .eq("id", conversation_id)
         .single()
-        .execute()
     )
     if not conv_result.data:
         raise HTTPException(status_code=404, detail="Conversa nao encontrada")
@@ -170,25 +173,28 @@ async def get_conversation(
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     # Fetch messages
-    msgs_result = (
+    msgs_result = await sb_execute(
         sb.table("messages")
         .select("*, profiles!messages_sender_id_fkey(email)")
         .eq("conversation_id", conversation_id)
         .order("created_at", desc=False)
-        .execute()
     )
 
     # Mark messages as read
     if admin:
         # Admin reading: mark user messages as read_by_admin
-        sb.table("messages").update({"read_by_admin": True}).eq(
-            "conversation_id", conversation_id
-        ).eq("is_admin_reply", False).eq("read_by_admin", False).execute()
+        await sb_execute(
+            sb.table("messages").update({"read_by_admin": True}).eq(
+                "conversation_id", conversation_id
+            ).eq("is_admin_reply", False).eq("read_by_admin", False)
+        )
     else:
         # User reading: mark admin replies as read_by_user
-        sb.table("messages").update({"read_by_user": True}).eq(
-            "conversation_id", conversation_id
-        ).eq("is_admin_reply", True).eq("read_by_user", False).execute()
+        await sb_execute(
+            sb.table("messages").update({"read_by_user": True}).eq(
+                "conversation_id", conversation_id
+            ).eq("is_admin_reply", True).eq("read_by_user", False)
+        )
 
     profile_data = conv.get("profiles") or {}
     messages = []
@@ -237,12 +243,11 @@ async def reply_to_conversation(
     admin = _is_admin(user_id)
 
     # Verify conversation exists and user has access
-    conv_result = (
+    conv_result = await sb_execute(
         sb.table("conversations")
         .select("id, user_id, status")
         .eq("id", conversation_id)
         .single()
-        .execute()
     )
     if not conv_result.data:
         raise HTTPException(status_code=404, detail="Conversa nao encontrada")
@@ -252,21 +257,25 @@ async def reply_to_conversation(
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     # Insert message
-    sb.table("messages").insert({
-        "conversation_id": conversation_id,
-        "sender_id": user_id,
-        "body": req.body,
-        "is_admin_reply": admin,
-        "read_by_user": not admin,   # if admin replies, user hasn't read yet
-        "read_by_admin": admin,      # if user replies, admin hasn't read yet
-    }).execute()
+    await sb_execute(
+        sb.table("messages").insert({
+            "conversation_id": conversation_id,
+            "sender_id": user_id,
+            "body": req.body,
+            "is_admin_reply": admin,
+            "read_by_user": not admin,   # if admin replies, user hasn't read yet
+            "read_by_admin": admin,      # if user replies, admin hasn't read yet
+        })
+    )
 
     # Auto-transition status
     new_status = "respondido" if admin else "aberto"
     if conv["status"] != "resolvido":
-        sb.table("conversations").update({"status": new_status}).eq(
-            "id", conversation_id
-        ).execute()
+        await sb_execute(
+            sb.table("conversations").update({"status": new_status}).eq(
+                "id", conversation_id
+            )
+        )
 
     logger.info(
         "Reply to conversation %s by %s (admin=%s)",
@@ -291,11 +300,10 @@ async def update_conversation_status(
 
     sb = _get_sb()
 
-    result = (
+    result = await sb_execute(
         sb.table("conversations")
         .update({"status": req.status.value})
         .eq("id", conversation_id)
-        .execute()
     )
     if not result.data:
         raise HTTPException(status_code=404, detail="Conversa nao encontrada")
@@ -320,33 +328,30 @@ async def get_unread_count(
 
     if admin:
         # Admin: count user messages not read by admin, across ALL conversations
-        result = (
+        result = await sb_execute(
             sb.table("messages")
             .select("id", count="exact")
             .eq("is_admin_reply", False)
             .eq("read_by_admin", False)
-            .execute()
         )
     else:
         # User: count admin replies not read by user, in own conversations only
         # First get own conversation IDs
-        convs = (
+        convs = await sb_execute(
             sb.table("conversations")
             .select("id")
             .eq("user_id", user_id)
-            .execute()
         )
         conv_ids = [c["id"] for c in (convs.data or [])]
         if not conv_ids:
             return UnreadCountResponse(unread_count=0)
 
-        result = (
+        result = await sb_execute(
             sb.table("messages")
             .select("id", count="exact")
             .in_("conversation_id", conv_ids)
             .eq("is_admin_reply", True)
             .eq("read_by_user", False)
-            .execute()
         )
 
     return UnreadCountResponse(unread_count=result.count or 0)

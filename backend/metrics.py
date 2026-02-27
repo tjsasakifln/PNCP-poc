@@ -313,6 +313,20 @@ SEARCH_WORKER_COMPLETION = _create_histogram(
     buckets=[5, 10, 15, 30, 60, 90, 120, 180, 300],
 )
 
+# STORY-290 AC5: Event loop blocking detection
+EVENT_LOOP_BLOCKING_TOTAL = _create_counter(
+    "smartlic_event_loop_blocking_total",
+    "Detected event loop blocking events (asyncio slow callbacks)",
+    labelnames=["source"],
+)
+
+# STORY-290: Supabase query offload duration tracking
+SUPABASE_EXECUTE_DURATION = _create_histogram(
+    "smartlic_supabase_execute_duration_seconds",
+    "Duration of Supabase queries offloaded via sb_execute",
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5],
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

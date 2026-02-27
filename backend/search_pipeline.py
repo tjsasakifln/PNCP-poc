@@ -604,7 +604,7 @@ class SearchPipeline:
         # Rate limiting (before quota check)
         if not (ctx.is_admin or ctx.is_master):
             try:
-                quick_quota = quota.check_quota(ctx.user["id"])
+                quick_quota = await asyncio.to_thread(quota.check_quota, ctx.user["id"])
                 max_rpm = quick_quota.capabilities.get("max_requests_per_min", 10)
             except Exception as e:
                 logger.warning(f"Failed to get rate limit for user {mask_user_id(ctx.user['id'])}: {e}")
@@ -651,7 +651,7 @@ class SearchPipeline:
         # GTM-ARCH-001 AC8: Skip quota consumption if already done in POST (async path)
         if ctx.quota_pre_consumed:
             logger.debug(f"ARCH-001: Quota pre-consumed for {mask_user_id(ctx.user['id'])} — skipping quota check")
-            ctx.quota_info = quota.check_quota(ctx.user["id"])
+            ctx.quota_info = await asyncio.to_thread(quota.check_quota, ctx.user["id"])
             return
 
         # GTM-INFRA-003 AC5-AC8: Check cache BEFORE quota — skip quota if fully cached
@@ -668,7 +668,7 @@ class SearchPipeline:
                 if _cache_result and _cache_result.get("results"):
                     # AC5: Cache hit — skip quota consumption entirely
                     ctx.from_cache = True
-                    ctx.quota_info = quota.check_quota(ctx.user["id"])
+                    ctx.quota_info = await asyncio.to_thread(quota.check_quota, ctx.user["id"])
                     if not ctx.quota_info.allowed:
                         raise HTTPException(status_code=403, detail=ctx.quota_info.error_message)
                     # AC10: Structured log
@@ -703,12 +703,13 @@ class SearchPipeline:
         elif deps.ENABLE_NEW_PRICING:
             logger.debug("New pricing enabled, checking quota and plan capabilities")
             try:
-                ctx.quota_info = quota.check_quota(ctx.user["id"])
+                ctx.quota_info = await asyncio.to_thread(quota.check_quota, ctx.user["id"])
 
                 if not ctx.quota_info.allowed:
                     raise HTTPException(status_code=403, detail=ctx.quota_info.error_message)
 
-                allowed, new_quota_used, quota_remaining_after = quota.check_and_increment_quota_atomic(
+                allowed, new_quota_used, quota_remaining_after = await asyncio.to_thread(
+                    quota.check_and_increment_quota_atomic,
                     ctx.user["id"],
                     ctx.quota_info.capabilities["max_requests_per_month"]
                 )
@@ -874,9 +875,11 @@ class SearchPipeline:
 
         # STORY-260 AC5: Load user profile for LLM analysis
         try:
-            from supabase_client import get_supabase
+            from supabase_client import get_supabase, sb_execute
             _db = get_supabase()
-            _profile_row = _db.table("profiles").select("context_data").eq("id", ctx.user["id"]).single().execute()
+            _profile_row = await sb_execute(
+                _db.table("profiles").select("context_data").eq("id", ctx.user["id"]).single()
+            )
             ctx.user_profile = (_profile_row.data or {}).get("context_data") or {}
         except Exception as _prof_err:
             logger.debug(f"Could not load user profile: {_prof_err}")

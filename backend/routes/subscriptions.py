@@ -57,7 +57,7 @@ async def update_billing_period(
     GTM-002: Simplified flow — Stripe handles proration automatically.
     No deferral logic, no manual credit calculations.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
     logger.info(
@@ -68,14 +68,13 @@ async def update_billing_period(
 
     # Step 1: Fetch current active subscription
     try:
-        result = (
+        result = await sb_execute(
             sb.table("user_subscriptions")
             .select("id, plan_id, billing_period, stripe_subscription_id, expires_at")
             .eq("user_id", user_id)
             .eq("is_active", True)
             .order("created_at", desc=True)
             .limit(1)
-            .execute()
         )
 
         if not result.data or len(result.data) == 0:
@@ -103,12 +102,11 @@ async def update_billing_period(
 
     # Step 2: Get plan Stripe price IDs
     try:
-        plan_result = (
+        plan_result = await sb_execute(
             sb.table("plans")
             .select("stripe_price_id_monthly, stripe_price_id_semiannual, stripe_price_id_annual")
             .eq("id", plan_id)
             .single()
-            .execute()
         )
 
         if not plan_result.data:
@@ -136,10 +134,12 @@ async def update_billing_period(
 
     # Step 4: Update Supabase subscription
     try:
-        sb.table("user_subscriptions").update({
-            "billing_period": request.new_billing_period,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", subscription["id"]).execute()
+        await sb_execute(
+            sb.table("user_subscriptions").update({
+                "billing_period": request.new_billing_period,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", subscription["id"])
+        )
     except Exception as e:
         logger.error(f"DB update failed for user {mask_user_id(user_id)}: {e}", exc_info=True)
         logger.critical(
@@ -175,7 +175,7 @@ async def cancel_subscription(
     GTM-FIX-006: User-initiated cancellation flow.
     Sets cancel_at_period_end=True in Stripe, updates status to 'canceling'.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
     logger.info(f"Cancellation requested for user {mask_user_id(user_id)}")
@@ -189,14 +189,13 @@ async def cancel_subscription(
 
     # Step 1: Fetch current active subscription
     try:
-        result = (
+        result = await sb_execute(
             sb.table("user_subscriptions")
             .select("id, stripe_subscription_id, expires_at")
             .eq("user_id", user_id)
             .eq("is_active", True)
             .order("created_at", desc=True)
             .limit(1)
-            .execute()
         )
 
         if not result.data or len(result.data) == 0:
@@ -236,11 +235,13 @@ async def cancel_subscription(
 
     # Step 3: Update profiles table with canceling status and end date
     try:
-        sb.table("profiles").update({
-            "subscription_status": "canceling",
-            "subscription_end_date": ends_at_iso,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", user_id).execute()
+        await sb_execute(
+            sb.table("profiles").update({
+                "subscription_status": "canceling",
+                "subscription_end_date": ends_at_iso,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", user_id)
+        )
 
         logger.info(f"Updated profiles for user {mask_user_id(user_id)} to canceling status")
     except Exception as e:

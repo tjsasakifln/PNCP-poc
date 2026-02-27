@@ -10,9 +10,12 @@ Usage:
     opportunities = await build_digest_for_user(user_id, max_items=10)
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+
+from supabase_client import sb_execute
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +27,11 @@ async def _get_user_profile_context(user_id: str, db) -> Optional[dict]:
         Dict with context_data keys (setor_id, ufs_atuacao, etc.) or None.
     """
     try:
-        result = db.table("profiles").select(
-            "context_data"
-        ).eq("id", user_id).single().execute()
+        result = await sb_execute(
+            db.table("profiles").select(
+                "context_data"
+            ).eq("id", user_id).single()
+        )
         return (result.data or {}).get("context_data") or {}
     except Exception as e:
         logger.warning(f"Failed to get profile context for digest: user_id={user_id[:8]}, error={e}")
@@ -40,9 +45,11 @@ async def _get_alert_preferences(user_id: str, db) -> Optional[dict]:
         Dict with frequency, enabled, last_digest_sent_at or None.
     """
     try:
-        result = db.table("alert_preferences").select(
-            "frequency, enabled, last_digest_sent_at"
-        ).eq("user_id", user_id).single().execute()
+        result = await sb_execute(
+            db.table("alert_preferences").select(
+                "frequency, enabled, last_digest_sent_at"
+            ).eq("user_id", user_id).single()
+        )
         return result.data
     except Exception:
         return None
@@ -117,7 +124,7 @@ async def _query_recent_opportunities(
         if since:
             query = query.gte("created_at", since.isoformat())
 
-        result = query.execute()
+        result = await sb_execute(query)
 
         if not result.data:
             return []
@@ -283,9 +290,11 @@ async def get_digest_eligible_users(db=None) -> list[dict]:
         db = get_supabase()
 
     try:
-        result = db.table("alert_preferences").select(
-            "user_id, frequency, enabled, last_digest_sent_at"
-        ).eq("enabled", True).neq("frequency", "off").execute()
+        result = await sb_execute(
+            db.table("alert_preferences").select(
+                "user_id, frequency, enabled, last_digest_sent_at"
+            ).eq("enabled", True).neq("frequency", "off")
+        )
 
         if not result.data:
             return []
@@ -310,8 +319,10 @@ async def mark_digest_sent(user_id: str, db=None) -> None:
 
     try:
         now = datetime.now(timezone.utc)
-        db.table("alert_preferences").update({
-            "last_digest_sent_at": now.isoformat(),
-        }).eq("user_id", user_id).execute()
+        await sb_execute(
+            db.table("alert_preferences").update({
+                "last_digest_sent_at": now.isoformat(),
+            }).eq("user_id", user_id)
+        )
     except Exception as e:
         logger.warning(f"Failed to update last_digest_sent_at for {user_id[:8]}: {e}")

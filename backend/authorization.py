@@ -43,26 +43,24 @@ async def check_user_roles(user_id: str) -> tuple[bool, bool]:
     """
     for attempt in range(2):
         try:
-            from supabase_client import get_supabase
+            from supabase_client import get_supabase, sb_execute
             sb = get_supabase()
 
             # Get profile - try with is_admin first, fallback to just plan_type
             try:
-                profile = (
+                profile = await sb_execute(
                     sb.table("profiles")
                     .select("is_admin, plan_type")
                     .eq("id", user_id)
                     .single()
-                    .execute()
                 )
             except Exception:
                 # is_admin column might not exist yet - fallback
-                profile = (
+                profile = await sb_execute(
                     sb.table("profiles")
                     .select("plan_type")
                     .eq("id", user_id)
                     .single()
-                    .execute()
                 )
 
             if not profile.data:

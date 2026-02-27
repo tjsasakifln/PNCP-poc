@@ -62,7 +62,7 @@ async def cleanup_stale_sessions() -> dict:
     Returns dict with counts: {"marked_stale": N, "deleted_old": M}
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
         now = datetime.now(timezone.utc)
@@ -72,7 +72,7 @@ async def cleanup_stale_sessions() -> dict:
         # Try status-based cleanup first; fall back if column doesn't exist
         try:
             # Mark stale in_progress sessions as timed_out
-            marked_result = (
+            marked_result = await sb_execute(
                 sb.table("search_sessions")
                 .update({
                     "status": "timed_out",
@@ -82,13 +82,12 @@ async def cleanup_stale_sessions() -> dict:
                 })
                 .eq("status", "in_progress")
                 .lt("created_at", stale_cutoff)
-                .execute()
             )
             marked_stale = len(marked_result.data) if marked_result.data else 0
 
             # Also mark stale 'created' and 'processing' sessions
             for stale_status in ("created", "processing"):
-                extra_result = (
+                extra_result = await sb_execute(
                     sb.table("search_sessions")
                     .update({
                         "status": "timed_out",
@@ -98,19 +97,17 @@ async def cleanup_stale_sessions() -> dict:
                     })
                     .eq("status", stale_status)
                     .lt("created_at", stale_cutoff)
-                    .execute()
                 )
                 marked_stale += len(extra_result.data) if extra_result.data else 0
 
             # Delete old terminal sessions
             deleted_old = 0
             for terminal_status in ("failed", "timeout", "timed_out"):
-                del_result = (
+                del_result = await sb_execute(
                     sb.table("search_sessions")
                     .delete()
                     .eq("status", terminal_status)
                     .lt("created_at", old_cutoff)
-                    .execute()
                 )
                 deleted_old += len(del_result.data) if del_result.data else 0
 
@@ -123,11 +120,10 @@ async def cleanup_stale_sessions() -> dict:
                     "Session cleanup: status column not found, "
                     "falling back to created_at-only cleanup"
                 )
-                del_result = (
+                del_result = await sb_execute(
                     sb.table("search_sessions")
                     .delete()
                     .lt("created_at", old_cutoff)
-                    .execute()
                 )
                 deleted_old = len(del_result.data) if del_result.data else 0
                 return {"marked_stale": 0, "deleted_old": deleted_old}
@@ -480,7 +476,7 @@ async def check_trial_reminders() -> dict:
         return {"sent": 0, "skipped": 0, "errors": 0, "disabled": True}
 
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         from services.trial_stats import get_trial_usage_stats
         from templates.emails.trial import (
             render_trial_midpoint_email,
@@ -506,13 +502,12 @@ async def check_trial_reminders() -> dict:
                 target_end = (now - timedelta(days=day - 1, hours=-12)).isoformat()
 
                 # AC8: Find trial users at this milestone
-                users_result = (
+                users_result = await sb_execute(
                     sb.table("profiles")
                     .select("id, email, full_name")
                     .eq("plan_type", "free_trial")
                     .gte("created_at", target_start)
                     .lt("created_at", target_end)
-                    .execute()
                 )
 
                 if not users_result.data:
@@ -528,13 +523,12 @@ async def check_trial_reminders() -> dict:
 
                     # AC9: Idempotency check — skip if already sent
                     try:
-                        existing = (
+                        existing = await sb_execute(
                             sb.table("trial_email_log")
                             .select("id")
                             .eq("user_id", user_id)
                             .eq("email_type", email_type)
                             .limit(1)
-                            .execute()
                         )
                         if existing.data and len(existing.data) > 0:
                             skipped += 1
@@ -585,10 +579,12 @@ async def check_trial_reminders() -> dict:
 
                         # Record in log for idempotency (AC9)
                         try:
-                            sb.table("trial_email_log").insert({
-                                "user_id": user_id,
-                                "email_type": email_type,
-                            }).execute()
+                            await sb_execute(
+                                sb.table("trial_email_log").insert({
+                                    "user_id": user_id,
+                                    "email_type": email_type,
+                                })
+                            )
                         except Exception as log_err:
                             # UNIQUE constraint violation = already sent (race condition safe)
                             logger.debug(f"trial_email_log insert failed (likely dup): {log_err}")

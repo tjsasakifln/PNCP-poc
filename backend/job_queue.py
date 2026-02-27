@@ -1058,13 +1058,15 @@ async def cache_warming_job(ctx: dict) -> dict:
     }
 
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
-        result = sb.table("search_sessions").select(
-            "search_params"
-        ).eq("status", "completed").order(
-            "created_at", desc=True
-        ).limit(200).execute()
+        result = await sb_execute(
+            sb.table("search_sessions").select(
+                "search_params"
+            ).eq("status", "completed").order(
+                "created_at", desc=True
+            ).limit(200)
+        )
 
         if not result.data:
             return {"status": "no_data", **stats}

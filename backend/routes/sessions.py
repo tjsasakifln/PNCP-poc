@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from auth import require_auth
 from database import get_db
 from schemas import SessionsListResponse
+from supabase_client import sb_execute
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,12 @@ async def get_sessions(
 ):
     """Get user's search session history."""
     try:
-        result = (
+        result = await sb_execute(
             db.table("search_sessions")
             .select("*", count="exact")
             .eq("user_id", user["id"])
             .order("created_at", desc=True)
             .range(offset, offset + limit - 1)
-            .execute()
         )
 
         return {

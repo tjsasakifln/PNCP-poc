@@ -152,7 +152,7 @@ async def _persist_transition(transition: StateTransition) -> None:
     Fire-and-forget — never raises, logs errors silently.
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
         row = {
@@ -168,7 +168,7 @@ async def _persist_transition(transition: StateTransition) -> None:
             ),
         }
 
-        sb.table("search_state_transitions").insert(row).execute()
+        await sb_execute(sb.table("search_state_transitions").insert(row))
     except Exception as e:
         logger.warning(f"CRIT-003: Failed to persist state transition: {e}")
 
@@ -183,7 +183,7 @@ async def _update_session_state(
     Maps SearchState to session status values (CRIT-002 schema).
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
         # Map state machine states to session status values
@@ -211,11 +211,10 @@ async def _update_session_state(
             from datetime import datetime, timezone
             update_data["completed_at"] = datetime.now(timezone.utc).isoformat()
 
-        (
+        await sb_execute(
             sb.table("search_sessions")
             .update(update_data)
             .eq("search_id", search_id)
-            .execute()
         )
     except Exception as e:
         logger.warning(f"CRIT-003: Failed to update session state: {e}")
@@ -228,15 +227,14 @@ async def _update_session_state(
 async def get_timeline(search_id: str) -> List[Dict[str, Any]]:
     """AC7: Return all transitions for a search_id, ordered chronologically."""
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
-        result = (
+        result = await sb_execute(
             sb.table("search_state_transitions")
             .select("*")
             .eq("search_id", search_id)
             .order("created_at", desc=False)
-            .execute()
         )
         return result.data or []
     except Exception as e:
@@ -250,16 +248,15 @@ async def get_current_state(search_id: str) -> Optional[Dict[str, Any]]:
     AC9: Used by SSE reconnection to derive current state from persistent storage.
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
-        result = (
+        result = await sb_execute(
             sb.table("search_state_transitions")
             .select("*")
             .eq("search_id", search_id)
             .order("created_at", desc=True)
             .limit(1)
-            .execute()
         )
         return result.data[0] if result.data else None
     except Exception as e:
@@ -273,16 +270,15 @@ async def get_search_status(search_id: str) -> Optional[Dict[str, Any]]:
     Combines search_sessions data with latest state transition.
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
 
         # Get session data
-        session_result = (
+        session_result = await sb_execute(
             sb.table("search_sessions")
             .select("*")
             .eq("search_id", search_id)
             .limit(1)
-            .execute()
         )
 
         if not session_result.data:
@@ -357,7 +353,7 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
     Returns number of recovered sessions.
     """
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         from datetime import datetime, timezone, timedelta
         sb = get_supabase()
 
@@ -368,11 +364,10 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
         # Production search_sessions may lack: search_id, status, started_at
         has_search_id_column = True
         try:
-            result = (
+            result = await sb_execute(
                 sb.table("search_sessions")
                 .select("id, search_id, status, started_at")
                 .in_("status", ["created", "processing"])
-                .execute()
             )
         except Exception as col_err:
             err_str = str(col_err)
@@ -386,11 +381,10 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                 has_search_id_column = False
                 try:
                     # Fallback: use only columns we know exist (id, created_at)
-                    result = (
+                    result = await sb_execute(
                         sb.table("search_sessions")
                         .select("id, created_at")
                         .lt("created_at", cutoff.isoformat())
-                        .execute()
                     )
                 except Exception:
                     logger.warning(
@@ -428,16 +422,20 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
                 # AC17: Old search — timed_out
                 # Only set status/error columns if they exist (may not in production)
                 try:
-                    sb.table("search_sessions").update({
-                        "status": "timed_out",
-                        "error_message": "O servidor reiniciou durante o processamento.",
-                        "error_code": "timeout",
-                        "completed_at": now.isoformat(),
-                    }).eq("id", session_id).execute()
+                    await sb_execute(
+                        sb.table("search_sessions").update({
+                            "status": "timed_out",
+                            "error_message": "O servidor reiniciou durante o processamento.",
+                            "error_code": "timeout",
+                            "completed_at": now.isoformat(),
+                        }).eq("id", session_id)
+                    )
                 except Exception:
                     # Columns may not exist — just delete the stale session
                     try:
-                        sb.table("search_sessions").delete().eq("id", session_id).execute()
+                        await sb_execute(
+                            sb.table("search_sessions").delete().eq("id", session_id)
+                        )
                     except Exception:
                         pass
                 timed_out_count += 1
@@ -454,12 +452,14 @@ async def recover_stale_searches(max_age_minutes: int = 10) -> int:
             else:
                 # AC18: Recent search — failed with retry
                 try:
-                    sb.table("search_sessions").update({
-                        "status": "failed",
-                        "error_message": "O servidor reiniciou. Tente novamente.",
-                        "error_code": "server_restart",
-                        "completed_at": now.isoformat(),
-                    }).eq("id", session_id).execute()
+                    await sb_execute(
+                        sb.table("search_sessions").update({
+                            "status": "failed",
+                            "error_message": "O servidor reiniciou. Tente novamente.",
+                            "error_code": "server_restart",
+                            "completed_at": now.isoformat(),
+                        }).eq("id", session_id)
+                    )
                 except Exception:
                     pass  # Columns may not exist — leave session as-is
                 failed_count += 1

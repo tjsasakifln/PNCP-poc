@@ -387,10 +387,10 @@ async def get_system_health() -> Dict[str, Any]:
 
     # Supabase check
     try:
-        from supabase_client import get_supabase
+        from supabase_client import get_supabase, sb_execute
         sb = get_supabase()
         start = time.monotonic()
-        sb.table("profiles").select("id").limit(1).execute()
+        await sb_execute(sb.table("profiles").select("id").limit(1))
         latency = int((time.monotonic() - start) * 1000)
         components["supabase"] = {"status": "up", "latency_ms": latency}
     except Exception as e:
