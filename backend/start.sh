@@ -17,13 +17,17 @@ case "$PROCESS_TYPE" in
   web)
     echo "Starting web process (gunicorn + uvicorn)..."
 
-    # CRIT-010 AC1+AC3: --preload loads the ASGI app in master BEFORE forking workers.
-    # This ensures all imports are resolved and routes registered before any worker
-    # accepts traffic — eliminating 404s during startup.
+    # STORY-303: --preload DISABLED by default (was true in CRIT-010).
+    # cryptography>=46.0.5 + --preload causes SIGSEGV: OpenSSL initialized in master
+    # pre-fork becomes invalid in forked workers. Without preload, each worker
+    # initializes its own OpenSSL — safe. CRIT-010 404s mitigated by:
+    #   1. Railway healthcheckTimeout=300s (no traffic until health check passes)
+    #   2. /health ready:false flag during startup (main.py lifespan gate)
+    #   3. Frontend BackendStatusIndicator handles transient unavailability
     PRELOAD_FLAG=""
-    if [ "${GUNICORN_PRELOAD:-true}" = "true" ]; then
+    if [ "${GUNICORN_PRELOAD:-false}" = "true" ]; then
       PRELOAD_FLAG="--preload"
-      echo "  --preload enabled: app loaded in master before forking workers"
+      echo "  WARNING: --preload enabled — verify cryptography fork-safety!"
     fi
 
     # SLA-002: WEB_CONCURRENCY 4→2 (Railway 1GB can't sustain 4 FastAPI workers

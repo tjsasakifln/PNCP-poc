@@ -14,7 +14,10 @@ watchPatterns = ["**"]
 # NOTE: Using Dockerfile CMD instead of startCommand for proper $PORT expansion
 # startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health/ready"
-# SLA-001: 300s timeout for cold starts (Python + Gunicorn preload + model init)
+# SLA-001 + STORY-303 AC6: 300s grace period for cold starts.
+# Without --preload (STORY-303), each worker loads 65+ modules independently (~5-15s).
+# Railway won't route traffic until /health/ready returns 200, preventing CRIT-010 404s.
+# Combined with main.py lifespan gate (ready:false until startup complete).
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 # SLA-001: 10 retries before giving up (was 3 — too aggressive for transient OOM)
