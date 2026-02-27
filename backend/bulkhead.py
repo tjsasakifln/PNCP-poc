@@ -10,7 +10,7 @@ Reference: https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhea
 import asyncio
 import logging
 import time
-from typing import Any, Awaitable, Callable, Dict, Optional, TypeVar
+from typing import Any, Awaitable, Dict, Optional, TypeVar
 
 from metrics import (
     SOURCE_ACTIVE_REQUESTS,

@@ -41,7 +41,7 @@
 | **Stage** | POC avancado (v0.5) in production, beta with trials, pre-revenue |
 | **Production URL** | https://smartlic.tech |
 | **Primary Data Sources** | PNCP (priority 1), PCP v2 (priority 2), ComprasGov v3 (priority 3) |
-| **Revenue Model** | Tiered subscription (free trial 7d + SmartLic Pro R$1.999/mo) via Stripe |
+| **Revenue Model** | Single subscription (free trial 30d + SmartLic Pro R$397/mo) via Stripe |
 | **AI Integration** | GPT-4.1-nano (classification + summaries via OpenAI SDK) |
 | **Scale** | Dual-instance deployment (web + worker on Railway), Redis for distributed state |
 | **Maturity** | 69 backend Python modules, 29 frontend pages, 43 Supabase migrations, 300+ test files |

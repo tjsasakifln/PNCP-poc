@@ -19,7 +19,7 @@
 - **Relatorios** — Excel estilizado + resumo executivo com IA
 - **Historico + Analytics** — Buscas salvas, sessoes, dashboard com metricas
 - **Resiliencia** — Circuit breakers, two-level cache (SWR), fallback cascade
-- **Billing** — Stripe subscriptions (SmartLic Pro R$1.999/mes + trial 7 dias)
+- **Billing** — Stripe subscriptions (SmartLic Pro R$397/mes + trial 30 dias)
 - **Observabilidade** — Prometheus metrics, OpenTelemetry tracing, Sentry errors
 - **304+ testes automatizados** — 169 backend + 135 frontend + E2E (Playwright)
 
@@ -348,7 +348,7 @@ PNCP_MAX_RETRIES=5                 # Máximo de tentativas de retry (default: 5)
 PNCP_RATE_LIMIT=100                # Delay mínimo entre requests em ms (default: 100)
 
 # === OPTIONAL (LLM) ===
-LLM_MODEL=gpt-4o-mini              # Modelo OpenAI (default: gpt-4o-mini)
+LLM_MODEL=gpt-4.1-nano              # Modelo OpenAI (default: gpt-4.1-nano)
 LLM_TEMPERATURE=0.3                # Temperatura do modelo (0.0-2.0, default: 0.3)
 LLM_MAX_TOKENS=500                 # Máximo de tokens na resposta (default: 500)
 ```

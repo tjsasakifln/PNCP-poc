@@ -11,7 +11,6 @@ Tests cover:
 """
 
 import asyncio
-import time
 from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
@@ -405,8 +404,8 @@ class TestBulkheadRegistry:
         assert get_bulkhead("PNCP") is bulkheads["PNCP"]
 
     def test_initialize_bulkheads_idempotent(self):
-        b1 = initialize_bulkheads()
-        b2 = initialize_bulkheads()
+        initialize_bulkheads()
+        initialize_bulkheads()
         # Second call overwrites; registry still has 3
         assert len(get_all_bulkheads()) == 3
 

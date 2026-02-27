@@ -9,7 +9,7 @@ AC8: log_sanitizer covers new endpoints
 
 import json
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 
 
@@ -129,7 +129,7 @@ class TestAC5NeverLeakStackTraces:
             response = client.get("/v1/me")
 
         assert response.status_code == 500
-        body_str = json.dumps(body := response.json())
+        body_str = json.dumps(response.json())
         assert "/app/" not in body_str
         assert ".py" not in body_str
         assert "line 42" not in body_str

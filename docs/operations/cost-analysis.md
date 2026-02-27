@@ -1,10 +1,12 @@
 # Estimativa de Custo Operacional — SmartLic
 
-> **Versão:** 1.0
-> **Data de extração:** 2026-02-21
+> **Versão:** 1.1
+> **Data de extração:** 2026-02-21 (atualizado 2026-02-27)
 > **Câmbio referência:** USD 1.00 = BRL 5.80
 > **Story:** GTM-GO-004
 > **Autor:** @dev (assistido por IA)
+
+> **ATUALIZAÇÃO STORY-277 (2026-02-26):** O pricing foi alterado de R$1.999/mes para R$397/mes (mensal), R$357/mes (semestral), R$317/mes (anual). As margens e break-even abaixo foram calculados com o pricing anterior. Recalculo pendente — ver seção 4 para valores atualizados.
 
 ---
 
@@ -220,25 +222,27 @@ Custos que escalam linearmente com o volume de buscas. Representam o custo margi
 
 ## 4. Margem Bruta — SmartLic Pro (AC5)
 
-**Plano:** SmartLic Pro — R$ 1.999/mês (1.000 buscas incluídas)
+**Plano:** SmartLic Pro — R$ 397/mês (1.000 buscas incluídas)
 
-### 4.1 Cálculo de Margem
+### 4.1 Cálculo de Margem (Pricing Atualizado STORY-277)
 
 ```
-Receita mensal por assinante:           R$ 1.999,00
+Receita mensal por assinante:           R$   397,00
 (-) Custos fixos (Supabase Pro):        R$   368,22
 (-) Custos variáveis (1.000 buscas):    R$     2,20
-(=) Lucro bruto por assinante:          R$ 1.628,58
-(÷) Receita × 100 = Margem bruta:      81,5%
+(=) Lucro bruto por assinante:          R$    26,58
+(÷) Receita × 100 = Margem bruta:      6,7%
 ```
 
 ### 4.2 Margem por Período de Cobrança
 
 | Período | Receita/mês | Custo/mês | Lucro Bruto/mês | **Margem** |
 |---------|-------------|-----------|-----------------|------------|
-| Mensal (R$ 1.999) | R$ 1.999 | R$ 370 | R$ 1.629 | **81,5%** |
-| Semestral (R$ 1.799) | R$ 1.799 | R$ 370 | R$ 1.429 | **79,4%** |
-| Anual (R$ 1.599) | R$ 1.599 | R$ 370 | R$ 1.229 | **76,9%** |
+| Mensal (R$ 397) | R$ 397 | R$ 370 | R$ 27 | **6,8%** |
+| Semestral (R$ 357) | R$ 357 | R$ 370 | R$ -13 | **-3,6%** |
+| Anual (R$ 317) | R$ 317 | R$ 370 | R$ -53 | **-16,7%** |
+
+> **Nota (STORY-277):** Com o repricing, a margem por assinante unico é marginal/negativa. A viabilidade depende de volume (custos fixos diluidos com multiplos assinantes). Ver Seção 5.2.
 
 > **Nota:** Margem calculada com Supabase Pro. Com free tier (fase beta), a margem sobe para ~89%.
 
@@ -270,10 +274,10 @@ Receita mensal por assinante:           R$ 1.999,00
 
 | Assinantes | Receita/mês | Railway | Supabase | LLM | Redis | Outros | **Custo Total** | **Margem** |
 |------------|-------------|---------|----------|-----|-------|--------|-----------------|------------|
-| **1** | R$ 1.999 | R$ 218 | R$ 145 | R$ 2 | R$ 0 | R$ 6 | **R$ 371** | **81,4%** |
-| **10** | R$ 19.990 | R$ 218 | R$ 145 | R$ 18 | R$ 0 | R$ 6 | **R$ 387** | **98,1%** |
-| **50** | R$ 99.950 | R$ 508 | R$ 145 | R$ 88 | R$ 0 | R$ 6 | **R$ 747** | **99,3%** |
-| **100** | R$ 199.900 | R$ 870 | R$ 145 | R$ 176 | R$ 58 | R$ 6 | **R$ 1.255** | **99,4%** |
+| **1** | R$ 397 | R$ 218 | R$ 145 | R$ 2 | R$ 0 | R$ 6 | **R$ 371** | **6,5%** |
+| **10** | R$ 3.970 | R$ 218 | R$ 145 | R$ 18 | R$ 0 | R$ 6 | **R$ 387** | **90,2%** |
+| **50** | R$ 19.850 | R$ 508 | R$ 145 | R$ 88 | R$ 0 | R$ 6 | **R$ 747** | **96,2%** |
+| **100** | R$ 39.700 | R$ 870 | R$ 145 | R$ 176 | R$ 58 | R$ 6 | **R$ 1.255** | **96,8%** |
 
 ### 5.3 Detalhamento Railway por Escala
 
@@ -287,12 +291,12 @@ Receita mensal por assinante:           R$ 1.999,00
 
 ```
 Break-even = Custo Fixo Mensal / Receita por Assinante
-           = R$ 368 / R$ 1.999
-           = 0,18 assinantes
+           = R$ 368 / R$ 397
+           = 0,93 assinantes
            ≈ 1 assinante
 ```
 
-**Com 1 (um) assinante SmartLic Pro, a operação já cobre 100% dos custos de infraestrutura com R$ 1.629 de sobra.**
+**Com 1 (um) assinante SmartLic Pro mensal (R$397), a operacao cobre os custos de infraestrutura com margem estreita (~R$27). A viabilidade robusta requer 2+ assinantes.**
 
 **Para cobrir custos operacionais expandidos (estimativa com 1 founder, ferramentas, marketing):**
 
@@ -434,20 +438,20 @@ O custo do SmartLic é **infrastructure-bound, não usage-bound**. Isso signific
 | **Custo fixo mensal (produção)** | R$ 368/mês ($63.50 USD) |
 | **Custo variável por busca** | R$ 0.0022 ($0.00038 USD) |
 | **Custo por 1.000 buscas** | R$ 370/mês (fixo + variável) |
-| **Margem bruta SmartLic Pro (mensal)** | **81,5%** |
-| **Margem bruta SmartLic Pro (anual)** | **76,9%** |
-| **Break-even** | **1 assinante** |
-| **Margem com 10 assinantes** | **98,1%** |
-| **Margem com 100 assinantes** | **99,4%** |
+| **Margem bruta SmartLic Pro (mensal)** | **6,8%** (1 assinante) / **90,2%** (10 assinantes) |
+| **Margem bruta SmartLic Pro (anual)** | **-16,7%** (1 assinante) / escala necessaria |
+| **Break-even** | **1 assinante** (mensal) |
+| **Margem com 10 assinantes** | **90,2%** |
+| **Margem com 100 assinantes** | **96,8%** |
 | **Top driver de custo (fixo)** | Railway compute 24/7 (59%) |
 | **Top driver de custo (variável)** | LLM / OpenAI (88%) |
-| **Risco financeiro** | **BAIXO** — Margem > 75% em todos os cenários |
+| **Risco financeiro** | **MEDIO** — Margem depende de volume (>10 assinantes para >90%) |
 
 ### Veredicto
 
-O modelo de pricing SmartLic Pro (R$ 1.999/mês) é **financeiramente viável** com margem bruta de 77-82%. O custo operacional é dominado pela infraestrutura fixa (Railway + Supabase), não pelo volume de uso. O custo marginal por busca (R$ 0.002) é praticamente zero graças ao GPT-4.1-nano.
+O modelo de pricing SmartLic Pro (R$ 397/mês, STORY-277) depende de **volume para viabilidade**. Com 1 assinante mensal, a margem e marginal (~7%). Com 10+ assinantes, os custos fixos se diluem e as margens tornam-se excelentes (>90%). O custo marginal por busca (R$ 0.002) permanece praticamente zero gracas ao GPT-4.1-nano.
 
-**O maior risco não é o custo por busca — é o custo fixo mensal sem assinantes.** Com 1 assinante, a operação é sustentável. Com 10+, as margens são excepcionais (> 98%).
+**O maior risco e o custo fixo mensal sem assinantes.** Com 1 assinante mensal, a operacao cobre custos por margem estreita. A estrategia de volume e critica: 10 assinantes = 90% margem.
 
 ---
 

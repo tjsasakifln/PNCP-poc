@@ -1,6 +1,6 @@
 # ROADMAP — SmartLic
 
-**Versao:** 3.0 | **Atualizado:** 2026-02-20 | **Status:** GTM Resilience Complete, Active Backlog
+**Versao:** 4.0 | **Atualizado:** 2026-02-27 | **Status:** Reliability Sprint Complete, Active Backlog
 
 ---
 
@@ -11,6 +11,7 @@ POC CORE:            [####################] 100% DEPLOYED
 GTM LAUNCH:          [####################] 100% (10/10 stories)
 GTM FIXES:           [####################] 100% (37 fixes)
 GTM RESILIENCE:      [####################] 100% (25/25 stories)
+RELIABILITY SPRINT:  [####################] 100% (13/13 stories, 4 sprints)
 TECH DEBT (TD):      [####................] ~20% (19 stories)
 UX PREMIUM:          [##..................] ~6% (2/36 stories)
 ```
@@ -38,6 +39,25 @@ PNCP client, filtering engine, Excel export, LLM summaries, Next.js frontend. De
 | D — Classification | 5 | Zero-match LLM, viability assessment, feedback loop |
 | E — Observability | 3 | Structured logging, Prometheus metrics, Sentry |
 | F — Infrastructure | 3 | ARQ job queue, OpenTelemetry tracing, schema validation |
+
+### Fase 4 — Reliability Sprint (Feb 22-27)
+13 stories across 4 sprints. Architecture hardening for multi-worker production.
+
+| Sprint | Stories | Key Deliverables |
+|--------|---------|------------------|
+| Sprint 0 — Make It Work | STORY-283, 290, 291, 292, 293 | Event loop unblock, Supabase circuit breaker, async search 202 pattern, CI fix |
+| Sprint 1 — Make It Reliable | STORY-294, 295, 296, 297, 298 | Redis state externalization, progressive results, bulkhead per source, SSE resumption, unified error UX |
+| Sprint 2 — Make It Observable | STORY-299, 300 | SLOs + alerting dashboard, security hardening (CSP, LGPD) |
+| Sprint 3 — Make It Competitive | STORY-301, 302 | Email alert system (CRUD, cron, dedup), documentation cleanup |
+
+### Fase 4.1 — GTM Repricing (Feb 25-26)
+Market-validated pricing realignment.
+
+| Story | Title | Status |
+|-------|-------|--------|
+| STORY-277 | Repricing R$1.999 → R$397/mes | Completed |
+| STORY-280 | Boleto + PIX via Stripe | Completed |
+| STORY-284 | GTM Quick Wins | Completed |
 
 ---
 
@@ -123,7 +143,11 @@ Obsolete stories and docs moved to `docs/archive/` (Feb 20, 2026):
 | 2026-02-17 | GTM production fixes (37 fixes) |
 | 2026-02-20 | GTM Resilience complete v0.5 (25 stories) |
 | 2026-02-20 | Documentation cleanup (180+ files archived) |
+| 2026-02-22 | Reliability Sprint started (13 stories, 4 sprints) |
+| 2026-02-25 | GTM Repricing — R$1.999 → R$397 (STORY-277) |
+| 2026-02-26 | Boleto + PIX payment methods (STORY-280) |
+| 2026-02-27 | Reliability Sprint complete v0.5.2 (13/13 stories) |
 
 ---
 
-*Ultima atualizacao: 2026-02-20*
+*Ultima atualizacao: 2026-02-27*

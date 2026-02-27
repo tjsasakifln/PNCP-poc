@@ -5,6 +5,41 @@ All notable changes to SmartLic will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-02-27 - RELIABILITY SPRINT COMPLETE
+
+### Added — Reliability Architecture
+- **Async search 202 Accepted pattern** (STORY-292) — non-blocking search with polling
+- **Redis state externalization** (STORY-294) — multi-worker state sharing
+- **Progressive results delivery** (STORY-295) — meta-search with incremental updates
+- **Bulkhead per source** (STORY-296) — concurrency + timeout isolation per data source
+- **SSE Last-Event-ID resumption** (STORY-297) — reconnect without data loss
+- **Unified error UX** (STORY-298) — SearchStateManager for consistent error handling
+- **SLOs + alerting dashboard** (STORY-299) — admin SLO monitoring with alerts
+- **Email alert system** (STORY-301) — CRUD alerts, cron execution, dedup, unsubscribe
+
+### Changed — Security & Observability
+- **Security hardening** (STORY-300) — CSP headers, error sanitization, LGPD compliance
+- **Supabase circuit breaker** (STORY-291) — eliminates database SPOF
+- **Event loop unblock** (STORY-290) — offload sync Supabase calls to thread pool
+- **CI/CD pipeline fix** (STORY-293) — restore green builds
+
+### Changed — Pricing & Billing
+- **Repricing** (STORY-277) — R$1.999/mes → R$397/mes (mensal), R$357 (semestral), R$317 (anual)
+- **Trial duration** — 7 days → 30 days (beta period)
+- **Boleto + PIX** (STORY-280) — additional payment methods via Stripe
+
+### Documentation
+- **STORY-302** — Documentation + stale cleanup (this release)
+- Updated pricing across CLAUDE.md, PRD.md, README.md, system-architecture.md
+- Updated cost-analysis.md with new pricing margins
+
+### Testing
+- Backend: 169 test files, 5131+ tests passing, 0 failures
+- Frontend: 135 test files, 2681+ tests passing, 0 failures
+- E2E: 60 critical user flow tests
+
+---
+
 ## [0.5.1] - 2026-02-26 - GTM Quick Wins (STORY-284)
 
 ### Fixed
@@ -69,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-02-14 - GTM LAUNCH PHASE
 
 ### Added
-- **Single subscription model** — SmartLic Pro R$1,999/month (3 billing periods)
+- **Single subscription model** — SmartLic Pro (3 billing periods, repriced to R$397/mo in v0.5.1)
 - **Onboarding wizard** — 3-step CNAE-based sector mapping with auto-search
 - **Trial conversion flow** — TrialConversionScreen, TrialExpiringBanner, TrialCountdown
 - **Multi-source search** — PNCP + PCP (Portal de Compras Publicas) consolidated results

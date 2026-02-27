@@ -340,12 +340,17 @@ async def test_warming_respects_budget_timeout():
     mock_cb.is_degraded = False
     mock_gauge = _make_active_searches_gauge(0)
 
-    # Simulate time passage: start at 0, first check OK, second check exceeds budget
+    # Simulate time passage: start at 0, first combo within budget, second exceeds
     start_time = time.monotonic()
+    # Provide many "within budget" values for first combo, then jump past budget
     time_values = [
-        start_time,         # start timestamp
-        start_time + 1,     # first combo: elapsed=1 < budget (OK)
-        start_time + 2000,  # second combo: elapsed=2000 > budget=10 (STOP)
+        start_time,         # start timestamp (line 1044)
+        start_time + 1,     # first combo: budget check (line 1097), elapsed=1 < 10 OK
+        start_time + 2,     # any intermediate monotonic calls during first combo
+        start_time + 3,     # any intermediate monotonic calls during first combo
+        start_time + 4,     # any intermediate monotonic calls during first combo
+        start_time + 5,     # any intermediate monotonic calls during first combo
+        start_time + 2000,  # second combo: budget check, elapsed=2000 > 10 STOP
     ]
     time_call_idx = [0]
 

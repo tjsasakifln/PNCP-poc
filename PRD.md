@@ -61,7 +61,7 @@ Plataforma de inteligencia em licitacoes publicas que automatiza a descoberta, a
 │  └─────────────────────────────────────────────────────────────────┘ │
 │                                                                      │
 │  CACHE: InMemory(4h) + Supabase(24h) | SWR background refresh       │
-│  BILLING: Stripe (SmartLic Pro R$1.999) | Quota enforcement          │
+│  BILLING: Stripe (SmartLic Pro R$397/mes) | Quota enforcement          │
 │  OBSERVABILITY: Prometheus /metrics | OpenTelemetry | Sentry         │
 │  AUTH: Supabase (email + Google OAuth) | RLS | JWT                   │
 └──────────────────────────────────────────────────────────────────────┘

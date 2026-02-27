@@ -22,9 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Tech Stack
 
-**Backend:** FastAPI, Python 3.12, Pydantic, httpx, OpenAI SDK (GPT-4.1-nano), Supabase (PostgreSQL + Auth + RLS), Redis (cache + circuit breaker), ARQ (async job queue), Stripe (billing), Resend (email), Prometheus + OpenTelemetry + Sentry, openpyxl, PyYAML
+**Backend:** FastAPI 0.129, Python 3.12, Pydantic v2, httpx, OpenAI SDK (GPT-4.1-nano), Supabase (PostgreSQL 17 + Auth + RLS), Redis (cache + circuit breaker + state), ARQ (async job queue), Stripe (billing), Resend (email), Prometheus + OpenTelemetry + Sentry, openpyxl, PyYAML
 
-**Frontend:** Next.js 16, React 18, TypeScript, Tailwind CSS, Framer Motion, Recharts, Supabase SSR (auth), Sentry, Mixpanel, @dnd-kit (pipeline), Shepherd.js (onboarding)
+**Frontend:** Next.js 16, React 18, TypeScript 5.9, Tailwind CSS 3, Framer Motion, Recharts, Supabase SSR (auth), Sentry, Mixpanel, @dnd-kit (pipeline), Shepherd.js (onboarding)
 
 **Infra:** Railway (web + worker + frontend), Supabase Cloud, Redis (Upstash/Railway), GitHub Actions (CI/CD)
 
@@ -267,6 +267,8 @@ For detailed module tables and route maps, see `.claude/rules/architecture-detai
 - Patch `supabase_client.get_supabase` for cache tests (not `search_cache.get_supabase`)
 
 ### Billing & Auth
+- **Pricing (STORY-277):** SmartLic Pro R$397/mes (mensal), R$357/mes (semestral), R$317/mes (anual)
+- **Trial:** 30 dias gratis (STORY-264/277), sem cartao
 - Stripe handles proration automatically — NO custom prorata code
 - "Fail to last known plan": never fall back to free_trial on DB errors
 - 3-day grace period for subscription gaps (`SUBSCRIPTION_GRACE_DAYS`)

@@ -19,8 +19,8 @@ Key mock patterns (from CLAUDE.md):
 """
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, Mock
-from datetime import datetime, timezone, timedelta
+from unittest.mock import patch, MagicMock
+from datetime import datetime, timezone
 
 import sys
 
@@ -30,10 +30,10 @@ sys.modules.setdefault("arq", mock_arq)
 sys.modules.setdefault("arq.connections", MagicMock())
 sys.modules.setdefault("arq.cron", MagicMock())
 
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
-from main import app
-from auth import require_auth
+from main import app  # noqa: E402
+from auth import require_auth  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

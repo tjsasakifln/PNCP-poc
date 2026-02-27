@@ -12,7 +12,6 @@ AC12: Existing tests still pass (verified by CI)
 
 import asyncio
 import json
-import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

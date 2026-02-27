@@ -112,7 +112,7 @@
 | Plan ID | Name | Price (BRL) | Max Searches | Status |
 |---------|------|-------------|--------------|--------|
 | `free_trial` | Gratuito | 0 | 3 | via `free` (deactivated, mapped to free_trial) |
-| `smartlic_pro` | SmartLic Pro | 1,999.00 | 1,000 | Active |
+| `smartlic_pro` | SmartLic Pro | 397.00 | 1,000 | Active |
 | `master` | Master | 0 | unlimited | Active (internal) |
 | `consultor_agil` | Consultor Agil | 297.00 | 50 | Deactivated |
 | `maquina` | Maquina | 597.00 | 300 | Deactivated |
