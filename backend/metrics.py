@@ -327,6 +327,19 @@ SUPABASE_EXECUTE_DURATION = _create_histogram(
     buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5],
 )
 
+# STORY-291 AC6: Supabase circuit breaker state gauge (0=closed, 1=open, 2=half_open)
+SUPABASE_CB_STATE = _create_gauge(
+    "smartlic_supabase_cb_state",
+    "Supabase circuit breaker state (0=closed, 1=open, 2=half_open)",
+)
+
+# STORY-291 AC7: Supabase circuit breaker state transitions
+SUPABASE_CB_TRANSITIONS = _create_counter(
+    "smartlic_supabase_cb_transitions_total",
+    "Supabase circuit breaker state transitions",
+    labelnames=["from_state", "to_state"],
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

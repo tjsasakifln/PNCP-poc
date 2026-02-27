@@ -4651,6 +4651,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -6594,6 +6601,7 @@
     },
     "/buscar": {
       "post": {
+        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo \u2014 POST\nfailed but SSE was waiting for a tracker that never existed.",
         "operationId": "buscar_licitacoes_buscar_post",
         "requestBody": {
           "content": {
@@ -9752,6 +9760,7 @@
     },
     "/v1/buscar": {
       "post": {
+        "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo \u2014 POST\nfailed but SSE was waiting for a tracker that never existed.",
         "operationId": "buscar_licitacoes_v1_buscar_post",
         "requestBody": {
           "content": {

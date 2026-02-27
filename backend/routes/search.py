@@ -877,9 +877,6 @@ async def buscar_licitacoes(
     user: dict = Depends(require_auth),
     _rl=Depends(require_rate_limit(SEARCH_RATE_LIMIT_PER_MINUTE, 60)),  # GTM-GO-002 AC1
 ):
-    # STORY-265 AC1: Block expired trials BEFORE any processing
-    from quota import require_active_plan
-    await require_active_plan(user)
     """
     Main search endpoint — thin wrapper that delegates to SearchPipeline.
 
@@ -894,6 +891,10 @@ async def buscar_licitacoes(
     - SSE tracker lifecycle (create, cleanup on error)
     - Exception mapping (PNCPRateLimitError → 503, PNCPAPIError → 502, etc.)
     - Dependency injection (passing module-level names for test mock compatibility)
+
+    STORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker
+    creation. Previously, when it failed the frontend was left in limbo — POST
+    failed but SSE was waiting for a tracker that never existed.
     """
     # SSE Progress Tracking
     # CRIT-011 AC4: Auto-generate search_id if not provided by client
@@ -917,6 +918,20 @@ async def buscar_licitacoes(
 
     tracker = await create_tracker(request.search_id, len(request.ufs))
     await tracker.emit("connecting", 3, "Iniciando busca...")
+
+    # STORY-291 AC5: Block expired trials AFTER tracker creation so SSE
+    # can emit an error event instead of leaving frontend in limbo.
+    from quota import require_active_plan
+    try:
+        await require_active_plan(user)
+    except HTTPException as plan_err:
+        await tracker.emit_error(
+            plan_err.detail.get("message", str(plan_err.detail))
+            if isinstance(plan_err.detail, dict)
+            else str(plan_err.detail)
+        )
+        await remove_tracker(request.search_id)
+        raise
     # CRIT-003 AC2: Create state machine for deterministic lifecycle tracking
     state_machine = await create_state_machine(request.search_id)
 

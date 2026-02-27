@@ -2,6 +2,9 @@
 
 Shared authorization logic used across multiple route modules.
 Extracted from main.py as part of STORY-202 monolith decomposition.
+
+STORY-291: Circuit breaker integration — when Supabase CB is open,
+check_user_roles() returns (False, False) immediately without retrying.
 """
 
 import asyncio
@@ -33,6 +36,9 @@ async def check_user_roles(user_id: str) -> tuple[bool, bool]:
     """
     Check user's admin and master status from Supabase.
 
+    STORY-291: When Supabase circuit breaker is open, returns (False, False)
+    immediately without retrying — user treated as regular.
+
     Returns:
         tuple: (is_admin, is_master)
         - is_admin: Can manage users via /admin/* endpoints
@@ -43,7 +49,7 @@ async def check_user_roles(user_id: str) -> tuple[bool, bool]:
     """
     for attempt in range(2):
         try:
-            from supabase_client import get_supabase, sb_execute
+            from supabase_client import get_supabase, sb_execute, CircuitBreakerOpenError
             sb = get_supabase()
 
             # Get profile - try with is_admin first, fallback to just plan_type
@@ -54,6 +60,8 @@ async def check_user_roles(user_id: str) -> tuple[bool, bool]:
                     .eq("id", user_id)
                     .single()
                 )
+            except CircuitBreakerOpenError:
+                raise  # Don't retry CB open — fast fail
             except Exception:
                 # is_admin column might not exist yet - fallback
                 profile = await sb_execute(
@@ -79,6 +87,13 @@ async def check_user_roles(user_id: str) -> tuple[bool, bool]:
 
             return (is_admin, is_master)
 
+        except CircuitBreakerOpenError:
+            # STORY-291: CB open — skip retries, return non-admin immediately
+            logger.warning(
+                f"ROLE CHECK SKIPPED for user {mask_user_id(user_id)}: "
+                f"Supabase circuit breaker is OPEN. User treated as regular."
+            )
+            return (False, False)
         except Exception as e:
             if attempt == 0:
                 logger.debug(f"Retry user roles check for {mask_user_id(user_id)} after error: {type(e).__name__}")

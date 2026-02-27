@@ -16,10 +16,15 @@ STORY-203 SYS-M04: Database-driven plan capabilities
 - Plan capabilities loaded from database `plans` table
 - In-memory cache with 5-minute TTL to reduce DB load
 - Automatic fallback to hardcoded values if DB unavailable
+
+STORY-291: Circuit breaker integration for Supabase calls.
+- AC3: Plan status cached in-memory with 5min TTL (fallback when CB open)
+- AC4: Fail-open on CB open — allow search, log for reconciliation
 """
 
 import asyncio
 import logging
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional, TypedDict
@@ -33,6 +38,31 @@ logger = logging.getLogger(__name__)
 _plan_capabilities_cache: Optional[dict[str, "PlanCapabilities"]] = None
 _plan_capabilities_cache_time: float = 0
 PLAN_CAPABILITIES_CACHE_TTL = 300  # 5 minutes in seconds
+
+# STORY-291 AC3: In-memory plan status cache (fallback when Supabase CB open)
+# Key: user_id, Value: (plan_id, cached_at)
+_plan_status_cache: dict[str, tuple[str, float]] = {}
+_plan_status_cache_lock = threading.Lock()
+PLAN_STATUS_CACHE_TTL = 300  # 5 minutes
+
+
+def _cache_plan_status(user_id: str, plan_id: str) -> None:
+    """Cache plan status for fallback when Supabase is unavailable."""
+    with _plan_status_cache_lock:
+        _plan_status_cache[user_id] = (plan_id, time.monotonic())
+
+
+def _get_cached_plan_status(user_id: str) -> Optional[str]:
+    """Get cached plan status. Returns None if expired or missing."""
+    with _plan_status_cache_lock:
+        entry = _plan_status_cache.get(user_id)
+        if entry is None:
+            return None
+        plan_id, cached_at = entry
+        if time.monotonic() - cached_at > PLAN_STATUS_CACHE_TTL:
+            del _plan_status_cache[user_id]
+            return None
+        return plan_id
 
 
 # ============================================================================
@@ -467,6 +497,9 @@ def check_and_increment_quota_atomic(
     There is no window between check and increment where another request
     could slip through.
 
+    STORY-291 AC4: When Supabase CB is open, allows the search (fail-open)
+    and logs for reconciliation. Better to over-count than to block a user.
+
     Args:
         user_id: The user's ID
         max_quota: Maximum allowed quota for the user's plan
@@ -477,20 +510,22 @@ def check_and_increment_quota_atomic(
             - new_count: The new quota count after operation
             - quota_remaining: How many requests remain (0 if at/over limit)
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, supabase_cb, CircuitBreakerOpenError
     sb = get_supabase()
     month_key = get_current_month_key()
 
     try:
-        # Use atomic PostgreSQL function
-        result = sb.rpc(
-            "check_and_increment_quota",
-            {
-                "p_user_id": user_id,
-                "p_month_year": month_key,
-                "p_max_quota": max_quota,
-            }
-        ).execute()
+        # Use atomic PostgreSQL function (wrapped with CB)
+        result = supabase_cb.call_sync(
+            sb.rpc(
+                "check_and_increment_quota",
+                {
+                    "p_user_id": user_id,
+                    "p_month_year": month_key,
+                    "p_max_quota": max_quota,
+                }
+            ).execute
+        )
 
         if result.data and len(result.data) > 0:
             row = result.data[0]
@@ -506,6 +541,14 @@ def check_and_increment_quota_atomic(
         # Unexpected empty result
         logger.warning(f"Empty result from check_and_increment_quota for user {mask_user_id(user_id)}")
         return (True, 0, max_quota)  # Fail open
+
+    except CircuitBreakerOpenError:
+        # STORY-291 AC4: Fail open — allow search, reconcile later
+        logger.warning(
+            f"STORY-291 CB OPEN: Quota check skipped for user {mask_user_id(user_id)} "
+            f"(fail-open). Will reconcile quota later."
+        )
+        return (True, 0, max_quota)
 
     except Exception as e:
         logger.error(f"Error in atomic quota check for user {mask_user_id(user_id)}: {e}")
@@ -595,52 +638,79 @@ def check_quota(user_id: str) -> QuotaInfo:
       2. Recently-expired subscription within grace period (billing gap)
       3. profiles.plan_type (last known plan - reliable fallback)
       4. free_trial (absolute last resort - only for truly new users)
+
+    STORY-291 AC3/AC4: When Supabase CB is open, uses in-memory plan cache
+    as fallback. If cache miss, allows search (fail-open) with logging.
     """
-    from supabase_client import get_supabase
+    from supabase_client import get_supabase, supabase_cb, CircuitBreakerOpenError
     sb = get_supabase()
 
     plan_id = None
     expires_at_dt: Optional[datetime] = None
     subscription_found = False
+    cb_open = False
 
-    # --- Layer 1: Active subscription ---
-    try:
-        result = (
-            sb.table("user_subscriptions")
-            .select("id, plan_id, expires_at")
-            .eq("user_id", user_id)
-            .eq("is_active", True)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-
-        if result.data and len(result.data) > 0:
-            sub = result.data[0]
-            plan_id = sub.get("plan_id", None)
-            expires_at_str = sub.get("expires_at")
-            expires_at_dt = (
-                datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
-                if expires_at_str
-                else None
+    # --- Layer 0 (STORY-291): Check if CB is open — use cache fallback ---
+    if supabase_cb.state == "OPEN":
+        cb_open = True
+        cached_plan = _get_cached_plan_status(user_id)
+        if cached_plan:
+            logger.info(
+                f"STORY-291 CB OPEN: Using cached plan '{cached_plan}' for user {mask_user_id(user_id)}"
             )
+            plan_id = cached_plan
+            subscription_found = True
+        else:
+            # AC4: No cached plan — fail open with last known plan
+            logger.warning(
+                f"STORY-291 CB OPEN + CACHE MISS for user {mask_user_id(user_id)}: "
+                f"Allowing search (fail-open). Will reconcile later."
+            )
+            plan_id = "smartlic_pro"  # Generous fail-open default
             subscription_found = True
 
-    except Exception as e:
-        logger.error(f"Error fetching active subscription for user {mask_user_id(user_id)}: {e}")
-
-    # --- Layer 2: Recently-expired subscription (grace period for billing gaps) ---
+    # --- Layer 1: Active subscription ---
     if not subscription_found:
         try:
+            result = supabase_cb.call_sync(
+                sb.table("user_subscriptions")
+                .select("id, plan_id, expires_at")
+                .eq("user_id", user_id)
+                .eq("is_active", True)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute
+            )
+
+            if result.data and len(result.data) > 0:
+                sub = result.data[0]
+                plan_id = sub.get("plan_id", None)
+                expires_at_str = sub.get("expires_at")
+                expires_at_dt = (
+                    datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+                    if expires_at_str
+                    else None
+                )
+                subscription_found = True
+
+        except CircuitBreakerOpenError:
+            cb_open = True
+            logger.warning(f"STORY-291 CB OPEN during subscription check for user {mask_user_id(user_id)}")
+        except Exception as e:
+            logger.error(f"Error fetching active subscription for user {mask_user_id(user_id)}: {e}")
+
+    # --- Layer 2: Recently-expired subscription (grace period for billing gaps) ---
+    if not subscription_found and not cb_open:
+        try:
             grace_cutoff = (datetime.now(timezone.utc) - timedelta(days=SUBSCRIPTION_GRACE_DAYS)).isoformat()
-            result = (
+            result = supabase_cb.call_sync(
                 sb.table("user_subscriptions")
                 .select("id, plan_id, expires_at")
                 .eq("user_id", user_id)
                 .gte("expires_at", grace_cutoff)
                 .order("expires_at", desc=True)
                 .limit(1)
-                .execute()
+                .execute
             )
 
             if result.data and len(result.data) > 0:
@@ -657,8 +727,25 @@ def check_quota(user_id: str) -> QuotaInfo:
                     f"Using grace-period subscription for user {mask_user_id(user_id)}: "
                     f"plan={plan_id}, expires_at={expires_at_str}"
                 )
+        except CircuitBreakerOpenError:
+            cb_open = True
+            logger.warning(f"STORY-291 CB OPEN during grace-period check for user {mask_user_id(user_id)}")
         except Exception as e:
             logger.warning(f"Error fetching grace-period subscription for user {mask_user_id(user_id)}: {e}")
+
+    # --- Layer 2.5 (STORY-291): CB opened mid-flow — check cache ---
+    if cb_open and not subscription_found:
+        cached_plan = _get_cached_plan_status(user_id)
+        if cached_plan:
+            logger.info(f"STORY-291 CB OPEN mid-flow: Using cached plan '{cached_plan}' for {mask_user_id(user_id)}")
+            plan_id = cached_plan
+            subscription_found = True
+        else:
+            logger.warning(
+                f"STORY-291 CB OPEN + CACHE MISS for user {mask_user_id(user_id)}: fail-open"
+            )
+            plan_id = "smartlic_pro"
+            subscription_found = True
 
     # --- Layer 3: Profile-based fallback (last known plan) ---
     if not subscription_found or not plan_id:
@@ -675,6 +762,10 @@ def check_quota(user_id: str) -> QuotaInfo:
             # Layer 4: Absolute last resort
             plan_id = "free_trial"
             expires_at_dt = None
+
+    # STORY-291 AC3: Cache plan status for future CB-open fallback
+    if plan_id and not cb_open:
+        _cache_plan_status(user_id, plan_id)
 
     # STORY-203 SYS-M04: Get plan capabilities from database-driven cache
     plan_caps = get_plan_capabilities()
@@ -774,6 +865,7 @@ async def require_active_plan(user: dict) -> dict:
     STORY-265 AC8: Returns HTTP 403 with structured body on expired trial/plan.
     STORY-265 AC9: Read-only endpoints (GET /pipeline, GET /sessions, GET /me)
                    should NOT use this dependency.
+    STORY-291 AC4: When Supabase CB is open, allows user through (fail-open).
 
     Usage:
         @router.post("/endpoint")
@@ -795,6 +887,7 @@ async def require_active_plan(user: dict) -> dict:
     """
     from fastapi import HTTPException
     from authorization import has_master_access
+    from supabase_client import CircuitBreakerOpenError
 
     user_id = user["id"]
 
@@ -802,10 +895,23 @@ async def require_active_plan(user: dict) -> dict:
     try:
         if await has_master_access(user_id):
             return user
+    except CircuitBreakerOpenError:
+        # STORY-291 AC4: CB open — can't check roles, allow through
+        logger.warning(
+            f"STORY-291 CB OPEN: Bypassing master check for user {mask_user_id(user_id)} (fail-open)"
+        )
+        return user
     except Exception:
         pass
 
-    quota_info = await asyncio.to_thread(check_quota, user_id)
+    try:
+        quota_info = await asyncio.to_thread(check_quota, user_id)
+    except CircuitBreakerOpenError:
+        # STORY-291 AC4: CB open — allow user through
+        logger.warning(
+            f"STORY-291 CB OPEN: Bypassing plan check for user {mask_user_id(user_id)} (fail-open)"
+        )
+        return user
 
     if not quota_info.allowed:
         # STORY-265 AC12: Structured logging for trial blocks
