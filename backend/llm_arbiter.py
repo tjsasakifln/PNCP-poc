@@ -94,6 +94,8 @@ def _arbiter_cache_get_redis(cache_key: str) -> Optional[Any]:
         except Exception:
             pass
         logger.warning(f"STORY-294: Arbiter cache Redis read failed: {e}")
+        import sentry_sdk
+        sentry_sdk.capture_exception(e)
     return None
 
 
@@ -115,6 +117,8 @@ def _arbiter_cache_set_redis(cache_key: str, value: Any) -> None:
         except Exception:
             pass
         logger.warning(f"STORY-294: Arbiter cache Redis write failed: {e}")
+        import sentry_sdk
+        sentry_sdk.capture_exception(e)
 
 
 # ============================================================================

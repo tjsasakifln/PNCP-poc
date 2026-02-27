@@ -355,8 +355,8 @@ class ConsolidationService:
                                 cb_result = on_early_return(completed_uf_list, pending_uf_list)
                                 if asyncio.iscoroutine(cb_result):
                                     await cb_result
-                            except Exception:
-                                pass
+                            except Exception as e:
+                                logger.warning(f"on_early_return callback error: {e}")
                         break
 
         # For any source without a result (timed out or cancelled), mark as timeout
@@ -406,8 +406,8 @@ class ConsolidationService:
                 if on_source_complete:
                     try:
                         on_source_complete(code, len(records), None)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"on_source_complete callback error for {code}: {e}")
             else:
                 error_msg = "Global timeout"
                 status = "timeout"
@@ -428,8 +428,8 @@ class ConsolidationService:
                 if on_source_complete:
                     try:
                         on_source_complete(code, 0, error_msg)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"on_source_complete callback error for {code}: {e}")
 
         # AC15: ComprasGov last-resort fallback when ALL sources fail
         fallback_used = False
@@ -472,8 +472,8 @@ class ConsolidationService:
                             on_source_complete(
                                 fallback_code, len(fb_records), None
                             )
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning(f"on_source_complete callback error for {fallback_code}: {e}")
                 else:
                     fb_error = fallback_result.get("error", "Unknown error")
                     source_errors[fallback_code] = fb_error
@@ -831,11 +831,11 @@ class ConsolidationService:
         for adapter in self._adapters.values():
             try:
                 await adapter.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Adapter close error (non-critical): {e}")
         # AC12: Close fallback adapter to prevent HTTP client leak
         if self._fallback_adapter is not None:
             try:
                 await self._fallback_adapter.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Fallback adapter close error (non-critical): {e}")

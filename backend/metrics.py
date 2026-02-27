@@ -136,6 +136,12 @@ API_ERRORS = _create_counter(
     labelnames=["source", "error_type"],
 )
 
+# STORY-304 AC6: Bid conversion errors in response path
+ITEMS_CONVERSION_ERRORS = _create_counter(
+    "smartlic_items_conversion_errors_total",
+    "Bid-to-LicitacaoItem conversion failures",
+)
+
 FILTER_DECISIONS = _create_counter(
     "smartlic_filter_decisions_total",
     "Filter pass/reject decisions",

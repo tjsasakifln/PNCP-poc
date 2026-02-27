@@ -44,8 +44,8 @@ async def _check_pipeline_read_access(user: dict) -> None:
         is_master = await has_master_access(user_id)
         if is_master:
             return
-    except Exception:
-        pass  # Fall through to plan check
+    except Exception as e:
+        logger.warning(f"Master access check failed, falling through: {e}")
 
     # Check plan capabilities
     quota_info = await asyncio.to_thread(check_quota, user_id)
@@ -83,8 +83,8 @@ async def _check_pipeline_write_access(user: dict) -> None:
         is_master = await has_master_access(user_id)
         if is_master:
             return
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Master access check failed, falling through: {e}")
 
     # STORY-265 AC2: Block expired trials (raises 403 with trial_expired)
     await require_active_plan(user)

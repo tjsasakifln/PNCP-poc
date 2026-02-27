@@ -115,7 +115,9 @@ def _maybe_send_quota_email(user_id: str, quota_used: int, quota_info) -> None:
             )
     except Exception as e:
         # Never fail the search pipeline due to email errors
-        logger.warning(f"Failed to send quota email for user {mask_user_id(user_id)}: {e}")
+        logger.error(f"Failed to send quota email for user {mask_user_id(user_id)}: {e}")
+        import sentry_sdk
+        sentry_sdk.capture_exception(e)
 
 
 # ============================================================================
@@ -146,8 +148,8 @@ def _build_pncp_link(lic: dict) -> str:
                         sequencial = cnpj_tipo_seq[2].lstrip("0")
                         if cnpj and ano and sequencial:
                             link = f"https://pncp.gov.br/app/editais/{cnpj}/{ano}/{sequencial}"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"PNCP link extraction failed for {numero_controle}: {e}")
 
     return link or ""
 
@@ -299,7 +301,11 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
             )
             items.append(item)
         except Exception as e:
-            logger.warning(f"Failed to convert bid to LicitacaoItem: {e}")
+            logger.error(f"Failed to convert bid to LicitacaoItem: {e}")
+            import sentry_sdk
+            sentry_sdk.capture_exception(e)
+            from metrics import ITEMS_CONVERSION_ERRORS
+            ITEMS_CONVERSION_ERRORS.inc()
             continue
     return items
 
@@ -1113,26 +1119,50 @@ class SearchPipeline:
             logger.warning(f"Sources with pending credentials: {pending_creds}")
 
         adapters = {}
+        skipped_sources: list[str] = []  # STORY-305 AC9: CB OPEN → skip source
+
+        # STORY-305 AC8-AC9: Check circuit breaker before adding each source
+        pncp_cb = get_circuit_breaker("pncp")
+        pcp_cb = get_circuit_breaker("pcp")
+        comprasgov_cb = get_circuit_breaker("comprasgov")
 
         if source_config.pncp.enabled:
-            adapters["PNCP"] = PNCPLegacyAdapter(
-                ufs=request.ufs,
-                modalidades=modalidades_to_fetch,
-                status=status_value,
-                on_uf_complete=uf_progress_callback,
-                on_uf_status=uf_status_callback,
-            )
+            if pncp_cb.is_degraded:
+                logger.warning("[MULTI-SOURCE] PNCP circuit breaker OPEN — skipping source")
+                skipped_sources.append("PNCP")
+            else:
+                adapters["PNCP"] = PNCPLegacyAdapter(
+                    ufs=request.ufs,
+                    modalidades=modalidades_to_fetch,
+                    status=status_value,
+                    on_uf_complete=uf_progress_callback,
+                    on_uf_status=uf_status_callback,
+                )
 
         if source_config.compras_gov.enabled:
-            adapters["COMPRAS_GOV"] = ComprasGovAdapter(
-                timeout=source_config.compras_gov.timeout
-            )
+            from config import COMPRASGOV_CB_ENABLED
+            if COMPRASGOV_CB_ENABLED and comprasgov_cb.is_degraded:
+                logger.warning("[MULTI-SOURCE] ComprasGov circuit breaker OPEN — skipping source")
+                skipped_sources.append("COMPRAS_GOV")
+            else:
+                adapters["COMPRAS_GOV"] = ComprasGovAdapter(
+                    timeout=source_config.compras_gov.timeout
+                )
 
         # GTM-FIX-024 T2: PCP v2 API is public — no API key required
         if source_config.portal.enabled:
-            adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
-                timeout=source_config.portal.timeout,
-            )
+            if pcp_cb.is_degraded:
+                logger.warning("[MULTI-SOURCE] PCP circuit breaker OPEN — skipping source")
+                skipped_sources.append("PORTAL_COMPRAS")
+            else:
+                adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                    timeout=source_config.portal.timeout,
+                )
+
+        # STORY-305 AC10: If ALL sources are CB OPEN, pipeline will get no adapters.
+        # ConsolidationService handles empty adapters → AllSourcesFailedError → cache stale path.
+        if skipped_sources:
+            logger.info(f"[MULTI-SOURCE] CB-skipped sources: {skipped_sources}")
 
         # GTM-FIX-025 T1: ComprasGov v1 is permanently unstable (503s).
         # Removed as fallback — PNCP+PCP provide sufficient coverage.
@@ -1237,6 +1267,17 @@ class SearchPipeline:
                 }
                 for sr in consolidation_result.source_results
             ]
+
+            # STORY-305 AC3: Record CB success/failure per source after consolidation
+            # Each source result counts as exactly 1 CB event (retry exhaustion = 1 failure, not N)
+            _cb_map = {"PNCP": pncp_cb, "PORTAL_COMPRAS": pcp_cb, "COMPRAS_GOV": comprasgov_cb}
+            for sr in consolidation_result.source_results:
+                _src_cb = _cb_map.get(sr.source_code)
+                if _src_cb:
+                    if sr.status == "success":
+                        asyncio.ensure_future(_src_cb.record_success())
+                    elif sr.status in ("error", "timeout"):
+                        asyncio.ensure_future(_src_cb.record_failure())
 
             # STORY-252 T8: Map consolidation degradation state to pipeline context
             ctx.is_partial = consolidation_result.is_partial
@@ -2559,6 +2600,7 @@ class SearchPipeline:
             "cache_hit": ctx.cached,
             "pncp_circuit_breaker": "degraded" if get_circuit_breaker("pncp").is_degraded else "healthy",
             "pcp_circuit_breaker": "degraded" if get_circuit_breaker("pcp").is_degraded else "healthy",
+            "comprasgov_circuit_breaker": "degraded" if get_circuit_breaker("comprasgov").is_degraded else "healthy",
             "total_results": len(ctx.licitacoes_raw) if ctx.licitacoes_raw else 0,
             "total_filtered": len(ctx.licitacoes_filtradas) if ctx.licitacoes_filtradas else 0,
             "ufs_requested": len(ctx.request.ufs),

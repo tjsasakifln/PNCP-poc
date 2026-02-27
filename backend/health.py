@@ -404,25 +404,32 @@ async def get_system_health() -> Dict[str, Any]:
     except Exception:
         components["arq_worker"] = {"status": "unknown"}
 
-    # PNCP circuit breaker
+    # STORY-305 AC4/AC11: Circuit breaker health for all 3 sources — includes try_recover canary
     try:
         from pncp_client import get_circuit_breaker
-        cb = get_circuit_breaker()
-        cb_state = getattr(cb, "state", "unknown")
-        if hasattr(cb_state, "value"):
-            cb_state = cb_state.value
-        components["pncp"] = {"status": "degraded" if str(cb_state) == "open" else "up", "circuit_breaker": str(cb_state)}
+        for src_name in ("pncp", "pcp", "comprasgov"):
+            cb = get_circuit_breaker(src_name)
+            # AC4: Health canary — try_recover on each check to detect cooldown expiry
+            await cb.try_recover()
+            is_deg = cb.is_degraded
+            components[src_name] = {
+                "status": "degraded" if is_deg else "up",
+                "circuit_breaker": "open" if is_deg else "closed",
+            }
     except Exception:
         components["pncp"] = {"status": "unknown"}
 
     # Overall status
     redis_down = components.get("redis", {}).get("status") == "down"
     supabase_down = components.get("supabase", {}).get("status") == "down"
-    pncp_degraded = components.get("pncp", {}).get("status") in ("degraded", "down")
+    any_source_degraded = any(
+        components.get(src, {}).get("status") == "degraded"
+        for src in ("pncp", "pcp", "comprasgov")
+    )
 
     if redis_down or supabase_down:
         overall = "unhealthy"
-    elif pncp_degraded:
+    elif any_source_degraded:
         overall = "degraded"
     else:
         overall = "healthy"

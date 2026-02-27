@@ -801,6 +801,15 @@ PNCP_SOURCE_TIMEOUT: float = float(os.getenv("PNCP_SOURCE_TIMEOUT", "80"))
 PCP_SOURCE_TIMEOUT: float = float(os.getenv("PCP_SOURCE_TIMEOUT", "30"))
 COMPRASGOV_SOURCE_TIMEOUT: float = float(os.getenv("COMPRASGOV_SOURCE_TIMEOUT", "30"))
 
+# STORY-305 AC2/AC6: ComprasGov circuit breaker (rollback: COMPRASGOV_CB_ENABLED=false)
+# All 3 HTTP API sources (PNCP, PCP, ComprasGov) share the same CB class and aligned
+# thresholds (15 failures / 60s cooldown). If different thresholds are needed in the future,
+# document the reason as a comment next to the env var in pncp_client.py.
+# Note: SupabaseCircuitBreaker (supabase_client.py) is intentionally SEPARATE —
+# databases have different failure semantics than HTTP APIs (sliding window with
+# fail-rate percentage is correct for DB; consecutive-failure count for HTTP APIs).
+COMPRASGOV_CB_ENABLED: bool = os.getenv("COMPRASGOV_CB_ENABLED", "true").lower() in ("true", "1", "yes")
+
 # ============================================================================
 # STORY-294: State Externalization to Redis
 # ============================================================================

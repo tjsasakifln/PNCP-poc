@@ -386,9 +386,11 @@ async def lifespan(app_instance: FastAPI):
     from pncp_client import get_circuit_breaker
     pncp_cb = get_circuit_breaker("pncp")
     pcp_cb = get_circuit_breaker("pcp")
+    comprasgov_cb = get_circuit_breaker("comprasgov")
     await pncp_cb.initialize()
     await pcp_cb.initialize()
-    logger.info("GTM-CRIT-005: Circuit breakers initialized from Redis")
+    await comprasgov_cb.initialize()
+    logger.info("GTM-CRIT-005: Circuit breakers initialized from Redis (pncp, pcp, comprasgov)")
 
     # CRIT-004: Validate schema contract for critical tables
     # SLA-002: NEVER crash on schema validation — degraded service > no service
@@ -882,11 +884,14 @@ async def health():
         sources[source_name] = source_health_registry.get_status(source_name)
 
     # B-06 AC9: Circuit breaker shared state (replaces simple string status)
+    # STORY-305 AC11: Include ComprasGov CB in health endpoint
     pncp_cb = get_circuit_breaker("pncp")
     pcp_cb = get_circuit_breaker("pcp")
+    comprasgov_cb = get_circuit_breaker("comprasgov")
     if hasattr(pncp_cb, "get_state"):
         sources["PNCP_circuit_breaker"] = await pncp_cb.get_state()
         sources["PCP_circuit_breaker"] = await pcp_cb.get_state()
+        sources["COMPRASGOV_circuit_breaker"] = await comprasgov_cb.get_state()
     else:
         sources["PNCP_circuit_breaker"] = {
             "status": "degraded" if pncp_cb.is_degraded else "healthy",
@@ -898,6 +903,12 @@ async def health():
             "status": "degraded" if pcp_cb.is_degraded else "healthy",
             "failures": pcp_cb.consecutive_failures,
             "degraded": pcp_cb.is_degraded,
+            "backend": "local",
+        }
+        sources["COMPRASGOV_circuit_breaker"] = {
+            "status": "degraded" if comprasgov_cb.is_degraded else "healthy",
+            "failures": comprasgov_cb.consecutive_failures,
+            "degraded": comprasgov_cb.is_degraded,
             "backend": "local",
         }
 

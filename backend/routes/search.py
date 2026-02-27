@@ -299,8 +299,8 @@ async def buscar_progress_stream(
     try:
         from metrics import SSE_CONNECTIONS_TOTAL
         SSE_CONNECTIONS_TOTAL.inc()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"SSE metrics unavailable: {e}")
 
     # GTM-GO-002 AC6: Enforce SSE connection limit per user
     user_id = user.get("id", "unknown")
@@ -954,8 +954,8 @@ async def _run_async_search(
         if state_machine:
             try:
                 await state_machine.complete()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"State machine complete() failed: {e}")
 
         elapsed = round(sync_time.time() - _start, 1)
         logger.info(
@@ -978,8 +978,8 @@ async def _run_async_search(
         if state_machine:
             try:
                 await state_machine.timeout()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"State machine timeout() failed: {e}")
 
     except asyncio.CancelledError:
         logger.info(f"STORY-292: Async search cancelled for {search_id} (shutdown)")
@@ -1001,8 +1001,8 @@ async def _run_async_search(
                     f"{type(e).__name__}: {str(e)[:200]}",
                     error_code="pipeline_error",
                 )
-            except Exception:
-                pass
+            except Exception as sm_err:
+                logger.warning(f"State machine fail() failed: {sm_err}")
 
     finally:
         await remove_tracker(search_id)
@@ -1398,8 +1398,8 @@ async def buscar_licitacoes(
         try:
             from middleware import correlation_id_var
             corr_id = correlation_id_var.get("-")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Correlation ID unavailable: {e}")
         raise HTTPException(
             status_code=503,
             detail=_build_error_detail(
@@ -1441,8 +1441,8 @@ async def buscar_licitacoes(
             corr_id = correlation_id_var.get("-")
             if corr_id == "-":
                 corr_id = None
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Correlation ID unavailable: {e}")
         raise HTTPException(
             status_code=502,
             detail=_build_error_detail(
@@ -1488,8 +1488,8 @@ async def buscar_licitacoes(
                 corr_id = correlation_id_var.get("-")
                 if corr_id == "-":
                     corr_id = None
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Correlation ID unavailable: {e}")
             # Map HTTP status to error code
             if exc.status_code == 504:
                 err_code = SearchErrorCode.TIMEOUT
@@ -1582,8 +1582,8 @@ async def buscar_licitacoes(
             corr_id = correlation_id_var.get("-")
             if corr_id == "-":
                 corr_id = None
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Correlation ID unavailable: {e}")
         # Determine error_code based on exception type
         if isinstance(e, asyncio.TimeoutError):
             err_code = SearchErrorCode.TIMEOUT

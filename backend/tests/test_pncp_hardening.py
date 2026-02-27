@@ -812,10 +812,10 @@ class TestGTMFIX005CircuitBreaker:
         assert PNCP_CIRCUIT_BREAKER_THRESHOLD == 15
         assert _circuit_breaker.threshold == 15
 
-    def test_pcp_threshold_default_is_30(self):
-        """PCP circuit breaker threshold defaults to 30."""
-        assert PCP_CIRCUIT_BREAKER_THRESHOLD == 30
-        assert _pcp_circuit_breaker.threshold == 30
+    def test_pcp_threshold_aligned_to_15(self):
+        """PCP circuit breaker threshold aligned to 15 (STORY-305 AC5)."""
+        assert PCP_CIRCUIT_BREAKER_THRESHOLD == 15
+        assert _pcp_circuit_breaker.threshold == 15
 
     # AC5: Configurable threshold
     @pytest.mark.asyncio

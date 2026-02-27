@@ -54,10 +54,20 @@ PNCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
     os.environ.get("PNCP_CIRCUIT_BREAKER_COOLDOWN", "60")
 )
 PCP_CIRCUIT_BREAKER_THRESHOLD: int = int(
-    os.environ.get("PCP_CIRCUIT_BREAKER_THRESHOLD", "30")  # Conservative: PCP API stability unknown
+    # STORY-305 AC5: Aligned with PNCP — same class of government API, no justification for 2x tolerance
+    os.environ.get("PCP_CIRCUIT_BREAKER_THRESHOLD", "15")
 )
 PCP_CIRCUIT_BREAKER_COOLDOWN: int = int(
-    os.environ.get("PCP_CIRCUIT_BREAKER_COOLDOWN", "120")
+    # STORY-305 AC5: Aligned with PNCP (was 120s)
+    os.environ.get("PCP_CIRCUIT_BREAKER_COOLDOWN", "60")
+)
+
+# STORY-305 AC2: ComprasGov circuit breaker — same class of government API
+COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD: int = int(
+    os.environ.get("COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD", "15")
+)
+COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN: int = int(
+    os.environ.get("COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN", "60")
 )
 
 # Per-modality timeout (STORY-252 AC6, GTM-RESILIENCE-F03 AC1) — configurable
@@ -207,6 +217,17 @@ class PNCPCircuitBreaker:
                     f"Circuit breaker [{self.name}] TRIPPED after {self.consecutive_failures} "
                     f"consecutive failures — degraded for {self.cooldown_seconds}s"
                 )
+                # STORY-305 AC13: Sentry breadcrumb on state transition
+                try:
+                    import sentry_sdk
+                    sentry_sdk.add_breadcrumb(
+                        category="circuit_breaker",
+                        message=f"CB [{self.name}] OPEN after {self.consecutive_failures} failures",
+                        level="warning",
+                        data={"source": self.name, "failures": self.consecutive_failures, "cooldown_s": self.cooldown_seconds},
+                    )
+                except Exception:
+                    pass
 
     async def record_success(self) -> None:
         """Record a successful request. Resets the failure counter."""
@@ -235,6 +256,17 @@ class PNCPCircuitBreaker:
                     logger.info(
                         f"Circuit breaker [{self.name}] cooldown expired — resetting to healthy"
                     )
+                    # STORY-305 AC13: Sentry breadcrumb on state transition
+                    try:
+                        import sentry_sdk
+                        sentry_sdk.add_breadcrumb(
+                            category="circuit_breaker",
+                            message=f"CB [{self.name}] CLOSED (recovered)",
+                            level="info",
+                            data={"source": self.name},
+                        )
+                    except Exception:
+                        pass
                     return True
             finally:
                 self._lock.release()
@@ -408,8 +440,8 @@ return {failures, 0}
                 if val is None:
                     return False
                 return time.time() < float(val)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Redis CB fallback (is_degraded_async): {e}")
         return self.is_degraded
 
     async def get_state(self) -> dict:
@@ -433,8 +465,8 @@ return {failures, 0}
                     "degraded_until": degraded_until,
                     "backend": "redis",
                 }
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Redis CB fallback (get_state): {e}")
         return {
             "status": "degraded" if self.is_degraded else "healthy",
             "failures": self.consecutive_failures,
@@ -498,8 +530,8 @@ return {failures, 0}
                 pipe.delete(self._key_failures)
                 pipe.delete(self._key_degraded)
                 await pipe.execute()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Redis CB fallback (reset_async): {e}")
 
 
 # Module-level singletons — one per data source (GTM-FIX-005 AC9)
@@ -517,16 +549,24 @@ _pcp_circuit_breaker = _CBClass(
     threshold=PCP_CIRCUIT_BREAKER_THRESHOLD,
     cooldown_seconds=PCP_CIRCUIT_BREAKER_COOLDOWN,
 )
+# STORY-305 AC1/AC2: ComprasGov circuit breaker — same class, same CB implementation
+_comprasgov_circuit_breaker = _CBClass(
+    name="comprasgov",
+    threshold=COMPRASGOV_CIRCUIT_BREAKER_THRESHOLD,
+    cooldown_seconds=COMPRASGOV_CIRCUIT_BREAKER_COOLDOWN,
+)
 
 
 def get_circuit_breaker(source: str = "pncp") -> PNCPCircuitBreaker:
     """Return the circuit breaker singleton for a given data source.
 
     Args:
-        source: "pncp" (default) or "pcp".
+        source: "pncp" (default), "pcp", or "comprasgov".
     """
     if source == "pcp":
         return _pcp_circuit_breaker
+    if source == "comprasgov":
+        return _comprasgov_circuit_breaker
     return _circuit_breaker
 
 
