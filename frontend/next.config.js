@@ -1,9 +1,14 @@
+const path = require("path");
 const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  // Fix standalone output when repo has multiple lockfiles (root + frontend)
+  // Without this, Next.js infers the wrong workspace root and server.js
+  // ends up in a nested path instead of .next/standalone/server.js
+  outputFileTracingRoot: path.join(__dirname, './'),
   // CRITICAL: Generate unique build ID to force cache invalidation on deploy
   // This prevents "Failed to find Server Action" errors from stale client bundles
   generateBuildId: async () => {

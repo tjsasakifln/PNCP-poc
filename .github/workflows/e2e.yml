@@ -92,7 +92,14 @@ jobs:
         working-directory: frontend
         run: |
           npm run build
-          npm run start > frontend.log 2>&1 &
+          # Use standalone server.js if available, otherwise fall back to next start
+          if [ -f .next/standalone/server.js ]; then
+            echo "Starting with standalone server.js"
+            node .next/standalone/server.js > frontend.log 2>&1 &
+          else
+            echo "standalone server.js not found, using next start"
+            npx next start > frontend.log 2>&1 &
+          fi
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
 
