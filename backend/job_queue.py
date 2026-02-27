@@ -1203,6 +1203,126 @@ except Exception:
     # Web process without REDIS_URL — WorkerSettings won't be used
     _worker_redis_settings = None
 
+# ==========================================================================
+# STORY-301: Email Alert System Cron Job
+# ==========================================================================
+
+async def email_alerts_job(ctx: dict) -> dict:
+    """STORY-301 AC5: Send email alerts to users with active alerts.
+
+    Runs as ARQ cron job at ALERTS_HOUR_UTC (default 11:00 = 8:00 BRT).
+    For each active alert: search cache, dedup, send digest email.
+
+    Returns:
+        Dict with job stats (total_alerts, emails_sent, skipped, errors).
+    """
+    import uuid as _uuid
+    from config import ALERTS_ENABLED, ALERTS_MAX_PER_EMAIL
+
+    cycle_id = str(_uuid.uuid4())[:8]
+    start = time.monotonic()
+
+    if not ALERTS_ENABLED:
+        logger.info(f"[Alerts {cycle_id}] Skipped — ALERTS_ENABLED=false")
+        return {"status": "disabled", "cycle_id": cycle_id}
+
+    stats = {
+        "cycle_id": cycle_id,
+        "total_alerts": 0,
+        "emails_sent": 0,
+        "emails_failed": 0,
+        "emails_skipped": 0,
+    }
+
+    try:
+        from supabase_client import get_supabase
+        db = get_supabase()
+    except Exception as e:
+        logger.error(f"[Alerts {cycle_id}] Supabase unavailable: {e}")
+        return {"status": "db_unavailable", **stats}
+
+    try:
+        from services.alert_service import run_all_alerts, finalize_alert_send
+        from templates.emails.alert_digest import (
+            render_alert_digest_email,
+            get_alert_digest_subject,
+        )
+        from routes.alerts import get_alert_unsubscribe_url
+        from email_service import send_email
+
+        # Run all alerts — returns payloads for alerts with new items
+        summary = await run_all_alerts(db)
+        stats["total_alerts"] = summary["total_alerts"]
+        stats["emails_skipped"] = summary["skipped"]
+
+        if not summary["payloads"]:
+            logger.info(f"[Alerts {cycle_id}] No alerts to send")
+            return {"status": "no_messages", **stats}
+
+        # Send emails for each payload
+        for payload in summary["payloads"]:
+            alert_id = payload["alert_id"]
+            opps = payload["opportunities"][:ALERTS_MAX_PER_EMAIL]
+            total_count = payload["total_count"]
+            user_name = payload["full_name"]
+            alert_name = payload["alert_name"]
+            email_to = payload["email"]
+
+            try:
+                unsubscribe_url = get_alert_unsubscribe_url(alert_id)
+
+                html = render_alert_digest_email(
+                    user_name=user_name,
+                    alert_name=alert_name,
+                    opportunities=opps,
+                    total_count=total_count,
+                    unsubscribe_url=unsubscribe_url,
+                )
+                subject = get_alert_digest_subject(total_count, alert_name)
+
+                result = send_email(
+                    to=email_to,
+                    subject=subject,
+                    html=html,
+                    tags=[
+                        {"name": "category", "value": "alert"},
+                        {"name": "alert_id", "value": alert_id[:8]},
+                        {"name": "cycle_id", "value": cycle_id},
+                    ],
+                )
+
+                if result:
+                    stats["emails_sent"] += 1
+                    # Track sent items for dedup (AC6)
+                    item_ids = [o["id"] for o in opps if o.get("id")]
+                    await finalize_alert_send(alert_id, item_ids, db)
+                    logger.info(
+                        f"[Alerts {cycle_id}] Sent alert {alert_id[:8]} "
+                        f"to {email_to}: {total_count} items"
+                    )
+                else:
+                    stats["emails_failed"] += 1
+                    logger.warning(
+                        f"[Alerts {cycle_id}] Failed to send alert {alert_id[:8]}"
+                    )
+
+            except Exception as e:
+                stats["emails_failed"] += 1
+                logger.error(
+                    f"[Alerts {cycle_id}] Error sending alert {alert_id[:8]}: {e}"
+                )
+
+    except Exception as e:
+        logger.error(f"[Alerts {cycle_id}] Unexpected error: {e}", exc_info=True)
+        return {"status": "error", "error": str(e), **stats}
+
+    duration_s = time.monotonic() - start
+    stats["duration_ms"] = int(duration_s * 1000)
+    logger.info(json.dumps({"event": "alerts_sent", **stats}))
+
+    return {"status": "completed", **stats}
+
+
 # CRIT-032 AC2: Build cron_jobs at module level (arq expects list attribute)
 try:
     from arq.cron import cron as _arq_cron
@@ -1226,6 +1346,13 @@ try:
     if DIGEST_ENABLED:
         _worker_cron_jobs.append(
             _arq_cron(daily_digest_job, hour={DIGEST_HOUR_UTC}, minute=0, timeout=1800),
+        )
+
+    # STORY-301 AC5: Email alerts cron job
+    from config import ALERTS_ENABLED, ALERTS_HOUR_UTC
+    if ALERTS_ENABLED:
+        _worker_cron_jobs.append(
+            _arq_cron(email_alerts_job, hour={ALERTS_HOUR_UTC}, minute=0, timeout=1800),
         )
 except Exception:
     _worker_cron_jobs = []
@@ -1270,7 +1397,7 @@ class WorkerSettings:
         cd backend && arq job_queue.WorkerSettings
     """
 
-    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job]
+    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job]
     cron_jobs = _worker_cron_jobs  # CRIT-032 AC2: periodic cache refresh
     on_startup = _worker_on_startup  # CRIT-038: Inject socket_timeout into Redis pool
     redis_settings = _worker_redis_settings

@@ -817,3 +817,11 @@ DIGEST_ENABLED: bool = str_to_bool(os.getenv("DIGEST_ENABLED", "false"))
 DIGEST_HOUR_UTC: int = int(os.getenv("DIGEST_HOUR_UTC", "10"))  # 10:00 UTC = 7:00 BRT
 DIGEST_MAX_PER_EMAIL: int = int(os.getenv("DIGEST_MAX_PER_EMAIL", "10"))
 DIGEST_BATCH_SIZE: int = 100  # Resend API limit per batch call
+
+# ============================================================================
+# STORY-301: Email Alert System Configuration
+# ============================================================================
+
+ALERTS_ENABLED: bool = str_to_bool(os.getenv("ALERTS_ENABLED", "true"))
+ALERTS_HOUR_UTC: int = int(os.getenv("ALERTS_HOUR_UTC", "11"))  # 11:00 UTC = 8:00 BRT
+ALERTS_MAX_PER_EMAIL: int = int(os.getenv("ALERTS_MAX_PER_EMAIL", "10"))

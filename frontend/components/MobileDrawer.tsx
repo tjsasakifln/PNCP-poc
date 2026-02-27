@@ -12,7 +12,7 @@ interface MobileDrawerProps {
   onClose: () => void;
 }
 
-/* ── SVG icons (20×20, strokeWidth 1.5) ── */
+/* -- SVG icons (20x20, strokeWidth 1.5) -- */
 const icons = {
   search: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -22,6 +22,11 @@ const icons = {
   pipeline: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15a2.25 2.25 0 0 1 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+    </svg>
+  ),
+  alerts: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
     </svg>
   ),
   history: (
@@ -76,10 +81,11 @@ const icons = {
   ),
 };
 
-/* ── Navigation items ── */
+/* -- Navigation items -- */
 const PRIMARY_NAV = [
   { href: "/buscar", label: "Buscar", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
+  { href: "/alertas", label: "Alertas", icon: icons.alerts },
   { href: "/historico", label: "Historico", icon: icons.history },
   { href: "/mensagens", label: "Mensagens", icon: icons.messages },
   { href: "/dashboard", label: "Dashboard", icon: icons.dashboard },
@@ -93,7 +99,7 @@ const SECONDARY_NAV = [
 
 /**
  * UX-340: Mobile drawer for authenticated area.
- * Replaces cluttered header icons with a clean hamburger → drawer pattern.
+ * Replaces cluttered header icons with a clean hamburger -> drawer pattern.
  * Slides from right (200ms), includes user info, nav, theme toggle, sign out.
  */
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
@@ -157,7 +163,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
 
   return (
     <div className="lg:hidden fixed inset-0 z-[70]" data-testid="mobile-drawer">
-      {/* AC6: Backdrop — click to close */}
+      {/* AC6: Backdrop -- click to close */}
       <div
         className="absolute inset-0 bg-black/40 transition-opacity duration-200"
         onClick={onClose}
@@ -165,7 +171,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         data-testid="mobile-drawer-backdrop"
       />
 
-      {/* AC9: Panel — slide from right, 200ms */}
+      {/* AC9: Panel -- slide from right, 200ms */}
       <div
         className="absolute top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-[var(--surface-0)] shadow-2xl flex flex-col animate-slide-in-right"
         style={{ animationDuration: "200ms" }}
@@ -190,7 +196,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
               {userEmail}
             </p>
           </div>
-          {/* AC6 + AC8: Close button ≥ 44px */}
+          {/* AC6 + AC8: Close button >= 44px */}
           <button
             onClick={onClose}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors"
@@ -273,7 +279,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           </div>
         </nav>
 
-        {/* Sign out — pinned to bottom */}
+        {/* Sign out -- pinned to bottom */}
         <div className="border-t border-[var(--border)] px-3 py-3">
           <button
             onClick={handleSignOut}

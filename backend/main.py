@@ -76,6 +76,7 @@ from routes.admin_trace import router as admin_trace_router  # CRIT-004 AC21: Se
 from routes.auth_check import router as auth_check_router  # STORY-258: Email/phone pre-signup checks
 from routes.bid_analysis import router as bid_analysis_router  # STORY-259: Deep bid analysis
 from routes.slo import router as slo_router  # STORY-299: SLO dashboard
+from routes.alerts import router as alerts_router  # STORY-301: Email Alert System
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -615,6 +616,7 @@ app.include_router(admin_trace_router)  # CRIT-004 AC21: Search trace (already h
 app.include_router(auth_check_router, prefix="/v1")  # STORY-258: Email/phone check
 app.include_router(bid_analysis_router, prefix="/v1")  # STORY-259: Deep bid analysis
 app.include_router(slo_router)  # STORY-299: SLO dashboard (already has /v1/admin prefix)
+app.include_router(alerts_router, prefix="/v1")  # STORY-301: Email Alert System
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -641,6 +643,7 @@ app.include_router(cache_health_router)  # UX-303: Cache health
 app.include_router(feedback_router)  # GTM-RESILIENCE-D05: User feedback loop
 app.include_router(auth_check_router)  # STORY-258: Email/phone check
 app.include_router(bid_analysis_router)  # STORY-259: Deep bid analysis
+app.include_router(alerts_router)  # STORY-301: Email Alert System
 
 # ============================================================================
 # GTM-PROXY-001 AC9-AC11: Global exception handlers for error sanitization
