@@ -34,6 +34,7 @@ interface DashboardMetrics {
   };
   fetch_durations: Record<string, number>;
   filter_decisions: Array<{ labels: Record<string, string>; value: number }>;
+  cta_conversion: Array<{ variant: string; shown: number; clicked: number; dismissed: number; ctr: number }>;
 }
 
 interface MetricsResponse {
@@ -340,6 +341,58 @@ export default function AdminMetricsPage() {
                             </span>
                           </td>
                           <td className="px-4 py-2 text-right font-data text-[var(--ink)]">{item.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* STORY-312 AC11: CTA Conversion Metrics */}
+            {d.cta_conversion && d.cta_conversion.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">
+                  CTA Conversion (Trial Upsell)
+                </h2>
+                <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-card overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[var(--surface-2)] text-left">
+                        <th className="px-4 py-3 font-medium text-[var(--ink-secondary)]">Variant</th>
+                        <th className="px-4 py-3 font-medium text-[var(--ink-secondary)] text-right">Shown</th>
+                        <th className="px-4 py-3 font-medium text-[var(--ink-secondary)] text-right">Clicked</th>
+                        <th className="px-4 py-3 font-medium text-[var(--ink-secondary)] text-right">Dismissed</th>
+                        <th className="px-4 py-3 font-medium text-[var(--ink-secondary)] text-right">CTR</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {d.cta_conversion.map((row, i) => (
+                        <tr key={row.variant} className="border-t border-[var(--border)]">
+                          <td className="px-4 py-2 text-[var(--ink)]">
+                            <span className="font-medium">{row.variant}</span>
+                            {i === 0 && (
+                              <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                Top
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-right font-data text-[var(--ink)]">{row.shown}</td>
+                          <td className="px-4 py-2 text-right font-data text-[var(--ink)]">{row.clicked}</td>
+                          <td className="px-4 py-2 text-right font-data text-[var(--ink-secondary)]">{row.dismissed}</td>
+                          <td className="px-4 py-2 text-right">
+                            <span
+                              className={`font-data font-semibold ${
+                                row.ctr >= 10
+                                  ? "text-green-600 dark:text-green-400"
+                                  : row.ctr >= 5
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-[var(--ink-secondary)]"
+                              }`}
+                            >
+                              {row.ctr}%
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

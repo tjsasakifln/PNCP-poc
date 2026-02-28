@@ -71,7 +71,7 @@ Inserir CTAs contextuais em 5 momentos-chave de valor percebido, com copy person
 
 ### Analytics — Conversao por Ponto
 
-- [ ] **AC11:** Dashboard admin deve mostrar (STORY-308) — DEFERRED (depends on STORY-308):
+- [x] **AC11:** Dashboard admin deve mostrar (STORY-308):
   - CTAs mostrados vs clicados por variant (conversion rate)
   - Top variant por conversao
   - Revenue atribuida a cada ponto de CTA

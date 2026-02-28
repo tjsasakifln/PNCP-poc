@@ -256,6 +256,31 @@ function extractDashboardMetrics(metrics: Record<string, PrometheusMetric>) {
   // API errors by source
   const apiErrorsBySource = getLabeledSamples("smartlic_api_errors");
 
+  // STORY-312 AC11: CTA conversion metrics
+  const ctaShown = getLabeledSamples("smartlic_cta_shown");
+  const ctaClicked = getLabeledSamples("smartlic_cta_clicked");
+  const ctaDismissed = getLabeledSamples("smartlic_cta_dismissed");
+
+  // Build per-variant breakdown
+  const ctaVariants: Array<{ variant: string; shown: number; clicked: number; dismissed: number; ctr: number }> = [];
+  const allVariants = new Set([
+    ...ctaShown.map((s) => s.labels.variant),
+    ...ctaClicked.map((s) => s.labels.variant),
+    ...ctaDismissed.map((s) => s.labels.variant),
+  ]);
+
+  for (const v of allVariants) {
+    if (!v) continue;
+    const shown = ctaShown.find((s) => s.labels.variant === v)?.value ?? 0;
+    const clicked = ctaClicked.find((s) => s.labels.variant === v)?.value ?? 0;
+    const dismissed = ctaDismissed.find((s) => s.labels.variant === v)?.value ?? 0;
+    const ctr = shown > 0 ? Math.round((clicked / shown) * 1000) / 10 : 0;
+    ctaVariants.push({ variant: v, shown, clicked, dismissed, ctr });
+  }
+
+  // Sort by CTR descending
+  ctaVariants.sort((a, b) => b.ctr - a.ctr);
+
   return {
     search: {
       total: totalSearches,
@@ -286,5 +311,6 @@ function extractDashboardMetrics(metrics: Record<string, PrometheusMetric>) {
     },
     fetch_durations: fetchDurations,
     filter_decisions: filterDecisions,
+    cta_conversion: ctaVariants,
   };
 }

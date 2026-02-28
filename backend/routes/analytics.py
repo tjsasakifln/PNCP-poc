@@ -336,3 +336,38 @@ async def get_trial_value(user: dict = Depends(require_auth), db=Depends(get_db)
             status_code=503,
             detail="Informação de valor do trial temporariamente indisponível"
         )
+
+
+# ============================================================================
+# STORY-312 AC11: CTA conversion tracking
+# ============================================================================
+
+VALID_CTA_ACTIONS = {"shown", "clicked", "dismissed"}
+VALID_CTA_VARIANTS = {"post-search", "post-download", "post-pipeline", "dashboard", "quota"}
+
+
+class CTAEventRequest(BaseModel):
+    action: str  # "shown" | "clicked" | "dismissed"
+    variant: str  # "post-search" | "post-download" | "post-pipeline" | "dashboard" | "quota"
+
+
+@router.post("/track-cta", status_code=204)
+async def track_cta_event(event: CTAEventRequest, user: dict = Depends(require_auth)):
+    """Track CTA conversion events for admin dashboard (STORY-312 AC11).
+
+    Increments Prometheus counters for shown/clicked/dismissed by variant.
+    Fire-and-forget — always returns 204.
+    """
+    if event.action not in VALID_CTA_ACTIONS or event.variant not in VALID_CTA_VARIANTS:
+        return  # Silently ignore invalid events
+
+    try:
+        import metrics
+        if event.action == "shown":
+            metrics.CTA_SHOWN.labels(variant=event.variant).inc()
+        elif event.action == "clicked":
+            metrics.CTA_CLICKED.labels(variant=event.variant).inc()
+        elif event.action == "dismissed":
+            metrics.CTA_DISMISSED.labels(variant=event.variant).inc()
+    except Exception:
+        pass  # Fire-and-forget

@@ -422,6 +422,25 @@ PAYMENT_FAILURE = _create_counter(
     labelnames=["decline_type", "decline_code"],
 )
 
+# STORY-312 AC11: CTA conversion tracking (frontend reports via /v1/analytics/track-cta)
+CTA_SHOWN = _create_counter(
+    "smartlic_cta_shown_total",
+    "Trial upsell CTAs shown by variant",
+    labelnames=["variant"],
+)
+
+CTA_CLICKED = _create_counter(
+    "smartlic_cta_clicked_total",
+    "Trial upsell CTAs clicked by variant",
+    labelnames=["variant"],
+)
+
+CTA_DISMISSED = _create_counter(
+    "smartlic_cta_dismissed_total",
+    "Trial upsell CTAs dismissed by variant",
+    labelnames=["variant"],
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

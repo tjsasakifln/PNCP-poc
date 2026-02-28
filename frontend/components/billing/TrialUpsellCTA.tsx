@@ -113,6 +113,23 @@ function setDismissed(variant: UpsellVariant): void {
 }
 
 // ---------------------------------------------------------------------------
+// Backend CTA tracking (AC11 — Prometheus counters for admin dashboard)
+// ---------------------------------------------------------------------------
+
+function reportCTAEvent(action: string, variant: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    fetch("/api/analytics?endpoint=track-cta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, variant }),
+    }).catch(() => {}); // fire-and-forget
+  } catch {
+    // ignore
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Styles per variant
 // ---------------------------------------------------------------------------
 
@@ -180,6 +197,7 @@ export function TrialUpsellCTA({
         incrementSessionCount();
       }
       trackEvent("trial_upsell_shown", { variant, ...contextData });
+      reportCTAEvent("shown", variant);
     }
   }, [shouldShow]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -187,10 +205,12 @@ export function TrialUpsellCTA({
     setDismissed(variant);
     setVisible(false);
     trackEvent("trial_upsell_dismissed", { variant });
+    reportCTAEvent("dismissed", variant);
   }, [variant, trackEvent]);
 
   const handleClick = useCallback(() => {
     trackEvent("trial_upsell_clicked", { variant, ...contextData });
+    reportCTAEvent("clicked", variant);
   }, [variant, contextData, trackEvent]);
 
   if (!visible) return null;

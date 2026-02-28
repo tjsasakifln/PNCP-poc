@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sanitizeProxyError, sanitizeNetworkError } from "../../../lib/proxy-error-handler";
 
+const POST_ENDPOINTS = ["track-cta"];
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const endpoint = searchParams.get("endpoint");
@@ -76,5 +78,42 @@ export async function GET(request: NextRequest) {
     // CRIT-017: Sanitize network errors
     console.error("[analytics] Network error:", error instanceof Error ? error.message : error);
     return sanitizeNetworkError(error);
+  }
+}
+
+// STORY-312 AC11: POST handler for CTA event tracking
+export async function POST(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const endpoint = searchParams.get("endpoint");
+
+  if (!endpoint || !POST_ENDPOINTS.includes(endpoint)) {
+    return NextResponse.json({ error: "Invalid endpoint" }, { status: 400 });
+  }
+
+  const authHeader = request.headers.get("authorization");
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
+    return new NextResponse(null, { status: 204 }); // Silently ignore if no backend
+  }
+
+  try {
+    const body = await request.json();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (authHeader) {
+      headers["Authorization"] = authHeader;
+    }
+
+    await fetch(`${backendUrl}/v1/analytics/${endpoint}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    return new NextResponse(null, { status: 204 });
+  } catch {
+    // Fire-and-forget — always return 204
+    return new NextResponse(null, { status: 204 });
   }
 }
