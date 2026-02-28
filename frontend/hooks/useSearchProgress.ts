@@ -53,6 +53,8 @@ export interface SearchProgressEvent {
     has_results?: boolean;
     /** GTM-ARCH-001: Error code from async search worker */
     error_code?: string;
+    /** STORY-329 AC4: Long-running filter indicator (>30s filtering) */
+    is_long_running?: boolean;
   };
 }
 
