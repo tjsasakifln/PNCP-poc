@@ -643,7 +643,11 @@ async def save_health_check(overall_status: str, sources: Dict, components: Dict
             })
         )
     except Exception as e:
-        logger.error("Failed to save health check: %s", e)
+        # CRIT-040 AC7: Schema errors (PGRST205) are WARNING, not ERROR
+        if "PGRST205" in str(e):
+            logger.warning("save_health_check: table missing in schema cache (PGRST205): %s", e)
+        else:
+            logger.error("Failed to save health check: %s", e)
 
 
 async def detect_incident(current_status: str, sources: Dict) -> None:
@@ -754,7 +758,11 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
                 logger.info("Incident auto-resolved: %s", ongoing.get("id"))
 
     except Exception as e:
-        logger.error("Incident detection failed: %s", e)
+        # CRIT-040 AC8: Schema errors (PGRST205) are WARNING, not ERROR
+        if "PGRST205" in str(e):
+            logger.warning("detect_incident: table missing in schema cache (PGRST205): %s", e)
+        else:
+            logger.error("Incident detection failed: %s", e)
 
 
 async def cleanup_old_health_checks() -> int:
@@ -774,7 +782,11 @@ async def cleanup_old_health_checks() -> int:
             logger.info("Cleaned up %d old health checks", deleted)
         return deleted
     except Exception as e:
-        logger.warning("Failed to cleanup old health checks: %s", e)
+        # CRIT-040 AC9: Schema errors (PGRST205) are WARNING with specific message
+        if "PGRST205" in str(e):
+            logger.warning("cleanup_old_health_checks: table missing in schema cache (PGRST205): %s", e)
+        else:
+            logger.warning("Failed to cleanup old health checks: %s", e)
         return 0
 
 

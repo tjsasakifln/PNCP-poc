@@ -170,7 +170,26 @@ def _fingerprint_transients(event, hint):
 
 
 def _before_send(event, hint):
-    """Combined before_send: PII scrubbing + transient fingerprinting (GTM-RESILIENCE-E02)."""
+    """Combined before_send: PII scrubbing + transient fingerprinting + noise filtering.
+
+    GTM-RESILIENCE-E02: PII scrubbing + transient fingerprinting.
+    CRIT-040 AC5: Drop CircuitBreakerOpenError and PGRST205 schema errors.
+    """
+    # CRIT-040 AC5: Drop CB open errors (already tracked via Prometheus)
+    exc_info = hint.get("exc_info")
+    if exc_info and exc_info[1] is not None:
+        exc = exc_info[1]
+        if type(exc).__name__ == "CircuitBreakerOpenError":
+            return None  # Drop — tracked via smartlic_supabase_cb_state metric
+    # CRIT-040 AC5: Drop PGRST205 schema cache errors (not runtime errors)
+    message = event.get("message", "")
+    exc_values = event.get("exception", {}).get("values", [])
+    for ev in exc_values:
+        if "PGRST205" in ev.get("value", ""):
+            return None
+    if "PGRST205" in message:
+        return None
+
     event = scrub_pii(event, hint)
     if event is None:
         return None
@@ -187,6 +206,8 @@ def _traces_sampler(sampling_context):
 
 _sentry_dsn = os.getenv("SENTRY_DSN")
 if _sentry_dsn:
+    from supabase_client import CircuitBreakerOpenError  # CRIT-040 AC6
+
     sentry_sdk.init(
         dsn=_sentry_dsn,
         integrations=[FastApiIntegration(), StarletteIntegration()],
@@ -194,6 +215,7 @@ if _sentry_dsn:
         environment=_env,
         release=APP_VERSION,
         before_send=_before_send,
+        ignore_errors=[CircuitBreakerOpenError],  # CRIT-040 AC6: fallback filter
     )
     logger.info("Sentry initialized for error tracking")
 else:

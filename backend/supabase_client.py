@@ -83,6 +83,9 @@ class SupabaseCircuitBreaker:
     Configuration (AC2):
         window_size=10, failure_rate_threshold=0.5 (50%),
         cooldown_seconds=60, trial_calls_max=3
+
+    CRIT-040: exclude_predicates — list of callables that inspect an exception
+    and return True if it should NOT count as a CB failure (e.g. schema errors).
     """
 
     def __init__(
@@ -91,6 +94,7 @@ class SupabaseCircuitBreaker:
         failure_rate_threshold: float = 0.5,
         cooldown_seconds: float = 60.0,
         trial_calls_max: int = 3,
+        exclude_predicates: Optional[list[Callable[[Exception], bool]]] = None,
     ):
         self._state: str = "CLOSED"
         self._window: deque[bool] = deque(maxlen=window_size)
@@ -101,6 +105,7 @@ class SupabaseCircuitBreaker:
         self._trial_successes = 0
         self._opened_at: Optional[float] = None
         self._lock = threading.Lock()
+        self._exclude_predicates: list[Callable[[Exception], bool]] = exclude_predicates or []
 
     @property
     def state(self) -> str:
@@ -119,7 +124,17 @@ class SupabaseCircuitBreaker:
                 if self._trial_successes >= self._trial_calls_max:
                     self._transition_locked("CLOSED")
 
-    def _record_failure(self) -> None:
+    def _record_failure(self, exc: Optional[Exception] = None) -> None:
+        # CRIT-040 AC2/AC4: Check exclude predicates before counting failure
+        if exc is not None:
+            for pred in self._exclude_predicates:
+                try:
+                    if pred(exc):
+                        logger.warning("CB: excluded error from failure count: %s", exc)
+                        return  # Don't count this as a failure
+                except Exception:
+                    pass  # Predicate errors are best-effort
+
         with self._lock:
             self._window.append(False)
             if self._state == "HALF_OPEN":
@@ -185,8 +200,8 @@ class SupabaseCircuitBreaker:
             result = func(*args, **kwargs)
             self._record_success()
             return result
-        except Exception:
-            self._record_failure()
+        except Exception as e:
+            self._record_failure(e)
             raise
 
     async def call_async(self, coro):
@@ -211,8 +226,8 @@ class SupabaseCircuitBreaker:
             result = await coro
             self._record_success()
             return result
-        except Exception:
-            self._record_failure()
+        except Exception as e:
+            self._record_failure(e)
             raise
 
     def reset(self) -> None:
@@ -224,8 +239,26 @@ class SupabaseCircuitBreaker:
             self._opened_at = None
 
 
+def _is_schema_error(exc: Exception) -> bool:
+    """CRIT-040 AC3: Detect PostgREST/PostgreSQL schema errors.
+
+    These indicate missing tables/columns in PostgREST cache — NOT
+    a Supabase outage. Must not trip the circuit breaker.
+
+    Excluded codes:
+        PGRST205 — schema cache miss (table not found)
+        PGRST204 — schema cache miss (column not found)
+        42703    — PostgreSQL: undefined column
+        42P01    — PostgreSQL: undefined table
+    """
+    msg = str(exc)
+    return any(code in msg for code in ("PGRST205", "PGRST204", "42703", "42P01"))
+
+
 # Global singleton — used by all modules
-supabase_cb = SupabaseCircuitBreaker()
+supabase_cb = SupabaseCircuitBreaker(
+    exclude_predicates=[_is_schema_error],
+)
 
 
 async def sb_execute(query):
@@ -258,7 +291,7 @@ async def sb_execute(query):
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         supabase_cb._record_success()
         return result
-    except Exception:
+    except Exception as e:
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
-        supabase_cb._record_failure()
+        supabase_cb._record_failure(e)
         raise

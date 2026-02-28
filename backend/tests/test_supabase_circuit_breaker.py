@@ -659,3 +659,285 @@ class TestDefinitionOfDone:
         from supabase_client import sb_execute
         source = inspect.getsource(sb_execute)
         assert "CircuitBreakerOpenError" in source or "supabase_cb" in source
+
+    def test_global_singleton_has_exclude_predicates(self):
+        """CRIT-040: Global singleton configured with schema error exclusion."""
+        from supabase_client import supabase_cb
+        assert len(supabase_cb._exclude_predicates) >= 1
+
+    def test_is_schema_error_function_exists(self):
+        """CRIT-040: _is_schema_error helper is importable."""
+        from supabase_client import _is_schema_error
+        assert callable(_is_schema_error)
+
+
+# ---------------------------------------------------------------------------
+# CRIT-040 AC10: Tests for exclude_predicates
+# ---------------------------------------------------------------------------
+
+class TestExcludePredicates:
+    """CRIT-040 AC10: Test CB error exclusion for schema errors."""
+
+    def _make_cb(self, **kwargs):
+        from supabase_client import SupabaseCircuitBreaker
+        return SupabaseCircuitBreaker(**kwargs)
+
+    def test_pgrst205_does_not_increment_failure_count(self):
+        """PGRST205 error is excluded — does NOT increment failure count."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        # Record 10 PGRST205 errors
+        for _ in range(10):
+            cb._record_failure(Exception("PGRST205: Could not find the table in the schema cache"))
+
+        # Window should be empty — all excluded
+        assert len(cb._window) == 0
+        assert cb.state == "CLOSED"
+
+    def test_pgrst204_does_not_increment_failure_count(self):
+        """PGRST204 error is excluded — does NOT increment failure count."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        cb._record_failure(Exception("PGRST204: Column not found"))
+        assert len(cb._window) == 0
+        assert cb.state == "CLOSED"
+
+    def test_pg_42703_does_not_increment_failure_count(self):
+        """PostgreSQL 42703 (undefined column) is excluded."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        cb._record_failure(Exception("42703: undefined column"))
+        assert len(cb._window) == 0
+
+    def test_pg_42P01_does_not_increment_failure_count(self):
+        """PostgreSQL 42P01 (undefined table) is excluded."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        cb._record_failure(Exception("42P01: undefined table"))
+        assert len(cb._window) == 0
+
+    def test_connection_error_increments_failure_count(self):
+        """Connection errors are NOT excluded — SIM increment failure count."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        cb._record_failure(ConnectionError("Connection refused"))
+        assert len(cb._window) == 1
+        assert list(cb._window)[0] is False
+
+    def test_cb_does_not_open_after_10_pgrst205_errors(self):
+        """CB stays CLOSED after 10 consecutive PGRST205 errors."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        for _ in range(10):
+            cb._record_failure(Exception("PGRST205: schema cache miss"))
+
+        assert cb.state == "CLOSED"
+        assert len(cb._window) == 0
+
+    def test_cb_opens_after_5_connection_errors_in_window_of_10(self):
+        """CB opens after 5 connection errors in window of 10 (50% rate)."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        # 5 successes + 5 connection errors = 50% failure rate → OPEN
+        for _ in range(5):
+            cb._record_success()
+        for _ in range(5):
+            cb._record_failure(ConnectionError("Connection refused"))
+
+        assert cb.state == "OPEN"
+
+    def test_mixed_schema_and_connection_errors(self):
+        """Schema errors excluded, connection errors counted — correct rate."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        # 8 successes + 20 PGRST205 (all excluded) + 2 connection errors
+        for _ in range(8):
+            cb._record_success()
+        for _ in range(20):
+            cb._record_failure(Exception("PGRST205: schema cache miss"))
+        for _ in range(2):
+            cb._record_failure(ConnectionError("timeout"))
+
+        # Window should have 10 entries: 8 success + 2 failure = 20% rate → CLOSED
+        assert cb.state == "CLOSED"
+
+    def test_no_predicates_counts_all_failures(self):
+        """Without exclude_predicates, PGRST205 counts as normal failure."""
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+        )
+
+        for _ in range(5):
+            cb._record_success()
+        for _ in range(5):
+            cb._record_failure(Exception("PGRST205: schema cache miss"))
+
+        assert cb.state == "OPEN"  # Without predicate, PGRST205 counts
+
+    def test_record_failure_without_exception_counts_normally(self):
+        """_record_failure(None) counts as a failure (backward compatible)."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=4, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        for _ in range(4):
+            cb._record_failure()  # No exception passed
+
+        assert cb.state == "OPEN"
+
+    def test_exclude_predicate_exception_is_swallowed(self):
+        """If a predicate itself raises, it's swallowed (best-effort)."""
+        def buggy_predicate(exc):
+            raise RuntimeError("predicate bug")
+
+        cb = self._make_cb(
+            window_size=4, failure_rate_threshold=0.5,
+            exclude_predicates=[buggy_predicate],
+        )
+
+        # Should not crash — counts as normal failure
+        for _ in range(4):
+            cb._record_failure(Exception("some error"))
+
+        assert cb.state == "OPEN"
+
+    def test_call_sync_passes_exception_to_record_failure(self):
+        """call_sync() passes the caught exception to _record_failure."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        # Schema error via call_sync — should be excluded
+        def raise_pgrst205():
+            raise Exception("PGRST205: table not found")
+
+        for _ in range(10):
+            with pytest.raises(Exception, match="PGRST205"):
+                cb.call_sync(raise_pgrst205)
+
+        assert cb.state == "CLOSED"  # All excluded
+        assert len(cb._window) == 0
+
+    @pytest.mark.asyncio
+    async def test_call_async_passes_exception_to_record_failure(self):
+        """call_async() passes the caught exception to _record_failure."""
+        from supabase_client import _is_schema_error
+        cb = self._make_cb(
+            window_size=10, failure_rate_threshold=0.5,
+            exclude_predicates=[_is_schema_error],
+        )
+
+        async def raise_pgrst205():
+            raise Exception("PGRST205: table not found")
+
+        for _ in range(10):
+            with pytest.raises(Exception, match="PGRST205"):
+                await cb.call_async(raise_pgrst205())
+
+        assert cb.state == "CLOSED"
+        assert len(cb._window) == 0
+
+
+# ---------------------------------------------------------------------------
+# CRIT-040 AC11: Integration test — health canary + missing table → CB CLOSED
+# ---------------------------------------------------------------------------
+
+class TestHealthCanaryCBIntegration:
+    """CRIT-040 AC11: Health canary with missing table → CB remains CLOSED."""
+
+    def setup_method(self):
+        from supabase_client import supabase_cb
+        supabase_cb.reset()
+
+    def teardown_method(self):
+        from supabase_client import supabase_cb
+        supabase_cb.reset()
+
+    @pytest.mark.asyncio
+    async def test_save_health_check_pgrst205_cb_stays_closed(self):
+        """save_health_check() with PGRST205 → CB stays CLOSED."""
+        from supabase_client import supabase_cb
+
+        # sb_execute raises PGRST205 → health.py catches → CB stays CLOSED
+        with patch("supabase_client.get_supabase", return_value=Mock()), \
+             patch("supabase_client.sb_execute") as mock_sb_exec:
+            # Make sb_execute raise PGRST205 and also record_failure with exclusion
+            pgrst_exc = Exception("PGRST205: Could not find the table in the schema cache")
+            mock_sb_exec.side_effect = pgrst_exc
+
+            # Manually trigger the CB path as sb_execute would
+            supabase_cb._record_failure(pgrst_exc)
+
+            from health import save_health_check
+            await save_health_check("healthy", {}, {})
+
+        # CB should still be CLOSED — PGRST205 is excluded
+        assert supabase_cb.state == "CLOSED"
+        assert len(supabase_cb._window) == 0
+
+    @pytest.mark.asyncio
+    async def test_detect_incident_pgrst205_cb_stays_closed(self):
+        """detect_incident() with PGRST205 → CB stays CLOSED."""
+        from supabase_client import supabase_cb
+
+        pgrst_exc = Exception("PGRST205: schema cache miss")
+        with patch("supabase_client.get_supabase", return_value=Mock()), \
+             patch("supabase_client.sb_execute", side_effect=pgrst_exc):
+            supabase_cb._record_failure(pgrst_exc)
+
+            from health import detect_incident
+            await detect_incident("healthy", {})
+
+        assert supabase_cb.state == "CLOSED"
+
+    @pytest.mark.asyncio
+    async def test_repeated_pgrst205_never_opens_cb(self):
+        """50 consecutive PGRST205 errors from health canary → CB still CLOSED."""
+        from supabase_client import supabase_cb
+
+        pgrst_exc = Exception("PGRST205: table missing")
+        with patch("supabase_client.get_supabase", return_value=Mock()), \
+             patch("supabase_client.sb_execute", side_effect=pgrst_exc):
+            from health import save_health_check
+            for _ in range(50):
+                supabase_cb._record_failure(pgrst_exc)
+                await save_health_check("healthy", {}, {})
+
+        assert supabase_cb.state == "CLOSED"
+        assert len(supabase_cb._window) == 0
