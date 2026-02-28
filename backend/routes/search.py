@@ -906,6 +906,51 @@ async def _execute_background_fetch(
 _ASYNC_SEARCH_TIMEOUT = 120  # AC9: Hard limit in seconds
 
 
+def _apply_trial_paywall(response: BuscaResponse, user: dict) -> BuscaResponse:
+    """STORY-320 AC3: Truncate results for trial users in limited_access phase.
+
+    If trial paywall is active and user is in limited_access phase:
+    - Truncate licitacoes to TRIAL_PAYWALL_MAX_RESULTS
+    - Set paywall_applied=True
+    - Set total_before_paywall to original count
+    """
+    from config import get_feature_flag, TRIAL_PAYWALL_MAX_RESULTS
+    from quota import get_trial_phase
+
+    if not get_feature_flag("TRIAL_PAYWALL_ENABLED"):
+        return response
+
+    user_id = user.get("id")
+    if not user_id:
+        return response
+
+    try:
+        phase_info = get_trial_phase(user_id)
+    except Exception as e:
+        logger.warning(f"STORY-320: trial phase check failed, skipping paywall: {e}")
+        return response
+
+    if phase_info["phase"] != "limited_access":
+        return response
+
+    total_results = len(response.licitacoes)
+    if total_results <= TRIAL_PAYWALL_MAX_RESULTS:
+        return response
+
+    response.total_before_paywall = total_results
+    response.licitacoes = response.licitacoes[:TRIAL_PAYWALL_MAX_RESULTS]
+    response.paywall_applied = True
+
+    # Update summary count to reflect visible results
+    response.resumo.total_oportunidades = TRIAL_PAYWALL_MAX_RESULTS
+    logger.info(
+        f"STORY-320: Paywall applied for user {user_id[:8]}... "
+        f"({total_results} → {TRIAL_PAYWALL_MAX_RESULTS} results)"
+    )
+
+    return response
+
+
 async def _run_async_search(
     search_id: str,
     request: "BuscaRequest",
@@ -940,6 +985,9 @@ async def _run_async_search(
             pipeline.run(ctx),
             timeout=_ASYNC_SEARCH_TIMEOUT,
         )
+
+        # STORY-320 AC3: Apply trial paywall truncation
+        response = _apply_trial_paywall(response, user)
 
         # Persist results: L1 (memory) + L2 (Redis) + L3 (Supabase session update)
         store_background_results(search_id, response)
@@ -1314,6 +1362,9 @@ async def buscar_licitacoes(
                         await tracker.emit_degraded("source_failure", _build_degraded_detail(ctx))
                         await remove_tracker(request.search_id)
 
+                # STORY-320 AC3: Apply trial paywall truncation (cache-first path)
+                response = _apply_trial_paywall(response, user)
+
                 # CRIT-005 AC1-2: Observability headers (cache-first path)
                 http_response.headers["X-Response-State"] = ctx.response_state or "live"
                 http_response.headers["X-Cache-Level"] = ctx.cache_level or "none"
@@ -1338,6 +1389,9 @@ async def buscar_licitacoes(
 
     try:
         response = await pipeline.run(ctx)
+
+        # STORY-320 AC3: Apply trial paywall truncation (sync path)
+        response = _apply_trial_paywall(response, user)
 
         # SSE: Emit terminal event based on response_state (A-02 AC3-AC5)
         if tracker:

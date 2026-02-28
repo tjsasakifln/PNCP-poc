@@ -27,6 +27,7 @@ import SourceStatusGrid from "./SourceStatusGrid";
 import { SearchStateManager } from "./SearchStateManager";
 import { deriveSearchPhase } from "../types/searchPhase";
 import { TrialUpsellCTA } from "../../../components/billing/TrialUpsellCTA";
+import { TrialPaywall } from "../../../components/billing/TrialPaywall";
 // GTM-UX-001: PartialTimeoutBanner replaced by DataQualityBanner
 
 export interface SearchResultsProps {
@@ -145,6 +146,11 @@ export interface SearchResultsProps {
   // STORY-295: Progressive results
   sourceStatuses?: Map<string, SourceStatus>;
   partialProgress?: PartialProgress | null;
+
+  // STORY-320: Trial paywall
+  trialPhase?: "full_access" | "limited_access" | "not_trial";
+  paywallApplied?: boolean;
+  totalBeforePaywall?: number | null;
 }
 
 export default function SearchResults({
@@ -175,6 +181,8 @@ export default function SearchResults({
   isTrialExpired,
   // STORY-295: Progressive results
   sourceStatuses, partialProgress,
+  // STORY-320: Trial paywall
+  trialPhase, paywallApplied, totalBeforePaywall,
 }: SearchResultsProps) {
   // STORY-257B AC4: Track transition from grid to results
   const [showGrid, setShowGrid] = useState(false);
@@ -488,6 +496,31 @@ export default function SearchResults({
       {/* Result Display — CRIT-027 AC2: only after loading completes */}
       {!loading && result && result.resumo.total_oportunidades > 0 && (
         <div className={`mt-6 sm:mt-8 space-y-4 sm:space-y-6 ${!showGrid ? 'animate-fade-in-up' : ''}`}>
+          {/* STORY-320 AC12: Persistent non-dismissable banner for limited_access (days 8-14) */}
+          {trialPhase === "limited_access" && (
+            <div
+              className="p-3 rounded-card bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-between"
+              data-testid="trial-paywall-banner"
+              role="banner"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-sm font-medium">
+                  Voce esta no modo preview. Desbloqueie acesso completo ao SmartLic.
+                </span>
+              </div>
+              <Link
+                href="/planos"
+                className="text-sm font-bold bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-button transition-colors whitespace-nowrap"
+                data-testid="trial-paywall-banner-cta"
+              >
+                Ver planos
+              </Link>
+            </div>
+          )}
+
           {/* GTM-UX-001: Single unified DataQualityBanner replaces FailedUfsBanner,
               TruncationWarningBanner, PartialResultsBanner, OperationalStateBanner, CacheBanner
               P2.2: Skip for degraded_expired — ExpiredCacheBanner is already shown above */}
@@ -685,15 +718,34 @@ export default function SearchResults({
           )}
 
           {/* Summary Card */}
-          <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card">
+          <div className="p-4 sm:p-6 bg-brand-blue-subtle border border-accent rounded-card relative">
             {/* CRIT-005 AC16: LLM source badge near the summary */}
             <div className="flex items-center gap-2 mb-3">
               <LlmSourceBadge llmSource={result.llm_source} />
             </div>
 
+            {/* STORY-320 AC9: Truncate AI summary in limited_access */}
             <p className="text-base sm:text-lg leading-relaxed text-ink">
-              {result.resumo.resumo_executivo}
+              {trialPhase === "limited_access"
+                ? result.resumo.resumo_executivo.split('. ').slice(0, 2).join('. ') + '...'
+                : result.resumo.resumo_executivo}
             </p>
+
+            {/* STORY-320 AC9: Paywall overlay on summary */}
+            {trialPhase === "limited_access" && (
+              <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700/40 rounded-lg flex items-center justify-between">
+                <span className="text-sm text-blue-800 dark:text-blue-200">
+                  Ver analise completa com SmartLic Pro
+                </span>
+                <Link
+                  href="/planos"
+                  className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  data-testid="summary-paywall-cta"
+                >
+                  Assinar
+                </Link>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-8 mt-4 sm:mt-6">
               <div>
@@ -891,9 +943,63 @@ export default function SearchResults({
             />
           )}
 
+          {/* STORY-320 AC7: Blurred results preview + paywall overlay for limited_access */}
+          {paywallApplied && totalBeforePaywall && totalBeforePaywall > result.licitacoes.length && (
+            <div className="relative mt-4" data-testid="paywall-blurred-results">
+              {/* Blurred placeholder cards */}
+              <div className="space-y-3 blur-sm pointer-events-none select-none" aria-hidden="true">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 bg-surface border border-border rounded-card">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full font-medium">Preview</span>
+                    </div>
+                    <div className="h-4 bg-[var(--surface-1)] rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-[var(--surface-1)] rounded w-1/2" />
+                  </div>
+                ))}
+              </div>
+              {/* Paywall overlay */}
+              <TrialPaywall
+                additionalCount={totalBeforePaywall - result.licitacoes.length}
+                context="search_results"
+              />
+            </div>
+          )}
+
           {/* Download Button — UX-349 AC1-AC5: Excel always visible when results exist */}
+          {/* STORY-320 AC8: Paywall preview download button */}
           {/* STORY-265 AC16: Trial expired → disabled download with upgrade message */}
-          {isTrialExpired ? (
+          {paywallApplied && totalBeforePaywall ? (
+            <div className="relative">
+              <button
+                onClick={onDownload}
+                disabled={downloadLoading}
+                className="w-full bg-surface-0 border-2 border-blue-500 text-blue-700 dark:text-blue-300 py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold
+                           hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all duration-200
+                           flex items-center justify-center gap-3
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="excel-paywall-button"
+                title={`Assine o SmartLic Pro para exportar todos os ${totalBeforePaywall} resultados`}
+              >
+                {downloadLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" aria-label="Carregando" role="img">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Preparando preview...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Baixar Preview ({result.licitacoes.length} resultados)
+                  </>
+                )}
+              </button>
+            </div>
+          ) : isTrialExpired ? (
             <Link
               href="/planos"
               className="w-full bg-surface-0 border-2 border-amber-500 text-amber-700 dark:text-amber-300 py-3 sm:py-4 rounded-button text-base sm:text-lg font-semibold

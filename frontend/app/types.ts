@@ -165,6 +165,10 @@ export interface BuscaResult {
   bid_analysis?: BidAnalysisItem[];
   /** STORY-259: Bid analysis status */
   bid_analysis_status?: "ready" | "processing" | null;
+  /** STORY-320 AC3: True when results were truncated by trial paywall */
+  paywall_applied?: boolean;
+  /** STORY-320 AC3: Total results before paywall truncation */
+  total_before_paywall?: number | null;
 }
 
 /** STORY-259: Per-bid analysis from batch LLM call */

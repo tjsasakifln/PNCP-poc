@@ -386,6 +386,12 @@ TRIAL_14_DAYS_ENABLED: bool = str_to_bool(os.getenv("TRIAL_14_DAYS_ENABLED", "tr
 # STORY-266: Trial Reminder Emails
 TRIAL_EMAILS_ENABLED: bool = str_to_bool(os.getenv("TRIAL_EMAILS_ENABLED", "true"))
 
+# STORY-320: Trial Paywall — soft paywall from day 7 of trial
+TRIAL_PAYWALL_ENABLED: bool = str_to_bool(os.getenv("TRIAL_PAYWALL_ENABLED", "true"))
+TRIAL_PAYWALL_DAY: int = int(os.getenv("TRIAL_PAYWALL_DAY", "7"))
+TRIAL_PAYWALL_MAX_RESULTS: int = int(os.getenv("TRIAL_PAYWALL_MAX_RESULTS", "10"))
+TRIAL_PAYWALL_MAX_PIPELINE: int = int(os.getenv("TRIAL_PAYWALL_MAX_PIPELINE", "5"))
+
 # ============================================
 # D-04: Viability Assessment
 # ============================================
@@ -443,6 +449,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "RATE_LIMITING_ENABLED": ("RATE_LIMITING_ENABLED", "true"),
     "SECTOR_RED_FLAGS_ENABLED": ("SECTOR_RED_FLAGS_ENABLED", "true"),
     "TRIAL_EMAILS_ENABLED": ("TRIAL_EMAILS_ENABLED", "true"),
+    "TRIAL_PAYWALL_ENABLED": ("TRIAL_PAYWALL_ENABLED", "true"),
     "CACHE_REFRESH_ENABLED": ("CACHE_REFRESH_ENABLED", "false"),
     "SEARCH_ASYNC_ENABLED": ("SEARCH_ASYNC_ENABLED", "true"),
     "BID_ANALYSIS_ENABLED": ("BID_ANALYSIS_ENABLED", "true"),

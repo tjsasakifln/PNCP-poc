@@ -350,6 +350,65 @@ class QuotaInfo(BaseModel):
 
 
 # ============================================================================
+# STORY-320: Trial Phase (Paywall Suave)
+# ============================================================================
+
+class TrialPhaseInfo(TypedDict):
+    phase: str  # "full_access" | "limited_access" | "not_trial"
+    day: int
+    days_remaining: int
+
+
+def get_trial_phase(user_id: str) -> TrialPhaseInfo:
+    """Determine trial phase for soft paywall (STORY-320 AC1).
+
+    - full_access (days 1 to TRIAL_PAYWALL_DAY): all features unrestricted
+    - limited_access (day TRIAL_PAYWALL_DAY+1 to end): soft paywall active
+    - not_trial: paid user or no trial
+
+    Uses check_quota() to get trial_expires_at, then calculates current day.
+    """
+    from config import (
+        TRIAL_PAYWALL_ENABLED,
+        TRIAL_PAYWALL_DAY,
+        TRIAL_DURATION_DAYS,
+    )
+
+    if not TRIAL_PAYWALL_ENABLED:
+        return TrialPhaseInfo(phase="full_access", day=0, days_remaining=999)
+
+    try:
+        quota_info = check_quota(user_id)
+    except Exception as e:
+        logger.warning(f"STORY-320: Failed to check quota for trial phase: {e}")
+        return TrialPhaseInfo(phase="full_access", day=0, days_remaining=999)
+
+    # Not a trial user → no paywall
+    if quota_info.plan_id != "free_trial":
+        return TrialPhaseInfo(phase="not_trial", day=0, days_remaining=999)
+
+    if not quota_info.trial_expires_at:
+        return TrialPhaseInfo(phase="full_access", day=0, days_remaining=999)
+
+    now = datetime.now(timezone.utc)
+
+    # Calculate trial start from expires_at - duration
+    trial_start = quota_info.trial_expires_at - timedelta(days=TRIAL_DURATION_DAYS)
+    elapsed = now - trial_start
+    current_day = max(1, elapsed.days + 1)  # Day 1 on first day
+
+    diff = quota_info.trial_expires_at - now
+    days_remaining = max(0, diff.days + (1 if diff.seconds > 0 else 0))
+
+    if current_day > TRIAL_PAYWALL_DAY:
+        phase = "limited_access"
+    else:
+        phase = "full_access"
+
+    return TrialPhaseInfo(phase=phase, day=current_day, days_remaining=days_remaining)
+
+
+# ============================================================================
 # Quota Tracking Functions
 # ============================================================================
 

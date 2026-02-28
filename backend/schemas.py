@@ -1143,6 +1143,15 @@ class BuscaResponse(BaseModel):
         default=None,
         description="GTM-STAB-005 AC4: 0=normal, 1=no floor, 2=no density, 3=top by value"
     )
+    # STORY-320 AC3: Soft paywall indicators
+    paywall_applied: bool = Field(
+        default=False,
+        description="STORY-320 AC3: True when results were truncated due to trial paywall"
+    )
+    total_before_paywall: Optional[int] = Field(
+        default=None,
+        description="STORY-320 AC3: Total results before paywall truncation (shown as 'See all N results')"
+    )
 
     class Config:
         """Pydantic configuration."""

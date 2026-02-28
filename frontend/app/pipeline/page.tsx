@@ -32,6 +32,7 @@ import { TrialUpsellCTA } from "../../components/billing/TrialUpsellCTA";
 import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
 import { OnboardingTourButton } from "../../components/OnboardingTourButton";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useTrialPhase } from "../../hooks/useTrialPhase";
 import { useRef } from "react";
 
 // STORY-313 AC9: Pipeline tour steps
@@ -61,11 +62,17 @@ export default function PipelinePage() {
   const { session, loading: authLoading } = useAuth();
   const { planInfo } = usePlan();
   const { trackEvent } = useAnalytics();
+  const { phase: trialPhase } = useTrialPhase();
   const isMobile = useIsMobile();
   const { items, loading, error, fetchItems, updateItem, removeItem } = usePipeline();
 
   // STORY-265 AC15: Detect trial expired for read-only mode
   const isTrialExpired = planInfo?.plan_id === "free_trial" && planInfo?.subscription_status === "expired";
+
+  // STORY-320 AC10: Pipeline limit for limited_access trial phase
+  const PIPELINE_LIMIT = 5;
+  const isPipelineLimited = trialPhase === "limited_access";
+  const [showPipelineLimitModal, setShowPipelineLimitModal] = useState(false);
 
   // STORY-312 AC3: Track new items added (show CTA after add)
   const [showPipelineCTA, setShowPipelineCTA] = useState(false);
@@ -74,9 +81,13 @@ export default function PipelinePage() {
   useEffect(() => {
     if (prevItemCount !== null && items.length > prevItemCount) {
       setShowPipelineCTA(true);
+      // STORY-320 AC10: Show limit modal when exceeding pipeline limit
+      if (isPipelineLimited && items.length > PIPELINE_LIMIT) {
+        setShowPipelineLimitModal(true);
+      }
     }
     setPrevItemCount(items.length);
-  }, [items.length, prevItemCount]);
+  }, [items.length, prevItemCount, isPipelineLimited]);
   const [activeItem, setActiveItem] = useState<PipelineItem | null>(null);
   const [optimisticItems, setOptimisticItems] = useState<PipelineItem[]>([]);
   const [initialLoadFailed, setInitialLoadFailed] = useState(false);
@@ -256,6 +267,18 @@ export default function PipelinePage() {
           </div>
         </div>
 
+        {/* STORY-320 AC10: Pipeline limit banner for limited_access */}
+        {isPipelineLimited && items.length >= PIPELINE_LIMIT && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700/40 rounded-card flex items-center justify-between" data-testid="pipeline-limit-banner">
+            <span className="text-sm text-blue-800 dark:text-blue-200">
+              Limite de {PIPELINE_LIMIT} itens no modo preview. Assine para pipeline ilimitado.
+            </span>
+            <a href="/planos" className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap ml-3">
+              Ver planos
+            </a>
+          </div>
+        )}
+
         {/* STORY-312 AC3: Post-add-to-pipeline CTA for trial users */}
         {showPipelineCTA && (
           <div className="mb-4" data-tour="pipeline-alerts">
@@ -416,6 +439,42 @@ export default function PipelinePage() {
           pipeline: restartPipelineTour,
         }}
       />
+
+      {/* STORY-320 AC10: Pipeline limit modal for limited_access */}
+      {showPipelineLimitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-label="Limite do trial" data-testid="pipeline-limit-modal">
+          <div className="bg-[var(--surface-0)] rounded-card p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Limite do trial</h3>
+                <p className="text-sm text-[var(--text-secondary)]">Seu pipeline esta limitado a {PIPELINE_LIMIT} itens no modo preview.</p>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
+              Assine o SmartLic Pro para pipeline ilimitado e acompanhe todas as suas oportunidades.
+            </p>
+            <div className="flex gap-3">
+              <a
+                href="/planos"
+                className="flex-1 text-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-button hover:from-blue-700 hover:to-purple-700 transition-all text-sm"
+              >
+                Assinar SmartLic Pro
+              </a>
+              <button
+                onClick={() => setShowPipelineLimitModal(false)}
+                className="px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] rounded-button transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

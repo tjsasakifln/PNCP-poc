@@ -10,6 +10,7 @@ import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
 import { OnboardingTourButton } from "../../components/OnboardingTourButton";
 import { useKeyboardShortcuts, getShortcutDisplay, type KeyboardShortcut } from "../../hooks/useKeyboardShortcuts";
 import { usePlan } from "../../hooks/usePlan";
+import { useTrialPhase } from "../../hooks/useTrialPhase";
 import { useAuth } from "../components/AuthProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { UserMenu } from "../components/UserMenu";
@@ -191,6 +192,7 @@ interface TrialValue {
 function HomePageContent() {
   const { session, loading: authLoading } = useAuth();
   const { planInfo } = usePlan();
+  const { phase: trialPhase } = useTrialPhase();
   const { trackEvent } = useAnalytics();
   const router = useRouter();
 
@@ -782,6 +784,10 @@ function HomePageContent() {
                 // STORY-295: Progressive results
                 sourceStatuses={search.sourceStatuses}
                 partialProgress={search.partialProgress}
+                // STORY-320: Trial paywall
+                trialPhase={trialPhase}
+                paywallApplied={search.result?.paywall_applied}
+                totalBeforePaywall={search.result?.total_before_paywall}
               />
             </SearchErrorBoundary>
           </div>

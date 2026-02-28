@@ -43,6 +43,9 @@ class TrialStatusResponse(BaseModel):
     expires_at: str | None = None
     is_expired: bool
     plan_features: list[str] = []  # STORY-264 AC6
+    # STORY-320 AC2: Trial phase for soft paywall
+    trial_phase: str = "full_access"  # "full_access" | "limited_access" | "not_trial"
+    trial_day: int = 0
 
 # STORY-210 AC12: Per-user rate limiting for /change-password
 # 5 attempts per 15 minutes (900 seconds)
@@ -214,6 +217,10 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
     if caps.get("max_summary_tokens", 0) >= 10000:
         plan_features.append("ia_resumo")
 
+    # STORY-320 AC2: Get trial phase for soft paywall
+    from quota import get_trial_phase
+    trial_phase_info = get_trial_phase(user_id)
+
     return TrialStatusResponse(
         plan=plan_id,
         days_remaining=days_remaining,
@@ -222,6 +229,8 @@ async def get_trial_status(user: dict = Depends(require_auth), db=Depends(get_db
         expires_at=expires_at_str,
         is_expired=is_expired,
         plan_features=plan_features,  # STORY-264 AC6
+        trial_phase=trial_phase_info["phase"],
+        trial_day=trial_phase_info["day"],
     )
 
 
