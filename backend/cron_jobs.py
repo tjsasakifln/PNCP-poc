@@ -1175,3 +1175,58 @@ async def _trial_sequence_loop() -> None:
         except Exception as e:
             logger.error(f"Trial email sequence loop error: {e}", exc_info=True)
             await asyncio.sleep(300)  # Retry in 5min on error
+
+
+# ============================================================================
+# STORY-324 AC3: Daily sector stats refresh for SEO landing pages
+# ============================================================================
+
+# Sector stats refresh interval: every 24 hours
+SECTOR_STATS_INTERVAL_SECONDS = 24 * 60 * 60
+SECTOR_STATS_HOUR_UTC = 6  # 06:00 UTC = 03:00 BRT
+
+
+async def start_sector_stats_task() -> asyncio.Task:
+    """STORY-324 AC3: Start the daily sector stats refresh background task.
+
+    Calculates initial delay to align with 06:00 UTC,
+    then runs every 24 hours.
+    Returns the Task so it can be cancelled during shutdown.
+    """
+    task = asyncio.create_task(_sector_stats_loop(), name="sector_stats_refresh")
+    logger.info("STORY-324: Sector stats refresh task started (daily at 06:00 UTC)")
+    return task
+
+
+async def _sector_stats_loop() -> None:
+    """STORY-324 AC3: Refresh all sector stats daily at 06:00 UTC."""
+    # Calculate delay until next 06:00 UTC
+    now = datetime.now(timezone.utc)
+    next_run = now.replace(hour=SECTOR_STATS_HOUR_UTC, minute=0, second=0, microsecond=0)
+    if now.hour >= SECTOR_STATS_HOUR_UTC:
+        next_run += timedelta(days=1)
+
+    initial_delay = (next_run - now).total_seconds()
+    initial_delay = max(60, min(initial_delay, 86400))
+
+    logger.info(
+        f"STORY-324: Sector stats first refresh in {initial_delay:.0f}s "
+        f"(target: {next_run.isoformat()})"
+    )
+    await asyncio.sleep(initial_delay)
+
+    while True:
+        try:
+            from routes.sectors_public import refresh_all_sector_stats
+            refreshed = await refresh_all_sector_stats()
+            logger.info(
+                f"STORY-324: Sector stats refreshed: {refreshed}/15 sectors "
+                f"at {datetime.now(timezone.utc).isoformat()}"
+            )
+            await asyncio.sleep(SECTOR_STATS_INTERVAL_SECONDS)
+        except asyncio.CancelledError:
+            logger.info("Sector stats refresh task cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Sector stats refresh error: {e}", exc_info=True)
+            await asyncio.sleep(600)  # Retry in 10min on error

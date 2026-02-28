@@ -31,6 +31,7 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/app/$1',
     '^@/components/(.*)$': '<rootDir>/app/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '^@/data/(.*)$': '<rootDir>/data/$1',
     '\\.css$': '<rootDir>/__mocks__/styleMock.js',
   },
 

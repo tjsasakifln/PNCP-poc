@@ -5,6 +5,7 @@ Allow: /planos
 Allow: /features
 Allow: /ajuda
 Allow: /pricing
+Allow: /licitacoes
 
 # Block authenticated/private pages
 Disallow: /admin

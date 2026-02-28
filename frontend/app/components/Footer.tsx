@@ -80,6 +80,28 @@ export default function Footer() {
             </ul>
           </div>
 
+          {/* STORY-324 AC15: Sector landing page links */}
+          <div>
+            <h3 className="font-bold text-lg mb-4 text-ink">Setores</h3>
+            <ul className="space-y-2 text-sm text-ink-secondary">
+              <li>
+                <FooterLink href="/licitacoes">Todos os setores</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/licitacoes/saude">Saúde</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/licitacoes/informatica">TI e Hardware</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/licitacoes/engenharia">Engenharia</FooterLink>
+              </li>
+              <li>
+                <FooterLink href="/licitacoes/alimentos">Alimentação</FooterLink>
+              </li>
+            </ul>
+          </div>
+
           {/* Planos */}
           <div>
             <h3 className="font-bold text-lg mb-4 text-ink">Planos</h3>

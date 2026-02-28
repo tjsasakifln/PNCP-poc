@@ -1,9 +1,11 @@
 import { MetadataRoute } from 'next';
 import { getAllSlugs } from '@/lib/blog';
+import { SECTORS } from '@/lib/sectors';
 
 /**
  * GTM-COPY-006 AC10: Dynamic sitemap with all public pages
  * STORY-261 AC10: Includes /blog and /blog/{slug} routes
+ * STORY-324 AC12: Includes /licitacoes and /licitacoes/{setor} routes
  *
  * Next.js generates sitemap.xml automatically from this file.
  */
@@ -16,6 +18,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.7,
+  }));
+
+  // STORY-324 AC12: Sector landing page routes
+  const sectorRoutes: MetadataRoute.Sitemap = SECTORS.map((sector) => ({
+    url: `${baseUrl}/licitacoes/${sector.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
   }));
 
   return [
@@ -82,6 +92,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // STORY-261 AC10: Individual blog articles
     ...blogArticleRoutes,
+    // STORY-324 AC12: Sector landing pages index
+    {
+      url: `${baseUrl}/licitacoes`,
+      lastModified: new Date(),
+      changeFrequency: 'daily' as const,
+      priority: 0.9,
+    },
+    // STORY-324 AC12: Individual sector landing pages
+    ...sectorRoutes,
     {
       url: `${baseUrl}/como-avaliar-licitacao`,
       lastModified: new Date(),

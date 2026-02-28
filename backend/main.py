@@ -87,6 +87,7 @@ from routes.trial_emails import router as trial_emails_router  # STORY-310: Tria
 from routes.mfa import router as mfa_router  # STORY-317: MFA TOTP + recovery codes
 from routes.organizations import router as org_router  # STORY-322: Organizations
 from routes.partners import router as partners_router  # STORY-323: Revenue Share
+from routes.sectors_public import router as sectors_public_router  # STORY-324: SEO Landing Pages
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -408,7 +409,7 @@ async def lifespan(app_instance: FastAPI):
     await get_arq_pool()
 
     # UX-303 AC8: Start periodic cache cleanup
-    from cron_jobs import start_cache_cleanup_task, start_session_cleanup_task, start_cache_refresh_task, warmup_top_params, start_warmup_task, start_trial_sequence_task, start_reconciliation_task, start_health_canary_task, start_revenue_share_task
+    from cron_jobs import start_cache_cleanup_task, start_session_cleanup_task, start_cache_refresh_task, warmup_top_params, start_warmup_task, start_trial_sequence_task, start_reconciliation_task, start_health_canary_task, start_revenue_share_task, start_sector_stats_task
     cleanup_task = await start_cache_cleanup_task()
 
     # CRIT-011 AC7: Start periodic session cleanup (stale + old sessions)
@@ -429,6 +430,9 @@ async def lifespan(app_instance: FastAPI):
 
     # STORY-323 AC9: Start monthly revenue share report (day 1, 09:00 BRT)
     revenue_share_task = await start_revenue_share_task()
+
+    # STORY-324 AC3: Start daily sector stats refresh (06:00 UTC)
+    sector_stats_task = await start_sector_stats_task()
 
     # P1.2: Start startup cache warm-up (top sector+UF combinations)
     warmup_task = await start_warmup_task()
@@ -568,6 +572,13 @@ async def lifespan(app_instance: FastAPI):
     except (Exception, asyncio.CancelledError):
         pass
 
+    # STORY-324: Cancel sector stats refresh
+    sector_stats_task.cancel()
+    try:
+        await sector_stats_task
+    except (Exception, asyncio.CancelledError):
+        pass
+
     # P1.2: Cancel startup warm-up (may still be in delay or mid-dispatch)
     warmup_task.cancel()
     try:
@@ -694,6 +705,7 @@ app.include_router(trial_emails_router, prefix="/v1")  # STORY-310: Trial email 
 app.include_router(mfa_router, prefix="/v1")  # STORY-317: MFA TOTP + recovery codes
 app.include_router(org_router, prefix="/v1")  # STORY-322: Organizations
 app.include_router(partners_router, prefix="/v1")  # STORY-323: Revenue Share
+app.include_router(sectors_public_router, prefix="/v1")  # STORY-324: SEO Landing Pages
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -725,6 +737,7 @@ app.include_router(trial_emails_router)  # STORY-310: Trial email sequence
 app.include_router(mfa_router)  # STORY-317: MFA TOTP + recovery codes
 app.include_router(org_router)  # STORY-322: Organizations
 app.include_router(partners_router)  # STORY-323: Revenue Share
+app.include_router(sectors_public_router)  # STORY-324: SEO Landing Pages
 
 # ============================================================================
 # GTM-PROXY-001 AC9-AC11: Global exception handlers for error sanitization
