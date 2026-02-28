@@ -436,6 +436,7 @@ function BidCard({
       <div
         className="p-4 bg-surface-0 border border-strong rounded-card hover:border-brand-blue transition-colors"
         data-testid="bid-card"
+        data-tour="result-card"
       >
         {/* AC7: Essential info always visible — title, value, UF, prazo, viability */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -444,7 +445,7 @@ function BidCard({
               {highlightTerms(item.objeto, item.matched_terms || searchTerms)}
             </h4>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <ViabilityBadge level={item.viability_level} score={item.viability_score} factors={item.viability_factors} valueSource={item._value_source} />
+              <span data-tour="viability-badge"><ViabilityBadge level={item.viability_level} score={item.viability_score} factors={item.viability_factors} valueSource={item._value_source} /></span>
               {getUrgenciaBadge(item)}
               <span className="inline-flex items-center px-2 py-0.5 rounded bg-brand-blue-subtle text-brand-navy text-xs font-medium">
                 {item.uf}

@@ -6,6 +6,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import PullToRefresh from "react-simple-pull-to-refresh";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { useOnboarding } from "../../hooks/useOnboarding";
+import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
+import { OnboardingTourButton } from "../../components/OnboardingTourButton";
 import { useKeyboardShortcuts, getShortcutDisplay, type KeyboardShortcut } from "../../hooks/useKeyboardShortcuts";
 import { usePlan } from "../../hooks/usePlan";
 import { useAuth } from "../components/AuthProvider";
@@ -113,6 +115,69 @@ function OnboardingEmptyState({ onAdjustFilters }: { onAdjustFilters: () => void
     </div>
   );
 }
+
+// STORY-313: Tour step definitions (static, outside component to avoid re-creation)
+const SEARCH_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'search-setor',
+    title: 'Escolha seu setor',
+    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Escolha o setor da sua empresa para filtrar oportunidades relevantes.</p>',
+    attachTo: { element: '[data-tour="setor-filter"]', on: 'bottom' },
+  },
+  {
+    id: 'search-ufs',
+    title: 'Selecione os estados',
+    text: '<span class="tour-step-counter">Passo 2 de 4</span><p>Selecione os estados onde sua empresa atua ou quer atuar.</p>',
+    attachTo: { element: '[data-tour="uf-selector"]', on: 'bottom' },
+    beforeShowPromise: () => new Promise<void>((resolve) => {
+      const btn = document.querySelector('[data-tour="customize-toggle"]') as HTMLElement;
+      if (btn?.getAttribute('aria-expanded') === 'false') {
+        btn.click();
+        setTimeout(resolve, 400);
+      } else {
+        resolve();
+      }
+    }),
+  },
+  {
+    id: 'search-period',
+    title: 'Defina o periodo',
+    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Defina o periodo para buscar editais recentes.</p>',
+    attachTo: { element: '[data-tour="period-selector"]', on: 'bottom' },
+  },
+  {
+    id: 'search-button',
+    title: 'Inicie sua busca!',
+    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Clique para iniciar sua busca inteligente!</p>',
+    attachTo: { element: '[data-tour="search-button"]', on: 'top' },
+  },
+];
+
+const RESULTS_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'results-card',
+    title: 'Suas oportunidades',
+    text: '<span class="tour-step-counter">Passo 1 de 4</span><p>Cada card mostra uma oportunidade com data, valor e orgao.</p>',
+    attachTo: { element: '[data-tour="result-card"]', on: 'bottom' },
+  },
+  {
+    id: 'results-viability',
+    title: 'Score de viabilidade',
+    text: '<span class="tour-step-counter">Passo 2 de 4</span><p>O score de viabilidade indica o potencial desta oportunidade para sua empresa.</p>',
+    attachTo: { element: '[data-tour="viability-badge"]', on: 'bottom' },
+  },
+  {
+    id: 'results-pipeline',
+    title: 'Pipeline de oportunidades',
+    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Adicione ao pipeline para acompanhar oportunidades promissoras. Acesse pela pagina Pipeline no menu.</p>',
+  },
+  {
+    id: 'results-excel',
+    title: 'Exporte para Excel',
+    text: '<span class="tour-step-counter">Passo 4 de 4</span><p>Exporte resultados para Excel para analise detalhada.</p>',
+    attachTo: { element: '[data-tour="excel-button"]', on: 'top' },
+  },
+];
 
 // Trial value type matching backend TrialValueResponse
 interface TrialValue {
@@ -255,13 +320,91 @@ function HomePageContent() {
     localStorage.setItem('smartlic-first-tip-dismissed', 'true');
   }, []);
 
-  // Onboarding
+  // STORY-313: Interactive guided tours (search + results)
+  const reportTourEvent = useCallback(async (tourId: string, event: string, stepsSeen: number) => {
+    try {
+      const token = session?.access_token;
+      await fetch('/api/onboarding?endpoint=tour-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ tour_id: tourId, event, steps_seen: stepsSeen }),
+      });
+    } catch { /* fire-and-forget */ }
+  }, [session?.access_token]);
+
+  const {
+    isCompleted: isSearchTourCompleted,
+    startTour: startSearchTour,
+    restartTour: restartSearchTour,
+  } = useShepherdTour({
+    tourId: 'search',
+    steps: SEARCH_TOUR_STEPS,
+    onComplete: (stepsSeen) => {
+      trackEvent('onboarding_tour_completed', { tour: 'search', steps_seen: stepsSeen });
+      reportTourEvent('search', 'completed', stepsSeen);
+    },
+    onSkip: (stepsSeen) => {
+      trackEvent('onboarding_tour_skipped', { tour: 'search', skipped_at_step: stepsSeen });
+      reportTourEvent('search', 'skipped', stepsSeen);
+    },
+  });
+
+  const {
+    isCompleted: isResultsTourCompleted,
+    startTour: startResultsTour,
+    restartTour: restartResultsTour,
+  } = useShepherdTour({
+    tourId: 'results',
+    steps: RESULTS_TOUR_STEPS,
+    onComplete: (stepsSeen) => {
+      trackEvent('onboarding_tour_completed', { tour: 'results', steps_seen: stepsSeen });
+      reportTourEvent('results', 'completed', stepsSeen);
+    },
+    onSkip: (stepsSeen) => {
+      trackEvent('onboarding_tour_skipped', { tour: 'results', skipped_at_step: stepsSeen });
+      reportTourEvent('results', 'skipped', stepsSeen);
+    },
+  });
+
+  // Ref to start search tour from welcome tour callbacks (avoids stale closures)
+  const searchTourStartRef = useRef<() => void>(() => {});
+  searchTourStartRef.current = () => {
+    if (!isSearchTourCompleted()) {
+      startSearchTour();
+      trackEvent('onboarding_tour_started', { tour: 'search' });
+    }
+  };
+
+  // Onboarding (existing welcome tour)
   const { shouldShowOnboarding, restartTour } = useOnboarding({
     autoStart: true,
-    onComplete: () => trackEvent('onboarding_completed', { completion_time: Date.now() }),
-    onDismiss: () => trackEvent('onboarding_dismissed', { dismissed_at: Date.now() }),
+    onComplete: () => {
+      trackEvent('onboarding_completed', { completion_time: Date.now() });
+      setTimeout(() => searchTourStartRef.current(), 500);
+    },
+    onDismiss: () => {
+      trackEvent('onboarding_dismissed', { dismissed_at: Date.now() });
+      setTimeout(() => searchTourStartRef.current(), 500);
+    },
     onStepChange: (stepId, stepIndex) => trackEvent('onboarding_step', { step_id: stepId, step_index: stepIndex }),
   });
+
+  // STORY-313 AC1: Auto-start search tour on return visit (welcome tour already done)
+  useEffect(() => {
+    const welcomeDone = localStorage.getItem('smartlic_onboarding_completed') === 'true' ||
+                         localStorage.getItem('smartlic_onboarding_dismissed') === 'true';
+    if (welcomeDone && !isSearchTourCompleted()) {
+      const timer = setTimeout(() => {
+        startSearchTour();
+        trackEvent('onboarding_tour_started', { tour: 'search' });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // GTM-FIX-035 AC1: Ref for progress/results area (scroll target)
   const progressAreaRef = useRef<HTMLDivElement>(null);
@@ -280,6 +423,25 @@ function HomePageContent() {
       fetchTrialValue();
     }
   }, [search.quotaError, fetchTrialValue]);
+
+  // STORY-313 AC7: Auto-start results tour after first search with >= 1 result
+  const hasTriggeredResultsTourRef = useRef(false);
+  useEffect(() => {
+    if (
+      search.result &&
+      search.result.resumo?.total_oportunidades >= 1 &&
+      !hasTriggeredResultsTourRef.current &&
+      !isResultsTourCompleted()
+    ) {
+      hasTriggeredResultsTourRef.current = true;
+      const timer = setTimeout(() => {
+        startResultsTour();
+        trackEvent('onboarding_tour_started', { tour: 'results' });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.result]);
 
   // GTM-UX-004 AC7: Load last search results from cache
   const handleLoadLastSearch = useCallback(() => {
@@ -767,6 +929,14 @@ function HomePageContent() {
           loading={trialValueLoading}
         />
       )}
+
+      {/* STORY-313 AC15: Floating guide button */}
+      <OnboardingTourButton
+        availableTours={{
+          search: restartSearchTour,
+          results: restartResultsTour,
+        }}
+      />
 
       {/* STORY-309 AC13: Payment recovery modal during grace period */}
       {showPaymentRecovery && (

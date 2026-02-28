@@ -961,6 +961,7 @@ export default function SearchResults({
                              transition-all duration-200
                              flex items-center justify-center gap-3"
                   data-testid="excel-download-button"
+                  data-tour="excel-button"
                 >
                   {downloadLoading ? (
                     <>

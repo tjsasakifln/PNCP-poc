@@ -210,7 +210,7 @@ export default function SearchForm({
       )}
 
       {/* Search Mode Toggle */}
-      <section className="mb-6 animate-fade-in-up stagger-1 relative z-30">
+      <section className="mb-6 animate-fade-in-up stagger-1 relative z-30" data-tour="setor-filter">
         <label className="block text-base font-semibold text-ink mb-3">
           Buscar por:
         </label>
@@ -439,6 +439,7 @@ export default function SearchForm({
           disabled={loading || !canSearch || isTrialExpired || isGracePeriod}
           type="button"
           aria-busy={loading}
+          data-tour="search-button"
           title={isGracePeriod ? "Buscas suspensas ate regularizacao do pagamento." : isTrialExpired ? "Seu trial expirou. Ative um plano para continuar buscando." : undefined}
           className="w-full bg-brand-navy text-white py-3.5 sm:py-4 rounded-button text-base sm:text-lg font-semibold
                      hover:bg-brand-blue-hover active:bg-brand-blue
@@ -489,6 +490,7 @@ export default function SearchForm({
           type="button"
           onClick={() => setCustomizeOpen(!customizeOpen)}
           aria-expanded={customizeOpen}
+          data-tour="customize-toggle"
           className="w-full text-base font-semibold text-ink mb-2 flex items-center gap-2 hover:text-brand-blue transition-colors"
         >
           <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -518,7 +520,7 @@ export default function SearchForm({
         {customizeOpen && (
           <div className="space-y-6 animate-fade-in-up">
             {/* UF Selection Section - moved into accordion */}
-            <div className="relative z-10">
+            <div className="relative z-10" data-tour="uf-selector">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
                 <label className="text-base sm:text-lg font-semibold text-ink">
                   Estados (<Tooltip content="UF = Unidade Federativa (Estado brasileiro). Selecione os estados onde deseja buscar licitações.">UFs</Tooltip>):
@@ -605,7 +607,7 @@ export default function SearchForm({
             </div>
 
             {/* Date Range Section - moved into accordion */}
-            <div className="relative z-0">
+            <div className="relative z-0" data-tour="period-selector">
               {modoBusca === "abertas" ? (
                 <div className="p-3 bg-brand-blue-subtle rounded-card border border-brand-blue/20">
                   <p className="text-sm font-medium text-brand-navy">

@@ -53,6 +53,7 @@ export function PipelineCard({ item, isDragging, onRemove, onUpdateNotes }: Pipe
       style={style}
       {...attributes}
       {...listeners}
+      data-tour="pipeline-card"
       className={`backdrop-blur-lg bg-white/60 dark:bg-gray-900/50 rounded-lg border border-white/20 dark:border-white/10 border-l-4 ${urgencyClass} p-3 cursor-grab active:cursor-grabbing shadow-glass hover:shadow-md transition-all hover:scale-[1.02] ${
         isDragging || isSortableDragging ? "opacity-50 shadow-lg ring-2 ring-brand-blue" : ""
       }`}

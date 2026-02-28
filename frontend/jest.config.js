@@ -31,6 +31,7 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/app/$1',
     '^@/components/(.*)$': '<rootDir>/app/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
+    '\\.css$': '<rootDir>/__mocks__/styleMock.js',
   },
 
   // Test file patterns
@@ -89,7 +90,7 @@ const customJestConfig = {
 
   // Transform node_modules that use ES modules (uuid, etc.)
   transformIgnorePatterns: [
-    'node_modules/(?!(uuid)/)',
+    'node_modules/(?!(uuid|shepherd\\.js)/)',
   ],
 
   // Transform files

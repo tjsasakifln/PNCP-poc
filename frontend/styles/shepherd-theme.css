@@ -1,0 +1,190 @@
+/* SmartLic Shepherd.js Theme — STORY-313 AC12 */
+
+/* Tooltip container */
+.shepherd-element.smartlic-shepherd-step {
+  max-width: 400px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  font-family: inherit;
+  z-index: 10001;
+}
+
+/* Dark mode */
+:root[data-theme="dark"] .shepherd-element.smartlic-shepherd-step,
+.dark .shepherd-element.smartlic-shepherd-step {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.smartlic-shepherd-step .shepherd-header {
+  background: #1e3a5f;
+  padding: 14px 18px;
+  border-radius: 11px 11px 0 0;
+  border-bottom: none;
+}
+
+/* Title */
+.smartlic-shepherd-step .shepherd-title {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Cancel (X) button */
+.smartlic-shepherd-step .shepherd-cancel-icon {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 20px;
+  transition: color 0.15s;
+}
+.smartlic-shepherd-step .shepherd-cancel-icon:hover {
+  color: #ffffff;
+}
+
+/* Text body */
+.smartlic-shepherd-step .shepherd-text {
+  padding: 16px 18px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.6;
+}
+:root[data-theme="dark"] .smartlic-shepherd-step .shepherd-text,
+.dark .smartlic-shepherd-step .shepherd-text {
+  color: #cbd5e1;
+}
+.smartlic-shepherd-step .shepherd-text p {
+  margin-bottom: 8px;
+}
+.smartlic-shepherd-step .shepherd-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Footer */
+.smartlic-shepherd-step .shepherd-footer {
+  padding: 12px 18px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+:root[data-theme="dark"] .smartlic-shepherd-step .shepherd-footer,
+.dark .smartlic-shepherd-step .shepherd-footer {
+  border-top-color: #334155;
+}
+
+/* Primary button */
+.smartlic-shepherd-step .shepherd-button:not(.shepherd-button-secondary) {
+  background: #1e3a5f;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.smartlic-shepherd-step .shepherd-button:not(.shepherd-button-secondary):hover {
+  background: #2a4d7a;
+}
+
+/* Secondary button */
+.smartlic-shepherd-step .shepherd-button-secondary {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.smartlic-shepherd-step .shepherd-button-secondary:hover {
+  background: #f8fafc;
+  color: #334155;
+}
+:root[data-theme="dark"] .smartlic-shepherd-step .shepherd-button-secondary,
+.dark .smartlic-shepherd-step .shepherd-button-secondary {
+  color: #94a3b8;
+  border-color: #475569;
+}
+:root[data-theme="dark"] .smartlic-shepherd-step .shepherd-button-secondary:hover,
+.dark .smartlic-shepherd-step .shepherd-button-secondary:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+/* Arrow */
+.smartlic-shepherd-step .shepherd-arrow::before {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+:root[data-theme="dark"] .smartlic-shepherd-step .shepherd-arrow::before,
+.dark .smartlic-shepherd-step .shepherd-arrow::before {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+/* Modal overlay — 70% opacity */
+.shepherd-modal-overlay-container {
+  fill: rgba(0, 0, 0, 0.7);
+}
+
+/* Target highlight */
+.shepherd-target.shepherd-enabled {
+  outline: 2px solid #3b82f6;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Step counter indicator */
+.smartlic-shepherd-step .shepherd-text .tour-step-counter {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 2px 10px;
+  background: #eff6ff;
+  color: #1e3a5f;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+:root[data-theme="dark"] .smartlic-shepherd-step .shepherd-text .tour-step-counter,
+.dark .smartlic-shepherd-step .shepherd-text .tour-step-counter {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+/* ===== RESPONSIVE — mobile < 640px ===== */
+@media (max-width: 639px) {
+  .shepherd-element.smartlic-shepherd-step {
+    max-width: calc(100vw - 32px);
+    margin: 0 16px;
+    border-radius: 10px;
+  }
+  .smartlic-shepherd-step .shepherd-header {
+    padding: 12px 14px;
+    border-radius: 9px 9px 0 0;
+  }
+  .smartlic-shepherd-step .shepherd-title {
+    font-size: 14px;
+  }
+  .smartlic-shepherd-step .shepherd-text {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .smartlic-shepherd-step .shepherd-footer {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .smartlic-shepherd-step .shepherd-button,
+  .smartlic-shepherd-step .shepherd-button-secondary {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}

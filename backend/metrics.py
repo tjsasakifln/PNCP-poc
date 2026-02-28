@@ -441,6 +441,19 @@ CTA_DISMISSED = _create_counter(
     labelnames=["variant"],
 )
 
+# STORY-313 AC18: Onboarding tour tracking
+TOUR_COMPLETED = _create_counter(
+    "smartlic_tour_completed_total",
+    "Onboarding tours completed by tour_id",
+    labelnames=["tour_id"],
+)
+
+TOUR_SKIPPED = _create_counter(
+    "smartlic_tour_skipped_total",
+    "Onboarding tours skipped by tour_id",
+    labelnames=["tour_id"],
+)
+
 
 # ============================================================================
 # ASGI app factory for /metrics endpoint

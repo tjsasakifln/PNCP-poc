@@ -1496,6 +1496,32 @@ class FirstAnalysisResponse(BaseModel):
     )
 
 
+class TourEventRequest(BaseModel):
+    """Request for onboarding tour event tracking (STORY-313 AC18)."""
+    tour_id: str = Field(
+        ...,
+        max_length=50,
+        description="Tour identifier (search, results, pipeline)",
+    )
+    event: str = Field(
+        ...,
+        description="Event type: completed or skipped",
+    )
+    steps_seen: int = Field(
+        ...,
+        ge=0,
+        description="Number of steps the user saw before event",
+    )
+
+    @field_validator('event')
+    @classmethod
+    def validate_event(cls, v: str) -> str:
+        valid_events = {"completed", "skipped"}
+        if v not in valid_events:
+            raise ValueError(f"Invalid event: {v}. Must be one of {valid_events}")
+        return v
+
+
 class UserProfileResponse(BaseModel):
     """
     User profile with plan capabilities and quota status.

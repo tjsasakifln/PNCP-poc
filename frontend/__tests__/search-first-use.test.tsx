@@ -53,6 +53,7 @@ jest.mock("../components/BackendStatusIndicator", () => {
 jest.mock("next/navigation", () => ({
   useSearchParams: () => ({ get: () => null }),
   useRouter: () => ({ push: jest.fn() }),
+  usePathname: () => "/buscar",
 }));
 
 jest.mock("react-simple-pull-to-refresh", () => ({

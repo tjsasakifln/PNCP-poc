@@ -351,9 +351,12 @@ describe('BuscarPage Header - Auth States', () => {
       const entrarLink = screen.getByRole('link', { name: /Entrar/i });
       expect(entrarLink).toBeInTheDocument();
 
-      // Should NOT have avatar button
+      // Should NOT have avatar button (exclude tour guide button which also uses rounded-full)
       const buttons = screen.queryAllByRole('button');
-      const avatarButton = buttons.find(btn => btn.className.includes('rounded-full'));
+      const avatarButton = buttons.find(btn =>
+        btn.className.includes('rounded-full') &&
+        !btn.hasAttribute('data-testid')
+      );
       expect(avatarButton).toBeUndefined();
     });
   });

@@ -29,10 +29,38 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { toast } from "sonner";
 import { TrialUpsellCTA } from "../../components/billing/TrialUpsellCTA";
+import { useShepherdTour, type TourStep } from "../../hooks/useShepherdTour";
+import { OnboardingTourButton } from "../../components/OnboardingTourButton";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { useRef } from "react";
+
+// STORY-313 AC9: Pipeline tour steps
+const PIPELINE_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'pipeline-columns',
+    title: 'Kanban de oportunidades',
+    text: '<span class="tour-step-counter">Passo 1 de 3</span><p>Arraste oportunidades entre etapas para acompanhar seu progresso.</p>',
+    attachTo: { element: '[data-tour="kanban-columns"]', on: 'top' },
+  },
+  {
+    id: 'pipeline-card',
+    title: 'Detalhes do card',
+    text: '<span class="tour-step-counter">Passo 2 de 3</span><p>Clique para ver detalhes e adicionar notas.</p>',
+    attachTo: { element: '[data-tour="pipeline-card"]', on: 'right' },
+    showOn: () => !!document.querySelector('[data-tour="pipeline-card"]'),
+  },
+  {
+    id: 'pipeline-alerts',
+    title: 'Alertas e prazos',
+    text: '<span class="tour-step-counter">Passo 3 de 3</span><p>Fique atento aos prazos — cards com borda vermelha estao proximos do encerramento.</p>',
+    attachTo: { element: '[data-tour="kanban-columns"]', on: 'bottom' },
+  },
+];
 
 export default function PipelinePage() {
   const { session, loading: authLoading } = useAuth();
   const { planInfo } = usePlan();
+  const { trackEvent } = useAnalytics();
   const isMobile = useIsMobile();
   const { items, loading, error, fetchItems, updateItem, removeItem } = usePipeline();
 
@@ -56,6 +84,52 @@ export default function PipelinePage() {
   useEffect(() => {
     setOptimisticItems(items);
   }, [items]);
+
+  // STORY-313 AC9-10: Pipeline tour
+  const reportTourEvent = useCallback(async (tourId: string, event: string, stepsSeen: number) => {
+    try {
+      const token = session?.access_token;
+      await fetch('/api/onboarding?endpoint=tour-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ tour_id: tourId, event, steps_seen: stepsSeen }),
+      });
+    } catch { /* fire-and-forget */ }
+  }, [session?.access_token]);
+
+  const {
+    isCompleted: isPipelineTourCompleted,
+    startTour: startPipelineTour,
+    restartTour: restartPipelineTour,
+  } = useShepherdTour({
+    tourId: 'pipeline',
+    steps: PIPELINE_TOUR_STEPS,
+    onComplete: (stepsSeen) => {
+      trackEvent('onboarding_tour_completed', { tour: 'pipeline', steps_seen: stepsSeen });
+      reportTourEvent('pipeline', 'completed', stepsSeen);
+    },
+    onSkip: (stepsSeen) => {
+      trackEvent('onboarding_tour_skipped', { tour: 'pipeline', skipped_at_step: stepsSeen });
+      reportTourEvent('pipeline', 'skipped', stepsSeen);
+    },
+  });
+
+  // Auto-start pipeline tour on first visit (AC9/AC10)
+  const pipelineTourStarted = useRef(false);
+  useEffect(() => {
+    if (!loading && !pipelineTourStarted.current && !isPipelineTourCompleted()) {
+      pipelineTourStarted.current = true;
+      const timer = setTimeout(() => {
+        startPipelineTour();
+        trackEvent('onboarding_tour_started', { tour: 'pipeline' });
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const wrappedFetchItems = useCallback(async () => {
     setInitialLoadFailed(false);
@@ -184,7 +258,7 @@ export default function PipelinePage() {
 
         {/* STORY-312 AC3: Post-add-to-pipeline CTA for trial users */}
         {showPipelineCTA && (
-          <div className="mb-4">
+          <div className="mb-4" data-tour="pipeline-alerts">
             <TrialUpsellCTA
               variant="post-pipeline"
               planId={planInfo?.plan_id}
@@ -316,7 +390,7 @@ export default function PipelinePage() {
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-200px)]">
+            <div className="flex gap-4 overflow-x-auto pb-4 min-h-[calc(100vh-200px)]" data-tour="kanban-columns">
               {STAGES_ORDER.map((stage) => (
                 <PipelineColumn
                   key={stage}
@@ -335,6 +409,13 @@ export default function PipelinePage() {
           )
         )}
       </main>
+
+      {/* STORY-313 AC15: Floating guide button */}
+      <OnboardingTourButton
+        availableTours={{
+          pipeline: restartPipelineTour,
+        }}
+      />
     </>
   );
 }

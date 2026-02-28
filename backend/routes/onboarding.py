@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 from fastapi import APIRouter, Depends
 
-from schemas import BuscaRequest, FirstAnalysisRequest, FirstAnalysisResponse
+from schemas import BuscaRequest, FirstAnalysisRequest, FirstAnalysisResponse, TourEventRequest
 from auth import require_auth
 from config import ENABLE_NEW_PRICING
 from pncp_client import PNCPClient, buscar_todas_ufs_paralelo
@@ -102,6 +102,29 @@ async def first_analysis(
         status="in_progress",
         message=f"Analisando oportunidades de {setor_name} em {uf_list}...",
         setor_id=setor_id,
+    )
+
+
+@router.post("/onboarding/tour-event", status_code=204)
+async def track_tour_event(
+    request: TourEventRequest,
+    user: dict = Depends(require_auth),
+):
+    """
+    Persist onboarding tour completion/skip events (STORY-313 AC18).
+
+    Fire-and-forget tracking — always returns 204 regardless of metric state.
+    """
+    from metrics import TOUR_COMPLETED, TOUR_SKIPPED
+
+    if request.event == "completed":
+        TOUR_COMPLETED.labels(tour_id=request.tour_id).inc()
+    elif request.event == "skipped":
+        TOUR_SKIPPED.labels(tour_id=request.tour_id).inc()
+
+    logger.info(
+        f"Tour event: {request.event} for tour={request.tour_id}, "
+        f"steps_seen={request.steps_seen}, user={mask_user_id(user.get('id', 'unknown'))}"
     )
 
 
