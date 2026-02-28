@@ -65,6 +65,14 @@
 - [ ] **Semana 3-4:** 5 setores intermediários (vestuário, alimentos, mobiliário, vigilância, transporte)
 - [ ] **Mês 2:** 5 setores restantes (papelaria, manutenção predial, engenharia rodoviária, materiais elétricos, materiais hidráulicos)
 
+### AC7 — Google Search Console via Playwright
+
+- [ ] **Solicitar indexação:** Script Playwright solicita indexação no GSC para cada panorama publicado (pillar pages = alta prioridade)
+- [ ] **Rich Results Test:** Playwright submete cada URL no Rich Results Test — validar `FAQPage` + `Dataset` + `Article` + `HowTo` detectados
+- [ ] **Verificar indexação (7 dias):** Re-inspeção via Playwright — panoramas são pillar pages, devem indexar rápido
+- [ ] **Monitoramento de performance:** Playwright exporta Desempenho GSC filtrado por `/blog/panorama/`
+- [ ] **Relatório:** `docs/validation/mkt-004-gsc-validation.md`
+
 ## Mitigações
 
 | Risco | Mitigação |
@@ -72,6 +80,7 @@
 | Dados insuficientes para setores menores | Combinar dados com contexto editorial mais robusto; indicar volume menor como "mercado de nicho" |
 | Conteúdo editorial genérico entre setores | Usar keywords e exclusões reais do `sectors_data.yaml` para personalizar cada página |
 | YoY sem baseline (produto novo) | Usar dados PNCP históricos (disponíveis via API) ou indicar "primeiro levantamento SmartLic" |
+| Panoramas não indexados rapidamente | Solicitar indexação via Playwright no GSC; pillar pages com 2.500+ palavras tendem a indexar rápido |
 
 ## Definição de Pronto
 
@@ -79,4 +88,7 @@
 - [ ] Dados ao vivo renderizando corretamente
 - [ ] Schema validado via Rich Results Test
 - [ ] Internal linking bidirecional com páginas setor×UF
+- [ ] GSC: indexação solicitada via Playwright para 5 panoramas iniciais
+- [ ] GSC: Rich Results Test validado com 0 erros
+- [ ] Relatório gerado em `docs/validation/mkt-004-gsc-validation.md`
 - [ ] Commit com tag `MKT-004`

@@ -70,6 +70,22 @@ O SEO programático é a camada de maior alavancagem do playbook de crescimento 
 - [ ] Texto padrão: "Veja todas as {count} licitações de {setor} em {uf} — teste grátis 30 dias"
 - [ ] UTM params automáticos: `utm_source=blog&utm_medium=programmatic&utm_content={slug}`
 
+### AC7 — Google Search Console setup via Playwright
+
+- [ ] **Submissão de Sitemap:** Script Playwright que faz login no GSC, navega para Sitemaps, submete `/sitemap-blog.xml` e verifica status "Sucesso"
+- [ ] **Propriedade verificada:** Via Playwright, confirmar que `smartlic.tech` está verificada no GSC (DNS ou meta tag)
+- [ ] **Configuração de país:** Via Playwright, verificar configuração de segmentação internacional no GSC (país: Brasil)
+- [ ] **robots.txt validado:** Via Playwright, navegar para ferramenta de teste de robots.txt no GSC e verificar que nenhuma URL do blog está bloqueada
+- [ ] **Rich Results Test em massa:** Script Playwright que submete URL de teste do template programático no Rich Results Test e valida 0 erros + schema types detectados
+- [ ] **URL Inspection API (alternativa):** Se disponível, configurar Google Indexing API para submissão programática de URLs novas (requer service account + verificação no GSC)
+
+### AC8 — Monitoramento contínuo via Playwright
+
+- [ ] **Script de health check semanal:** Playwright navega para GSC → Desempenho → filtra por `/blog/` → exporta CSV com impressões, cliques, CTR, posição média
+- [ ] **Cobertura de indexação:** Playwright navega para GSC → Páginas → verifica "Páginas indexadas" vs "Não indexadas" para URLs do blog
+- [ ] **Erros de rastreamento:** Playwright verifica se há erros 404/5xx em URLs do blog no relatório de Páginas do GSC
+- [ ] **Output:** Relatório semanal salvo em `docs/validation/gsc-weekly-{date}.md`
+
 ## Mitigações
 
 | Risco | Mitigação |
@@ -79,6 +95,8 @@ O SEO programático é a camada de maior alavancagem do playbook de crescimento 
 | Sobrecarga da API com tráfego de bots | Cache L1 de 6h + rate limiting nos endpoints de stats |
 | Dados desatualizados em páginas ISR | Revalidação a cada 24h + indicador visual "dados atualizados em DD/MM" |
 | Schema inválido em produção | Validação automática no build + teste com Rich Results Test |
+| Sitemap não processado pelo Google | Submissão e verificação via Playwright no GSC; resubmissão automática se status ≠ Sucesso |
+| Páginas não indexadas após deploy | Monitoramento semanal via Playwright (Cobertura GSC); Indexing API como fallback |
 
 ## Definição de Pronto
 
@@ -87,6 +105,9 @@ O SEO programático é a camada de maior alavancagem do playbook de crescimento 
 - [ ] Schema validado automaticamente
 - [ ] Sitemap dinâmico registrado
 - [ ] Testes: API endpoints, template rendering, schema validation
+- [ ] GSC: sitemap submetido e status "Sucesso" (via Playwright)
+- [ ] GSC: robots.txt validado — nenhuma URL de blog bloqueada
+- [ ] Rich Results Test: template programático validado com 0 erros
 - [ ] Commit com tag `MKT-002`
 
 ## File List

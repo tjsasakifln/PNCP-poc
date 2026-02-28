@@ -55,7 +55,15 @@ Páginas por cidade capturam buscas hiper-locais como "licitações em Curitiba"
 - [ ] **Fase 2 (Mês 3):** 73 cidades com +300k habitantes
 - [ ] **Fase 3 (Mês 4+):** Expandir para top 200-500 conforme demanda
 
-### AC6 — Página de índice
+### AC6 — Google Search Console via Playwright
+
+- [ ] **Solicitar indexação (capitais):** Script Playwright solicita indexação no GSC para as 27 URLs de capitais da Fase 1
+- [ ] **Verificar indexação (14 dias depois):** Playwright re-inspeciona e gera relatório: indexada/pendente, schema detectado
+- [ ] **Rich Results Test:** Playwright testa 5 URLs de capitais no Rich Results Test — validar `FAQPage` + `LocalBusiness` + `BreadcrumbList`
+- [ ] **Monitoramento:** Playwright exporta Desempenho GSC filtrado por `/blog/licitacoes/cidade/`
+- [ ] **Relatório:** `docs/validation/mkt-005-indexation-fase1.md`
+
+### AC7 — Página de índice
 
 - [ ] `/blog/licitacoes/cidades/` — mapa ou lista de todas as cidades com contagens
 - [ ] Filtro por UF
@@ -67,7 +75,7 @@ Páginas por cidade capturam buscas hiper-locais como "licitações em Curitiba"
 |-------|-----------|
 | Cidades com volume zero de licitações | Mostrar dados da UF como fallback + "Monitore licitações de {UF} que incluem {cidade}" |
 | Thin content em cidades menores | Bloco editorial fixo por região + dados da UF complementam |
-| 100+ páginas saturando indexação | Lançamento faseado (27 → 100) com monitoramento via Search Console |
+| 100+ páginas saturando indexação | Lançamento faseado (27 → 100) com solicitação de indexação via Playwright no GSC; monitoramento semanal |
 | Nomes de cidade com homônimos | Slug inclui UF para desambiguação (ex: `vitoria-es`, `vitoria-da-conquista-ba`) |
 
 ## Definição de Pronto
@@ -75,4 +83,7 @@ Páginas por cidade capturam buscas hiper-locais como "licitações em Curitiba"
 - [ ] 27 capitais publicadas e indexáveis
 - [ ] Dados renderizando corretamente (ou fallback gracioso)
 - [ ] Schema validado
+- [ ] GSC: 27 URLs de capitais com indexação solicitada via Playwright
+- [ ] GSC: Rich Results Test validado para 5 URLs amostrais
+- [ ] Relatório gerado em `docs/validation/mkt-005-indexation-fase1.md`
 - [ ] Commit com tag `MKT-005`

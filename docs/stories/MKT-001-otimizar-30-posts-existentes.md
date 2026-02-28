@@ -62,6 +62,14 @@ O SmartLic já possui 30 posts publicados (15 B2G + 15 Consultorias), mas segund
 - [ ] Verificar/atualizar OG image, OG title, OG description
 - [ ] Adicionar canonical URL explícita
 
+### AC7 — Validação via Playwright (Google Search Console + Rich Results)
+
+- [ ] **Rich Results Test automatizado:** Script Playwright que navega para `https://search.google.com/test/rich-results`, submete cada URL dos 30 posts e verifica: 0 erros, schema `FAQPage` + `Article` + `BreadcrumbList` detectados
+- [ ] **Google Search Console — Inspeção de URL:** Script Playwright que faz login no GSC (`search.google.com/search-console`), inspeciona cada um dos 30 posts via "Inspecionar URL", verifica status de indexação e solicita reindexação dos posts atualizados
+- [ ] **Google Search Console — Verificar Sitemaps:** Via Playwright, confirmar que o sitemap do blog está submetido e sem erros no GSC (Sitemaps → Status)
+- [ ] **Google Search Console — Core Web Vitals:** Via Playwright, navegar para relatório CWV e verificar que nenhum post do blog está em "Precisa de melhorias" ou "Ruim"
+- [ ] **Relatório de validação:** Gerar arquivo `docs/validation/mkt-001-gsc-validation.md` com: URL, status indexação, schema detectado, CWV status, data da verificação
+
 ## Mitigações
 
 | Risco | Mitigação |
@@ -70,12 +78,16 @@ O SmartLic já possui 30 posts publicados (15 B2G + 15 Consultorias), mas segund
 | FAQ genéricas sem valor | Derivar FAQs do conteúdo real; cada FAQ deve responder uma busca real |
 | CTA intrusivo prejudicar experiência de leitura | CTA inline discreto (banner leve, não popup); CTA final com design coerente |
 | Schema inválido prejudicar indexação | Validar cada post no Google Rich Results Test antes de publicar |
+| Reindexação demorar após alterações | Solicitar reindexação via GSC (Playwright) imediatamente após deploy |
+| CWV degradar com schema/CTA extras | Verificar Core Web Vitals via GSC após deploy; rollback se degradar |
 
 ## Definição de Pronto
 
 - [ ] 30 posts atualizados com FAQ schema + front-loading + CTAs
 - [ ] Schema validado via Rich Results Test (0 erros)
 - [ ] Zero regressões visuais no blog
+- [ ] Validação GSC via Playwright: 30/30 posts indexados, schema detectado, CWV OK
+- [ ] Relatório de validação gerado em `docs/validation/mkt-001-gsc-validation.md`
 - [ ] Commit com tag `MKT-001`
 
 ## File List

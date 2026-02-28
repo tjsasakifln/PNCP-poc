@@ -58,7 +58,16 @@
 - [ ] **Fase 3 (Mês 2):** Expandir para 15 setores × 27 UFs = 405 páginas
 - [ ] Monitorar indexação via Search Console após cada fase
 
-### AC6 — Internal linking
+### AC6 — Google Search Console via Playwright (por fase)
+
+- [ ] **Fase 1 — Solicitar indexação:** Script Playwright que faz login no GSC e solicita indexação (URL Inspection → "Solicitar indexação") para cada uma das 25 URLs da Fase 1
+- [ ] **Fase 1 — Verificar indexação (7 dias depois):** Playwright re-inspeciona as 25 URLs e gera relatório: indexada/não indexada, schema detectado, erros
+- [ ] **Fase 2 e 3 — Submissão em lote:** Para fases com 75+ URLs, usar sitemap como mecanismo principal; Playwright verifica que sitemap atualizado foi processado no GSC
+- [ ] **Rich Results Test por amostragem:** Playwright testa 5 URLs por fase no Rich Results Test — validar `FAQPage` + `Dataset` + `BreadcrumbList`
+- [ ] **Monitoramento de performance:** Playwright exporta relatório de Desempenho do GSC filtrado por `/blog/licitacoes/` — impressões, cliques, CTR, posição média
+- [ ] **Relatório:** `docs/validation/mkt-003-indexation-{fase}.md` com status de cada URL
+
+### AC7 — Internal linking
 
 - [ ] Cada página linka para: panorama do setor (MKT-005), 3 páginas de UFs vizinhas, post editorial do setor (se existir)
 - [ ] Página de índice `/blog/licitacoes/` listando todos os setores e UFs com contagens
@@ -68,7 +77,7 @@
 | Risco | Mitigação |
 |-------|-----------|
 | Thin content (página com 0 licitações) | Exibir "Nenhuma licitação ativa neste período" + conteúdo editorial fixo + sugestão de UFs próximas |
-| Indexação lenta (405 páginas novas) | Lançamento faseado (25 → 75 → 405), submissão via Search Console, internal linking |
+| Indexação lenta (405 páginas novas) | Lançamento faseado (25 → 75 → 405), solicitação de indexação via Playwright no GSC, monitoramento semanal |
 | Dados desatualizados | ISR 24h + badge "atualizado em DD/MM" + fallback para cache se API falhar |
 | Conteúdo editorial repetitivo entre UFs | Variar o bloco editorial por região (Norte/Nordeste/Sudeste/Sul/Centro-Oeste) |
 
@@ -79,6 +88,9 @@
 - [ ] Sitemap inclui todas as páginas
 - [ ] Dados ao vivo renderizando corretamente
 - [ ] Testes: rendering, schema, dados, 404 para inválidos
+- [ ] GSC: 25 URLs da Fase 1 com indexação solicitada via Playwright
+- [ ] GSC: Rich Results Test validado para 5 URLs amostrais
+- [ ] Relatório de indexação gerado em `docs/validation/mkt-003-indexation-fase1.md`
 - [ ] Commit com tag `MKT-003`
 
 ## KPIs

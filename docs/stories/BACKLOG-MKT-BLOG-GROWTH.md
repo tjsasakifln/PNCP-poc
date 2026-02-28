@@ -74,6 +74,22 @@ MKT-011 (depende de dados do SmartLic — API já existe)
 | Downloads Radar Semanal/semana | 50 | 200 | 500 |
 | Backlinks (domínios únicos) | 5 | 25 | 80 |
 
+## Playwright — Automação Google Search Console
+
+Todas as stories com conteúdo indexável incluem ACs de automação via Playwright para Google Search Console:
+
+| Story | Ação Playwright GSC |
+|-------|---------------------|
+| **MKT-001** | Rich Results Test (30 URLs), URL Inspection + reindexação, verificar sitemaps, Core Web Vitals |
+| **MKT-002** | Submissão de sitemap, verificar propriedade, validar robots.txt, Rich Results Test template, health check semanal |
+| **MKT-003** | Solicitar indexação (25 URLs Fase 1), verificar indexação (7d), Rich Results Test amostra, export performance |
+| **MKT-004** | Solicitar indexação (pillar pages), Rich Results Test, verificar indexação (7d), export performance |
+| **MKT-005** | Solicitar indexação (27 capitais), Rich Results Test amostra, verificar indexação (14d) |
+
+**Relatórios gerados:** `docs/validation/mkt-{NNN}-*.md` por story + `docs/validation/gsc-weekly-{date}.md` recorrente.
+
+**Credenciais necessárias:** Login GSC com conta `tiago.sasaki@gmail.com` (proprietário verificado de `smartlic.tech`).
+
 ## Anti-Patterns (O que NÃO fazer)
 
 - NÃO publicar "o que é licitação" — genérico, sem diferenciação
