@@ -1,6 +1,6 @@
 # STORY-318: Split Concurrency Safety Migration
 
-**Status:** Ready
+**Status:** Done
 **Priority:** High
 **Sprint:** Current
 **Points:** 2
@@ -21,21 +21,22 @@ As migrations subsequentes (`add_dunning_fields`, `story310_trial_email_sequence
 
 ## Acceptance Criteria
 
-- [ ] **AC1:** Remover `20260227120000_concurrency_safety.sql` do diretório de migrations
-- [ ] **AC2:** Criar `20260227120001_concurrency_stripe_webhook.sql` — ALTER TABLE stripe_webhook_events (status + received_at + backfill + GRANT)
-- [ ] **AC3:** Criar `20260227120002_concurrency_pipeline_version.sql` — ALTER TABLE pipeline_items (version column)
-- [ ] **AC4:** Criar `20260227120003_concurrency_quota_rpc.sql` — CREATE OR REPLACE FUNCTION + GRANT (isolado)
-- [ ] **AC5:** Executar `supabase db push` com sucesso (todas 3 novas + dunning + trial_email)
-- [ ] **AC6:** Verificar que as colunas `status`, `received_at` existem em `stripe_webhook_events`
-- [ ] **AC7:** Verificar que `version` existe em `pipeline_items`
-- [ ] **AC8:** Verificar que `increment_quota_fallback_atomic()` funciona via `SELECT * FROM increment_quota_fallback_atomic(...)`
+- [x] **AC1:** Remover `20260227120000_concurrency_safety.sql` do diretório de migrations
+- [x] **AC2:** Criar `20260227120001_concurrency_stripe_webhook.sql` — ALTER TABLE stripe_webhook_events (status + received_at + backfill + GRANT)
+- [x] **AC3:** Criar `20260227120002_concurrency_pipeline_version.sql` — ALTER TABLE pipeline_items (version column)
+- [x] **AC4:** Criar `20260227120003_concurrency_quota_rpc.sql` — CREATE OR REPLACE FUNCTION (isolado) + `120004` para GRANT
+- [x] **AC5:** Executar `supabase db push` com sucesso (todas 4 split + dunning + trial_email)
+- [x] **AC6:** Verificar que as colunas `status`, `received_at` existem em `stripe_webhook_events`
+- [x] **AC7:** Verificar que `version` existe em `pipeline_items`
+- [x] **AC8:** Verificar que `increment_quota_fallback_atomic()` funciona via `SELECT * FROM increment_quota_fallback_atomic(...)`
 
 ## Technical Notes
 
 - O Supabase CLI executa cada migration como prepared statement via PostgREST
 - PL/pgSQL functions com `BEGIN...END` contam como múltiplos statements internos
 - A solução é isolar a function creation em seu próprio arquivo de migration
-- Timestamps das novas migrations devem manter ordem: `120001`, `120002`, `120003` (entre `120000` e `130000`)
+- **Descoberta:** Mesmo isolada, a function + GRANT no mesmo arquivo ainda causa SQLSTATE 42601. A solução final foi 4 arquivos: function em `120003`, GRANT em `120004`.
+- Timestamps das novas migrations devem manter ordem: `120001`, `120002`, `120003`, `120004` (entre `120000` e `130000`)
 - A migration original `120000` deve ser deletada DEPOIS de confirmar que as novas aplicaram
 
 ## Migration Content Reference
@@ -61,10 +62,10 @@ GRANT EXECUTE ON FUNCTION increment_quota_fallback_atomic(UUID, TEXT, INTEGER) T
 
 ## Definition of Done
 
-- [ ] All 3 split migrations apply cleanly via `supabase db push`
-- [ ] Pending migrations (dunning, trial_email) also apply
-- [ ] Original `120000` file removed
-- [ ] No regressions in backend tests
+- [x] All 4 split migrations apply cleanly via `supabase db push`
+- [x] Pending migrations (dunning, trial_email) also apply
+- [x] Original `120000` file removed
+- [x] No regressions in backend tests (5 migration-content tests updated to reference split files)
 
 ## File List
 
@@ -74,3 +75,4 @@ GRANT EXECUTE ON FUNCTION increment_quota_fallback_atomic(UUID, TEXT, INTEGER) T
 | CREATE | `supabase/migrations/20260227120001_concurrency_stripe_webhook.sql` |
 | CREATE | `supabase/migrations/20260227120002_concurrency_pipeline_version.sql` |
 | CREATE | `supabase/migrations/20260227120003_concurrency_quota_rpc.sql` |
+| CREATE | `supabase/migrations/20260227120004_concurrency_quota_rpc_grant.sql` |

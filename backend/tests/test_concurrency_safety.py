@@ -607,38 +607,53 @@ class TestQuotaAtomicity:
 # ============================================================================
 
 class TestMigrationContent:
-    """Validate migration SQL content for STORY-307."""
+    """Validate migration SQL content for STORY-307 (split into 4 files by STORY-318)."""
 
     @pytest.fixture
-    def migration_sql(self):
+    def migrations_dir(self):
         from pathlib import Path
-        path = Path(__file__).parent.parent.parent / "supabase" / "migrations" / "20260227120000_concurrency_safety.sql"
-        return path.read_text(encoding="utf-8")
+        return Path(__file__).parent.parent.parent / "supabase" / "migrations"
 
-    def test_ac16_status_column_added(self, migration_sql):
+    @pytest.fixture
+    def stripe_webhook_sql(self, migrations_dir):
+        return (migrations_dir / "20260227120001_concurrency_stripe_webhook.sql").read_text(encoding="utf-8")
+
+    @pytest.fixture
+    def pipeline_version_sql(self, migrations_dir):
+        return (migrations_dir / "20260227120002_concurrency_pipeline_version.sql").read_text(encoding="utf-8")
+
+    @pytest.fixture
+    def quota_rpc_sql(self, migrations_dir):
+        return (migrations_dir / "20260227120003_concurrency_quota_rpc.sql").read_text(encoding="utf-8")
+
+    @pytest.fixture
+    def quota_rpc_grant_sql(self, migrations_dir):
+        return (migrations_dir / "20260227120004_concurrency_quota_rpc_grant.sql").read_text(encoding="utf-8")
+
+    def test_ac16_status_column_added(self, stripe_webhook_sql):
         """AC16: Migration adds status column to stripe_webhook_events."""
-        assert "ADD COLUMN" in migration_sql
-        assert "status" in migration_sql
-        assert "VARCHAR(20)" in migration_sql
+        assert "ADD COLUMN" in stripe_webhook_sql
+        assert "status" in stripe_webhook_sql
+        assert "VARCHAR(20)" in stripe_webhook_sql
 
-    def test_ac17_received_at_column_added(self, migration_sql):
+    def test_ac17_received_at_column_added(self, stripe_webhook_sql):
         """AC17: Migration adds received_at to stripe_webhook_events."""
-        assert "received_at" in migration_sql
-        assert "TIMESTAMPTZ" in migration_sql
+        assert "received_at" in stripe_webhook_sql
+        assert "TIMESTAMPTZ" in stripe_webhook_sql
 
-    def test_ac18_version_column_added(self, migration_sql):
+    def test_ac18_version_column_added(self, pipeline_version_sql):
         """AC18: Migration adds version column to pipeline_items."""
-        assert "pipeline_items" in migration_sql
-        assert "version" in migration_sql
-        assert "INTEGER" in migration_sql
-        assert "DEFAULT 1" in migration_sql
+        assert "pipeline_items" in pipeline_version_sql
+        assert "version" in pipeline_version_sql
+        assert "INTEGER" in pipeline_version_sql
+        assert "DEFAULT 1" in pipeline_version_sql
 
-    def test_ac19_grant_update(self, migration_sql):
+    def test_ac19_grant_update(self, stripe_webhook_sql):
         """AC19: GRANT UPDATE on stripe_webhook_events to service_role."""
-        assert "GRANT UPDATE ON stripe_webhook_events TO service_role" in migration_sql
+        assert "GRANT UPDATE ON stripe_webhook_events TO service_role" in stripe_webhook_sql
 
-    def test_atomic_fallback_rpc_created(self, migration_sql):
+    def test_atomic_fallback_rpc_created(self, quota_rpc_sql):
         """Migration creates increment_quota_fallback_atomic function."""
-        assert "increment_quota_fallback_atomic" in migration_sql
-        assert "ON CONFLICT" in migration_sql
-        assert "searches_count + 1" in migration_sql
+        assert "increment_quota_fallback_atomic" in quota_rpc_sql
+        assert "ON CONFLICT" in quota_rpc_sql
+        assert "searches_count + 1" in quota_rpc_sql
