@@ -382,11 +382,11 @@ SUPABASE_CB_STATE = _create_gauge(
     "Supabase circuit breaker state (0=closed, 1=open, 2=half_open)",
 )
 
-# STORY-291 AC7: Supabase circuit breaker state transitions
+# STORY-291 AC7 + CRIT-042 AC9: Supabase circuit breaker state transitions
 SUPABASE_CB_TRANSITIONS = _create_counter(
     "smartlic_supabase_cb_transitions_total",
     "Supabase circuit breaker state transitions",
-    labelnames=["from_state", "to_state"],
+    labelnames=["from_state", "to_state", "source"],
 )
 
 # ============================================================================

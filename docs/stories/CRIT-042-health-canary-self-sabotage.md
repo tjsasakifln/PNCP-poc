@@ -42,30 +42,30 @@ Criar `health_cb = SupabaseCircuitBreaker()` dedicado ao canary, isolando do `su
 
 ### Backend — Isolamento do Canary
 
-- [ ] **AC1:** Criar função `sb_execute_direct()` em `supabase_client.py` que executa queries Supabase SEM registrar no `supabase_cb`:
+- [x] **AC1:** Criar função `sb_execute_direct()` em `supabase_client.py` que executa queries Supabase SEM registrar no `supabase_cb`:
   ```python
   async def sb_execute_direct(query) -> dict:
       """Execute Supabase query bypassing circuit breaker.
       Use ONLY for internal health monitoring operations."""
       ...
   ```
-- [ ] **AC2:** Em `health.py:save_health_check()`: substituir `sb_execute()` por `sb_execute_direct()`
-- [ ] **AC3:** Em `health.py:detect_incident()`: substituir `sb_execute()` por `sb_execute_direct()`
-- [ ] **AC4:** Em `health.py:cleanup_old_health_checks()`: substituir `sb_execute()` por `sb_execute_direct()`
-- [ ] **AC5:** Em `health.py:get_public_status()` — a query `sb.table("profiles").select("id").limit(1)` que verifica se Supabase está vivo DEVE continuar usando `sb_execute()` (é um health probe legítimo)
-- [ ] **AC6:** Adicionar docstring clara em `sb_execute_direct()`: "NEVER use for user-facing operations"
+- [x] **AC2:** Em `health.py:save_health_check()`: substituir `sb_execute()` por `sb_execute_direct()`
+- [x] **AC3:** Em `health.py:detect_incident()`: substituir `sb_execute()` por `sb_execute_direct()`
+- [x] **AC4:** Em `health.py:cleanup_old_health_checks()`: substituir `sb_execute()` por `sb_execute_direct()`
+- [x] **AC5:** Em `health.py:get_public_status()` — a query `sb.table("profiles").select("id").limit(1)` que verifica se Supabase está vivo DEVE continuar usando `sb_execute()` (é um health probe legítimo)
+- [x] **AC6:** Adicionar docstring clara em `sb_execute_direct()`: "NEVER use for user-facing operations"
 
 ### Backend — Log Improvement
 
-- [ ] **AC7:** Em `save_health_check()`: catch PGRST205 → log WARNING com mensagem "health_checks table not found — migration pending" (não ERROR)
-- [ ] **AC8:** Em `detect_incident()`: catch PGRST205 → log WARNING (não ERROR)
-- [ ] **AC9:** Métricas: adicionar label `source="canary"` vs `source="app"` ao `smartlic_supabase_cb_transitions_total` para distinguir origem de failures
+- [x] **AC7:** Em `save_health_check()`: catch PGRST205 → log WARNING com mensagem "health_checks table not found — migration pending" (não ERROR)
+- [x] **AC8:** Em `detect_incident()`: catch PGRST205 → log WARNING (não ERROR)
+- [x] **AC9:** Métricas: adicionar label `source="canary"` vs `source="app"` ao `smartlic_supabase_cb_transitions_total` para distinguir origem de failures
 
 ### Testes
 
-- [ ] **AC10:** Teste: health canary falha 20x consecutivas → `supabase_cb` permanece CLOSED
-- [ ] **AC11:** Teste: erro de conexão real em query de app → `supabase_cb` abre normalmente
-- [ ] **AC12:** Teste: `sb_execute_direct()` funciona quando `supabase_cb` está OPEN
+- [x] **AC10:** Teste: health canary falha 20x consecutivas → `supabase_cb` permanece CLOSED
+- [x] **AC11:** Teste: erro de conexão real em query de app → `supabase_cb` abre normalmente
+- [x] **AC12:** Teste: `sb_execute_direct()` funciona quando `supabase_cb` está OPEN
 
 ---
 

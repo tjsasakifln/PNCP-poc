@@ -167,7 +167,7 @@ class SupabaseCircuitBreaker:
             state_val = {"CLOSED": 0, "OPEN": 1, "HALF_OPEN": 2}
             SUPABASE_CB_STATE.set(state_val.get(new_state, 0))
             SUPABASE_CB_TRANSITIONS.labels(
-                from_state=old_state, to_state=new_state
+                from_state=old_state, to_state=new_state, source="app"
             ).inc()
         except Exception:
             pass  # Metrics are best-effort
@@ -294,4 +294,26 @@ async def sb_execute(query):
     except Exception as e:
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         supabase_cb._record_failure(e)
+        raise
+
+
+async def sb_execute_direct(query):
+    """Execute Supabase query bypassing circuit breaker (CRIT-042).
+
+    NEVER use for user-facing operations. This is exclusively for
+    internal health monitoring operations (canary, incident detection,
+    cleanup) that must not affect the application circuit breaker.
+
+    CRIT-042: Health canary failures were opening the shared supabase_cb,
+    causing the monitoring mechanism to sabotage the system it monitors.
+    """
+    from metrics import SUPABASE_EXECUTE_DURATION
+    start = time.monotonic()
+
+    try:
+        result = await asyncio.to_thread(query.execute)
+        SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
+        return result
+    except Exception:
+        SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         raise

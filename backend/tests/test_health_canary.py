@@ -203,7 +203,7 @@ class TestUptimeCalculation:
         ])
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock, return_value=mock_resp):
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock, return_value=mock_resp):
                 result = await calculate_uptime_percentages()
 
         assert result["24h"] == 100.0
@@ -221,7 +221,7 @@ class TestUptimeCalculation:
         ])
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock, return_value=mock_resp):
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock, return_value=mock_resp):
                 result = await calculate_uptime_percentages()
 
         # (100 + 50 + 0 + 100) / 4 = 62.5
@@ -233,7 +233,7 @@ class TestUptimeCalculation:
         mock_resp = SimpleNamespace(data=[])
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock, return_value=mock_resp):
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock, return_value=mock_resp):
                 result = await calculate_uptime_percentages()
 
         assert result["24h"] == 100.0
@@ -255,7 +255,7 @@ class TestIncidentDetection:
 
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock) as mock_exec:
                 mock_exec.side_effect = [ongoing_resp, insert_resp]
                 with patch("email_service.send_email") as mock_email:
                     mock_email.return_value = "email-id"
@@ -275,7 +275,7 @@ class TestIncidentDetection:
 
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = ongoing_resp
                 await detect_incident("degraded", {"pncp": {"status": "degraded"}})
 
@@ -296,7 +296,7 @@ class TestIncidentDetection:
 
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock) as mock_exec:
                 mock_exec.side_effect = [ongoing_resp, recent_resp, update_resp]
                 with patch("email_service.send_email") as mock_email:
                     mock_email.return_value = "email-id"
@@ -318,7 +318,7 @@ class TestIncidentDetection:
 
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock) as mock_exec:
                 mock_exec.side_effect = [ongoing_resp, recent_resp]
                 await detect_incident("healthy", {})
 
@@ -338,7 +338,7 @@ class TestSaveHealthCheck:
         """AC6: Saves health check result to DB."""
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = SimpleNamespace(data=[])
                 await save_health_check(
                     "healthy",
@@ -353,7 +353,7 @@ class TestSaveHealthCheck:
         """AC6: Does not raise on DB error."""
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock, side_effect=Exception("DB error")):
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock, side_effect=Exception("DB error")):
                 await save_health_check("healthy", {}, {}, None)
 
 
@@ -439,7 +439,7 @@ class TestCleanup:
         """Cleanup returns number of deleted records."""
         with patch("supabase_client.get_supabase") as mock_sb:
             mock_sb.return_value = MagicMock()
-            with patch("supabase_client.sb_execute", new_callable=AsyncMock) as mock_exec:
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock) as mock_exec:
                 mock_exec.return_value = SimpleNamespace(data=[{"id": "1"}, {"id": "2"}])
                 count = await cleanup_old_health_checks()
                 assert count == 2

@@ -556,16 +556,18 @@ async def calculate_uptime_percentages() -> Dict[str, float]:
 
     healthy=100%, degraded=50%, unhealthy=0%.
     Returns percentages for 24h, 7d, 30d windows.
+
+    CRIT-042: Uses sb_execute_direct() — called from canary path.
     """
     result = {"24h": 100.0, "7d": 100.0, "30d": 100.0}
     try:
-        from supabase_client import get_supabase, sb_execute
+        from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
         now = datetime.now(timezone.utc)
 
         for label, delta in [("24h", timedelta(hours=24)), ("7d", timedelta(days=7)), ("30d", timedelta(days=30))]:
             cutoff = (now - delta).isoformat()
-            resp = await sb_execute(
+            resp = await sb_execute_direct(
                 sb.table("health_checks")
                 .select("overall_status")
                 .gte("checked_at", cutoff)
@@ -593,11 +595,14 @@ async def calculate_uptime_percentages() -> Dict[str, float]:
 
 
 async def get_last_incident() -> Optional[str]:
-    """Get the timestamp of the last incident."""
+    """Get the timestamp of the last incident.
+
+    CRIT-042: Uses sb_execute_direct() — called from canary path.
+    """
     try:
-        from supabase_client import get_supabase, sb_execute
+        from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
-        resp = await sb_execute(
+        resp = await sb_execute_direct(
             sb.table("incidents")
             .select("started_at")
             .order("started_at", desc=True)
@@ -629,12 +634,15 @@ async def get_recent_incidents(days: int = 30) -> List[Dict[str, Any]]:
 
 
 async def save_health_check(overall_status: str, sources: Dict, components: Dict, latency_ms: Optional[int] = None) -> None:
-    """STORY-316 AC6: Save a health check result to DB."""
+    """STORY-316 AC6: Save a health check result to DB.
+
+    CRIT-042 AC2: Uses sb_execute_direct() to bypass circuit breaker.
+    """
     try:
-        from supabase_client import get_supabase, sb_execute
+        from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
         import json
-        await sb_execute(
+        await sb_execute_direct(
             sb.table("health_checks").insert({
                 "overall_status": overall_status,
                 "sources_json": json.dumps(sources) if isinstance(sources, dict) else sources,
@@ -643,9 +651,9 @@ async def save_health_check(overall_status: str, sources: Dict, components: Dict
             })
         )
     except Exception as e:
-        # CRIT-040 AC7: Schema errors (PGRST205) are WARNING, not ERROR
+        # CRIT-042 AC7: PGRST205 → WARNING with specific migration message
         if "PGRST205" in str(e):
-            logger.warning("save_health_check: table missing in schema cache (PGRST205): %s", e)
+            logger.warning("save_health_check: health_checks table not found — migration pending: %s", e)
         else:
             logger.error("Failed to save health check: %s", e)
 
@@ -655,13 +663,15 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
 
     - healthy → degraded/unhealthy: create incident + email admin + Sentry alert
     - 3 consecutive healthy after incident: auto-resolve (AC10)
+
+    CRIT-042 AC3: Uses sb_execute_direct() to bypass circuit breaker.
     """
     try:
-        from supabase_client import get_supabase, sb_execute
+        from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
 
         # Check for ongoing incidents
-        ongoing_resp = await sb_execute(
+        ongoing_resp = await sb_execute_direct(
             sb.table("incidents")
             .select("*")
             .eq("status", "ongoing")
@@ -680,7 +690,7 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
             severity = "critical" if current_status == "unhealthy" else "warning"
             description = f"System status changed to {current_status}. Affected: {', '.join(affected) or 'unknown'}"
 
-            await sb_execute(
+            await sb_execute_direct(
                 sb.table("incidents").insert({
                     "status": "ongoing",
                     "affected_sources": affected,
@@ -723,7 +733,7 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
 
         elif current_status == "healthy" and ongoing:
             # AC10: Check for 3 consecutive healthy checks
-            recent_resp = await sb_execute(
+            recent_resp = await sb_execute_direct(
                 sb.table("health_checks")
                 .select("overall_status")
                 .order("checked_at", desc=True)
@@ -733,7 +743,7 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
 
             if len(recent_statuses) >= 3 and all(s == "healthy" for s in recent_statuses):
                 # Auto-resolve incident
-                await sb_execute(
+                await sb_execute_direct(
                     sb.table("incidents")
                     .update({
                         "status": "resolved",
@@ -758,21 +768,24 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
                 logger.info("Incident auto-resolved: %s", ongoing.get("id"))
 
     except Exception as e:
-        # CRIT-040 AC8: Schema errors (PGRST205) are WARNING, not ERROR
+        # CRIT-042 AC8: PGRST205 → WARNING with specific migration message
         if "PGRST205" in str(e):
-            logger.warning("detect_incident: table missing in schema cache (PGRST205): %s", e)
+            logger.warning("detect_incident: incidents table not found — migration pending: %s", e)
         else:
             logger.error("Incident detection failed: %s", e)
 
 
 async def cleanup_old_health_checks() -> int:
-    """Clean up health checks older than retention period."""
+    """Clean up health checks older than retention period.
+
+    CRIT-042 AC4: Uses sb_execute_direct() to bypass circuit breaker.
+    """
     try:
         from config import HEALTH_CHECKS_RETENTION_DAYS
-        from supabase_client import get_supabase, sb_execute
+        from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
         cutoff = (datetime.now(timezone.utc) - timedelta(days=HEALTH_CHECKS_RETENTION_DAYS)).isoformat()
-        resp = await sb_execute(
+        resp = await sb_execute_direct(
             sb.table("health_checks")
             .delete()
             .lt("checked_at", cutoff)
@@ -782,9 +795,8 @@ async def cleanup_old_health_checks() -> int:
             logger.info("Cleaned up %d old health checks", deleted)
         return deleted
     except Exception as e:
-        # CRIT-040 AC9: Schema errors (PGRST205) are WARNING with specific message
         if "PGRST205" in str(e):
-            logger.warning("cleanup_old_health_checks: table missing in schema cache (PGRST205): %s", e)
+            logger.warning("cleanup_old_health_checks: health_checks table not found — migration pending: %s", e)
         else:
             logger.warning("Failed to cleanup old health checks: %s", e)
         return 0

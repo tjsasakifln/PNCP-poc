@@ -268,7 +268,7 @@ class TestCircuitBreakerMetrics:
 
             mock_gauge.set.assert_called_with(1)  # 1 = OPEN
             mock_counter.labels.assert_called_with(
-                from_state="CLOSED", to_state="OPEN"
+                from_state="CLOSED", to_state="OPEN", source="app"
             )
 
     def test_metrics_on_recovery(self):
@@ -291,7 +291,7 @@ class TestCircuitBreakerMetrics:
 
             mock_gauge.set.assert_called_with(0)  # 0 = CLOSED
             mock_counter.labels.assert_called_with(
-                from_state="HALF_OPEN", to_state="CLOSED"
+                from_state="HALF_OPEN", to_state="CLOSED", source="app"
             )
 
 
@@ -894,20 +894,16 @@ class TestHealthCanaryCBIntegration:
         """save_health_check() with PGRST205 → CB stays CLOSED."""
         from supabase_client import supabase_cb
 
-        # sb_execute raises PGRST205 → health.py catches → CB stays CLOSED
+        # sb_execute_direct raises PGRST205 → health.py catches → CB untouched
         with patch("supabase_client.get_supabase", return_value=Mock()), \
-             patch("supabase_client.sb_execute") as mock_sb_exec:
-            # Make sb_execute raise PGRST205 and also record_failure with exclusion
+             patch("supabase_client.sb_execute_direct") as mock_sb_direct:
             pgrst_exc = Exception("PGRST205: Could not find the table in the schema cache")
-            mock_sb_exec.side_effect = pgrst_exc
-
-            # Manually trigger the CB path as sb_execute would
-            supabase_cb._record_failure(pgrst_exc)
+            mock_sb_direct.side_effect = pgrst_exc
 
             from health import save_health_check
             await save_health_check("healthy", {}, {})
 
-        # CB should still be CLOSED — PGRST205 is excluded
+        # CB should still be CLOSED — sb_execute_direct bypasses CB entirely
         assert supabase_cb.state == "CLOSED"
         assert len(supabase_cb._window) == 0
 
@@ -918,9 +914,7 @@ class TestHealthCanaryCBIntegration:
 
         pgrst_exc = Exception("PGRST205: schema cache miss")
         with patch("supabase_client.get_supabase", return_value=Mock()), \
-             patch("supabase_client.sb_execute", side_effect=pgrst_exc):
-            supabase_cb._record_failure(pgrst_exc)
-
+             patch("supabase_client.sb_execute_direct", side_effect=pgrst_exc):
             from health import detect_incident
             await detect_incident("healthy", {})
 
@@ -933,11 +927,117 @@ class TestHealthCanaryCBIntegration:
 
         pgrst_exc = Exception("PGRST205: table missing")
         with patch("supabase_client.get_supabase", return_value=Mock()), \
-             patch("supabase_client.sb_execute", side_effect=pgrst_exc):
+             patch("supabase_client.sb_execute_direct", side_effect=pgrst_exc):
             from health import save_health_check
             for _ in range(50):
-                supabase_cb._record_failure(pgrst_exc)
                 await save_health_check("healthy", {}, {})
 
         assert supabase_cb.state == "CLOSED"
         assert len(supabase_cb._window) == 0
+
+
+# ---------------------------------------------------------------------------
+# CRIT-042: Health canary isolation tests
+# ---------------------------------------------------------------------------
+
+class TestCrit042CanaryIsolation:
+    """CRIT-042 AC10-AC12: Health canary fully isolated from supabase_cb."""
+
+    def setup_method(self):
+        from supabase_client import supabase_cb
+        supabase_cb.reset()
+
+    def teardown_method(self):
+        from supabase_client import supabase_cb
+        supabase_cb.reset()
+
+    @pytest.mark.asyncio
+    async def test_ac10_canary_20_failures_cb_stays_closed(self):
+        """AC10: Health canary fails 20x consecutively → supabase_cb remains CLOSED.
+
+        sb_execute_direct bypasses the CB entirely, so any number of
+        canary failures must never affect supabase_cb state.
+        """
+        from supabase_client import supabase_cb
+
+        timeout_exc = ConnectionError("Connection timed out")
+        with patch("supabase_client.get_supabase", return_value=Mock()), \
+             patch("supabase_client.sb_execute_direct", side_effect=timeout_exc):
+            from health import save_health_check, detect_incident, cleanup_old_health_checks
+            for _ in range(20):
+                await save_health_check("unhealthy", {}, {})
+                await detect_incident("unhealthy", {})
+                await cleanup_old_health_checks()
+
+        # CB must remain CLOSED — canary operations bypass CB
+        assert supabase_cb.state == "CLOSED"
+        assert len(supabase_cb._window) == 0
+
+    @pytest.mark.asyncio
+    async def test_ac11_real_app_error_opens_cb(self):
+        """AC11: Real application connection error → supabase_cb opens normally.
+
+        sb_execute (used by app code) still records failures in the CB.
+        """
+        from supabase_client import supabase_cb, sb_execute
+
+        mock_query = Mock()
+        mock_query.execute.side_effect = ConnectionError("Connection refused")
+
+        with patch("metrics.SUPABASE_EXECUTE_DURATION"):
+            for _ in range(10):
+                with pytest.raises(ConnectionError):
+                    await sb_execute(mock_query)
+
+        # CB should be OPEN — 10 consecutive failures (100% rate in window of 10)
+        assert supabase_cb.state == "OPEN"
+
+    @pytest.mark.asyncio
+    async def test_ac12_sb_execute_direct_works_when_cb_open(self):
+        """AC12: sb_execute_direct() works even when supabase_cb is OPEN.
+
+        The bypass function must not check CB state at all.
+        """
+        from supabase_client import supabase_cb, sb_execute_direct
+
+        # Force CB OPEN
+        for _ in range(10):
+            supabase_cb._record_failure()
+        assert supabase_cb.state == "OPEN"
+
+        # sb_execute_direct must still work
+        mock_query = Mock()
+        mock_query.execute.return_value = Mock(data=[{"id": 1}])
+
+        with patch("metrics.SUPABASE_EXECUTE_DURATION"):
+            result = await sb_execute_direct(mock_query)
+
+        assert result.data == [{"id": 1}]
+        # CB must still be OPEN — sb_execute_direct doesn't record success either
+        assert supabase_cb.state == "OPEN"
+
+    @pytest.mark.asyncio
+    async def test_canary_failures_then_app_query_succeeds(self):
+        """Canary failures don't poison app queries — CB stays CLOSED for app."""
+        from supabase_client import supabase_cb, sb_execute
+
+        # 50 canary failures via sb_execute_direct (bypass)
+        timeout_exc = ConnectionError("timeout")
+        with patch("supabase_client.get_supabase", return_value=Mock()), \
+             patch("supabase_client.sb_execute_direct", side_effect=timeout_exc):
+            from health import save_health_check
+            for _ in range(50):
+                await save_health_check("unhealthy", {}, {})
+
+        # CB should be untouched
+        assert supabase_cb.state == "CLOSED"
+
+        # App query via sb_execute should work fine
+        mock_query = Mock()
+        mock_query.execute.return_value = Mock(data=[{"ok": True}])
+
+        with patch("metrics.SUPABASE_EXECUTE_DURATION"):
+            result = await sb_execute(mock_query)
+
+        assert result.data == [{"ok": True}]
+        assert supabase_cb.state == "CLOSED"
