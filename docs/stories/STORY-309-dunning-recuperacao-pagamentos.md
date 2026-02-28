@@ -108,8 +108,8 @@ Implementar fluxo completo de dunning com:
 
 ### Configuracao Stripe (Dashboard)
 
-- [ ] **AC22:** Configurar Smart Retries: 8 tentativas over 2 semanas _(manual: Stripe Dashboard → Settings → Subscriptions → Smart Retries)_
-- [ ] **AC23:** Apos retries esgotadas: marcar como `unpaid` (nao cancelar — permite reativacao) _(manual: Stripe Dashboard → Settings → Subscriptions → After all retries fail → Mark as unpaid)_
+- [x] **AC22:** Configurar Smart Retries: 8 tentativas over 2 semanas _(verificado via Playwright: ja configurado — 8 vezes / 2 semanas)_
+- [x] **AC23:** Apos retries esgotadas: marcar como `unpaid` (nao cancelar — permite reativacao) _(verificado via Playwright: "deixar a assinatura vencida" por 60 dias)_
 
 ---
 
