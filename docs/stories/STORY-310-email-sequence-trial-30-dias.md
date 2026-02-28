@@ -1,8 +1,11 @@
 # STORY-310: Email Sequence Trial — 30 Dias
 
+> **SUPERSEDED by STORY-321** (Email Sequence Trial 14 Dias) — TurboCash Playbook reduziu trial para 14d.
+> Esta story nao sera implementada. Use STORY-321 como referencia.
+
 **Epic:** EPIC-PRE-GTM-2026-02
 **Sprint:** Sprint 1 (Pre-GTM)
-**Priority:** BLOCKER
+**Priority:** ~~BLOCKER~~ CANCELLED
 **Story Points:** 8 SP
 **Estimate:** 5-7 dias
 **Owner:** @dev + @data-engineer

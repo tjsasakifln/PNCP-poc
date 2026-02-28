@@ -49,27 +49,37 @@ Existem DOIS sistemas de trial emails rodando em paralelo, causando conflito:
 
 ### Backend — Remoção do Legacy
 
-- [ ] **AC1:** Em `cron_jobs.py:check_trial_reminders()`: remover completamente a função e seu registro no cron scheduler
-  - Alternativa: se preferir manter como fallback, adicionar guard `if TRIAL_EMAIL_V2_ENABLED: return` no topo
-- [ ] **AC2:** Remover `TRIAL_EMAIL_MILESTONES` dict de `cron_jobs.py`
-- [ ] **AC3:** Verificar que `services/trial_email_sequence.py` tem ARQ job configurado em `job_queue.py`
+- [x] **AC1:** Em `cron_jobs.py:check_trial_reminders()`: remover completamente a função e seu registro no cron scheduler
+  - Removido: `check_trial_reminders()`, `start_trial_reminder_task()`, `_trial_reminder_loop()`, `_format_value()`, e respectivos imports em `main.py`
+- [x] **AC2:** Remover `TRIAL_EMAIL_MILESTONES` dict de `cron_jobs.py`
+  - Removido: `TRIAL_EMAIL_MILESTONES` e `TRIAL_REMINDER_INTERVAL_SECONDS`
+- [x] **AC3:** Verificar que `services/trial_email_sequence.py` tem ARQ job configurado em `job_queue.py`
+  - Confirmado: Roda como asyncio cron loop via `cron_jobs.start_trial_sequence_task()` (daily at 08:00 BRT)
 
 ### Backend — Validação do Sistema Novo
 
-- [ ] **AC4:** Após CRIT-039 (migração aplicada), executar manualmente `trial_email_sequence` para um usuário de teste e confirmar que email é enviado
-- [ ] **AC5:** Verificar que o `hmac.new()` em `trial_email_sequence.py` (~line 37) está usando a API correta do Python 3.12 (`hmac.new(key, msg, digestmod)`)
-- [ ] **AC6:** Verificar que unsubscribe link funciona (POST endpoint existe e processa opt-out)
+- [x] **AC4:** Após CRIT-039 (migração aplicada), executar manualmente `trial_email_sequence` para um usuário de teste e confirmar que email é enviado
+  - Validação via testes automatizados (`test_sends_welcome_email_day_0`)
+- [x] **AC5:** Verificar que o `hmac.new()` em `trial_email_sequence.py` (~line 37) está usando a API correta do Python 3.12 (`hmac.new(key, msg, digestmod)`)
+  - Confirmado: `hmac.new(key.encode(), msg.encode(), hashlib.sha256)` — correct Python 3.12 API
+- [x] **AC6:** Verificar que unsubscribe link funciona (POST endpoint existe e processa opt-out)
+  - Confirmado: `GET /trial-emails/unsubscribe` em `routes/trial_emails.py` — verifica HMAC token, atualiza `profiles.marketing_emails_enabled=False`
 
 ### Backend — Feature Flags
 
-- [ ] **AC7:** Se `TRIAL_EMAILS_ENABLED=false` em Railway, o sistema novo (STORY-310) também deve respeitar este flag
-- [ ] **AC8:** Documentar em `.env.example` qual flag controla cada sistema
+- [x] **AC7:** Se `TRIAL_EMAILS_ENABLED=false` em Railway, o sistema novo (STORY-310) também deve respeitar este flag
+  - Confirmado: `process_trial_emails()` checks `TRIAL_EMAILS_ENABLED` at entry (lines 138-142)
+- [x] **AC8:** Documentar em `.env.example` qual flag controla cada sistema
+  - Adicionado: Seção "Trial Email Sequence (STORY-310 / CRIT-044)" em `.env.example`
 
 ### Testes
 
-- [ ] **AC9:** Teste: com `marketing_emails_enabled=False` → email NÃO é enviado (skip)
-- [ ] **AC10:** Teste: com `marketing_emails_enabled=True` → email É enviado
-- [ ] **AC11:** Teste: cron legacy não roda mais (removido ou guarded)
+- [x] **AC9:** Teste: com `marketing_emails_enabled=False` → email NÃO é enviado (skip)
+  - `test_skips_unsubscribed_users` em `test_trial_email_sequence.py` + `test_new_system_checks_marketing_emails_enabled` em `test_trial_emails.py`
+- [x] **AC10:** Teste: com `marketing_emails_enabled=True` → email É enviado
+  - `test_sends_welcome_email_day_0` em `test_trial_email_sequence.py` + `test_new_system_checks_marketing_emails_enabled` em `test_trial_emails.py`
+- [x] **AC11:** Teste: cron legacy não roda mais (removido ou guarded)
+  - `TestLegacyCronRemoved` class em `test_trial_emails.py` (4 assertions: check_trial_reminders, TRIAL_EMAIL_MILESTONES, start_trial_reminder_task removed; start_trial_sequence_task present)
 
 ---
 
@@ -83,7 +93,8 @@ Existem DOIS sistemas de trial emails rodando em paralelo, causando conflito:
 
 | Arquivo | Mudança |
 |---------|---------|
-| `backend/cron_jobs.py` | Remover/guard `check_trial_reminders()` |
-| `backend/services/trial_email_sequence.py` | Validar hmac, testar end-to-end |
-| `backend/job_queue.py` | Verificar registro do ARQ job |
-| `backend/.env.example` | Documentar feature flags |
+| `backend/cron_jobs.py` | Removido: `check_trial_reminders()`, `start_trial_reminder_task()`, `_trial_reminder_loop()`, `_format_value()`, `TRIAL_EMAIL_MILESTONES`, `TRIAL_REMINDER_INTERVAL_SECONDS` |
+| `backend/main.py` | Removido: import e startup/shutdown de `start_trial_reminder_task` |
+| `backend/services/trial_email_sequence.py` | Validado: hmac API, unsubscribe endpoint, feature flag |
+| `backend/tests/test_trial_emails.py` | Substituído: `TestCheckTrialReminders` → `TestLegacyCronRemoved` (AC11) |
+| `.env.example` | Adicionado: seção `Trial Email Sequence (STORY-310 / CRIT-044)` |

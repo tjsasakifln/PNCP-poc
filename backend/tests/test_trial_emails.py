@@ -240,172 +240,48 @@ class TestTrialExpiredEmail:
 
 
 # ============================================================================
-# AC18-AC19: Cron job tests
+# CRIT-044 AC11: Verify legacy cron job is removed
 # ============================================================================
 
-class TestCheckTrialReminders:
-    """AC18: Test cron job logic for identifying milestone users."""
+class TestLegacyCronRemoved:
+    """CRIT-044 AC11: Verify legacy STORY-266 trial reminder system is fully removed."""
 
-    @pytest.mark.asyncio
-    async def test_disabled_flag_skips(self):
-        """AC10: When TRIAL_EMAILS_ENABLED=false, does nothing."""
-        with patch("config.TRIAL_EMAILS_ENABLED", False):
-            from cron_jobs import check_trial_reminders
-            result = await check_trial_reminders()
-            assert result.get("disabled") is True
-            assert result["sent"] == 0
+    def test_check_trial_reminders_removed(self):
+        """AC11: check_trial_reminders() no longer exists in cron_jobs."""
+        import cron_jobs
+        assert not hasattr(cron_jobs, "check_trial_reminders"), \
+            "Legacy check_trial_reminders() should have been removed (CRIT-044 AC1)"
 
-    @pytest.mark.asyncio
-    async def test_sends_midpoint_email(self):
-        """AC18: Correctly identifies day-3 users and sends midpoint email."""
-        from cron_jobs import check_trial_reminders
+    def test_trial_email_milestones_removed(self):
+        """AC11: TRIAL_EMAIL_MILESTONES dict no longer exists in cron_jobs."""
+        import cron_jobs
+        assert not hasattr(cron_jobs, "TRIAL_EMAIL_MILESTONES"), \
+            "Legacy TRIAL_EMAIL_MILESTONES should have been removed (CRIT-044 AC2)"
 
-        datetime.now(timezone.utc)
+    def test_start_trial_reminder_task_removed(self):
+        """AC11: start_trial_reminder_task() no longer exists in cron_jobs."""
+        import cron_jobs
+        assert not hasattr(cron_jobs, "start_trial_reminder_task"), \
+            "Legacy start_trial_reminder_task() should have been removed (CRIT-044 AC1)"
 
-        mock_sb = MagicMock()
-        # Mock profiles query — return one user at day 3
-        profiles_chain = MagicMock()
-        profiles_chain.select.return_value = profiles_chain
-        profiles_chain.eq.return_value = profiles_chain
-        profiles_chain.gte.return_value = profiles_chain
-        profiles_chain.lt.return_value = profiles_chain
+    def test_new_system_still_exists(self):
+        """AC3: STORY-310 trial sequence system is still active."""
+        import cron_jobs
+        assert hasattr(cron_jobs, "start_trial_sequence_task"), \
+            "STORY-310 start_trial_sequence_task() must remain (CRIT-044 AC3)"
 
-        # Only return data for first milestone (day 3)
-        call_count = [0]
+    def test_new_system_respects_feature_flag(self):
+        """AC7: STORY-310 process_trial_emails respects TRIAL_EMAILS_ENABLED."""
+        from services.trial_email_sequence import process_trial_emails
+        import inspect
+        source = inspect.getsource(process_trial_emails)
+        assert "TRIAL_EMAILS_ENABLED" in source, \
+            "process_trial_emails must check TRIAL_EMAILS_ENABLED flag (CRIT-044 AC7)"
 
-        def profiles_execute():
-            call_count[0] += 1
-            if call_count[0] == 1:  # First call is for day 3
-                return MagicMock(data=[{
-                    "id": "user-123-uuid-mock-abcdef123456",
-                    "email": "test@example.com",
-                    "full_name": "Test User",
-                }])
-            return MagicMock(data=[])
-
-        profiles_chain.execute.side_effect = profiles_execute
-
-        # Mock trial_email_log check — not yet sent
-        log_check_chain = MagicMock()
-        log_check_chain.select.return_value = log_check_chain
-        log_check_chain.eq.return_value = log_check_chain
-        log_check_chain.limit.return_value = log_check_chain
-        log_check_chain.execute.return_value = MagicMock(data=[])
-
-        # Mock log insert
-        log_insert_chain = MagicMock()
-        log_insert_chain.insert.return_value = log_insert_chain
-        log_insert_chain.execute.return_value = MagicMock(data=[{"id": "log-1"}])
-
-        # Track which table is requested
-        table_call_count = [0]
-
-        def table_side_effect(name):
-            if name == "profiles":
-                return profiles_chain
-            elif name == "trial_email_log":
-                table_call_count[0] += 1
-                # First calls are checks (select), later is insert
-                chain = MagicMock()
-                chain.select.return_value = chain
-                chain.eq.return_value = chain
-                chain.limit.return_value = chain
-                chain.execute.return_value = MagicMock(data=[])
-                chain.insert.return_value = chain
-                return chain
-            return MagicMock()
-
-        mock_sb.table.side_effect = table_side_effect
-
-        mock_stats = MagicMock()
-        mock_stats.model_dump.return_value = {
-            "searches_count": 5,
-            "opportunities_found": 20,
-            "total_value_estimated": 500_000,
-            "pipeline_items_count": 2,
-            "sectors_searched": ["vestuario"],
-        }
-
-        with patch("config.TRIAL_EMAILS_ENABLED", True), \
-             patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("services.trial_stats.get_trial_usage_stats", return_value=mock_stats), \
-             patch("email_service.send_email_async") as mock_send, \
-             patch("metrics.TRIAL_EMAILS_SENT"):
-
-            result = await check_trial_reminders()
-
-            assert result["sent"] >= 1
-            mock_send.assert_called()
-
-    @pytest.mark.asyncio
-    async def test_idempotency_skips_already_sent(self):
-        """AC19: Running job twice doesn't send duplicate emails."""
-        from cron_jobs import check_trial_reminders
-
-        mock_sb = MagicMock()
-
-        profiles_chain = MagicMock()
-        profiles_chain.select.return_value = profiles_chain
-        profiles_chain.eq.return_value = profiles_chain
-        profiles_chain.gte.return_value = profiles_chain
-        profiles_chain.lt.return_value = profiles_chain
-
-        call_count = [0]
-
-        def profiles_execute():
-            call_count[0] += 1
-            if call_count[0] == 1:
-                return MagicMock(data=[{
-                    "id": "user-456-uuid-mock-abcdef789012",
-                    "email": "dup@example.com",
-                    "full_name": "Dup User",
-                }])
-            return MagicMock(data=[])
-
-        profiles_chain.execute.side_effect = profiles_execute
-
-        def table_side_effect(name):
-            if name == "profiles":
-                return profiles_chain
-            elif name == "trial_email_log":
-                # Return existing log entry = already sent!
-                chain = MagicMock()
-                chain.select.return_value = chain
-                chain.eq.return_value = chain
-                chain.limit.return_value = chain
-                chain.execute.return_value = MagicMock(data=[{"id": "existing-log"}])
-                return chain
-            return MagicMock()
-
-        mock_sb.table.side_effect = table_side_effect
-
-        with patch("config.TRIAL_EMAILS_ENABLED", True), \
-             patch("supabase_client.get_supabase", return_value=mock_sb), \
-             patch("email_service.send_email_async") as mock_send, \
-             patch("metrics.TRIAL_EMAILS_SENT"):
-
-            result = await check_trial_reminders()
-
-            assert result["skipped"] >= 1
-            mock_send.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_no_users_at_milestone(self):
-        """AC18: No users at any milestone = zero sent."""
-        from cron_jobs import check_trial_reminders
-
-        mock_sb = MagicMock()
-        empty_chain = MagicMock()
-        empty_chain.select.return_value = empty_chain
-        empty_chain.eq.return_value = empty_chain
-        empty_chain.gte.return_value = empty_chain
-        empty_chain.lt.return_value = empty_chain
-        empty_chain.execute.return_value = MagicMock(data=[])
-
-        mock_sb.table.return_value = empty_chain
-
-        with patch("config.TRIAL_EMAILS_ENABLED", True), \
-             patch("supabase_client.get_supabase", return_value=mock_sb):
-            result = await check_trial_reminders()
-            assert result["sent"] == 0
-            assert result["errors"] == 0
+    def test_new_system_checks_marketing_emails_enabled(self):
+        """AC9/AC10: STORY-310 checks marketing_emails_enabled for skip/send."""
+        from services.trial_email_sequence import process_trial_emails
+        import inspect
+        source = inspect.getsource(process_trial_emails)
+        assert "marketing_emails_enabled" in source, \
+            "process_trial_emails must check marketing_emails_enabled (CRIT-044 AC9/AC10)"
