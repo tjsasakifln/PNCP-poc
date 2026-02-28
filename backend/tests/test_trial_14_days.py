@@ -74,10 +74,10 @@ class TestEmailSequence14Days:
         assert len(expired) == 1
         assert expired[0]["day"] == 16  # 2 days after 14-day trial
 
-    def test_sequence_has_8_emails(self):
-        """Sequence should still have 8 emails."""
+    def test_sequence_has_6_emails(self):
+        """STORY-321: Sequence has 6 emails (compressed from 8)."""
         from services.trial_email_sequence import TRIAL_EMAIL_SEQUENCE
-        assert len(TRIAL_EMAIL_SEQUENCE) == 8
+        assert len(TRIAL_EMAIL_SEQUENCE) == 6
 
     def test_sequence_days_are_ascending(self):
         """Email days should be in ascending order."""
@@ -92,30 +92,23 @@ class TestEmailSequence14Days:
         assert "14 dias" in html
         assert "30 dias" not in html
 
-    def test_midpoint_email_says_11_dias(self):
-        """Day 3 midpoint email should say 11 dias remaining."""
-        from templates.emails.trial import render_trial_midpoint_email
-        html = render_trial_midpoint_email("Test", {"searches_count": 0})
-        assert "11 dias" in html
-
-    def test_engagement_email_says_9_dias(self):
-        """Day 5 engagement email should say 9 dias remaining."""
+    def test_engagement_email_says_11_dias(self):
+        """STORY-321: Day 3 engagement email should say 11 dias remaining for zero usage."""
         from templates.emails.trial import render_trial_engagement_email
         html = render_trial_engagement_email("Test", {"searches_count": 0})
-        assert "9 dias" in html
+        assert "11 dias" in html
 
-    def test_tips_email_says_14_dias_trial(self):
-        """Day 7 tips email should mention 14-day trial midpoint."""
-        from templates.emails.trial import render_trial_tips_email
-        html = render_trial_tips_email("Test", {"searches_count": 0})
-        assert "14 dias" in html
+    def test_paywall_alert_says_7_dias(self):
+        """STORY-321: Day 7 paywall alert email should mention 7 dias."""
+        from templates.emails.trial import render_trial_paywall_alert_email
+        html = render_trial_paywall_alert_email("Test", {"searches_count": 5})
         assert "7 dias" in html
 
-    def test_urgency_default_4_days(self):
-        """Urgency email should default to 4 days remaining."""
-        from templates.emails.trial import render_trial_urgency_email
-        html = render_trial_urgency_email("Test", {})
-        assert "4 dias" in html or "Restam 4" in html
+    def test_value_email_says_4_dias(self):
+        """STORY-321: Day 10 value email should say 4 dias for zero usage."""
+        from templates.emails.trial import render_trial_value_email
+        html = render_trial_value_email("Test", {"searches_count": 0})
+        assert "4 dias" in html
 
     def test_welcome_subject_says_14_dias(self):
         """Welcome email subject should say 14 dias."""

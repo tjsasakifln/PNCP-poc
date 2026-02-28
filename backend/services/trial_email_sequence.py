@@ -1,7 +1,14 @@
 """
-STORY-310 AC1-AC5, AC12 + STORY-319: Trial email sequence — 8 emails over 14 days.
+STORY-321 AC1-AC6, AC12-AC14: Trial email sequence — 6 emails over 14 days.
 
-Dispatches personalized trial emails based on user's created_at date.
+Compressed sequence (replaces STORY-310 8-email sequence):
+- Day 0:  Welcome (onboarding CTA)
+- Day 3:  Engagement (stats de uso)
+- Day 7:  Paywall alert (preview limitado amanha)
+- Day 10: Valor acumulado (social proof R$X)
+- Day 13: Ultimo dia (escassez)
+- Day 16: Expirado (reengajamento 20% off)
+
 Respects feature flags, conversion status, and unsubscribe preferences.
 """
 
@@ -17,20 +24,20 @@ logger = logging.getLogger(__name__)
 _UNSUBSCRIBE_SECRET = os.getenv("WEBHOOK_SECRET", os.getenv("SECRET_KEY", "smartlic-trial-unsub"))
 
 # ============================================================================
-# AC1: Email sequence definition — STORY-319: 8 emails over 14-day trial
-# (was: days 0, 3, 7, 14, 21, 25, 29, 32 for 30-day trial)
+# AC1: Email sequence definition — 6 emails over 14-day trial
 # ============================================================================
 
 TRIAL_EMAIL_SEQUENCE = [
     {"number": 1, "day": 0,  "type": "welcome"},
-    {"number": 2, "day": 3,  "type": "engagement_early"},
-    {"number": 3, "day": 5,  "type": "engagement"},
-    {"number": 4, "day": 7,  "type": "tips"},
-    {"number": 5, "day": 10, "type": "urgency"},
-    {"number": 6, "day": 11, "type": "expiring"},
-    {"number": 7, "day": 13, "type": "last_day"},
-    {"number": 8, "day": 16, "type": "expired"},
+    {"number": 2, "day": 3,  "type": "engagement"},
+    {"number": 3, "day": 7,  "type": "paywall_alert"},
+    {"number": 4, "day": 10, "type": "value"},
+    {"number": 5, "day": 13, "type": "last_day"},
+    {"number": 6, "day": 16, "type": "expired"},
 ]
+
+# AC13: Stripe coupon for reengagement email (20% off first month)
+TRIAL_COMEBACK_COUPON = os.getenv("TRIAL_COMEBACK_COUPON", "TRIAL_COMEBACK_20")
 
 
 def _generate_unsubscribe_token(user_id: str) -> str:
@@ -61,7 +68,21 @@ def verify_unsubscribe_token(user_id: str, token: str) -> bool:
 
 
 # ============================================================================
-# AC12: get_trial_user_stats(user_id) — enhanced stats with days_remaining
+# AC14: Coupon checkout URL
+# ============================================================================
+
+def get_coupon_checkout_url() -> str:
+    """AC14: Build Stripe checkout URL with TRIAL_COMEBACK_20 coupon applied.
+
+    Returns the /planos URL with coupon query param. The frontend handles
+    passing the coupon to the checkout API.
+    """
+    from templates.emails.base import FRONTEND_URL
+    return f"{FRONTEND_URL}/planos?coupon={TRIAL_COMEBACK_COUPON}"
+
+
+# ============================================================================
+# AC12: get_trial_user_stats(user_id) — stats with days_remaining
 # ============================================================================
 
 def get_trial_user_stats(user_id: str) -> dict:
@@ -116,11 +137,11 @@ def get_trial_user_stats(user_id: str) -> dict:
 
 
 # ============================================================================
-# AC1-AC5: Main dispatch logic
+# AC1-AC6: Main dispatch logic
 # ============================================================================
 
 async def process_trial_emails(batch_size: int = 50) -> dict:
-    """STORY-310 AC1/AC9: Process pending trial emails for all eligible users.
+    """STORY-321 AC1/AC10: Process pending trial emails for all eligible users.
 
     Runs daily at 08:00 BRT. For each email in the sequence, identifies
     users who should receive it and dispatches the email.
@@ -128,7 +149,8 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
     AC3: Respects TRIAL_EMAILS_ENABLED flag.
     AC4: Skips users who have already converted to paid.
     AC5: Skips users who have opted out of marketing emails.
-    AC9: Batch processing with max batch_size emails per execution.
+    AC6: Dedup via trial_email_log table.
+    AC10: Batch processing with max batch_size emails per execution.
 
     Args:
         batch_size: Maximum emails to send per execution (default 50).
@@ -191,7 +213,7 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
 
                     user_id = user["id"]
                     email_addr = user.get("email", "")
-                    user_name = user.get("full_name") or (email_addr.split("@")[0] if email_addr else "Usuário")
+                    user_name = user.get("full_name") or (email_addr.split("@")[0] if email_addr else "Usuario")
 
                     if not email_addr:
                         continue
@@ -207,7 +229,7 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                         unsubscribed_skipped += 1
                         continue
 
-                    # Idempotency check — skip if already sent this email_number
+                    # AC6: Idempotency check — skip if already sent this email_number
                     try:
                         existing = await sb_execute(
                             sb.table("trial_email_log")
@@ -222,7 +244,7 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                     except Exception:
                         pass  # If check fails, proceed (better to send than skip)
 
-                    # Collect stats for personalization
+                    # Collect stats for personalization (AC2)
                     try:
                         stats = get_trial_user_stats(user_id)
                     except Exception:
@@ -252,7 +274,7 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
                             ],
                         )
 
-                        # Record in log for idempotency
+                        # Record in log for idempotency (AC6)
                         try:
                             await sb_execute(
                                 sb.table("trial_email_log").insert({
@@ -324,11 +346,9 @@ def _render_email(
     """
     from templates.emails.trial import (
         render_trial_welcome_email,
-        render_trial_midpoint_email,
         render_trial_engagement_email,
-        render_trial_tips_email,
-        render_trial_urgency_email,
-        render_trial_expiring_email,
+        render_trial_paywall_alert_email,
+        render_trial_value_email,
         render_trial_last_day_email,
         render_trial_expired_email,
         _format_brl,
@@ -339,58 +359,45 @@ def _render_email(
     pipeline = stats.get("pipeline_items_count", 0)
 
     if email_type == "welcome":
-        subject = "Bem-vindo ao SmartLic — seu trial de 14 dias começou!"
+        subject = "Bem-vindo ao SmartLic — seu trial de 14 dias comecou!"
         html = render_trial_welcome_email(user_name, unsubscribe_url=unsubscribe_url)
 
-    elif email_type == "engagement_early":
-        if value > 0:
-            subject = f"Você já analisou {_format_brl(value)} em oportunidades"
-        else:
-            subject = "Descubra as oportunidades que esperam por você"
-        html = render_trial_midpoint_email(user_name, stats, unsubscribe_url=unsubscribe_url)
-
     elif email_type == "engagement":
-        if opps > 0:
-            subject = f"Semana 1: {opps} oportunidades encontradas — descubra mais"
+        if value > 0:
+            subject = f"Voce ja analisou {_format_brl(value)} em oportunidades"
         else:
-            subject = "Descubra o poder completo do SmartLic"
+            subject = "Descubra as oportunidades que esperam por voce"
         html = render_trial_engagement_email(user_name, stats, unsubscribe_url=unsubscribe_url)
 
-    elif email_type == "tips":
-        if value > 0:
-            subject = f"Metade do trial: dicas para ir além de {_format_brl(value)}"
-        else:
-            subject = "Dicas de especialista para encontrar mais oportunidades"
-        html = render_trial_tips_email(user_name, stats, unsubscribe_url=unsubscribe_url)
+    elif email_type == "paywall_alert":
+        subject = "Metade do trial — a partir de amanha, preview limitado"
+        html = render_trial_paywall_alert_email(user_name, stats, unsubscribe_url=unsubscribe_url)
 
-    elif email_type == "urgency":
-        days_remaining = stats.get("days_remaining", 4)
+    elif email_type == "value":
         if value > 0:
-            subject = f"Restam {days_remaining} dias — {_format_brl(value)} em oportunidades"
+            subject = f"Voce ja analisou {_format_brl(value)} — nao perca esse progresso"
+        elif opps > 0:
+            subject = f"{opps} oportunidades encontradas — nao perca"
         else:
-            subject = f"Restam {days_remaining} dias no seu trial SmartLic"
-        html = render_trial_urgency_email(
-            user_name, stats, days_remaining=days_remaining, unsubscribe_url=unsubscribe_url
-        )
-
-    elif email_type == "expiring":
-        days_remaining = stats.get("days_remaining", 3)
-        subject = f"Seu acesso completo acaba em {days_remaining} dias"
-        html = render_trial_expiring_email(
-            user_name, days_remaining, stats, unsubscribe_url=unsubscribe_url
-        )
+            subject = "Restam 4 dias no seu trial SmartLic"
+        html = render_trial_value_email(user_name, stats, unsubscribe_url=unsubscribe_url)
 
     elif email_type == "last_day":
-        subject = "Amanhã seu acesso expira — não perca o que você construiu"
+        subject = "Amanha seu acesso expira — assine agora"
         html = render_trial_last_day_email(user_name, stats, unsubscribe_url=unsubscribe_url)
 
     elif email_type == "expired":
         count = pipeline if pipeline > 0 else opps
         if count > 0:
-            subject = f"Suas {count} oportunidades estão esperando por você"
+            subject = f"Suas {count} oportunidades estao esperando — volte com 20% off"
         else:
-            subject = "As oportunidades de licitação continuam surgindo"
-        html = render_trial_expired_email(user_name, stats, unsubscribe_url=unsubscribe_url)
+            subject = "Sentimos sua falta — volte com 20% off"
+        coupon_url = get_coupon_checkout_url()
+        html = render_trial_expired_email(
+            user_name, stats,
+            unsubscribe_url=unsubscribe_url,
+            coupon_checkout_url=coupon_url,
+        )
 
     else:
         raise ValueError(f"Unknown email type: {email_type}")

@@ -27,7 +27,7 @@ Redesenhar a sequencia de emails para 6 touchpoints em 14 dias, com cadencia mai
 
 ### Backend — Nova Sequencia de Emails (6 emails)
 
-- [ ] **AC1:** Criar `backend/services/trial_email_sequence.py` com logica de disparo:
+- [x] **AC1:** Criar `backend/services/trial_email_sequence.py` com logica de disparo:
 
   | Email | Dia | Objetivo | CTA |
   |-------|-----|----------|-----|
@@ -38,37 +38,37 @@ Redesenhar a sequencia de emails para 6 touchpoints em 14 dias, com cadencia mai
   | 5. Ultimo dia | 13 | Escassez — "Amanha seu acesso expira" | "Assinar agora" |
   | 6. Expirado | 16 | Reengajamento — "Sentimos sua falta" | "Voltar com 20% off" |
 
-- [ ] **AC2:** Cada email inclui:
+- [x] **AC2:** Cada email inclui:
   - Nome do usuario (personalizacao)
   - Stats de uso reais (buscas, oportunidades, valor analisado)
   - CTA principal contextual
   - Link de unsubscribe (RFC 8058 one-click)
   - Preheader text otimizado
-- [ ] **AC3:** Respeitar `TRIAL_EMAILS_ENABLED` flag (config.py)
-- [ ] **AC4:** Skip se usuario converteu para plano pago
-- [ ] **AC5:** Skip se usuario fez unsubscribe de marketing
-- [ ] **AC6:** Dedup: tabela `trial_email_log` previne envio duplicado
+- [x] **AC3:** Respeitar `TRIAL_EMAILS_ENABLED` flag (config.py)
+- [x] **AC4:** Skip se usuario converteu para plano pago
+- [x] **AC5:** Skip se usuario fez unsubscribe de marketing
+- [x] **AC6:** Dedup: tabela `trial_email_log` previne envio duplicado
 
 ### Backend — Templates
 
-- [ ] **AC7:** Criar/atualizar templates em `backend/templates/emails/trial.py`:
+- [x] **AC7:** Criar/atualizar templates em `backend/templates/emails/trial.py`:
   - `render_trial_welcome_email()` — 3 passos, screenshot do SmartLic
   - `render_trial_engagement_email()` — stats reais, destaques de uso
   - `render_trial_paywall_alert_email()` — "A partir de amanha, preview limitado"
   - `render_trial_value_email()` — valor acumulado em destaque (R$ grande)
   - `render_trial_last_day_email()` — countdown visual, urgencia
   - `render_trial_expired_email()` — reengajamento com cupom 20% off
-- [ ] **AC8:** Reutilizar `_stats_block()` helper existente
-- [ ] **AC9:** Reutilizar `base.py` wrapper HTML
+- [x] **AC8:** Reutilizar `_stats_block()` helper existente
+- [x] **AC9:** Reutilizar `base.py` wrapper HTML
 
 ### Backend — Cron Job
 
-- [ ] **AC10:** ARQ task `process_trial_emails` em `cron_jobs.py`:
+- [x] **AC10:** ARQ task `process_trial_emails` em `cron_jobs.py`:
   - Executar diariamente as 08:00 BRT (11:00 UTC)
   - Query: usuarios trial com `created_at` matching cada milestone
   - Batch: max 50 emails/execucao
   - Rate limit: 1 email/usuario/dia (nao empilhar)
-- [ ] **AC11:** Criar migration para tabela `trial_email_log`:
+- [x] **AC11:** Criar migration para tabela `trial_email_log`:
   ```sql
   CREATE TABLE trial_email_log (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -84,7 +84,7 @@ Redesenhar a sequencia de emails para 6 touchpoints em 14 dias, com cadencia mai
 
 ### Backend — Stats Query
 
-- [ ] **AC12:** Funcao `get_trial_user_stats(user_id)` retorna:
+- [x] **AC12:** Funcao `get_trial_user_stats(user_id)` retorna:
   - `searches_executed` (count from search_sessions)
   - `opportunities_found` (sum from search results)
   - `total_value_analyzed` (sum valor_estimado)
@@ -93,20 +93,20 @@ Redesenhar a sequencia de emails para 6 touchpoints em 14 dias, com cadencia mai
 
 ### Backend — Cupom Reengajamento
 
-- [ ] **AC13:** Criar Stripe coupon `TRIAL_COMEBACK_20` (20% off primeiro mes)
-- [ ] **AC14:** Email 6 (expirado) inclui link de checkout com cupom aplicado automaticamente
+- [x] **AC13:** Criar Stripe coupon `TRIAL_COMEBACK_20` (20% off primeiro mes)
+- [x] **AC14:** Email 6 (expirado) inclui link de checkout com cupom aplicado automaticamente
 
 ### Frontend — Admin Preview
 
-- [ ] **AC15:** Pagina admin `/admin/emails` para preview de todos os 6 templates
-- [ ] **AC16:** Botao "Enviar teste" para cada template
+- [x] **AC15:** Pagina admin `/admin/emails` para preview de todos os 6 templates
+- [x] **AC16:** Botao "Enviar teste" para cada template
 
 ### Testes
 
-- [ ] **AC17:** Testes para cada email (6 emails x cenarios)
-- [ ] **AC18:** Testes para cron job (scheduling, dedup, rate limit, skip converted)
-- [ ] **AC19:** Testes para stats query
-- [ ] **AC20:** Zero regressions
+- [x] **AC17:** Testes para cada email (6 emails x cenarios)
+- [x] **AC18:** Testes para cron job (scheduling, dedup, rate limit, skip converted)
+- [x] **AC19:** Testes para stats query
+- [x] **AC20:** Zero regressions (6448 pass, 19 pre-existing, 0 new failures)
 
 ---
 

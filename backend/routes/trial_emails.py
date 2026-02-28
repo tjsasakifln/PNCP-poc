@@ -92,7 +92,7 @@ async def resend_webhook(request: Request):
 
 @router.get("/admin/trial-emails/preview")
 async def preview_trial_emails(request: Request):
-    """AC13: Preview all 8 trial email templates."""
+    """AC15: Preview all 6 trial email templates."""
     from auth import require_auth
     from authorization import require_admin
 

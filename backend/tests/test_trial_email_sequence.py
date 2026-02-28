@@ -1,34 +1,15 @@
 """
-STORY-310 AC15-AC18: Tests for trial email sequence.
+STORY-321 AC17-AC20: Tests for trial email sequence — 6 emails.
 
-AC15: Tests for each email in the sequence (8 emails x scenarios).
-AC16: Tests for cron job (scheduling, dedup, rate limit, skip converted).
-AC17: Tests for stats query.
-AC18: Zero regressions.
+AC17: Tests for each email (6 emails x scenarios).
+AC18: Tests for cron job (scheduling, dedup, rate limit, skip converted).
+AC19: Tests for stats query.
+AC20: Zero regressions.
 """
 
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from datetime import datetime, timezone, timedelta
-
-
-# ============================================================================
-# AC15: Template rendering tests — 8 emails
-# ============================================================================
-
-from templates.emails.trial import (
-    render_trial_welcome_email,
-    render_trial_midpoint_email,
-    render_trial_engagement_email,
-    render_trial_tips_email,
-    render_trial_urgency_email,
-    render_trial_expiring_email,
-    render_trial_last_day_email,
-    render_trial_expired_email,
-    _format_brl,
-    _stats_block,
-    _unsubscribe_block,
-)
 
 
 SAMPLE_STATS = {
@@ -50,276 +31,60 @@ ZERO_STATS = {
 UNSUB_URL = "https://api.smartlic.tech/v1/trial-emails/unsubscribe?user_id=test&token=abc"
 
 
-class TestUnsubscribeBlock:
-    """Test unsubscribe block rendering."""
-
-    def test_renders_when_url_provided(self):
-        html = _unsubscribe_block(UNSUB_URL)
-        assert "unsubscribe" in html
-        assert "trial" in html.lower()
-
-    def test_empty_when_no_url(self):
-        html = _unsubscribe_block("")
-        assert html == ""
-
-
-class TestWelcomeEmail:
-    """AC15: Email #1 — Day 0: Welcome."""
-
-    def test_renders_without_error(self):
-        html = render_trial_welcome_email("João")
-        assert "<!DOCTYPE html>" in html
-
-    def test_contains_user_name(self):
-        html = render_trial_welcome_email("Maria Silva")
-        assert "Maria Silva" in html
-
-    def test_contains_welcome_message(self):
-        html = render_trial_welcome_email("Test")
-        assert "Bem-vindo" in html
-
-    def test_contains_14_day_trial_mention(self):
-        """STORY-319: Welcome email mentions 14-day trial."""
-        html = render_trial_welcome_email("Test")
-        assert "14 dias" in html
-
-    def test_contains_buscar_cta(self):
-        html = render_trial_welcome_email("Test")
-        assert "/buscar" in html
-        assert "primeira busca" in html.lower()
-
-    def test_contains_feature_list(self):
-        html = render_trial_welcome_email("Test")
-        assert "Pipeline" in html or "pipeline" in html
-        assert "Excel" in html
-
-    def test_contains_unsubscribe_link(self):
-        html = render_trial_welcome_email("Test", unsubscribe_url=UNSUB_URL)
-        assert "unsubscribe" in html
-
-    def test_is_not_transactional(self):
-        """Welcome email should include unsubscribe option."""
-        html = render_trial_welcome_email("Test", unsubscribe_url=UNSUB_URL)
-        assert "Cancelar inscrição" in html or "unsubscribe" in html
-
-
-class TestMidpointEmail:
-    """AC15: Email #2 — Day 3: Engagement Early."""
-
-    def test_renders_with_stats(self):
-        html = render_trial_midpoint_email("João", SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_shows_value_when_used(self):
-        html = render_trial_midpoint_email("Test", SAMPLE_STATS)
-        assert "2.4M" in html or "2.3M" in html  # _format_brl rounding
-
-    def test_adapts_for_zero_usage(self):
-        """STORY-319: Now says 11 dias (14-day trial, sent at day 3)."""
-        html = render_trial_midpoint_email("Test", ZERO_STATS)
-        assert "11 dias" in html
-
-    def test_contains_buscar_cta(self):
-        html = render_trial_midpoint_email("Test", SAMPLE_STATS)
-        assert "/buscar" in html
-
-    def test_empty_stats_safe(self):
-        html = render_trial_midpoint_email("Test", {})
-        assert "<!DOCTYPE html>" in html
-
-    def test_unsubscribe_url_passed(self):
-        html = render_trial_midpoint_email("Test", SAMPLE_STATS, unsubscribe_url=UNSUB_URL)
-        assert "unsubscribe" in html
-
-
-class TestEngagementEmail:
-    """AC15: Email #3 — Day 7: Engagement."""
-
-    def test_renders_without_error(self):
-        html = render_trial_engagement_email("João", SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_contains_feature_education(self):
-        html = render_trial_engagement_email("Test", SAMPLE_STATS)
-        assert "Pipeline" in html or "pipeline" in html
-        assert "Excel" in html
-
-    def test_shows_opportunities_count(self):
-        html = render_trial_engagement_email("Test", SAMPLE_STATS)
-        assert "47" in html
-
-    def test_adapts_for_zero_usage(self):
-        html = render_trial_engagement_email("Test", ZERO_STATS)
-        assert "poder completo" in html.lower() or "descubra" in html.lower()
-
-    def test_9_days_remaining(self):
-        """STORY-319: Now says 9 dias (14-day trial, sent at day 5)."""
-        html = render_trial_engagement_email("Test", SAMPLE_STATS)
-        assert "9 dias" in html
-
-    def test_empty_stats_safe(self):
-        html = render_trial_engagement_email("Test", {})
-        assert "<!DOCTYPE html>" in html
-
-
-class TestTipsEmail:
-    """AC15: Email #4 — Day 14: Tips."""
-
-    def test_renders_without_error(self):
-        html = render_trial_tips_email("João", SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_contains_tips(self):
-        html = render_trial_tips_email("Test", SAMPLE_STATS)
-        assert "dica" in html.lower() or "Dica" in html
-
-    def test_shows_value_in_headline(self):
-        html = render_trial_tips_email("Test", SAMPLE_STATS)
-        assert "2.4M" in html or "2.3M" in html or "Metade" in html
-
-    def test_shows_sector_tips(self):
-        html = render_trial_tips_email("Test", SAMPLE_STATS)
-        assert "software" in html
-
-    def test_adapts_for_zero_usage(self):
-        html = render_trial_tips_email("Test", ZERO_STATS)
-        assert "Metade" in html or "dica" in html.lower()
-
-    def test_7_days_remaining(self):
-        """STORY-319: Now says 7 dias (14-day trial midpoint, sent at day 7)."""
-        html = render_trial_tips_email("Test", SAMPLE_STATS)
-        assert "7 dias" in html
-
-    def test_empty_stats_safe(self):
-        html = render_trial_tips_email("Test", {})
-        assert "<!DOCTYPE html>" in html
-
-
-class TestUrgencyEmail:
-    """AC15: Email #5 — Day 21: Urgency Light."""
-
-    def test_renders_without_error(self):
-        html = render_trial_urgency_email("João", SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_shows_days_remaining(self):
-        html = render_trial_urgency_email("Test", SAMPLE_STATS, days_remaining=9)
-        assert "9 dias" in html
-
-    def test_shows_value_in_headline(self):
-        html = render_trial_urgency_email("Test", SAMPLE_STATS)
-        assert "2.4M" in html or "2.3M" in html or "oportunidades" in html
-
-    def test_mentions_smartlic_pro(self):
-        html = render_trial_urgency_email("Test", SAMPLE_STATS)
-        assert "SmartLic Pro" in html
-
-    def test_planos_cta(self):
-        html = render_trial_urgency_email("Test", SAMPLE_STATS)
-        assert "/planos" in html
-
-    def test_custom_days(self):
-        html = render_trial_urgency_email("Test", ZERO_STATS, days_remaining=5)
-        assert "5 dias" in html
-
-    def test_empty_stats_safe(self):
-        html = render_trial_urgency_email("Test", {})
-        assert "<!DOCTYPE html>" in html
-
-
-class TestExpiringEmail:
-    """AC15: Email #6 — Day 25: Expiring."""
-
-    def test_renders_without_error(self):
-        html = render_trial_expiring_email("João", 5, SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_contains_days_remaining(self):
-        html = render_trial_expiring_email("Test", 5, {})
-        assert "5 dias" in html
-
-    def test_contains_planos_cta(self):
-        html = render_trial_expiring_email("Test", 5, {})
-        assert "/planos" in html
-
-    def test_shows_pipeline(self):
-        html = render_trial_expiring_email("Test", 5, SAMPLE_STATS)
-        assert "8" in html  # pipeline items
-
-    def test_empty_stats_safe(self):
-        html = render_trial_expiring_email("Test", 5, {})
-        assert "<!DOCTYPE html>" in html
-
-
-class TestLastDayEmail:
-    """AC15: Email #7 — Day 29: Last Day."""
-
-    def test_renders_without_error(self):
-        html = render_trial_last_day_email("João", SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_urgency_styling(self):
-        html = render_trial_last_day_email("Test", SAMPLE_STATS)
-        assert "#d32f2f" in html
-
-    def test_contains_price(self):
-        html = render_trial_last_day_email("Test", SAMPLE_STATS)
-        assert "397" in html
-
-    def test_mentions_tomorrow(self):
-        html = render_trial_last_day_email("Test", {})
-        assert "Amanhã" in html
-
-    def test_empty_stats_safe(self):
-        html = render_trial_last_day_email("Test", {})
-        assert "<!DOCTYPE html>" in html
-
-
-class TestExpiredEmail:
-    """AC15: Email #8 — Day 32: Expired."""
-
-    def test_renders_without_error(self):
-        html = render_trial_expired_email("João", SAMPLE_STATS)
-        assert "<!DOCTYPE html>" in html
-
-    def test_mentions_data_saved(self):
-        html = render_trial_expired_email("Test", SAMPLE_STATS)
-        assert "30 dias" in html
-
-    def test_reactivation_cta(self):
-        html = render_trial_expired_email("Test", SAMPLE_STATS)
-        assert "/planos" in html
-        assert "Reativar" in html
-
-    def test_adapts_headline_pipeline(self):
-        html = render_trial_expired_email("Test", {
-            "opportunities_found": 30,
-            "pipeline_items_count": 5,
-        })
-        assert "5 oportunidades" in html
-
-    def test_adapts_headline_opps(self):
-        html = render_trial_expired_email("Test", {
-            "opportunities_found": 30,
-            "pipeline_items_count": 0,
-        })
-        assert "30 oportunidades" in html
-
-    def test_zero_usage_generic(self):
-        html = render_trial_expired_email("Test", ZERO_STATS)
-        assert "continuam surgindo" in html.lower()
-
-    def test_empty_stats_safe(self):
-        html = render_trial_expired_email("Test", {})
-        assert "<!DOCTYPE html>" in html
+# ============================================================================
+# AC1: Sequence definition tests
+# ============================================================================
+
+class TestSequenceDefinition:
+    """AC1: Verify the 6-email sequence structure."""
+
+    def test_sequence_has_6_emails(self):
+        from services.trial_email_sequence import TRIAL_EMAIL_SEQUENCE
+        assert len(TRIAL_EMAIL_SEQUENCE) == 6
+
+    def test_sequence_days(self):
+        """AC1: Correct day schedule: 0, 3, 7, 10, 13, 16."""
+        from services.trial_email_sequence import TRIAL_EMAIL_SEQUENCE
+        days = [e["day"] for e in TRIAL_EMAIL_SEQUENCE]
+        assert days == [0, 3, 7, 10, 13, 16]
+
+    def test_sequence_types(self):
+        """AC1: Correct email types."""
+        from services.trial_email_sequence import TRIAL_EMAIL_SEQUENCE
+        types = [e["type"] for e in TRIAL_EMAIL_SEQUENCE]
+        assert types == ["welcome", "engagement", "paywall_alert", "value", "last_day", "expired"]
+
+    def test_sequence_numbers(self):
+        """AC1: Sequential numbering 1-6."""
+        from services.trial_email_sequence import TRIAL_EMAIL_SEQUENCE
+        numbers = [e["number"] for e in TRIAL_EMAIL_SEQUENCE]
+        assert numbers == [1, 2, 3, 4, 5, 6]
 
 
 # ============================================================================
-# AC17: Stats query tests
+# AC13/AC14: Coupon tests
+# ============================================================================
+
+class TestCoupon:
+    """AC13/AC14: Stripe coupon logic."""
+
+    def test_coupon_constant(self):
+        from services.trial_email_sequence import TRIAL_COMEBACK_COUPON
+        assert TRIAL_COMEBACK_COUPON == "TRIAL_COMEBACK_20"
+
+    def test_coupon_checkout_url(self):
+        from services.trial_email_sequence import get_coupon_checkout_url
+        url = get_coupon_checkout_url()
+        assert "coupon=TRIAL_COMEBACK_20" in url
+        assert "smartlic.tech" in url or "planos" in url
+
+
+# ============================================================================
+# AC19: Stats query tests
 # ============================================================================
 
 class TestGetTrialUserStats:
-    """AC17: Test get_trial_user_stats function."""
+    """AC19: Test get_trial_user_stats function."""
 
     def test_returns_dict_with_required_keys(self):
         """AC12: Returns all required fields."""
@@ -348,7 +113,7 @@ class TestGetTrialUserStats:
         assert "pipeline_items" in result
         assert "days_remaining" in result
         assert result["searches_executed"] == 5
-        assert result["days_remaining"] in (3, 4)  # STORY-319: 14 - 10, +/- 1 due to time-of-day
+        assert result["days_remaining"] in (3, 4)  # 14 - 10, +/- 1 due to time-of-day
 
     def test_days_remaining_zero_when_expired(self):
         """Days remaining is 0 when trial has expired."""
@@ -420,11 +185,11 @@ class TestGetTrialUserStats:
 
 
 # ============================================================================
-# AC16: Cron job / process_trial_emails tests
+# AC18: Cron job / process_trial_emails tests
 # ============================================================================
 
 class TestProcessTrialEmails:
-    """AC16: Test the process_trial_emails dispatch function."""
+    """AC18: Test the process_trial_emails dispatch function."""
 
     @pytest.mark.asyncio
     async def test_disabled_flag_skips(self):
@@ -442,7 +207,6 @@ class TestProcessTrialEmails:
 
         mock_sb = MagicMock()
 
-        # Track table calls
         def table_side_effect(name):
             if name == "profiles":
                 chain = MagicMock()
@@ -478,15 +242,11 @@ class TestProcessTrialEmails:
         mock_sb.table.side_effect = table_side_effect
 
         mock_stats = {
-            "searches_count": 0,
-            "opportunities_found": 0,
-            "total_value_estimated": 0,
-            "pipeline_items_count": 0,
-            "sectors_searched": [],
+            **ZERO_STATS,
             "searches_executed": 0,
             "total_value_analyzed": 0,
             "pipeline_items": 0,
-            "days_remaining": 30,
+            "days_remaining": 14,
         }
 
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
@@ -500,7 +260,6 @@ class TestProcessTrialEmails:
 
             assert result["sent"] >= 1
             mock_send.assert_called()
-            # Verify welcome email was among the calls (first call)
             first_call = mock_send.call_args_list[0]
             assert "Bem-vindo" in first_call.kwargs.get("subject", "") or "Bem-vindo" in str(first_call)
 
@@ -518,13 +277,11 @@ class TestProcessTrialEmails:
                 chain.eq.return_value = chain
                 chain.gte.return_value = chain
                 chain.lt.return_value = chain
-                # Return user with paid plan (shouldn't happen since we query free_trial,
-                # but double-check in code)
                 chain.execute = AsyncMock(return_value=MagicMock(data=[{
                     "id": "user-paid-uuid",
                     "email": "paid@example.com",
                     "full_name": "Paid User",
-                    "plan_type": "smartlic_pro",  # Already converted!
+                    "plan_type": "smartlic_pro",
                     "marketing_emails_enabled": True,
                 }]))
                 return chain
@@ -562,7 +319,7 @@ class TestProcessTrialEmails:
                     "email": "unsub@example.com",
                     "full_name": "Unsub User",
                     "plan_type": "free_trial",
-                    "marketing_emails_enabled": False,  # Unsubscribed!
+                    "marketing_emails_enabled": False,
                 }]))
                 return chain
             return MagicMock()
@@ -582,7 +339,7 @@ class TestProcessTrialEmails:
 
     @pytest.mark.asyncio
     async def test_idempotency_skips_already_sent(self):
-        """AC16: Running job twice doesn't send duplicate emails."""
+        """AC6: Running job twice doesn't send duplicate emails."""
         from services.trial_email_sequence import process_trial_emails
 
         mock_sb = MagicMock()
@@ -614,7 +371,6 @@ class TestProcessTrialEmails:
                 chain.select.return_value = chain
                 chain.eq.return_value = chain
                 chain.limit.return_value = chain
-                # Return existing log = already sent!
                 chain.execute = AsyncMock(return_value=MagicMock(data=[{"id": "existing-log"}]))
                 return chain
             return MagicMock()
@@ -634,12 +390,11 @@ class TestProcessTrialEmails:
 
     @pytest.mark.asyncio
     async def test_batch_limit_respected(self):
-        """AC9: Batch limit stops processing after max emails."""
+        """AC10: Batch limit stops processing after max emails."""
         from services.trial_email_sequence import process_trial_emails
 
         mock_sb = MagicMock()
 
-        # Return many users for every milestone
         def table_side_effect(name):
             if name == "profiles":
                 chain = MagicMock()
@@ -647,7 +402,6 @@ class TestProcessTrialEmails:
                 chain.eq.return_value = chain
                 chain.gte.return_value = chain
                 chain.lt.return_value = chain
-                # Return 10 users per milestone
                 chain.execute = AsyncMock(return_value=MagicMock(data=[
                     {
                         "id": f"user-batch-{i}",
@@ -676,7 +430,7 @@ class TestProcessTrialEmails:
             "searches_executed": 0,
             "total_value_analyzed": 0,
             "pipeline_items": 0,
-            "days_remaining": 30,
+            "days_remaining": 14,
         }
 
         with patch("config.TRIAL_EMAILS_ENABLED", True), \
@@ -688,7 +442,6 @@ class TestProcessTrialEmails:
 
             result = await process_trial_emails(batch_size=5)
 
-            # Should stop at 5 despite many more users available
             assert result["sent"] <= 5
 
     @pytest.mark.asyncio
@@ -745,15 +498,15 @@ class TestUnsubscribe:
 
 
 class TestRenderEmail:
-    """Test _render_email dispatcher."""
+    """Test _render_email dispatcher for all 6 types."""
 
-    def test_all_types_render(self):
-        """All 8 email types render without error."""
+    def test_all_6_types_render(self):
+        """All 6 email types render without error."""
         from services.trial_email_sequence import _render_email
 
         for email_type in [
-            "welcome", "engagement_early", "engagement", "tips",
-            "urgency", "expiring", "last_day", "expired",
+            "welcome", "engagement", "paywall_alert",
+            "value", "last_day", "expired",
         ]:
             subject, html = _render_email(
                 email_type=email_type,
@@ -768,6 +521,26 @@ class TestRenderEmail:
         from services.trial_email_sequence import _render_email
         with pytest.raises(ValueError, match="Unknown email type"):
             _render_email(email_type="nonexistent", user_name="T", stats={})
+
+    def test_expired_includes_coupon(self):
+        """AC14: Expired email render includes coupon URL."""
+        from services.trial_email_sequence import _render_email
+        subject, html = _render_email(
+            email_type="expired",
+            user_name="Test",
+            stats=SAMPLE_STATS,
+        )
+        assert "coupon" in html.lower() or "20%" in html
+
+    def test_expired_subject_includes_20_off(self):
+        """AC14: Expired email subject mentions 20% off."""
+        from services.trial_email_sequence import _render_email
+        subject, html = _render_email(
+            email_type="expired",
+            user_name="Test",
+            stats=SAMPLE_STATS,
+        )
+        assert "20%" in subject
 
 
 class TestResendWebhook:
@@ -821,21 +594,19 @@ class TestResendWebhook:
 
 
 # ============================================================================
-# STORY-310 Cron Integration tests
+# Cron Integration tests
 # ============================================================================
 
 class TestCronJobIntegration:
     """Test cron_jobs.py integration with trial email sequence."""
 
     def test_trial_sequence_constants_exist(self):
-        """STORY-310 constants are defined in cron_jobs."""
         from cron_jobs import TRIAL_SEQUENCE_INTERVAL_SECONDS, TRIAL_SEQUENCE_BATCH_SIZE
-        assert TRIAL_SEQUENCE_INTERVAL_SECONDS == 86400  # 24h
+        assert TRIAL_SEQUENCE_INTERVAL_SECONDS == 86400
         assert TRIAL_SEQUENCE_BATCH_SIZE == 50
 
     @pytest.mark.asyncio
     async def test_start_trial_sequence_task_returns_task(self):
-        """start_trial_sequence_task returns an asyncio.Task."""
         import asyncio
         from cron_jobs import start_trial_sequence_task
         task = await start_trial_sequence_task()

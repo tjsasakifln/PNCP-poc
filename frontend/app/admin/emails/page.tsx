@@ -109,22 +109,18 @@ export default function AdminEmailsPage() {
 
   const EMAIL_TYPE_LABELS: Record<string, string> = {
     welcome: 'Boas-vindas',
-    engagement_early: 'Engajamento Inicial',
     engagement: 'Engajamento',
-    tips: 'Dicas',
-    urgency: 'Urgencia Leve',
-    expiring: 'Expirando',
+    paywall_alert: 'Paywall Alert',
+    value: 'Valor Acumulado',
     last_day: 'Ultimo Dia',
-    expired: 'Expirado',
+    expired: 'Expirado (20% off)',
   };
 
   const DAY_COLORS: Record<string, string> = {
     welcome: 'bg-green-100 text-green-800',
-    engagement_early: 'bg-blue-100 text-blue-800',
     engagement: 'bg-blue-100 text-blue-800',
-    tips: 'bg-yellow-100 text-yellow-800',
-    urgency: 'bg-orange-100 text-orange-800',
-    expiring: 'bg-orange-100 text-orange-800',
+    paywall_alert: 'bg-orange-100 text-orange-800',
+    value: 'bg-emerald-100 text-emerald-800',
     last_day: 'bg-red-100 text-red-800',
     expired: 'bg-gray-100 text-gray-800',
   };
@@ -139,7 +135,7 @@ export default function AdminEmailsPage() {
               Email Sequence — Trial 14 Dias
             </h1>
             <p className="text-gray-500 mt-1">
-              STORY-310 — Preview e teste dos 8 emails da sequencia trial
+              STORY-321 — Preview e teste dos 6 emails da sequencia trial
             </p>
           </div>
           <div className="flex gap-3">
