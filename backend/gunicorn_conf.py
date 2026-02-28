@@ -63,6 +63,14 @@ else:
 logconfig_dict = {
     "version": 1,
     "disable_existing_loggers": False,
+    # CRIT-044-fix: Override root logger to use our stdout handler.
+    # Gunicorn merges CONFIG_DEFAULTS (root→error_console) with this dict.
+    # Without root override, merged config references missing "error_console"
+    # handler → ValueError: Unable to configure root logger → silent crash.
+    "root": {
+        "level": "INFO",
+        "handlers": ["stdout"],
+    },
     "formatters": {
         "gunicorn_fmt": _formatter_config,
     },
