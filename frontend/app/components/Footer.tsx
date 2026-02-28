@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { fadeInUp } from '@/lib/animations';
 import { footer } from '@/lib/copy/valueProps';
+import { useBackendStatusContext, type BackendStatus } from '@/components/BackendStatusIndicator';
 
 /**
  * STORY-174 AC6: Footer - Refined Layout with Animations
@@ -236,6 +237,9 @@ export default function Footer() {
               <span className="text-sm text-ink-secondary">Em conformidade com a LGPD</span>
             </div>
 
+            {/* STORY-316 AC16: Status badge with link to /status */}
+            <StatusFooterBadge />
+
             {/* Developer Attribution */}
             <p className="text-sm text-ink-secondary">
               Uma Solução CONFENGE
@@ -246,6 +250,34 @@ export default function Footer() {
     </footer>
   );
 }
+
+/**
+ * STORY-316 AC16-AC17: Status badge in footer.
+ * Reuses BackendStatusIndicator polling data (CRIT-008).
+ */
+function StatusFooterBadge() {
+  const { status } = useBackendStatusContext();
+
+  const config: Record<BackendStatus, { dot: string; label: string }> = {
+    online: { dot: "bg-green-500", label: "Operacional" },
+    offline: { dot: "bg-red-500 animate-pulse", label: "Indisponível" },
+    recovering: { dot: "bg-yellow-500", label: "Recuperando" },
+  };
+
+  const c = config[status];
+
+  return (
+    <a
+      href="/status"
+      className="flex items-center gap-1.5 text-sm text-ink-secondary hover:text-brand-blue transition-colors"
+      aria-label={`Status: ${c.label}`}
+    >
+      <span className={`inline-block w-2 h-2 rounded-full ${c.dot}`} />
+      Status: {c.label}
+    </a>
+  );
+}
+
 
 /**
  * Footer Link with Underline Animation

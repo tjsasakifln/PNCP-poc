@@ -249,8 +249,8 @@ class TestAC4PNCPHealthCanary:
         assert result.status == HealthStatus.HEALTHY
 
     @pytest.mark.asyncio
-    async def test_pncp_canary_uses_small_page_size(self):
-        """PNCP canary should use small tamanhoPagina (10) to minimize load."""
+    async def test_pncp_canary_uses_realistic_page_size(self):
+        """PNCP canary should use tamanhoPagina=50 (STORY-316: realistic canary detects page size bug)."""
         from health import check_source_health
 
         captured_params = {}
@@ -272,7 +272,7 @@ class TestAC4PNCPHealthCanary:
         with patch("health.httpx.AsyncClient", return_value=FakeClient()):
             await check_source_health("PNCP")
 
-        assert captured_params.get("tamanhoPagina") == 10
+        assert captured_params.get("tamanhoPagina") == 50
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,11 @@
 """UX-303 AC7: Cache health check endpoint.
+STORY-316 AC3: Public status endpoint.
 
 GET /v1/health/cache — Returns status of each cache level with latency.
+GET /v1/health — System health (internal, requires admin for details).
+GET /v1/status — Public status page data (no auth).
+GET /v1/status/incidents — Recent incidents (no auth).
+GET /v1/status/uptime-history — Daily uptime for chart (no auth).
 """
 
 import logging
@@ -16,13 +21,40 @@ router = APIRouter(tags=["health"])
 
 @router.get("/health")
 async def system_health():
-    """GTM-STAB-008 AC3: Comprehensive system health endpoint.
+    """GTM-STAB-008 AC3: Comprehensive system health endpoint (AC4: internal, detailed).
 
     Returns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)
     and overall health classification (healthy / degraded / unhealthy).
     """
     from health import get_system_health
     return await get_system_health()
+
+
+@router.get("/status")
+async def public_status():
+    """STORY-316 AC3: Public status endpoint (no auth required).
+
+    Returns per-source status, component health, uptime percentages,
+    and last incident timestamp.
+    """
+    from health import get_public_status
+    return await get_public_status()
+
+
+@router.get("/status/incidents")
+async def recent_incidents():
+    """STORY-316 AC13: Recent incidents for status page."""
+    from health import get_recent_incidents
+    incidents = await get_recent_incidents(days=30)
+    return {"incidents": incidents}
+
+
+@router.get("/status/uptime-history")
+async def uptime_history():
+    """STORY-316 AC12: Daily uptime data for status page chart."""
+    from health import get_uptime_history
+    history = await get_uptime_history(days=90)
+    return {"history": history}
 
 
 @router.get("/health/cache")

@@ -19,7 +19,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
@@ -141,8 +141,8 @@ async def check_source_health(
         async with httpx.AsyncClient(timeout=timeout) as client:
             # Use HEAD request if possible, otherwise GET with minimal params
             if source_code == "PNCP":
-                # STORY-271 AC4: Fix PNCP canary — correct date format (yyyyMMdd),
-                # add required codigoModalidadeContratacao param, use tamanhoPagina=10
+                # STORY-316 AC1: Realistic canary — tamanhoPagina=50 (same as production)
+                # Detects the silent HTTP 400 bug when PNCP reduces max page size
                 response = await client.get(
                     endpoint,
                     params={
@@ -150,8 +150,20 @@ async def check_source_health(
                         "dataFinal": "20260101",
                         "codigoModalidadeContratacao": 6,
                         "pagina": 1,
-                        "tamanhoPagina": 10,
+                        "tamanhoPagina": 50,
                     },
+                )
+            elif source_code == "Portal":
+                # STORY-316 AC1: PCP v2 realistic canary with pagination
+                response = await client.get(
+                    "https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos",
+                    params={"pagina": 1},
+                )
+            elif source_code == "ComprasGov":
+                # STORY-316 AC1: ComprasGov dual-endpoint test (legacy)
+                response = await client.get(
+                    "https://dadosabertos.compras.gov.br/modulo-pesquisa-preco/1_consultarMaterial",
+                    params={"pagina": 1, "tamanhoPagina": 1},
                 )
             else:
                 # Try HEAD first, fall back to GET
@@ -452,3 +464,357 @@ async def get_system_health() -> Dict[str, Any]:
         "environment": os.getenv("ENVIRONMENT", "development"),
         "slo": slo_compliance,
     }
+
+
+# ============================================================================
+# STORY-316: Public Status Page data
+# ============================================================================
+
+async def get_public_status() -> Dict[str, Any]:
+    """STORY-316 AC2/AC3: Public status endpoint data.
+
+    Returns per-source status, component health, uptime percentages,
+    and last incident info — all sanitized for public consumption.
+    """
+    # Get source health with realistic canary (AC1)
+    source_checks = await check_all_sources_health(
+        enabled_sources=["PNCP", "Portal", "ComprasGov"],
+        timeout=10.0,
+    )
+
+    sources = {}
+    for code, result in source_checks.items():
+        entry: Dict[str, Any] = {
+            "status": result.status.value,
+            "latency_ms": result.response_time_ms,
+        }
+        if result.error:
+            entry["error"] = result.error
+        # Use last_checked from result
+        entry["last_check"] = result.last_checked.isoformat()
+        sources[code.lower()] = entry
+
+    # Component health (Redis, Supabase, ARQ)
+    components: Dict[str, str] = {}
+    try:
+        from redis_pool import get_redis_pool
+        redis = await get_redis_pool()
+        if redis:
+            await redis.ping()
+            components["redis"] = "healthy"
+        else:
+            components["redis"] = "unhealthy"
+    except Exception:
+        components["redis"] = "unhealthy"
+
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        await sb_execute(sb.table("profiles").select("id").limit(1))
+        components["supabase"] = "healthy"
+    except Exception:
+        components["supabase"] = "unhealthy"
+
+    try:
+        from job_queue import is_queue_available
+        worker_ok = await is_queue_available()
+        components["arq_worker"] = "healthy" if worker_ok else "unhealthy"
+    except Exception:
+        components["arq_worker"] = "unknown"
+
+    # Overall status
+    source_statuses = [r.status for r in source_checks.values()]
+    comp_unhealthy = any(v == "unhealthy" for v in components.values())
+
+    if comp_unhealthy or all(s == HealthStatus.UNHEALTHY for s in source_statuses):
+        overall = "unhealthy"
+    elif any(s != HealthStatus.HEALTHY for s in source_statuses):
+        overall = "degraded"
+    else:
+        overall = "healthy"
+
+    # Uptime percentages (AC7)
+    uptime = await calculate_uptime_percentages()
+
+    # Last incident
+    last_incident = await get_last_incident()
+
+    return {
+        "status": overall,
+        "sources": sources,
+        "components": components,
+        "uptime_pct_24h": uptime.get("24h", 0.0),
+        "uptime_pct_7d": uptime.get("7d", 0.0),
+        "uptime_pct_30d": uptime.get("30d", 0.0),
+        "last_incident": last_incident,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+async def calculate_uptime_percentages() -> Dict[str, float]:
+    """STORY-316 AC7: Calculate uptime from health_checks history.
+
+    healthy=100%, degraded=50%, unhealthy=0%.
+    Returns percentages for 24h, 7d, 30d windows.
+    """
+    result = {"24h": 100.0, "7d": 100.0, "30d": 100.0}
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        now = datetime.now(timezone.utc)
+
+        for label, delta in [("24h", timedelta(hours=24)), ("7d", timedelta(days=7)), ("30d", timedelta(days=30))]:
+            cutoff = (now - delta).isoformat()
+            resp = await sb_execute(
+                sb.table("health_checks")
+                .select("overall_status")
+                .gte("checked_at", cutoff)
+                .order("checked_at", desc=True)
+            )
+            rows = resp.data or []
+            if not rows:
+                result[label] = 100.0
+                continue
+
+            total_score = 0.0
+            for row in rows:
+                status = row.get("overall_status", "healthy")
+                if status == "healthy":
+                    total_score += 100.0
+                elif status == "degraded":
+                    total_score += 50.0
+                # unhealthy = 0
+
+            result[label] = round(total_score / len(rows), 1)
+    except Exception as e:
+        logger.warning("Failed to calculate uptime percentages: %s", e)
+
+    return result
+
+
+async def get_last_incident() -> Optional[str]:
+    """Get the timestamp of the last incident."""
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        resp = await sb_execute(
+            sb.table("incidents")
+            .select("started_at")
+            .order("started_at", desc=True)
+            .limit(1)
+        )
+        if resp.data:
+            return resp.data[0].get("started_at")
+    except Exception as e:
+        logger.debug("Failed to get last incident: %s", e)
+    return None
+
+
+async def get_recent_incidents(days: int = 30) -> List[Dict[str, Any]]:
+    """STORY-316 AC13: Get incidents from the last N days."""
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        resp = await sb_execute(
+            sb.table("incidents")
+            .select("*")
+            .gte("started_at", cutoff)
+            .order("started_at", desc=True)
+        )
+        return resp.data or []
+    except Exception as e:
+        logger.warning("Failed to get recent incidents: %s", e)
+        return []
+
+
+async def save_health_check(overall_status: str, sources: Dict, components: Dict, latency_ms: Optional[int] = None) -> None:
+    """STORY-316 AC6: Save a health check result to DB."""
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        import json
+        await sb_execute(
+            sb.table("health_checks").insert({
+                "overall_status": overall_status,
+                "sources_json": json.dumps(sources) if isinstance(sources, dict) else sources,
+                "components_json": json.dumps(components) if isinstance(components, dict) else components,
+                "latency_ms": latency_ms,
+            })
+        )
+    except Exception as e:
+        logger.error("Failed to save health check: %s", e)
+
+
+async def detect_incident(current_status: str, sources: Dict) -> None:
+    """STORY-316 AC8: Detect status transitions and create/resolve incidents.
+
+    - healthy → degraded/unhealthy: create incident + email admin + Sentry alert
+    - 3 consecutive healthy after incident: auto-resolve (AC10)
+    """
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+
+        # Check for ongoing incidents
+        ongoing_resp = await sb_execute(
+            sb.table("incidents")
+            .select("*")
+            .eq("status", "ongoing")
+            .order("started_at", desc=True)
+            .limit(1)
+        )
+        ongoing = ongoing_resp.data[0] if ongoing_resp.data else None
+
+        if current_status in ("degraded", "unhealthy") and not ongoing:
+            # New incident — determine affected sources
+            affected = [
+                src for src, data in sources.items()
+                if isinstance(data, dict) and data.get("status") in ("degraded", "unhealthy", "Timeout")
+                or (isinstance(data, dict) and data.get("error"))
+            ]
+            severity = "critical" if current_status == "unhealthy" else "warning"
+            description = f"System status changed to {current_status}. Affected: {', '.join(affected) or 'unknown'}"
+
+            await sb_execute(
+                sb.table("incidents").insert({
+                    "status": "ongoing",
+                    "affected_sources": affected,
+                    "description": description,
+                })
+            )
+
+            # Fire-and-forget: email admin (AC8)
+            try:
+                from email_service import send_email
+                admin_email = os.getenv("ADMIN_EMAIL", "tiago.sasaki@gmail.com")
+                send_email(
+                    to=admin_email,
+                    subject=f"[SmartLic] Incidente: {current_status}",
+                    html=f"<h2>Incidente detectado</h2><p>{description}</p><p>Verifique: <a href='https://smartlic.tech/status'>Status Page</a></p>",
+                    tags=[{"name": "category", "value": "incident"}],
+                )
+            except Exception:
+                logger.warning("Failed to send incident email")
+
+            # Sentry alert
+            try:
+                import sentry_sdk
+                sentry_sdk.capture_message(
+                    f"Health incident: {description}",
+                    level="error" if current_status == "unhealthy" else "warning",
+                )
+            except Exception:
+                pass
+
+            # Metrics
+            try:
+                from metrics import INCIDENTS_TOTAL
+                for src in affected:
+                    INCIDENTS_TOTAL.labels(source=src, severity=severity).inc()
+            except Exception:
+                pass
+
+            logger.warning("Incident created: %s", description)
+
+        elif current_status == "healthy" and ongoing:
+            # AC10: Check for 3 consecutive healthy checks
+            recent_resp = await sb_execute(
+                sb.table("health_checks")
+                .select("overall_status")
+                .order("checked_at", desc=True)
+                .limit(3)
+            )
+            recent_statuses = [r.get("overall_status") for r in (recent_resp.data or [])]
+
+            if len(recent_statuses) >= 3 and all(s == "healthy" for s in recent_statuses):
+                # Auto-resolve incident
+                await sb_execute(
+                    sb.table("incidents")
+                    .update({
+                        "status": "resolved",
+                        "resolved_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                    .eq("id", ongoing["id"])
+                )
+
+                # Email resolution
+                try:
+                    from email_service import send_email
+                    admin_email = os.getenv("ADMIN_EMAIL", "tiago.sasaki@gmail.com")
+                    send_email(
+                        to=admin_email,
+                        subject="[SmartLic] Incidente resolvido",
+                        html=f"<h2>Incidente resolvido</h2><p>O sistema voltou ao status saudável após 3 checks consecutivos.</p><p>Incidente: {ongoing.get('description', '')}</p>",
+                        tags=[{"name": "category", "value": "incident_resolved"}],
+                    )
+                except Exception:
+                    logger.warning("Failed to send resolution email")
+
+                logger.info("Incident auto-resolved: %s", ongoing.get("id"))
+
+    except Exception as e:
+        logger.error("Incident detection failed: %s", e)
+
+
+async def cleanup_old_health_checks() -> int:
+    """Clean up health checks older than retention period."""
+    try:
+        from config import HEALTH_CHECKS_RETENTION_DAYS
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=HEALTH_CHECKS_RETENTION_DAYS)).isoformat()
+        resp = await sb_execute(
+            sb.table("health_checks")
+            .delete()
+            .lt("checked_at", cutoff)
+        )
+        deleted = len(resp.data) if resp.data else 0
+        if deleted > 0:
+            logger.info("Cleaned up %d old health checks", deleted)
+        return deleted
+    except Exception as e:
+        logger.warning("Failed to cleanup old health checks: %s", e)
+        return 0
+
+
+async def get_uptime_history(days: int = 90) -> List[Dict[str, Any]]:
+    """STORY-316 AC12: Get daily uptime data for the status page chart."""
+    try:
+        from supabase_client import get_supabase, sb_execute
+        sb = get_supabase()
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        resp = await sb_execute(
+            sb.table("health_checks")
+            .select("checked_at, overall_status")
+            .gte("checked_at", cutoff)
+            .order("checked_at", desc=False)
+        )
+        rows = resp.data or []
+
+        # Group by date
+        daily: Dict[str, List[str]] = {}
+        for row in rows:
+            date_str = row["checked_at"][:10]  # YYYY-MM-DD
+            daily.setdefault(date_str, []).append(row["overall_status"])
+
+        result = []
+        for date_str, statuses in sorted(daily.items()):
+            total = len(statuses)
+            healthy = sum(1 for s in statuses if s == "healthy")
+            degraded = sum(1 for s in statuses if s == "degraded")
+            unhealthy = total - healthy - degraded
+            pct = round((healthy * 100 + degraded * 50) / total, 1) if total else 100.0
+            result.append({
+                "date": date_str,
+                "uptime_pct": pct,
+                "checks": total,
+                "healthy": healthy,
+                "degraded": degraded,
+                "unhealthy": unhealthy,
+            })
+
+        return result
+    except Exception as e:
+        logger.warning("Failed to get uptime history: %s", e)
+        return []

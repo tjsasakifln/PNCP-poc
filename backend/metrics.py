@@ -509,6 +509,28 @@ ALERTS_PROCESSING_DURATION = _create_histogram(
 
 
 # ============================================================================
+# STORY-316: Health Canary + Status Page metrics
+# ============================================================================
+
+HEALTH_CANARY_DURATION = _create_histogram(
+    "smartlic_health_canary_duration_seconds",
+    "Health canary check duration",
+    buckets=[0.5, 1, 2, 5, 10, 15, 30],
+)
+
+HEALTH_CANARY_STATUS = _create_gauge(
+    "smartlic_health_canary_status",
+    "Health canary status (1=healthy, 0.5=degraded, 0=unhealthy)",
+)
+
+INCIDENTS_TOTAL = _create_counter(
+    "smartlic_incidents_total",
+    "Total incidents detected",
+    labelnames=["source", "severity"],
+)
+
+
+# ============================================================================
 # ASGI app factory for /metrics endpoint
 # ============================================================================
 

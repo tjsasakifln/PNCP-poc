@@ -139,14 +139,14 @@ class TestT2HealthPerSource:
         assert health_dict["sources"]["PNCP"]["status"] == "healthy"
         assert health_dict["sources"]["PNCP"]["response_time_ms"] == 100
 
-    def test_pncp_health_check_uses_tamanho_pagina_10(self):
-        """health.py PNCP canary must use tamanhoPagina=10 (STORY-271 AC4: reduced from 50 to minimize load)."""
+    def test_pncp_health_check_uses_tamanho_pagina_50(self):
+        """health.py PNCP canary must use tamanhoPagina=50 (STORY-316 AC1: realistic canary detects page size bug)."""
         import inspect
         from health import check_source_health
         source = inspect.getsource(check_source_health)
         assert "tamanhoPagina" in source
-        # STORY-271 AC4: Canary uses 10 (lightweight probe, not 50)
-        assert '"tamanhoPagina": 10' in source or "'tamanhoPagina': 10" in source
+        # STORY-316 AC1: Canary uses 50 (realistic — detects silent HTTP 400 when >50)
+        assert '"tamanhoPagina": 50' in source or "'tamanhoPagina': 50" in source
 
 
 # ---------------------------------------------------------------------------

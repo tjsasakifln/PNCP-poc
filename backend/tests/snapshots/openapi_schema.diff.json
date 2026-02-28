@@ -8926,6 +8926,66 @@
           "summary": "Sources Health"
         }
       },
+      "/status": {
+        "get": {
+          "description": "STORY-316 AC3: Public status endpoint (no auth required).\n\nReturns per-source status, component health, uptime percentages,\nand last incident timestamp.",
+          "operationId": "public_status_status_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Public Status",
+          "tags": [
+            "health"
+          ]
+        }
+      },
+      "/status/incidents": {
+        "get": {
+          "description": "STORY-316 AC13: Recent incidents for status page.",
+          "operationId": "recent_incidents_status_incidents_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Recent Incidents",
+          "tags": [
+            "health"
+          ]
+        }
+      },
+      "/status/uptime-history": {
+        "get": {
+          "description": "STORY-316 AC12: Daily uptime data for status page chart.",
+          "operationId": "uptime_history_status_uptime_history_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Uptime History",
+          "tags": [
+            "health"
+          ]
+        }
+      },
       "/subscription/status": {
         "get": {
           "description": "Check subscription activation status (GTM-FIX-016).\n\nUsed by obrigado page to poll for webhook completion.\nReturns current subscription state from DB, with Stripe API fallback.",
@@ -12044,7 +12104,7 @@
       },
       "/v1/health": {
         "get": {
-          "description": "GTM-STAB-008 AC3: Comprehensive system health endpoint.\n\nReturns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)\nand overall health classification (healthy / degraded / unhealthy).",
+          "description": "GTM-STAB-008 AC3: Comprehensive system health endpoint (AC4: internal, detailed).\n\nReturns component-level statuses (Redis, Supabase, ARQ Worker, PNCP)\nand overall health classification (healthy / degraded / unhealthy).",
           "operationId": "system_health_v1_health_get",
           "responses": {
             "200": {
@@ -12957,6 +13017,66 @@
             }
           },
           "summary": "Listar Setores"
+        }
+      },
+      "/v1/status": {
+        "get": {
+          "description": "STORY-316 AC3: Public status endpoint (no auth required).\n\nReturns per-source status, component health, uptime percentages,\nand last incident timestamp.",
+          "operationId": "public_status_v1_status_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Public Status",
+          "tags": [
+            "health"
+          ]
+        }
+      },
+      "/v1/status/incidents": {
+        "get": {
+          "description": "STORY-316 AC13: Recent incidents for status page.",
+          "operationId": "recent_incidents_v1_status_incidents_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Recent Incidents",
+          "tags": [
+            "health"
+          ]
+        }
+      },
+      "/v1/status/uptime-history": {
+        "get": {
+          "description": "STORY-316 AC12: Daily uptime data for status page chart.",
+          "operationId": "uptime_history_v1_status_uptime_history_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "Uptime History",
+          "tags": [
+            "health"
+          ]
         }
       },
       "/v1/subscription/status": {

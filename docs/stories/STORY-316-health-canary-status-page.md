@@ -23,12 +23,12 @@ Criar pagina de status publica acessivel sem autenticacao, alimentada pelo healt
 
 ### Backend — Canary Aprimorado
 
-- [ ] **AC1:** Criar canary "realista" em `health.py` que testa com parametros reais:
+- [x] **AC1:** Criar canary "realista" em `health.py` que testa com parametros reais:
   - PNCP: `tamanhoPagina=50` (detecta bug de page size limit)
   - PCP v2: request real com pagination
   - ComprasGov: dual-endpoint test
   - Timeout: 10s por fonte (nao bloquear health check)
-- [ ] **AC2:** Health check deve retornar per-source status:
+- [x] **AC2:** Health check deve retornar per-source status:
   ```json
   {
     "status": "degraded",
@@ -46,70 +46,70 @@ Criar pagina de status publica acessivel sem autenticacao, alimentada pelo healt
     "last_incident": "2026-02-25T14:30:00Z"
   }
   ```
-- [ ] **AC3:** Criar endpoint publico `GET /status` (sem auth) com response acima
-- [ ] **AC4:** Endpoint interno `GET /health` continua existente (com detalhes, requer auth admin)
+- [x] **AC3:** Criar endpoint publico `GET /status` (sem auth) com response acima
+- [x] **AC4:** Endpoint interno `GET /health` continua existente (com detalhes, requer auth admin)
 
 ### Backend — Historico de Disponibilidade
 
-- [ ] **AC5:** Criar tabela `health_checks`:
+- [x] **AC5:** Criar tabela `health_checks`:
   - `id`, `checked_at`, `overall_status`, `sources_json`, `components_json`, `latency_ms`
   - Retention: 30 dias
-- [ ] **AC6:** Cron job a cada 5 minutos que executa health check e salva resultado:
+- [x] **AC6:** Cron job a cada 5 minutos que executa health check e salva resultado:
   - ARQ task `health_canary_check`
   - Respeitar feature flag `HEALTH_CANARY_ENABLED`
-- [ ] **AC7:** Calcular uptime percentages de historico:
+- [x] **AC7:** Calcular uptime percentages de historico:
   - Ultimas 24h, 7 dias, 30 dias
   - healthy = 100%, degraded = 50%, unhealthy = 0%
 
 ### Backend — Alertas de Incidente
 
-- [ ] **AC8:** Se status muda de healthy → degraded/unhealthy:
+- [x] **AC8:** Se status muda de healthy → degraded/unhealthy:
   - Enviar email para admin (fire-and-forget)
   - Log estruturado com Sentry alert
   - Criar registro em `incidents` table
-- [ ] **AC9:** Criar tabela `incidents`:
+- [x] **AC9:** Criar tabela `incidents`:
   - `id`, `started_at`, `resolved_at`, `status` (ongoing|resolved), `affected_sources`, `description`
-- [ ] **AC10:** Deteccao automatica de resolucao:
+- [x] **AC10:** Deteccao automatica de resolucao:
   - Se 3 checks consecutivos sao healthy apos incident → auto-resolve
   - Enviar email "Incidente resolvido"
 
 ### Frontend — Status Page Publica
 
-- [ ] **AC11:** Criar pagina `/status` (publica, sem auth):
+- [x] **AC11:** Criar pagina `/status` (publica, sem auth):
   - Header: "Status do SmartLic" com status geral (Operacional / Degradado / Indisponivel)
   - Icone e cor: verde / amarelo / vermelho
   - Componentes individuais: PNCP, Portal de Compras, ComprasGov, Redis, Banco de Dados
   - Cada componente: nome + status badge + latencia
-- [ ] **AC12:** Grafico de uptime dos ultimos 90 dias (barras horizontais por dia):
+- [x] **AC12:** Grafico de uptime dos ultimos 90 dias (barras horizontais por dia):
   - Verde: 100% uptime
   - Amarelo: parcialmente degradado
   - Vermelho: incidente
   - Tooltip com detalhes ao hover
-- [ ] **AC13:** Secao "Incidentes Recentes":
+- [x] **AC13:** Secao "Incidentes Recentes":
   - Lista de incidentes dos ultimos 30 dias
   - Data, duracao, componentes afetados, descricao
-- [ ] **AC14:** Auto-refresh a cada 60 segundos (polling)
-- [ ] **AC15:** Design limpo, minimalista, carrega rapido (nao depende de auth/session)
+- [x] **AC14:** Auto-refresh a cada 60 segundos (polling)
+- [x] **AC15:** Design limpo, minimalista, carrega rapido (nao depende de auth/session)
 
 ### Frontend — Status Badge no Footer
 
-- [ ] **AC16:** No footer de todas as paginas: "Status: Operacional" (ou Degradado/Indisponivel) com link para /status
-- [ ] **AC17:** Badge usa dados de `BackendStatusIndicator` existente (CRIT-008) — reusar polling
+- [x] **AC16:** No footer de todas as paginas: "Status: Operacional" (ou Degradado/Indisponivel) com link para /status
+- [x] **AC17:** Badge usa dados de `BackendStatusIndicator` existente (CRIT-008) — reusar polling
 
 ### Metricas
 
-- [ ] **AC18:** Prometheus:
+- [x] **AC18:** Prometheus:
   - `smartlic_health_canary_duration_seconds`
   - `smartlic_health_canary_status` (gauge: 1=healthy, 0.5=degraded, 0=unhealthy)
   - `smartlic_incidents_total` (labels: source, severity)
 
 ### Testes
 
-- [ ] **AC19:** Testes para canary realista (mock de cada fonte)
-- [ ] **AC20:** Testes para calculo de uptime
-- [ ] **AC21:** Testes para deteccao e resolucao de incidentes
-- [ ] **AC22:** Testes frontend (render page, auto-refresh, incident list)
-- [ ] **AC23:** Zero regressions
+- [x] **AC19:** Testes para canary realista (mock de cada fonte)
+- [x] **AC20:** Testes para calculo de uptime
+- [x] **AC21:** Testes para deteccao e resolucao de incidentes
+- [x] **AC22:** Testes frontend (render page, auto-refresh, incident list)
+- [x] **AC23:** Zero regressions
 
 ---
 
@@ -128,19 +128,23 @@ Criar pagina de status publica acessivel sem autenticacao, alimentada pelo healt
 ## Files Esperados (Output)
 
 **Novos:**
-- `frontend/app/status/page.tsx`
-- `frontend/app/status/components/UptimeChart.tsx`
-- `frontend/app/status/components/IncidentList.tsx`
-- `backend/tests/test_health_canary.py`
-- `frontend/__tests__/status/status-page.test.tsx`
-- `supabase/migrations/XXXXXXXX_add_health_checks_table.sql`
-- `supabase/migrations/XXXXXXXX_add_incidents_table.sql`
+- `frontend/app/status/page.tsx` ✅
+- `frontend/app/status/components/UptimeChart.tsx` ✅
+- `frontend/app/status/components/IncidentList.tsx` ✅
+- `frontend/app/api/status/route.ts` ✅ (API proxy)
+- `backend/tests/test_health_canary.py` ✅ (23 tests)
+- `frontend/__tests__/status/status-page.test.tsx` ✅ (12 tests)
+- `supabase/migrations/20260228150000_add_health_checks_table.sql` ✅
+- `supabase/migrations/20260228150001_add_incidents_table.sql` ✅
 
 **Modificados:**
-- `backend/health.py` (canary realista)
-- `backend/cron_jobs.py` (canary job)
-- `backend/config.py` (HEALTH_CANARY_ENABLED)
-- `backend/metrics.py`
+- `backend/health.py` ✅ (canary realista + public status + uptime + incidents)
+- `backend/routes/health.py` ✅ (GET /status, /status/incidents, /status/uptime-history)
+- `backend/cron_jobs.py` ✅ (canary job every 5min)
+- `backend/config.py` ✅ (HEALTH_CANARY_ENABLED + interval + retention)
+- `backend/metrics.py` ✅ (3 Prometheus metrics)
+- `backend/main.py` ✅ (canary task startup/shutdown)
+- `frontend/app/components/Footer.tsx` ✅ (StatusFooterBadge)
 
 ## Dependencias
 

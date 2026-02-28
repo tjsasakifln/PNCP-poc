@@ -431,6 +431,120 @@ async def _cache_refresh_loop() -> None:
 
 
 # ============================================================================
+# STORY-316: Health Canary Cron Job (every 5 minutes)
+# ============================================================================
+
+HEALTH_CANARY_INTERVAL_SECONDS = 5 * 60  # 5 minutes
+
+
+async def start_health_canary_task() -> asyncio.Task:
+    """STORY-316 AC6: Start the periodic health canary background task.
+
+    Runs every 5 minutes. Saves results to health_checks table.
+    Detects incidents and auto-resolves after 3 consecutive healthy.
+    Respects HEALTH_CANARY_ENABLED feature flag.
+    Returns the Task so it can be cancelled during shutdown.
+    """
+    task = asyncio.create_task(_health_canary_loop(), name="health_canary")
+    logger.info("STORY-316: Health canary task started (interval: 5m)")
+    return task
+
+
+async def run_health_canary() -> dict:
+    """STORY-316 AC6: Execute a single health canary check.
+
+    1. Run realistic source checks (PNCP tamanhoPagina=50, PCP v2, ComprasGov)
+    2. Check component health (Redis, Supabase, ARQ)
+    3. Save result to health_checks table
+    4. Detect incidents (AC8) and auto-resolve (AC10)
+    5. Update Prometheus metrics (AC18)
+    """
+    import time as _time
+    from config import HEALTH_CANARY_ENABLED
+
+    if not HEALTH_CANARY_ENABLED:
+        return {"status": "disabled"}
+
+    start = _time.time()
+
+    try:
+        from health import get_public_status, save_health_check, detect_incident
+        from metrics import HEALTH_CANARY_DURATION, HEALTH_CANARY_STATUS
+
+        # Get full status (AC1: realistic canary)
+        status_data = await get_public_status()
+        duration = _time.time() - start
+
+        overall = status_data.get("status", "unhealthy")
+        sources = status_data.get("sources", {})
+        components = status_data.get("components", {})
+
+        # Calculate average latency
+        latencies = [
+            s.get("latency_ms", 0) for s in sources.values()
+            if isinstance(s, dict) and s.get("latency_ms") is not None
+        ]
+        avg_latency = int(sum(latencies) / len(latencies)) if latencies else None
+
+        # Save to DB (AC6)
+        await save_health_check(overall, sources, components, avg_latency)
+
+        # Detect incidents (AC8/AC10)
+        await detect_incident(overall, sources)
+
+        # Update metrics (AC18)
+        try:
+            HEALTH_CANARY_DURATION.observe(duration)
+            status_value = {"healthy": 1.0, "degraded": 0.5, "unhealthy": 0.0}.get(overall, 0.0)
+            HEALTH_CANARY_STATUS.set(status_value)
+        except Exception:
+            pass
+
+        # Periodic cleanup of old health checks
+        from health import cleanup_old_health_checks
+        await cleanup_old_health_checks()
+
+        logger.info(
+            "STORY-316 canary: status=%s, latency=%s ms, duration=%.1fs",
+            overall, avg_latency, duration,
+        )
+
+        return {
+            "status": overall,
+            "latency_ms": avg_latency,
+            "duration_s": round(duration, 2),
+            "sources": {k: v.get("status") for k, v in sources.items() if isinstance(v, dict)},
+        }
+
+    except Exception as e:
+        logger.error("STORY-316 canary error: %s", e, exc_info=True)
+        return {"status": "error", "error": str(e)}
+
+
+async def _health_canary_loop() -> None:
+    """STORY-316 AC6: Run health canary every 5 minutes."""
+    from config import HEALTH_CANARY_ENABLED, HEALTH_CANARY_INTERVAL_SECONDS as interval
+
+    if not HEALTH_CANARY_ENABLED:
+        logger.info("STORY-316: Health canary disabled (HEALTH_CANARY_ENABLED=false)")
+        return
+
+    # Wait 30s after startup to let app stabilize
+    await asyncio.sleep(30)
+
+    while True:
+        try:
+            await run_health_canary()
+            await asyncio.sleep(interval)
+        except asyncio.CancelledError:
+            logger.info("STORY-316: Health canary task cancelled")
+            break
+        except Exception as e:
+            logger.error("STORY-316 canary loop error: %s", e, exc_info=True)
+            await asyncio.sleep(60)
+
+
+# ============================================================================
 # STORY-266: Trial Reminder Emails (legacy — replaced by STORY-310 sequence)
 # ============================================================================
 

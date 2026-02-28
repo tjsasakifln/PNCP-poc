@@ -452,6 +452,7 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     # STORY-306: Cache correctness — dual-read for thundering herd mitigation
     "CACHE_LEGACY_KEY_FALLBACK": ("CACHE_LEGACY_KEY_FALLBACK", "true"),
     "SHOW_CACHE_FALLBACK_BANNER": ("SHOW_CACHE_FALLBACK_BANNER", "true"),
+    "HEALTH_CANARY_ENABLED": ("HEALTH_CANARY_ENABLED", "true"),
 }
 
 # ============================================
@@ -856,3 +857,10 @@ ALERTS_MAX_PER_EMAIL: int = int(os.getenv("ALERTS_MAX_PER_EMAIL", "10"))
 # ============================================================================
 RECONCILIATION_ENABLED: bool = str_to_bool(os.getenv("RECONCILIATION_ENABLED", "true"))
 RECONCILIATION_HOUR_UTC: int = int(os.getenv("RECONCILIATION_HOUR_UTC", "6"))  # 06:00 UTC = 03:00 BRT
+
+# ============================================================================
+# STORY-316: Health Canary + Status Page
+# ============================================================================
+HEALTH_CANARY_ENABLED: bool = str_to_bool(os.getenv("HEALTH_CANARY_ENABLED", "true"))
+HEALTH_CANARY_INTERVAL_SECONDS: int = int(os.getenv("HEALTH_CANARY_INTERVAL_SECONDS", "300"))  # 5 minutes
+HEALTH_CHECKS_RETENTION_DAYS: int = int(os.getenv("HEALTH_CHECKS_RETENTION_DAYS", "30"))
