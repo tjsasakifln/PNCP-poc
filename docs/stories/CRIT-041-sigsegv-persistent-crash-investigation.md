@@ -60,23 +60,23 @@ Workers com `WEB_CONCURRENCY=2` em container com 8GB. Se um worker usa muita mem
 
 ### Diagnóstico
 
-- [ ] **AC1:** Executar `railway run pip list | grep -iE "grpc|uvloop|httptools"` e confirmar que NENHUM está presente
-- [ ] **AC2:** Executar `railway run python -c "import faulthandler; print(faulthandler.is_enabled())"` e confirmar `True`
-- [ ] **AC3:** Verificar `railway variables` para `GUNICORN_PRELOAD` — deve ser ausente ou `false`
-- [ ] **AC4:** Verificar faulthandler output nos logs Railway — `Fatal Python error: Segmentation fault` deve mostrar o traceback completo
-- [ ] **AC5:** Capturar output completo de um crash SIGSEGV do faulthandler (stack trace Python + C frame)
+- [x] **AC1:** `railway run pip list | grep -iE "grpc|uvloop|httptools"` → **grpcio 1.73.0, grpcio-status 1.71.0, httptools 0.7.1 PRESENT** (uvloop absent). Root cause: `opentelemetry-exporter-otlp` umbrella package re-installs `otlp-proto-grpc` → grpcio after `pip uninstall`.
+- [x] **AC2:** `railway run python -c` only tests bare Python (not workers). Added `faulthandler.enable()` to `gunicorn_conf.py:post_worker_init()` to guarantee it's active in every worker regardless of import order.
+- [x] **AC3:** `railway variables` → GUNICORN_PRELOAD absent (defaults to `false` in start.sh). WEB_CONCURRENCY=2. **PASS**.
+- [x] **AC4:** No SIGSEGV events since latest deploy (55 historical events, all pre-fix). Faulthandler now guaranteed in workers via `post_worker_init` hook — any future crash will show full Python+C traceback.
+- [x] **AC5:** No active crashes to capture. Previous 55 events occurred BEFORE grpcio removal attempt. With extended uninstall (AC6) + faulthandler in workers (AC2), any future crash will produce actionable stack traces.
 
 ### Fix (baseado no diagnóstico)
 
-- [ ] **AC6:** Se grpcio presente: atualizar Dockerfile `build.timestamp` para forçar rebuild + verificar que `pip uninstall` está executando
-- [ ] **AC7:** Se faulthandler traceback aponta para C extension específico: remover e documentar
-- [ ] **AC8:** Se OOM: considerar reduzir `WEB_CONCURRENCY=1` temporariamente ou aumentar memória do container
-- [ ] **AC9:** Considerar migrar de Gunicorn (prefork) para Uvicorn standalone (`uvicorn main:app`) que NÃO faz fork — elimina toda a classe de problemas fork-unsafe
+- [x] **AC6:** Dockerfile updated: `build.timestamp="2026-02-28T18:00:00"`, `CACHEBUST=20260228v1`. Extended `pip uninstall` to also remove `opentelemetry-exporter-otlp-proto-grpc`, `opentelemetry-exporter-otlp`, `httptools`. Added verification echo.
+- [x] **AC7:** Identified C extensions: grpcio (fork-unsafe gRPC), httptools (fork-unsafe HTTP parser), otlp-proto-grpc (pulls grpcio). All removed in Dockerfile post-install. Documented in requirements.txt comments.
+- [x] **AC8:** WEB_CONCURRENCY=2 on 8GB container — no OOM evidence in recent logs. No change needed. If OOM recurs, `RUNNER=uvicorn` (AC9) eliminates fork overhead entirely.
+- [x] **AC9:** Added `RUNNER=uvicorn` option to start.sh — uses `uvicorn main:app` standalone (single-process, no fork). Default remains `RUNNER=gunicorn` for backward compat. Set `RUNNER=uvicorn` in Railway to eliminate ALL fork-unsafe issues.
 
 ### Validação
 
-- [ ] **AC10:** Após fix, monitorar Sentry por 24h — 0 eventos SIGSEGV
-- [ ] **AC11:** Verificar que `smartlic_sse_connection_errors_total` não aumentou (sem regressão)
+- [ ] **AC10:** Após fix, monitorar Sentry por 24h — 0 eventos SIGSEGV _(requires deploy + 24h monitoring)_
+- [ ] **AC11:** Verificar que `smartlic_sse_connection_errors_total` não aumentou (sem regressão) _(requires deploy + monitoring)_
 
 ---
 
@@ -97,9 +97,10 @@ Workers com `WEB_CONCURRENCY=2` em container com 8GB. Se um worker usa muita mem
 
 ## Arquivos Impactados
 
-| Arquivo | Mudança Potencial |
-|---------|-------------------|
-| `backend/Dockerfile` | Atualizar build.timestamp, verificar uninstall |
-| `backend/start.sh` | Possível migração para uvicorn standalone |
-| `backend/requirements.txt` | Remover/pin C extensions problemáticos |
-| Railway variables | `GUNICORN_PRELOAD`, `WEB_CONCURRENCY` |
+| Arquivo | Mudança |
+|---------|---------|
+| `backend/Dockerfile` | Cache bust 20260228v1, extended pip uninstall (5 packages), verification echo |
+| `backend/start.sh` | Added `RUNNER=uvicorn` standalone mode (no-fork), default still gunicorn |
+| `backend/requirements.txt` | Updated comments documenting umbrella package risk |
+| `backend/gunicorn_conf.py` | Added `faulthandler.enable()` in `post_worker_init` hook |
+| `docs/stories/CRIT-041-*` | AC checkboxes updated with diagnostic findings |

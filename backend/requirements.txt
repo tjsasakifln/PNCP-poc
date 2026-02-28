@@ -66,8 +66,10 @@ prometheus_client>=0.20.0
 arq>=0.26,<1.0
 
 # Distributed tracing (GTM-RESILIENCE-F02)
-# NOTE: These pull grpcio as transitive dep — removed in Dockerfile post-install.
-# We use HTTP/protobuf exporter (not gRPC), so grpcio is unnecessary and fork-unsafe.
+# CRIT-041: Pin ONLY the packages we need. Do NOT install umbrella packages
+# (opentelemetry-exporter-otlp, opentelemetry-instrumentation) as they pull
+# grpcio, httptools, and other fork-unsafe C extensions via transitive deps.
+# Dockerfile post-install removes any that sneak through anyway.
 opentelemetry-api>=1.25,<2.0
 opentelemetry-sdk>=1.25,<2.0
 opentelemetry-exporter-otlp-proto-http>=1.25,<2.0

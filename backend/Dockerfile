@@ -7,9 +7,9 @@
 FROM python:3.12-slim
 
 # CACHE BUST - This label forces Railway to rebuild when changed
-# Update timestamp to invalidate all cached layers: 2026-02-20T12:00:00
-LABEL build.timestamp="2026-02-20T12:00:00"
-ARG CACHEBUST=20260220v1
+# Update timestamp to invalidate all cached layers: 2026-02-28T18:00:00
+LABEL build.timestamp="2026-02-28T18:00:00"
+ARG CACHEBUST=20260228v1
 
 # Set working directory
 WORKDIR /app
@@ -24,11 +24,22 @@ RUN echo "Build: ${CACHEBUST}" && apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Python dependencies
-# CRIT-SIGSEGV: Remove grpcio (transitive dep from opentelemetry) — C extension
-# that is fork-unsafe and not needed (we use HTTP/protobuf OTLP exporter, not gRPC).
+# CRIT-041: Aggressive removal of ALL fork-unsafe C extensions.
+# Previous fix (CRIT-SIGSEGV) only removed grpcio/grpcio-status, but
+# opentelemetry-exporter-otlp (umbrella) re-pulls otlp-proto-grpc → grpcio.
+# httptools also sneaks in as transitive dep and is fork-unsafe.
+# We only need otlp-proto-http (not gRPC), so remove the entire gRPC chain.
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip uninstall -y grpcio grpcio-status 2>/dev/null || true
+    pip uninstall -y \
+        grpcio \
+        grpcio-status \
+        opentelemetry-exporter-otlp-proto-grpc \
+        opentelemetry-exporter-otlp \
+        httptools \
+    2>/dev/null || true && \
+    echo "=== CRIT-041: Verifying no fork-unsafe packages remain ===" && \
+    pip list | grep -iE "grpc|uvloop|httptools" && echo "WARNING: fork-unsafe packages still present!" || echo "OK: all fork-unsafe packages removed"
 
 # Copy application code
 COPY . .

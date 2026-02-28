@@ -32,11 +32,20 @@ def when_ready(server):
 
 
 def post_worker_init(worker):
-    """Install SIGABRT handler in worker for structured timeout diagnostics.
+    """Install SIGABRT handler + faulthandler in worker for crash diagnostics.
 
     Called by gunicorn after a worker process has been initialized.
     Runs in the WORKER process context (not the arbiter).
     """
+    # CRIT-041: Enable faulthandler in EACH worker process.
+    # main.py enables it at import time, but without --preload the master
+    # doesn't import main.py — so faulthandler may not be active in workers
+    # that crash before importing main. This guarantees it's always on.
+    import faulthandler
+    if not faulthandler.is_enabled():
+        faulthandler.enable()
+        logger.info(f"CRIT-041: faulthandler enabled in worker pid={worker.pid}")
+
     try:
         from worker_lifecycle import install_timeout_handler
         install_timeout_handler(worker.pid)

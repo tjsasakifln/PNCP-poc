@@ -15,7 +15,23 @@ PROCESS_TYPE="${PROCESS_TYPE:-web}"
 
 case "$PROCESS_TYPE" in
   web)
-    echo "Starting web process (gunicorn + uvicorn)..."
+    # CRIT-041 AC9: RUNNER=uvicorn uses uvicorn standalone (no fork, no SIGSEGV risk).
+    # RUNNER=gunicorn (default) uses gunicorn prefork model (multi-worker).
+    RUNNER="${RUNNER:-gunicorn}"
+
+    if [ "$RUNNER" = "uvicorn" ]; then
+      echo "Starting web process (uvicorn standalone — no fork)..."
+      echo "  CRIT-041: Single-process mode eliminates ALL fork-unsafe C extension issues."
+      echo "  host=0.0.0.0, port=${PORT:-8000}, log-level=${UVICORN_LOG_LEVEL:-info}"
+
+      exec uvicorn main:app \
+        --host "0.0.0.0" \
+        --port "${PORT:-8000}" \
+        --log-level "${UVICORN_LOG_LEVEL:-info}" \
+        --timeout-keep-alive "${GUNICORN_KEEP_ALIVE:-75}"
+    fi
+
+    echo "Starting web process (gunicorn + uvicorn workers)..."
 
     # STORY-303: --preload DISABLED by default (was true in CRIT-010).
     # cryptography>=46.0.5 + --preload causes SIGSEGV: OpenSSL initialized in master
