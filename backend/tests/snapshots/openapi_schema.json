@@ -3275,6 +3275,37 @@
         "title": "MessageResponse",
         "type": "object"
       },
+      "MfaStatusResponse": {
+        "properties": {
+          "aal_level": {
+            "default": "aal1",
+            "title": "Aal Level",
+            "type": "string"
+          },
+          "factors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Factors",
+            "type": "array"
+          },
+          "mfa_enabled": {
+            "title": "Mfa Enabled",
+            "type": "boolean"
+          },
+          "mfa_required": {
+            "default": false,
+            "title": "Mfa Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mfa_enabled"
+        ],
+        "title": "MfaStatusResponse",
+        "type": "object"
+      },
       "PerfilContexto": {
         "description": "Business context profile collected during onboarding wizard.\n\nUsed to personalize search defaults and LLM recommendations.\nStored as JSONB in profiles.context_data.",
         "properties": {
@@ -3982,6 +4013,27 @@
         "title": "Recomendacao",
         "type": "object"
       },
+      "RecoveryCodesResponse": {
+        "properties": {
+          "codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Codes",
+            "type": "array"
+          },
+          "message": {
+            "default": "Salve estes c\u00f3digos em local seguro. Cada c\u00f3digo s\u00f3 pode ser usado uma vez.",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "codes"
+        ],
+        "title": "RecoveryCodesResponse",
+        "type": "object"
+      },
       "RedisMetrics": {
         "description": "Redis health metrics (B-04 AC8).",
         "properties": {
@@ -4014,6 +4066,27 @@
           }
         },
         "title": "RedisMetrics",
+        "type": "object"
+      },
+      "RegenerateRecoveryResponse": {
+        "properties": {
+          "codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Codes",
+            "type": "array"
+          },
+          "message": {
+            "default": "Novos c\u00f3digos gerados. Os c\u00f3digos anteriores foram invalidados.",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "codes"
+        ],
+        "title": "RegenerateRecoveryResponse",
         "type": "object"
       },
       "ReplyRequest": {
@@ -5199,6 +5272,44 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VerifyRecoveryRequest": {
+        "properties": {
+          "code": {
+            "maxLength": 20,
+            "minLength": 4,
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "VerifyRecoveryRequest",
+        "type": "object"
+      },
+      "VerifyRecoveryResponse": {
+        "properties": {
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          },
+          "remaining_codes": {
+            "default": 0,
+            "title": "Remaining Codes",
+            "type": "integer"
+          },
+          "success": {
+            "title": "Success",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "title": "VerifyRecoveryResponse",
         "type": "object"
       },
       "WelcomeEmailResponse": {
@@ -8289,6 +8400,134 @@
         "summary": "Export User Data",
         "tags": [
           "user"
+        ]
+      }
+    },
+    "/mfa/recovery-codes": {
+      "post": {
+        "description": "AC5: Generate 10 recovery codes after MFA enrollment.\n\nThis should be called immediately after successful MFA enrollment.\nStores bcrypt-hashed codes in the database, returns plaintext once.",
+        "operationId": "generate_recovery_codes_mfa_recovery_codes_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Generate Recovery Codes",
+        "tags": [
+          "MFA"
+        ]
+      }
+    },
+    "/mfa/regenerate-recovery": {
+      "post": {
+        "description": "AC8: Regenerate recovery codes (requires aal2).\n\nInvalidates all existing codes and generates a fresh set.",
+        "operationId": "regenerate_recovery_codes_mfa_regenerate_recovery_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegenerateRecoveryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Regenerate Recovery Codes",
+        "tags": [
+          "MFA"
+        ]
+      }
+    },
+    "/mfa/status": {
+      "get": {
+        "description": "AC4: Get MFA status for the current user.\n\nReturns whether MFA is enabled, enrolled factors, current AAL level,\nand whether MFA is required for this user's role.",
+        "operationId": "get_mfa_status_mfa_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Mfa Status",
+        "tags": [
+          "MFA"
+        ]
+      }
+    },
+    "/mfa/verify-recovery": {
+      "post": {
+        "description": "AC7: Verify a recovery code for MFA bypass.\n\nBrute force protection: max 3 failed attempts per hour.\nOn success: marks code as used, returns remaining count.",
+        "operationId": "verify_recovery_code_mfa_verify_recovery_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRecoveryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyRecoveryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Recovery Code",
+        "tags": [
+          "MFA"
         ]
       }
     },
@@ -12215,6 +12454,134 @@
         "summary": "Export User Data",
         "tags": [
           "user"
+        ]
+      }
+    },
+    "/v1/mfa/recovery-codes": {
+      "post": {
+        "description": "AC5: Generate 10 recovery codes after MFA enrollment.\n\nThis should be called immediately after successful MFA enrollment.\nStores bcrypt-hashed codes in the database, returns plaintext once.",
+        "operationId": "generate_recovery_codes_v1_mfa_recovery_codes_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryCodesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Generate Recovery Codes",
+        "tags": [
+          "MFA"
+        ]
+      }
+    },
+    "/v1/mfa/regenerate-recovery": {
+      "post": {
+        "description": "AC8: Regenerate recovery codes (requires aal2).\n\nInvalidates all existing codes and generates a fresh set.",
+        "operationId": "regenerate_recovery_codes_v1_mfa_regenerate_recovery_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegenerateRecoveryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Regenerate Recovery Codes",
+        "tags": [
+          "MFA"
+        ]
+      }
+    },
+    "/v1/mfa/status": {
+      "get": {
+        "description": "AC4: Get MFA status for the current user.\n\nReturns whether MFA is enabled, enrolled factors, current AAL level,\nand whether MFA is required for this user's role.",
+        "operationId": "get_mfa_status_v1_mfa_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Mfa Status",
+        "tags": [
+          "MFA"
+        ]
+      }
+    },
+    "/v1/mfa/verify-recovery": {
+      "post": {
+        "description": "AC7: Verify a recovery code for MFA bypass.\n\nBrute force protection: max 3 failed attempts per hour.\nOn success: marks code as used, returns remaining count.",
+        "operationId": "verify_recovery_code_v1_mfa_verify_recovery_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRecoveryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyRecoveryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Recovery Code",
+        "tags": [
+          "MFA"
         ]
       }
     },

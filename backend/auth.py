@@ -299,11 +299,16 @@ async def get_current_user(
         if not user_id:
             raise HTTPException(status_code=401, detail="Token sem user ID")
 
+        # STORY-317: Extract AAL (Authenticator Assurance Level) from JWT
+        # aal1 = password only, aal2 = password + TOTP verified
+        aal = payload.get("aal", "aal1")
+
         # Build user data from JWT claims (no API call needed!)
         user_data = {
             "id": user_id,
             "email": email or "unknown",
             "role": role,
+            "aal": aal,
         }
 
         # Cache validated token
@@ -337,6 +342,62 @@ async def require_auth(
             status_code=401,
             detail="Autenticacao necessaria. Faca login para continuar.",
         )
+    return user
+
+
+async def require_mfa(
+    user: dict = Depends(require_auth),
+) -> dict:
+    """STORY-317 AC2/AC3: Require MFA (aal2) for sensitive endpoints.
+
+    For admin/master roles: always requires aal2.
+    For regular users with MFA enrolled: requires aal2.
+    For regular users without MFA: allows aal1 (pass-through).
+
+    Used on: /admin/*, /checkout, /billing-portal, /change-password
+    """
+    aal = user.get("aal", "aal1")
+    user_id = user["id"]
+
+    if aal == "aal2":
+        return user
+
+    # Check if user is admin/master (MFA mandatory for these roles)
+    from authorization import check_user_roles
+    is_admin, is_master = await check_user_roles(user_id)
+
+    if is_admin or is_master:
+        raise HTTPException(
+            status_code=403,
+            detail="MFA obrigatório para sua conta. Configure a autenticação em dois fatores.",
+            headers={"X-MFA-Required": "true"},
+        )
+
+    # For regular users: check if they have MFA enrolled but haven't verified
+    # If they have factors, they need to verify; if not, allow through
+    try:
+        from supabase_client import get_supabase
+        sb = get_supabase()
+        result = (
+            sb.table("mfa_factors")
+            .select("id, status")
+            .eq("user_id", user_id)
+            .eq("status", "verified")
+            .execute()
+        )
+        if result.data and len(result.data) > 0:
+            # User has MFA enrolled but session is aal1 — need to verify
+            raise HTTPException(
+                status_code=403,
+                detail="Verificação MFA necessária. Use seu app autenticador.",
+                headers={"X-MFA-Required": "true"},
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # If we can't check factors, allow through (fail-open for non-admin)
+        logger.warning(f"MFA factor check failed for user {user_id[:8]}: {type(e).__name__}")
+
     return user
 
 

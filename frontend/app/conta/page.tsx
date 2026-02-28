@@ -446,6 +446,24 @@ export default function ContaPage() {
           </div>
         </div>
 
+        {/* STORY-317 AC9: Security section with MFA link */}
+        <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--ink)]">Segurança</h2>
+              <p className="text-sm text-[var(--ink-secondary)] mt-1">
+                Gerencie a autenticação em dois fatores (MFA) e outras configurações de segurança.
+              </p>
+            </div>
+            <Link
+              href="/conta/seguranca"
+              className="px-4 py-2 bg-[var(--brand-navy)] text-white rounded-button text-sm font-semibold hover:bg-[var(--brand-blue)] transition-colors"
+            >
+              Configurar MFA
+            </Link>
+          </div>
+        </div>
+
         {/* Change password */}
         <div className="p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card mb-6">
           <h2 className="text-lg font-semibold text-[var(--ink)] mb-4">Alterar senha</h2>

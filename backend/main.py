@@ -84,6 +84,7 @@ from routes.bid_analysis import router as bid_analysis_router  # STORY-259: Deep
 from routes.slo import router as slo_router  # STORY-299: SLO dashboard
 from routes.alerts import router as alerts_router  # STORY-301: Email Alert System
 from routes.trial_emails import router as trial_emails_router  # STORY-310: Trial email sequence
+from routes.mfa import router as mfa_router  # STORY-317: MFA TOTP + recovery codes
 
 # Configure structured logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -653,6 +654,7 @@ app.include_router(bid_analysis_router, prefix="/v1")  # STORY-259: Deep bid ana
 app.include_router(slo_router)  # STORY-299: SLO dashboard (already has /v1/admin prefix)
 app.include_router(alerts_router, prefix="/v1")  # STORY-301: Email Alert System
 app.include_router(trial_emails_router, prefix="/v1")  # STORY-310: Trial email sequence
+app.include_router(mfa_router, prefix="/v1")  # STORY-317: MFA TOTP + recovery codes
 
 # ============================================================================
 # SYS-M08: Backward Compatibility - Mount routers without /v1/ prefix
@@ -681,6 +683,7 @@ app.include_router(auth_check_router)  # STORY-258: Email/phone check
 app.include_router(bid_analysis_router)  # STORY-259: Deep bid analysis
 app.include_router(alerts_router)  # STORY-301: Email Alert System
 app.include_router(trial_emails_router)  # STORY-310: Trial email sequence
+app.include_router(mfa_router)  # STORY-317: MFA TOTP + recovery codes
 
 # ============================================================================
 # GTM-PROXY-001 AC9-AC11: Global exception handlers for error sanitization

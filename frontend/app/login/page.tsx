@@ -8,6 +8,13 @@ import Link from "next/link";
 import InstitutionalSidebar from "../components/InstitutionalSidebar";
 import { toast } from "sonner";
 import { translateAuthError } from "../../lib/error-messages";
+import dynamic from "next/dynamic";
+
+// STORY-317: Lazy load to avoid supabase import at module level (breaks tests)
+const TotpVerificationScreen = dynamic(
+  () => import("../../components/auth/TotpVerificationScreen").then(mod => ({ default: mod.TotpVerificationScreen })),
+  { ssr: false }
+);
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
@@ -69,6 +76,7 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
+  const [showMfaVerification, setShowMfaVerification] = useState(false);
 
   // Check for error/reason params from OAuth callback or middleware redirect
   useEffect(() => {
@@ -105,6 +113,7 @@ function LoginContent() {
 
   // Handle already authenticated users
   // AC7: Link user identity after login
+  // STORY-317 AC13: Check if MFA verification is needed after login
   useEffect(() => {
     if (!authLoading && session) {
       // AC7: Link user identity after login
@@ -113,15 +122,26 @@ function LoginContent() {
         signup_date: session.user.created_at,
       });
 
-      const redirectTo = searchParams.get("redirect") || "/buscar";
+      // STORY-317 AC13: Check MFA status before redirect
+      (async () => {
+        try {
+          const { supabase: sb } = await import("../../lib/supabase");
+          const { data: aalData } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel === "aal1") {
+            // User has MFA enrolled but hasn't verified this session
+            setShowMfaVerification(true);
+            return;
+          }
+        } catch {
+          // MFA check failed — proceed normally
+        }
 
-      // Show toast notification
-      toast.info("Você já está autenticado!");
-
-      // Redirect after short delay to allow toast to be seen
-      setTimeout(() => {
-        router.push(redirectTo);
-      }, 1500);
+        const redirectTo = searchParams.get("redirect") || "/buscar";
+        toast.info("Você já está autenticado!");
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 1500);
+      })();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, session, router, searchParams]);
@@ -147,6 +167,21 @@ function LoginContent() {
         toast.success("Link mágico enviado! Verifique seu email.");
       } else {
         await signInWithEmail(email, password);
+
+        // STORY-317 AC13: Check if MFA is needed after password login
+        try {
+          const { supabase: sb } = await import("../../lib/supabase");
+          const { data: aalData } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aalData && aalData.nextLevel === "aal2" && aalData.currentLevel === "aal1") {
+            trackEvent('login_completed', { method: "email", mfa_required: true });
+            setShowMfaVerification(true);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // MFA check failed — proceed normally
+        }
+
         setSuccess(true);
         // AC16: Track login_completed for email
         trackEvent('login_completed', { method: "email" });
@@ -178,6 +213,25 @@ function LoginContent() {
       }, 300);
     }
   }, []);
+
+  // STORY-317 AC13: Show MFA verification screen
+  if (showMfaVerification) {
+    const redirectTo = searchParams.get("redirect") || "/buscar";
+    return (
+      <TotpVerificationScreen
+        onVerified={() => {
+          toast.success("Verificação MFA bem-sucedida!");
+          router.push(redirectTo);
+        }}
+        onCancel={async () => {
+          const { supabase: sb } = await import("../../lib/supabase");
+          await sb.auth.signOut();
+          setShowMfaVerification(false);
+        }}
+        redirectTo={redirectTo}
+      />
+    );
+  }
 
   // Show loading while checking initial auth state
   if (authLoading) {
