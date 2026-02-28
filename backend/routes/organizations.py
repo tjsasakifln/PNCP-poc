@@ -1,6 +1,7 @@
 """Organization routes for multi-user consultancy management.
 
 STORY-322: Plano Consultoria — organization CRUD and member management.
+STORY-331 AC3: Defensive guard — PGRST205 → HTTP 503.
 """
 
 import logging
@@ -21,6 +22,7 @@ from services.organization_service import (
     remove_member,
     update_org_logo,
 )
+from supabase_client import _is_schema_error
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,12 @@ async def get_my_org(
     """Get the organization the current user belongs to."""
     user_id = user["id"]
     logger.debug("get_my_org user=%s", mask_user_id(user_id))
-    org = await get_user_org(user_id=user_id)
+    try:
+        org = await get_user_org(user_id=user_id)
+    except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
+        raise
     if not org:
         return {"organization": None}
     return {"organization": org}
@@ -77,6 +84,8 @@ async def create_org(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
         logger.error("Failed to create organization user=%s: %s", mask_user_id(user_id), e)
         raise HTTPException(status_code=500, detail="Erro ao criar organizacao")
 
@@ -90,7 +99,12 @@ async def get_org(
     """Get organization details (must be a member)."""
     user_id = user["id"]
     logger.debug("get_org org_id=%s user=%s", org_id, mask_user_id(user_id))
-    org = await get_organization(org_id=org_id, user_id=user_id)
+    try:
+        org = await get_organization(org_id=org_id, user_id=user_id)
+    except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
+        raise
     if not org:
         raise HTTPException(status_code=404, detail="Organizacao nao encontrada")
     return org
@@ -119,6 +133,8 @@ async def invite_org_member(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
         logger.error(
             "Failed to invite member org_id=%s inviter=%s: %s",
             org_id,
@@ -143,6 +159,8 @@ async def accept_org_invite(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
         logger.error(
             "Failed to accept invite org_id=%s user=%s: %s",
             org_id,
@@ -179,6 +197,8 @@ async def remove_org_member(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
         logger.error(
             "Failed to remove member org_id=%s remover=%s target=%s: %s",
             org_id,
@@ -204,6 +224,8 @@ async def get_org_dashboard_endpoint(
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
         logger.error(
             "Failed to get org dashboard org_id=%s user=%s: %s",
             org_id,
@@ -235,6 +257,8 @@ async def upload_org_logo(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        if _is_schema_error(e):
+            raise HTTPException(status_code=503, detail="Feature not yet available")
         logger.error(
             "Failed to update org logo org_id=%s user=%s: %s",
             org_id,
