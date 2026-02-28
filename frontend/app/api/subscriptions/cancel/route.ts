@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
       ...(body && { body }),
     });
 
-    const body = await res.text();
-    const sanitized = sanitizeProxyError(res.status, body, res.headers.get("content-type"));
+    const responseBody = await res.text();
+    const sanitized = sanitizeProxyError(res.status, responseBody, res.headers.get("content-type"));
     if (sanitized) return sanitized;
 
     try {
-      const data = JSON.parse(body);
+      const data = JSON.parse(responseBody);
       return NextResponse.json(data, { status: res.status });
     } catch {
       return NextResponse.json({ message: "Erro temporário de comunicação" }, { status: res.status });
