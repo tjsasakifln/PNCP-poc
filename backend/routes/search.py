@@ -50,7 +50,7 @@ from rate_limiter import (
     SEARCH_RATE_LIMIT_PER_MINUTE,
 )
 from progress import create_tracker, get_tracker, remove_tracker, get_replay_events, is_search_terminal
-from redis_pool import get_redis_pool
+from redis_pool import get_redis_pool, get_sse_redis_pool
 from log_sanitizer import get_sanitized_logger
 from search_pipeline import SearchPipeline
 from search_context import SearchContext
@@ -416,8 +416,10 @@ async def buscar_progress_stream(
             # STORY-276: Try Redis Streams first, fallback to in-memory queue
             _use_streams = tracker._use_redis
             _redis = None
+            _supabase_fallback = False  # CRIT-048 AC4: track Redis timeout for Supabase polling fallback
             if _use_streams:
-                _redis = await get_redis_pool()
+                # CRIT-048 AC5: Use SSE-specific Redis pool with 60s socket timeout
+                _redis = await get_sse_redis_pool()
                 if not _redis:
                     _use_streams = False
                     logger.warning(
@@ -508,6 +510,32 @@ async def buscar_progress_stream(
                         ).inc()
                         break
 
+                    except (TimeoutError, ConnectionError) as redis_timeout_err:
+                        # CRIT-048 AC3: Redis timeout/connection error — emit graceful
+                        # SSE event instead of crashing. Then fall to Supabase polling (AC4).
+                        #
+                        # Root cause chain (CRIT-048 AC1 correlation):
+                        #   SMARTLIC-BACKEND-1M: Redis TimeoutError during SSE XREAD
+                        #   → SSE generator crashes → backend closes connection abruptly
+                        #   → SMARTLIC-FRONTEND-1: Next.js proxy "failed to pipe response"
+                        from metrics import SSE_CONNECTION_ERRORS
+                        SSE_CONNECTION_ERRORS.labels(
+                            error_type="redis_timeout", phase="streaming"
+                        ).inc()
+                        logger.error(
+                            f"CRIT-048 AC3: Redis timeout for SSE {search_id}: "
+                            f"{type(redis_timeout_err).__name__}: {redis_timeout_err}"
+                        )
+                        # Emit non-terminal informational event before switching transport
+                        _sse_event_counter += 1
+                        yield (
+                            f"id: {_sse_event_counter}\n"
+                            f"data: {_json.dumps({'stage': 'connecting', 'progress': -1, 'message': 'Reconectando ao servidor de progresso...'})}\n\n"
+                        )
+                        _supabase_fallback = True
+                        _use_streams = False
+                        break
+
                     except Exception as redis_err:
                         # CRIT-026-ROOT: Circuit breaker for transient Redis errors.
                         # Instead of crashing the SSE generator on first error,
@@ -521,16 +549,61 @@ async def buscar_progress_stream(
                             logger.error(
                                 f"CRIT-026: Circuit breaker open for {search_id} "
                                 f"after {_consecutive_errors} consecutive Redis errors, "
-                                f"falling back to in-memory queue"
+                                f"falling back to Supabase polling"
                             )
-                            # Fall through to in-memory mode
+                            # CRIT-048 AC4: Fall through to Supabase polling
                             _use_streams = False
+                            _supabase_fallback = True
                             break
                         # Exponential backoff: 1s, 2s, 4s, 8s, 16s
                         _backoff = min(2 ** (_consecutive_errors - 1), 16)
                         await _asyncio.sleep(_backoff)
 
-            if not _use_streams:
+            # CRIT-048 AC4: Supabase polling fallback when Redis is unavailable
+            # Polls search_state_transitions via get_search_status() every 5s
+            # to deliver degraded-but-functional SSE progress updates.
+            if _supabase_fallback:
+                logger.info(f"CRIT-048 AC4: Supabase polling fallback for {search_id}")
+                _last_polled_state = None
+                _max_polls = 60  # 60 * 5s = 5 minutes max
+                for _poll_idx in range(_max_polls):
+                    try:
+                        _sb_status = await get_search_status(search_id)
+                        if _sb_status:
+                            _current_status = _sb_status.get("status", "unknown")
+                            if _current_status != _last_polled_state:
+                                _last_polled_state = _current_status
+                                # Map DB states to SSE stages
+                                _stage = _current_status
+                                if _current_status == "completed":
+                                    _stage = "complete"
+                                elif _current_status in ("failed", "timed_out", "rate_limited"):
+                                    _stage = "error"
+                                _sse_event_counter += 1
+                                yield (
+                                    f"id: {_sse_event_counter}\n"
+                                    f"data: {_json.dumps({'stage': _stage, 'progress': _sb_status.get('progress', 0), 'message': f'Acompanhamento: {_current_status}', 'detail': {'transport': 'supabase_fallback'}})}\n\n"
+                                )
+                                if _stage in (
+                                    "complete", "error", "degraded",
+                                    "refresh_available", "search_complete",
+                                ):
+                                    return
+                    except Exception as _sb_err:
+                        logger.warning(
+                            f"CRIT-048: Supabase poll error for {search_id}: {_sb_err}"
+                        )
+                    heartbeat_count += 1
+                    yield ": heartbeat\n\n"
+                    await _asyncio.sleep(5.0)
+                # Max polls exhausted — emit terminal error
+                _sse_event_counter += 1
+                yield (
+                    f"id: {_sse_event_counter}\n"
+                    f"data: {_json.dumps({'stage': 'error', 'progress': -1, 'message': 'Timeout no acompanhamento da busca'})}\n\n"
+                )
+
+            elif not _use_streams:
                 # AC3: In-memory mode — fallback asyncio.Queue (no Redis)
                 # Also entered when CRIT-026-ROOT circuit breaker opens mid-stream.
                 logger.debug(f"SSE using in-memory queue for {search_id}")

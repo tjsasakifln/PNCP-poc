@@ -8,6 +8,8 @@
  * CRIT-012: Added bodyTimeout: 0, AbortController, structured error handling.
  * CRIT-026: Added undici diagnostic logging, AbortSignal.timeout fallback,
  *           retry-once on BodyTimeoutError/terminated, Sentry breadcrumb.
+ * CRIT-048: Controlled pipe with error recovery (AC6), upstream logging (AC2),
+ *           MAX_SSE_RETRIES 1→2 (AC7).
  */
 
 import { NextRequest } from "next/server";
@@ -15,8 +17,8 @@ import { NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// CRIT-026 AC7: Max retries for transient stream failures
-const MAX_SSE_RETRIES = 1;
+// CRIT-048 AC7: Max retries increased from 1→2 (total 3 attempts)
+const MAX_SSE_RETRIES = 2;
 
 /**
  * CRIT-026 AC6+AC7: Perform the actual SSE fetch to backend with undici
@@ -141,6 +143,17 @@ export async function GET(request: NextRequest) {
       );
 
       if (!backendResponse.ok) {
+        // CRIT-048 AC2: Log upstream error details
+        console.error(
+          "[SSE-PROXY] CRIT-048: Upstream error:",
+          JSON.stringify({
+            search_id: searchId,
+            upstream_status: backendResponse.status,
+            upstream_error: backendResponse.statusText,
+            elapsed_ms: Date.now() - startTime,
+            attempt: attempt + 1,
+          })
+        );
         return new Response("Erro no servidor", {
           status: backendResponse.status,
         });
@@ -150,15 +163,80 @@ export async function GET(request: NextRequest) {
         return new Response("Erro de conexão com o servidor", { status: 502 });
       }
 
-      // Proxy the SSE stream directly to the browser
+      // CRIT-048 AC6: Controlled pipe with error recovery.
+      // Instead of passing body directly (which causes "failed to pipe response"
+      // when backend disconnects mid-stream), we manually pipe and catch errors,
+      // emitting an SSE error event with retry hint for client reconnection.
+      const sseHeaders = {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      };
+
+      // Controlled pipe — intercept upstream read errors
+      if (typeof ReadableStream !== "undefined" && backendResponse.body?.getReader) {
+        const upstreamBody = backendResponse.body;
+        const sseReadable = new ReadableStream({
+          async start(controller) {
+            const reader = upstreamBody.getReader();
+            const encoder = new TextEncoder();
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                controller.enqueue(value);
+              }
+              controller.close();
+            } catch (pipeError) {
+              // CRIT-048 AC2+AC6: Pipe failure — log with upstream details
+              const pipeErrorName =
+                pipeError instanceof Error ? pipeError.name : "UnknownError";
+              const pipeErrorMsg =
+                pipeError instanceof Error
+                  ? pipeError.message
+                  : String(pipeError);
+              console.error(
+                "[SSE-PROXY] CRIT-048: Pipe failure:",
+                JSON.stringify({
+                  error_type: pipeErrorName,
+                  search_id: searchId,
+                  upstream_status: backendResponse.status,
+                  upstream_error: pipeErrorMsg,
+                  elapsed_ms: Date.now() - startTime,
+                })
+              );
+              try {
+                // Emit SSE error event so client can reconnect
+                controller.enqueue(
+                  encoder.encode(
+                    `event: error\ndata: ${JSON.stringify({
+                      stage: "error",
+                      progress: -1,
+                      message: "Conexão com servidor interrompida",
+                      detail: { upstream_error: pipeErrorName },
+                    })}\nretry: 5000\n\n`
+                  )
+                );
+              } catch {
+                // Client already disconnected — nothing to do
+              }
+              try {
+                controller.close();
+              } catch {
+                // Already closed
+              }
+            }
+          },
+        });
+
+        return new Response(sseReadable, { status: 200, headers: sseHeaders });
+      }
+
+      // Fallback: direct pass-through (legacy behavior)
       return new Response(backendResponse.body, {
         status: 200,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive",
-          "X-Accel-Buffering": "no",
-        },
+        headers: sseHeaders,
       });
     } catch (error) {
       lastError = error;

@@ -157,7 +157,7 @@ describe("CRIT-026: SSE Proxy Retry + Observability", () => {
     const response = await GET(makeRequest("test-retry-exhausted"));
 
     expect(response.status).toBe(504);
-    expect(callCount).toBe(2); // Original + 1 retry
+    expect(callCount).toBe(3); // Original + 2 retries (CRIT-048 AC7)
     const body = await response.json();
     expect(body.retries_exhausted).toBe(true);
     expect(body.error_type).toBe("BodyTimeoutError");
@@ -185,7 +185,7 @@ describe("CRIT-026: SSE Proxy Retry + Observability", () => {
     const response = await GET(makeRequest("test-retry-terminated"));
 
     expect(response.status).toBe(504);
-    expect(callCount).toBe(2); // Original + 1 retry
+    expect(callCount).toBe(3); // Original + 2 retries (CRIT-048 AC7)
   });
 
   // --------------------------------------------------------------------------
@@ -292,6 +292,6 @@ describe("CRIT-026: SSE Proxy Retry + Observability", () => {
     const response = await GET(makeRequest("test-pipe-error"));
 
     expect(response.status).toBe(504);
-    expect(callCount).toBe(2); // Original + 1 retry
+    expect(callCount).toBe(3); // Original + 2 retries (CRIT-048 AC7)
   });
 });

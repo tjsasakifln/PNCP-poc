@@ -221,6 +221,65 @@ async def get_redis_pool():
         return None
 
 
+# ---------------------------------------------------------------------------
+# CRIT-048 AC5: SSE-specific Redis pool with extended socket timeout
+# ---------------------------------------------------------------------------
+# Railway Redis has latency spikes (shared infra) that cause socket_timeout=30s
+# to be exceeded during SSE XREAD polling. A separate small pool with 60s timeout
+# prevents TimeoutError on SSE reads without affecting other Redis operations.
+
+SSE_SOCKET_TIMEOUT = 60
+
+_sse_redis_pool = None
+_sse_pool_initialized = False
+
+
+async def get_sse_redis_pool():
+    """Get Redis pool with extended timeout for SSE reads (CRIT-048 AC5).
+
+    Returns a separate Redis pool with socket_timeout=60s (vs 30s global).
+    Falls back to the regular pool if SSE pool initialization fails.
+
+    Returns:
+        redis.asyncio.Redis instance if available, None otherwise.
+    """
+    global _sse_redis_pool, _sse_pool_initialized
+
+    if _sse_pool_initialized:
+        return _sse_redis_pool
+
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        _sse_pool_initialized = True
+        return None
+
+    try:
+        import redis.asyncio as aioredis
+
+        _sse_redis_pool = aioredis.from_url(
+            redis_url,
+            decode_responses=True,
+            max_connections=10,  # Small pool — SSE only
+            socket_timeout=SSE_SOCKET_TIMEOUT,
+            socket_connect_timeout=POOL_SOCKET_CONNECT_TIMEOUT,
+        )
+
+        await _sse_redis_pool.ping()
+        logger.info(
+            "SSE Redis pool connected (socket_timeout=%ds, max_connections=10)",
+            SSE_SOCKET_TIMEOUT,
+        )
+        _sse_pool_initialized = True
+        return _sse_redis_pool
+
+    except Exception as e:
+        logger.warning("SSE Redis pool failed: %s — falling back to regular pool", e)
+        _sse_redis_pool = None
+        _sse_pool_initialized = True
+        # Fall back to regular pool (better than None)
+        return await get_redis_pool()
+
+
 def _mark_fallback_started() -> None:
     """STORY-332: Record when Redis fallback mode began and update metrics."""
     global _fallback_since
