@@ -6,8 +6,10 @@ on:
       - 'supabase/migrations/**'
   push:
     branches: [main]
-    paths:
-      - 'supabase/migrations/**'
+  workflow_dispatch:
+  schedule:
+    # Daily at 06:00 UTC — catch unapplied migrations even without pushes
+    - cron: '0 6 * * *'
 
 permissions:
   contents: read
@@ -37,15 +39,32 @@ jobs:
           OUTPUT=$(supabase migration list --linked 2>&1)
           echo "$OUTPUT"
 
-          # Check if any migration shows as NOT applied (local only)
-          if echo "$OUTPUT" | grep -q "Not applied"; then
+          # Detect unapplied migrations: rows with Local value but empty Remote
+          # Supabase CLI outputs table with "Local | Remote | Time" columns
+          # An unapplied migration has content in Local but nothing in Remote
+          UNAPPLIED=$(echo "$OUTPUT" | awk -F'|' '
+            NR > 2 {
+              local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              if (local != "" && remote == "") print local
+            }
+          ')
+
+          # Also check for explicit "Not applied" text (older CLI versions)
+          if [ -n "$UNAPPLIED" ] || echo "$OUTPUT" | grep -q "Not applied"; then
             echo ""
-            echo "::error::Found unapplied migrations! Run 'supabase db push' before deploying."
+            echo "::error::Found unapplied migrations!"
+            if [ -n "$UNAPPLIED" ]; then
+              echo "Unapplied migrations:"
+              echo "$UNAPPLIED"
+            fi
             echo ""
             echo "To fix this:"
             echo "  1. export SUPABASE_ACCESS_TOKEN=<your-token>"
             echo "  2. supabase link --project-ref <project-ref>"
-            echo "  3. supabase db push"
+            echo "  3. supabase db push --include-all"
+            echo ""
+            echo "This check prevents CRIT-039/CRIT-045 recurrence."
             exit 1
           fi
 
