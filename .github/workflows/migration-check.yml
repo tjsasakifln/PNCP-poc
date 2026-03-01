@@ -1,15 +1,13 @@
 name: Migration Check
 
 on:
-  pull_request:
-    paths:
-      - 'supabase/migrations/**'
   push:
     branches: [main]
   workflow_dispatch:
   schedule:
     # Daily at 06:00 UTC — catch unapplied migrations even without pushes
     - cron: '0 6 * * *'
+  # NOTE: PR checks moved to migration-gate.yml (CRIT-050) — warns instead of blocking
 
 permissions:
   contents: read

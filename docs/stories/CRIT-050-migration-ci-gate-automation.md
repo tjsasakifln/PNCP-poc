@@ -32,22 +32,22 @@ Criar um CI check que detecta migrações locais não aplicadas em produção AN
 
 ### CI Gate
 
-- [ ] **AC1:** Criar GitHub Actions workflow `.github/workflows/migration-gate.yml` que roda em PRs que tocam `supabase/migrations/`
-- [ ] **AC2:** O workflow deve:
+- [x] **AC1:** Criar GitHub Actions workflow `.github/workflows/migration-gate.yml` que roda em PRs que tocam `supabase/migrations/`
+- [x] **AC2:** O workflow deve:
   1. Listar migrações locais em `supabase/migrations/`
   2. Comparar com migrações aplicadas via `supabase migration list --linked`
   3. Se houver pendentes: **WARNING** no PR (não bloqueia, mas chama atenção)
-- [ ] **AC3:** Adicionar step no deploy workflow que executa `supabase db push --include-all` automaticamente após deploy do backend
-- [ ] **AC4:** Adicionar step de `NOTIFY pgrst, 'reload schema'` após `db push` para forçar cache refresh
+- [x] **AC3:** Adicionar step no deploy workflow que executa `supabase db push --include-all` automaticamente após deploy do backend
+- [x] **AC4:** Adicionar step de `NOTIFY pgrst, 'reload schema'` após `db push` para forçar cache refresh
 
 ### Post-Deploy Verification
 
-- [ ] **AC5:** Após `db push`, verificar que `GET /v1/health` não retorna erros PGRST205 (smoke test)
-- [ ] **AC6:** Se `db push` falhar, o deploy deve ser marcado como DEGRADED (não rollback, mas alerta)
+- [x] **AC5:** Após `db push`, verificar que `GET /v1/health` não retorna erros PGRST205 (smoke test)
+- [x] **AC6:** Se `db push` falhar, o deploy deve ser marcado como DEGRADED (não rollback, mas alerta)
 
 ### Documentação
 
-- [ ] **AC7:** Documentar o novo fluxo em CLAUDE.md seção "Git Workflow"
+- [x] **AC7:** Documentar o novo fluxo em CLAUDE.md seção "Git Workflow"
 
 ---
 

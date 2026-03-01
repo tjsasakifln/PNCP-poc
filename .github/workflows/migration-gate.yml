@@ -1,0 +1,126 @@
+name: Migration Gate (PR Warning)
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  warn-pending-migrations:
+    name: Check Pending Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: List and compare migrations
+        id: check
+        run: |
+          echo "=== Checking migration status ==="
+          OUTPUT=$(supabase migration list --linked 2>&1)
+          echo "$OUTPUT"
+
+          # Parse unapplied migrations: rows with Local value but empty Remote
+          UNAPPLIED=$(echo "$OUTPUT" | awk -F'|' '
+            NR > 2 {
+              local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              if (local != "" && remote == "") print local
+            }
+          ')
+
+          # Also check for explicit "Not applied" text (older CLI versions)
+          if echo "$OUTPUT" | grep -q "Not applied"; then
+            LEGACY_UNAPPLIED=$(echo "$OUTPUT" | grep "Not applied" | awk '{print $1}')
+            UNAPPLIED=$(printf "%s\n%s" "$UNAPPLIED" "$LEGACY_UNAPPLIED" | sort -u | sed '/^$/d')
+          fi
+
+          COUNT=$(echo "$UNAPPLIED" | sed '/^$/d' | wc -l)
+
+          if [ "$COUNT" -gt 0 ]; then
+            echo "has_pending=true" >> $GITHUB_OUTPUT
+            echo "count=$COUNT" >> $GITHUB_OUTPUT
+            # Save list for comment step
+            echo "$UNAPPLIED" > /tmp/unapplied_migrations.txt
+
+            echo ""
+            echo "::warning::Found $COUNT unapplied migration(s) in production."
+            echo "These will be auto-applied by the deploy workflow after merge."
+            echo ""
+            echo "Unapplied migrations:"
+            echo "$UNAPPLIED"
+          else
+            echo "has_pending=false" >> $GITHUB_OUTPUT
+            echo "count=0" >> $GITHUB_OUTPUT
+            echo "All migrations are applied to production."
+          fi
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Post PR comment
+        if: steps.check.outputs.has_pending == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const unapplied = fs.readFileSync('/tmp/unapplied_migrations.txt', 'utf8').trim();
+            const count = '${{ steps.check.outputs.count }}';
+
+            const body = `## ⚠️ Migration Gate — ${count} Pending Migration(s)
+
+            The following migration(s) exist locally but are **not yet applied** to production:
+
+            \`\`\`
+            ${unapplied}
+            \`\`\`
+
+            **This is a warning, not a blocker.** The deploy workflow will auto-apply these migrations via \`supabase db push --include-all\` after the backend deploys.
+
+            ### What to verify before merging:
+            - [ ] Migration SQL is idempotent or safe to apply
+            - [ ] No destructive operations (DROP TABLE, DROP COLUMN) without review
+            - [ ] Backend code handles the schema transition gracefully
+
+            > _Powered by CRIT-050 migration gate — prevents CRIT-039/CRIT-045 recurrence._`;
+
+            // Find and update existing comment or create new
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.body.includes('Migration Gate') && c.user.type === 'Bot'
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

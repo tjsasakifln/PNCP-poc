@@ -345,4 +345,14 @@ Supabase Auth with RLS on all tables. Input validation via Pydantic (backend) an
 
 **Commits:** Use conventional commits: `feat(backend):`, `fix(frontend):`, `docs:`, `chore:`
 
-**Before Committing:** Run tests (pytest / npm test), check linting, update docs. Migration CI guard (`migration-check.yml`) checks that all local migrations in `supabase/migrations/` are applied to production.
+**Before Committing:** Run tests (pytest / npm test), check linting, update docs.
+
+### Migration CI Flow (CRIT-050)
+
+Three-layer defense against unapplied migrations (prevents CRIT-039/CRIT-045 recurrence):
+
+1. **PR Warning** (`migration-gate.yml`) — Runs on PRs touching `supabase/migrations/`. Lists pending migrations and posts a WARNING comment. Does NOT block merge.
+2. **Push Alert** (`migration-check.yml`) — Runs on push to main + daily schedule. Blocks (exit 1) if unapplied migrations detected.
+3. **Auto-Apply on Deploy** (`deploy.yml`) — After backend deploys, runs `supabase db push --include-all` automatically. Sends `NOTIFY pgrst, 'reload schema'` for immediate PostgREST cache refresh. Verifies no PGRST205 errors via smoke test. If push fails, marks deploy as DEGRADED (does not rollback).
+
+**Required Secrets:** `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_URL` (for NOTIFY pgrst)

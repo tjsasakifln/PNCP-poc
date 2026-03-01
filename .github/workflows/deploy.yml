@@ -61,42 +61,10 @@ jobs:
             fi
           fi
 
-  check-migrations:
-    name: Check Unapplied Migrations
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Link project
-        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Check for unapplied migrations
-        run: |
-          echo "Checking migration status..."
-          OUTPUT=$(supabase migration list --linked 2>&1)
-          echo "$OUTPUT"
-
-          if echo "$OUTPUT" | grep -q "Not applied"; then
-            echo "::error::Found unapplied migrations! Run 'supabase db push' before deploying."
-            exit 1
-          fi
-
-          echo "All migrations are applied to production."
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
   deploy-backend:
     name: Deploy Backend (Railway)
     runs-on: ubuntu-latest
-    needs: [detect-changes, check-migrations]
+    needs: [detect-changes]
     if: needs.detect-changes.outputs.backend == 'true'
     environment: production
 
@@ -163,13 +131,129 @@ jobs:
           echo "Backend health check failed after 5 attempts"
           exit 1
 
+  apply-migrations:
+    name: Apply Pending Migrations
+    runs-on: ubuntu-latest
+    needs: [deploy-backend]
+    if: always() && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    outputs:
+      status: ${{ steps.result.outputs.status }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Check for pending migrations
+        id: check
+        run: |
+          echo "=== Checking migration status ==="
+          OUTPUT=$(supabase migration list --linked 2>&1)
+          echo "$OUTPUT"
+
+          UNAPPLIED=$(echo "$OUTPUT" | awk -F'|' '
+            NR > 2 {
+              local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              if (local != "" && remote == "") print local
+            }
+          ')
+
+          if [ -n "$UNAPPLIED" ] || echo "$OUTPUT" | grep -q "Not applied"; then
+            echo "has_pending=true" >> $GITHUB_OUTPUT
+            echo "Pending migrations found:"
+            echo "$UNAPPLIED"
+          else
+            echo "has_pending=false" >> $GITHUB_OUTPUT
+            echo "All migrations already applied."
+          fi
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Apply migrations (db push)
+        id: push
+        if: steps.check.outputs.has_pending == 'true'
+        continue-on-error: true
+        run: |
+          echo "=== Applying pending migrations ==="
+          supabase db push --include-all
+          echo "Migrations applied successfully."
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Notify PostgREST schema reload
+        if: steps.push.outcome == 'success' || steps.check.outputs.has_pending == 'false'
+        continue-on-error: true
+        run: |
+          if [ -n "$SUPABASE_DB_URL" ]; then
+            psql "$SUPABASE_DB_URL" -c "NOTIFY pgrst, 'reload schema';" 2>&1
+            echo "PostgREST schema reload notified via NOTIFY."
+          else
+            echo "::warning::SUPABASE_DB_URL not set — PostgREST will auto-detect schema changes within ~60s"
+          fi
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Verify no PGRST205 errors (smoke test)
+        if: steps.push.outcome == 'success' || steps.check.outputs.has_pending == 'false'
+        run: |
+          echo "Waiting 10s for PostgREST schema reload..."
+          sleep 10
+
+          echo "=== PGRST205 Smoke Test ==="
+
+          echo "1. Health endpoint..."
+          HEALTH=$(curl -sf "${BACKEND_URL}/health" 2>&1 || true)
+          echo "$HEALTH"
+          if echo "$HEALTH" | grep -qi "PGRST"; then
+            echo "::error::PostgREST error detected in /health!"
+            exit 1
+          fi
+
+          echo "2. Setores endpoint..."
+          SETORES=$(curl -sf "${BACKEND_URL}/setores" 2>&1 || true)
+          if echo "$SETORES" | grep -qi "PGRST205\|relation.*does not exist"; then
+            echo "::error::PGRST205 schema mismatch detected in /setores!"
+            exit 1
+          fi
+
+          echo "No PGRST205 errors detected."
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+
+      - name: Determine migration result
+        id: result
+        if: always()
+        run: |
+          if [ "${{ steps.check.outputs.has_pending }}" = "false" ]; then
+            echo "status=clean" >> $GITHUB_OUTPUT
+            echo "No migrations needed."
+          elif [ "${{ steps.push.outcome }}" = "success" ]; then
+            echo "status=applied" >> $GITHUB_OUTPUT
+            echo "Migrations applied successfully."
+          elif [ "${{ steps.push.outcome }}" = "failure" ]; then
+            echo "status=degraded" >> $GITHUB_OUTPUT
+            echo "::warning::Migration push FAILED — deploy is DEGRADED. Manual intervention required."
+            echo "::warning::Run: supabase db push --include-all --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}"
+          else
+            echo "status=skipped" >> $GITHUB_OUTPUT
+          fi
+
   deploy-frontend:
     name: Deploy Frontend (Railway)
     runs-on: ubuntu-latest
-    needs: [detect-changes, check-migrations, deploy-backend]
+    needs: [detect-changes, apply-migrations, deploy-backend]
     if: |
       always() &&
-      needs.check-migrations.result == 'success' &&
       needs.detect-changes.outputs.frontend == 'true' &&
       (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
     environment: production
@@ -228,7 +312,7 @@ jobs:
   smoke-tests:
     name: Production Smoke Tests
     runs-on: ubuntu-latest
-    needs: [deploy-backend, deploy-frontend]
+    needs: [deploy-backend, deploy-frontend, apply-migrations]
     if: |
       always() &&
       (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
@@ -300,7 +384,7 @@ jobs:
   notify-slack:
     name: Slack Deploy Notification
     runs-on: ubuntu-latest
-    needs: [detect-changes, deploy-backend, deploy-frontend, smoke-tests]
+    needs: [detect-changes, deploy-backend, deploy-frontend, smoke-tests, apply-migrations]
     if: always()
     steps:
       - name: Check for Slack webhook
@@ -323,13 +407,14 @@ jobs:
           BACKEND_STATUS="${{ needs.deploy-backend.result }}"
           FRONTEND_STATUS="${{ needs.deploy-frontend.result }}"
           SMOKE_STATUS="${{ needs.smoke-tests.result }}"
+          MIGRATION_STATUS="${{ needs.apply-migrations.outputs.status }}"
 
           # Overall status: failure if any deploy failed, success if all succeeded/skipped
           if [ "$BACKEND_STATUS" = "failure" ] || [ "$FRONTEND_STATUS" = "failure" ]; then
             OVERALL="failure"
             EMOJI="❌"
             COLOR="#dc3545"
-          elif [ "$SMOKE_STATUS" = "failure" ]; then
+          elif [ "$SMOKE_STATUS" = "failure" ] || [ "$MIGRATION_STATUS" = "degraded" ]; then
             OVERALL="warning"
             EMOJI="⚠️"
             COLOR="#ffc107"
@@ -365,12 +450,16 @@ jobs:
           BACKEND_EMOJI="⏭️"
           FRONTEND_EMOJI="⏭️"
           SMOKE_EMOJI="⏭️"
+          MIGRATION_EMOJI="⏭️"
           [ "$BACKEND_STATUS" = "success" ] && BACKEND_EMOJI="✅"
           [ "$BACKEND_STATUS" = "failure" ] && BACKEND_EMOJI="❌"
           [ "$FRONTEND_STATUS" = "success" ] && FRONTEND_EMOJI="✅"
           [ "$FRONTEND_STATUS" = "failure" ] && FRONTEND_EMOJI="❌"
           [ "$SMOKE_STATUS" = "success" ] && SMOKE_EMOJI="✅"
           [ "$SMOKE_STATUS" = "failure" ] && SMOKE_EMOJI="❌"
+          [ "$MIGRATION_STATUS" = "applied" ] && MIGRATION_EMOJI="✅"
+          [ "$MIGRATION_STATUS" = "clean" ] && MIGRATION_EMOJI="✅"
+          [ "$MIGRATION_STATUS" = "degraded" ] && MIGRATION_EMOJI="⚠️"
 
           echo "overall=$OVERALL" >> $GITHUB_OUTPUT
           echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
@@ -381,6 +470,7 @@ jobs:
           echo "backend_emoji=$BACKEND_EMOJI" >> $GITHUB_OUTPUT
           echo "frontend_emoji=$FRONTEND_EMOJI" >> $GITHUB_OUTPUT
           echo "smoke_emoji=$SMOKE_EMOJI" >> $GITHUB_OUTPUT
+          echo "migration_emoji=$MIGRATION_EMOJI" >> $GITHUB_OUTPUT
 
       - name: Send Slack notification
         if: steps.check_webhook.outputs.skip != 'true'
@@ -412,6 +502,7 @@ jobs:
                   "fields": [
                     { "type": "mrkdwn", "text": "${{ steps.payload.outputs.backend_emoji }} Backend" },
                     { "type": "mrkdwn", "text": "${{ steps.payload.outputs.frontend_emoji }} Frontend" },
+                    { "type": "mrkdwn", "text": "${{ steps.payload.outputs.migration_emoji }} Migrations" },
                     { "type": "mrkdwn", "text": "${{ steps.payload.outputs.smoke_emoji }} Smoke Tests" }
                   ]
                 },
