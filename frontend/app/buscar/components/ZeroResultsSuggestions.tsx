@@ -7,6 +7,8 @@ interface ZeroResultsSuggestionsProps {
   sectorName: string;
   ufCount: number;
   dayRange: number;
+  // SAB-005 AC5: UF abbreviations for contextual message
+  ufNames?: string[];
   onAdjustPeriod?: () => void;
   onAddNeighborStates?: () => void;
   onChangeSector?: () => void;
@@ -22,6 +24,7 @@ export function ZeroResultsSuggestions({
   sectorName,
   ufCount,
   dayRange,
+  ufNames,
   onAdjustPeriod,
   onAddNeighborStates,
   onChangeSector,
@@ -31,6 +34,10 @@ export function ZeroResultsSuggestions({
   filterStats,
 }: ZeroResultsSuggestionsProps) {
   const hasSourceData = totalFromSources != null && totalFromSources > 0;
+  // SAB-005 AC5: Format UF list for contextual message
+  const ufLabel = ufNames && ufNames.length > 0 && ufNames.length <= 5
+    ? ufNames.join(", ")
+    : `${ufCount} ${ufCount === 1 ? "estado" : "estados"}`;
 
   return (
     <div className="mt-6 sm:mt-8 animate-fade-in-up" data-testid="zero-results-suggestions">
@@ -56,10 +63,10 @@ export function ZeroResultsSuggestions({
             <span className="font-medium">{sectorName}</span>.
           </p>
         ) : (
-          <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto">
-            para <span className="font-medium">{sectorName}</span> em{" "}
-            <span className="font-medium">{ufCount} {ufCount === 1 ? "estado" : "estados"}</span>{" "}
-            nos ultimos <span className="font-medium">{dayRange} dias</span>.
+          <p className="text-sm text-[var(--ink-secondary)] mb-6 max-w-md mx-auto" data-testid="zero-results-context">
+            Nenhuma licitação encontrada para <span className="font-medium">{sectorName}</span> em{" "}
+            <span className="font-medium">{ufLabel}</span>.{" "}
+            Tente ampliar o período ou os estados.
           </p>
         )}
 

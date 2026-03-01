@@ -159,6 +159,9 @@ export interface SearchResultsProps {
   // STORY-325: PDF Diagnostico
   onGeneratePdf?: (options: { clientName: string; maxItems: number }) => void;
   pdfLoading?: boolean;
+
+  // SAB-005 AC1: Skeleton timeout
+  skeletonTimeoutReached?: boolean;
 }
 
 export default function SearchResults({
@@ -195,6 +198,8 @@ export default function SearchResults({
   trialPhase, paywallApplied, totalBeforePaywall,
   // STORY-325: PDF Diagnostico
   onGeneratePdf, pdfLoading,
+  // SAB-005 AC1: Skeleton timeout
+  skeletonTimeoutReached,
 }: SearchResultsProps) {
   // STORY-333: Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -375,6 +380,46 @@ export default function SearchResults({
           </div>
           <LoadingResultsSkeleton count={1} />
 
+          {/* SAB-005 AC1-AC3: Timeout banner when skeleton visible >30s without data update */}
+          {skeletonTimeoutReached && (
+            <div
+              className="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 animate-fade-in-up"
+              role="alert"
+              data-testid="skeleton-timeout-banner"
+            >
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    A busca está demorando mais que o esperado
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    O servidor pode estar processando um volume alto de dados.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-start gap-2 mt-3">
+                    <button
+                      onClick={() => { onCancel(); onSearch(); }}
+                      className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                      type="button"
+                      data-testid="skeleton-timeout-retry"
+                    >
+                      Tentar novamente
+                    </button>
+                    <Link
+                      href="/historico"
+                      className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:underline"
+                      data-testid="skeleton-timeout-historico"
+                    >
+                      Ver buscas anteriores
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* STORY-295 AC10: Per-source status indicators */}
           {sourceStatuses && sourceStatuses.size > 0 && (
             <SourceStatusGrid sourceStatuses={sourceStatuses} className="mt-3" />
@@ -518,6 +563,7 @@ export default function SearchResults({
         <ZeroResultsSuggestions
           sectorName={sectorName}
           ufCount={ufsSelecionadas.size}
+          ufNames={Array.from(ufsSelecionadas)}
           dayRange={30}
           onAdjustPeriod={onAdjustPeriod}
           onAddNeighborStates={onAddNeighborStates}

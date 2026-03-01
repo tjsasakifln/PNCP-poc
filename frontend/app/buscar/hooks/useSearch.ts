@@ -166,6 +166,8 @@ export interface UseSearchReturn {
   asyncSearchActive: boolean;
   /** STAB-009 AC7: Number of SSE reconnection attempts */
   sseReconnectAttempts: number;
+  /** SAB-005 AC1: True when skeletons visible >30s without data update */
+  skeletonTimeoutReached: boolean;
 }
 
 export function useSearch(filters: UseSearchParams): UseSearchReturn {
@@ -241,6 +243,10 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
 
   // SAB-001 AC6: Safety timeout — forces loading=false when result is set but loading stuck
   const resultSafetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // SAB-005 AC1: Skeleton timeout — shows banner after 30s without data update
+  const [skeletonTimeoutReached, setSkeletonTimeoutReached] = useState(false);
+  const skeletonTimeoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // SAB-001 AC4: Keep ref in sync with state for closure-safe reads
   useEffect(() => {
@@ -425,6 +431,19 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     }
   }, [effectiveEvent?.detail?.uf_index]);
 
+  // SAB-005 AC1: Reset skeleton timeout whenever SSE event arrives (data update)
+  useEffect(() => {
+    if (loading && effectiveEvent) {
+      if (skeletonTimeoutTimerRef.current) {
+        clearTimeout(skeletonTimeoutTimerRef.current);
+      }
+      setSkeletonTimeoutReached(false);
+      skeletonTimeoutTimerRef.current = setTimeout(() => {
+        setSkeletonTimeoutReached(true);
+      }, 30_000);
+    }
+  }, [loading, effectiveEvent]);
+
   const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
   const estimateSearchTime = (ufCount: number, dateRangeDays: number): number => {
@@ -445,6 +464,9 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     // STAB-003: Clear finalizing state on cancel
     if (finalizingTimerRef.current) { clearTimeout(finalizingTimerRef.current); finalizingTimerRef.current = null; }
     setIsFinalizing(false);
+    // SAB-005: Clear skeleton timeout on cancel
+    if (skeletonTimeoutTimerRef.current) { clearTimeout(skeletonTimeoutTimerRef.current); skeletonTimeoutTimerRef.current = null; }
+    setSkeletonTimeoutReached(false);
     // CRIT-006 AC16: Notify backend of cancellation
     const activeId = asyncSearchIdRef.current || searchId;
     if (activeId && session?.access_token) {
@@ -536,6 +558,13 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     setShowingPartialResults(false);
     setIsFinalizing(false);
     sseReconnectAttemptsRef.current = 0;
+
+    // SAB-005 AC1: Start 30s skeleton timeout
+    setSkeletonTimeoutReached(false);
+    if (skeletonTimeoutTimerRef.current) clearTimeout(skeletonTimeoutTimerRef.current);
+    skeletonTimeoutTimerRef.current = setTimeout(() => {
+      setSkeletonTimeoutReached(true);
+    }, 30_000);
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -891,6 +920,12 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
         finalizingTimerRef.current = null;
       }
       setIsFinalizing(false);
+      // SAB-005: Clear skeleton timeout when search completes
+      if (skeletonTimeoutTimerRef.current) {
+        clearTimeout(skeletonTimeoutTimerRef.current);
+        skeletonTimeoutTimerRef.current = null;
+      }
+      setSkeletonTimeoutReached(false);
       // SAB-001 AC4: Use REF (not stale closure state) to check async mode.
       // The state variable `asyncSearchActive` captures the value from the render
       // that created buscar(), which may be stale. The ref always has current value.
@@ -1173,5 +1208,6 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
     isFinalizing,
     asyncSearchActive,
     sseReconnectAttempts: sseReconnectAttemptsRef.current,
+    skeletonTimeoutReached,
   };
 }

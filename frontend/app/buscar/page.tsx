@@ -836,6 +836,8 @@ function HomePageContent() {
                 // STORY-325: PDF Diagnostico
                 onGeneratePdf={() => setPdfModalOpen(true)}
                 pdfLoading={pdfLoading}
+                // SAB-005 AC1: Skeleton timeout
+                skeletonTimeoutReached={search.skeletonTimeoutReached}
               />
             </SearchErrorBoundary>
           </div>
