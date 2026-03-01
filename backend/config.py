@@ -475,6 +475,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "CACHE_LEGACY_KEY_FALLBACK": ("CACHE_LEGACY_KEY_FALLBACK", "true"),
     "SHOW_CACHE_FALLBACK_BANNER": ("SHOW_CACHE_FALLBACK_BANNER", "true"),
     "HEALTH_CANARY_ENABLED": ("HEALTH_CANARY_ENABLED", "true"),
+    # CRIT-047 AC6: PCP v2 disable flag (reads PCP_ENABLED env var, default true)
+    "PCP_V2_ENABLED": ("PCP_ENABLED", "true"),
 }
 
 # ============================================
@@ -839,6 +841,18 @@ COMPRASGOV_BULKHEAD_CONCURRENCY: int = int(os.getenv("COMPRASGOV_BULKHEAD_CONCUR
 PNCP_SOURCE_TIMEOUT: float = float(os.getenv("PNCP_SOURCE_TIMEOUT", "80"))
 PCP_SOURCE_TIMEOUT: float = float(os.getenv("PCP_SOURCE_TIMEOUT", "30"))
 COMPRASGOV_SOURCE_TIMEOUT: float = float(os.getenv("COMPRASGOV_SOURCE_TIMEOUT", "30"))
+
+# ============================================================================
+# CRIT-047: PCP v2 Timeout Resilience
+# ============================================================================
+# AC4: Max pages to paginate (PCP v2 = 10 items/page, 206 pages for 10-day range).
+# Cap at 20 pages (200 items) to avoid 200s+ pagination that triggers source timeout.
+PCP_MAX_PAGES_V2: int = int(os.getenv("PCP_MAX_PAGES_V2", "20"))
+# AC5: Rate limit delay between PCP requests (seconds). 0.5s = 2 req/s (was 0.2s = 5 req/s).
+PCP_RATE_LIMIT_DELAY: float = float(os.getenv("PCP_RATE_LIMIT_DELAY", "0.5"))
+# AC4: Per-page slow threshold (seconds). Pages slower than this trigger early-return
+# after 3 consecutive slow pages.
+PCP_SLOW_PAGE_THRESHOLD_S: float = float(os.getenv("PCP_SLOW_PAGE_THRESHOLD_S", "10.0"))
 
 # STORY-305 AC2/AC6: ComprasGov circuit breaker (rollback: COMPRASGOV_CB_ENABLED=false)
 # All 3 HTTP API sources (PNCP, PCP, ComprasGov) share the same CB class and aligned

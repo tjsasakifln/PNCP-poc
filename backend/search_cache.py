@@ -1568,26 +1568,38 @@ async def _fetch_multi_source_for_revalidation(request_data: dict) -> tuple[list
         from source_config.sources import get_source_config
 
         source_config = get_source_config()
+        from source_config.sources import source_health_registry
         adapters = {}
 
         # Build adapters for all enabled sources
+        # CRIT-047 AC7: Skip sources that are DOWN in health registry —
+        # don't waste timeout budget on known-failed sources during revalidation
         if source_config.pncp.enabled:
-            from pncp_client import PNCPLegacyAdapter
-            adapters["PNCP"] = PNCPLegacyAdapter(
-                ufs=list(request_data["ufs"]),
-                modalidades=request_data.get("modalidades"),
-            )
+            if source_health_registry.is_available("PNCP"):
+                from pncp_client import PNCPLegacyAdapter
+                adapters["PNCP"] = PNCPLegacyAdapter(
+                    ufs=list(request_data["ufs"]),
+                    modalidades=request_data.get("modalidades"),
+                )
+            else:
+                logger.info("[REVALIDATION] Skipping PNCP — source is DOWN in health registry")
 
         if source_config.compras_gov.enabled:
-            from clients.compras_gov_client import ComprasGovAdapter
-            adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+            if source_health_registry.is_available("COMPRAS_GOV"):
+                from clients.compras_gov_client import ComprasGovAdapter
+                adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+            else:
+                logger.info("[REVALIDATION] Skipping COMPRAS_GOV — source is DOWN in health registry")
 
         # GTM-FIX-024 T2: PCP v2 API is public — no API key required
         if source_config.portal.enabled:
-            from clients.portal_compras_client import PortalComprasAdapter
-            adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
-                timeout=source_config.portal.timeout,
-            )
+            if source_health_registry.is_available("PORTAL_COMPRAS"):
+                from clients.portal_compras_client import PortalComprasAdapter
+                adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                    timeout=source_config.portal.timeout,
+                )
+            else:
+                logger.info("[REVALIDATION] Skipping PORTAL_COMPRAS — source is DOWN in health registry")
 
         if adapters:
             svc = ConsolidationService(
@@ -1618,18 +1630,26 @@ async def _fetch_multi_source_for_revalidation(request_data: dict) -> tuple[list
         from source_config.sources import get_source_config
 
         source_config = get_source_config()
+        from source_config.sources import source_health_registry
         fallback_adapters = {}
 
+        # CRIT-047 AC7: Skip DOWN sources in fallback revalidation too
         if source_config.compras_gov.enabled:
-            from clients.compras_gov_client import ComprasGovAdapter
-            fallback_adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+            if source_health_registry.is_available("COMPRAS_GOV"):
+                from clients.compras_gov_client import ComprasGovAdapter
+                fallback_adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
+            else:
+                logger.info("[REVALIDATION] Skipping COMPRAS_GOV fallback — source is DOWN")
 
         # GTM-FIX-024 T2: PCP v2 API is public — no API key required
         if source_config.portal.enabled:
-            from clients.portal_compras_client import PortalComprasAdapter
-            fallback_adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
-                timeout=source_config.portal.timeout,
-            )
+            if source_health_registry.is_available("PORTAL_COMPRAS"):
+                from clients.portal_compras_client import PortalComprasAdapter
+                fallback_adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                    timeout=source_config.portal.timeout,
+                )
+            else:
+                logger.info("[REVALIDATION] Skipping PORTAL_COMPRAS fallback — source is DOWN")
 
         if fallback_adapters:
             logger.info(f"Revalidation fallback: trying {list(fallback_adapters.keys())} without PNCP")

@@ -1159,9 +1159,15 @@ class SearchPipeline:
                 )
 
         # GTM-FIX-024 T2: PCP v2 API is public — no API key required
+        # CRIT-047 AC8: Also check health registry — skip if source is DOWN
         if source_config.portal.enabled:
+            from source_config.sources import source_health_registry as _pcp_health
+            pcp_health_status = _pcp_health.get_status("PORTAL_COMPRAS")
             if pcp_cb.is_degraded:
                 logger.warning("[MULTI-SOURCE] PCP circuit breaker OPEN — skipping source")
+                skipped_sources.append("PORTAL_COMPRAS")
+            elif pcp_health_status == "down":
+                logger.warning("[MULTI-SOURCE] PCP health registry DOWN — skipping source")
                 skipped_sources.append("PORTAL_COMPRAS")
             else:
                 adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(

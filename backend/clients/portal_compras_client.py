@@ -104,13 +104,15 @@ class PortalComprasAdapter(SourceAdapter):
 
     The v2 listing endpoint does NOT include value data (valor_estimado will
     be 0.0 for PCP records).
+
+    CRIT-047: Added per-page latency logging, configurable max pages and rate
+    limit, early-return on slow pages.
     """
 
     BASE_URL = "https://compras.api.portaldecompraspublicas.com.br"
     PORTAL_URL = "https://www.portaldecompraspublicas.com.br"
     DEFAULT_TIMEOUT = 30
     MAX_RETRIES = 3
-    RATE_LIMIT_DELAY = 0.2  # 200ms = 5 req/s
     PAGE_SIZE = 10  # v2 API fixed at 10 per page
 
     _metadata = SourceMetadata(
@@ -143,6 +145,12 @@ class PortalComprasAdapter(SourceAdapter):
         # GTM-FIX-004 AC11: Truncation detection for PCP source
         self.was_truncated: bool = False
 
+        # CRIT-047: Configurable rate limiting and max pages
+        from config import PCP_RATE_LIMIT_DELAY, PCP_MAX_PAGES_V2, PCP_SLOW_PAGE_THRESHOLD_S
+        self._rate_limit_delay = PCP_RATE_LIMIT_DELAY
+        self._max_pages = PCP_MAX_PAGES_V2
+        self._slow_page_threshold = PCP_SLOW_PAGE_THRESHOLD_S
+
     @property
     def metadata(self) -> SourceMetadata:
         return self._metadata
@@ -169,11 +177,14 @@ class PortalComprasAdapter(SourceAdapter):
         return self._client
 
     async def _rate_limit(self) -> None:
-        """Enforce rate limiting between requests."""
+        """Enforce rate limiting between requests.
+
+        CRIT-047 AC5: Uses configurable delay from PCP_RATE_LIMIT_DELAY env var.
+        """
         now = asyncio.get_running_loop().time()
         elapsed = now - self._last_request_time
-        if elapsed < self.RATE_LIMIT_DELAY:
-            await asyncio.sleep(self.RATE_LIMIT_DELAY - elapsed)
+        if elapsed < self._rate_limit_delay:
+            await asyncio.sleep(self._rate_limit_delay - elapsed)
         self._last_request_time = asyncio.get_running_loop().time()
         self._request_count += 1
 
@@ -308,6 +319,10 @@ class PortalComprasAdapter(SourceAdapter):
         v2 API uses ISO dates directly and does NOT support server-side UF
         filtering. UF filtering is done client-side.
 
+        CRIT-047 AC3: Per-page latency logging.
+        CRIT-047 AC4: Max pages cap + early-return on slow pages.
+        CRIT-047 AC5: Configurable rate limiting.
+
         Args:
             data_inicial: Start date YYYY-MM-DD.
             data_final: End date YYYY-MM-DD.
@@ -324,10 +339,14 @@ class PortalComprasAdapter(SourceAdapter):
         seen_ids: Set[str] = set()
         total_fetched = 0
         pagina = 1
+        fetch_start = asyncio.get_running_loop().time()
+        consecutive_slow_pages = 0
 
         while True:
             params["pagina"] = pagina
 
+            # CRIT-047 AC3: Per-page latency logging
+            page_start = asyncio.get_running_loop().time()
             try:
                 response = await self._request_with_retry(
                     "GET", "/v2/licitacao/processos", params
@@ -335,11 +354,41 @@ class PortalComprasAdapter(SourceAdapter):
             except SourceAuthError:
                 raise
             except Exception as e:
-                logger.error(f"[PCP] Error fetching page {pagina}: {e}")
+                page_elapsed_ms = int((asyncio.get_running_loop().time() - page_start) * 1000)
+                logger.error(
+                    f"[PCP] Error fetching page {pagina} after {page_elapsed_ms}ms: {e}"
+                )
                 if total_fetched > 0:
                     logger.warning(f"[PCP] Returning {total_fetched} partial results")
                     return
                 raise
+
+            page_elapsed_ms = int((asyncio.get_running_loop().time() - page_start) * 1000)
+            page_elapsed_s = page_elapsed_ms / 1000.0
+
+            # CRIT-047 AC3: Log per-page latency
+            logger.debug(
+                f"[PCP] Page {pagina} fetched in {page_elapsed_ms}ms"
+            )
+
+            # CRIT-047 AC4: Early-return on slow pages — if a page takes too long,
+            # increment counter and abort after 3 consecutive slow pages
+            if page_elapsed_s > self._slow_page_threshold:
+                consecutive_slow_pages += 1
+                logger.warning(
+                    f"[PCP] Page {pagina} slow: {page_elapsed_ms}ms "
+                    f"(threshold={self._slow_page_threshold}s, "
+                    f"consecutive_slow={consecutive_slow_pages})"
+                )
+                if consecutive_slow_pages >= 3 and total_fetched > 0:
+                    self.was_truncated = True
+                    logger.warning(
+                        f"[PCP] Aborting after {consecutive_slow_pages} consecutive slow pages. "
+                        f"Returning {total_fetched} partial results."
+                    )
+                    return
+            else:
+                consecutive_slow_pages = 0
 
             # v2 response: { result: [...], total, pageCount, nextPage, ... }
             if isinstance(response, dict):
@@ -359,8 +408,10 @@ class PortalComprasAdapter(SourceAdapter):
                 next_page = None
 
             if pagina == 1 and total_count > 0:
+                effective_pages = min(page_count, self._max_pages)
                 logger.info(
-                    f"[PCP] {total_count} total records across {page_count} pages"
+                    f"[PCP] {total_count} total records across {page_count} pages "
+                    f"(capped at {effective_pages})"
                 )
 
             if not data:
@@ -399,17 +450,21 @@ class PortalComprasAdapter(SourceAdapter):
 
             pagina += 1
 
-            if pagina > 100:
-                # GTM-FIX-004 AC11: Detect truncation when page limit reached
+            # CRIT-047 AC4: Max pages cap — prevent unbounded pagination
+            if pagina > self._max_pages:
                 self.was_truncated = True
                 logger.warning(
-                    f"[PCP] Reached page limit (100). "
-                    f"Total records ({total_count}) may exceed fetched. "
-                    f"Results may be incomplete."
+                    f"[PCP] Reached page limit ({self._max_pages}). "
+                    f"Total records ({total_count}) may exceed fetched ({total_fetched}). "
+                    f"Results truncated."
                 )
                 break
 
-        logger.info(f"[PCP] Fetch complete: {total_fetched} records (truncated={self.was_truncated})")
+        total_elapsed_ms = int((asyncio.get_running_loop().time() - fetch_start) * 1000)
+        logger.info(
+            f"[PCP] Fetch complete: {total_fetched} records in {total_elapsed_ms}ms "
+            f"({pagina} pages, truncated={self.was_truncated})"
+        )
 
     def normalize(self, raw_record: Dict[str, Any]) -> UnifiedProcurement:
         """Convert PCP v2 record to UnifiedProcurement.

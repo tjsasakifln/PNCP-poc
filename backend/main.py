@@ -1116,10 +1116,15 @@ async def sources_health():
         if source_config.compras_gov.enabled:
             adapters["COMPRAS_GOV"] = ComprasGovAdapter(timeout=source_config.compras_gov.timeout)
         # GTM-FIX-024 T2: PCP v2 API is public — no API key required
+        # CRIT-047 AC8: Check health registry before including PCP
         if source_config.portal.enabled:
-            adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
-                timeout=source_config.portal.timeout,
-            )
+            from source_config.sources import source_health_registry as _hr
+            if _hr.is_available("PORTAL_COMPRAS"):
+                adapters["PORTAL_COMPRAS"] = PortalComprasAdapter(
+                    timeout=source_config.portal.timeout,
+                )
+            else:
+                logger.info("[HEALTH] PCP v2 source is DOWN — excluded from health check")
 
         if adapters:
             svc = ConsolidationService(adapters=adapters)
