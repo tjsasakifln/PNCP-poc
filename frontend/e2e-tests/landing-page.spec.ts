@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * SAB-006: Landing page E2E tests — updated for condensed 6-section layout.
+ * Target flow: Hero → Problema → Solução → Como Funciona → Stats → CTA → Footer
+ */
 test.describe('Landing Page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -8,23 +12,19 @@ test.describe('Landing Page', () => {
   test('renders hero section with headline and CTAs', async ({ page }) => {
     // Check headline
     await expect(
-      page.getByText(/6\+ milhões de licitações por ano no Brasil/i)
+      page.getByText(/Pare de perder dinheiro/i)
     ).toBeVisible();
 
     // Check subheadline
-    await expect(page.getByText(/500 mil oportunidades mensais/i)).toBeVisible();
+    await expect(page.getByText(/O SmartLic analisa cada edital/i)).toBeVisible();
 
     // Check primary CTA
-    const primaryCTA = page.getByRole('link', { name: /Descobrir Minhas Oportunidades/i });
+    const primaryCTA = page.getByRole('button', { name: /Ver oportunidades para meu setor/i });
     await expect(primaryCTA).toBeVisible();
-    await expect(primaryCTA).toHaveAttribute('href', '/signup');
 
     // Check secondary CTA
     const secondaryCTA = page.getByRole('button', { name: /ver como funciona/i });
     await expect(secondaryCTA).toBeVisible();
-
-    // Check credibility badge
-    await expect(page.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeVisible();
   });
 
   test('scrolls to "Como Funciona" section when clicking secondary CTA', async ({ page }) => {
@@ -38,18 +38,15 @@ test.describe('Landing Page', () => {
     await expect(page.getByRole('heading', { name: /como funciona/i })).toBeInViewport();
   });
 
-  test('renders all sections in correct order', async ({ page }) => {
-    // Check section order by verifying headings
+  test('renders all sections in correct order (SAB-006 AC8)', async ({ page }) => {
+    // SAB-006 target flow: Hero → Problema → Solução → Como Funciona → Stats → CTA
     const sections = [
-      /6\+ milhões de licitações/i, // Hero
-      /qual o custo de uma licitação/i, // OpportunityCost
-      /transforme sua busca/i, // BeforeAfter
-      /diferenciais que importam/i, // DifferentialsGrid
+      /Pare de perder dinheiro/i, // Hero
+      /Continuar sem filtro estratégico/i, // OpportunityCost (Problema)
+      /O que acontece sem filtro estratégico/i, // BeforeAfter (Solução)
       /como funciona/i, // HowItWorks
-      /números que falam por si/i, // StatsSection
-      /desenvolvido por quem conhece/i, // DataSourcesSection
-      /setores atendidos/i, // SectorsGrid
-      /pronto para economizar tempo/i, // FinalCTA
+      /Impacto real no mercado/i, // StatsSection
+      /Licitações estão abrindo agora/i, // FinalCTA
     ];
 
     for (const sectionHeading of sections) {
@@ -78,7 +75,7 @@ test.describe('Landing Page', () => {
 
   test('navigates to login and signup pages', async ({ page }) => {
     // Test Login link
-    await page.getByRole('link', { name: /^login$/i }).first().click();
+    await page.getByRole('link', { name: /^(login|entrar)$/i }).first().click();
     await page.waitForURL(/\/login/);
     expect(page.url()).toContain('/login');
 
@@ -86,7 +83,7 @@ test.describe('Landing Page', () => {
     await page.goto('/');
 
     // Test Signup button (in navbar)
-    await page.getByRole('link', { name: /cadastro/i }).first().click();
+    await page.getByRole('link', { name: /(cadastro|comece gratis|comece grátis)/i }).first().click();
     await page.waitForURL(/\/signup/);
     expect(page.url()).toContain('/signup');
   });
@@ -103,27 +100,6 @@ test.describe('Landing Page', () => {
 
     // Check copyright
     await expect(page.getByText(/© 2026 SmartLic\.tech/i)).toBeVisible();
-
-    // Check LGPD badge
-    await expect(page.getByText(/lgpd compliant/i)).toBeVisible();
-
-    // Check "Sistema desenvolvido por servidores públicos"
-    await expect(page.getByText(/Sistema desenvolvido por servidores públicos/i)).toBeVisible();
-  });
-
-  test('PNCP link opens in new tab', async ({ page, context }) => {
-    // Listen for new page (tab)
-    const pagePromise = context.waitForEvent('page');
-
-    // Click PNCP link
-    await page.getByRole('link', { name: /acessar pncp/i }).click();
-
-    // Wait for new page
-    const newPage = await pagePromise;
-    await newPage.waitForLoadState();
-
-    // Check URL
-    expect(newPage.url()).toContain('pncp.gov.br');
   });
 
   test('responsive layout on mobile', async ({ page }) => {
@@ -132,11 +108,11 @@ test.describe('Landing Page', () => {
 
     // Check hero section renders on mobile
     await expect(
-      page.getByText(/6\+ milhões de licitações/i).first()
+      page.getByText(/Pare de perder dinheiro/i).first()
     ).toBeVisible();
 
     // Check CTAs are visible
-    await expect(page.getByRole('link', { name: /Descobrir Minhas Oportunidades/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Ver oportunidades para meu setor/i })).toBeVisible();
 
     // Check grid layouts collapse to single column (verify no horizontal scroll)
     const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -150,32 +126,31 @@ test.describe('Landing Page', () => {
 
     // Check hero section renders on tablet
     await expect(
-      page.getByText(/6\+ milhões de licitações/i).first()
+      page.getByText(/Pare de perder dinheiro/i).first()
     ).toBeVisible();
 
-    // Check differentials grid is 2 columns (not 4)
-    // This is visual, but we can check no horizontal scroll
+    // Check no horizontal scroll
     const bodyScrollWidth = await page.evaluate(() => document.body.scrollWidth);
     const viewportWidth = await page.evaluate(() => window.innerWidth);
     expect(bodyScrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
   });
 
   test('keyboard navigation works', async ({ page }) => {
-    // Tab to primary CTA
+    // Tab through interactive elements
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab'); // Should focus on primary CTA
+    await page.keyboard.press('Tab');
 
-    // Check focus is on primary CTA (visual indicator)
-    const focusedElement = await page.evaluate(() => document.activeElement?.textContent);
-    expect(focusedElement).toContain('Começar');
+    // Check focus is on an interactive element
+    const focusedElement = await page.evaluate(() => document.activeElement?.tagName);
+    expect(['A', 'BUTTON']).toContain(focusedElement);
   });
 
-  test('all sections have proper semantic HTML', async ({ page }) => {
-    // Check for semantic sections
+  test('all sections have proper semantic HTML (SAB-006 AC3)', async ({ page }) => {
+    // Check for semantic sections — SAB-006 reduced from ~15 to 6+
     const sections = await page.locator('section').count();
-    expect(sections).toBeGreaterThan(5); // At least 8 sections
+    expect(sections).toBeGreaterThanOrEqual(5);
 
     // Check for header (navbar)
     await expect(page.locator('header')).toBeVisible();
@@ -185,5 +160,34 @@ test.describe('Landing Page', () => {
 
     // Check for footer
     await expect(page.locator('footer')).toBeVisible();
+  });
+
+  test('stats section has counter animation (SAB-006 AC6)', async ({ page }) => {
+    // Scroll to stats section
+    await page.evaluate(() => {
+      const statsSection = document.querySelector('[class*="bg-brand-blue-subtle"]');
+      if (statsSection) statsSection.scrollIntoView({ behavior: 'instant' });
+    });
+
+    // Wait for animation
+    await page.waitForTimeout(2000);
+
+    // Check that final values are displayed
+    await expect(page.getByText('15')).toBeVisible();
+    await expect(page.getByText('87%')).toBeVisible();
+    await expect(page.getByText('27')).toBeVisible();
+  });
+
+  test('beta counter is in FinalCTA section (SAB-006 AC3)', async ({ page }) => {
+    // Scroll to bottom
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    // Beta counter should be inside FinalCTA, not a separate section
+    const betaCounter = page.locator('[data-testid="beta-counter"]');
+    await expect(betaCounter).toBeVisible();
+
+    // Should be inside the navy CTA card
+    const ctaSection = page.locator('.bg-brand-navy');
+    await expect(ctaSection.locator('[data-testid="beta-counter"]')).toBeVisible();
   });
 });

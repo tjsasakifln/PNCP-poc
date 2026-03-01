@@ -13,7 +13,7 @@ export default function OpportunityCost({ className = '' }: OpportunityCostProps
   return (
     <section
       ref={ref as React.RefObject<HTMLElement>}
-      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 ${className}`}
     >
       <div
         className={`

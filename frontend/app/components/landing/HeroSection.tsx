@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Target, Globe, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { GradientButton } from '@/app/components/ui/GradientButton';
-import { GlassCard } from '@/app/components/ui/GlassCard';
 import { useScrollAnimation } from '@/lib/animations';
-import { fadeInUp, staggerContainer, scaleIn } from '@/lib/animations';
+import { fadeInUp, staggerContainer } from '@/lib/animations';
 
 interface HeroSectionProps {
   className?: string;
@@ -14,13 +13,7 @@ interface HeroSectionProps {
 
 /**
  * STORY-174 AC1: Hero Section Redesign - Premium SaaS Aesthetic
- *
- * Features:
- * - Gradient text headline (background-clip: text)
- * - Animated CTAs (gradient + glow effect)
- * - Glassmorphism stats badges with counter animation
- * - Subtle gradient mesh background
- * - Scroll-triggered animations (fade-in + slide-up)
+ * SAB-006 AC2/AC5: Removed stats badges (consolidated into StatsSection), CTA above fold
  */
 export default function HeroSection({ className = '' }: HeroSectionProps) {
   const { ref, isVisible } = useScrollAnimation(0.1);
@@ -40,7 +33,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
         max-w-landing
         mx-auto
         px-4 sm:px-6 lg:px-8
-        py-20 sm:py-32
+        py-16 sm:py-24
         overflow-hidden
         ${className}
       `}
@@ -98,7 +91,7 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
           O SmartLic analisa cada edital contra o perfil da sua empresa. Elimina o que não faz sentido. Entrega só o que tem chance real de retorno — com justificativa objetiva.
         </motion.p>
 
-        {/* CTA Buttons */}
+        {/* CTA Buttons — AC5: Primary CTA visible above the fold */}
         <motion.div
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
           variants={fadeInUp}
@@ -113,26 +106,16 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
             Ver oportunidades para meu setor
           </GradientButton>
 
-          {/* Secondary CTA with border fill animation */}
+          {/* Secondary CTA — scroll to Como Funciona */}
           <GradientButton
             variant="secondary"
             size="lg"
             glow={false}
-            onClick={() => scrollToSection('proof-of-value')}
+            onClick={() => scrollToSection('como-funciona')}
           >
-            Ver exemplo de análise real
+            Ver como funciona
             <ChevronDown size={20} className="ml-2 transition-transform" aria-hidden="true" />
           </GradientButton>
-        </motion.div>
-
-        {/* Stats badges with glassmorphism */}
-        <motion.div
-          className="mt-12 flex flex-wrap items-center justify-center gap-4"
-          variants={fadeInUp}
-        >
-          <StatsBadge icon={Target} value="87%" label="de editais descartados" delay={0} />
-          <StatsBadge icon={Zap} value="15" label="setores especializados" delay={0.1} />
-          <StatsBadge icon={Globe} value="27" label="UFs cobertas" delay={0.2} />
         </motion.div>
 
         {/* AC7: Trust indicators */}
@@ -155,112 +138,5 @@ export default function HeroSection({ className = '' }: HeroSectionProps) {
         </motion.div>
       </motion.div>
     </section>
-  );
-}
-
-/**
- * Stats Badge Component - Glassmorphism card with counter animation
- */
-interface StatsBadgeProps {
-  icon: React.ComponentType<any> | string; // Lucide component or legacy emoji string
-  value: string;
-  label: string;
-  delay: number;
-}
-
-function StatsBadge({ icon, value, label, delay }: StatsBadgeProps) {
-  const { ref, isVisible } = useScrollAnimation(0.1);
-  const [count, setCount] = useState(0);
-
-  // Counter animation for numbers
-  useEffect(() => {
-    if (!isVisible) return;
-
-    // Extract numeric part from value (e.g., "160x" -> 160, "95%" -> 95)
-    const numericValue = parseInt(value.match(/\d+/)?.[0] || '0');
-
-    if (numericValue === 0) return;
-
-    const duration = 1000; // 1 second
-    const steps = 30;
-    const increment = numericValue / steps;
-    let current = 0;
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= numericValue) {
-        setCount(numericValue);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, duration / steps);
-
-    return () => clearInterval(timer);
-  }, [isVisible, value]);
-
-  // Format value with counter
-  const displayValue = value.includes('%')
-    ? `${count}%`
-    : value.includes('x')
-    ? `${count}x`
-    : value.includes('+')
-    ? value // Keep original value as is
-    : `${count}`;
-
-  // Determine if icon is a component or string emoji (backward compatibility)
-  const isComponent = typeof icon !== 'string';
-  const IconComponent = isComponent ? (icon as React.ComponentType<any>) : null;
-
-  return (
-    <motion.div ref={ref} variants={scaleIn} transition={{ delay }}>
-      <GlassCard
-        hoverable={true}
-        variant="subtle"
-        className="
-          group
-          inline-flex
-          items-center
-          gap-2
-          px-4
-          py-2
-          rounded-full
-          text-sm
-          min-w-[140px]
-          justify-center
-          cursor-default
-        "
-        role="text"
-        aria-label={`${value} ${label}`}
-      >
-        {isComponent && IconComponent ? (
-          <IconComponent
-            className={`
-              w-6 h-6 flex-shrink-0
-              text-brand-blue
-              transition-all duration-300
-              group-hover:scale-110
-              ${label.includes('Rápido') ? 'group-hover:rotate-6' : ''}
-              ${label.includes('Precisão') ? 'group-hover:scale-125' : ''}
-              ${label.includes('Portais') ? 'group-hover:-rotate-6' : ''}
-            `}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-        ) : (
-          <span className="text-lg" aria-hidden="true">
-            {icon as string}
-          </span>
-        )}
-        <div className="flex flex-col items-start" aria-hidden="true">
-          <span className="text-ink font-bold tabular-nums">
-            {displayValue}
-          </span>
-          <span className="text-ink-muted text-xs font-medium">
-            {label}
-          </span>
-        </div>
-      </GlassCard>
-    </motion.div>
   );
 }

@@ -13,7 +13,7 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
   return (
     <section
       ref={ref as React.RefObject<HTMLElement>}
-      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 ${className}`}
     >
       <h2
         className={`text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-12 transition-all duration-500 ${
@@ -88,11 +88,11 @@ export default function BeforeAfter({ className = '' }: BeforeAfterProps) {
           <ul className="space-y-3 text-blue-800 dark:text-blue-200">
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>87% dos editais descartados antes de chegar até você — sobra só o compatível</span>
+              <span>Editais incompatíveis descartados antes de chegar até você — sobra só o relevante</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />
-              <span>Cobertura nacional automática — 27 UFs de fontes oficiais</span>
+              <span>Cobertura nacional automática — todas as UFs de fontes oficiais</span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="text-green-500 flex-shrink-0 mt-1 font-bold" size={18} />

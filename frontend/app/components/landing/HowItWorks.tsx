@@ -26,7 +26,7 @@ const steps: StepCard[] = [
   },
   {
     stepNumber: 2,
-    title: '87% do ruído eliminado',
+    title: 'Ruído eliminado pela IA',
     description: 'IA analisa cada edital contra seu perfil. Descarta o incompatível, prioriza o que tem chance real.',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -53,7 +53,7 @@ export default function HowItWorks({ className = '' }: HowItWorksProps) {
     <section
       id="como-funciona"
       ref={ref as React.RefObject<HTMLElement>}
-      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 bg-surface-1 ${className}`}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 bg-surface-1 ${className}`}
     >
       <h2
         className={`text-3xl sm:text-4xl font-bold text-center text-ink tracking-tight mb-4 transition-all duration-500 ${

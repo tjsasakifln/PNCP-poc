@@ -20,12 +20,13 @@ describe('BeforeAfter', () => {
     expect(screen.getByText(/Decide com base em intuição — opera no escuro/i)).toBeInTheDocument();
   });
 
-  it('renders "Com SmartLic" card with filtering-focused positives (AC5)', () => {
+  it('renders "Com SmartLic" card with filtering-focused positives (AC5, SAB-006 AC2)', () => {
     render(<BeforeAfter />);
 
     expect(screen.getByText(/Com SmartLic/i)).toBeInTheDocument();
-    expect(screen.getByText(/87% dos editais descartados antes de chegar até você/i)).toBeInTheDocument();
-    expect(screen.getByText(/Cobertura nacional automática — 27 UFs/i)).toBeInTheDocument();
+    // SAB-006 AC2: Stats consolidated — no specific "87%" or "27 UFs" here
+    expect(screen.getByText(/Editais incompatíveis descartados antes de chegar até você/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cobertura nacional automática — todas as UFs de fontes oficiais/i)).toBeInTheDocument();
     expect(screen.getByText(/Acesso assim que publicados — você se posiciona antes/i)).toBeInTheDocument();
     expect(screen.getByText(/Cada decisão baseada em critérios objetivos documentados/i)).toBeInTheDocument();
   });
@@ -54,5 +55,14 @@ describe('BeforeAfter', () => {
     expect(container.querySelector('.text-red-500')).toBeInTheDocument();
     expect(container.querySelector('.text-green-500')).toBeInTheDocument();
     expect(container.querySelector('.text-blue-600')).toBeInTheDocument();
+  });
+
+  it('does NOT contain duplicate stats (SAB-006 AC2)', () => {
+    const { container } = render(<BeforeAfter />);
+    const text = container.textContent || '';
+
+    // Specific numbers consolidated into StatsSection
+    expect(text).not.toMatch(/87%/);
+    expect(text).not.toMatch(/27 UFs/);
   });
 });

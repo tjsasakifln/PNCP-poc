@@ -6,13 +6,16 @@ interface FinalCTAProps {
   className?: string;
 }
 
+/**
+ * SAB-006 AC3: Absorbed beta counter content into FinalCTA.
+ */
 export default function FinalCTA({ className = '' }: FinalCTAProps) {
   const { ref, isInView } = useInView({ threshold: 0.3 });
 
   return (
     <section
       ref={ref as React.RefObject<HTMLElement>}
-      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 ${className}`}
+      className={`max-w-landing mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 ${className}`}
     >
       <div
         className={`bg-brand-navy rounded-card p-10 sm:p-14 text-center text-white transition-all duration-500 ${
@@ -24,11 +27,21 @@ export default function FinalCTA({ className = '' }: FinalCTAProps) {
         </h2>
 
         <p
-          className={`text-lg sm:text-xl mb-8 text-white/80 transition-all duration-500 delay-100 ${
+          className={`text-lg sm:text-xl mb-6 text-white/80 transition-all duration-500 delay-100 ${
             isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
         >
           A cada dia sem filtro estratégico, editais compatíveis com sua empresa passam — e vão para outro.
+        </p>
+
+        {/* SAB-006: Absorbed beta counter */}
+        <p
+          className={`text-sm mb-8 text-white/60 transition-all duration-500 delay-150 ${
+            isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+          data-testid="beta-counter"
+        >
+          Mais de <span className="text-white font-semibold">10 empresas</span> já testaram — uniformes, TI, engenharia, saúde e facilities
         </p>
 
         <div

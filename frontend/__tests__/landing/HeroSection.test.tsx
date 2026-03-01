@@ -24,22 +24,14 @@ describe('HeroSection', () => {
     expect(primaryCTA).toBeInTheDocument();
   });
 
-  it('renders stats badges with trust signals (AC4)', () => {
+  it('renders secondary CTA linking to como-funciona (SAB-006 AC1)', () => {
     render(<HeroSection />);
 
-    expect(screen.getByText(/setores especializados/i)).toBeInTheDocument();
-    expect(screen.getByText(/de editais descartados/i)).toBeInTheDocument();
-    expect(screen.getByText(/UFs cobertas/i)).toBeInTheDocument();
-  });
-
-  it('renders secondary CTA button linking to proof-of-value', () => {
-    render(<HeroSection />);
-
-    const secondaryCTA = screen.getByRole('button', { name: /Ver exemplo de análise real/i });
+    const secondaryCTA = screen.getByRole('button', { name: /Ver como funciona/i });
     expect(secondaryCTA).toBeInTheDocument();
   });
 
-  it('scrolls to proof-of-value section when secondary CTA is clicked', async () => {
+  it('scrolls to como-funciona section when secondary CTA is clicked', async () => {
     const user = userEvent.setup();
 
     const mockScrollIntoView = jest.fn();
@@ -48,10 +40,10 @@ describe('HeroSection', () => {
 
     render(<HeroSection />);
 
-    const secondaryCTA = screen.getByRole('button', { name: /Ver exemplo de análise real/i });
+    const secondaryCTA = screen.getByRole('button', { name: /Ver como funciona/i });
     await user.click(secondaryCTA);
 
-    expect(document.getElementById).toHaveBeenCalledWith('proof-of-value');
+    expect(document.getElementById).toHaveBeenCalledWith('como-funciona');
     expect(mockScrollIntoView).toHaveBeenCalledWith({
       behavior: 'smooth',
       block: 'start',
@@ -77,5 +69,14 @@ describe('HeroSection', () => {
 
     expect(container.querySelector('.text-ink')).toBeInTheDocument();
     expect(container.querySelector('.text-gradient')).toBeInTheDocument();
+  });
+
+  it('does NOT render stats badges (SAB-006 AC2 — stats consolidated into StatsSection)', () => {
+    const { container } = render(<HeroSection />);
+    const text = container.textContent || '';
+
+    // Stats badges removed — these values should NOT appear in HeroSection
+    expect(text).not.toMatch(/87%/);
+    expect(text).not.toMatch(/UFs cobertas/i);
   });
 });
