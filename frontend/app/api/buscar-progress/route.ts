@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
       };
 
       // Controlled pipe — intercept upstream read errors
-      if (typeof ReadableStream !== "undefined" && backendResponse.body?.getReader) {
+      if (typeof ReadableStream !== "undefined" && backendResponse.body) {
         const upstreamBody = backendResponse.body;
         const sseReadable = new ReadableStream({
           async start(controller) {
