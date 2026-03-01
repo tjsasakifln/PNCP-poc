@@ -23,16 +23,13 @@ Título "Escolha Seu Nível de Compromisso" — "Compromisso" tem conotação ne
 
 ### Badge BETA (P2-03)
 
-- [ ] **AC1:** Opção A: Remover badge "BETA" completamente. Opção B: Substituir por "Early Adopter" com benefício (preço lock-in). **Decisão do PO necessária.**
-- [ ] **AC2:** Se opção B: adicionar tooltip "Preço garantido para early adopters. Sem reajuste por 12 meses."
-- [ ] **AC3:** Verificar se há outros lugares no app com badge "BETA" (grep global)
+- [x] **AC1:** Opção A escolhida: Badge "BETA" removido completamente do card de pricing.
+- [x] **AC2:** N/A (opção A escolhida — sem tooltip necessário).
+- [x] **AC3:** Grep global realizado. Removido "(Beta)" de: ajuda FAQ (2x), FaqStructuredData (2x), termos, signup layout meta, planos layout meta, InstitutionalSidebar, valueProps, TrialConversionScreen. Total: 10 ocorrências limpas.
 
 ### Heading (P2-04)
 
-- [ ] **AC4:** Alterar "Escolha Seu Nível de Compromisso" para copy aprovada pelo PO. Sugestões:
-  - "Escolha o melhor para sua empresa"
-  - "Invista na inteligência competitiva"
-  - "Comece a vencer licitações"
+- [x] **AC4:** Heading alterado para "Comece a Vencer Licitações". Também atualizado: PlanToggle aria-label, FAQ answer, trial/expired banners, TrialCountdown title, pricing page — todos "compromisso" → "período de acesso".
 
 ---
 

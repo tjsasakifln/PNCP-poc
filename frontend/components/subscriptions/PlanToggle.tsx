@@ -5,7 +5,7 @@ import { useState } from "react";
 /**
  * PlanToggle Component — GTM-002
  *
- * Toggle for 3 "níveis de compromisso": Mensal, Semestral, Anual
+ * Toggle for 3 períodos de acesso: Mensal, Semestral, Anual
  * NOT plan tiers — billing periods only.
  */
 
@@ -37,7 +37,7 @@ export function PlanToggle({
       {/* Toggle Buttons */}
       <div
         role="radiogroup"
-        aria-label="Escolha seu nível de compromisso"
+        aria-label="Escolha seu período de acesso"
         className="relative inline-flex items-center bg-surface-1 rounded-full p-1 border border-strong"
       >
         {BILLING_OPTIONS.map((option) => (

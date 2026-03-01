@@ -95,7 +95,7 @@ describe("STORY-319: InstitutionalSidebar copy", () => {
 
   it("AC11: signup benefits say 14 dias", () => {
     render(<InstitutionalSidebar variant="signup" />);
-    expect(screen.getByText("14 dias do produto completo — sem limites (Beta)")).toBeInTheDocument();
+    expect(screen.getByText("14 dias do produto completo — sem limites")).toBeInTheDocument();
   });
 
   it("AC11: does NOT mention 30 dias", () => {

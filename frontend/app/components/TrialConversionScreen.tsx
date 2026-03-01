@@ -80,7 +80,7 @@ export function TrialConversionScreen({ trialValue, onClose, loading }: TrialCon
       <GlassCard variant="pricing" hoverable={false} className="max-w-4xl w-full p-8 md:p-12 my-8">
         {/* Hero */}
         <h1 className="text-3xl md:text-4xl font-bold font-display text-center mb-2 text-ink">
-          {hasData ? "Veja o que você descobriu no período Beta" : "Descubra oportunidades para seu negócio"}
+          {hasData ? "Veja o que você descobriu no período de avaliação" : "Descubra oportunidades para seu negócio"}
         </h1>
         <p className="text-center text-ink-secondary mb-8">
           {hasData

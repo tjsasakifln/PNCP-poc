@@ -232,7 +232,7 @@ export const pricing = {
     },
     guarantee: {
       traditional: "Raro",
-      smartlic: "14 dias do produto completo (Beta)",
+      smartlic: "14 dias do produto completo",
     },
   },
 

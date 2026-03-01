@@ -208,7 +208,7 @@ describe('PlanToggle Component', () => {
       render(<PlanToggle value="monthly" onChange={mockOnChange} />);
 
       const radioGroup = screen.getByRole('radiogroup');
-      expect(radioGroup).toHaveAttribute('aria-label', 'Escolha seu nível de compromisso');
+      expect(radioGroup).toHaveAttribute('aria-label', 'Escolha seu período de acesso');
     });
 
     it('should have correct ARIA role for all buttons', () => {

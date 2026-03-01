@@ -156,7 +156,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
     headline: "Sua empresa a um passo das melhores oportunidades públicas",
     subheadline: "Crie sua conta e comece a encontrar licitações compatíveis com seu negócio",
     benefits: [
-      { icon: "gift", text: "14 dias do produto completo — sem limites (Beta)" },
+      { icon: "gift", text: "14 dias do produto completo — sem limites" },
       { icon: "credit-card-off", text: "Sem necessidade de cartão de crédito" },
       { icon: "zap", text: "Configuração em menos de 2 minutos" },
       { icon: "headset", text: "Suporte dedicado via plataforma" },

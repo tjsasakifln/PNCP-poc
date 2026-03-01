@@ -50,7 +50,7 @@ export function TrialCountdown({ daysRemaining, className = "" }: TrialCountdown
         ${bgColor} ${textColor} ${borderColor}
         ${className}
       `}
-      title="Ver níveis de compromisso"
+      title="Ver períodos de acesso"
     >
       <span className={`w-1.5 h-1.5 rounded-full ${dotColor} ${daysRemaining <= 2 ? "animate-pulse" : ""}`} />
       {daysRemaining} dia{daysRemaining === 1 ? "" : "s"} de acesso completo

@@ -69,7 +69,7 @@ export default function TermosPage() {
                 3.2 Tipos de Conta
               </h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
-                <li><strong>Período de Avaliação (Beta):</strong> 14 dias de acesso completo a todas as funcionalidades da plataforma, sem compromisso e sem necessidade de cartão de crédito</li>
+                <li><strong>Período de Avaliação:</strong> 14 dias de acesso completo a todas as funcionalidades da plataforma, sem compromisso e sem necessidade de cartão de crédito</li>
                 <li><strong>SmartLic Pro:</strong> Acesso completo à plataforma, incluindo busca multi-fonte, classificação por IA, relatórios em Excel, pipeline de oportunidades e suporte prioritário — R$&nbsp;397/mês (mensal), R$&nbsp;357/mês (semestral) ou R$&nbsp;297/mês (anual)</li>
               </ul>
 

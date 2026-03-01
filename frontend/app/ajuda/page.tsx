@@ -80,12 +80,12 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Qual a diferença entre o período de avaliação e o SmartLic Pro?",
         answer:
-          "Durante os 14 dias de avaliação gratuita (Beta), você usa o produto completo sem restrições: Excel, Pipeline, IA completa e histórico. Após o período de avaliação, assine o SmartLic Pro para continuar com acesso completo.",
+          "Durante os 14 dias de avaliação gratuita, você usa o produto completo sem restrições: Excel, Pipeline, IA completa e histórico. Após o período de avaliação, assine o SmartLic Pro para continuar com acesso completo.",
       },
       {
         question: "Posso testar antes de assinar?",
         answer:
-          "Sim! Ao criar sua conta, você experimenta o produto completo por 14 dias gratuitamente durante o período Beta, sem limites. Não é necessário informar dados de pagamento.",
+          "Sim! Ao criar sua conta, você experimenta o produto completo por 14 dias gratuitamente, sem limites. Não é necessário informar dados de pagamento.",
       },
       {
         question: "Como faço upgrade do meu plano?",

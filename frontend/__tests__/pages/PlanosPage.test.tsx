@@ -97,7 +97,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Escolha Seu Nível de Compromisso/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Comece a Vencer Licitações/i })).toBeInTheDocument();
       });
     });
 
@@ -139,7 +139,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const radioGroup = screen.getByRole('radiogroup', { name: /Escolha seu nível de compromisso/i });
+        const radioGroup = screen.getByRole('radiogroup', { name: /Escolha seu período de acesso/i });
         expect(radioGroup).toBeInTheDocument();
       });
 

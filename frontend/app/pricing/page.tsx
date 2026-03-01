@@ -122,7 +122,7 @@ export default function PricingPage() {
                 {formatCurrency(SMARTLIC_PRO_PRICE)}<span className="text-sm font-normal text-[var(--ink-muted)]">/mês</span>
               </p>
               <p className="text-xs text-[var(--ink-muted)] mt-1">
-                A partir de {formatCurrency(297)}/mês no compromisso anual
+                A partir de {formatCurrency(297)}/mês no período anual
               </p>
             </div>
 

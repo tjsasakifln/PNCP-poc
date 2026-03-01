@@ -63,7 +63,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "Existe contrato de fidelidade?",
-    answer: "Não. O SmartLic Pro funciona como acesso recorrente. Você escolhe o nível de compromisso e pode alterar ou cancelar livremente.",
+    answer: "Não. O SmartLic Pro funciona como acesso recorrente. Você escolhe o período de acesso e pode alterar ou cancelar livremente.",
   },
   {
     question: "O que acontece se eu cancelar?",
@@ -279,7 +279,7 @@ export default function PlanosPage() {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-display font-bold text-[var(--ink)] mb-4">
-            Escolha Seu Nível de Compromisso
+            Comece a Vencer Licitações
           </h1>
           <p className="text-lg text-[var(--ink-secondary)] max-w-2xl mx-auto">
             O SmartLic é um só. Você decide com que frequência quer investir em inteligência competitiva.
@@ -325,7 +325,7 @@ export default function PlanosPage() {
               Você está no período de avaliação{trialDaysRemaining !== null ? ` (${trialDaysRemaining} ${trialDaysRemaining === 1 ? "dia restante" : "dias restantes"})` : ""}
             </p>
             <p className="text-sm text-blue-600 dark:text-blue-400">
-              Escolha seu compromisso para continuar após o trial
+              Assine para continuar após o período de avaliação
             </p>
           </div>
         )}
@@ -336,7 +336,7 @@ export default function PlanosPage() {
               Seu período de avaliação encerrou
             </p>
             <p className="text-sm text-amber-600 dark:text-amber-400">
-              Escolha um compromisso para voltar a ter acesso
+              Assine para voltar a ter acesso
             </p>
           </div>
         )}
@@ -361,12 +361,9 @@ export default function PlanosPage() {
         {/* Single Plan Card — Centered */}
         <div className="max-w-lg mx-auto">
           <div className="backdrop-blur-xl bg-white/50 dark:bg-gray-900/40 border-2 border-[var(--brand-blue)] rounded-card p-8 shadow-gem-amethyst">
-            {/* Plan Name + Beta Badge */}
+            {/* Plan Name */}
             <div className="text-center mb-6">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <h2 className="text-2xl font-bold text-[var(--ink)]">SmartLic Pro</h2>
-                <span className="inline-block px-2 py-0.5 bg-[var(--brand-blue)] text-white text-xs font-bold rounded-full uppercase tracking-wide">Beta</span>
-              </div>
+              <h2 className="text-2xl font-bold text-[var(--ink)] mb-1">SmartLic Pro</h2>
               <p className="text-sm text-[var(--ink-secondary)]">
                 Inteligência de decisão completa para licitações
               </p>
