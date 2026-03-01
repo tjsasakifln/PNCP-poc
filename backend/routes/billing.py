@@ -22,7 +22,7 @@ async def get_plans(db=Depends(get_db)):
     """Get available subscription plans."""
     result = await sb_execute(
         db.table("plans")
-        .select("id, name, description, max_searches, price_brl, duration_days, stripe_price_id_monthly, stripe_price_id_annual")
+        .select("id, name, description, max_searches, price_brl, duration_days, stripe_price_id_monthly, stripe_price_id_semiannual, stripe_price_id_annual")
         .eq("is_active", True)
         .order("price_brl")
     )
