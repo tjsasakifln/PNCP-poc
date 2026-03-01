@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { getUserFriendlyError } from "../../lib/error-messages";
+import { formatCurrencyBR } from "../../lib/format-currency";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
@@ -260,8 +261,8 @@ export default function HistoricoPage() {
     );
   }
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  // SAB-012 AC6: PT-BR currency formatting with abbreviations
+  const formatCurrency = formatCurrencyBR;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("pt-BR", {
@@ -371,8 +372,20 @@ export default function HistoricoPage() {
                           </p>
                         </>
                       )}
-                      {s.duration_ms != null && (
-                        <p className="text-xs text-[var(--ink-muted)] mt-1">
+                      {/* SAB-012 AC1-AC3: Smart duration display */}
+                      {s.duration_ms != null && s.duration_ms > 60000 && (
+                        <p className="text-xs text-[var(--ink-muted)] mt-1 flex items-center gap-1" data-testid="deep-analysis-label">
+                          <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                          </svg>
+                          Análise profunda
+                        </p>
+                      )}
+                      {s.duration_ms != null && s.duration_ms < 30000 && (
+                        <p className="text-xs text-[var(--success)] mt-1 flex items-center gap-1" data-testid="fast-search-badge">
+                          <svg aria-hidden="true" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                           {(s.duration_ms / 1000).toFixed(1)}s
                         </p>
                       )}

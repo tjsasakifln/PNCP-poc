@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import { TrialUpsellCTA } from "../../components/billing/TrialUpsellCTA";
 import { usePlan } from "../../hooks/usePlan";
+import { formatCurrencyBR } from "../../lib/format-currency";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "SmartLic.tech";
 
@@ -82,11 +83,8 @@ const CHART_COLORS = [
 // Helpers
 // ============================================================================
 
-function formatCurrency(val: number): string {
-  if (val >= 1_000_000) return `R$ ${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `R$ ${(val / 1_000).toFixed(0)}k`;
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
-}
+// SAB-012 AC5: PT-BR currency formatting with abbreviations (bi/mi)
+const formatCurrency = formatCurrencyBR;
 
 function formatNumber(val: number): string {
   return new Intl.NumberFormat("pt-BR").format(val);

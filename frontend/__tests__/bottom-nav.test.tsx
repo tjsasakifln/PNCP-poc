@@ -43,10 +43,11 @@ describe("BottomNav", () => {
     const nav = screen.getByTestId("bottom-nav");
     expect(nav).toBeInTheDocument();
 
-    expect(screen.getByText("Buscar")).toBeInTheDocument();
+    // SAB-012 AC8: Abbreviated labels
+    expect(screen.getByText("Busca")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
-    expect(screen.getByText("Histórico")).toBeInTheDocument();
-    expect(screen.getByText("Msg")).toBeInTheDocument();
+    expect(screen.getByText("Hist.")).toBeInTheDocument();
+    expect(screen.getByText("Msgs")).toBeInTheDocument();
     expect(screen.getByText("Mais")).toBeInTheDocument();
   });
 
@@ -61,7 +62,8 @@ describe("BottomNav", () => {
   it("each item displays both icon and label text", () => {
     render(<BottomNav />);
     // All items should have visible text labels
-    const items = ["Buscar", "Pipeline", "Histórico", "Msg", "Mais"];
+    // SAB-012 AC8: Abbreviated labels
+    const items = ["Busca", "Pipeline", "Hist.", "Msgs", "Mais"];
     items.forEach((label) => {
       const el = screen.getByText(label);
       expect(el).toBeInTheDocument();
@@ -137,6 +139,7 @@ describe("BottomNav", () => {
   it("does not highlight inactive items", () => {
     mockPathname.mockReturnValue("/buscar");
     render(<BottomNav />);
+    // Pipeline is not active at /buscar
     const pipelineLink = screen.getByText("Pipeline").closest("a");
     expect(pipelineLink).not.toHaveAttribute("aria-current");
   });

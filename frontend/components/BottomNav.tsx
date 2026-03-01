@@ -9,6 +9,7 @@ import { usePlan } from "../hooks/usePlan";
 interface BottomNavItem {
   href: string;
   label: string;
+  ariaLabel?: string;
   icon: React.ReactNode;
 }
 
@@ -66,11 +67,12 @@ const icons = {
   ),
 };
 
+// SAB-012 AC8: Abbreviated labels for 375px viewport fit
 const MAIN_ITEMS: BottomNavItem[] = [
-  { href: "/buscar", label: "Buscar", icon: icons.search },
+  { href: "/buscar", label: "Busca", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
-  { href: "/historico", label: "Histórico", icon: icons.history },
-  { href: "/mensagens", label: "Msg", icon: icons.messages },
+  { href: "/historico", label: "Hist.", ariaLabel: "Histórico", icon: icons.history },
+  { href: "/mensagens", label: "Msgs", ariaLabel: "Mensagens", icon: icons.messages },
 ];
 
 const DRAWER_ITEMS: { href: string; label: string; icon: React.ReactNode }[] = [
@@ -176,7 +178,7 @@ export function BottomNav() {
                 href={item.href}
                 className={`
                   flex flex-col items-center justify-center gap-0.5
-                  min-w-[44px] min-h-[44px] px-2 py-1 rounded-lg
+                  min-w-[44px] min-h-[44px] px-1 py-1 rounded-lg
                   transition-colors text-center
                   ${active
                     ? "text-[var(--brand-blue)]"
@@ -184,9 +186,10 @@ export function BottomNav() {
                   }
                 `}
                 aria-current={active ? "page" : undefined}
+                aria-label={item.ariaLabel || item.label}
               >
                 {item.icon}
-                <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+                <span className="text-[10px] font-medium leading-tight truncate max-w-[56px]">{item.label}</span>
               </Link>
             );
           })}
@@ -198,7 +201,7 @@ export function BottomNav() {
             data-testid="bottom-nav-more"
             className={`
               flex flex-col items-center justify-center gap-0.5
-              min-w-[44px] min-h-[44px] px-2 py-1 rounded-lg
+              min-w-[44px] min-h-[44px] px-1 py-1 rounded-lg
               transition-colors text-center
               ${moreActive
                 ? "text-[var(--brand-blue)]"

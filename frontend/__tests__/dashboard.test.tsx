@@ -234,11 +234,12 @@ describe("DashboardPage — UX-338", () => {
   });
 
   describe("AC3: Real metrics when data exists", () => {
-    it("should display currency formatted total value", async () => {
+    // SAB-012 AC5: PT-BR currency format uses "mi" instead of "M"
+    it("should display currency formatted total value in PT-BR", async () => {
       render(<DashboardPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/R\$ 45.*M/)).toBeInTheDocument();
+        expect(screen.getByText(/R\$ 45,0 mi/)).toBeInTheDocument();
       });
     });
 

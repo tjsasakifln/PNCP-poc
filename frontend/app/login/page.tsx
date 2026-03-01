@@ -339,18 +339,20 @@ function LoginContent() {
           </div>
         )}
 
-        {/* Google OAuth */}
+        {/* SAB-012 AC10: Google OAuth as primary CTA — full-width, prominent */}
         <button
           onClick={() => signInWithGoogle()}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 mb-4
-                     border border-[var(--border)] rounded-button bg-[var(--surface-0)]
-                     text-[var(--ink)] hover:bg-[var(--surface-1)] transition-colors
-                     disabled:opacity-50 disabled:cursor-not-allowed"
+          data-testid="google-oauth-button"
+          className="w-full flex items-center justify-center gap-3 px-4 py-3.5 mb-6
+                     border-2 border-[var(--ink)] rounded-button bg-white
+                     text-[var(--ink)] hover:bg-gray-50 transition-all shadow-md
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     font-semibold text-base"
         >
           <svg
               role="img"
-              aria-label="Ícone" width="18" height="18" viewBox="0 0 24 24">
+              aria-label="Ícone Google" width="20" height="20" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -359,17 +361,18 @@ function LoginContent() {
           Entrar com Google
         </button>
 
+        {/* SAB-012 AC11: Divider with "ou continue com email" */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 h-px bg-[var(--border)]" />
-          <span className="text-xs text-[var(--ink-muted)]">OU</span>
+          <span className="text-xs text-[var(--ink-muted)] whitespace-nowrap">ou continue com email</span>
           <div className="flex-1 h-px bg-[var(--border)]" />
         </div>
 
-        {/* Mode toggle */}
+        {/* SAB-012 AC12: Email/senha + Magic Link as secondary options */}
         <div className="flex mb-4 bg-[var(--surface-1)] rounded-button p-1">
           <button
             onClick={() => setMode("password")}
-            className={`flex-1 py-2 text-sm rounded-button transition-colors ${
+            className={`flex-1 py-1.5 text-xs rounded-button transition-colors ${
               mode === "password"
                 ? "bg-[var(--surface-0)] text-[var(--ink)] shadow-sm"
                 : "text-[var(--ink-muted)]"
@@ -379,7 +382,7 @@ function LoginContent() {
           </button>
           <button
             onClick={() => setMode("magic")}
-            className={`flex-1 py-2 text-sm rounded-button transition-colors ${
+            className={`flex-1 py-1.5 text-xs rounded-button transition-colors ${
               mode === "magic"
                 ? "bg-[var(--surface-0)] text-[var(--ink)] shadow-sm"
                 : "text-[var(--ink-muted)]"
@@ -464,11 +467,12 @@ function LoginContent() {
             </div>
           )}
 
+          {/* SAB-012 AC12: Secondary submit — less prominent than Google OAuth */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[var(--brand-navy)] text-white rounded-button
-                       font-semibold hover:bg-[var(--brand-blue)] transition-colors
+            className="w-full py-2.5 bg-[var(--brand-navy)] text-white rounded-button
+                       font-medium text-sm hover:bg-[var(--brand-blue)] transition-colors
                        disabled:opacity-50 disabled:cursor-not-allowed
                        flex items-center justify-center gap-2"
           >

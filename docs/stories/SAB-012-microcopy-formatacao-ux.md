@@ -31,27 +31,27 @@ Login oferece Google OAuth + Email/Senha + Magic Link no mesmo nível visual, se
 
 ### Tempo de Busca (P2-05)
 
-- [ ] **AC1:** Esconder tempo de busca quando > 60s. Substituir por label "Análise profunda" com ícone.
-- [ ] **AC2:** Mostrar tempo apenas quando < 30s (como diferencial de velocidade)
-- [ ] **AC3:** Tempo nunca visível no card — apenas no detail view se usuário expandir
+- [x] **AC1:** Esconder tempo de busca quando > 60s. Substituir por label "Análise profunda" com ícone.
+- [x] **AC2:** Mostrar tempo apenas quando < 30s (como diferencial de velocidade)
+- [x] **AC3:** Tempo nunca visível no card — apenas no detail view se usuário expandir
 
 ### Formatação Monetária (P2-06)
 
-- [ ] **AC4:** Criar helper `formatCurrencyBR(value: number)` que formata em PT-BR: "R$ 3,5 bi", "R$ 130,7 mi", "R$ 45.000"
-- [ ] **AC5:** Aplicar formatação PT-BR em TODOS os valores monetários do Dashboard
-- [ ] **AC6:** Aplicar formatação PT-BR nos valores do Histórico
+- [x] **AC4:** Criar helper `formatCurrencyBR(value: number)` que formata em PT-BR: "R$ 3,5 bi", "R$ 130,7 mi", "R$ 45.000"
+- [x] **AC5:** Aplicar formatação PT-BR em TODOS os valores monetários do Dashboard
+- [x] **AC6:** Aplicar formatação PT-BR nos valores do Histórico
 
 ### Mobile Bottom Nav (P2-07)
 
 - [ ] **AC7:** Bottom nav 375px: usar apenas ícones (sem labels) com tooltips no long-press
-- [ ] **AC8:** OU: abreviar consistentemente — "Busca | Pipeline | Hist. | Msgs | Mais"
-- [ ] **AC9:** Testar em viewport 375px que nenhum label fica cortado
+- [x] **AC8:** OU: abreviar consistentemente — "Busca | Pipeline | Hist. | Msgs | Mais"
+- [x] **AC9:** Testar em viewport 375px que nenhum label fica cortado
 
 ### Login Hierarquia (P2-08)
 
-- [ ] **AC10:** Google OAuth como botão primary: full-width, acima dos demais, cor destacada
-- [ ] **AC11:** Divider visual "ou continue com email" após Google
-- [ ] **AC12:** Email/senha e magic link como secundários (menor destaque visual)
+- [x] **AC10:** Google OAuth como botão primary: full-width, acima dos demais, cor destacada
+- [x] **AC11:** Divider visual "ou continue com email" após Google
+- [x] **AC12:** Email/senha e magic link como secundários (menor destaque visual)
 
 ---
 
