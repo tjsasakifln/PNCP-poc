@@ -14,6 +14,7 @@ const PROTECTED_ROUTES = [
   "/buscar",
   "/dashboard",
   "/pipeline",
+  "/alertas",
   "/historico",
   "/mensagens",
   "/conta",

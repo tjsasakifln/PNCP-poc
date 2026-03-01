@@ -99,11 +99,20 @@ describe("BottomNav", () => {
     expect(screen.getByText("Sair")).toBeInTheDocument();
   });
 
-  it("drawer shows Dashboard link", () => {
+  it("drawer shows Dashboard and Alertas links", () => {
     render(<BottomNav />);
     fireEvent.click(screen.getByTestId("bottom-nav-more"));
 
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Alertas")).toBeInTheDocument();
+  });
+
+  // SAB-004 AC3: Alertas in drawer highlights on mobile
+  it("highlights Mais button when /alertas is active", () => {
+    mockPathname.mockReturnValue("/alertas");
+    render(<BottomNav />);
+    const mais = screen.getByTestId("bottom-nav-more");
+    expect(mais.className).toContain("brand-blue");
   });
 
   it("drawer closes when backdrop is clicked", () => {

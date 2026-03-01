@@ -19,10 +19,10 @@ A página `/alertas` renderiza em layout full-width SEM a sidebar padrão de nav
 
 ## Critérios de Aceite
 
-- [ ] **AC1:** Página `/alertas` renderiza com a mesma sidebar de navegação das demais páginas logadas
-- [ ] **AC2:** Item "Alertas" na sidebar fica highlighted/ativo quando na página `/alertas`
-- [ ] **AC3:** Layout responsivo: no mobile, sidebar colapsa igual às outras páginas (bottom nav)
-- [ ] **AC4:** Verificar se `/mensagens` também tem sidebar (se não, incluir no fix)
+- [x] **AC1:** Página `/alertas` renderiza com a mesma sidebar de navegação das demais páginas logadas
+- [x] **AC2:** Item "Alertas" na sidebar fica highlighted/ativo quando na página `/alertas`
+- [x] **AC3:** Layout responsivo: no mobile, sidebar colapsa igual às outras páginas (bottom nav)
+- [x] **AC4:** Verificar se `/mensagens` também tem sidebar (se não, incluir no fix) — já tem, confirmado
 
 ---
 
