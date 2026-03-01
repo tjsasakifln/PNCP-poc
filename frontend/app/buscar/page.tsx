@@ -171,7 +171,8 @@ const RESULTS_TOUR_STEPS: TourStep[] = [
   {
     id: 'results-pipeline',
     title: 'Pipeline de oportunidades',
-    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Adicione ao pipeline para acompanhar oportunidades promissoras. Acesse pela pagina Pipeline no menu.</p>',
+    text: '<span class="tour-step-counter">Passo 3 de 4</span><p>Clique em "Pipeline" para salvar oportunidades promissoras e acompanha-las no kanban.</p>',
+    attachTo: { element: '[data-tour="pipeline-button"]', on: 'bottom' },
   },
   {
     id: 'results-excel',

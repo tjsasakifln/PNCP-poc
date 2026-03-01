@@ -29,6 +29,14 @@ from excel import parse_datetime
 from middleware import request_id_var
 
 
+def _format_brl_full(value: float) -> str:
+    """Format value as 'R$ 1.234.567,89' (pt-BR full format)."""
+    formatted = f"{value:,.2f}"
+    # Swap US separators to pt-BR: comma↔dot
+    formatted = formatted.replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"R$ {formatted}"
+
+
 def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes e fardamentos", termos_busca: str | None = None) -> ResumoEstrategico:
     """
     Generate AI-powered executive summary of procurement bids using GPT-4.1-nano.
@@ -363,13 +371,13 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "
     # Generate insight setorial from data (GTM-FIX-041: use terms when available)
     ufs_str = ", ".join(sorted(dist_uf.keys()))
     if termos_busca:
-        insight = f"Busca por '{termos_busca}': {total} oportunidade(s) distribuída(s) em {len(dist_uf)} estado(s) ({ufs_str}), totalizando R$ {valor_total:,.2f}."
+        insight = f"Busca por '{termos_busca}': {total} oportunidade(s) distribuída(s) em {len(dist_uf)} estado(s) ({ufs_str}), totalizando {_format_brl_full(valor_total)}."
     else:
-        insight = f"Setor de {sector_name}: {total} oportunidades distribuídas em {len(dist_uf)} estado(s) ({ufs_str}), totalizando R$ {valor_total:,.2f}."
+        insight = f"Setor de {sector_name}: {total} oportunidades distribuídas em {len(dist_uf)} estado(s) ({ufs_str}), totalizando {_format_brl_full(valor_total)}."
 
     # Consultive resumo executivo (GTM-FIX-041)
     urgentes = sum(1 for r in recomendacoes if r.urgencia == "alta")
-    resumo_exec = f"Encontradas {total} licitações {_fb_label} totalizando R$ {valor_total:,.2f}."
+    resumo_exec = f"Encontradas {total} licitações {_fb_label} totalizando {_format_brl_full(valor_total)}."
     if urgentes > 0:
         resumo_exec += f" Recomendamos atenção imediata a {urgentes} oportunidade(s) com prazo curto."
     elif recomendacoes:

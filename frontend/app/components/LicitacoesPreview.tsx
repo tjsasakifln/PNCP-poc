@@ -8,6 +8,7 @@ import FeedbackButtons from "../buscar/components/FeedbackButtons";
 import CompatibilityBadge from "../buscar/components/CompatibilityBadge";
 import ActionLabel from "../buscar/components/ActionLabel";
 import DeepAnalysisModal from "../buscar/components/DeepAnalysisModal";
+import { AddToPipelineButton } from "./AddToPipelineButton";
 
 interface LicitacoesPreviewProps {
   /** List of bid items to display */
@@ -484,6 +485,9 @@ function BidCard({
           <div className="flex flex-col items-end gap-2 shrink-0">
             <span className="text-lg font-bold font-data text-brand-navy">
               {formatCurrency(item.valor)}
+            </span>
+            <span data-tour="pipeline-button">
+              <AddToPipelineButton licitacao={item} />
             </span>
             {item.link && (
               <a
