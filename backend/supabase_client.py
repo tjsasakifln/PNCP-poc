@@ -1,8 +1,8 @@
 """Supabase client singleton for backend operations.
 
 STORY-291: Circuit breaker pattern for Supabase calls.
-Supabase is the ONLY external dependency without a circuit breaker on the hot path.
-When Supabase has latency or downtime, 100% of searches fail without CB protection.
+CRIT-046: Connection pool exhaustion fix — enlarged httpx pool,
+explicit timeouts, pool utilization metrics, ConnectionError retry.
 """
 
 import asyncio
@@ -19,6 +19,21 @@ T = TypeVar("T")
 
 # Lazy import to avoid breaking existing tests that don't have supabase installed
 _supabase_client = None
+
+# ============================================================================
+# CRIT-046: Connection pool configuration
+# ============================================================================
+
+_POOL_MAX_CONNECTIONS = 50
+_POOL_MAX_KEEPALIVE = 20
+_POOL_TIMEOUT = 30.0
+_POOL_CONNECT_TIMEOUT = 10.0
+_POOL_HIGH_WATER_RATIO = 0.8  # Log warning when pool > 80% utilization
+_RETRY_DELAY_S = 1.0  # AC5: delay between retries
+
+# Thread-safe active connection counter (for high-water logging)
+_pool_active_lock = threading.Lock()
+_pool_active_count = 0
 
 
 def _get_config():
@@ -47,8 +62,51 @@ def get_supabase():
         from supabase import create_client
         url, key = _get_config()
         _supabase_client = create_client(url, key)
+        _configure_httpx_pool(_supabase_client)
         logger.info("Supabase client initialized")
     return _supabase_client
+
+
+def _configure_httpx_pool(client):
+    """CRIT-046 AC3/AC4: Enlarge httpx connection pool and set explicit timeouts.
+
+    Default httpx pool: max_connections=10, max_keepalive_connections=5.
+    With 2 Gunicorn workers + ARQ + SWR + cron, easily > 10 concurrent connections.
+
+    New pool: max_connections=50, max_keepalive_connections=20.
+    Timeout: 30s total, 10s connect (instead of httpx default 5s).
+    """
+    try:
+        import httpx
+
+        postgrest = client.postgrest
+        old_session = postgrest.session
+
+        new_session = httpx.Client(
+            base_url=old_session.base_url,
+            headers=dict(old_session.headers),
+            timeout=httpx.Timeout(_POOL_TIMEOUT, connect=_POOL_CONNECT_TIMEOUT),
+            transport=httpx.HTTPTransport(
+                limits=httpx.Limits(
+                    max_connections=_POOL_MAX_CONNECTIONS,
+                    max_keepalive_connections=_POOL_MAX_KEEPALIVE,
+                ),
+                http2=True,
+            ),
+            follow_redirects=True,
+        )
+
+        old_session.close()
+        postgrest.session = new_session
+
+        logger.info(
+            "CRIT-046: httpx pool configured — max_connections=%d, "
+            "max_keepalive=%d, timeout=%.0fs/connect=%.0fs",
+            _POOL_MAX_CONNECTIONS, _POOL_MAX_KEEPALIVE,
+            _POOL_TIMEOUT, _POOL_CONNECT_TIMEOUT,
+        )
+    except Exception as e:
+        logger.warning("CRIT-046: Failed to configure httpx pool: %s", e)
 
 
 def get_supabase_url() -> str:
@@ -270,6 +328,8 @@ async def sb_execute(query):
     STORY-291: Wrapped with circuit breaker. When CB is open,
     raises CircuitBreakerOpenError — callers must handle fallback.
 
+    CRIT-046: Pool utilization metrics (AC1/AC2) + ConnectionError retry (AC5).
+
     Usage:
         # Before (blocks event loop):
         result = db.table("profiles").select("*").eq("id", uid).execute()
@@ -277,7 +337,7 @@ async def sb_execute(query):
         # After (non-blocking + CB protected):
         result = await sb_execute(db.table("profiles").select("*").eq("id", uid))
     """
-    from metrics import SUPABASE_EXECUTE_DURATION
+    from metrics import SUPABASE_EXECUTE_DURATION, SUPABASE_POOL_ACTIVE, SUPABASE_RETRY_TOTAL
     start = time.monotonic()
 
     current_state = supabase_cb.state
@@ -286,15 +346,49 @@ async def sb_execute(query):
             "Supabase circuit breaker is OPEN — sb_execute rejected"
         )
 
+    global _pool_active_count
+    SUPABASE_POOL_ACTIVE.inc()
+    with _pool_active_lock:
+        _pool_active_count += 1
+        current_active = _pool_active_count
+
+    # AC2: Log when pool > 80% utilization
+    high_water = int(_POOL_MAX_CONNECTIONS * _POOL_HIGH_WATER_RATIO)
+    if current_active > high_water:
+        logger.warning(
+            "CRIT-046: Supabase pool > 80%% utilization: %d/%d active",
+            current_active, _POOL_MAX_CONNECTIONS,
+        )
+
     try:
         result = await asyncio.to_thread(query.execute)
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         supabase_cb._record_success()
         return result
+    except ConnectionError as e:
+        # AC5: Retry once with delay for ConnectionError
+        logger.warning("CRIT-046: ConnectionError in sb_execute, retrying in %.1fs: %s", _RETRY_DELAY_S, e)
+        SUPABASE_RETRY_TOTAL.labels(outcome="attempt").inc()
+        await asyncio.sleep(_RETRY_DELAY_S)
+        try:
+            result = await asyncio.to_thread(query.execute)
+            SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
+            supabase_cb._record_success()
+            SUPABASE_RETRY_TOTAL.labels(outcome="success").inc()
+            return result
+        except Exception as retry_exc:
+            SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
+            supabase_cb._record_failure(retry_exc)
+            SUPABASE_RETRY_TOTAL.labels(outcome="failure").inc()
+            raise
     except Exception as e:
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         supabase_cb._record_failure(e)
         raise
+    finally:
+        SUPABASE_POOL_ACTIVE.dec()
+        with _pool_active_lock:
+            _pool_active_count -= 1
 
 
 async def sb_execute_direct(query):
@@ -306,9 +400,16 @@ async def sb_execute_direct(query):
 
     CRIT-042: Health canary failures were opening the shared supabase_cb,
     causing the monitoring mechanism to sabotage the system it monitors.
+
+    CRIT-046: Shares the same httpx pool — tracks active connections.
     """
-    from metrics import SUPABASE_EXECUTE_DURATION
+    from metrics import SUPABASE_EXECUTE_DURATION, SUPABASE_POOL_ACTIVE
     start = time.monotonic()
+
+    global _pool_active_count
+    SUPABASE_POOL_ACTIVE.inc()
+    with _pool_active_lock:
+        _pool_active_count += 1
 
     try:
         result = await asyncio.to_thread(query.execute)
@@ -317,3 +418,7 @@ async def sb_execute_direct(query):
     except Exception:
         SUPABASE_EXECUTE_DURATION.observe(time.monotonic() - start)
         raise
+    finally:
+        SUPABASE_POOL_ACTIVE.dec()
+        with _pool_active_lock:
+            _pool_active_count -= 1

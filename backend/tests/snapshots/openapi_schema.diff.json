@@ -1582,6 +1582,47 @@
           "title": "CheckoutResponse",
           "type": "object"
         },
+        "CidadeStats": {
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "cidade": {
+              "title": "Cidade",
+              "type": "string"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "orgaos_frequentes": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Orgaos Frequentes",
+              "type": "array"
+            },
+            "total_editais": {
+              "title": "Total Editais",
+              "type": "integer"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            }
+          },
+          "required": [
+            "cidade",
+            "uf",
+            "total_editais",
+            "orgaos_frequentes",
+            "avg_value",
+            "last_updated"
+          ],
+          "title": "CidadeStats",
+          "type": "object"
+        },
         "ConversationCategory": {
           "description": "Category for support conversations.",
           "enum": [
@@ -1888,6 +1929,56 @@
           "title": "CreateOrgRequest",
           "type": "object"
         },
+        "CreatePartnerRequest": {
+          "properties": {
+            "contact_email": {
+              "title": "Contact Email",
+              "type": "string"
+            },
+            "contact_name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Contact Name"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "revenue_share_pct": {
+              "default": 25.0,
+              "title": "Revenue Share Pct",
+              "type": "number"
+            },
+            "slug": {
+              "title": "Slug",
+              "type": "string"
+            },
+            "stripe_coupon_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stripe Coupon Id"
+            }
+          },
+          "required": [
+            "name",
+            "slug",
+            "contact_email"
+          ],
+          "title": "CreatePartnerRequest",
+          "type": "object"
+        },
         "CreateUserRequest": {
           "properties": {
             "company": {
@@ -2154,6 +2245,38 @@
             "message"
           ],
           "title": "DeleteAccountResponse",
+          "type": "object"
+        },
+        "DiagnosticoRequest": {
+          "description": "Request body for PDF diagnostico report generation.",
+          "properties": {
+            "client_name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Name"
+            },
+            "max_items": {
+              "default": 20,
+              "maximum": 50.0,
+              "minimum": 1.0,
+              "title": "Max Items",
+              "type": "integer"
+            },
+            "search_id": {
+              "title": "Search Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "search_id"
+          ],
+          "title": "DiagnosticoRequest",
           "type": "object"
         },
         "DimensionItem": {
@@ -3351,6 +3474,73 @@
           "title": "MfaStatusResponse",
           "type": "object"
         },
+        "PanoramaStats": {
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "crescimento_estimado_pct": {
+              "title": "Crescimento Estimado Pct",
+              "type": "number"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "sazonalidade": {
+              "items": {
+                "$ref": "#/components/schemas/TrendPoint"
+              },
+              "title": "Sazonalidade",
+              "type": "array"
+            },
+            "sector_id": {
+              "title": "Sector Id",
+              "type": "string"
+            },
+            "sector_name": {
+              "title": "Sector Name",
+              "type": "string"
+            },
+            "top_modalidades": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Modalidades",
+              "type": "array"
+            },
+            "top_ufs": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Ufs",
+              "type": "array"
+            },
+            "total_nacional": {
+              "title": "Total Nacional",
+              "type": "integer"
+            },
+            "total_value": {
+              "title": "Total Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "sector_id",
+            "sector_name",
+            "total_nacional",
+            "total_value",
+            "avg_value",
+            "top_ufs",
+            "top_modalidades",
+            "sazonalidade",
+            "crescimento_estimado_pct",
+            "last_updated"
+          ],
+          "title": "PanoramaStats",
+          "type": "object"
+        },
         "PerfilContexto": {
           "description": "Business context profile collected during onboarding wizard.\n\nUsed to personalize search defaults and LLM recommendations.\nStored as JSONB in profiles.context_data.",
           "properties": {
@@ -4379,6 +4569,45 @@
           "title": "RootResponse",
           "type": "object"
         },
+        "SampleItem": {
+          "properties": {
+            "data": {
+              "title": "Data",
+              "type": "string"
+            },
+            "orgao": {
+              "title": "Orgao",
+              "type": "string"
+            },
+            "titulo": {
+              "title": "Titulo",
+              "type": "string"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            },
+            "valor": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor"
+            }
+          },
+          "required": [
+            "titulo",
+            "orgao",
+            "uf",
+            "data"
+          ],
+          "title": "SampleItem",
+          "type": "object"
+        },
         "SanctionsSummarySchema": {
           "description": "Lightweight sanctions summary for search result enrichment (STORY-256 AC11).\n\nShown as a badge on each search result when check_sanctions=true.",
           "properties": {
@@ -4518,6 +4747,219 @@
             "data"
           ],
           "title": "SearchesOverTimeResponse",
+          "type": "object"
+        },
+        "SectorBlogStats": {
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "sector_id": {
+              "title": "Sector Id",
+              "type": "string"
+            },
+            "sector_name": {
+              "title": "Sector Name",
+              "type": "string"
+            },
+            "top_modalidades": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Modalidades",
+              "type": "array"
+            },
+            "top_ufs": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Ufs",
+              "type": "array"
+            },
+            "total_editais": {
+              "title": "Total Editais",
+              "type": "integer"
+            },
+            "trend_90d": {
+              "items": {
+                "$ref": "#/components/schemas/TrendPoint"
+              },
+              "title": "Trend 90D",
+              "type": "array"
+            },
+            "value_range_max": {
+              "title": "Value Range Max",
+              "type": "number"
+            },
+            "value_range_min": {
+              "title": "Value Range Min",
+              "type": "number"
+            }
+          },
+          "required": [
+            "sector_id",
+            "sector_name",
+            "total_editais",
+            "value_range_min",
+            "value_range_max",
+            "avg_value",
+            "top_modalidades",
+            "top_ufs",
+            "trend_90d",
+            "last_updated"
+          ],
+          "title": "SectorBlogStats",
+          "type": "object"
+        },
+        "SectorListItem": {
+          "properties": {
+            "description": {
+              "title": "Description",
+              "type": "string"
+            },
+            "id": {
+              "title": "Id",
+              "type": "string"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            },
+            "slug": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "slug",
+            "name",
+            "description"
+          ],
+          "title": "SectorListItem",
+          "type": "object"
+        },
+        "SectorStatsResponse": {
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "sample_items": {
+              "items": {
+                "$ref": "#/components/schemas/SampleItem"
+              },
+              "title": "Sample Items",
+              "type": "array"
+            },
+            "sector_description": {
+              "title": "Sector Description",
+              "type": "string"
+            },
+            "sector_id": {
+              "title": "Sector Id",
+              "type": "string"
+            },
+            "sector_name": {
+              "title": "Sector Name",
+              "type": "string"
+            },
+            "slug": {
+              "title": "Slug",
+              "type": "string"
+            },
+            "top_modalidades": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Modalidades",
+              "type": "array"
+            },
+            "top_ufs": {
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Ufs",
+              "type": "array"
+            },
+            "total_open": {
+              "title": "Total Open",
+              "type": "integer"
+            },
+            "total_value": {
+              "title": "Total Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "sector_id",
+            "sector_name",
+            "sector_description",
+            "slug",
+            "total_open",
+            "total_value",
+            "avg_value",
+            "top_ufs",
+            "top_modalidades",
+            "sample_items",
+            "last_updated"
+          ],
+          "title": "SectorStatsResponse",
+          "type": "object"
+        },
+        "SectorUfStats": {
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "last_updated": {
+              "title": "Last Updated",
+              "type": "string"
+            },
+            "sector_id": {
+              "title": "Sector Id",
+              "type": "string"
+            },
+            "sector_name": {
+              "title": "Sector Name",
+              "type": "string"
+            },
+            "top_oportunidades": {
+              "items": {
+                "$ref": "#/components/schemas/SampleItem"
+              },
+              "title": "Top Oportunidades",
+              "type": "array"
+            },
+            "total_editais": {
+              "title": "Total Editais",
+              "type": "integer"
+            },
+            "uf": {
+              "title": "Uf",
+              "type": "string"
+            }
+          },
+          "required": [
+            "sector_id",
+            "sector_name",
+            "uf",
+            "total_editais",
+            "avg_value",
+            "top_oportunidades",
+            "last_updated"
+          ],
+          "title": "SectorUfStats",
           "type": "object"
         },
         "SessionsListResponse": {
@@ -4798,6 +5240,24 @@
           "title": "TopDimensionsResponse",
           "type": "object"
         },
+        "TopEntry": {
+          "properties": {
+            "count": {
+              "title": "Count",
+              "type": "integer"
+            },
+            "name": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "count"
+          ],
+          "title": "TopEntry",
+          "type": "object"
+        },
         "TopOpportunity": {
           "properties": {
             "title": {
@@ -4843,6 +5303,29 @@
             "steps_seen"
           ],
           "title": "TourEventRequest",
+          "type": "object"
+        },
+        "TrendPoint": {
+          "properties": {
+            "avg_value": {
+              "title": "Avg Value",
+              "type": "number"
+            },
+            "count": {
+              "title": "Count",
+              "type": "integer"
+            },
+            "period": {
+              "title": "Period",
+              "type": "string"
+            }
+          },
+          "required": [
+            "period",
+            "count",
+            "avg_value"
+          ],
+          "title": "TrendPoint",
           "type": "object"
         },
         "TrialStatusResponse": {
@@ -5724,6 +6207,218 @@
           "summary": "Feedback Patterns",
           "tags": [
             "feedback"
+          ]
+        }
+      },
+      "/admin/partners": {
+        "get": {
+          "description": "AC10: List all partners. Admin only.",
+          "operationId": "list_partners_endpoint_admin_partners_get",
+          "parameters": [
+            {
+              "description": "Filter by status: active, inactive, pending",
+              "in": "query",
+              "name": "status",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Filter by status: active, inactive, pending",
+                "title": "Status"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "List Partners Endpoint",
+          "tags": [
+            "partners"
+          ]
+        },
+        "post": {
+          "description": "AC11: Create a new partner. Admin only.",
+          "operationId": "create_partner_endpoint_admin_partners_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePartnerRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "201": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Create Partner Endpoint",
+          "tags": [
+            "partners"
+          ]
+        }
+      },
+      "/admin/partners/{partner_id}/referrals": {
+        "get": {
+          "description": "AC12: Get referrals for a specific partner. Admin only.",
+          "operationId": "get_partner_referrals_endpoint_admin_partners__partner_id__referrals_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "partner_id",
+              "required": true,
+              "schema": {
+                "title": "Partner Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Partner Referrals Endpoint",
+          "tags": [
+            "partners"
+          ]
+        }
+      },
+      "/admin/partners/{partner_id}/revenue": {
+        "get": {
+          "description": "AC13: Get revenue share for a partner in a given month. Admin only.",
+          "operationId": "get_partner_revenue_endpoint_admin_partners__partner_id__revenue_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "partner_id",
+              "required": true,
+              "schema": {
+                "title": "Partner Id",
+                "type": "string"
+              }
+            },
+            {
+              "description": "Year (default: current)",
+              "in": "query",
+              "name": "year",
+              "required": false,
+              "schema": {
+                "description": "Year (default: current)",
+                "title": "Year",
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Month 1-12 (default: current)",
+              "in": "query",
+              "name": "month",
+              "required": false,
+              "schema": {
+                "description": "Month 1-12 (default: current)",
+                "title": "Month",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Partner Revenue Endpoint",
+          "tags": [
+            "partners"
           ]
         }
       },
@@ -9014,6 +9709,31 @@
           ]
         }
       },
+      "/partner/dashboard": {
+        "get": {
+          "description": "AC14: Dashboard for the logged-in partner.\n\nPartner is identified by matching their auth email to partners.contact_email.",
+          "operationId": "partner_dashboard_partner_dashboard_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Partner Dashboard",
+          "tags": [
+            "partners"
+          ]
+        }
+      },
       "/pipeline": {
         "get": {
           "description": "List pipeline items for the authenticated user (AC3).\n\nSTORY-265 AC3: Trial expired can VIEW pipeline (read-only).\nSupports filtering by stage and pagination via limit/offset.",
@@ -9461,6 +10181,51 @@
           ]
         }
       },
+      "/reports/diagnostico": {
+        "post": {
+          "description": "Generate a PDF diagnostico report for a completed search.\n\nFetches the results from a previous search (by search_id), applies\nviability scoring if not already present, selects the top N opportunities,\nand streams a styled PDF back to the caller as a file download.\n\nRequest Body:\n    {\n        \"search_id\": \"uuid-of-completed-search\",\n        \"client_name\": \"Empresa ABC Ltda\",  // optional\n        \"max_items\": 20                       // 1-50\n    }\n\nReturns:\n    PDF file as a streaming attachment:\n    Content-Disposition: attachment; filename=\"diagnostico-<setor>-<date>.pdf\"\n\nErrors:\n    400 Bad Request: search_id is not a valid UUID\n    404 Not Found: search not found or expired\n    500 Internal Server Error: PDF generation failed",
+          "operationId": "generate_diagnostico_reports_diagnostico_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticoRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Generate Diagnostico",
+          "tags": [
+            "reports"
+          ]
+        }
+      },
       "/search/{search_id}/results": {
         "get": {
           "description": "GTM-STAB-009 AC4: Return results of async search.\n\n- 200 with BuscaResponse when results are ready\n- 202 with status when still processing\n- 404 when search_id not found or expired",
@@ -9504,6 +10269,75 @@
           "summary": "Get Search Results V1",
           "tags": [
             "search"
+          ]
+        }
+      },
+      "/sectors": {
+        "get": {
+          "description": "List all sectors with slug mapping (public, no auth).",
+          "operationId": "list_all_sectors_sectors_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "items": {
+                      "$ref": "#/components/schemas/SectorListItem"
+                    },
+                    "title": "Response List All Sectors Sectors Get",
+                    "type": "array"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "List All Sectors",
+          "tags": [
+            "sectors-public"
+          ]
+        }
+      },
+      "/sectors/{slug}/stats": {
+        "get": {
+          "description": "Public sector stats for SEO landing pages (AC1).\n\nNo auth required. Returns cached stats (6h TTL).",
+          "operationId": "get_sector_stats_sectors__slug__stats_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "slug",
+              "required": true,
+              "schema": {
+                "title": "Slug",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SectorStatsResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Sector Stats",
+          "tags": [
+            "sectors-public"
           ]
         }
       },
@@ -10085,6 +10919,218 @@
           "summary": "Feedback Patterns",
           "tags": [
             "feedback"
+          ]
+        }
+      },
+      "/v1/admin/partners": {
+        "get": {
+          "description": "AC10: List all partners. Admin only.",
+          "operationId": "list_partners_endpoint_v1_admin_partners_get",
+          "parameters": [
+            {
+              "description": "Filter by status: active, inactive, pending",
+              "in": "query",
+              "name": "status",
+              "required": false,
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Filter by status: active, inactive, pending",
+                "title": "Status"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "List Partners Endpoint",
+          "tags": [
+            "partners"
+          ]
+        },
+        "post": {
+          "description": "AC11: Create a new partner. Admin only.",
+          "operationId": "create_partner_endpoint_v1_admin_partners_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePartnerRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "201": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Create Partner Endpoint",
+          "tags": [
+            "partners"
+          ]
+        }
+      },
+      "/v1/admin/partners/{partner_id}/referrals": {
+        "get": {
+          "description": "AC12: Get referrals for a specific partner. Admin only.",
+          "operationId": "get_partner_referrals_endpoint_v1_admin_partners__partner_id__referrals_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "partner_id",
+              "required": true,
+              "schema": {
+                "title": "Partner Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Partner Referrals Endpoint",
+          "tags": [
+            "partners"
+          ]
+        }
+      },
+      "/v1/admin/partners/{partner_id}/revenue": {
+        "get": {
+          "description": "AC13: Get revenue share for a partner in a given month. Admin only.",
+          "operationId": "get_partner_revenue_endpoint_v1_admin_partners__partner_id__revenue_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "partner_id",
+              "required": true,
+              "schema": {
+                "title": "Partner Id",
+                "type": "string"
+              }
+            },
+            {
+              "description": "Year (default: current)",
+              "in": "query",
+              "name": "year",
+              "required": false,
+              "schema": {
+                "description": "Year (default: current)",
+                "title": "Year",
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Month 1-12 (default: current)",
+              "in": "query",
+              "name": "month",
+              "required": false,
+              "schema": {
+                "description": "Month 1-12 (default: current)",
+                "title": "Month",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Get Partner Revenue Endpoint",
+          "tags": [
+            "partners"
           ]
         }
       },
@@ -12334,6 +13380,187 @@
           ]
         }
       },
+      "/v1/blog/stats/cidade/{cidade}": {
+        "get": {
+          "description": "City stats: count, frequent buying orgs, avg values.\n\nPublic (no auth). Cached 6h.\nUses the first sector with results to get city data.",
+          "operationId": "get_cidade_stats_v1_blog_stats_cidade__cidade__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cidade",
+              "required": true,
+              "schema": {
+                "title": "Cidade",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CidadeStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Cidade Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
+      "/v1/blog/stats/panorama/{setor_id}": {
+        "get": {
+          "description": "National panorama: totals, seasonality, estimated YoY growth.\n\nPublic (no auth). Cached 6h.",
+          "operationId": "get_panorama_stats_v1_blog_stats_panorama__setor_id__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "setor_id",
+              "required": true,
+              "schema": {
+                "title": "Setor Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PanoramaStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Panorama Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
+      "/v1/blog/stats/setor/{setor_id}": {
+        "get": {
+          "description": "Sector overview: count, value range, top modalities, top UFs, 90d trend.\n\nPublic (no auth). Cached 6h.",
+          "operationId": "get_sector_blog_stats_v1_blog_stats_setor__setor_id__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "setor_id",
+              "required": true,
+              "schema": {
+                "title": "Setor Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SectorBlogStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Sector Blog Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
+      "/v1/blog/stats/setor/{setor_id}/uf/{uf}": {
+        "get": {
+          "description": "Sector \u00d7 UF detail: count, avg value, top 5 recent opportunities.\n\nPublic (no auth). Cached 6h.",
+          "operationId": "get_sector_uf_stats_v1_blog_stats_setor__setor_id__uf__uf__get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "setor_id",
+              "required": true,
+              "schema": {
+                "title": "Setor Id",
+                "type": "string"
+              }
+            },
+            {
+              "in": "path",
+              "name": "uf",
+              "required": true,
+              "schema": {
+                "title": "Uf",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SectorUfStats"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Sector Uf Stats",
+          "tags": [
+            "blog-stats"
+          ]
+        }
+      },
       "/v1/buscar": {
         "post": {
           "description": "Main search endpoint \u2014 thin wrapper that delegates to SearchPipeline.\n\nGTM-RESILIENCE-A04: Cache-first progressive delivery.\nWhen cache exists for this search, returns cached data immediately with\n`live_fetch_in_progress=True` and dispatches background live fetch.\nWhen no cache, runs synchronous pipeline as before (AC10).\n\nThe wrapper handles:\n- Cache-first check and immediate response (A-04 AC1)\n- Background task dispatch (A-04 AC2)\n- SSE tracker lifecycle (create, cleanup on error)\n- Exception mapping (PNCPRateLimitError \u2192 503, PNCPAPIError \u2192 502, etc.)\n- Dependency injection (passing module-level names for test mock compatibility)\n\nSTORY-291 AC5: require_active_plan() moved INSIDE try block, AFTER tracker\ncreation. Previously, when it failed the frontend was left in limbo \u2014 POST\nfailed but SSE was waiting for a tracker that never existed.",
@@ -13443,6 +14670,31 @@
           ]
         }
       },
+      "/v1/partner/dashboard": {
+        "get": {
+          "description": "AC14: Dashboard for the logged-in partner.\n\nPartner is identified by matching their auth email to partners.contact_email.",
+          "operationId": "partner_dashboard_v1_partner_dashboard_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Partner Dashboard",
+          "tags": [
+            "partners"
+          ]
+        }
+      },
       "/v1/pipeline": {
         "get": {
           "description": "List pipeline items for the authenticated user (AC3).\n\nSTORY-265 AC3: Trial expired can VIEW pipeline (read-only).\nSupports filtering by stage and pagination via limit/offset.",
@@ -13890,6 +15142,51 @@
           ]
         }
       },
+      "/v1/reports/diagnostico": {
+        "post": {
+          "description": "Generate a PDF diagnostico report for a completed search.\n\nFetches the results from a previous search (by search_id), applies\nviability scoring if not already present, selects the top N opportunities,\nand streams a styled PDF back to the caller as a file download.\n\nRequest Body:\n    {\n        \"search_id\": \"uuid-of-completed-search\",\n        \"client_name\": \"Empresa ABC Ltda\",  // optional\n        \"max_items\": 20                       // 1-50\n    }\n\nReturns:\n    PDF file as a streaming attachment:\n    Content-Disposition: attachment; filename=\"diagnostico-<setor>-<date>.pdf\"\n\nErrors:\n    400 Bad Request: search_id is not a valid UUID\n    404 Not Found: search not found or expired\n    500 Internal Server Error: PDF generation failed",
+          "operationId": "generate_diagnostico_v1_reports_diagnostico_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticoRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Generate Diagnostico",
+          "tags": [
+            "reports"
+          ]
+        }
+      },
       "/v1/search/{search_id}/cancel": {
         "post": {
           "description": "CRIT-006 AC16-17: Cancel an in-progress search.",
@@ -14119,6 +15416,75 @@
           "summary": "Search Timeline Endpoint",
           "tags": [
             "search"
+          ]
+        }
+      },
+      "/v1/sectors": {
+        "get": {
+          "description": "List all sectors with slug mapping (public, no auth).",
+          "operationId": "list_all_sectors_v1_sectors_get",
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "items": {
+                      "$ref": "#/components/schemas/SectorListItem"
+                    },
+                    "title": "Response List All Sectors V1 Sectors Get",
+                    "type": "array"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            }
+          },
+          "summary": "List All Sectors",
+          "tags": [
+            "sectors-public"
+          ]
+        }
+      },
+      "/v1/sectors/{slug}/stats": {
+        "get": {
+          "description": "Public sector stats for SEO landing pages (AC1).\n\nNo auth required. Returns cached stats (6h TTL).",
+          "operationId": "get_sector_stats_v1_sectors__slug__stats_get",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "slug",
+              "required": true,
+              "schema": {
+                "title": "Slug",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SectorStatsResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Sector Stats",
+          "tags": [
+            "sectors-public"
           ]
         }
       },

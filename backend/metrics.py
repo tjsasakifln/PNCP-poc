@@ -376,6 +376,19 @@ HTTP_RESPONSES_TOTAL = _create_counter(
     labelnames=["status_class", "method"],
 )
 
+# CRIT-046 AC1: Supabase connection pool utilization
+SUPABASE_POOL_ACTIVE = _create_gauge(
+    "smartlic_supabase_pool_active_connections",
+    "Number of currently active Supabase connections (via sb_execute)",
+)
+
+# CRIT-046 AC5: ConnectionError retries in sb_execute
+SUPABASE_RETRY_TOTAL = _create_counter(
+    "smartlic_supabase_retry_total",
+    "Supabase sb_execute ConnectionError retries",
+    labelnames=["outcome"],  # success, failure
+)
+
 # STORY-291 AC6: Supabase circuit breaker state gauge (0=closed, 1=open, 2=half_open)
 SUPABASE_CB_STATE = _create_gauge(
     "smartlic_supabase_cb_state",
