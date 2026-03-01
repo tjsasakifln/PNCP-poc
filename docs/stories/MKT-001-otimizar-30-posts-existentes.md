@@ -38,9 +38,9 @@ O SmartLic já possui 30 posts publicados (15 B2G + 15 Consultorias), mas segund
 
 ### AC3 — CTAs contextuais
 
-- [ ] Inserir CTA inline no meio do post (após ~40% do conteúdo): "Teste grátis 30 dias — sem cartão de crédito"
+- [ ] Inserir CTA inline no meio do post (após ~40% do conteúdo): "Teste grátis 14 dias — sem cartão de crédito"
 - [ ] Inserir CTA final com botão estilizado: link direto para `/signup`
-- [ ] CTA deve mencionar trial de 30 dias e "sem cartão"
+- [ ] CTA deve mencionar trial de 14 dias e "sem cartão"
 - [ ] Tracking: `utm_source=blog&utm_medium=cta&utm_content=[slug]`
 
 ### AC4 — Schema markup completo

@@ -33,7 +33,7 @@ commands:
 - [ ] Unique differentiators clearly communicated (IA viability, multi-source)
 - [ ] Feature comparison accurate on marketing pages
 - [ ] Free tier sufficient to demonstrate value
-- [ ] Trial duration competitive (30 days vs market norms)
+- [ ] Trial duration competitive (14 days vs market norms)
 
 ### Feature Gap Analysis
 - [ ] Table-stakes features present:

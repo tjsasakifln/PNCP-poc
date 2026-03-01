@@ -4,7 +4,7 @@ responsavel: "@billing-auditor"
 responsavel_type: agent
 atomic_layer: task
 Entrada: |
-  - Trial configuration (30 days, STORY-277)
+  - Trial configuration (14 days, STORY-277/319)
   - backend/quota.py
   - frontend trial status components
 Saida: |
@@ -12,7 +12,7 @@ Saida: |
   - Conversion funnel analysis
   - Grace period check
 Checklist:
-  - "[ ] Trial creates on signup (30 days)"
+  - "[ ] Trial creates on signup (14 days)"
   - "[ ] Trial days remaining shown correctly"
   - "[ ] Trial-to-paid conversion works"
   - "[ ] Trial expiry downgrades to free"
@@ -28,7 +28,7 @@ Validate the complete trial lifecycle: creation → usage → conversion/expiry.
 
 1. Read quota.py — check trial quota enforcement
 2. Read trial status frontend components
-3. Verify STORY-277 trial configuration (30 days)
+3. Verify STORY-277/319 trial configuration (14 days)
 4. Check grace period implementation (SUBSCRIPTION_GRACE_DAYS)
 5. Verify trial expiry handling
 

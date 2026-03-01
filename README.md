@@ -19,7 +19,7 @@
 - **Relatorios** — Excel estilizado + resumo executivo com IA
 - **Historico + Analytics** — Buscas salvas, sessoes, dashboard com metricas
 - **Resiliencia** — Circuit breakers, two-level cache (SWR), fallback cascade
-- **Billing** — Stripe subscriptions (SmartLic Pro R$397/mes + trial 30 dias)
+- **Billing** — Stripe subscriptions (SmartLic Pro R$397/mes + trial 14 dias)
 - **Observabilidade** — Prometheus metrics, OpenTelemetry tracing, Sentry errors
 - **304+ testes automatizados** — 169 backend + 135 frontend + E2E (Playwright)
 

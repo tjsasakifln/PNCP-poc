@@ -268,7 +268,7 @@ For detailed module tables and route maps, see `.claude/rules/architecture-detai
 
 ### Billing & Auth
 - **Pricing (STORY-277):** SmartLic Pro R$397/mes (mensal), R$357/mes (semestral), R$317/mes (anual)
-- **Trial:** 30 dias gratis (STORY-264/277), sem cartao
+- **Trial:** 14 dias gratis (STORY-264/277/319), sem cartao
 - Stripe handles proration automatically — NO custom prorata code
 - "Fail to last known plan": never fall back to free_trial on DB errors
 - 3-day grace period for subscription gaps (`SUBSCRIPTION_GRACE_DAYS`)

@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed — Pricing & Billing
 - **Repricing** (STORY-277) — R$1.999/mes → R$397/mes (mensal), R$357 (semestral), R$317 (anual)
-- **Trial duration** — 7 days → 30 days (beta period)
+- **Trial duration** — 7 days → 30 days → 14 days (STORY-319: shorter trial converts better)
 - **Boleto + PIX** (STORY-280) — additional payment methods via Stripe
 
 ### Documentation

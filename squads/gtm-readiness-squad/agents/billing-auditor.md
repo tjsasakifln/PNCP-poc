@@ -47,7 +47,7 @@ commands:
 - [ ] Boleto expiry handled correctly
 
 ### Trial Flow
-- [ ] Free trial creates on signup (30 days, STORY-277)
+- [ ] Free trial creates on signup (14 days, STORY-277/319)
 - [ ] Trial shows remaining days correctly
 - [ ] Trial-to-paid conversion works
 - [ ] Trial expiry downgrades to free plan

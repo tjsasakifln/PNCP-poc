@@ -21,15 +21,15 @@ A tela de signup diz "14 dias do produto completo" mas o CLAUDE.md e stories ant
 
 ### Atualizar Documentação
 
-- [ ] **AC1:** CLAUDE.md — alterar "Trial: 30 dias gratis" → "Trial: 14 dias gratis" (seção Billing & Auth)
-- [ ] **AC2:** Verificar MEMORY.md e remover/atualizar qualquer referência a "30 dias de trial"
-- [ ] **AC3:** Verificar PRD.md — atualizar referências de 30 → 14 dias se existirem
-- [ ] **AC4:** Verificar se há outros docs em `docs/` referenciando "30 dias" de trial
+- [x] **AC1:** CLAUDE.md — alterar "Trial: 30 dias gratis" → "Trial: 14 dias gratis" (seção Billing & Auth)
+- [x] **AC2:** Verificar MEMORY.md e remover/atualizar qualquer referência a "30 dias de trial" — nenhuma referência encontrada
+- [x] **AC3:** Verificar PRD.md — atualizar referências de 30 → 14 dias se existirem — nenhuma referência encontrada
+- [x] **AC4:** Verificar se há outros docs em `docs/` referenciando "30 dias" de trial — corrigidos: README.md, system-architecture.md, MKT-001, .env.example, CHANGELOG.md, squads/gtm-readiness-squad (3 arquivos)
 
 ### Validação no Frontend
 
-- [ ] **AC5:** Confirmar que TODAS as menções de trial no frontend dizem "14 dias" (signup, planos, banners, emails)
-- [ ] **AC6:** Confirmar que `config.py` `TRIAL_DURATION_DAYS` = 14
+- [x] **AC5:** Confirmar que TODAS as menções de trial no frontend dizem "14 dias" (signup, planos, banners, emails) — confirmado via grep
+- [x] **AC6:** Confirmar que `config.py` `TRIAL_DURATION_DAYS` = 14 — confirmado (linha 393)
 
 ---
 
