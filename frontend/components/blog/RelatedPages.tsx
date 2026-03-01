@@ -98,6 +98,18 @@ function getPanoramaLink(sectorId: string, sector: SectorMeta): RelatedLink | nu
   };
 }
 
+/** Phase 1 sectors × UFs that have /blog/licitacoes/ pages */
+const LICITACOES_SECTORS = ['informatica', 'saude', 'engenharia', 'facilities', 'software'];
+const LICITACOES_UFS = ['SP', 'RJ', 'MG', 'PR', 'RS'];
+
+function getLicitacoesHref(sectorSlug: string, uf: string): string {
+  const sectorId = sectorSlug.replace(/-/g, '_');
+  if (LICITACOES_SECTORS.includes(sectorId) && LICITACOES_UFS.includes(uf)) {
+    return `/blog/licitacoes/${sectorSlug}/${uf.toLowerCase()}`;
+  }
+  return `/blog/programmatic/${sectorSlug}/${uf.toLowerCase()}`;
+}
+
 function getNeighboringUfLinks(
   sectorId: string,
   currentUf: string,
@@ -106,7 +118,7 @@ function getNeighboringUfLinks(
   const neighbors = UF_NEIGHBORS[currentUf] || [];
   return neighbors.slice(0, 3).map((uf) => ({
     title: `Licitações de ${sector.name} em ${uf}`,
-    href: `/blog/programmatic/${sector.slug}/${uf.toLowerCase()}`,
+    href: getLicitacoesHref(sector.slug, uf),
     type: 'programmatic',
   }));
 }

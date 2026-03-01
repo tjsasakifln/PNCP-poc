@@ -124,6 +124,10 @@ class SectorUfStats(BaseModel):
     uf: str
     total_editais: int
     avg_value: float
+    value_range_min: float = 0.0
+    value_range_max: float = 0.0
+    top_modalidades: list[TopEntry] = []
+    trend_90d: list[TrendPoint] = []
     top_oportunidades: list[SampleItem]
     last_updated: str
 
@@ -401,6 +405,17 @@ async def get_sector_uf_stats(setor_id: str, uf: str):
 
     values = [v for item in uf_results if (v := _extract_value(item)) is not None]
     avg_val = sum(values) / len(values) if values else 0.0
+    min_val = min(values) if values else 0.0
+    max_val = max(values) if values else 0.0
+
+    # Top modalities
+    mod_counter: Counter = Counter()
+    for item in uf_results:
+        mod_counter[_extract_modality(item)] += 1
+    top_mods = [{"name": m, "count": c} for m, c in mod_counter.most_common(5)]
+
+    # 90-day trend (estimate from current 10-day data)
+    trend_90d = _estimate_trend(len(uf_results), avg_val, now)
 
     # Top 5 opportunities
     top_items = [_make_sample_item(item) for item in uf_results[:5]]
@@ -411,6 +426,10 @@ async def get_sector_uf_stats(setor_id: str, uf: str):
         "uf": uf,
         "total_editais": len(uf_results),
         "avg_value": round(avg_val, 2),
+        "value_range_min": round(min_val, 2),
+        "value_range_max": round(max_val, 2),
+        "top_modalidades": top_mods,
+        "trend_90d": trend_90d,
         "top_oportunidades": top_items,
         "last_updated": now.isoformat(),
     }

@@ -44,6 +44,10 @@ export interface SectorUfStats {
   uf: string;
   total_editais: number;
   avg_value: number;
+  value_range_min: number;
+  value_range_max: number;
+  top_modalidades: { name: string; count: number }[];
+  trend_90d: { period: string; count: number; avg_value: number }[];
   top_oportunidades: {
     titulo: string;
     orgao: string;
@@ -242,4 +246,136 @@ export function getEditorialContent(sectorId: string): string {
   };
 
   return content[sectorId] || content.vestuario || '';
+}
+
+// -----------------------------------------------------------------------
+// MKT-003: Phased launch configuration
+// -----------------------------------------------------------------------
+
+/** Phase 1 sectors — 5 largest by procurement volume */
+const PHASE1_SECTORS = ['informatica', 'saude', 'engenharia', 'facilities', 'software'];
+
+/** Phase 1 UFs — 5 largest by procurement volume */
+const PHASE1_UFS = ['SP', 'RJ', 'MG', 'PR', 'RS'];
+
+/**
+ * MKT-003 AC5: Generate static params for phased launch.
+ * Phase 1: 5 sectors × 5 UFs = 25 pages.
+ */
+export function generateLicitacoesParams(): { setor: string; uf: string }[] {
+  const params: { setor: string; uf: string }[] = [];
+  for (const sector of SECTORS) {
+    if (!PHASE1_SECTORS.includes(sector.id)) continue;
+    for (const uf of PHASE1_UFS) {
+      params.push({ setor: sector.slug, uf: uf.toLowerCase() });
+    }
+  }
+  return params;
+}
+
+// -----------------------------------------------------------------------
+// MKT-003: Region-specific editorial content
+// -----------------------------------------------------------------------
+
+type Region = 'sudeste' | 'sul' | 'nordeste' | 'norte' | 'centro_oeste';
+
+const UF_REGION: Record<string, Region> = {
+  SP: 'sudeste', RJ: 'sudeste', MG: 'sudeste', ES: 'sudeste',
+  PR: 'sul', SC: 'sul', RS: 'sul',
+  BA: 'nordeste', PE: 'nordeste', CE: 'nordeste', MA: 'nordeste',
+  PI: 'nordeste', RN: 'nordeste', PB: 'nordeste', AL: 'nordeste', SE: 'nordeste',
+  AM: 'norte', PA: 'norte', AC: 'norte', RO: 'norte', RR: 'norte', AP: 'norte', TO: 'norte',
+  GO: 'centro_oeste', MT: 'centro_oeste', MS: 'centro_oeste', DF: 'centro_oeste',
+};
+
+const REGION_NAMES: Record<Region, string> = {
+  sudeste: 'Sudeste',
+  sul: 'Sul',
+  nordeste: 'Nordeste',
+  norte: 'Norte',
+  centro_oeste: 'Centro-Oeste',
+};
+
+/**
+ * MKT-003 AC2: Region-specific editorial content block (300+ words).
+ * Varies by region to avoid repetitive thin content across UFs.
+ */
+export function getRegionalEditorial(
+  sectorName: string,
+  uf: string,
+  ufName: string,
+): string[] {
+  const region = UF_REGION[uf] || 'sudeste';
+  const regionName = REGION_NAMES[region];
+
+  const paragraphs: Record<Region, string[]> = {
+    sudeste: [
+      `O ${regionName} brasileiro concentra o maior volume de licitações públicas do país, e ${ufName} não é exceção. Com uma densa rede de órgãos públicos federais, estaduais e municipais, o estado oferece um fluxo constante de oportunidades para empresas de ${sectorName.toLowerCase()}. A concentração econômica e administrativa da região garante editais de alto valor e frequência regular, tornando o monitoramento sistemático especialmente vantajoso.`,
+      `A infraestrutura logística do ${regionName} — com portos, aeroportos e rodovias de primeira linha — favorece empresas que precisam atender contratos com entrega em múltiplos pontos. Em ${ufName}, a competição é intensa, mas o volume de oportunidades compensa: empresas que dominam a documentação técnica e mantêm suas certidões em dia encontram um mercado de escala incomparável. A proximidade de centros de decisão política (Brasília, capitais estaduais) também facilita o acompanhamento presencial de pregões e audiências.`,
+      `Para empresas de ${sectorName.toLowerCase()} que atuam em ${ufName}, a chave do sucesso está na análise seletiva. Nem todo edital publicado representa uma oportunidade real — fatores como modalidade de contratação, prazo de entrega, valor estimado e exigências de qualificação técnica determinam a viabilidade de participação. O SmartLic automatiza essa triagem usando inteligência artificial, classificando cada edital em até 4 fatores de viabilidade: modalidade (30%), prazo (25%), valor (25%) e geografia (20%). Isso permite que equipes comerciais foquem apenas nas oportunidades com maior probabilidade de sucesso.`,
+      `O mercado de compras públicas em ${ufName} segue padrões sazonais bem definidos: o primeiro trimestre é marcado pela finalização de contratos do exercício anterior e planejamento orçamentário; o segundo trimestre inicia a execução efetiva; o terceiro concentra o pico de publicações; e o quarto trimestre traz uma corrida para empenhar recursos antes do encerramento do exercício fiscal. Empresas que entendem esse ciclo e se preparam com antecedência têm taxa de adjudicação significativamente superior à média do setor.`,
+    ],
+    sul: [
+      `A região ${regionName} destaca-se pelo alto índice de eficiência administrativa nos órgãos públicos, refletindo-se em editais bem estruturados e processos licitatórios transparentes. Em ${ufName}, empresas de ${sectorName.toLowerCase()} encontram um mercado maduro, onde a qualidade da proposta técnica frequentemente supera o fator preço na decisão de adjudicação. Cooperativas e associações empresariais da região têm forte tradição de participação conjunta em licitações de maior porte.`,
+      `O perfil de compras públicas em ${ufName} reflete a diversificação econômica da região ${regionName}: há demanda consistente em setores industriais, agropecuários e de serviços. As prefeituras do interior, frequentemente subestimadas, representam um nicho valioso — menor concorrência e relações comerciais de longo prazo. O SmartLic monitora automaticamente todas as publicações do PNCP e portais estaduais, garantindo que nenhuma oportunidade passe despercebida.`,
+      `Para se destacar nas licitações de ${sectorName.toLowerCase()} em ${ufName}, empresas devem investir na qualificação técnica da equipe e na padronização dos processos internos de elaboração de propostas. A região ${regionName} tem elevada exigência documental — atestados de capacidade técnica, certificações ISO e comprovações de experiência anterior são diferenciais decisivos. Manter um banco de dados atualizado de editais similares adjudicados, com histórico de preços praticados, permite precificar propostas com assertividade.`,
+      `A sazonalidade das licitações em ${ufName} acompanha o calendário fiscal nacional, com picos no segundo e terceiro trimestres. Porém, uma particularidade da região ${regionName} é o impacto do inverno nas obras de infraestrutura — o frio e as chuvas concentradas podem atrasar cronogramas, abrindo oportunidades em períodos tipicamente de baixa movimentação. A análise de viabilidade geográfica do SmartLic leva em conta a distância entre a sede da empresa e o local de execução, otimizando a seleção de editais com logística favorável.`,
+    ],
+    nordeste: [
+      `O ${regionName} brasileiro vive um momento de transformação nas compras públicas, com crescente adoção de pregão eletrônico e maior transparência nos processos licitatórios. Em ${ufName}, o volume de editais de ${sectorName.toLowerCase()} tem crescido consistentemente, impulsionado por investimentos federais em infraestrutura, saúde e educação. A região oferece oportunidades únicas para empresas que compreendem suas especificidades regulatórias e logísticas.`,
+      `A logística de entrega é o principal desafio para empresas que atuam no ${regionName} a partir de outras regiões. No entanto, empresas locais de ${sectorName.toLowerCase()} em ${ufName} têm vantagem competitiva natural — menor custo de frete, conhecimento do mercado local e relacionamento com órgãos compradores. Para empresas de fora, a estratégia mais eficaz é estabelecer parcerias com distribuidores regionais ou manter estoques descentralizados. O SmartLic ajuda a identificar quais editais justificam o investimento logístico com base na análise de viabilidade de 4 fatores.`,
+      `Os programas federais direcionados ao ${regionName} — como investimentos em saneamento, energia e infraestrutura urbana — geram um pipeline previsível de licitações. Em ${ufName}, os municípios menores frequentemente publicam editais com menor concorrência e valores que, somados, representam receita significativa. A chave é o monitoramento abrangente: enquanto grandes empresas focam nos editais de maior valor, PMEs encontram espaço em compras fracionadas e contratos de fornecimento contínuo.`,
+      `O calendário de compras em ${ufName} é influenciado pelo ciclo político municipal e estadual — anos eleitorais tendem a concentrar investimentos nos primeiros semestres. Para ${sectorName.toLowerCase()}, entender essas dinâmicas permite antecipar demandas e preparar propostas com antecedência. O SmartLic consolida dados de três fontes oficiais (PNCP, Portal de Compras Públicas e ComprasGov), eliminando o risco de perder oportunidades publicadas em portais diferentes.`,
+    ],
+    norte: [
+      `A região ${regionName} do Brasil apresenta um mercado de licitações públicas em expansão acelerada, impulsionado por investimentos federais em infraestrutura, saúde e conectividade. Em ${ufName}, as distâncias geográficas e a logística fluvial criam barreiras naturais de entrada que reduzem a concorrência efetiva, beneficiando empresas com presença local ou capacidade logística diferenciada. Para ${sectorName.toLowerCase()}, essa combinação de demanda crescente e menor competição representa uma oportunidade estratégica.`,
+      `As peculiaridades logísticas do ${regionName} exigem adaptação nas estratégias de participação em licitações. Em ${ufName}, muitos órgãos públicos aceitam prazos de entrega estendidos em razão das dificuldades de acesso, o que favorece empresas com planejamento logístico robusto. O transporte fluvial e aéreo complementa o rodoviário em muitas localidades, impactando diretamente o custo e a viabilidade de fornecimento. O SmartLic incorpora a análise geográfica em seu score de viabilidade, ajudando empresas a identificar quais editais justificam o investimento logístico.`,
+      `Os investimentos em infraestrutura digital e saneamento na região ${regionName} estão gerando um ciclo virtuoso de licitações. Em ${ufName}, municípios que antes dependiam exclusivamente de repasses federais agora publicam editais próprios com recursos de royalties e compensações ambientais. Para empresas de ${sectorName.toLowerCase()}, isso significa um mercado cada vez mais diversificado, com oportunidades em todas as esferas de governo (federal, estadual e municipal).`,
+      `A sazonalidade no ${regionName} é fortemente influenciada pelo regime de chuvas. Em ${ufName}, o período seco (geralmente junho a novembro) concentra o maior volume de obras e aquisições, enquanto o período chuvoso reduz a atividade em setores dependentes de logística terrestre. Empresas que planejam sua participação em licitações de ${sectorName.toLowerCase()} considerando essa sazonalidade maximizam sua taxa de sucesso e reduzem custos operacionais.`,
+    ],
+    centro_oeste: [
+      `O ${regionName} brasileiro, sede do governo federal em Brasília, é um dos polos mais relevantes para licitações públicas no país. Em ${ufName}, a concentração de órgãos federais e a pujança do agronegócio geram um volume expressivo de compras governamentais em ${sectorName.toLowerCase()}. A proximidade com centros de decisão política e a infraestrutura rodoviária interligando as capitais conferem vantagens logísticas a empresas da região.`,
+      `O mercado de licitações em ${ufName} é caracterizado pela coexistência de grandes contratos federais (especialmente em ${ufName === 'Distrito Federal' ? 'órgãos da esplanada dos ministérios' : 'representações regionais de ministérios'}) e demandas municipais pulverizadas. Para ${sectorName.toLowerCase()}, essa diversidade permite compor um portfólio equilibrado entre contratos de alto valor e fornecimentos recorrentes. O SmartLic classifica automaticamente cada edital por relevância setorial, eliminando o ruído de editais irrelevantes.`,
+      `A economia do ${regionName} — ancorada no agronegócio, mineração e serviços — gera demandas específicas de infraestrutura que se refletem nas licitações. Em ${ufName}, os investimentos em logística (armazéns, silos, rodovias) e em equipamentos públicos (hospitais, escolas, delegacias) mantêm um fluxo constante de oportunidades. Empresas de ${sectorName.toLowerCase()} que monitoram sistematicamente essas publicações conseguem antecipar tendências e preparar propostas mais competitivas.`,
+      `O calendário fiscal em ${ufName} segue o padrão nacional, com picos de publicação no segundo e terceiro trimestres. Uma particularidade do ${regionName} é a influência dos períodos de safra na disponibilidade de recursos municipais — municípios dependentes de receitas agropecuárias concentram investimentos após os períodos de colheita. A análise de viabilidade do SmartLic considera quatro fatores (modalidade, prazo, valor e geografia) para identificar as oportunidades mais alinhadas ao perfil de cada empresa.`,
+    ],
+  };
+
+  return paragraphs[region];
+}
+
+/**
+ * MKT-003 AC2: Generate FAQs specific to sector × UF.
+ * 5 questions, 40-60 words each answer.
+ */
+export function generateLicitacoesFAQs(
+  sectorName: string,
+  ufName: string,
+  totalEditais?: number,
+  avgValue?: number,
+): { question: string; answer: string }[] {
+  const count = totalEditais ?? 0;
+
+  return [
+    {
+      question: `Quantas licitações de ${sectorName} estão abertas em ${ufName}?`,
+      answer: `Nos últimos 10 dias, foram publicadas ${count > 0 ? count : 'diversas'} licitações de ${sectorName} em ${ufName}, consolidando dados do PNCP, Portal de Compras Públicas e ComprasGov. O SmartLic atualiza esses números automaticamente a cada 24 horas.`,
+    },
+    {
+      question: `Qual o valor médio das licitações de ${sectorName} em ${ufName}?`,
+      answer: `${avgValue && avgValue > 0 ? `O valor médio estimado é de ${formatBRL(avgValue)}.` : 'O valor varia conforme a modalidade e o escopo.'} Os editais de ${sectorName} em ${ufName} vão desde compras pequenas até contratos de grande porte. No SmartLic você filtra por faixa de valor.`,
+    },
+    {
+      question: `Como participar de licitações de ${sectorName} em ${ufName}?`,
+      answer: `O primeiro passo é monitorar as publicações no PNCP e portais estaduais. Depois, analise a viabilidade de cada edital verificando modalidade, prazo, valor e exigências técnicas. O SmartLic automatiza essa triagem usando IA, economizando horas de análise manual.`,
+    },
+    {
+      question: `Quais modalidades são mais comuns para ${sectorName} em ${ufName}?`,
+      answer: `O pregão eletrônico é a modalidade predominante para compras de ${sectorName}, seguido pela dispensa de licitação para valores menores. A Lei 14.133/2021 consolidou o pregão como via preferencial para bens e serviços comuns, beneficiando empresas cadastradas nas plataformas eletrônicas.`,
+    },
+    {
+      question: `Posso testar o SmartLic para buscar licitações de ${sectorName}?`,
+      answer: `Sim, o SmartLic oferece teste grátis de 30 dias sem necessidade de cartão de crédito. Durante o teste você tem acesso completo à busca com IA, análise de viabilidade por 4 fatores, pipeline de oportunidades e exportação de relatórios em Excel.`,
+    },
+  ];
 }
