@@ -175,4 +175,40 @@ describe("Sidebar", () => {
     render(<Sidebar />);
     expect(screen.getByLabelText("Navegação principal")).toBeInTheDocument();
   });
+
+  // ── SAB-013 AC1-AC3: Hover transitions + active left border ──
+
+  // AC1: transition: background-color 150ms ease
+  it("SAB-013 AC1: nav items have transition-[background-color] duration-150", () => {
+    render(<Sidebar />);
+    const dashboardLink = screen.getByText("Dashboard").closest("a");
+    expect(dashboardLink?.className).toContain("transition-[background-color]");
+    expect(dashboardLink?.className).toContain("duration-150");
+    expect(dashboardLink?.className).toContain("ease-in-out");
+  });
+
+  // AC2: More visible hover: bg-gray-100 (light) / bg-gray-800 (dark)
+  it("SAB-013 AC2: inactive items have hover:bg-gray-100 dark:hover:bg-gray-800", () => {
+    render(<Sidebar />);
+    const dashboardLink = screen.getByText("Dashboard").closest("a");
+    expect(dashboardLink?.className).toContain("hover:bg-gray-100");
+    expect(dashboardLink?.className).toContain("dark:hover:bg-gray-800");
+  });
+
+  // AC3: Active item with 4px left border accent (blue)
+  it("SAB-013 AC3: active item has border-l-4 border-[var(--brand-blue)]", () => {
+    mockPathname.mockReturnValue("/buscar");
+    render(<Sidebar />);
+    const buscarLink = screen.getByText("Buscar").closest("a");
+    expect(buscarLink?.className).toContain("border-l-4");
+    expect(buscarLink?.className).toContain("border-[var(--brand-blue)]");
+  });
+
+  it("SAB-013 AC3: inactive items have border-transparent (no visual jump)", () => {
+    mockPathname.mockReturnValue("/buscar");
+    render(<Sidebar />);
+    const dashboardLink = screen.getByText("Dashboard").closest("a");
+    expect(dashboardLink?.className).toContain("border-l-4");
+    expect(dashboardLink?.className).toContain("border-transparent");
+  });
 });

@@ -51,6 +51,13 @@ export function NavigationShell({ children }: { children: React.ReactNode }) {
         {/* STORY-317 AC16-17: MFA enforcement banner for admin/master */}
         <MfaEnforcementBanner />
         {children}
+        {/* SAB-013 AC7: Minimal footer in logged area */}
+        <footer data-testid="logged-footer" className="mt-auto py-4 text-center text-sm text-[var(--ink-muted)] border-t border-[var(--border)]">
+          &copy; 2026 SmartLic &middot;{" "}
+          <a href="/termos" className="hover:text-[var(--brand-blue)] transition-colors">Termos</a>
+          {" "}&middot;{" "}
+          <a href="/privacidade" className="hover:text-[var(--brand-blue)] transition-colors">Privacidade</a>
+        </footer>
         <BottomNav />
       </div>
     </div>

@@ -304,11 +304,21 @@ function HomePageContent() {
   const [customizeOpen, setCustomizeOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
     if (localStorage.getItem('smartlic-has-searched') !== 'true') return false;
-    return localStorage.getItem('smartlic-customize-open') === 'open';
+    // SAB-013 AC6: migrate from old key if present
+    const legacy = localStorage.getItem('smartlic-customize-open');
+    const current = localStorage.getItem('smartlic:buscar:filters-expanded');
+    if (current !== null) return current === 'true';
+    if (legacy !== null) {
+      const wasOpen = legacy === 'open';
+      localStorage.setItem('smartlic:buscar:filters-expanded', String(wasOpen));
+      localStorage.removeItem('smartlic-customize-open');
+      return wasOpen;
+    }
+    return false;
   });
 
   useEffect(() => {
-    localStorage.setItem('smartlic-customize-open', customizeOpen ? 'open' : 'closed');
+    localStorage.setItem('smartlic:buscar:filters-expanded', String(customizeOpen));
   }, [customizeOpen]);
 
   // UX-346 AC5: First-use tip (shown until first search or dismiss)

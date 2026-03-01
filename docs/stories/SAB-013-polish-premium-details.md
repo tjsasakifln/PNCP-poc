@@ -28,20 +28,20 @@ Footer com links "Sobre", "Planos", "Central de Ajuda" duplica informação já 
 
 ### Sidebar Hover (P3-02)
 
-- [ ] **AC1:** Adicionar `transition: background-color 150ms ease` em items da sidebar
-- [ ] **AC2:** Hover state mais visível: `bg-gray-100` (light) / `bg-gray-800` (dark)
-- [ ] **AC3:** Active item com left border accent (4px azul) além do background
+- [x] **AC1:** Adicionar `transition: background-color 150ms ease` em items da sidebar
+- [x] **AC2:** Hover state mais visível: `bg-gray-100` (light) / `bg-gray-800` (dark)
+- [x] **AC3:** Active item com left border accent (4px azul) além do background
 
 ### Filtros Persistentes (P3-03)
 
-- [ ] **AC4:** Salvar estado do accordion "Personalizar busca" no `localStorage`
-- [ ] **AC5:** Se usuário já expandiu antes, manter aberto no próximo acesso
-- [ ] **AC6:** Key do localStorage: `smartlic:buscar:filters-expanded`
+- [x] **AC4:** Salvar estado do accordion "Personalizar busca" no `localStorage`
+- [x] **AC5:** Se usuário já expandiu antes, manter aberto no próximo acesso
+- [x] **AC6:** Key do localStorage: `smartlic:buscar:filters-expanded`
 
 ### Footer Simplificado (P3-05)
 
-- [ ] **AC7:** Na área logada: footer reduzido a uma linha: "© 2026 SmartLic · Termos · Privacidade"
-- [ ] **AC8:** Na área pública (landing, login, signup): manter footer completo
+- [x] **AC7:** Na área logada: footer reduzido a uma linha: "© 2026 SmartLic · Termos · Privacidade"
+- [x] **AC8:** Na área pública (landing, login, signup): manter footer completo
 
 ---
 

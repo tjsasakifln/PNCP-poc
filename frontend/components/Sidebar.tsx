@@ -123,10 +123,10 @@ export function Sidebar() {
         href={item.href}
         title={collapsed ? item.label : undefined}
         className={`
-          flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
+          flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-[background-color] duration-150 ease-in-out relative
           ${active
-            ? "bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)]"
-            : "text-[var(--ink-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--ink)]"
+            ? "bg-[var(--brand-blue-subtle)] text-[var(--brand-blue)] border-l-4 border-[var(--brand-blue)]"
+            : "text-[var(--ink-secondary)] hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[var(--ink)] border-l-4 border-transparent"
           }
           ${collapsed ? "justify-center" : ""}
         `}
