@@ -29,6 +29,7 @@ export interface ComparisonRow {
   traditional: string;
   smartlic: string;
   advantage: string;
+  tooltip?: string;
   icon?: React.ComponentType<any>;
 }
 
@@ -102,6 +103,7 @@ export const comparisonTable: ComparisonRow[] = [
     traditional: "Risco de sistema fora do ar quando você precisa decidir",
     smartlic: "Infraestrutura moderna, disponível quando você precisa",
     advantage: "Disponível 24/7",
+    tooltip: "Monitoramento contínuo com alertas automáticos",
     icon: ShieldCheck,
   },
 ];
@@ -325,8 +327,8 @@ export interface ProofPoint {
 
 export const proofPoints: Record<string, ProofPoint> = {
   coverage: {
-    claim: "Fontes oficiais consolidadas com cobertura em todos os 27 estados",
-    proofSource: "Technical architecture — multi-source integration",
+    claim: "3 fontes oficiais federais + portal de compras públicas com cobertura em todos os 27 estados",
+    proofSource: "Technical architecture — multi-source integration (PNCP + PCP v2 + ComprasGov v3)",
   },
 
   sectors: {

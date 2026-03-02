@@ -169,7 +169,7 @@ export const features = {
     without:
       "Você consulta 3-4 fontes manualmente. Oportunidades em portais estaduais passam despercebidas. Seu concorrente descobre antes.",
     withSmartLic:
-      "Cobertura de +98% das oportunidades públicas federais e estaduais. Cobertura nacional completa. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
+      "Cobertura nacional via fontes oficiais consolidadas. Se uma licitação compatível com seu perfil é publicada em qualquer lugar do Brasil, você sabe.",
     gemAccent: "emerald" as const,
   },
 
@@ -446,6 +446,12 @@ export const BANNED_PHRASES = [
   "descobrir",
   "explorar",
   "experimentar",
+  // STORY-352: Human support 24/7 is not realistic for pre-revenue team
+  "Suporte 24/7",
+  // STORY-350: Unverifiable coverage claims
+  "+98%",
+  "+98% cobertura",
+  "+98% das oportunidades",
 ];
 
 // ============================================================================

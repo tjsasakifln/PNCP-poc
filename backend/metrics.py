@@ -520,11 +520,24 @@ ALERTS_PROCESSING_DURATION = _create_histogram(
     buckets=[5, 10, 30, 60, 120, 300, 600],
 )
 
+# STORY-350 AC3: Per-source bids fetched (enables future coverage measurement)
+SOURCES_BIDS_FETCHED = _create_counter(
+    "smartlic_sources_bids_fetched_total",
+    "Total bids/items fetched per data source and UF",
+    labelnames=["source", "uf"],
+)
+
 # STORY-328 AC25: Org context stripping metrics
 ORG_CONTEXT_STRIPPED = _create_counter(
     "smartlic_org_context_stripped_total",
     "Bid descriptions where org context was stripped before keyword matching",
     labelnames=["sector"],
+)
+
+# STORY-352 AC4: 30-day uptime percentage gauge (updated by health canary)
+UPTIME_PCT_30D = _create_gauge(
+    "smartlic_uptime_pct_30d",
+    "30-day uptime percentage calculated from health checks",
 )
 
 # STORY-332 AC1: Redis availability gauge (1=connected, 0=fallback)

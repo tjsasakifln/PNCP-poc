@@ -121,7 +121,10 @@ export default function ComparisonTable() {
                             {row.smartlic}
                           </p>
                           {row.advantage && (
-                            <p className="text-xs text-brand-blue mt-1 font-semibold">
+                            <p
+                              className="text-xs text-brand-blue mt-1 font-semibold"
+                              title={row.tooltip}
+                            >
                               {row.advantage}
                             </p>
                           )}
@@ -186,7 +189,10 @@ export default function ComparisonTable() {
                         {row.smartlic}
                       </p>
                       {row.advantage && (
-                        <p className="text-xs text-brand-blue mt-1 font-semibold">
+                        <p
+                          className="text-xs text-brand-blue mt-1 font-semibold"
+                          title={row.tooltip}
+                        >
                           {row.advantage}
                         </p>
                       )}

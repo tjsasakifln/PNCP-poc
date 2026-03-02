@@ -27,13 +27,13 @@ A comparison table e TrustSignals prometem "Disponível 24/7" e "Suporte priorit
 
 ## Critérios de Aceite
 
-- [ ] AC1: Manter "Disponível 24/7" em `comparisons.ts:104` — claim factualmente correto. Adicionar tooltip "monitoramento contínuo com alertas automáticos"
-- [ ] AC2: Substituir "Suporte prioritário 24/7" por "Suporte dedicado para assinantes" em `TrustSignals.tsx:139`
-- [ ] AC3: Adicionar "Suporte 24/7" ao BANNED_PHRASES em `valueProps.ts` (apenas suporte humano — NÃO banir "Disponível 24/7")
-- [ ] AC4: Criar Prometheus gauge `smartlic_uptime_pct_30d` calculado a partir dos health checks existentes
-- [ ] AC5: Na página `/admin`, exibir uptime real dos últimos 30 dias
-- [ ] AC6: Atualizar testes e2e que verificam texto "24/7" se existirem
-- [ ] AC7: Revisar `ajuda/page.tsx` para remover "24 horas" se presente
+- [x] AC1: Manter "Disponível 24/7" em `comparisons.ts:104` — claim factualmente correto. Adicionar tooltip "monitoramento contínuo com alertas automáticos"
+- [x] AC2: Substituir "Suporte prioritário 24/7" por "Suporte dedicado para assinantes" em `TrustSignals.tsx:139`
+- [x] AC3: Adicionar "Suporte 24/7" ao BANNED_PHRASES em `valueProps.ts` (apenas suporte humano — NÃO banir "Disponível 24/7")
+- [x] AC4: Criar Prometheus gauge `smartlic_uptime_pct_30d` calculado a partir dos health checks existentes
+- [x] AC5: Na página `/admin`, exibir uptime real dos últimos 30 dias
+- [x] AC6: Atualizar testes e2e que verificam texto "24/7" se existirem
+- [x] AC7: Revisar `ajuda/page.tsx` para remover "24 horas" se presente
 
 ## Arquivos Afetados
 

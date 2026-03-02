@@ -117,7 +117,7 @@ describe('TrustSignals Component', () => {
 
       expect(screen.getByText(/Garantia de 30 dias/i)).toBeInTheDocument();
       expect(screen.getByText(/Segurança de nível bancário/i)).toBeInTheDocument();
-      expect(screen.getByText(/Suporte prioritário/i)).toBeInTheDocument();
+      expect(screen.getByText(/Suporte dedicado para assinantes/i)).toBeInTheDocument();
     });
 
     it('should display 30-day refund guarantee details', () => {

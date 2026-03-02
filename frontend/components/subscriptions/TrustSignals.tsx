@@ -136,7 +136,7 @@ export function TrustSignals({
               <span className="text-xl" aria-hidden="true">📞</span>
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-ink">Suporte prioritário 24/7</p>
+              <p className="font-semibold text-ink">Suporte dedicado para assinantes</p>
               <p className="text-sm text-ink-secondary mt-0.5">
                 Atendimento dedicado para assinantes anuais
               </p>

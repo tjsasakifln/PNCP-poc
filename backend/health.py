@@ -561,6 +561,10 @@ async def calculate_uptime_percentages() -> Dict[str, float]:
     """
     result = {"24h": 100.0, "7d": 100.0, "30d": 100.0}
     try:
+        from metrics import UPTIME_PCT_30D
+    except Exception:
+        UPTIME_PCT_30D = None
+    try:
         from supabase_client import get_supabase, sb_execute_direct
         sb = get_supabase()
         now = datetime.now(timezone.utc)
@@ -590,6 +594,13 @@ async def calculate_uptime_percentages() -> Dict[str, float]:
             result[label] = round(total_score / len(rows), 1)
     except Exception as e:
         logger.warning("Failed to calculate uptime percentages: %s", e)
+
+    # STORY-352 AC4: Update Prometheus gauge
+    if UPTIME_PCT_30D is not None:
+        try:
+            UPTIME_PCT_30D.set(result["30d"])
+        except Exception:
+            pass
 
     return result
 

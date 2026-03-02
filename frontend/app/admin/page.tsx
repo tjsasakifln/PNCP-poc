@@ -60,6 +60,17 @@ export default function AdminPage() {
   const [editCreditsValue, setEditCreditsValue] = useState<string>("");
   const [savingCredits, setSavingCredits] = useState(false);
 
+  // STORY-352 AC5: Uptime widget state
+  const [uptimePct30d, setUptimePct30d] = useState<number | null>(null);
+
+  // STORY-350 AC6: Source health state
+  const [sourceHealth, setSourceHealth] = useState<Record<string, {
+    status: string;
+    latency_ms?: number;
+    last_check?: string;
+  }>>({});
+  const [sourceHealthLoading, setSourceHealthLoading] = useState(false);
+
   // STORY-314: Reconciliation widget state
   const [reconHistory, setReconHistory] = useState<Array<{
     id: string;
@@ -97,6 +108,22 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, [session, page, search]);
+
+  const fetchSourceHealth = useCallback(async () => {
+    setSourceHealthLoading(true);
+    try {
+      const res = await fetch("/api/status");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sources) setSourceHealth(data.sources);
+        if (data.uptime_pct_30d !== undefined) setUptimePct30d(data.uptime_pct_30d);
+      }
+    } catch {
+      // Non-critical — widget is informational
+    } finally {
+      setSourceHealthLoading(false);
+    }
+  }, []);
 
   const fetchReconHistory = useCallback(async () => {
     if (!session) return;
@@ -143,8 +170,9 @@ export default function AdminPage() {
     if (!authLoading && session) {
       fetchUsers();
       fetchReconHistory();
+      fetchSourceHealth();
     }
-  }, [authLoading, session, fetchUsers, fetchReconHistory]);
+  }, [authLoading, session, fetchUsers, fetchReconHistory, fetchSourceHealth]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,6 +353,92 @@ export default function AdminPage() {
               {showCreate ? "Cancelar" : "Novo usuário"}
             </button>
           </div>
+        </div>
+
+        {/* STORY-352 AC5: Uptime Widget */}
+        <div className="mb-8 p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Uptime (30 dias)</h2>
+            <Link href="/status" className="text-sm text-[var(--brand-blue)] hover:underline">
+              Status Page
+            </Link>
+          </div>
+          <div className="mt-4 flex items-center gap-4">
+            <div className={`text-4xl font-bold ${
+              uptimePct30d === null ? "text-[var(--ink-muted)]" :
+              uptimePct30d >= 99 ? "text-green-600" :
+              uptimePct30d >= 95 ? "text-yellow-600" : "text-red-600"
+            }`}>
+              {uptimePct30d !== null ? `${uptimePct30d}%` : "—"}
+            </div>
+            <div className="text-sm text-[var(--ink-secondary)]">
+              {uptimePct30d !== null && uptimePct30d >= 99
+                ? "Alta disponibilidade"
+                : uptimePct30d !== null && uptimePct30d >= 95
+                  ? "Disponibilidade aceitavel"
+                  : uptimePct30d !== null
+                    ? "Abaixo do esperado"
+                    : "Carregando..."}
+            </div>
+          </div>
+        </div>
+
+        {/* STORY-350 AC6: Fontes ativas card */}
+        <div className="mb-8 p-6 bg-[var(--surface-0)] border border-[var(--border)] rounded-card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Fontes ativas</h2>
+            <button
+              onClick={fetchSourceHealth}
+              disabled={sourceHealthLoading}
+              className="text-xs px-3 py-1 border border-[var(--border)] rounded-button hover:bg-[var(--surface-1)] disabled:opacity-50 text-[var(--ink-secondary)]"
+            >
+              {sourceHealthLoading ? "Atualizando..." : "Atualizar"}
+            </button>
+          </div>
+          {sourceHealthLoading && Object.keys(sourceHealth).length === 0 ? (
+            <div className="h-12 bg-[var(--surface-1)] rounded animate-pulse" />
+          ) : Object.keys(sourceHealth).length === 0 ? (
+            <p className="text-sm text-[var(--ink-muted)]">Status indisponivel</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {Object.entries(sourceHealth).map(([code, info]) => {
+                const statusLabel =
+                  info.status === "healthy" ? "UP" : info.status === "degraded" ? "DEGRADED" : "DOWN";
+                const statusColor =
+                  info.status === "healthy"
+                    ? "text-green-600 bg-green-50"
+                    : info.status === "degraded"
+                      ? "text-yellow-600 bg-yellow-50"
+                      : "text-red-600 bg-red-50";
+                const dotColor =
+                  info.status === "healthy"
+                    ? "bg-green-500"
+                    : info.status === "degraded"
+                      ? "bg-yellow-500"
+                      : "bg-red-500";
+                const sourceName =
+                  code === "pncp" ? "PNCP" : code === "portal" ? "PCP v2" : code === "comprasgov" ? "ComprasGov" : code;
+
+                return (
+                  <div
+                    key={code}
+                    className="flex items-center gap-3 p-4 rounded-card border border-[var(--border)] bg-[var(--surface-1)]"
+                  >
+                    <span className={`w-3 h-3 rounded-full ${dotColor} flex-shrink-0`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--ink)]">{sourceName}</p>
+                      {info.latency_ms !== undefined && (
+                        <p className="text-xs text-[var(--ink-muted)]">{info.latency_ms}ms</p>
+                      )}
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${statusColor}`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* STORY-314 AC12: Reconciliation Widget */}

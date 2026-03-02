@@ -443,3 +443,48 @@ class TestCleanup:
                 mock_exec.return_value = SimpleNamespace(data=[{"id": "1"}, {"id": "2"}])
                 count = await cleanup_old_health_checks()
                 assert count == 2
+
+
+# ============================================================================
+# STORY-352 AC4: Uptime gauge tests
+# ============================================================================
+
+
+class TestUptimeGauge:
+    """STORY-352 AC4: Tests for smartlic_uptime_pct_30d gauge."""
+
+    @pytest.mark.asyncio
+    async def test_gauge_updated_on_uptime_calculation(self):
+        """AC4: UPTIME_PCT_30D gauge is updated after calculate_uptime_percentages."""
+        mock_resp = SimpleNamespace(data=[
+            {"overall_status": "healthy"},
+            {"overall_status": "healthy"},
+            {"overall_status": "degraded"},
+        ])
+        mock_gauge = MagicMock()
+        with patch("supabase_client.get_supabase") as mock_sb:
+            mock_sb.return_value = MagicMock()
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock, return_value=mock_resp):
+                with patch("metrics.UPTIME_PCT_30D", mock_gauge):
+                    result = await calculate_uptime_percentages()
+
+        # (100 + 100 + 50) / 3 = 83.3
+        assert result["30d"] == 83.3
+        mock_gauge.set.assert_called_with(83.3)
+
+    @pytest.mark.asyncio
+    async def test_gauge_set_to_100_when_all_healthy(self):
+        """AC4: Gauge set to 100 when all checks are healthy."""
+        mock_resp = SimpleNamespace(data=[
+            {"overall_status": "healthy"},
+            {"overall_status": "healthy"},
+        ])
+        mock_gauge = MagicMock()
+        with patch("supabase_client.get_supabase") as mock_sb:
+            mock_sb.return_value = MagicMock()
+            with patch("supabase_client.sb_execute_direct", new_callable=AsyncMock, return_value=mock_resp):
+                with patch("metrics.UPTIME_PCT_30D", mock_gauge):
+                    result = await calculate_uptime_percentages()
+
+        assert result["30d"] == 100.0
+        mock_gauge.set.assert_called_with(100.0)
