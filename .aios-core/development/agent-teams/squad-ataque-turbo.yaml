@@ -1,0 +1,178 @@
+bundle:
+  name: Ataque Turbo — Outreach com Licitacoes Reais
+  icon: "\U0001F4A5"
+  description: |
+    Squad de prospeccao ativa que combina dados reais do PNCP com emails
+    ultra-personalizados. Modelo freemium teaser: mostra fracao gratuita
+    das licitacoes encontradas + CTA para PDF completo via PIX.
+
+    Workflow: Executa *acha-leads (Lean mode, sem OpenAI API), busca
+    licitacoes abertas reais por setor/UF de cada lead, e gera emails
+    com analise detalhada das oportunidades de amostra.
+
+    Fonte de leads: turbocash.md (Tier 1 + Tier 2) + novos via PNCP.
+    Output: docs/ataque-turbo-NNN.md (numeracao sequencial, leads ineditos).
+
+agents:
+  - analyst        # Lead: buy-intent scoring, decisao de fracao gratis caso a caso, pricing
+  - data-engineer  # PNCP API queries (curl), agregacao, enriquecimento Receita Federal
+  - dev            # Executar curl commands, processar dados, gerar arquivos de saida
+  - po             # Personalizacao de emails, proposta de valor, CTA, tom de voz
+
+workflows:
+  - acha-leads (Lean mode)
+
+tasks:
+  - acha-leads.md
+
+references:
+  - docs/sessions/2026-02/turbocash.md       # Playbook de monetizacao + pipeline de leads
+  - .aios-core/development/tasks/acha-leads.md  # Workflow de prospeccao buy-intent
+
+coordination:
+  lead_agent: analyst
+  execution_sequence:
+    - phase: prospeccao
+      agents: [data-engineer, dev]
+      deliverable: |
+        Query PNCP API via curl para:
+        1. Participacoes e homologacoes dos leads (historico)
+        2. Licitacoes abertas por setor/UF de cada lead (ultimos 10 dias)
+        Sem chamadas OpenAI API.
+
+    - phase: enriquecimento
+      agents: [data-engineer]
+      dependencies: [prospeccao]
+      deliverable: |
+        Enriquecer leads com Receita Federal (CNPJ, CNAE, porte).
+        Cruzar perfil do lead com licitacoes encontradas.
+
+    - phase: qualificacao
+      agents: [analyst]
+      dependencies: [enriquecimento]
+      deliverable: |
+        Para cada lead, decidir:
+        - Quantas licitacoes mostrar gratis (fracao do total)
+        - Preco do PDF completo (baseado no valor das oportunidades)
+        - Quais licitacoes sao a melhor amostra (maior impacto de convencimento)
+
+    - phase: email_creation
+      agents: [po, dev]
+      dependencies: [qualificacao]
+      deliverable: |
+        Email personalizado por lead contendo:
+        1. "Encontramos N licitacoes de interesse da [Empresa]"
+        2. K amostra(s) com analise detalhada (motivos de relevancia)
+        3. CTA: PDF completo com N licitacoes + viabilidade por R$X via PIX
+        Sem uso de OpenAI — copywriting manual via template.
+
+    - phase: output
+      agents: [dev]
+      dependencies: [email_creation]
+      deliverable: |
+        Arquivo docs/ataque-turbo-NNN.md com:
+        - Metadata da execucao (data, setores, parametros)
+        - Lista completa de leads processados
+        - Emails prontos para envio (copy/paste)
+        - Resumo de metricas (total licitacoes, leads, taxa estimada de resposta)
+
+fracao_gratis_guidelines: |
+  O @analyst decide caso a caso quantas licitacoes mostrar gratuitamente.
+  Diretriz geral (pode ser ajustada por contexto):
+
+  | Total encontrado | Mostrar gratis | Ratio aproximado |
+  |:---:|:---:|:---:|
+  | 1-5              | 1              | ~20%             |
+  | 6-15             | 2              | ~15%             |
+  | 16-30            | 3              | ~10%             |
+  | 31+              | 3-4            | <10%             |
+
+  Fatores que influenciam a decisao:
+  - Valor agregado das licitacoes (alto valor = menos amostra)
+  - Perfil do lead (Tier 1 pode receber mais para impressionar)
+  - Qualidade da amostra (escolher as mais impactantes)
+
+pricing_guidelines: |
+  O @analyst define preco do PDF caso a caso, baseado em:
+  - Valor total das licitacoes encontradas
+  - Quantidade de oportunidades
+  - Porte e setor do lead
+  - Referencia base: R$1.500 (micro/pequena) a R$3.000 (media empresa)
+  - Inclui 30 dias gratis do SmartLic Pro
+
+email_template: |
+  Estrutura do email (adaptada pelo @po por lead):
+
+  ---
+  Assunto: [Empresa] — encontramos {N} licitacoes abertas no perfil de voces
+
+  Ola {Nome},
+
+  Sou Tiago Sasaki, fundador do SmartLic — plataforma de inteligencia em
+  licitacoes que usa IA para filtrar e classificar oportunidades por setor.
+
+  {Parágrafo personalizado sobre a empresa — pesquisa, vitórias passadas, setor}
+
+  Rodei uma busca no SmartLic para o perfil da {Empresa} e encontramos
+  **{N} licitacoes abertas** com alta relevancia. Aqui estao {K} delas:
+
+  {Licitacao 1 — analise detalhada: orgao, valor, modalidade, prazo, motivos de relevancia}
+  {Licitacao 2 — analise detalhada (se K >= 2)}
+  {Licitacao 3 — analise detalhada (se K >= 3)}
+
+  As outras {N-K} oportunidades incluem editais de {resumo dos setores/valores}.
+
+  **Quer receber a lista completa com analise de viabilidade para cada uma?**
+  Enviamos o PDF com as {N} licitacoes detalhadas por R${preco} via PIX.
+  Inclui 30 dias gratis do SmartLic Pro para monitorar novas oportunidades.
+
+  Abraco,
+  Tiago Sasaki
+  Fundador, SmartLic
+  smartlic.tech
+  ---
+
+output_rules:
+  file_pattern: "docs/ataque-turbo-{NNN}.md"
+  numbering: sequential (001, 002, 003...)
+  unique_leads: true  # Cada execucao deve ter leads ineditos (nao repetir de runs anteriores)
+  dedup_strategy: |
+    Antes de gerar output, ler todos os docs/ataque-turbo-*.md existentes
+    e extrair CNPJs/nomes de empresas ja abordados. Excluir da execucao atual.
+
+constraints:
+  - Zero chamadas OpenAI API (emails escritos manualmente via template)
+  - Dados reais do PNCP (curl direto para API publica)
+  - Leads ineditos a cada execucao (dedup contra runs anteriores)
+  - tamanhoPagina=50 (limite PNCP, >50 = HTTP 400)
+  - Rate limiting: respeitar Retry-After do PNCP
+  - Receita Federal: 1 req/sec
+
+success_criteria:
+  - minimum_leads: 5
+  - real_pncp_data: true
+  - zero_openai_calls: true
+  - emails_ready_to_send: true
+  - pricing_per_lead: true
+  - fracao_gratis_justified: true
+  - dedup_against_previous_runs: true
+
+when_to_use:
+  - Prospeccao ativa de novos clientes para SmartLic
+  - Cold outreach com dados reais de licitacoes
+  - Campanhas de aquisicao a custo negativo (diagnostico pago)
+  - Geracao de pipeline de vendas founder-led
+
+activation: |
+  Para ativar este squad:
+  1. /squad-creator
+  2. Carregar: squad-ataque-turbo
+  3. Executar: *acha-leads --mode lean
+  4. Output: docs/ataque-turbo-NNN.md
+
+notes:
+  - Modelo inspirado no TurboCash playbook (Acao 1 + Acao 2)
+  - Preco referencia: R$1.500 (diagnostico) — ajustavel pelo @analyst
+  - Follow-up D+3 para quem nao respondeu (script no turbocash.md)
+  - Meta: 13 outreach -> 2-3 respostas (15-23% reply) -> 1 demo -> 1 conversao
+  - Apos 3 runs com >=15% response rate, graduar para Scale mode do acha-leads
