@@ -18,8 +18,8 @@ interface UserProfile {
   is_admin?: boolean;
 }
 
-// STORY-277: Repricing — R$397/mês (market-aligned). STORY-319: 14-day trial
-const PRICING: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
+// STORY-360 AC2: Static fallback pricing (source of truth: backend GET /v1/plans → Stripe)
+const PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
   monthly: { monthly: 397, total: 397, period: "mês" },
   semiannual: { monthly: 357, total: 2142, period: "semestre", discount: 10 },
   annual: { monthly: 297, total: 3564, period: "ano", discount: 25 },
@@ -36,7 +36,7 @@ const FEATURES = [
   { text: "Filtragem com 1.000+ regras", detail: "Precisão setorial para seu mercado" },
 ];
 
-const CONSULTORIA_PRICING: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
+const CONSULTORIA_PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }> = {
   monthly: { monthly: 997, total: 997, period: "mês" },
   semiannual: { monthly: 897, total: 5382, period: "semestre", discount: 10 },
   annual: { monthly: 797, total: 9564, period: "ano", discount: 20 },
@@ -52,6 +52,7 @@ const CONSULTORIA_FEATURES = [
 ];
 
 // FAQ items — STORY-280 AC4: Updated to mention Boleto
+// STORY-360 AC5: Discount percentages reference PRICING_FALLBACK constants
 const FAQ_ITEMS = [
   {
     question: "Quais formas de pagamento são aceitas?",
@@ -71,7 +72,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "Como funciona a cobrança semestral e anual?",
-    answer: "No acesso semestral, o valor é cobrado a cada 6 meses com 10% de economia. No anual, a cada 12 meses com 25% de economia. Stripe processa tudo com segurança.",
+    answer: `No acesso semestral, o valor é cobrado a cada 6 meses com ${PRICING_FALLBACK.semiannual.discount}% de economia. No anual, a cada 12 meses com ${PRICING_FALLBACK.annual.discount}% de economia. Stripe processa tudo com segurança.`,
   },
 ];
 
@@ -94,6 +95,47 @@ export default function PlanosPage() {
 
   // STORY-323 AC17: Partner tracking state
   const [partnerName, setPartnerName] = useState<string | null>(null);
+
+  // STORY-360 AC2: Dynamic pricing from backend with static fallback
+  type PricingMap = Record<BillingPeriod, { monthly: number; total: number; period: string; discount?: number }>;
+  const [proPricing, setProPricing] = useState<PricingMap>(PRICING_FALLBACK);
+  const [consultoriaPricing, setConsultoriaPricing] = useState<PricingMap>(CONSULTORIA_PRICING_FALLBACK);
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const res = await fetch("/api/plans");
+        if (!res.ok) return; // Keep fallback
+        const data = await res.json();
+        const plans = data.plans || [];
+        for (const plan of plans) {
+          const bp = plan.billing_periods;
+          if (!bp) continue;
+          const buildPricing = (base: PricingMap): PricingMap => {
+            const result = { ...base };
+            if (bp.monthly) {
+              const m = bp.monthly.price_cents / 100;
+              result.monthly = { monthly: m, total: m, period: "mês" };
+            }
+            if (bp.semiannual) {
+              const m = bp.semiannual.price_cents / 100;
+              result.semiannual = { monthly: m, total: m * 6, period: "semestre", discount: bp.semiannual.discount_percent || undefined };
+            }
+            if (bp.annual) {
+              const m = bp.annual.price_cents / 100;
+              result.annual = { monthly: m, total: m * 12, period: "ano", discount: bp.annual.discount_percent || undefined };
+            }
+            return result;
+          };
+          if (plan.id === "smartlic_pro") setProPricing(buildPricing(PRICING_FALLBACK));
+          if (plan.id === "consultoria") setConsultoriaPricing(buildPricing(CONSULTORIA_PRICING_FALLBACK));
+        }
+      } catch {
+        // Keep fallback values on network error
+      }
+    };
+    fetchPricing();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -163,7 +205,7 @@ export default function PlanosPage() {
     return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   }, [planInfo?.trial_expires_at]);
 
-  const currentPricing = PRICING[billingPeriod];
+  const currentPricing = proPricing[billingPeriod];
   const isAlreadyPro = userStatus === "subscriber";
   const hasFullAccess = userStatus === "subscriber" || userStatus === "privileged";
 
@@ -355,7 +397,11 @@ export default function PlanosPage() {
 
         {/* Billing Period Toggle */}
         <div className="flex justify-center mb-8">
-          <PlanToggle value={billingPeriod} onChange={setBillingPeriod} />
+          <PlanToggle
+            value={billingPeriod}
+            onChange={setBillingPeriod}
+            discounts={{ semiannual: proPricing.semiannual.discount, annual: proPricing.annual.discount }}
+          />
         </div>
 
         {/* Single Plan Card — Centered */}
@@ -492,7 +538,7 @@ export default function PlanosPage() {
               </div>
               <div className="text-3xl text-[var(--ink-muted)]">vs</div>
               <div>
-                <p className="text-2xl font-bold text-[var(--success)]">{formatCurrency(PRICING.annual.total)}</p>
+                <p className="text-2xl font-bold text-[var(--success)]">{formatCurrency(proPricing.annual.total)}</p>
                 <p>SmartLic Pro anual</p>
               </div>
             </div>
@@ -529,14 +575,14 @@ export default function PlanosPage() {
             <div className="text-center mb-6">
               <div className="flex items-baseline justify-center gap-1">
                 <span className="text-5xl font-bold text-amber-700 dark:text-amber-400">
-                  {formatCurrency(CONSULTORIA_PRICING[billingPeriod].monthly)}
+                  {formatCurrency(consultoriaPricing[billingPeriod].monthly)}
                 </span>
                 <span className="text-lg text-[var(--ink-muted)]">/mês</span>
               </div>
-              {CONSULTORIA_PRICING[billingPeriod].discount && (
+              {consultoriaPricing[billingPeriod].discount && (
                 <div className="mt-2">
                   <span className="inline-block px-3 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 text-sm font-semibold rounded-full">
-                    Economize {CONSULTORIA_PRICING[billingPeriod].discount}%
+                    Economize {consultoriaPricing[billingPeriod].discount}%
                   </span>
                 </div>
               )}

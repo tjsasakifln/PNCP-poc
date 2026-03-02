@@ -146,7 +146,7 @@ describe('PlanosPage Component', () => {
       // Check all 3 radio buttons exist
       expect(screen.getByRole('radio', { name: /Mensal/i })).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: /Semestral.*Economize 10%/i })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: /Anual.*Economize 20%/i })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Anual.*Economize 25%/i })).toBeInTheDocument();
     });
 
     it('should default to monthly billing period', async () => {
@@ -185,14 +185,14 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       // Click annual toggle
-      const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 20%/i });
+      const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 25%/i });
       fireEvent.click(annualRadio);
 
       await waitFor(() => {
         // Annual price should be R$ 297/mês
         expect(screen.getByText(/R\$\s*297/)).toBeInTheDocument();
-        // Check for multiple "Economize 20%" elements (toggle + badge)
-        const saveElements = screen.getAllByText(/Economize 20%/);
+        // Check for multiple "Economize 25%" elements (toggle + badge)
+        const saveElements = screen.getAllByText(/Economize 25%/);
         expect(saveElements.length).toBeGreaterThan(0);
       });
     });
@@ -211,7 +211,7 @@ describe('PlanosPage Component', () => {
     it('should show total billing amount for annual', async () => {
       render(<PlanosPage />);
 
-      const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 20%/i });
+      const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 25%/i });
       fireEvent.click(annualRadio);
 
       await waitFor(() => {
@@ -225,7 +225,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       await waitFor(() => {
-        const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 20%/i });
+        const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 25%/i });
         expect(annualRadio).toHaveAttribute('aria-checked', 'true');
         expect(screen.getByText(/R\$\s*297/)).toBeInTheDocument();
       });
@@ -399,7 +399,7 @@ describe('PlanosPage Component', () => {
       render(<PlanosPage />);
 
       // Switch to annual
-      const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 20%/i });
+      const annualRadio = screen.getByRole('radio', { name: /Anual.*Economize 25%/i });
       fireEvent.click(annualRadio);
 
       await waitFor(() => {

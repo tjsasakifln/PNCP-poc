@@ -267,7 +267,7 @@ For detailed module tables and route maps, see `.claude/rules/architecture-detai
 - Patch `supabase_client.get_supabase` for cache tests (not `search_cache.get_supabase`)
 
 ### Billing & Auth
-- **Pricing (STORY-277):** SmartLic Pro R$397/mes (mensal), R$357/mes (semestral), R$317/mes (anual)
+- **Pricing (STORY-277/360):** SmartLic Pro R$397/mes (mensal), R$357/mes (semestral, 10% off), R$297/mes (anual, 25% off). Consultoria R$997/mes, R$897/sem (10%), R$797/anual (20%). Source of truth: `plan_billing_periods` table (synced from Stripe)
 - **Trial:** 14 dias gratis (STORY-264/277/319), sem cartao
 - Stripe handles proration automatically — NO custom prorata code
 - "Fail to last known plan": never fall back to free_trial on DB errors

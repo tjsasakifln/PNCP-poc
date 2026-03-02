@@ -19,14 +19,52 @@ router = APIRouter(tags=["billing"])
 
 @router.get("/plans", response_model=BillingPlansResponse)
 async def get_plans(db=Depends(get_db)):
-    """Get available subscription plans."""
+    """Get available subscription plans with billing period pricing.
+
+    STORY-360 AC1: Single source of truth — DB (synced from Stripe) is master.
+    Returns per-period pricing from plan_billing_periods table.
+    Stripe price IDs stripped from response (STORY-210 AC11).
+    """
     result = await sb_execute(
         db.table("plans")
-        .select("id, name, description, max_searches, price_brl, duration_days, stripe_price_id_monthly, stripe_price_id_semiannual, stripe_price_id_annual")
+        .select("id, name, description, max_searches, price_brl, duration_days")
         .eq("is_active", True)
         .order("price_brl")
     )
-    return {"plans": result.data}
+
+    # STORY-360 AC1: Fetch billing period pricing
+    billing_periods_result = await sb_execute(
+        db.table("plan_billing_periods")
+        .select("plan_id, billing_period, price_cents, discount_percent")
+        .order("plan_id")
+    )
+
+    # Index billing periods by plan_id
+    bp_by_plan: dict = {}
+    for bp in (billing_periods_result.data or []):
+        plan_id = bp["plan_id"]
+        if plan_id not in bp_by_plan:
+            bp_by_plan[plan_id] = {}
+        bp_by_plan[plan_id][bp["billing_period"]] = {
+            "price_cents": bp["price_cents"],
+            "discount_percent": bp["discount_percent"],
+        }
+
+    # Enrich plans with billing periods (no Stripe IDs)
+    enriched = []
+    for plan in (result.data or []):
+        plan_data = {
+            "id": plan["id"],
+            "name": plan["name"],
+            "description": plan["description"],
+            "max_searches": plan["max_searches"],
+            "price_brl": plan["price_brl"],
+            "duration_days": plan["duration_days"],
+            "billing_periods": bp_by_plan.get(plan["id"], {}),
+        }
+        enriched.append(plan_data)
+
+    return {"plans": enriched}
 
 
 @router.post("/checkout", response_model=CheckoutResponse)

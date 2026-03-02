@@ -21,7 +21,7 @@ describe('PlanToggle Component', () => {
 
       expect(screen.getByLabelText('Mensal')).toBeInTheDocument();
       expect(screen.getByLabelText(/Semestral — Economize 10%/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Anual — Economize 20%/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Anual — Economize 25%/i)).toBeInTheDocument();
     });
 
     it('should highlight monthly when value is monthly', () => {
@@ -43,7 +43,7 @@ describe('PlanToggle Component', () => {
     it('should highlight annual when value is annual', () => {
       render(<PlanToggle value="annual" onChange={mockOnChange} />);
 
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
       expect(annualButton).toHaveAttribute('aria-checked', 'true');
       expect(annualButton).toHaveClass('bg-brand-navy');
     });
@@ -52,20 +52,20 @@ describe('PlanToggle Component', () => {
       render(<PlanToggle value="monthly" onChange={mockOnChange} />);
 
       expect(screen.queryByText(/Economize 10%/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Economize 20%/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Economize 25%/i)).not.toBeInTheDocument();
     });
 
     it('should show 10% savings badge when semiannual is selected', () => {
       render(<PlanToggle value="semiannual" onChange={mockOnChange} />);
 
       expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Economize 10%');
-      expect(screen.queryByText(/Economize 20%/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Economize 25%/i)).not.toBeInTheDocument();
     });
 
     it('should show 20% savings badge when annual is selected', () => {
       render(<PlanToggle value="annual" onChange={mockOnChange} />);
 
-      expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Economize 20%');
+      expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Economize 25%');
       expect(screen.queryByText(/Economize 10%/i)).not.toBeInTheDocument();
     });
 
@@ -78,7 +78,7 @@ describe('PlanToggle Component', () => {
       expect(screen.getByText(/Economize 10%/i)).toBeInTheDocument();
 
       rerender(<PlanToggle value="annual" onChange={mockOnChange} />);
-      expect(screen.getByText(/Economize 20%/i)).toBeInTheDocument();
+      expect(screen.getByText(/Economize 25%/i)).toBeInTheDocument();
 
       rerender(<PlanToggle value="monthly" onChange={mockOnChange} />);
       expect(screen.queryByText(/Economize/i)).not.toBeInTheDocument();
@@ -89,7 +89,7 @@ describe('PlanToggle Component', () => {
 
       const monthlyButton = screen.getByLabelText('Mensal');
       const semiannualButton = screen.getByLabelText(/Semestral — Economize 10%/i);
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
 
       expect(monthlyButton).toBeDisabled();
       expect(semiannualButton).toBeDisabled();
@@ -119,7 +119,7 @@ describe('PlanToggle Component', () => {
     it('should call onChange with annual when clicking annual button', () => {
       render(<PlanToggle value="monthly" onChange={mockOnChange} />);
 
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
       fireEvent.click(annualButton);
 
       expect(mockOnChange).toHaveBeenCalledWith('annual');
@@ -130,7 +130,7 @@ describe('PlanToggle Component', () => {
 
       const monthlyButton = screen.getByLabelText('Mensal');
       const semiannualButton = screen.getByLabelText(/Semestral — Economize 10%/i);
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
 
       fireEvent.click(monthlyButton);
       fireEvent.click(semiannualButton);
@@ -156,7 +156,7 @@ describe('PlanToggle Component', () => {
 
       const monthlyButton = screen.getByLabelText('Mensal');
       const semiannualButton = screen.getByLabelText(/Semestral — Economize 10%/i);
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
 
       // Monthly selected
       expect(monthlyButton).toHaveClass('bg-brand-navy', 'text-white', 'shadow-md');
@@ -181,7 +181,7 @@ describe('PlanToggle Component', () => {
 
       const monthlyButton = screen.getByLabelText('Mensal');
       const semiannualButton = screen.getByLabelText(/Semestral — Economize 10%/i);
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
 
       expect(monthlyButton).toHaveClass('transition-all', 'duration-300', 'ease-in-out');
       expect(semiannualButton).toHaveClass('transition-all', 'duration-300', 'ease-in-out');
@@ -216,7 +216,7 @@ describe('PlanToggle Component', () => {
 
       const monthlyButton = screen.getByLabelText('Mensal');
       const semiannualButton = screen.getByLabelText(/Semestral — Economize 10%/i);
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
 
       expect(monthlyButton).toHaveAttribute('role', 'radio');
       expect(semiannualButton).toHaveAttribute('role', 'radio');
@@ -228,7 +228,7 @@ describe('PlanToggle Component', () => {
 
       const monthlyButton = screen.getByLabelText('Mensal');
       const semiannualButton = screen.getByLabelText(/Semestral — Economize 10%/i);
-      const annualButton = screen.getByLabelText(/Anual — Economize 20%/i);
+      const annualButton = screen.getByLabelText(/Anual — Economize 25%/i);
 
       expect(monthlyButton).toHaveAttribute('aria-checked', 'false');
       expect(semiannualButton).toHaveAttribute('aria-checked', 'true');
@@ -250,7 +250,7 @@ describe('PlanToggle Component', () => {
 
       // Semiannual and annual include discount in aria-label
       expect(screen.getByLabelText(/Semestral — Economize 10%/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Anual — Economize 20%/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Anual — Economize 25%/i)).toBeInTheDocument();
     });
   });
 
@@ -262,6 +262,47 @@ describe('PlanToggle Component', () => {
 
       const wrapper = container.firstChild as HTMLElement;
       expect(wrapper).toHaveClass('custom-test-class');
+    });
+  });
+
+  // STORY-360 AC6: Custom discounts prop
+  describe('Discounts prop override', () => {
+    it('should use custom discounts when provided', () => {
+      render(
+        <PlanToggle
+          value="annual"
+          onChange={mockOnChange}
+          discounts={{ semiannual: 10, annual: 20 }}
+        />
+      );
+
+      // Custom annual discount shows 20%
+      expect(screen.getByLabelText(/Anual — Economize 20%/i)).toBeInTheDocument();
+      expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Economize 20%');
+    });
+
+    it('should show default 25% when no discounts prop passed', () => {
+      render(<PlanToggle value="annual" onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText(/Anual — Economize 25%/i)).toBeInTheDocument();
+      expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Economize 25%');
+    });
+
+    it('should differentiate Pro (25%) from Consultoria (20%) discounts', () => {
+      // Pro uses default (25%)
+      const { unmount } = render(<PlanToggle value="annual" onChange={mockOnChange} />);
+      expect(screen.getByLabelText(/Anual — Economize 25%/i)).toBeInTheDocument();
+      unmount();
+
+      // Consultoria uses custom (20%)
+      render(
+        <PlanToggle
+          value="annual"
+          onChange={mockOnChange}
+          discounts={{ semiannual: 10, annual: 20 }}
+        />
+      );
+      expect(screen.getByLabelText(/Anual — Economize 20%/i)).toBeInTheDocument();
     });
   });
 });

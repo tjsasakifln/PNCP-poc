@@ -16,21 +16,33 @@ export interface PlanToggleProps {
   onChange: (value: BillingPeriod) => void;
   className?: string;
   disabled?: boolean;
+  /** STORY-360 AC6: Per-period discount overrides (e.g. { semiannual: 10, annual: 25 }) */
+  discounts?: Partial<Record<BillingPeriod, number>>;
 }
 
-const BILLING_OPTIONS: { value: BillingPeriod; label: string; discount?: string }[] = [
-  { value: 'monthly', label: 'Mensal' },
-  { value: 'semiannual', label: 'Semestral', discount: 'Economize 10%' },
-  { value: 'annual', label: 'Anual', discount: 'Economize 20%' },
-];
+const DEFAULT_DISCOUNTS: Partial<Record<BillingPeriod, number>> = {
+  semiannual: 10,
+  annual: 25,
+};
+
+function buildBillingOptions(discounts: Partial<Record<BillingPeriod, number>>) {
+  return [
+    { value: 'monthly' as BillingPeriod, label: 'Mensal' },
+    { value: 'semiannual' as BillingPeriod, label: 'Semestral', discount: discounts.semiannual ? `Economize ${discounts.semiannual}%` : undefined },
+    { value: 'annual' as BillingPeriod, label: 'Anual', discount: discounts.annual ? `Economize ${discounts.annual}%` : undefined },
+  ];
+}
 
 export function PlanToggle({
   value,
   onChange,
   className = "",
   disabled = false,
+  discounts,
 }: PlanToggleProps) {
-  const selectedOption = BILLING_OPTIONS.find(o => o.value === value);
+  const effectiveDiscounts = discounts || DEFAULT_DISCOUNTS;
+  const billingOptions = buildBillingOptions(effectiveDiscounts);
+  const selectedOption = billingOptions.find(o => o.value === value);
 
   return (
     <div className={`flex flex-col items-center gap-3 ${className}`}>
@@ -40,7 +52,7 @@ export function PlanToggle({
         aria-label="Escolha seu período de acesso"
         className="relative inline-flex items-center bg-surface-1 rounded-full p-1 border border-strong"
       >
-        {BILLING_OPTIONS.map((option) => (
+        {billingOptions.map((option) => (
           <button
             key={option.value}
             type="button"
