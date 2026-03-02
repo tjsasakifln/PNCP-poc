@@ -588,22 +588,32 @@ coordination:
            - Se prazo ≤5 dias: alertar urgência explicitamente no email
 
     - phase: 5_email_and_save
-      name: "Redação do Email + Salvamento Automático"
-      agents: [po, dev]
+      name: "Redação do Email + Relatório Individual + Salvamento Automático"
+      agents: [po, analyst, dev]
       dependencies: [4_qualification]
       deliverable: |
-        Para cada lead, gerar email personalizado seguindo:
+        PARTE A — EMAIL (para cada lead):
         1. Template com acentuação correta em PT-BR
         2. Identidade do remetente: Tiago Sasaki, Eng. Software CONFENGE
-        3. Cada oportunidade com link oficial do PNCP
+        3. Cada oportunidade da amostra com link oficial do edital
         4. Análise personalizada de por que cada oportunidade é relevante
         5. CTA: relatório completo via PIX
         6. Tom alinhado com landing page (inteligência de decisão, filtro estratégico)
 
-        SALVAMENTO AUTOMÁTICO (OBRIGATÓRIO — executar sem pedir confirmação):
-        7. Determinar próximo número sequencial (ler docs/ataque-turbo-*.md existentes)
-        8. Salvar arquivo completo em docs/ataque-turbo-NNN.md usando Write tool
-        9. Confirmar salvamento no output final com path do arquivo
+        PARTE B — RELATÓRIO INDIVIDUAL (para cada lead):
+        7. Gerar .md com TODAS as {N} oportunidades (não apenas a amostra K)
+        8. Cada oportunidade com análise de relevância + viabilidade 4 fatores
+        9. Cada oportunidade com prazo de proposta (data + dias restantes)
+        10. Tom analítico/objetivo (sem CTA, sem preço — é o produto já pago)
+        11. Seguir template lead_report_structure (ver output_rules)
+        12. Salvar em docs/ataque-turbo-{NNN}-relatorios/{slug-empresa}.md
+
+        PARTE C — SALVAMENTO AUTOMÁTICO (OBRIGATÓRIO — sem pedir confirmação):
+        13. Determinar próximo número sequencial (ler docs/ataque-turbo-*.md existentes)
+        14. Criar diretório docs/ataque-turbo-{NNN}-relatorios/
+        15. Salvar relatório consolidado: docs/ataque-turbo-{NNN}.md
+        16. Salvar relatório individual de CADA lead: docs/ataque-turbo-{NNN}-relatorios/{slug}.md
+        17. Confirmar salvamento com lista de paths no output final
         O usuário NUNCA deve precisar pedir para salvar. É automático.
 
 # ═══════════════════════════════════════════════════════════════════
@@ -715,8 +725,22 @@ email_template: |
 # ═══════════════════════════════════════════════════════════════════
 
 output_rules:
-  file_pattern: "docs/ataque-turbo-{NNN}.md"
-  numbering: "Sequencial (001, 002, 003...). Verificar último existente antes de criar."
+  summary_file:
+    pattern: "docs/ataque-turbo-{NNN}.md"
+    description: "Relatório consolidado da execução (todos os leads + métricas)"
+    numbering: "Sequencial (001, 002, 003...). Verificar último existente antes de criar."
+
+  lead_reports:
+    pattern: "docs/ataque-turbo-{NNN}-relatorios/{slug_empresa}.md"
+    description: |
+      Relatório INDIVIDUAL por lead com TODAS as oportunidades encontradas.
+      Este é o PRODUTO ENTREGÁVEL — pronto para converter em PDF e enviar
+      após confirmação de pagamento PIX.
+
+      OBRIGATÓRIO: gerar um .md por lead qualificado, mesmo que o lead
+      ainda não tenha convertido. O relatório fica pronto aguardando.
+    slug_rule: "Nome da empresa em lowercase, sem acentos, espaços → hífens (ex: construtora-alfa)"
+
   unique_leads: true
   dedup_strategy: |
     Antes de gerar output, ler todos os docs/ataque-turbo-*.md existentes
@@ -774,6 +798,11 @@ output_rules:
     ---
     {Repetir para cada lead}
 
+    ## Relatórios Individuais Gerados
+    | Lead | Arquivo | Oportunidades | Valor Total | Status |
+    |------|---------|---------------|-------------|--------|
+    | {Empresa 1} | `docs/ataque-turbo-{NNN}-relatorios/{slug}.md` | {N} | R$ {valor} | Pronto para envio |
+
     ## Métricas da Execução
     - Tempo total: {duração}
     - Requests PNCP: {N}
@@ -786,6 +815,97 @@ output_rules:
     - Fontes utilizadas: {lista de fontes que retornaram dados}
     - Leads descartados total: {N} (motivos: {lista})
 
+  lead_report_structure: |
+    # Relatório de Oportunidades — {Nome da Empresa}
+    **Preparado por:** Tiago Sasaki — CONFENGE Avaliações e Inteligência Artificial
+    **Plataforma:** SmartLic.tech
+    **Data:** {DD/MM/AAAA}
+
+    ---
+
+    ## Perfil da Empresa
+    | Campo | Dado |
+    |-------|------|
+    | CNPJ | {XX.XXX.XXX/XXXX-XX} |
+    | Razão Social | {nome} |
+    | Nome Fantasia | {nome_fantasia} |
+    | CNAE Principal | {código} — {descrição} |
+    | Porte | {porte} |
+    | Capital Social | R$ {valor} |
+    | UF | {UF} |
+    | Município | {município} |
+    | Sócios | {nomes do QSA} |
+    | Situação TCU/CEIS/CNEP | Nada consta |
+
+    ## Histórico de Contratações
+    - Contratos homologados (últimos 12 meses): {N}
+    - Valor total contratado: R$ {valor}
+    - Fontes: {PNCP, TCU, ComprasGov, Portal da Transparência}
+    - Órgãos frequentes: {lista}
+    - Setores/objetos mais contratados: {lista}
+    - Win rate estimado: {X}% ({vitórias}/{participações})
+
+    ## Oportunidades Identificadas
+
+    **Total: {N} licitações abertas** compatíveis com o perfil da {Empresa}
+    **Valor total estimado: R$ {valor}**
+    **Período: {data_inicial} a {data_final}**
+
+    ---
+
+    ### Oportunidade 1 de {N}
+    | Campo | Detalhe |
+    |-------|---------|
+    | **Objeto** | {descrição completa do objeto} |
+    | **Órgão** | {razaoSocial do órgão} |
+    | **UF** | {UF} |
+    | **Valor estimado** | R$ {valor} |
+    | **Modalidade** | {modalidade} |
+    | **Prazo para proposta** | **{DD/MM/AAAA}** ({X} dias restantes) |
+    | **Link do edital** | {URL oficial} |
+    | **Fontes** | {lista de APIs onde apareceu} |
+
+    **Análise de relevância para a {Empresa}:**
+    {Justificativa personalizada — por que este edital é relevante para
+    ESTA empresa especificamente. Cruzamento com histórico de vitórias,
+    tipo de objeto, órgão familiar, faixa de valor compatível, UF de atuação.}
+
+    **Avaliação de viabilidade:**
+    - Compatibilidade setorial: {Alta/Média/Baixa} — {justificativa}
+    - Faixa de valor: {compatível/acima/abaixo do histórico}
+    - Prazo: {confortável/apertado/urgente}
+    - Geografia: {mesma UF/UF onde já venceu/UF nova}
+
+    ---
+    {Repetir para TODAS as {N} oportunidades — sem exceção}
+
+    ## Resumo Executivo
+    | Métrica | Valor |
+    |---------|-------|
+    | Total de oportunidades | {N} |
+    | Valor total estimado | R$ {valor} |
+    | Oportunidades urgentes (≤5 dias) | {N} |
+    | Oportunidades com prazo confortável | {N} |
+    | UFs cobertas | {lista} |
+    | Órgãos distintos | {N} |
+    | Maior oportunidade | R$ {valor} — {objeto resumido} |
+
+    ---
+    *Relatório gerado pelo algoritmo de classificação do SmartLic.tech*
+    *Fontes oficiais verificadas: {lista de APIs consultadas}*
+    *CONFENGE Avaliações e Inteligência Artificial LTDA*
+
+    REGRAS DO RELATÓRIO INDIVIDUAL:
+    - Incluir TODAS as oportunidades (não apenas a amostra do email)
+    - Cada oportunidade com análise de relevância personalizada
+    - Cada oportunidade com avaliação de viabilidade (4 critérios)
+    - Cada oportunidade com prazo de proposta (data + dias restantes)
+    - Cada oportunidade com link oficial do edital
+    - NÃO incluir preço do relatório (este é o produto já pago)
+    - NÃO incluir CTA ou linguagem de venda (é o entregável)
+    - Tom: analítico, objetivo, profissional
+    - Pronto para exportar como PDF sem edição adicional
+
 # ═══════════════════════════════════════════════════════════════════
 # CONSTRAINTS E QUALITY GATES
 # ═══════════════════════════════════════════════════════════════════
@@ -793,10 +913,14 @@ output_rules:
 auto_save:
   enabled: true
   description: |
-    O relatório DEVE ser salvo automaticamente ao final da execução.
+    TODOS os arquivos DEVEM ser salvos automaticamente ao final da execução.
     O usuário NUNCA deve precisar pedir para salvar.
-    Usar Write tool para criar docs/ataque-turbo-NNN.md.
-    Confirmar salvamento com path completo no output final.
+    Arquivos a gerar:
+    1. docs/ataque-turbo-NNN.md (consolidado — emails + métricas)
+    2. docs/ataque-turbo-NNN-relatorios/{slug}.md (um por lead — relatório completo)
+    Criar diretório de relatórios com Bash mkdir -p.
+    Usar Write tool para cada arquivo.
+    Confirmar salvamento com lista completa de paths no output final.
 
 constraints:
   - "SALVAR AUTOMATICAMENTE ao final — nunca esperar pedido do usuário"
@@ -868,6 +992,8 @@ success_criteria:
   - "cross_source_dedup_applied: true (sem duplicatas entre fontes)"
   - "zero_openai_calls: true"
   - "emails_ready_to_send: true (copy/paste)"
+  - "lead_reports_generated: true (um .md por lead com TODAS as oportunidades)"
+  - "lead_reports_ready_for_pdf: true (pronto para envio sem edição)"
   - "all_links_verified: true"
   - "proper_pt_br_accents: true"
   - "personalized_relevance_analysis: true (não genérico)"
