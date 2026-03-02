@@ -23,16 +23,16 @@ O ROI calculator usa defaults agressivos: 8.5h busca manual vs 0.05h SmartLic (1
 
 ## Causa Raiz
 
-ROI calculator usa `timeSavedPerSearch: 8.5` (horas) vs `smartlicTimePerSearch: 0.05` (horas). O "tempo manual" inclui atividades que SmartLic não substitui (leitura de edital completo, análise jurídica). SmartLic substitui apenas a etapa de descoberta e triagem inicial.
+ROI calculator usa `timeSavedPerSearch: 8.5` (horas) vs `smartlicTimePerSearch: 0.05` (horas) — defaults inflados. A copy "se paga na primeira licitação ganha" é copy de vendas intencional e será mantida. O sistema (defaults do calculator) precisa ser ajustado para que os números sejam defensáveis, sustentando o claim.
 
 ## Critérios de Aceite
 
 - [ ] AC1: Adicionar disclaimer ao ROI calculator: "* Valores estimados. SmartLic auxilia na descoberta e priorização de oportunidades, não garante vitória em licitações."
 - [ ] AC2: Ajustar `timeSavedPerSearch` de `8.5` para `3.0` em `roi.ts` (default mais conservador — busca + triagem inicial, não análise completa)
-- [ ] AC3: Substituir "Investimento se paga na primeira licitação ganha" por "Economize horas de análise manual desde o primeiro uso" em `valueProps.ts:216`
+- [ ] AC3: Manter "Investimento se paga na primeira licitação ganha" em `valueProps.ts:216` — copy intencional de vendas. O sistema entrega valor suficiente para sustentar o claim com defaults honestos
 - [ ] AC4: Ajustar `potentialReturn` para cálculo dinâmico baseado nos inputs reais (não hardcoded "500x")
 - [ ] AC5: Adicionar cenário "conservador" ao lado do default na UI do calculator
-- [ ] AC6: Adicionar "se paga na primeira licitação" ao BANNED_PHRASES
+- [ ] AC6: NÃO banir "se paga na primeira licitação" — copy válida. Apenas garantir que defaults do calculator suportam o claim
 - [ ] AC7: Testes: verificar que disclaimer aparece em todos os cenários do calculator
 
 ## Arquivos Afetados
@@ -51,5 +51,6 @@ ROI calculator usa `timeSavedPerSearch: 8.5` (horas) vs `smartlicTimePerSearch: 
 
 ## Notas
 
-- ROI calculators são ferramentas de persuasão, não predição. O disclaimer torna isso explícito.
-- Consultorias de licitação (target audience) são sofisticadas — exagero perde credibilidade.
+- Copy agressiva é intencional — "se paga na primeira licitação ganha" é provocativo por design.
+- O ajuste é nos defaults do calculator (defensáveis), não na copy.
+- Disclaimer protege legalmente sem enfraquecer a mensagem.

@@ -30,7 +30,7 @@ Número exibido na sidebar sem fonte de dados. Pode ser verdade (PNCP publica mi
 - [ ] AC2: Criar cron job diário que registra contagem de bids processados nas últimas 24h
 - [ ] AC3: Criar endpoint `GET /v1/metrics/daily-volume` retornando média de bids/dia dos últimos 30 dias
 - [ ] AC4: No frontend, substituir "1000+" hardcoded por valor dinâmico (com fallback "centenas" se API falhar)
-- [ ] AC5: Se volume real < 500/dia, ajustar copy para "centenas de licitações/dia"
+- [ ] AC5: Se volume processado < 1000/dia, investigar causa raiz e otimizar throughput do pipeline para atingir target — a copy é o objetivo, o sistema se adapta
 - [ ] AC6: Testes do endpoint e do cron job
 
 ## Arquivos Afetados

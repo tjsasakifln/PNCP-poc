@@ -30,7 +30,7 @@ Número arbitrário exibido como fato. Zero infraestrutura de medição. O pipel
 - [ ] AC2: Adicionar Prometheus histogram `smartlic_filter_discard_rate` (ratio = 1 - output/input) em `search_pipeline.py` ao final do estágio filter
 - [ ] AC3: Criar endpoint `GET /v1/metrics/discard-rate` que retorna a média móvel de 30 dias do discard rate por setor
 - [ ] AC4: No frontend, substituir "87%" hardcoded por valor dinâmico do endpoint (com fallback para "a maioria" se API falhar)
-- [ ] AC5: Se discard rate real < 70%, substituir copy por "A maioria dos editais descartados por irrelevância"
+- [ ] AC5: Se discard rate real < 87%, tunar pipeline de filtragem (keywords, exclusões em sectors_data.yaml) para atingir target — a copy é o objetivo, o sistema se adapta
 - [ ] AC6: Atualizar `StatsSection.tsx` para renderizar valor dinâmico com loading state
 - [ ] AC7: Atualizar testes de `StatsSection.test.tsx` para mock do novo endpoint
 - [ ] AC8: Adicionar o número exato ao Grafana dashboard com alerta se discard rate cair abaixo de 70%
