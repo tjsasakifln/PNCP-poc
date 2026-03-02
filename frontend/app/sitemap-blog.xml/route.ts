@@ -51,7 +51,19 @@ export async function GET() {
     );
   }
 
-  // 3. Sector programmatic pages (priority 0.7)
+  // 3. Panorama pages — pillar pages (priority 0.8)
+  for (const sector of SECTORS) {
+    urls.push(
+      urlEntry(
+        `${BASE_URL}/blog/panorama/${sector.slug}`,
+        now,
+        'daily',
+        '0.8',
+      ),
+    );
+  }
+
+  // 4. Sector programmatic pages (priority 0.7)
   for (const sector of SECTORS) {
     urls.push(
       urlEntry(
@@ -63,7 +75,7 @@ export async function GET() {
     );
   }
 
-  // 4. Sector × UF programmatic pages (priority 0.7)
+  // 5. Sector × UF programmatic pages (priority 0.7)
   for (const sector of SECTORS) {
     for (const uf of ALL_UFS) {
       urls.push(

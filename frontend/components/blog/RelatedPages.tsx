@@ -93,7 +93,7 @@ function getEditorialLinks(sectorId: string): RelatedLink[] {
 function getPanoramaLink(sectorId: string, sector: SectorMeta): RelatedLink | null {
   return {
     title: `Panorama Nacional: ${sector.name}`,
-    href: `/blog/programmatic/${sector.slug}`,
+    href: `/blog/panorama/${sector.slug}`,
     type: 'panorama',
   };
 }
