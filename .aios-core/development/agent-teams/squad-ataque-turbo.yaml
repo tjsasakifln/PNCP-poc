@@ -1,11 +1,12 @@
 bundle:
   name: Ataque Turbo — Prospecção Cirúrgica com Licitações Reais
   icon: "\U0001F4A5"
-  version: "2.0"
+  version: "3.0"
   description: |
-    Squad de prospecção ativa que cruza dados reais do PNCP com perfis
-    de empresas vencedoras frequentes de licitações para gerar emails
-    ultra-personalizados com oportunidades irresistíveis.
+    Squad de prospecção ativa que cruza dados reais de MÚLTIPLAS fontes
+    públicas de licitações (PNCP, ComprasGov, Portal da Transparência,
+    Compras.dados.gov.br) com perfis de empresas vencedoras frequentes
+    para gerar emails ultra-personalizados com oportunidades irresistíveis.
 
     Modelo freemium teaser: mostra fração gratuita das licitações
     encontradas + CTA para relatório completo (PDF) via PIX.
@@ -13,6 +14,10 @@ bundle:
     PRINCÍPIO FUNDAMENTAL: Qualidade > Quantidade. Cada lead recebe
     investigação nível CSI — cruzamento profundo entre histórico de
     vitórias, perfil empresarial e editais abertos no momento.
+
+    CRITÉRIO DE IMPACTO: Ao receber o email, o lead deve pensar
+    "CARALHO, como não conheci esse cara antes?!" — se o email não
+    causa esse efeito visceral, a investigação e o texto são inadequados.
 
     ESTÁGIO DO PRODUTO: SmartLic.tech está em preparativos finais antes
     do lançamento oficial. O algoritmo de busca e classificação está
@@ -100,7 +105,7 @@ target_audience:
       3. CNAE compatível com setor que tenha editais abertos no momento
       4. Compra do PDF deve ser no-brainer (valor do relatório << valor das oportunidades)
     approach: "Relatório de oportunidades direto para o decisor"
-    discovery: "Via PNCP API contratos homologados → Receita Federal → cruzamento com editais abertos"
+    discovery: "Via PNCP + ComprasGov + Portal da Transparência contratos homologados → Receita Federal → cruzamento com editais abertos"
 
   tier_2_empresas_b2g:
     description: "Empresas B2G menores mas com padrão consistente de participação"
@@ -229,8 +234,151 @@ api_reference:
       - capital_social: indicador de porte (correlação moderada com faturamento)
       - porte: MEI (< R$81K/ano), ME (< R$360K), EPP (< R$4.8M), DEMAIS (> R$4.8M)
       - Volume de contratos PNCP: soma de valorGlobal nos últimos 12 meses
+      - Volume de contratos ComprasGov: soma adicional de fontes complementares
       - Nº de funcionários: não disponível publicamente
-      O @analyst deve usar porte + volume de contratos como proxy de faturamento.
+      O @analyst deve usar porte + volume TOTAL de contratos (todas as fontes) como proxy.
+
+  # ───────────────────────────────────────────────────────────────
+  # FONTES COMPLEMENTARES (ALÉM DO PNCP)
+  # ───────────────────────────────────────────────────────────────
+
+  comprasgov_v3:
+    description: "ComprasGov v3 — Dados Abertos (Portal de Compras Governamentais)"
+    base_url: "https://dadosabertos.compras.gov.br"
+    auth: "Nenhuma (dados abertos)"
+    coverage: "Federal (compras.gov.br — licitações federais)"
+    priority: 3  # Terceira fonte (após PNCP=1 e PCP=2)
+
+    endpoints:
+      search_supplier: |
+        # MELHOR ENTRADA: buscar fornecedor por CNPJ ou CNAE
+        # Retorna dados cadastrais + histórico do fornecedor no ComprasGov
+        curl -s "https://dadosabertos.compras.gov.br/modulo-fornecedor/1_consultarFornecedor\
+          ?cnpj-cpf={CNPJ_SEM_PONTUACAO}" | python -m json.tool
+
+        # Busca por CNAE (útil para descobrir fornecedores de um setor):
+        curl -s "https://dadosabertos.compras.gov.br/modulo-fornecedor/1_consultarFornecedor\
+          ?natureza-juridica-fornecedor={CODIGO_CNAE}" | python -m json.tool
+
+      award_results: |
+        # Resultados de itens de contratações Lei 14.133 (com vencedores)
+        curl -s "https://dadosabertos.compras.gov.br/modulo-contratacoes/\
+          3_consultarResultadoItensContratacoes_PNCP_14133\
+          ?pagina=1&tamanhoPagina=50" | python -m json.tool
+
+        # Filtros disponíveis: dataResultado, codigoUasg, etc.
+        # Retorna: cnpjFornecedor, nomeRazaoSocial, valorUnitarioHomologado
+
+      procurement_items: |
+        # Itens de contratações com detalhes
+        curl -s "https://dadosabertos.compras.gov.br/modulo-contratacoes/\
+          2_consultarItensContratacoes_PNCP_14133\
+          ?pagina=1&tamanhoPagina=50" | python -m json.tool
+
+    key_fields: |
+      Fornecedor: cnpj, razaoSocial, uf, cnae, habilitado
+      Resultado: cnpjFornecedor, valorUnitarioHomologado, quantidade, dataResultado
+
+  portal_transparencia:
+    description: "Portal da Transparência — API de Contratos e Licitações Federais"
+    base_url: "https://api.portaldatransparencia.gov.br/api-de-dados"
+    auth: |
+      Token obrigatório (cadastro gratuito em portaldatransparencia.gov.br)
+      Header: chave-api-dados: {TOKEN}
+      Rate limit: 90 req/min (06h-01h), 450 req/min (01h-06h)
+    coverage: "Federal — contratos, licitações, despesas"
+    priority: 4  # Quarta fonte
+
+    endpoints:
+      contracts_by_supplier: |
+        # Contratos por fornecedor (busca por CNPJ!)
+        curl -s -H "chave-api-dados: {TOKEN}" \
+          "https://api.portaldatransparencia.gov.br/api-de-dados/contratos\
+          ?codigoOrgao=&cnpjCpfFornecedor={CNPJ_SEM_PONTUACAO}\
+          &dataInicial={DD/MM/AAAA}&dataFinal={DD/MM/AAAA}\
+          &pagina=1" | python -m json.tool
+
+      open_tenders: |
+        # Licitações em andamento
+        curl -s -H "chave-api-dados: {TOKEN}" \
+          "https://api.portaldatransparencia.gov.br/api-de-dados/licitacoes\
+          ?dataInicial={DD/MM/AAAA}&dataFinal={DD/MM/AAAA}\
+          &pagina=1" | python -m json.tool
+
+    key_fields: |
+      Contratos: fornecedor (cnpjCpf, nome), objeto, valor, vigencia, orgao
+      Licitações: modalidade, objeto, valorEstimado, orgao, situacao
+
+    notes: |
+      ATENÇÃO: Requer cadastro prévio para obter token.
+      Se token não disponível, PNCP + ComprasGov cobrem a maioria dos dados.
+      Portal da Transparência é complementar — dados federais com interface diferente.
+
+  compras_dados_legacy:
+    description: "Compras.dados.gov.br — API Legacy de Fornecedores"
+    base_url: "https://compras.dados.gov.br"
+    auth: "Nenhuma (dados abertos)"
+    coverage: "Federal (cadastro ComprasNet)"
+    priority: 5  # Quinta fonte (legacy)
+
+    endpoints:
+      suppliers_by_uf: |
+        # Fornecedores cadastrados por UF
+        curl -s "https://compras.dados.gov.br/fornecedores/v1/fornecedores.json\
+          ?uf={UF_SIGLA}" | python -m json.tool
+
+        # Fornecedores habilitados com filtro
+        curl -s "https://compras.dados.gov.br/fornecedores/v1/fornecedores.json\
+          ?cnpj={CNPJ_SEM_PONTUACAO}" | python -m json.tool
+
+    key_fields: |
+      cnpj, nome, uf, habilitado, ativo
+      HATEOAS: links para navegação de resultados
+
+    notes: |
+      API REST + HATEOAS. Útil para validar se fornecedor está cadastrado
+      no ComprasNet. Dados limitados — usar como complemento, não fonte primária.
+
+  # ───────────────────────────────────────────────────────────────
+  # ESTRATÉGIA DE DEDUP CROSS-SOURCE
+  # ───────────────────────────────────────────────────────────────
+
+  dedup_strategy:
+    description: |
+      Licitações e contratos podem aparecer em múltiplas fontes (PNCP,
+      ComprasGov, Portal da Transparência). Dedup obrigatório para não
+      contar o mesmo edital duas vezes e não incluir duplicatas no email.
+
+    algorithm: |
+      DEDUP DE 2 CAMADAS (adaptado de backend/consolidation.py):
+
+      Tier 1 — Chave Estruturada (prioridade):
+        {cnpj_orgao}:{numero_edital_or_contrato}:{ano}
+        Cobertura: ~85% dos registros (quando número do edital disponível)
+
+      Tier 2 — Fallback por Conteúdo (quando Tier 1 falha):
+        {cnpj_orgao}:{MD5(objeto_resumido)[:12]}:{valor_or_data}
+        Cobertura: ~15% restantes (registros sem número padronizado)
+
+      Dedup de Vencedores/Contratos:
+        {cnpj_buyer}:{procurement_id}:{ano}:{cnpj_winner}
+        Garante que o mesmo contrato de um mesmo fornecedor não é duplicado.
+
+    source_priority: |
+      Quando mesmo edital aparece em múltiplas fontes, manter o de maior prioridade:
+        1. PNCP (mais completo, link oficial funcional)
+        2. ComprasGov v3 (dados abertos federais)
+        3. Portal da Transparência (complementar)
+        4. Compras.dados.gov.br legacy (menor granularidade)
+
+      Exceção: se a fonte de menor prioridade tem mais dados (ex: valor estimado
+      preenchido vs ausente), ENRIQUECER o registro de maior prioridade com esses dados.
+
+    implementation_notes: |
+      - Normalizar CNPJ: remover pontuação, strip leading zeros
+      - Normalizar objeto: lowercase, remover acentos, strip whitespace extra
+      - Log discrepâncias >5% de valor entre fontes (sinal de dados inconsistentes)
+      - Manter campo `fontes: ["PNCP", "ComprasGov"]` no registro final (mostra cobertura)
 
 # ═══════════════════════════════════════════════════════════════════
 # WORKFLOW DE EXECUÇÃO (5 FASES)
@@ -246,15 +394,20 @@ coordination:
 
   execution_sequence:
     - phase: 1_discovery
-      name: "Descoberta de Vencedores Frequentes"
+      name: "Descoberta Multi-Fonte de Vencedores Frequentes"
       agents: [data-engineer, dev]
       deliverable: |
         Para cada setor de interesse:
-        1. Query PNCP /contratos com filtros de data (últimos 12 meses)
-        2. Agregar por cnpjFornecedor: contar vitórias, somar valores, listar órgãos
-        3. Identificar empresas com ≥3 contratos homologados
-        4. Filtrar empresas com padrão consistente (não apenas 1 contrato grande)
-        Output: Lista de CNPJs candidatos com métricas de participação
+        1. Query PNCP /contratos com filtros de data (últimos 12 meses) — tamanhoPagina=500
+        2. Query ComprasGov v3 /modulo-fornecedor para fornecedores por CNAE do setor
+        3. Query ComprasGov v3 /resultado-itens para vencedores recentes (Lei 14.133)
+        4. (Opcional) Query Portal da Transparência contratos se token disponível
+        5. DEDUP cross-source: aplicar Tier 1 + Tier 2 (ver dedup_strategy)
+        6. Agregar por cnpjFornecedor: contar vitórias (TOTAL cross-source), somar valores, listar órgãos
+        7. Identificar empresas com ≥3 contratos homologados (somando todas as fontes)
+        8. Filtrar empresas com padrão consistente (não apenas 1 contrato grande)
+        9. Manter campo `fontes` por registro (e.g., ["PNCP", "ComprasGov"])
+        Output: Lista de CNPJs candidatos com métricas de participação e cobertura multi-fonte
 
     - phase: 2_enrichment
       name: "Investigação CSI do Lead"
@@ -273,21 +426,28 @@ coordination:
         R$200K+ e o relatório custa R$1.500, é no-brainer (133x).
 
     - phase: 3_matching
-      name: "Cruzamento Editais Abertos × Perfil do Lead"
+      name: "Cruzamento Multi-Fonte Editais Abertos × Perfil do Lead"
       agents: [data-engineer, analyst]
       dependencies: [2_enrichment]
       deliverable: |
         Para cada lead qualificado:
         1. Determinar setores/keywords relevantes (do CNAE + histórico de vitórias)
         2. Query PNCP publicações abertas (últimos 10 dias) com filtros de setor/UF
-        3. Filtrar editais que matcham o perfil do lead:
+        3. Query ComprasGov v3 resultado-itens para contratações recentes abertas
+        4. (Opcional) Query Portal da Transparência licitações abertas se token disponível
+        5. DEDUP cross-source: aplicar Tier 1 + Tier 2 antes de filtrar
+        6. Filtrar editais dedupados que matcham o perfil do lead:
            - Mesmo setor/CNAE
            - UF compatível (mesma UF ou UFs onde já venceu)
            - Faixa de valor compatível (dentro do range histórico do lead)
            - Modalidade compatível
-        4. Ranquear editais por relevância (maior match com perfil = mais relevante)
-        5. Construir link PNCP para cada edital: https://pncp.gov.br/app/editais/{CNPJ}/{ANO}/{SEQ}
-        6. Contar total N de oportunidades encontradas
+        7. Ranquear editais por relevância (maior match com perfil = mais relevante)
+        8. Construir link oficial para cada edital:
+           - PNCP: https://pncp.gov.br/app/editais/{CNPJ}/{ANO}/{SEQ}
+           - ComprasGov: link direto se disponível nos dados da API
+           - Portal Transparência: link do portal se disponível
+           Priorizar link PNCP quando edital existe em múltiplas fontes.
+        9. Contar total N de oportunidades ÚNICAS encontradas (pós-dedup)
 
         Se N = 0 para um lead: descartar (não há valor a entregar).
         Se N < 3: avaliar se vale incluir (pode ser email mais curto).
@@ -473,7 +633,7 @@ output_rules:
     - Setores analisados: {lista}
     - UFs: {lista}
     - Período de editais: {data_inicial} a {data_final}
-    - APIs consultadas: PNCP (contratos + publicações), OpenCNPJ
+    - APIs consultadas: PNCP, ComprasGov v3, Portal da Transparência (se disponível), OpenCNPJ
 
     ## Resumo
     - Leads processados: {N}
@@ -515,7 +675,11 @@ output_rules:
     ## Métricas da Execução
     - Tempo total: {duração}
     - Requests PNCP: {N}
+    - Requests ComprasGov v3: {N}
+    - Requests Portal da Transparência: {N}
     - Requests OpenCNPJ: {N}
+    - Editais pré-dedup: {N} | Pós-dedup: {N} | Duplicatas removidas: {N}
+    - Fontes utilizadas: {lista de fontes que retornaram dados}
     - Leads descartados: {N} (motivos: {lista})
 
 # ═══════════════════════════════════════════════════════════════════
@@ -533,40 +697,75 @@ auto_save:
 constraints:
   - "SALVAR AUTOMATICAMENTE ao final — nunca esperar pedido do usuário"
   - "Zero chamadas OpenAI API — emails redigidos manualmente pelo squad"
-  - "Dados exclusivamente reais do PNCP e Receita Federal — NUNCA fabricar"
+  - "Dados exclusivamente reais de APIs públicas — NUNCA fabricar"
   - "Acentuação correta em todo texto PT-BR"
-  - "Cada oportunidade DEVE incluir link oficial do edital no PNCP"
+  - "Cada oportunidade DEVE incluir link oficial do edital (preferencialmente PNCP)"
   - "Leads inéditos a cada execução (dedup contra runs anteriores)"
-  - "tamanhoPagina: 50 para /contratacoes (editais), 500 para /contratos (vitórias)"
-  - "Rate limiting: respeitar Retry-After do PNCP"
+  - "DEDUP cross-source OBRIGATÓRIO antes de contar ou listar oportunidades"
+  - "tamanhoPagina: 50 para PNCP /contratacoes, 500 para PNCP /contratos"
+  - "Rate limiting: respeitar Retry-After do PNCP, 90 req/min Portal da Transparência"
   - "OpenCNPJ: até 50 req/s (respeitar, não abusar)"
   - "Identidade: SEMPRE Tiago Sasaki, Eng. Software CONFENGE"
   - "NUNCA incentivar assinaturas ou mencionar planos"
   - "Qualidade > Quantidade — menos leads, mais profundidade"
+  - "TESTE DE IMPACTO obrigatório: email deve causar reação 'CARALHO' (ver quality_gates.impact_test)"
+  - "Consultar TODAS as fontes disponíveis (não apenas PNCP) antes de concluir busca"
 
 quality_gates:
+  impact_test: |
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  TESTE DE IMPACTO (GATE FINAL OBRIGATÓRIO)                 ║
+    ║                                                            ║
+    ║  Ao ler o email, o lead deve pensar:                       ║
+    ║  "CARALHO, como não conheci esse cara antes?!"             ║
+    ║                                                            ║
+    ║  Se o email NÃO causa esse efeito visceral:                ║
+    ║  → A investigação NÃO foi profunda o suficiente            ║
+    ║  → O texto NÃO é personalizado o suficiente                ║
+    ║  → VOLTAR para fase 2 (investigação) e aprofundar          ║
+    ║                                                            ║
+    ║  Indicadores de que o email PASSA no teste:                ║
+    ║  ✓ Menciona dados que o lead não sabia que eram públicos   ║
+    ║  ✓ Cruza informações de forma que surpreende               ║
+    ║  ✓ Demonstra conhecimento do perfil que parece "insider"   ║
+    ║  ✓ Cada oportunidade tem justificativa cirúrgica           ║
+    ║  ✓ O valor do relatório é tão óbvio que recusar dói        ║
+    ║                                                            ║
+    ║  Indicadores de FALHA no teste:                            ║
+    ║  ✗ Email poderia ser enviado para qualquer empresa         ║
+    ║  ✗ Análise de relevância é genérica/vaga                   ║
+    ║  ✗ Não há cruzamento com histórico específico do lead      ║
+    ║  ✗ Tom de "cold email template" impessoal                  ║
+    ║  ✗ Lead pensa "mais um email de vendas"                    ║
+    ╚══════════════════════════════════════════════════════════════╝
+
   pre_email:
-    - "Lead tem ≥3 contratos homologados nos últimos 12 meses?"
+    - "Lead tem ≥3 contratos homologados nos últimos 12 meses (cross-source)?"
     - "Porte justifica compra do relatório (no-brainer test)?"
     - "Existem editais abertos que matcham o perfil?"
-    - "Link PNCP de cada edital foi verificado/construído?"
+    - "Link oficial de cada edital foi verificado/construído?"
     - "Análise de relevância é personalizada (não genérica)?"
+    - "Dedup cross-source aplicado (sem duplicatas entre PNCP/ComprasGov/etc.)?"
+    - "TESTE DE IMPACTO: email causa reação 'CARALHO'? (ver impact_test)"
   pre_output:
     - "Acentuação revisada em todos os emails?"
-    - "Todos os links PNCP estão no formato correto?"
+    - "Todos os links de editais estão no formato correto e funcionais?"
     - "Nenhum dado fabricado — todos verificáveis via API?"
     - "Tom alinhado com copy da landing page?"
     - "Nenhuma menção a assinatura/plano/trial?"
     - "Dedup verificado contra ataque-turbo-*.md anteriores?"
+    - "Fontes multi-source documentadas no metadata do relatório?"
 
 success_criteria:
   - "minimum_qualified_leads: 3 (qualidade > quantidade)"
-  - "real_pncp_data: true (verificável)"
+  - "real_multi_source_data: true (verificável — PNCP + ComprasGov + outros)"
+  - "cross_source_dedup_applied: true (sem duplicatas entre fontes)"
   - "zero_openai_calls: true"
   - "emails_ready_to_send: true (copy/paste)"
   - "all_links_verified: true"
   - "proper_pt_br_accents: true"
   - "personalized_relevance_analysis: true (não genérico)"
+  - "impact_test_passed: true (reação 'CARALHO' em cada email)"
   - "no_brainer_test_passed: true (todos os leads)"
   - "dedup_against_previous_runs: true"
   - "sender_identity_correct: true (CONFENGE, não SmartLic)"
@@ -592,7 +791,9 @@ notes:
   - "Modelo inspirado no TurboCash playbook (Ação 1 + Ação 2)"
   - "Preço referência: R$1.500 a R$3.000 — ajustável pelo @analyst"
   - "Follow-up D+3 para quem não respondeu (script no turbocash.md)"
-  - "Meta: investigação CSI → emails irresistíveis → conversão"
+  - "Meta: investigação CSI multi-fonte → emails irresistíveis → reação 'CARALHO' → conversão"
   - "Após 3 runs com >=15% response rate, graduar para Scale mode"
-  - "Público expandido: consultorias (turbocash) + empresas B2G diretas (PNCP)"
-  - "Faturamento inferido via: porte + capital_social + volume de contratos PNCP"
+  - "Público expandido: consultorias (turbocash) + empresas B2G diretas"
+  - "Fontes: PNCP (primária), ComprasGov v3 (complementar), Portal da Transparência (federal), Compras.dados.gov.br (legacy)"
+  - "Faturamento inferido via: porte + capital_social + volume TOTAL de contratos (cross-source)"
+  - "Dedup cross-source baseado no padrão já implementado em backend/consolidation.py"
