@@ -811,7 +811,7 @@ function HomePageContent() {
                 ufAllComplete={search.ufAllComplete}
                 // STORY-257B: Partial results (AC5)
                 searchElapsedSeconds={searchElapsed}
-                onViewPartial={search.cancelSearch}
+                onViewPartial={search.viewPartialResults}
                 partialDismissed={partialDismissed}
                 onDismissPartial={() => setPartialDismissed(true)}
                 // STORY-257B: Cache refresh (AC9)

@@ -218,6 +218,8 @@ export function useSearchSSE({
   const onUfStatusRef = useRef(onUfStatus);
   const onErrorRef = useRef(onError);
   const selectedUfsRef = useRef(selectedUfs);
+  // CRIT-SSE-FIX AC3: Ref for searchId to avoid stale closure in retry callbacks
+  const searchIdRef = useRef(searchId);
 
   // Serialize selectedUfs for stable dependency comparison
   const selectedUfsKey = selectedUfs.join(',');
@@ -226,6 +228,8 @@ export function useSearchSSE({
   useEffect(() => { onUfStatusRef.current = onUfStatus; }, [onUfStatus]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
   useEffect(() => { selectedUfsRef.current = selectedUfs; }, [selectedUfsKey]);
+  // CRIT-SSE-FIX AC3: Keep searchId ref in sync
+  useEffect(() => { searchIdRef.current = searchId; }, [searchId]);
 
   const cleanup = useCallback(() => {
     if (eventSourceRef.current) {
@@ -482,7 +486,9 @@ export function useSearchSSE({
     const SSE_MAX_RETRIES = 3;
 
     const scheduleRetry = () => {
-      if (retryAttemptRef.current >= SSE_MAX_RETRIES || !searchId) {
+      // CRIT-SSE-FIX AC3: Use ref instead of closure searchId to avoid stale value
+      const currentSearchId = searchIdRef.current;
+      if (retryAttemptRef.current >= SSE_MAX_RETRIES || !currentSearchId) {
         console.warn(`SSE all ${SSE_MAX_RETRIES} retries exhausted — falling back to simulated progress`);
         setSseAvailable(false);
         setSseDisconnected(true);
@@ -498,8 +504,10 @@ export function useSearchSSE({
       console.info(`SSE reconnecting in ${delay}ms (attempt ${retryAttemptRef.current}/${SSE_MAX_RETRIES})`);
 
       setTimeout(() => {
-        if (!eventSourceRef.current && searchId) {
-          let retryUrl = `/api/buscar-progress?search_id=${encodeURIComponent(searchId)}`;
+        // CRIT-SSE-FIX AC3: Re-read ref at execution time (not capture time)
+        const retrySearchId = searchIdRef.current;
+        if (!eventSourceRef.current && retrySearchId) {
+          let retryUrl = `/api/buscar-progress?search_id=${encodeURIComponent(retrySearchId)}`;
           if (authToken) {
             retryUrl += `&token=${encodeURIComponent(authToken)}`;
           }
