@@ -27,13 +27,13 @@ ROI calculator usa `timeSavedPerSearch: 8.5` (horas) vs `smartlicTimePerSearch: 
 
 ## Critérios de Aceite
 
-- [ ] AC1: Adicionar disclaimer ao ROI calculator: "* Valores estimados. SmartLic auxilia na descoberta e priorização de oportunidades, não garante vitória em licitações."
-- [ ] AC2: Ajustar `timeSavedPerSearch` de `8.5` para `3.0` em `roi.ts` (default mais conservador — busca + triagem inicial, não análise completa)
-- [ ] AC3: Manter "Investimento se paga na primeira licitação ganha" em `valueProps.ts:216` — copy intencional de vendas. O sistema entrega valor suficiente para sustentar o claim com defaults honestos
-- [ ] AC4: Ajustar `potentialReturn` para cálculo dinâmico baseado nos inputs reais (não hardcoded "500x")
-- [ ] AC5: Adicionar cenário "conservador" ao lado do default na UI do calculator
-- [ ] AC6: NÃO banir "se paga na primeira licitação" — copy válida. Apenas garantir que defaults do calculator suportam o claim
-- [ ] AC7: Testes: verificar que disclaimer aparece em todos os cenários do calculator
+- [x] AC1: Adicionar disclaimer ao ROI calculator: "* Valores estimados. SmartLic auxilia na descoberta e priorização de oportunidades, não garante vitória em licitações."
+- [x] AC2: Ajustar `timeSavedPerSearch` de `8.5` para `3.0` em `roi.ts` (default mais conservador — busca + triagem inicial, não análise completa)
+- [x] AC3: Manter "Investimento se paga na primeira licitação ganha" em `valueProps.ts:216` — copy intencional de vendas. O sistema entrega valor suficiente para sustentar o claim com defaults honestos
+- [x] AC4: Ajustar `potentialReturn` para cálculo dinâmico baseado nos inputs reais (não hardcoded "500x")
+- [x] AC5: Adicionar cenário "conservador" ao lado do default na UI do calculator
+- [x] AC6: NÃO banir "se paga na primeira licitação" — copy válida. Apenas garantir que defaults do calculator suportam o claim
+- [x] AC7: Testes: verificar que disclaimer aparece em todos os cenários do calculator
 
 ## Arquivos Afetados
 

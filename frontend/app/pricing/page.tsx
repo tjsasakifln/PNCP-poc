@@ -13,9 +13,11 @@ import { useState, useEffect } from 'react';
 import { pricing } from '@/lib/copy/valueProps';
 import {
   calculateROI,
+  calculateConservativeROI,
   DEFAULT_VALUES,
   formatCurrency,
   getROIMessage,
+  ROI_DISCLAIMER,
   type ROIInputs,
 } from '@/lib/copy/roi';
 import Footer from '../components/Footer';
@@ -26,8 +28,18 @@ export default function PricingPage() {
   const [hoursPerWeek, setHoursPerWeek] = useState(DEFAULT_VALUES.hoursPerWeek);
   const [costPerHour, setCostPerHour] = useState(DEFAULT_VALUES.costPerHour);
 
+  const [showConservative, setShowConservative] = useState(false);
+
   const [roiResult, setRoiResult] = useState(
     calculateROI({
+      hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
+      costPerHour: DEFAULT_VALUES.costPerHour,
+      planPrice: SMARTLIC_PRO_PRICE,
+    })
+  );
+
+  const [conservativeResult, setConservativeResult] = useState(
+    calculateConservativeROI({
       hoursPerWeek: DEFAULT_VALUES.hoursPerWeek,
       costPerHour: DEFAULT_VALUES.costPerHour,
       planPrice: SMARTLIC_PRO_PRICE,
@@ -41,6 +53,7 @@ export default function PricingPage() {
       planPrice: SMARTLIC_PRO_PRICE,
     };
     setRoiResult(calculateROI(inputs));
+    setConservativeResult(calculateConservativeROI(inputs));
   }, [hoursPerWeek, costPerHour]);
 
   const roiMessage = getROIMessage({
@@ -129,58 +142,96 @@ export default function PricingPage() {
             {/* Divider */}
             <div className="border-t border-border my-8"></div>
 
+            {/* STORY-355 AC5: Scenario Toggle */}
+            <div className="flex justify-center gap-2 mb-6" data-testid="scenario-toggle">
+              <button
+                onClick={() => setShowConservative(false)}
+                className={`px-4 py-2 rounded-button text-sm font-medium transition-colors ${
+                  !showConservative
+                    ? 'bg-[var(--brand-blue)] text-white'
+                    : 'bg-[var(--surface-2)] text-[var(--ink-secondary)] hover:bg-[var(--surface-2)]/80'
+                }`}
+              >
+                Cenário Padrão
+              </button>
+              <button
+                onClick={() => setShowConservative(true)}
+                data-testid="conservative-toggle"
+                className={`px-4 py-2 rounded-button text-sm font-medium transition-colors ${
+                  showConservative
+                    ? 'bg-[var(--brand-blue)] text-white'
+                    : 'bg-[var(--surface-2)] text-[var(--ink-secondary)] hover:bg-[var(--surface-2)]/80'
+                }`}
+              >
+                Cenário Conservador
+              </button>
+            </div>
+
             {/* ROI Results */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-card p-6">
-                <p className="text-sm text-[var(--ink-secondary)] mb-1">
-                  Custo Mensal do Processo Manual
-                </p>
-                <p className="text-3xl font-bold text-error">
-                  {roiResult.formatted.manualSearchCostPerMonth}
-                </p>
-                <p className="text-xs text-[var(--ink-muted)] mt-2">
-                  {hoursPerWeek}h/semana x {formatCurrency(costPerHour)}/h x 4 semanas
-                </p>
-              </div>
+            {(() => {
+              const activeResult = showConservative ? conservativeResult : roiResult;
+              const activeHours = showConservative ? hoursPerWeek * DEFAULT_VALUES.conservativeMultiplier : hoursPerWeek;
+              return (
+                <>
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-card p-6">
+                      <p className="text-sm text-[var(--ink-secondary)] mb-1">
+                        Custo Mensal do Processo Manual
+                      </p>
+                      <p className="text-3xl font-bold text-error" data-testid="manual-cost">
+                        {activeResult.formatted.manualSearchCostPerMonth}
+                      </p>
+                      <p className="text-xs text-[var(--ink-muted)] mt-2">
+                        {activeHours}h/semana x {formatCurrency(costPerHour)}/h x 4 semanas
+                      </p>
+                    </div>
 
-              <div className="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-card p-6">
-                <p className="text-sm text-[var(--ink-secondary)] mb-1">
-                  SmartLic Pro
-                </p>
-                <p className="text-3xl font-bold text-success">
-                  {roiResult.formatted.smartlicPlanCost}
-                </p>
-                <p className="text-xs text-[var(--ink-muted)] mt-2">
-                  Fixo mensal, sem taxas ocultas
-                </p>
-              </div>
-            </div>
+                    <div className="bg-[var(--success)]/10 border border-[var(--success)]/30 rounded-card p-6">
+                      <p className="text-sm text-[var(--ink-secondary)] mb-1">
+                        SmartLic Pro
+                      </p>
+                      <p className="text-3xl font-bold text-success">
+                        {activeResult.formatted.smartlicPlanCost}
+                      </p>
+                      <p className="text-xs text-[var(--ink-muted)] mt-2">
+                        Fixo mensal, sem taxas ocultas
+                      </p>
+                    </div>
+                  </div>
 
-            <div className="bg-[var(--brand-blue)]/10 border border-[var(--brand-blue)]/30 rounded-card p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-[var(--ink-secondary)] mb-1">
-                    Economia Mensal
-                  </p>
-                  <p className="text-4xl font-bold text-brand-blue">
-                    {roiResult.formatted.monthlySavings}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-[var(--ink-secondary)] mb-1">ROI</p>
-                  <p className="text-4xl font-bold text-brand-blue">
-                    {roiResult.formatted.roi}
-                  </p>
-                </div>
-              </div>
-              <div className="border-t border-brand-blue/20 pt-4">
-                <p className="font-semibold text-[var(--ink)] mb-2">{roiMessage.headline}</p>
-                <p className="text-sm text-[var(--ink-secondary)]">{roiMessage.explanation}</p>
-              </div>
-            </div>
+                  <div className="bg-[var(--brand-blue)]/10 border border-[var(--brand-blue)]/30 rounded-card p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-sm text-[var(--ink-secondary)] mb-1">
+                          Economia Mensal
+                        </p>
+                        <p className="text-4xl font-bold text-brand-blue" data-testid="monthly-savings">
+                          {activeResult.formatted.monthlySavings}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-[var(--ink-secondary)] mb-1">ROI</p>
+                        <p className="text-4xl font-bold text-brand-blue" data-testid="roi-value">
+                          {activeResult.formatted.roi}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="border-t border-brand-blue/20 pt-4">
+                      <p className="font-semibold text-[var(--ink)] mb-2">{roiMessage.headline}</p>
+                      <p className="text-sm text-[var(--ink-secondary)]">{roiMessage.explanation}</p>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             <p className="text-center text-lg font-semibold text-success mt-6">
               {pricing.roi.tagline}
+            </p>
+
+            {/* STORY-355 AC1: Disclaimer */}
+            <p className="text-center text-xs text-[var(--ink-muted)] mt-3" data-testid="roi-disclaimer">
+              {ROI_DISCLAIMER}
             </p>
           </div>
         </div>

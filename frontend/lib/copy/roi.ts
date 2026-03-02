@@ -19,11 +19,14 @@ export const DEFAULT_VALUES = {
   // User's hourly cost (R$ per hour)
   costPerHour: 100,
 
-  // Time saved per search (hours)
-  timeSavedPerSearch: 8.5, // Manual (8.5h) vs SmartLic (0.05h = 3 min)
+  // Time saved per search (hours) — STORY-355: conservative default (busca + triagem inicial)
+  timeSavedPerSearch: 3.0, // Manual search + initial screening per search
 
   // SmartLic time per search (hours)
   smartlicTimePerSearch: 0.05, // 3 minutes = 0.05 hours
+
+  // Conservative scenario multiplier (50% of default)
+  conservativeMultiplier: 0.5,
 };
 
 // ============================================================================
@@ -161,6 +164,37 @@ export function formatDays(value: number): string {
 
 export function formatHours(value: number): string {
   return `${Math.round(value)}h`;
+}
+
+// ============================================================================
+// STORY-355: DISCLAIMER
+// ============================================================================
+
+export const ROI_DISCLAIMER =
+  "* Valores estimados. SmartLic auxilia na descoberta e priorização de oportunidades, não garante vitória em licitações.";
+
+// ============================================================================
+// STORY-355: CONSERVATIVE SCENARIO
+// ============================================================================
+
+export function calculateConservativeROI(inputs: ROIInputs): ROIOutputs {
+  return calculateROI({
+    ...inputs,
+    hoursPerWeek: inputs.hoursPerWeek * DEFAULT_VALUES.conservativeMultiplier,
+  });
+}
+
+// ============================================================================
+// STORY-355: DYNAMIC POTENTIAL RETURN
+// ============================================================================
+
+export function calculatePotentialReturn(
+  contractValue: number,
+  planMonthlyPrice: number
+): string {
+  const annualInvestment = planMonthlyPrice * 12;
+  const multiple = Math.round(contractValue / annualInvestment);
+  return `${multiple}x`;
 }
 
 // ============================================================================
@@ -406,9 +440,12 @@ export function compareWithCompetitors(searchesPerMonth: number) {
 
 export default {
   DEFAULT_VALUES,
+  ROI_DISCLAIMER,
   PRESET_SCENARIOS,
   COMPETITOR_COSTS,
   calculateROI,
+  calculateConservativeROI,
+  calculatePotentialReturn,
   getDefaultROI,
   hasPositiveROI,
   getRecommendedPlanId,

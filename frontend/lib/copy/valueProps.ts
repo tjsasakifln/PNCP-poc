@@ -210,7 +210,12 @@ export const pricing = {
       exampleCalculation: {
         missedOpportunityCost: 200_000,
         smartLicInvestment: 397,
-        potentialReturn: "500x",
+        // STORY-355 AC4: potentialReturn is now calculated dynamically
+        // Use calculatePotentialReturn(contractValue, planPrice) from roi.ts
+        get potentialReturn(): string {
+          const annualInvestment = this.smartLicInvestment * 12;
+          return `${Math.round(this.missedOpportunityCost / annualInvestment)}x`;
+        },
       },
     },
     tagline: "Uma única licitação ganha paga o investimento do ano inteiro.",

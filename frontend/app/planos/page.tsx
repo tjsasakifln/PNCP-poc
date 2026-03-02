@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { getUserFriendlyError } from "../../lib/error-messages";
 import { PlanToggle, BillingPeriod } from "../../components/subscriptions/PlanToggle";
-import { formatCurrency } from '@/lib/copy/roi';
+import { formatCurrency, ROI_DISCLAIMER } from '@/lib/copy/roi';
 import { usePlan } from "../../hooks/usePlan";
 import { toast } from "sonner";
 import TestimonialSection, { TESTIMONIALS } from "../../components/TestimonialSection";
@@ -498,6 +498,9 @@ export default function PlanosPage() {
             </div>
             <p className="mt-3 text-sm font-semibold text-[var(--brand-blue)]">
               Exemplo ilustrativo com base em oportunidades típicas do setor
+            </p>
+            <p className="mt-2 text-xs text-[var(--ink-muted)]" data-testid="roi-disclaimer">
+              {ROI_DISCLAIMER}
             </p>
           </div>
         </div>
