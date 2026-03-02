@@ -1,0 +1,207 @@
+# SQUAD CHARLIE: Integration & Infrastructure (STORY-179 SUPPORT)
+# Mission: Integrate Alpha + Bravo pipelines, stats, docs, performance
+# Timeline: Week 2 (after Alpha/Bravo foundations complete)
+
+name: "squad-story179-charlie-integration"
+description: "High-velocity integration, observability, and documentation"
+mission: "Integrate anti-FP + anti-FN pipelines, add stats/metrics, docs, performance benchmarks"
+
+story:
+  id: "STORY-179"
+  title: "LLM Arbiter para Eliminação de Falsos Positivos e Falsos Negativos"
+  scope: "Integration + Infrastructure (AC4-AC10)"
+  priority: "P0 - Critical"
+
+squad:
+  lead: "@dev"
+  members:
+    - agent: "@dev"
+      role: "Integration Lead"
+      responsibilities:
+        - "AC4.1-4.3: Integrate 4-layer pipeline in aplicar_todos_filtros()"
+        - "AC4.2: Pass termos_busca to filter functions"
+        - "Orchestrate FP flow → FN flow"
+        - "Ensure proper error handling end-to-end"
+
+    - agent: "@data-engineer"
+      role: "Observability & Metrics"
+      responsibilities:
+        - "AC5.1: Add 15+ new stats fields to response"
+        - "AC5.2: Structured logging for all 4 layers"
+        - "AC5.3: Cost tracking metrics"
+        - "CloudWatch/DataDog integration (if available)"
+
+    - agent: "@pm"
+      role: "Documentation Lead"
+      responsibilities:
+        - "AC8.1: Update PRD.md with 4-layer architecture"
+        - "AC8.2: Create docs/architecture/llm-arbiter.md"
+        - "AC8.3: Update OpenAPI/Swagger specs"
+        - "AC8.4: Add inline comments in code"
+
+    - agent: "@qa"
+      role: "Performance & Testing"
+      responsibilities:
+        - "AC9.1: Benchmark P95 latency < 150ms increase"
+        - "AC9.2: Validate cache hit rate > 80%"
+        - "AC9.3: Load test with 10K contracts"
+        - "AC7.3: Cost testing (< R$ 0.01 per 1K contracts)"
+
+    - agent: "@devops"
+      role: "Infrastructure & Feature Flags"
+      responsibilities:
+        - "AC6.1-6.2: Add env vars to .env.example + config.py"
+        - "AC6.3: Feature flag LLM_ARBITER_ENABLED"
+        - "AC10.2: Seed initial max_contract_value for sectors"
+        - "Deploy to staging environment"
+
+workflow:
+  phase_1:
+    name: "Core Integration"
+    duration: "2 days"
+    depends_on: ["squad-alpha-complete", "squad-bravo-complete"]
+    tasks:
+      - id: "AC4"
+        owner: "@dev"
+        description: "Full pipeline integration"
+        deliverables:
+          - "aplicar_todos_filtros() orchestrates FP + FN flows"
+          - "Proper execution order: UF → keyword → value → density → LLM → FN recovery"
+          - "termos_busca passed through entire chain"
+          - "Error handling: fallback on any layer failure"
+        acceptance:
+          - "End-to-end test: R$ 47.6M melhorias → REJECTED (FP flow)"
+          - "End-to-end test: Fardamento → APPROVED (FN synonym flow)"
+          - "End-to-end test: Manutenção predial → RECOVERED (FN LLM flow)"
+
+      - id: "AC5"
+        owner: "@data-engineer"
+        description: "Stats & Observability"
+        deliverables:
+          - "15+ new stats fields in response JSON"
+          - "Structured logs with timing per layer"
+          - "Cost metrics: llm_calls × R$ 0.00003"
+          - "Cache hit/miss tracking"
+        acceptance:
+          - "Stats JSON validates against schema"
+          - "Logs show latency breakdown per layer"
+          - "Cost estimate accurate (± 5%)"
+
+  phase_2:
+    name: "Configuration & Flags"
+    duration: "1 day"
+    tasks:
+      - id: "AC6"
+        owner: "@devops"
+        description: "Environment & Feature Flags"
+        deliverables:
+          - ".env.example with 8 new vars documented"
+          - "config.py loads all LLM arbiter settings"
+          - "Feature flag: LLM_ARBITER_ENABLED=false → bypass works"
+          - "Thresholds adjustable without code change"
+        acceptance:
+          - "LLM_ARBITER_ENABLED=false → accepts ambiguous (legacy behavior)"
+          - "TERM_DENSITY_HIGH_THRESHOLD=0.10 → threshold adjusts"
+
+      - id: "AC10"
+        owner: "@devops"
+        description: "Data Migration (Seeding)"
+        deliverables:
+          - "Seed max_contract_value for 9 sectors"
+          - "Document threshold adjustment process"
+          - "No DB migration needed (code-only)"
+        acceptance:
+          - "Vestuário: R$ 5M, Alimentos: R$ 10M, etc."
+
+  phase_3:
+    name: "Performance & Testing"
+    duration: "2 days"
+    tasks:
+      - id: "AC9"
+        owner: "@qa"
+        description: "Performance Benchmarks"
+        deliverables:
+          - "Load test: 10K contracts in < 10s total"
+          - "P95 latency: < 150ms increase vs baseline"
+          - "Cache hit rate: > 80% on repeated searches"
+          - "LLM calls: < 15% of total contracts"
+        acceptance:
+          - "Benchmark report shows all targets met"
+          - "No performance regression in baseline tests"
+
+      - id: "AC7-final"
+        owner: "@qa"
+        description: "Comprehensive test suite"
+        deliverables:
+          - "All tests from AC7.1-7.4 passing"
+          - "Cost test: 1000 contracts → < R$ 0.01"
+          - "Coverage ≥ 85% for llm_arbiter.py, synonyms.py, filter.py changes"
+          - "Integration tests cover all 4 layers"
+        acceptance:
+          - "82+ baseline tests pass (no regression)"
+          - "New tests: +30 tests for FP/FN flows"
+
+  phase_4:
+    name: "Documentation & Handoff"
+    duration: "1 day"
+    tasks:
+      - id: "AC8"
+        owner: "@pm"
+        description: "Comprehensive documentation"
+        deliverables:
+          - "PRD.md updated with 4-layer architecture diagram"
+          - "docs/architecture/llm-arbiter.md (new file)"
+          - "OpenAPI specs with 15+ new stats fields"
+          - "Inline comments in filter.py, llm_arbiter.py"
+        acceptance:
+          - "Docs reviewable by external developer"
+          - "All new endpoints documented"
+
+      - id: "deploy-staging"
+        owner: "@devops"
+        description: "Deploy to staging"
+        deliverables:
+          - "feature/story179-* merged to develop"
+          - "Deployed to staging.smartlic.tech"
+          - "Smoke tests pass in staging"
+        acceptance:
+          - "Manual test: R$ 47.6M case works in staging"
+          - "Manual test: Fardamento recovery works"
+
+integration_points:
+  dependencies:
+    - "Squad Alpha 100% complete (AC1-AC3)"
+    - "Squad Bravo 100% complete (AC11-AC14)"
+    - "STORY-178 deployed to production"
+
+  coordination:
+    - "Daily sync with ALL squads (@dev leads)"
+    - "Final integration testing with @architect review"
+    - "Merge order: alpha → bravo → charlie (sequential)"
+
+metrics:
+  success_criteria:
+    - "AC4-AC10 100% complete"
+    - "All 14 ACs from STORY-179 ✅"
+    - "Coverage ≥ 85%"
+    - "P95 latency < 150ms increase"
+    - "Cost < R$ 0.50 per 1K contracts"
+    - "DoD 100% satisfied"
+
+  kpis:
+    - "False positive rate: < 1%"
+    - "False negative rate: < 2%"
+    - "LLM arbiter calls: < 20% total"
+    - "Cache hit rate: > 80%"
+
+communication:
+  daily_standup: "09:00 BRT"
+  blockers_channel: "#story179-charlie-integration"
+  final_demo: "Friday 14:00 BRT (end of Week 2)"
+  stakeholders: ["@po", "@architect", "@sm"]
+
+notes:
+  - "Integration is CRITICAL path - cannot rush"
+  - "All PRs require @architect approval before merge"
+  - "Staging deployment is BLOCKING for prod deploy"
+  - "DoD checklist must be 100% before closing story"

@@ -1,0 +1,69 @@
+bundle:
+  name: SEO Optimization Squad
+  icon: 🔍
+  description: Specialized team for complete SEO optimization including sitemap, structured data, analytics, and meta tags
+agents:
+  - architect      # Design SEO architecture and implementation strategy
+  - dev            # Implement Next.js sitemap, schema.org, GA4 integration
+  - ux-design-expert  # Optimize meta tags, OG images, user-facing SEO elements
+  - qa             # Test SEO implementation, validate structured data, lighthouse audits
+  - devops         # Deploy optimizations, configure robots.txt, verify production
+workflows:
+  - brownfield-ui.yaml
+tasks:
+  - name: "Sitemap Generation"
+    owner: dev
+    description: "Install next-sitemap, configure sitemap.xml generation for all routes"
+    acceptance_criteria:
+      - "sitemap.xml accessible at /sitemap.xml"
+      - "All important routes included (/, /buscar, /pricing, /login)"
+      - "Automatic regeneration on build"
+      - "Submitted to Google Search Console"
+
+  - name: "Schema.org Structured Data"
+    owner: dev
+    description: "Implement JSON-LD structured data for Organization, WebSite, SoftwareApplication"
+    acceptance_criteria:
+      - "Organization schema on homepage"
+      - "WebSite schema with search action"
+      - "SoftwareApplication schema for SmartLic"
+      - "Validated with Google Rich Results Test"
+
+  - name: "robots.txt Configuration"
+    owner: devops
+    description: "Create optimized robots.txt allowing all crawlers with sitemap reference"
+    acceptance_criteria:
+      - "robots.txt accessible at /robots.txt"
+      - "User-agent: * Allow: /"
+      - "Sitemap URL included"
+      - "No disallowed critical pages"
+
+  - name: "Google Analytics 4 Setup"
+    owner: dev
+    description: "Integrate GA4 with Next.js app, track page views and key events"
+    acceptance_criteria:
+      - "GA4 property created and configured"
+      - "Tracking ID added to environment variables"
+      - "Page view tracking working"
+      - "Event tracking for key actions (search, download, sign-up)"
+      - "Privacy-compliant (LGPD/GDPR)"
+
+  - name: "Meta Tags Optimization"
+    owner: ux-design-expert
+    description: "Optimize all meta tags for SEO and social sharing"
+    acceptance_criteria:
+      - "Unique title and description per page"
+      - "Open Graph tags complete (title, description, image, url)"
+      - "Twitter Card tags configured"
+      - "Canonical URLs set correctly"
+      - "OG images optimized (1200x630px)"
+
+  - name: "SEO Quality Assurance"
+    owner: qa
+    description: "Validate all SEO implementations with automated tools"
+    acceptance_criteria:
+      - "Google Lighthouse SEO score >= 90"
+      - "Schema.org validation passes"
+      - "Sitemap validates in Search Console"
+      - "Meta tags present on all pages"
+      - "No broken links or 404s"

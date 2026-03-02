@@ -1,0 +1,159 @@
+# SQUAD ALPHA: Anti-False Positive Pipeline (STORY-179 FLUXO 1)
+# Mission: Eliminate false positives using 3-layer filter (value → density → LLM)
+# Timeline: Week 1 (parallel with Squad Bravo)
+
+name: "squad-story179-alpha-fp"
+description: "High-velocity implementation of Anti-False Positive pipeline"
+mission: "Implement value threshold, term density ratio, and LLM arbiter for false positive elimination"
+
+story:
+  id: "STORY-179"
+  title: "LLM Arbiter para Eliminação de Falsos Positivos e Falsos Negativos"
+  scope: "FLUXO 1 - Anti-False Positive (AC1-AC3)"
+  priority: "P0 - Critical"
+
+squad:
+  lead: "@architect"
+  members:
+    - agent: "@architect"
+      role: "Architecture Lead"
+      responsibilities:
+        - "AC1.2: Design sector max_contract_value thresholds"
+        - "AC2.2: Define term density decision boundaries"
+        - "AC3.2-3.3: Design LLM prompts (sector vs custom terms)"
+        - "Code review for filter.py integration"
+
+    - agent: "@dev"
+      role: "Backend Implementation"
+      responsibilities:
+        - "AC1.1: Add max_contract_value to SectorConfig"
+        - "AC1.3: Integrate value threshold in aplicar_todos_filtros()"
+        - "AC2.1: Implement term density calculation"
+        - "AC2.3: Add stats tracking for density decisions"
+
+    - agent: "@data-engineer"
+      role: "LLM Integration Specialist"
+      responsibilities:
+        - "AC3.1: Create llm_arbiter.py module"
+        - "AC3.4: Configure GPT-4o-mini (max_tokens=1, temp=0)"
+        - "AC3.5: Implement in-memory cache with MD5 keys"
+        - "AC3.6: Fallback logic on LLM failure"
+        - "AC3.7: Object truncation to 500 chars"
+
+    - agent: "@qa"
+      role: "Quality Assurance & Testing"
+      responsibilities:
+        - "AC1.4: Test cases for value threshold"
+        - "AC2.4: Test cases for term density"
+        - "AC3.8: Test LLM responses (mock + integration)"
+        - "AC7.1-7.2: Unit + integration tests"
+        - "Manual testing: R$ 47.6M melhorias urbanas case"
+
+workflow:
+  phase_1:
+    name: "Foundation (No LLM)"
+    duration: "2 days"
+    tasks:
+      - id: "AC1"
+        owner: "@architect + @dev"
+        description: "Implement Camada 1A (Value Threshold)"
+        deliverables:
+          - "sectors.py with max_contract_value field"
+          - "filter.py integration before keyword matching"
+          - "9 sector thresholds configured"
+        acceptance:
+          - "R$ 47.6M vestuario → REJECTED"
+          - "R$ 3M vestuario → APPROVED"
+
+      - id: "AC2"
+        owner: "@dev"
+        description: "Implement Camada 2A (Term Density)"
+        deliverables:
+          - "Term density calculation in filter.py"
+          - "Thresholds: >5% accept, <1% reject, 1-5% → LLM"
+          - "Stats: aprovadas_alta_densidade, rejeitadas_baixa_densidade"
+        acceptance:
+          - "15% density → ACCEPT without LLM"
+          - "1% density → SEND to LLM"
+
+  phase_2:
+    name: "LLM Arbiter Integration"
+    duration: "2 days"
+    tasks:
+      - id: "AC3"
+        owner: "@data-engineer"
+        description: "Implement Camada 3A (LLM False Positive Check)"
+        deliverables:
+          - "llm_arbiter.py with classify_contract_primary_match()"
+          - "Two modes: sector-based and custom-terms"
+          - "Cache with MD5 keys"
+          - "Fallback: reject if LLM fails"
+        acceptance:
+          - "Mock test: R$ 47.6M melhorias → LLM='NAO' → REJECT"
+          - "Mock test: R$ 3M uniformes → LLM='SIM' → ACCEPT"
+
+      - id: "AC7-phase1"
+        owner: "@qa"
+        description: "Comprehensive testing (Camadas 1A-3A)"
+        deliverables:
+          - "test_llm_arbiter.py: Mock OpenAI, cache, fallback"
+          - "test_filter_llm.py: Integration tests"
+          - "Coverage ≥ 85% for new modules"
+        acceptance:
+          - "82+ tests passing (baseline maintained)"
+          - "No regression in existing tests"
+
+  phase_3:
+    name: "Validation & Handoff"
+    duration: "1 day"
+    tasks:
+      - id: "manual-testing"
+        owner: "@qa"
+        description: "Manual validation with real PNCP data"
+        test_cases:
+          - "R$ 47.6M melhorias urbanas + vestuário → REJECTED ✓"
+          - "R$ 10M software + informática → APPROVED ✓"
+          - "Edge: R$ 4.9M vestuário (just under threshold) → APPROVED ✓"
+
+      - id: "handoff-to-charlie"
+        owner: "@architect"
+        description: "Handoff to Squad Charlie for integration"
+        deliverables:
+          - "Camada 1A-3A fully functional"
+          - "Tests passing"
+          - "API documented"
+          - "Ready for AC4 integration"
+
+integration_points:
+  dependencies:
+    - "STORY-178 (Filtragem Inteligente) must be deployed"
+    - "OpenAI API key in .env"
+
+  coordination:
+    - "Daily sync with Squad Bravo (@architect leads)"
+    - "Shared modules: filter.py, sectors.py"
+    - "Merge strategy: feature/story179-alpha-fp → develop"
+
+metrics:
+  success_criteria:
+    - "AC1-AC3 100% complete"
+    - "Coverage ≥ 85%"
+    - "R$ 47.6M case REJECTED ✓"
+    - "No regression (82 baseline tests pass)"
+    - "Latency increase < 50ms P95"
+
+  kpis:
+    - "False positive rate: < 1% (vs ~5% baseline)"
+    - "LLM calls: < 15% of total contracts"
+    - "Cost per 1000 contracts: < R$ 0.50"
+
+communication:
+  daily_standup: "09:00 BRT"
+  blockers_channel: "#story179-alpha-fp"
+  demo: "Friday 14:00 BRT (end of Week 1)"
+
+notes:
+  - "YOLO mode: Break AC into parallel micro-tasks where possible"
+  - "Architect reviews all PRs before merge"
+  - "QA runs tests on EVERY commit (CI/CD enforced)"
+  - "If LLM fails, fallback is REJECT (conservative)"

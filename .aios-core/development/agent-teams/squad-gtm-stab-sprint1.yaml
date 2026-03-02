@@ -1,0 +1,586 @@
+# GTM-STAB Sprint 1 — "Estabilização Final"
+# Full-force squad para zerar 524s, estabilizar infra e habilitar async search
+# Duração: 5 dias | Effort: 22-33h | Gate: Zero erros visíveis ao usuário
+
+name: squad-gtm-stab-sprint1
+description: |
+  Squad de estabilização final do SmartLic para go-to-market.
+  Objetivo: transformar o sistema de "quebra às vezes" para "nunca quebra".
+
+  3 Stories pendentes (001, 006, 009) + validação prod de 4 shipped (002, 003, 007, 008).
+  Critério de saída: 20 buscas consecutivas com 0 erros + ARQ >24h sem crash.
+
+icon: 🛡️
+
+# ════════════════════════════════════════════════════════════════
+# AGENTES — 5 frentes paralelas
+# ════════════════════════════════════════════════════════════════
+
+agents:
+
+  # ── FRENTE 1: Infraestrutura Crítica (D1) ──────────────────
+  - role: devops
+    agent: "@devops (Gage)"
+    primary_responsibility: |
+      - Aplicar migration em prod (STAB-001): `supabase db push`
+      - Migrar Redis → Upstash (STAB-002): URL + ssl=True + validar
+      - Configurar worker restart wrapper (ARQ crash recovery)
+      - UptimeRobot + Sentry alert rules (STAB-008)
+      - Railway variables audit (GUNICORN_TIMEOUT, REDIS_URL, etc.)
+    parallel_tasks:
+      - task_id: stab001_migration
+        story: GTM-STAB-001
+        description: |
+          Apply missing migration `params_hash_global` + FK fix (profiles instead of auth.users).
+          Migration file already committed (d233ab8). Execute `supabase db push` in prod.
+          Validate: cache table accepts new inserts, Sentry CRIT-001 events stop.
+        estimated_hours: 1
+        priority: P0-BLOCKER
+        gate: gate_1
+        day: 1
+      - task_id: stab002_redis_upstash
+        story: GTM-STAB-002
+        description: |
+          Migrate Redis from Railway addon to Upstash.
+          Set REDIS_URL=rediss://..., verify ssl=True works (redis-py 5.x).
+          Test: ARQ worker connects, circuit breaker resets, cache writes succeed.
+          Add worker restart wrapper for ARQ crash loop recovery (no native reconnect).
+        estimated_hours: 3
+        priority: P0
+        gate: gate_1
+        day: 1
+      - task_id: stab008_monitoring
+        story: GTM-STAB-008
+        description: |
+          Configure UptimeRobot on GET /health (30s interval, alert on 2 consecutive failures).
+          Create Sentry alert rules: WORKER_TIMEOUT, Redis TimeoutError, error spike (>10/5min).
+          Railway deploy notifications → Sentry release tracking.
+          Validate: alerts fire on test trigger, resolve on recovery.
+        estimated_hours: 2
+        priority: P1
+        gate: gate_3
+        day: 5
+    tools:
+      - Bash (railway CLI, supabase CLI)
+      - Read
+      - Write
+      - Edit
+    handoff_to:
+      - qa (gate validation after each task)
+      - dev (if Redis config affects app code)
+
+  # ── FRENTE 2: Backend Dev — Async + SSE (D2-D4) ───────────
+  - role: dev
+    agent: "@dev (backend focus)"
+    primary_responsibility: |
+      - Completar async search frontend migration (STAB-009)
+      - Implementar SSE Proxy resilience (STAB-006)
+      - Validar timeout chain em prod (STAB-003)
+      - Garantir AC5+AC6 de STAB-004 (never lose data, never 5xx with data)
+    parallel_tasks:
+      - task_id: stab009_async_search
+        story: GTM-STAB-009
+        description: |
+          Backend: enriched response já commitado (5a284d9). Validar flag SEARCH_ASYNC_ENABLED.
+          Frontend: migrar useSearch.ts para polling /v1/search/{id}/status + /v1/search/{id}/results.
+          Backward compat: SEARCH_ASYNC_ENABLED=false rollback em <60s.
+          E2E: POST /buscar → 202 em <1s → resultado via polling em <60s.
+        estimated_hours: 4
+        priority: P0
+        gate: gate_2
+        day: 2
+      - task_id: stab006_sse_resilience
+        story: GTM-STAB-006
+        description: |
+          Replace technical SSE errors with humanized UX messages.
+          Implement auto-reconnect with backoff (3s/6s/12s, max 3 attempts).
+          Add localStorage partial result persistence (survive page reload).
+          Reduce Sentry noise: batch SSE errors, filter known transients.
+          19 "failed to pipe" events → 0.
+        estimated_hours: 7
+        priority: P1
+        gate: gate_3
+        day: 3-4
+      - task_id: stab003_timeout_validation
+        story: GTM-STAB-003
+        description: |
+          Validate new timeout chain in prod: Pipeline(110s) > Consolidation(100s) > PerSource(80s) > PerUF(30s).
+          Run 10 buscas with 4+ UFs, verify no 524 errors.
+          Confirm Gunicorn keep-alive=75s prevents intermittent 502s.
+          Skip LLM after 90s, skip viability after 100s (graceful degradation).
+        estimated_hours: 2
+        priority: P0
+        gate: gate_2
+        day: 3
+      - task_id: stab004_never_lose_data
+        story: GTM-STAB-004
+        description: |
+          AC5: Pipeline NEVER discards collected data on partial timeout. If 3/5 UFs return, serve those 3.
+          AC6: NEVER return HTTP 5xx when there IS data (even partial). Return 200 with degradation flag.
+          De-scoped: NO two-phase pipeline, NO progressive rendering (async solves this).
+        estimated_hours: 2
+        priority: P0
+        gate: gate_2
+        day: 2
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+      - Grep
+      - Glob
+    handoff_to:
+      - qa (after each task completion)
+      - architect (for async pattern review)
+      - devops (for deploy)
+
+  # ── FRENTE 3: QA — Gates + Validação Contínua (D1-D5) ─────
+  - role: qa
+    agent: "@qa"
+    primary_responsibility: |
+      - Validar cada gate (1, 2, 3) com checklists específicos
+      - Testar regressão após cada mudança infra
+      - E2E validation com Playwright MCP em prod
+      - Garantir zero-failure baseline dos testes
+    parallel_tasks:
+      - task_id: gate1_infra_validation
+        description: |
+          GATE 1 — Infra Ready (after STAB-001 + STAB-002):
+          □ Sentry CRIT-001 = 0 novos eventos (aguardar 1h)
+          □ Busca retorna cache hit na segunda tentativa
+          □ ARQ worker sobrevive >1h sem crash (railway logs --tail)
+          □ railway logs sem Redis TimeoutError
+          □ pytest full suite = 0 failures
+        priority: P0-BLOCKER
+        gate: gate_1
+        day: 1
+      - task_id: gate2_async_validation
+        description: |
+          GATE 2 — Zero 524s + Async Funcional (after STAB-009 + STAB-003):
+          □ 10 buscas consecutivas com 4 UFs = 0 erros 524
+          □ POST /buscar retorna 202 em <1s (async mode)
+          □ Resultado final chega via polling em <60s
+          □ SEARCH_ASYNC_ENABLED=false rollback funciona em <60s
+          □ Busca com termos que zera → empty state educativo
+          □ UF timeout → "Sem oportunidades" amarelo (não verde com 0)
+          □ Partial timeout → dados parciais servidos (not 5xx)
+        priority: P0
+        gate: gate_2
+        day: 3
+      - task_id: gate3_operational_validation
+        description: |
+          GATE 3 — Operational Maturity (after STAB-006 + STAB-008):
+          □ SSE reconnect funciona após disconnect simulado
+          □ Buscas populares <2s (cache warming ativo)
+          □ UptimeRobot verde por 24h consecutivas
+          □ Sentry unresolved → 0 issues
+          □ Full test suite: backend 0 fail + frontend 0 fail
+          □ Smoke test Playwright: login→busca→resultado→download
+        priority: P1
+        gate: gate_3
+        day: 5
+      - task_id: regression_continuous
+        description: |
+          Continuous regression after every deploy/change:
+          - Backend: pytest (baseline: 5419 pass / 0 fail)
+          - Frontend: npm test (baseline: 2681 pass / 0 fail)
+          - Run after each STAB completion
+        priority: P0
+        gate: all
+        day: 1-5
+    tools:
+      - Bash (pytest, npm test)
+      - Read
+      - Grep
+      - mcp__browser (Playwright for E2E prod validation)
+    handoff_to:
+      - dev (bugs found → fix)
+      - devops (infra issues → remediate)
+      - sm (blockers → escalate)
+
+  # ── FRENTE 4: Architect — Review + Decisões Técnicas ───────
+  - role: architect
+    agent: "@architect"
+    primary_responsibility: |
+      - Validar pattern async search (STAB-009): flag, polling, backward compat
+      - Revisar SSE reconnect strategy (STAB-006): backoff, partial persistence
+      - Aprovar timeout chain values (STAB-003): Railway fit
+      - Documentar ADRs para decisões tomadas
+    parallel_tasks:
+      - task_id: async_pattern_review
+        description: |
+          Review async search implementation:
+          - POST → 202 + search_id pattern
+          - Polling vs SSE for result delivery
+          - Feature flag rollback strategy (SEARCH_ASYNC_ENABLED)
+          - Backward compat: old clients still work with sync mode
+        estimated_hours: 1
+        priority: P0
+        day: 2
+      - task_id: sse_resilience_review
+        description: |
+          Review SSE proxy resilience design:
+          - Reconnect backoff strategy (3s/6s/12s)
+          - localStorage partial persistence (what to store, TTL, cleanup)
+          - Error humanization mapping (technical → user-friendly)
+          - Sentry noise reduction (batch vs filter)
+        estimated_hours: 1
+        priority: P1
+        day: 3
+      - task_id: timeout_chain_review
+        description: |
+          Validate timeout chain fits Railway constraints:
+          - Railway hard limit: 300s (confirmed, was assumed 120s)
+          - New chain: Pipeline(110s) > Consolidation(100s) > PerSource(80s) > PerUF(30s)
+          - Graceful degradation: skip LLM@90s, skip viability@100s
+          - Gunicorn keep-alive=75s > Railway proxy 60s
+        estimated_hours: 0.5
+        priority: P0
+        day: 1
+      - task_id: adr_documentation
+        description: |
+          Document key decisions:
+          - ADR: Async search pattern (poll vs SSE)
+          - ADR: Redis migration Upstash (why, config, fallback)
+          - ADR: Timeout chain values (rationale for each layer)
+        estimated_hours: 1
+        priority: P2
+        day: 5
+    tools:
+      - Read
+      - Grep
+      - Glob
+    handoff_to:
+      - dev (implementation guidance)
+      - devops (infra constraints)
+
+  # ── FRENTE 5: Scrum Master — Coordenação + Impedimentos ────
+  - role: sm
+    agent: "@sm"
+    primary_responsibility: |
+      - Coordenar daily sync (15min) entre frentes
+      - Manter impediment log atualizado
+      - Facilitar gate validations (qa sign-off)
+      - Atualizar GTM-STAB-000 sprint tracker
+      - Escalonar blockers ao PO se necessário
+    parallel_tasks:
+      - task_id: daily_coordination
+        description: |
+          Daily sync (15min):
+          - O que cada frente completou
+          - Blockers atuais
+          - Próximas 4h de cada agente
+          - Gate readiness check
+        estimated_hours: 0.5
+        day: 1-5
+      - task_id: sprint_tracking
+        description: |
+          Update GTM-STAB-000 tracker:
+          - Mark stories as completed
+          - Update effort actuals vs estimates
+          - Burn-down tracking
+          - Risk register updates
+        estimated_hours: 0.5
+        day: 1-5
+      - task_id: blocker_escalation
+        description: |
+          Impediment management:
+          - If migration fails → escalate to Supabase support
+          - If Upstash connectivity issue → fallback to Railway Redis
+          - If test baseline broken → stop sprint, fix first
+          - If Railway deploy fails → rollback + investigate
+        estimated_hours: 0.5
+        day: 1-5
+    tools:
+      - Read
+      - Write
+      - Edit
+    handoff_to:
+      - All agents (impediment resolution)
+
+# ════════════════════════════════════════════════════════════════
+# COORDINATION STRATEGY
+# ════════════════════════════════════════════════════════════════
+
+coordination:
+  mode: parallel_execution_with_gates
+
+  # Gates são bloqueantes — sprint não avança sem sign-off
+  gates:
+    gate_1:
+      name: "Infra Ready"
+      trigger: STAB-001 + STAB-002 applied in prod
+      owner: qa
+      day: 1
+      criteria:
+        - Sentry CRIT-001 = 0 novos eventos
+        - Cache hit funcional na segunda busca
+        - ARQ worker alive >1h
+        - Zero Redis TimeoutError em logs
+      blocks: [gate_2]
+
+    gate_2:
+      name: "Zero 524s + Async"
+      trigger: STAB-009 + STAB-003 + STAB-004(AC5+AC6) validated
+      owner: qa
+      day: 3
+      criteria:
+        - 10 buscas × 4 UFs = 0 erros 524
+        - POST /buscar → 202 em <1s
+        - Resultado via polling em <60s
+        - Rollback SEARCH_ASYNC_ENABLED=false funciona
+        - Partial timeout → dados parciais (not 5xx)
+      blocks: [gate_3]
+
+    gate_3:
+      name: "Operational Maturity"
+      trigger: STAB-006 + STAB-008 validated + smoke test
+      owner: qa
+      day: 5
+      criteria:
+        - SSE reconnect funcional
+        - UptimeRobot verde 24h
+        - Sentry 0 unresolved
+        - Smoke test Playwright passes
+        - Full test suite 0 failures
+
+  synchronization_points:
+    - milestone: migration_applied
+      trigger: devops completes STAB-001
+      action: qa starts gate_1 validation
+      day: 1
+
+    - milestone: redis_migrated
+      trigger: devops completes STAB-002
+      action: qa validates ARQ worker + cache
+      day: 1
+
+    - milestone: gate1_passed
+      trigger: qa approves gate_1
+      action: dev starts STAB-009 async search + STAB-003 validation
+      day: 1-2
+
+    - milestone: async_ready
+      trigger: dev completes STAB-009 FE migration
+      action: qa starts gate_2 validation (10 buscas test)
+      day: 2-3
+
+    - milestone: gate2_passed
+      trigger: qa approves gate_2
+      action: dev starts STAB-006 SSE resilience
+      day: 3
+
+    - milestone: sse_resilient
+      trigger: dev completes STAB-006
+      action: devops starts STAB-008 monitoring setup
+      day: 4
+
+    - milestone: gate3_passed
+      trigger: qa approves gate_3
+      action: sm closes sprint, handoff to Sprint 2
+      day: 5
+
+# ════════════════════════════════════════════════════════════════
+# TIMELINE — 5 DIAS
+# ════════════════════════════════════════════════════════════════
+
+timeline:
+  day_1:
+    theme: "Infra Critical — Unblock Everything"
+    devops:
+      - "AM: supabase db push (STAB-001) — 1h"
+      - "AM: Migrate Redis → Upstash (STAB-002) — 2h"
+      - "PM: Worker restart wrapper + connectivity validation — 1h"
+    architect:
+      - "AM: Review timeout chain values (STAB-003) — 30min"
+      - "PM: Review async search pattern (STAB-009) — 30min"
+    qa:
+      - "PM: Gate 1 validation (cache + ARQ + Sentry) — 2h"
+      - "PM: Run full backend test suite (regression) — 30min"
+    dev:
+      - "Prepare STAB-009 FE branch while waiting for gate_1"
+      - "Review STAB-004 AC5+AC6 implementation needs"
+    sm:
+      - "AM: Sprint kickoff (15min)"
+      - "PM: Update tracker after gate_1"
+    gate: "GATE 1 — Infra Ready (EOD sign-off)"
+
+  day_2:
+    theme: "Async Search — Kill the 524s"
+    dev:
+      - "Full day: STAB-009 FE migration (useSearch.ts → polling) — 4h"
+      - "STAB-004 AC5+AC6 (never lose data, never 5xx with data) — 2h"
+    architect:
+      - "Review STAB-009 implementation (polling pattern, backward compat) — 1h"
+    qa:
+      - "Smoke test after each dev push"
+      - "Run frontend test suite (regression) — 30min"
+    devops:
+      - "Monitor Railway logs for Redis stability"
+      - "Verify worker uptime (should be >12h by now)"
+    sm:
+      - "Daily sync (15min)"
+      - "Track impediments"
+
+  day_3:
+    theme: "Validate + SSE Resilience Start"
+    dev:
+      - "AM: STAB-003 timeout validation in prod (10 buscas × 4 UFs) — 2h"
+      - "PM: Start STAB-006 SSE resilience (humanized errors) — 3h"
+    architect:
+      - "Review STAB-006 design (reconnect strategy, localStorage) — 1h"
+    qa:
+      - "AM: Gate 2 validation (async + timeout + partial results) — 3h"
+      - "PM: Regression after STAB-003 changes"
+    devops:
+      - "Monitor async search in prod (202 responses, polling latency)"
+    sm:
+      - "Daily sync (15min)"
+      - "Gate 2 sign-off facilitation"
+    gate: "GATE 2 — Zero 524s + Async (EOD sign-off)"
+
+  day_4:
+    theme: "SSE Resilience Completion"
+    dev:
+      - "Full day: Complete STAB-006 (auto-reconnect, localStorage partial, Sentry noise) — 4h"
+    qa:
+      - "Test SSE reconnect scenarios (disconnect, timeout, partial)"
+      - "Verify Sentry noise reduction (19 → 0 'failed to pipe')"
+      - "Run full test suite (both backend + frontend)"
+    devops:
+      - "Prepare STAB-008 monitoring configs (UptimeRobot, Sentry rules)"
+    architect:
+      - "Final review of all changes, ADR drafts"
+    sm:
+      - "Daily sync (15min)"
+      - "Risk assessment for day 5"
+
+  day_5:
+    theme: "Monitoring + Final Validation + Sprint Close"
+    devops:
+      - "AM: Configure UptimeRobot + Sentry alert rules (STAB-008) — 2h"
+      - "PM: Deploy all pending changes to prod"
+    qa:
+      - "AM: Gate 3 full validation — 3h"
+      - "PM: Smoke test Playwright (login → busca → resultado → download)"
+      - "PM: Final regression (full suite both sides)"
+    architect:
+      - "Record ADRs (async pattern, Redis migration, timeout chain)"
+    dev:
+      - "Bugfixes from gate 3 validation (if any)"
+    sm:
+      - "Gate 3 sign-off facilitation"
+      - "Sprint retrospective"
+      - "Update GTM-STAB-000 tracker → Sprint 1 DONE"
+      - "Handoff document for Sprint 2"
+    gate: "GATE 3 — Operational Maturity (EOD sign-off)"
+
+# ════════════════════════════════════════════════════════════════
+# SUCCESS CRITERIA
+# ════════════════════════════════════════════════════════════════
+
+success_criteria:
+  hard_requirements:
+    - metric: zero_524_errors
+      description: "10 buscas consecutivas com 4 UFs = 0 erros 524"
+      threshold: 0
+    - metric: async_response_time
+      description: "POST /buscar retorna 202 em <1s"
+      threshold: "< 1000ms"
+    - metric: result_delivery
+      description: "Resultado completo via polling em <60s"
+      threshold: "< 60s"
+    - metric: arq_worker_uptime
+      description: "ARQ worker alive >24h sem crash"
+      threshold: "> 24h"
+    - metric: sentry_unresolved
+      description: "Sentry unresolved issues"
+      threshold: 0
+    - metric: test_suite_backend
+      description: "pytest full suite zero failures"
+      threshold: "0 failures (5419+ pass)"
+    - metric: test_suite_frontend
+      description: "npm test full suite zero failures"
+      threshold: "0 failures (2681+ pass)"
+
+  soft_requirements:
+    - metric: cache_hit_time
+      description: "Busca cached (segunda tentativa)"
+      threshold: "< 2s"
+    - metric: uptimerobot_uptime
+      description: "UptimeRobot verde por 24h"
+      threshold: "> 99%"
+    - metric: sse_reconnect
+      description: "SSE reconnect funcional após disconnect"
+      threshold: "true"
+
+# ════════════════════════════════════════════════════════════════
+# RISK REGISTER
+# ════════════════════════════════════════════════════════════════
+
+risks:
+  - id: R1
+    description: "Migration `supabase db push` fails in prod"
+    probability: low
+    impact: critical
+    mitigation: "Test on staging first. Have rollback SQL ready. Supabase support on speed-dial."
+    owner: devops
+
+  - id: R2
+    description: "Upstash Redis connectivity issues (ssl, latency)"
+    probability: medium
+    impact: high
+    mitigation: "Keep Railway Redis as fallback. Test ssl=True with redis-py 5.x before cutover."
+    owner: devops
+
+  - id: R3
+    description: "Async search FE migration breaks existing flow"
+    probability: medium
+    impact: high
+    mitigation: "Feature flag SEARCH_ASYNC_ENABLED. Rollback in <60s. Backward compat tested."
+    owner: dev
+
+  - id: R4
+    description: "Test baseline broken by infra changes"
+    probability: low
+    impact: high
+    mitigation: "Run full suite after every change. Stop sprint if baseline broken."
+    owner: qa
+
+  - id: R5
+    description: "Railway deploy timeout during sprint"
+    probability: low
+    impact: medium
+    mitigation: "Blue-green deploy pattern. Rollback to previous build."
+    owner: devops
+
+# ════════════════════════════════════════════════════════════════
+# REFERENCES
+# ════════════════════════════════════════════════════════════════
+
+references:
+  stories:
+    - GTM-STAB-000 (sprint plan — meta tracker)
+    - GTM-STAB-001 (apply missing migrations — P0 BLOCKER)
+    - GTM-STAB-002 (Redis/ARQ worker stability — P0)
+    - GTM-STAB-003 (timeout chain Railway fit — P0)
+    - GTM-STAB-004 (partial results — de-scoped to AC5+AC6)
+    - GTM-STAB-005 (filter zero results UX — code shipped ✅)
+    - GTM-STAB-006 (SSE proxy resilience — P1)
+    - GTM-STAB-007 (cache warming — code shipped ✅)
+    - GTM-STAB-008 (monitoring + alerting — P1)
+    - GTM-STAB-009 (async search architecture — P0)
+
+  key_commits:
+    - "899ee07: GTM-STAB sprint bulk (002/003/004/005/007/008)"
+    - "d233ab8: GTM-STAB-001 migration file committed"
+    - "5a284d9: GTM-STAB-009 async search enriched response"
+    - "f37a624: GTM-STAB-000 progress update (6/9 shipped)"
+
+  workflows:
+    - ".aios-core/development/workflows/bidiq-hotfix.yaml"
+    - ".aios-core/development/workflows/bidiq-deploy-release.yaml"
+
+  docs:
+    - "docs/summaries/gtm-resilience-summary.md"
+    - "docs/summaries/gtm-fixes-summary.md"

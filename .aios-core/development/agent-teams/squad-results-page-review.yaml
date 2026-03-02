@@ -1,0 +1,81 @@
+# Squad: Results Page UX/UI Critical Review
+# Purpose: Comprehensive evaluation of search results page
+# Created: 2026-02-10
+# Mission: Identify all UX/UI issues, accessibility concerns, and functional problems
+
+squad:
+  name: results-page-review
+  mission: "Critical evaluation of search results page - UX/UI, accessibility, functionality"
+
+  agents:
+    - agent: ux-design-expert
+      role: Lead UX/UI Designer
+      responsibilities:
+        - Visual consistency and design system adherence
+        - Information architecture and layout effectiveness
+        - Interaction patterns and micro-interactions
+        - Mobile responsiveness evaluation
+        - Design token usage and CSS quality
+
+    - agent: qa
+      role: Quality Assurance & Accessibility Auditor
+      responsibilities:
+        - WCAG AA/AAA compliance audit
+        - Keyboard navigation testing
+        - Screen reader compatibility
+        - Functional testing (all buttons, links, interactions)
+        - Error state and edge case validation
+
+    - agent: analyst
+      role: Business Analyst & User Experience Evaluator
+      responsibilities:
+        - User journey analysis
+        - Information clarity and scannability
+        - Data presentation effectiveness
+        - Business value communication
+        - Cognitive load assessment
+
+  workflow:
+    phase_1_initial_analysis:
+      lead: ux-design-expert
+      tasks:
+        - Screenshot analysis (provided by user)
+        - Visual hierarchy assessment
+        - Design system consistency check
+        - Responsive layout review
+
+    phase_2_functional_audit:
+      lead: qa
+      tasks:
+        - Accessibility audit (WCAG)
+        - Interactive element testing
+        - Error handling evaluation
+        - Performance assessment
+
+    phase_3_ux_evaluation:
+      lead: analyst
+      tasks:
+        - User flow analysis
+        - Information scannability
+        - Cognitive load measurement
+        - Business value clarity
+
+    phase_4_synthesis:
+      all_agents: true
+      output: consolidated_report
+
+  deliverables:
+    - Critical issues (blocking)
+    - Major issues (high priority)
+    - Minor issues (polish)
+    - UX improvement opportunities
+    - Accessibility concerns
+    - Overall score (0-10)
+    - Actionable recommendations
+
+  success_criteria:
+    - All sections of page evaluated
+    - Every interactive element tested
+    - Accessibility score provided
+    - Prioritized action items
+    - Clear next steps for dev team

@@ -335,17 +335,29 @@ docker-compose.*.override.yml
 # =============================================================================
 # AIOS Specific (stealth mode)
 # =============================================================================
-# Ignore all AIOS/Claude artifacts
-.aios-core/
-.claude/
 .ai/
-CLAUDE.md
-.claude/CLAUDE.md
 *.aios-*
 *-aios-*
 .aios/
 *-OLD.md
 .pr-*-review-*.md
+
+# Un-ignore .claude/ and .aios-core/ (overrides *.aios-* glob above)
+!.claude/
+!.aios-core/
+
+# .claude/ — whitelist commands, rules, and CLAUDE.md only
+.claude/*
+!.claude/commands/
+!.claude/rules/
+!.claude/CLAUDE.md
+
+# .aios-core/ — whitelist agent-teams and workflows only
+.aios-core/*
+!.aios-core/development/
+.aios-core/development/*
+!.aios-core/development/agent-teams/
+!.aios-core/development/workflows/
 
 # =============================================================================
 # Screenshots & Playwright MCP artifacts
@@ -383,8 +395,7 @@ playwright-report/
 # Dependencies (AIOS)
 node_modules
 
-# AIOS Local (AIOS)
-.aios-core/local/
+# AIOS Local (keep ignored even with whitelists above)
 .claude/settings.local.json
 .claude/settings.*.json
 .aios/install-log.txt

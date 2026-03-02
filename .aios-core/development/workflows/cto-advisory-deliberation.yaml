@@ -1,0 +1,114 @@
+workflow:
+  name: CTO Advisory Board Deliberation
+  description: >
+    Executa o protocolo de deliberação do Conselho de CTOs.
+    Recebe uma solicitação, coleta evidências, delibera internamente
+    entre 8 clusters de perspectiva, e retorna apenas o consenso final.
+  squad: squad-cto-advisory-board.yaml
+  mode: advisory
+  output: consensus_only
+
+parameters:
+  - name: question
+    type: string
+    required: true
+    description: A pergunta ou solicitação do usuário para o conselho
+
+execution:
+  # Phase 1 — Evidence Gathering (parallel)
+  phase_1_evidence:
+    name: Evidence Gathering
+    parallel: true
+    agents:
+      - type: Explore
+        name: code-evidence
+        prompt: |
+          Analyze the SmartLic codebase to find evidence relevant to: {question}
+          Search thoroughly across backend/, frontend/, supabase/, and config files.
+          Return: file paths, code snippets, patterns found, potential issues.
+
+      - type: general-purpose
+        name: web-evidence
+        prompt: |
+          Search the web for current (2026) industry best practices relevant to: {question}
+          Focus on: architecture patterns, proven solutions, anti-patterns to avoid.
+          Include sources from official docs, engineering blogs, and case studies.
+          Return: key findings with source URLs.
+
+  # Phase 2-4 — Internal Deliberation (single deep analysis)
+  phase_2_4_deliberation:
+    name: Adversarial Deliberation
+    depends_on: phase_1_evidence
+    agent:
+      type: deep-executor
+      model: opus
+      prompt: |
+        You are facilitating the CTO Advisory Board deliberation.
+
+        ## Context
+        User question: {question}
+        Code evidence: {code_evidence}
+        Web evidence: {web_evidence}
+
+        ## Your Task
+        Simulate the full adversarial deliberation protocol:
+
+        ### Round 1 — Initial Positions (8 clusters)
+        For each cluster, formulate a distinct initial position:
+        1. Scale & Infra: Focus on scalability, distributed systems
+        2. DevEx & Platform: Focus on API design, developer productivity
+        3. Data & AI/ML: Focus on data pipelines, LLM usage
+        4. Security & SRE: Focus on reliability, observability, security
+        5. Product Engineering: Focus on user value, feature velocity
+        6. Enterprise SaaS: Focus on multi-tenancy, compliance
+        7. Fintech & GovTech: Focus on regulation, gov API patterns
+        8. Startup Velocity: Focus on simplicity, pragmatism
+
+        ### Round 2 — Confrontation
+        Challenge positions across the 4 adversarial pairs:
+        - Scale vs Startup (complexity vs simplicity)
+        - Security vs DevEx (safety vs speed)
+        - Product vs Enterprise (agility vs compliance)
+        - Data/AI vs Fintech/GovTech (innovation vs regulation)
+
+        ### Round 3 — Synthesis
+        Resolve all objections. Find the position that ALL clusters agree on.
+        If a cluster would object, address that objection explicitly.
+
+        ### Output — ONLY the final consensus
+        Do NOT show the internal deliberation rounds.
+        Output ONLY the unanimous consensus in this format:
+
+        ## Consenso do Conselho de CTOs
+
+        **Veredicto:** [Clear recommendation]
+
+        **Fundamentos:**
+        - [Reason 1 — backed by evidence]
+        - [Reason 2 — backed by evidence]
+        - [Reason 3 — backed by evidence]
+
+        **Evidências no Código:**
+        - `file:line` — [what it shows]
+
+        **Referências Externas:**
+        - [Source + URL]
+
+        **Riscos Reconhecidos:**
+        - [Risk 1 — and why it's acceptable]
+        - [Risk 2 — and mitigation]
+
+        **Próximos Passos:**
+        1. [Highest priority action]
+        2. [Second priority]
+        3. [Third priority]
+
+        ---
+        _Consenso unânime: 8/8 clusters (53 CTOs)_
+
+  # Phase 5 — Output (consensus only)
+  phase_5_output:
+    name: Present Consensus
+    depends_on: phase_2_4_deliberation
+    action: return_to_user
+    filter: consensus_only

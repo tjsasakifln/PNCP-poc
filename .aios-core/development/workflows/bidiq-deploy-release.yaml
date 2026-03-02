@@ -1,0 +1,101 @@
+workflow:
+  id: bidiq-deploy-release
+  name: BidIQ Deploy & Release
+  description: >-
+    Agent workflow for the BidIQ release process from test validation through
+    deployment and smoke testing. Ensures coverage thresholds, build integrity,
+    and post-deploy verification.
+  type: brownfield
+  project_types:
+    - release
+    - deployment
+    - ci-cd
+
+  startup:
+    mode: single_option
+    default_action: yolo
+
+  sequence:
+    - step: run_full_test_suite
+      phase: 1
+      phase_name: Test Validation
+      agent: qa
+      action: run full test suite for backend and frontend
+      creates: test results, coverage reports
+      notes: >-
+        Executar backend: cd backend && pytest --cov --cov-report=html
+        Executar frontend: cd frontend && npm run test:coverage
+        Capturar resultados e relatórios de cobertura para validação.
+
+    - step: verify_coverage_thresholds
+      phase: 2
+      phase_name: Coverage Gate
+      agent: qa
+      action: verify coverage meets minimum thresholds
+      creates: coverage validation report
+      notes: >-
+        Backend: coverage >= 70% (branches, functions, lines, statements).
+        Frontend: coverage >= 60%. Se abaixo do threshold, BLOQUEAR release
+        e reportar gaps. Verificar que testes críticos passam: pncp_client,
+        filter, excel, llm.
+
+    - step: build_validation
+      phase: 3
+      phase_name: Build Validation
+      agent: devops
+      action: validate builds for backend and frontend
+      creates: build artifacts
+      notes: >-
+        Backend: pip install -r requirements.txt (verificar dependências).
+        Frontend: npm run build (verificar que Next.js compila sem erros).
+        Verificar variáveis de ambiente necessárias documentadas.
+
+    - step: create_release_pr
+      phase: 4
+      phase_name: Release PR
+      agent: devops
+      action: create release PR with changelog
+      creates: pull request, CHANGELOG.md update
+      notes: >-
+        Criar PR de release com: versão semântica, changelog das mudanças
+        desde última release, checklist de deploy. Usar gh pr create.
+        Incluir resultados de testes e cobertura no body do PR.
+
+    - step: deploy
+      phase: 5
+      phase_name: Deployment
+      agent: devops
+      action: deploy to staging or production environment
+      creates: deployed application
+      notes: >-
+        Deploy via Railway ou ambiente configurado. Verificar que variáveis
+        de ambiente estão configuradas (OPENAI_API_KEY, PNCP_TIMEOUT, etc.).
+        Monitorar logs de inicialização para erros.
+
+    - step: smoke_test
+      phase: 6
+      phase_name: Post-Deploy Smoke Test
+      agent: qa
+      action: smoke test deployed application
+      creates: smoke test results
+      notes: >-
+        Verificar: API health check (GET /), frontend carrega corretamente,
+        conectividade com PNCP API (busca teste com UF=SP),
+        geração de Excel funcional, resumo LLM retorna (ou fallback funciona).
+        Se smoke test falhar, iniciar rollback imediato.
+
+  decision_guidance:
+    when_to_use:
+      - Ready to release a new version of BidIQ
+      - Sprint complete with all stories done
+      - Critical bug fix needs expedited deployment
+      - Infrastructure or dependency updates require redeployment
+      - Post-merge validation before production release
+
+  handoff_prompts:
+    qa_to_devops_build: "Tests passing with coverage above thresholds. Proceed with build validation."
+    devops_to_devops_pr: "Builds successful. Create release PR with changelog."
+    devops_to_devops_deploy: "Release PR merged. Deploy to target environment."
+    devops_to_qa_smoke: "Deployment complete. Run smoke tests to verify application health."
+    complete: "Release deployed and smoke tests passing. Application is live."
+    rollback: "Smoke test failed. Initiate rollback to previous version and investigate."

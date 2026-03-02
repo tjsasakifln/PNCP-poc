@@ -1,0 +1,187 @@
+bundle:
+  name: Team BidIQ Bugfix Sprint
+  icon: 🔧
+  description: Squad especializado para correção dos issues identificados no teste manual de 2026-02-05
+  created: 2026-02-05
+  test_report: docs/sessions/2026-02/manual-testing-report-admin-2026-02-05.md
+
+agents:
+  - dev               # Correções de código (React, CSS, i18n)
+  - qa                # Validação das correções e testes de regressão
+  - ux-design-expert  # Melhorias de UX identificadas
+  - devops            # Deploy das correções
+
+issues:
+  critical:
+    - id: C1
+      title: React Error #310 no carregamento inicial
+      description: Aplicação crasheia ao abrir, requer clicar "Tentar novamente"
+      agent: dev
+      priority: P0
+      files_likely:
+        - frontend/app/page.tsx
+        - frontend/app/layout.tsx
+        - frontend/components/providers/
+      root_cause: Hook useState chamado fora de componente React ou SSR issue
+
+    - id: C2
+      title: Perda de estado após interação com dropdown
+      description: Ao abrir Buscas Salvas e pressionar Escape, estados são desmarcados e resultados desaparecem
+      agent: dev
+      priority: P0
+      files_likely:
+        - frontend/components/SavedSearchesDropdown.tsx
+        - frontend/app/page.tsx
+      root_cause: Event handler do Escape propagando e resetando state
+
+  major:
+    - id: M1
+      title: Performance - Excel generation 45% acima do estimado
+      description: Geração demorou 235s vs 162s estimado
+      agent: dev
+      priority: P1
+      files_likely:
+        - backend/excel.py
+        - backend/main.py
+
+    - id: M2
+      title: Buscas não salvas automaticamente
+      description: Histórico mostra 0 buscas mesmo após realizar busca
+      agent: dev
+      priority: P1
+      files_likely:
+        - frontend/app/page.tsx
+        - backend/main.py
+
+    - id: M3
+      title: Admin vê página de planos
+      description: Admin/Master é dono, não deveria ver pricing
+      agent: ux-design-expert
+      priority: P2
+      files_likely:
+        - frontend/app/planos/page.tsx
+
+    - id: M4
+      title: Símbolo infinito renderiza como HTML entity
+      description: "&#8734;" aparece em vez de ∞
+      agent: dev
+      priority: P2
+      files_likely:
+        - frontend/app/admin/page.tsx
+
+    - id: M5
+      title: Header flutuando no dark mode
+      description: Bug de CSS/z-index no sticky header
+      agent: dev
+      priority: P2
+      files_likely:
+        - frontend/components/Header.tsx
+        - frontend/app/globals.css
+
+  minor:
+    - id: m1
+      title: "Busca Inteligente PNCP" colado no logo
+      agent: ux-design-expert
+      files_likely:
+        - frontend/components/Header.tsx
+
+    - id: m2-m7
+      title: Typos de acentuação em português
+      description: |
+        - Historico → Histórico
+        - Usuarios → Usuários
+        - Creditos → Créditos
+        - Acoes → Ações
+        - gratis → grátis
+        - licitacoes → licitações
+      agent: dev
+      files_likely:
+        - frontend/app/historico/page.tsx
+        - frontend/app/admin/page.tsx
+        - frontend/app/planos/page.tsx
+
+    - id: m8
+      title: Console warning Mixpanel token
+      agent: devops
+      files_likely:
+        - frontend/lib/analytics.ts
+        - frontend/.env.example
+
+  ux_improvements:
+    - id: U1
+      title: Dropdown bloqueia tela com overlay invisível
+      agent: ux-design-expert
+
+    - id: U2
+      title: Header mobile muito apertado
+      agent: ux-design-expert
+
+    - id: U3
+      title: Sem indicação de busca sendo salva
+      agent: ux-design-expert
+
+    - id: U4
+      title: Planos não indicam qual é o atual
+      agent: ux-design-expert
+
+workflows:
+  - bidiq-hotfix.yaml
+
+tasks:
+  - review-code.md
+  - apply-qa-fixes.md
+  - qa-gate.md
+
+execution_order:
+  phase_1_critical:
+    name: "Fase 1: Issues Críticos (P0)"
+    agent: dev
+    issues: [C1, C2]
+    validation: qa
+
+  phase_2_major:
+    name: "Fase 2: Issues Maiores (P1-P2)"
+    agent: dev
+    issues: [M1, M2, M3, M4, M5]
+    validation: qa
+
+  phase_3_polish:
+    name: "Fase 3: Polish e UX"
+    agents: [dev, ux-design-expert]
+    issues: [m1, m2-m7, m8, U1, U2, U3, U4]
+    validation: qa
+
+  phase_4_deploy:
+    name: "Fase 4: Deploy"
+    agent: devops
+    tasks:
+      - Create PR with all fixes
+      - Run full test suite
+      - Deploy to production
+      - Validate in production
+
+quality_gates:
+  pre_commit:
+    - pytest --cov (≥70% backend)
+    - npm run lint
+    - npm run typecheck
+    - npm test --coverage (≥60%)
+
+  pre_merge:
+    - All tests passing
+    - No new console errors
+    - Manual smoke test on staging
+
+success_criteria: |
+  Sprint completo quando:
+  - [ ] C1: Página carrega sem erro na primeira tentativa
+  - [ ] C2: Dropdown não perde estado ao fechar
+  - [ ] M1: Excel gerado em tempo estimado (±10%)
+  - [ ] M2: Buscas aparecem no histórico
+  - [ ] M3: Admin não vê página de pricing
+  - [ ] M4: Símbolo ∞ renderiza corretamente
+  - [ ] M5: Header não flutua no dark mode
+  - [ ] m1-m8: Todos typos corrigidos
+  - [ ] U1-U4: UX improvements implementadas
+  - [ ] Deploy em produção com sucesso
+  - [ ] Teste manual de validação passa

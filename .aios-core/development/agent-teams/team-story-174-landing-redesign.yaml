@@ -1,0 +1,226 @@
+bundle:
+  name: Story 174 - Landing Page Redesign Squad
+  icon: 🎨
+  description: Specialized multi-agent team for premium SaaS landing page visual redesign with maximum parallelization
+  story: STORY-174
+
+agents:
+  # Design & Architecture Foundation
+  - role: ux-design-expert
+    agent: Olivia
+    focus:
+      - Design system tokens (colors, typography, spacing)
+      - Visual hierarchy and accessibility
+      - Responsive design breakpoints
+    deliverables:
+      - CSS variables in globals.css
+      - Design system documentation
+      - A11y audit reports
+
+  - role: architect
+    agent: Morgan
+    focus:
+      - Component architecture (reusable UI primitives)
+      - Performance strategy (bundle size, code splitting)
+      - Animation performance (60fps, will-change)
+    deliverables:
+      - Component architecture document
+      - Performance baseline and targets
+      - Technical risk mitigation plan
+
+  # Frontend Development (Parallel Streams)
+  - role: dev-frontend-1
+    agent: Alex
+    focus:
+      - AC1 Hero Section (gradient text, animated CTAs)
+      - AC2 Value Props (bento grid, glassmorphism)
+      - AC3 Comparison Table (premium styling, animations)
+    deliverables:
+      - HeroSection.tsx (redesigned)
+      - ValuePropSection.tsx (bento grid)
+      - ComparisonTable.tsx (premium table)
+
+  - role: dev-frontend-2
+    agent: Alex
+    focus:
+      - AC4 Sectors Grid (3D tilt cards)
+      - AC5 Testimonials (carousel, glassmorphism)
+      - AC6 Footer (refined layout, animations)
+    deliverables:
+      - SectorsGrid.tsx (3D tilt)
+      - TestimonialsCarousel.tsx (NEW)
+      - Footer.tsx (redesigned)
+
+  # Animations & Micro-interactions
+  - role: data-engineer
+    agent: Casey
+    focus:
+      - AC7 Scroll animations (Intersection Observer)
+      - Framer Motion setup and variants
+      - Custom easing curves and physics
+    deliverables:
+      - lib/animations/scrollAnimations.ts
+      - lib/animations/framerVariants.ts
+      - lib/animations/easing.ts
+
+  # Quality Assurance
+  - role: qa
+    agent: Quinn
+    focus:
+      - Visual regression testing (Chromatic/Percy)
+      - A11y testing (axe DevTools, screen readers)
+      - Cross-browser testing (Chrome, Safari, Firefox, Edge)
+      - Animation performance testing (DevTools Performance tab)
+    deliverables:
+      - Visual regression test suite
+      - A11y audit report
+      - Cross-browser compatibility matrix
+      - Performance audit report
+
+  # Build & Performance Optimization
+  - role: devops
+    agent: Gage
+    focus:
+      - AC9 Bundle size optimization (<150KB gzipped)
+      - Core Web Vitals (LCP <2.5s, FID <100ms, CLS <0.1)
+      - Image optimization (WebP, srcset, lazy-load)
+      - Tailwind config extensions (colors, shadows, animations)
+    deliverables:
+      - Optimized Tailwind config
+      - WebP image conversion script
+      - Lighthouse audit reports (95+ score)
+      - Bundle analysis reports
+
+  # Project Coordination
+  - role: pm
+    agent: Jordan
+    focus:
+      - Task orchestration across 3 parallel streams
+      - Progress tracking and story updates
+      - Dependency management
+    deliverables:
+      - Daily progress updates
+      - Story checklist maintenance
+      - Final handoff document
+
+workflows:
+  - phase: foundation
+    duration: 2h
+    parallel: true
+    streams:
+      - name: design
+        agents: [ux-design-expert, architect]
+        tasks:
+          - Define CSS variables (colors, typography, spacing)
+          - Create design system documentation
+          - Performance baseline (Lighthouse)
+
+      - name: infrastructure
+        agents: [devops]
+        tasks:
+          - Extend Tailwind config (colors, shadows, animations)
+          - Install Framer Motion (npm install framer-motion)
+          - Setup bundle analysis tools
+
+      - name: base-components
+        agents: [dev-frontend-1]
+        tasks:
+          - Create GlassCard.tsx component
+          - Create GradientButton.tsx component
+          - Create BentoGrid.tsx component
+
+      - name: testing-setup
+        agents: [qa]
+        tasks:
+          - Setup visual regression testing (Percy or Chromatic)
+          - Install axe DevTools for a11y testing
+          - Create cross-browser testing checklist
+
+  - phase: core-implementation
+    duration: 4h
+    parallel: true
+    streams:
+      - name: hero-value-props
+        agents: [dev-frontend-1, data-engineer]
+        tasks:
+          - AC1 Redesign HeroSection.tsx (gradient text, CTAs, badges)
+          - AC2 Redesign ValuePropSection.tsx (bento grid, glassmorphism)
+          - AC7 Add scroll animations (Intersection Observer)
+
+      - name: table-sectors
+        agents: [dev-frontend-2, data-engineer]
+        tasks:
+          - AC3 Redesign ComparisonTable.tsx (premium styling, animated checkmarks)
+          - AC4 Redesign SectorsGrid.tsx (3D tilt, gradient overlays)
+          - AC7 Add hover animations (Framer Motion)
+
+      - name: footer-testimonials
+        agents: [ux-design-expert, dev-frontend-2]
+        tasks:
+          - AC5 Create TestimonialsCarousel.tsx (NEW)
+          - AC6 Redesign Footer.tsx (gradient separator, link animations)
+
+  - phase: refinement-optimization
+    duration: 3h
+    parallel: true
+    streams:
+      - name: responsive
+        agents: [ux-design-expert, dev-frontend-1]
+        tasks:
+          - AC8 Test mobile breakpoints (iPhone SE 375px)
+          - AC8 Test tablet breakpoints (iPad 768px)
+          - AC8 Test desktop breakpoints (1920px+)
+
+      - name: performance
+        agents: [devops, architect]
+        tasks:
+          - AC9 Optimize images (WebP conversion, srcset)
+          - AC9 Bundle size optimization (<150KB gzipped)
+          - AC9 Core Web Vitals testing (LCP, FID, CLS)
+
+      - name: quality
+        agents: [qa]
+        tasks:
+          - Visual regression testing (all components)
+          - A11y audit (keyboard nav, screen readers)
+          - Cross-browser testing (Chrome, Safari, Firefox, Edge)
+          - Animation performance testing (60fps verification)
+
+success-criteria:
+  quantitative:
+    - Bounce rate reduction: 40% (60% → 36%)
+    - Time on page increase: 50% (45s → 67s)
+    - Trial signup rate increase: 30% (2.5% → 3.25%)
+    - Lighthouse score: 95+ (Performance, Accessibility, Best Practices)
+
+  qualitative:
+    - User feedback: "Looks professional" vs "looks generic"
+    - A/B test: Current vs redesign (measure conversion)
+    - Heatmaps: More engagement with value prop cards
+
+risk-mitigation:
+  - Animation performance: Use CSS transforms, lazy-load Framer Motion, test on low-end devices
+  - Bundle size: Dynamic imports, tree-shake Tailwind, monitor bundle size
+  - Brand consistency: Document design system in Storybook, create reusable components
+
+tools:
+  - Framer Motion (React animations)
+  - Intersection Observer API (scroll triggers)
+  - Chromatic or Percy (visual regression)
+  - axe DevTools (accessibility)
+  - Lighthouse (performance)
+  - Chrome DevTools Performance tab (animation profiling)
+  - Tailwind CSS (styling)
+  - Next.js Image (optimized images)
+
+related-stories:
+  - STORY-173: Brand Positioning & Value Prop (copy complements visual redesign)
+  - STORY-172: Design System Alignment (foundational design tokens)
+  - STORY-170: UX Polish 10/10 (comprehensive UX improvements)
+
+dependencies:
+  - STORY-173 (copy should be finalized before visual implementation)
+
+estimated-effort: 8-12 hours
+complexity: High
+priority: Critical (Brand Perception)

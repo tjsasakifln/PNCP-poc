@@ -1,0 +1,173 @@
+# SQUAD BRAVO: Anti-False Negative Pipeline (STORY-179 FLUXO 2)
+# Mission: Recover false negatives using 4-layer recovery (exclusion → synonym → LLM → zero-results)
+# Timeline: Week 1-2 (parallel with Squad Alpha, then integration)
+
+name: "squad-story179-bravo-fn"
+description: "High-velocity implementation of Anti-False Negative recovery pipeline"
+mission: "Implement exclusion recovery, synonym matching, LLM recovery, and zero-results relaxation"
+
+story:
+  id: "STORY-179"
+  title: "LLM Arbiter para Eliminação de Falsos Positivos e Falsos Negativos"
+  scope: "FLUXO 2 - Anti-False Negative (AC11-AC14)"
+  priority: "P0 - Critical"
+
+squad:
+  lead: "@architect"
+  members:
+    - agent: "@architect"
+      role: "Architecture Lead"
+      responsibilities:
+        - "AC12.1: Design sector synonym dictionaries"
+        - "AC13.1-13.2: Design LLM recovery prompts"
+        - "AC14.2: Design progressive relaxation strategy"
+        - "Code review for recovery logic"
+
+    - agent: "@dev"
+      role: "Backend Implementation"
+      responsibilities:
+        - "AC11.1-11.3: Track exclusion rejections + density"
+        - "AC11.4: Integrate recovery candidates → LLM"
+        - "AC12.2-12.3: Implement synonym matching with SequenceMatcher"
+        - "AC14.1-14.2: Implement zero-results relaxation"
+
+    - agent: "@data-engineer"
+      role: "LLM Integration + Synonym Data"
+      responsibilities:
+        - "AC12.1: Create synonyms.py with SECTOR_SYNONYMS dict"
+        - "AC13.3: Extend llm_arbiter.py with classify_contract_recovery()"
+        - "AC14.3: LLM evaluation of relaxation candidates"
+        - "Semantic distance calculations for synonyms"
+
+    - agent: "@qa"
+      role: "Quality Assurance & Testing"
+      responsibilities:
+        - "AC11.5: Test exclusion recovery (manutenção predial case)"
+        - "AC12.4: Test synonym matching (fardamento ≈ uniforme)"
+        - "AC13.4: Test LLM recovery (servidor de rede case)"
+        - "AC14.5: Test zero-results relaxation"
+        - "test_synonyms.py: Synonym matching tests"
+
+workflow:
+  phase_1:
+    name: "Synonym Matching (No LLM)"
+    duration: "2 days"
+    tasks:
+      - id: "AC12"
+        owner: "@data-engineer + @dev"
+        description: "Implement Camada 2B (Synonym/Variant Matching)"
+        deliverables:
+          - "synonyms.py with 9+ sector dictionaries"
+          - "find_synonym_matches() using SequenceMatcher"
+          - "Auto-approve if 2+ synonym matches (high confidence)"
+          - "Stats: aprovadas_synonym_match"
+        acceptance:
+          - "fardamento → uniforme synonym → APPROVED without LLM"
+          - "jaleco → guarda-pó synonym → APPROVED without LLM"
+
+  phase_2:
+    name: "Exclusion Recovery"
+    duration: "2 days"
+    tasks:
+      - id: "AC11"
+        owner: "@dev"
+        description: "Implement Camada 1B (Exclusion Recovery Candidates)"
+        deliverables:
+          - "Track rejection_reason='exclusion' in filter.py"
+          - "Calculate term_density_pre_exclusion"
+          - "Select recovery candidates (density > 3%)"
+          - "Pass to LLM for validation"
+        acceptance:
+          - "Manutenção predial + facilities rejected by 'obra' → density 15% → LLM recovery candidate"
+
+      - id: "AC13"
+        owner: "@data-engineer"
+        description: "Implement Camada 3B (LLM Recovery)"
+        deliverables:
+          - "classify_contract_recovery() in llm_arbiter.py"
+          - "Prompts for exclusion recovery + synonym validation"
+          - "Same GPT-4o-mini config (max_tokens=1, temp=0)"
+        acceptance:
+          - "Mock: Servidor de rede rejected by 'servidor público' → LLM='SIM' → RECOVERED"
+
+  phase_3:
+    name: "Zero Results Relaxation"
+    duration: "1 day"
+    tasks:
+      - id: "AC14"
+        owner: "@dev + @data-engineer"
+        description: "Implement Camada 4 (Zero Results Relaxation)"
+        deliverables:
+          - "Detect len(results)==0 after all filters"
+          - "Step 1: Relax min_match_floor (STORY-178)"
+          - "Step 2: Get top 20 by density, LLM evaluates"
+          - "Return max 5 with warning to user"
+        acceptance:
+          - "Busca muito específica → 0 results → relaxation → 2 recovered with warning ✓"
+
+      - id: "AC7-phase2"
+        owner: "@qa"
+        description: "Comprehensive testing (Camadas 1B-4)"
+        deliverables:
+          - "test_synonyms.py: Synonym matching edge cases"
+          - "test_filter_llm.py: Exclusion recovery integration"
+          - "test_zero_results.py: Relaxation logic"
+          - "Coverage ≥ 85% for new modules"
+        acceptance:
+          - "82+ tests passing (baseline maintained)"
+          - "Manual: Fardamento → APPROVED, Manutenção → RECOVERED"
+
+  phase_4:
+    name: "Validation & Handoff"
+    duration: "1 day"
+    tasks:
+      - id: "manual-testing"
+        owner: "@qa"
+        description: "Manual validation with real edge cases"
+        test_cases:
+          - "Exclusion recovery: Obra de manutenção predial + facilities → RECOVERED ✓"
+          - "Synonym match: Fardamento militar + vestuário → APPROVED ✓"
+          - "Zero results: Busca específica sem resultados → Relaxamento OK ✓"
+
+      - id: "handoff-to-charlie"
+        owner: "@architect"
+        description: "Handoff to Squad Charlie for integration"
+        deliverables:
+          - "Camadas 1B-4 fully functional"
+          - "synonyms.py with ≥ 50 synonyms across 9 sectors"
+          - "Tests passing"
+          - "Ready for AC4 full integration"
+
+integration_points:
+  dependencies:
+    - "Squad Alpha (Camadas 1A-3A) must be complete"
+    - "STORY-178 min_match_floor for relaxation"
+
+  coordination:
+    - "Daily sync with Squad Alpha (@architect leads)"
+    - "Shared: filter.py, llm_arbiter.py"
+    - "Merge strategy: feature/story179-bravo-fn → develop"
+
+metrics:
+  success_criteria:
+    - "AC11-AC14 100% complete"
+    - "Coverage ≥ 85%"
+    - "Fardamento case APPROVED ✓"
+    - "Manutenção predial RECOVERED ✓"
+    - "Zero results relaxation works ✓"
+    - "LLM recovery calls < 5% of total"
+
+  kpis:
+    - "False negative rate: < 2% (vs ~10% baseline)"
+    - "Recovery success rate: > 60% (FN recovered / candidates)"
+    - "Cost per 1000 contracts: < R$ 0.10 (FN flow)"
+
+communication:
+  daily_standup: "09:00 BRT"
+  blockers_channel: "#story179-bravo-fn"
+  demo: "Friday 14:00 BRT (end of Week 1-2)"
+
+notes:
+  - "YOLO mode: Synonym dictionaries can be expanded incrementally"
+  - "If LLM recovery fails, log for manual review (don't block)"
+  - "Zero results relaxation is LAST resort (clear warning to user)"

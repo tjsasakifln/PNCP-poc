@@ -1,0 +1,289 @@
+name: "team-bidiq-value-sprint"
+description: "Full squad focado em elevar drasticamente o valor percebido pelo usuário em 1 sprint"
+objective: "Entregar 5-7 melhorias de alto impacto visando aumentar retenção e satisfação do usuário"
+duration: "1 sprint (2 weeks)"
+
+# Squad Composition: 9 agents optimized for rapid value delivery
+agents:
+  - name: po
+    role: Product Owner
+    priority: 1
+    responsibilities:
+      - Definir e priorizar features por valor percebido (MoSCoW)
+      - Validar que entregas geram impacto real no usuário
+      - Manter foco em quick wins de alto valor
+      - Aprovar designs e implementações
+    outputs:
+      - Product backlog priorizado por impacto/esforço
+      - Acceptance criteria claros para cada feature
+      - Validação de valor entregue vs. objetivos
+
+  - name: analyst
+    role: Business Analyst
+    priority: 1
+    responsibilities:
+      - Analisar dados de uso atual (se disponíveis)
+      - Identificar dores e fricções reais do usuário
+      - Definir métricas de sucesso e baselines
+      - Propor melhorias baseadas em dados
+    outputs:
+      - Relatório de análise de uso e fricções
+      - Métricas SMART para o sprint
+      - Recommendations de quick wins
+
+  - name: sm
+    role: Scrum Master
+    priority: 2
+    responsibilities:
+      - Facilitar sprint planning, dailies, review e retrospectiva
+      - Remover impedimentos e blockers
+      - Garantir execução focada e velocity
+      - Manter time alinhado com sprint goal
+    outputs:
+      - Sprint planning completo
+      - Daily standups facilitados
+      - Impediment log atualizado
+      - Sprint retrospective
+
+  - name: pm
+    role: Engineering Manager
+    priority: 2
+    responsibilities:
+      - Validar viabilidade técnica das features priorizadas
+      - Alocar trabalho eficientemente entre devs
+      - Garantir entrega no prazo (scope management)
+      - Code review e quality gates
+    outputs:
+      - Technical feasibility assessment
+      - Work breakdown e alocação
+      - Sprint burn-down tracking
+
+  - name: ux-design-expert
+    role: UX Designer
+    priority: 1
+    responsibilities:
+      - Auditar UX atual e identificar fricções críticas
+      - Design de flows e interfaces de alto impacto
+      - Validar usabilidade com heurísticas
+      - Criar protótipos rápidos para validação
+    outputs:
+      - UX audit report com fricções priorizadas
+      - Wireframes/mockups de novas features
+      - Usability validation checklist
+
+  - name: architect
+    role: Technical Architect
+    priority: 2
+    responsibilities:
+      - Arquitetar quick wins tecnicamente viáveis
+      - Garantir decisões técnicas sólidas e escaláveis
+      - Evitar débito técnico em nome de velocidade
+      - Revisar implementações críticas
+    outputs:
+      - Architecture decision records (ADRs)
+      - Technical design docs para features complexas
+      - Code review de implementações arquiteturais
+
+  - name: dev
+    role: Full Stack Developer
+    priority: 1
+    responsibilities:
+      - Implementar features priorizadas (backend + frontend)
+      - Bugfixes e refinamentos UX
+      - Code review de peers
+      - Colaborar com QA em testes
+    outputs:
+      - Features implementadas conforme acceptance criteria
+      - Unit tests com coverage adequado
+      - Code bem documentado
+
+  - name: qa
+    role: QA Engineer
+    priority: 1
+    responsibilities:
+      - Testes automatizados e manuais
+      - Validação de qualidade sem comprometer velocidade
+      - Smoke tests em staging
+      - Regression testing
+    outputs:
+      - Test suites automatizados
+      - Test reports com bugs encontrados
+      - Sign-off de qualidade para deploy
+
+  - name: devops
+    role: DevOps Engineer
+    priority: 2
+    responsibilities:
+      - CI/CD setup e otimização
+      - Deploy contínuo (canary/blue-green)
+      - Monitoramento pós-deploy
+      - Rollback strategy
+    outputs:
+      - CI/CD pipelines funcionais
+      - Deploy scripts e automation
+      - Monitoring dashboards
+
+# Sprint Workflow (2 weeks)
+workflow:
+  phase1:
+    name: "Discovery & Planning"
+    duration: "Day 1-2"
+    leads: [analyst, po, sm]
+    activities:
+      - "@analyst: Analisar dados de uso, identificar dores"
+      - "@po: Priorizar features por valor/esforço (MoSCoW)"
+      - "@ux-design-expert: Auditar UX atual, mapear fricções"
+      - "@sm: Facilitar sprint planning, definir DoD"
+      - "@pm: Validar viabilidade técnica, alocar trabalho"
+    outputs:
+      - Sprint backlog priorizado
+      - Métricas de sucesso definidas
+      - UX audit report
+
+  phase2:
+    name: "Design & Implementation Wave 1"
+    duration: "Day 3-7"
+    leads: [architect, dev, ux-design-expert]
+    activities:
+      - "@architect: Definir arquitetura para quick wins"
+      - "@ux-design-expert: Criar mockups/flows para aprovação"
+      - "@dev: Implementar features priorizadas (paralelizar)"
+      - "@qa: Preparar test suites, testes de fumaça"
+      - "@sm: Daily standups, remove impedimentos"
+    outputs:
+      - Arquitetura documentada
+      - Mockups aprovados
+      - 50%+ features implementadas
+
+  phase3:
+    name: "Implementation Wave 2 & Testing"
+    duration: "Day 8-10"
+    leads: [dev, qa]
+    activities:
+      - "@dev: Concluir implementações, bugfixes"
+      - "@qa: Executar testes completos, validação UX"
+      - "@devops: Preparar pipelines de deploy contínuo"
+      - "@pm: Code review, quality gates"
+      - "@sm: Daily standups, impediment management"
+    outputs:
+      - 100% features implementadas
+      - Test reports completos
+      - CI/CD ready
+
+  phase4:
+    name: "Polish, Deploy & Validation"
+    duration: "Day 11-14"
+    leads: [qa, devops, po]
+    activities:
+      - "@qa: Smoke tests em staging"
+      - "@devops: Deploy gradual (canary/blue-green)"
+      - "@analyst: Configurar tracking de métricas"
+      - "@po: Validar entrega vs. critérios de valor"
+      - "@sm: Sprint review & retrospectiva"
+    outputs:
+      - Deploy em produção
+      - Métricas sendo coletadas
+      - Sprint retrospective report
+
+# Success Metrics
+metrics:
+  performance:
+    - name: "Time to Download"
+      baseline: "TBD by @analyst"
+      target: "-30% reduction"
+      measurement: "Avg time from search to Excel download"
+
+    - name: "Download Conversion Rate"
+      baseline: "TBD by @analyst"
+      target: "+20% increase"
+      measurement: "% of searches resulting in download"
+
+  satisfaction:
+    - name: "User Satisfaction (NPS/CSAT)"
+      baseline: "TBD (collect during sprint)"
+      target: "+15 points increase"
+      measurement: "Post-download survey"
+
+    - name: "Bounce Rate"
+      baseline: "TBD by @analyst"
+      target: "Reduce by 25%"
+      measurement: "% users leaving after first search"
+
+# Deliverables (Quick Wins Priorizados)
+deliverables:
+  must_have:
+    - name: "Interactive Onboarding Flow"
+      value: "First impression - reduce time to first successful search"
+      owner: "@ux-design-expert + @dev"
+
+    - name: "Saved Searches & History"
+      value: "Avoid rework - users can revisit past searches"
+      owner: "@dev + @architect"
+
+    - name: "Performance Improvements with Visible Feedback"
+      value: "Perceived speed - better loading states, optimizations"
+      owner: "@dev + @ux-design-expert"
+
+  should_have:
+    - name: "Opportunity Notifications"
+      value: "Proactive value - alert users of new matching bids"
+      owner: "@dev + @architect"
+
+    - name: "Personal Analytics Dashboard"
+      value: "Show value generated - stats on searches, downloads, saved time"
+      owner: "@dev + @analyst"
+
+    - name: "Multi-Format Export (CSV, PDF)"
+      value: "Flexibility - different user workflows"
+      owner: "@dev"
+
+  could_have:
+    - name: "Persistent Filters"
+      value: "Save clicks - remember user preferences"
+      owner: "@dev"
+
+# Communication & Coordination
+communication:
+  daily_standup:
+    time: "09:00 AM"
+    duration: "15 min"
+    format: "What did I do? What will I do? Blockers?"
+    facilitator: "@sm"
+
+  sprint_review:
+    day: "Day 14"
+    duration: "1 hour"
+    attendees: "Full squad + stakeholders"
+    format: "Demo deliverables, review metrics, gather feedback"
+
+  retrospective:
+    day: "Day 14"
+    duration: "45 min"
+    attendees: "Full squad"
+    format: "What went well? What to improve? Action items"
+
+# Risk Mitigation
+risks:
+  - risk: "Scope creep"
+    mitigation: "@po enforces MoSCoW prioritization, @pm manages scope"
+
+  - risk: "Technical blockers"
+    mitigation: "@sm removes impediments, @architect provides solutions"
+
+  - risk: "Quality issues"
+    mitigation: "@qa continuous testing, @pm enforces quality gates"
+
+  - risk: "Missed deadline"
+    mitigation: "@sm tracks velocity, @pm adjusts scope if needed"
+
+# Activation
+activation:
+  command: "/bidiq feature --squad team-bidiq-value-sprint"
+  alternative: "Invoke agents sequentially following workflow phases"
+
+# Related Resources
+resources:
+  - ".aios-core/development/workflows/bidiq-sprint-kickoff.yaml"
+  - ".aios-core/development/workflows/bidiq-feature-e2e.yaml"
+  - "docs/sprints/value-sprint-01.md"
+  - "docs/guides/bidiq-development-guide.md"

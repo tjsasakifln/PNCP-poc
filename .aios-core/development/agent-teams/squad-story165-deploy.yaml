@@ -1,0 +1,259 @@
+bundle:
+  name: STORY-165 Deployment Squad
+  icon: 🚢
+  description: Feature flag deployment, monitoring, and rollback plan for STORY-165
+
+agents:
+  - devops            # Feature flag setup, deployment orchestration
+  - qa                # Pre-deployment validation, smoke tests
+  - architect         # Monitor architecture impact, performance baselines
+  - pm                # Sign-off, stakeholder communication
+
+workflows:
+  - bidiq-deploy-release.yaml
+
+tasks:
+  - ci-cd-configuration.md
+  - qa-gate.md
+  - github-devops-github-pr-automation.md
+
+mission: |
+  Deploy STORY-165 (Plan Restructuring) with:
+  1. Feature flag: ENABLE_NEW_PRICING (gradual rollout)
+  2. Monitoring: error rates, upgrade clicks, performance
+  3. Rollback plan: documented and tested
+  4. Staged deployment: 0% → 10% → 50% → 100%
+
+task_breakdown:
+  task_7_deploy:
+    - Implement feature flag system (ENABLE_NEW_PRICING)
+    - Configure environment variables for staging/production
+    - Set up monitoring dashboards (Grafana/Datadog/CloudWatch)
+    - Create rollback runbook
+    - Test feature flag toggle (enable/disable)
+    - Deploy to staging
+    - Run smoke tests on staging
+    - Enable 10% rollout in production
+    - Monitor for 24 hours
+    - Gradual increase: 50% → 100%
+    - Final validation and sign-off
+
+quality_gates:
+  pre_staging_deploy:
+    trigger: Before staging deployment
+    agent: qa
+    checks:
+      - All AC1-AC16 completed ✅
+      - Backend tests ≥70% coverage ✅
+      - Frontend tests ≥60% coverage ✅
+      - E2E tests passing ✅
+      - No linting errors ✅
+    threshold: 100% quality gates passing
+
+  pre_production_deploy:
+    trigger: Before production deployment
+    agent: devops
+    checks:
+      - Staging smoke tests pass ✅
+      - Feature flag toggle tested ✅
+      - Rollback plan documented ✅
+      - Monitoring dashboards ready ✅
+      - On-call team notified ✅
+    threshold: 0 blockers, deployment approved
+
+  post_deploy_validation:
+    trigger: After production deployment
+    agent: qa
+    checks:
+      - Health check endpoints responding
+      - Error rate < 1%
+      - Response time < 500ms p95
+      - No critical errors in logs
+      - Upgrade click tracking working
+    threshold: All green for 1 hour before next rollout stage
+
+rollout_strategy: |
+  **Stage 1: Staging (Week 1)**
+  - Deploy with ENABLE_NEW_PRICING=false (feature off)
+  - Test feature flag toggle
+  - Run full regression suite
+  - Enable feature on staging: ENABLE_NEW_PRICING=true
+  - Manual QA testing
+
+  **Stage 2: Production 10% (Week 2 Day 1-2)**
+  - Deploy with feature flag
+  - Enable for 10% of users (based on user_id hash or whitelist)
+  - Monitor:
+    - Error rate (target: <0.5%)
+    - Response time (target: <500ms p95)
+    - Upgrade click events (analytics)
+    - User complaints (support tickets)
+  - Decision: Proceed if metrics green
+
+  **Stage 3: Production 50% (Week 2 Day 3-4)**
+  - Increase to 50% of users
+  - Monitor same metrics
+  - Decision: Proceed if metrics green
+
+  **Stage 4: Production 100% (Week 2 Day 5-7)**
+  - Enable for all users
+  - Monitor for 48 hours
+  - Remove feature flag after stable (Week 3)
+
+rollback_plan: |
+  **Trigger Conditions for Rollback:**
+  - Error rate > 2%
+  - Response time > 1000ms p95
+  - Critical bugs affecting user flow
+  - Payment integration issues
+  - Data corruption detected
+
+  **Rollback Procedure:**
+  1. Set feature flag to false: ENABLE_NEW_PRICING=false
+  2. Verify rollback in 2-3 minutes (cache clear)
+  3. Notify team via Slack/PagerDuty
+  4. Investigate root cause
+  5. Document incident in docs/incidents/
+
+  **Rollback Testing:**
+  - Test flag toggle: true → false → true
+  - Verify old UI returns immediately
+  - No data loss or corruption
+  - User sessions preserved
+
+monitoring_setup: |
+  **Key Metrics to Track:**
+  1. **Error Rates:**
+     - 403 Forbidden (plan restrictions)
+     - 429 Too Many Requests (rate limiting)
+     - 500 Server Errors
+
+  2. **Business Metrics:**
+     - Upgrade button clicks
+     - Excel export attempts (blocked vs allowed)
+     - Date range validation failures
+     - Quota exhaustion events
+
+  3. **Performance:**
+     - /api/buscar response time
+     - /api/me response time
+     - Database query latency
+     - Redis rate limiter latency
+
+  4. **User Experience:**
+     - Trial conversion rate
+     - Upgrade modal views
+     - Support ticket volume
+
+  **Monitoring Tools:**
+  - Application logs: CloudWatch/ELK
+  - Metrics: Prometheus + Grafana
+  - Alerts: PagerDuty
+  - Analytics: PostHog/Mixpanel
+
+feature_flag_implementation: |
+  **Backend (FastAPI):**
+  ```python
+  # backend/config.py
+  ENABLE_NEW_PRICING = os.getenv("ENABLE_NEW_PRICING", "false").lower() == "true"
+
+  # backend/main.py
+  from config import ENABLE_NEW_PRICING
+
+  @app.post("/api/buscar")
+  async def buscar(...):
+      if ENABLE_NEW_PRICING:
+          # New logic: check_quota() with PLAN_CAPABILITIES
+          quota_info = check_quota(user_id)
+          if not quota_info.allowed:
+              raise HTTPException(status_code=403, detail=quota_info.error_message)
+      else:
+          # Old logic: no restrictions
+          pass
+  ```
+
+  **Frontend (Next.js):**
+  ```typescript
+  // frontend/lib/config.ts
+  export const ENABLE_NEW_PRICING = process.env.NEXT_PUBLIC_ENABLE_NEW_PRICING === "true";
+
+  // frontend/components/SearchForm.tsx
+  import { ENABLE_NEW_PRICING } from '@/lib/config';
+
+  if (ENABLE_NEW_PRICING) {
+    // Show plan badge, quota counter, locked features
+  } else {
+    // Show old UI (no restrictions)
+  }
+  ```
+
+  **Environment Variables:**
+  - Staging: ENABLE_NEW_PRICING=true
+  - Production (initial): ENABLE_NEW_PRICING=false
+  - Production (rollout): Toggle via deployment or runtime config
+
+agent_responsibilities:
+  devops:
+    - Set up feature flag infrastructure
+    - Configure monitoring dashboards
+    - Create deployment pipeline for staged rollout
+    - Document rollback procedure
+    - Execute deployments (staging, 10%, 50%, 100%)
+    - On-call during rollout
+
+  qa:
+    - Pre-deployment validation (all AC1-AC16)
+    - Smoke tests on staging
+    - Monitor error rates during rollout
+    - Execute rollback if issues detected
+    - Final acceptance sign-off
+
+  architect:
+    - Review performance baselines
+    - Monitor database query performance
+    - Analyze rate limiter impact
+    - Assess Redis vs in-memory trade-offs
+    - Post-deployment architecture review
+
+  pm:
+    - Stakeholder communication (GTM team)
+    - Go/no-go decision at each stage
+    - Track business metrics (upgrade clicks)
+    - Sign-off on final deployment
+    - Update roadmap status
+
+success_criteria: |
+  Deployment is successful when:
+  - Feature flag implemented ✅
+  - Deployed to staging and tested ✅
+  - 10% rollout completed with <1% error rate ✅
+  - 50% rollout completed with <1% error rate ✅
+  - 100% rollout completed with <1% error rate ✅
+  - Monitoring dashboards operational ✅
+  - Rollback plan tested and documented ✅
+  - STORY-165 marked as COMPLETED ✅
+  - GTM team notified and pricing live ✅
+
+timeline:
+  - Feature flag implementation: 0.5 days
+  - Staging deployment + testing: 1 day
+  - Production 10% rollout: 1-2 days (monitor 24h)
+  - Production 50% rollout: 1-2 days (monitor 24h)
+  - Production 100% rollout: 1-2 days (monitor 48h)
+  - Total: 5-8 days
+
+risks:
+  - High: Payment integration not yet implemented (upgrade CTAs point to TBD)
+  - Medium: Redis not yet configured (use in-memory fallback)
+  - Low: Monitoring dashboards require manual setup
+
+mitigation:
+  - Upgrade CTAs can show "Coming Soon" modal instead of payment flow
+  - In-memory rate limiter sufficient for initial rollout
+  - Use application logs + basic CloudWatch for initial monitoring
+
+notes:
+  - No paying users yet, so rollback has low business impact
+  - Focus on data integrity and UX during rollout
+  - Payment integration is future story (not blocking GTM)
+  - Monitor upgrade click events to validate demand

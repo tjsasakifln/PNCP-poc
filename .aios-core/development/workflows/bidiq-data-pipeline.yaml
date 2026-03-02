@@ -1,0 +1,209 @@
+workflow:
+  id: bidiq-data-pipeline
+  name: BidIQ Data Pipeline - Filtragem e Geração de Relatórios
+  description: >-
+    Workflow para criação ou modificação de pipeline de dados: filtros de licitações,
+    transformações e geração de relatórios (Excel/PDF). Cobre o fluxo completo
+    PNCP data → filtering → transformation → output (Excel com openpyxl).
+  type: brownfield
+  project_types:
+    - data-pipeline
+    - etl
+    - report-generation
+    - filtering
+
+  sequence:
+    - step: data_flow_design
+      phase: 1
+      phase_name: "Design do Fluxo de Dados"
+      agent: data-engineer
+      action: design_data_pipeline
+      creates: docs/architecture/data-pipeline-design.md
+      notes: |
+        @data-engineer projeta o fluxo de dados:
+
+        RESPONSABILIDADES:
+        1. Definir input (fonte de dados, formato, volume estimado)
+        2. Mapear etapas de filtragem (ordem fail-fast)
+        3. Definir transformações (normalização, enriquecimento)
+        4. Especificar formato de saída (colunas, tipos, formatação)
+        5. Estimar volume e requisitos de memória
+
+        REFERÊNCIA - Ordem de filtros (fail-fast):
+        1. UF check (mais rápido)
+        2. Value range check
+        3. Keyword matching (mais custoso)
+        4. Status/date validation
+
+        REFERÊNCIA - Keywords: filter.py (KEYWORDS_UNIFORMES, KEYWORDS_EXCLUSAO)
+
+        OUTPUT: docs/architecture/data-pipeline-design.md
+
+    - step: pipeline_review
+      phase: 2
+      phase_name: "Review de Performance"
+      agent: architect
+      action: review_pipeline_performance
+      requires: docs/architecture/data-pipeline-design.md
+      notes: |
+        @architect revisa o design para performance:
+
+        CHECKLIST:
+        1. Paginação: generator pattern para datasets grandes?
+        2. Memória: streaming vs load-all-in-memory?
+        3. Filtros: ordem otimizada (fail-fast)?
+        4. I/O: operações de escrita buffered?
+        5. Unicode: normalização NFC/NFD para matching?
+        6. Concorrência: async onde possível?
+
+        REFERÊNCIA:
+        - pncp_client.py: fetch_all() generator, 500 items/page
+        - filter.py: Unicode normalization, word boundary regex
+        - Limite LLM: max 50 bids para resumo
+
+        OUTPUT: Review com recomendações de performance
+
+    - step: implement_filters
+      phase: 3
+      phase_name: "Implementação de Filtros"
+      agent: dev
+      action: implement_filter_logic
+      requires: docs/architecture/data-pipeline-design.md
+      creates: backend/filter.py (atualizado)
+      notes: |
+        @dev implementa lógica de filtragem:
+
+        COMPONENTES:
+        1. Filtros sequenciais (fail-fast optimization)
+        2. Keyword matching com Unicode normalization
+        3. Word boundary regex para precisão
+        4. Keywords de exclusão (false positive prevention)
+        5. Value range validation (R$ 50k - R$ 5M)
+        6. Retorno: tuple[bool, str | None] (approved, rejection_reason)
+
+        PADRÃO: filter.py existente
+        - unicodedata.normalize para matching
+        - re.compile para performance
+        - Type hints + docstrings Google style
+
+        OUTPUT: Filtros implementados
+
+    - step: implement_output_generator
+      phase: 4
+      phase_name: "Gerador de Output"
+      agent: dev
+      action: implement_output_generator
+      requires: backend/filter.py
+      creates: backend/excel.py (atualizado)
+      notes: |
+        @dev implementa gerador de relatório:
+
+        COMPONENTES (Excel com openpyxl):
+        1. Headers estilizados (verde #2E7D32, branco, bold)
+        2. Colunas: Código, Objeto, Órgão, UF, Município, Valor, Modalidade, Datas, Status, Link
+        3. Auto-width baseado no conteúdo
+        4. Frozen header row (A2)
+        5. Formatação de moeda (R$)
+        6. Hyperlinks para URLs do PNCP
+        7. Metadata sheet (stats de geração)
+
+        PADRÃO: excel.py existente
+        - Constantes para estilos
+        - openpyxl com PatternFill, Font, Alignment
+
+        OUTPUT: Gerador de relatório funcional
+
+    - step: edge_case_tests
+      phase: 5
+      phase_name: "Testes de Edge Cases"
+      agent: qa
+      action: test_edge_cases
+      requires:
+        - backend/filter.py
+        - backend/excel.py
+      creates:
+        - backend/tests/test_filter.py (atualizado)
+        - backend/tests/test_excel.py (atualizado)
+      notes: |
+        @qa testa edge cases do pipeline:
+
+        CENÁRIOS DE FILTRO:
+        1. Zero resultados (nenhum match)
+        2. Todos os resultados passam
+        3. Unicode: acentos, cedilha, caracteres especiais
+        4. Keywords parciais (não devem dar match por boundary)
+        5. Valores limítrofes (exatamente R$ 50k, exatamente R$ 5M)
+        6. Campos ausentes ou nulos
+
+        CENÁRIOS DE OUTPUT:
+        1. Excel com 0 linhas (apenas header)
+        2. Excel com 1000+ linhas
+        3. Texto longo em objeto (truncamento)
+        4. Valores monetários extremos
+        5. URLs inválidas ou ausentes
+        6. Metadata sheet com stats corretos
+
+        THRESHOLD: Coverage >= 70%
+
+        OUTPUT: Testes atualizados com edge cases
+
+    - step: performance_tests
+      phase: 6
+      phase_name: "Testes de Performance"
+      agent: qa
+      action: test_performance
+      requires:
+        - backend/filter.py
+        - backend/excel.py
+      notes: |
+        @qa testa performance com datasets grandes:
+
+        CENÁRIOS:
+        1. Filtrar 10.000 licitações (tempo < 5s)
+        2. Gerar Excel com 5.000 linhas (tempo < 10s)
+        3. Memória: não exceder 200MB para datasets grandes
+        4. Paginação: processar 20 páginas de 500 items
+
+        FERRAMENTAS:
+        - pytest-benchmark ou time.perf_counter
+        - @pytest.mark.performance para separar dos unit tests
+
+        OUTPUT: Relatório de performance
+
+  decision_guidance:
+    when_to_use:
+      - Novo pipeline de dados (filtro → transformação → output)
+      - Adicionar novos filtros ao sistema de licitações
+      - Modificar formato de relatório Excel
+      - Otimizar performance de filtragem
+      - Adicionar novo tipo de output (PDF, CSV, etc.)
+      - Modificar keywords de busca ou exclusão
+
+  handoff_prompts:
+    design_complete: |
+      Design do pipeline concluído: docs/architecture/data-pipeline-design.md
+
+      Próximo: @architect para review de performance (FASE 2)
+
+    review_complete: |
+      Review de performance concluído. Recomendações incorporadas.
+
+      Próximo: @dev para implementação de filtros (FASE 3)
+
+    filters_complete: |
+      Filtros implementados com Unicode normalization e fail-fast.
+
+      Próximo: @dev para gerador de output (FASE 4)
+
+    output_complete: |
+      Gerador de relatório implementado (Excel com estilos).
+
+      Próximo: @qa para testes de edge cases e performance (FASES 5-6)
+
+    workflow_complete: |
+      Data pipeline completo!
+      - Fluxo de dados desenhado e revisado
+      - Filtros implementados (fail-fast, Unicode)
+      - Gerador de output funcional (Excel styled)
+      - Edge cases testados
+      - Performance validada

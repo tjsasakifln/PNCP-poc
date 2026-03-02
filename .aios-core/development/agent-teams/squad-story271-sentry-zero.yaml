@@ -1,0 +1,114 @@
+bundle:
+  name: Squad STORY-271 Sentry Zero
+  icon: "\U0001F6A8"
+  description: Full squad to resolve all 5 Sentry unresolved issues and achieve "0 unresolved" GTM gate
+
+agents:
+  - architect      # Timeout chain analysis, pipeline resilience design
+  - dev            # Code fixes (health.py, config.py, consolidation.py)
+  - data-engineer  # Migration for warming user profile FK fix
+  - qa             # Test coverage for all ACs, Sentry zero-gate validation
+  - github-devops  # Railway env cleanup, supabase db push, deploy verification
+
+workflows:
+  - bidiq-hotfix.yaml
+
+tasks:
+  - dev-develop-story.md
+  - qa-run-tests.md
+  - qa-generate-tests.md
+  - db-apply-migration.md
+
+when_to_use:
+  - Resolving production Sentry issues
+  - Infrastructure-level bug fixes (timeouts, FK violations, env vars)
+  - Operational maturity gates
+
+quality_gates:
+  pre_commit:
+    trigger: Before commit
+    agent: qa
+    checks:
+      - pytest backend/tests/test_story271_sentry_fixes.py -v
+      - pytest --cov (>=70% threshold)
+    threshold: All AC tests passing, coverage >=70%
+
+  pre_deploy:
+    trigger: Before Railway deploy
+    agent: github-devops
+    checks:
+      - supabase db push (AC1 migration)
+      - railway variables verification (AC5)
+      - Sentry issue resolution confirmation
+    threshold: 0 test failures, migration applied, env vars corrected
+
+purpose: |
+  Resolves 5 production Sentry issues blocking GTM "0 unresolved" gate.
+
+  ## Work Breakdown by Agent
+
+  ### Phase 1: Investigation & Design (@architect)
+  - Analyze timeout chain: Pipeline(110s) vs Gunicorn(115s) — only 5s buffer
+  - Design reduced timeout: Pipeline(100s) → 15s buffer
+  - Verify early-return logic (80s threshold, 80% completeness)
+  - Review AllSourcesFailedError fallback paths
+
+  ### Phase 2: Database Fix (@data-engineer)
+  - AC1: Create migration `20260226110000_warming_user_profile.sql`
+  - Insert nil UUID system profile for cache warmer
+  - ON CONFLICT guard for idempotency
+  - Coordinate supabase db push with @devops
+
+  ### Phase 3: Code Fixes (@dev)
+  - AC2: Reduce DEGRADED_GLOBAL_TIMEOUT 110→100 in consolidation.py
+  - AC2: Add EARLY_RETURN_TIME_S=80 + EARLY_RETURN_THRESHOLD_PCT=0.8 to config.py
+  - AC4: Fix PNCP health canary in health.py:
+    - Date format YYYY-MM-DD → yyyyMMdd
+    - Add codigoModalidadeContratacao=6
+    - Change status check from <500 to <400
+  - AC1: Add WARMING_USER_ID to config.py
+
+  ### Phase 4: Testing (@qa)
+  - Verify test_story271_sentry_fixes.py (already 21 tests)
+  - Run full backend suite (baseline: 5419 pass / 0 fail)
+  - Validate each AC against test expectations
+  - Post-deploy: monitor Sentry 24h for regression
+
+  ### Phase 5: Deploy & Verify (@devops)
+  - AC5: railway variables set/delete PNCP_TIMEOUT_PER_MODALITY
+  - supabase db push (AC1 migration)
+  - railway up (deploy backend)
+  - Verify Sentry issue count = 0 (AC6)
+
+  ## Issue-to-AC Mapping
+
+  | Sentry Issue | AC | Agent | Fix |
+  |-------------|-----|-------|-----|
+  | FK violation (44 events) | AC1 | @data-engineer + @dev | Migration + config |
+  | Worker timeout (11 events) | AC2 | @architect + @dev | Reduce pipeline timeout |
+  | AllSourcesFailedError (3 events) | AC3 | @architect + @dev | Verify fallbacks |
+  | PNCP canary wrong params | AC4 | @dev | Fix health.py |
+  | Stale Railway env var | AC5 | @devops | Clean env |
+  | Sentry zero gate | AC6 | @qa + @devops | Validate post-deploy |
+
+activation_instructions: |
+  To activate this squad:
+
+  1. Type: `/squad-creator`
+  2. Select: "Load existing squad"
+  3. Choose: "squad-story271-sentry-zero"
+  4. Start: `*develop` or follow phase sequence
+
+  Quick start:
+  - Phase 1: @architect → timeout analysis
+  - Phase 2: @data-engineer → migration
+  - Phase 3: @dev → code fixes (AC1-AC4)
+  - Phase 4: @qa → test validation
+  - Phase 5: @devops → deploy + verify
+
+notes:
+  - Tests already exist: backend/tests/test_story271_sentry_fixes.py (21 tests)
+  - Migration already exists: supabase/migrations/20260226110000_warming_user_profile.sql
+  - Some code changes already in progress (see git status: config.py, health.py, consolidation.py modified)
+  - Railway timeout is 300s (not 120s) — Gunicorn at 115s is the real constraint
+  - PNCP max tamanhoPagina=50 — health canary uses 10 (safe)

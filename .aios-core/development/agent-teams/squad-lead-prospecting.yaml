@@ -1,0 +1,77 @@
+bundle:
+  name: Lead Prospecting Task Force
+  icon: 🎯
+  description: |
+    Specialized squad for surgical lead prospecting workflow.
+    Identifies companies highly dependent on public procurement contracts.
+
+    Mission: Create *acha-leads workflow that:
+    - Queries PNCP API for recently homologated contracts
+    - Cross-references with public APIs (Receita Federal, etc)
+    - Performs strategic web searches
+    - Identifies companies where public contracts are primary revenue source
+    - Generates contact data (email, phone, WhatsApp)
+    - Provides strategic conversion intelligence
+    - Creates personalized outreach messages
+
+    Output: ≥10 qualified leads with full contact data and conversion strategy
+
+agents:
+  - analyst        # Lead: qualification criteria, business intelligence
+  - data-engineer  # Data pipeline, API integrations, data cross-referencing
+  - architect      # Workflow architecture, integration patterns
+  - dev            # Implementation of *acha-leads workflow
+  - qa             # Data quality validation, accuracy testing
+
+workflows:
+  - brownfield-service.yaml  # Extending existing backend
+
+coordination:
+  lead_agent: analyst
+  execution_sequence:
+    - phase: discovery
+      agents: [analyst, data-engineer]
+      deliverable: "Requirements document + API inventory"
+
+    - phase: design
+      agents: [architect, data-engineer]
+      deliverable: "Workflow architecture + data model"
+
+    - phase: implementation
+      agents: [dev]
+      dependencies: [design]
+      deliverable: "*acha-leads workflow implementation"
+
+    - phase: validation
+      agents: [qa]
+      dependencies: [implementation]
+      deliverable: "Quality report + test results"
+
+success_criteria:
+  - minimum_leads: 10
+  - required_contact_data: ["email", "phone"]
+  - preferred_contact_data: ["whatsapp"]
+  - strategic_intelligence: "Recent wins, bid patterns, sector alignment"
+  - personalized_message: "Ready to copy/paste for outreach"
+  - sectors_covered: "1 or more of 12 configured sectors"
+
+technical_requirements:
+  apis:
+    - PNCP API (homologated contracts)
+    - Receita Federal API (company data)
+    - Web search (strategic intelligence)
+
+  output_format: "Markdown document with structured lead profiles"
+
+  workflow_invocation: "*acha-leads"
+
+  resilience:
+    - Retry logic for API failures
+    - Fallback strategies for incomplete data
+    - Rate limiting compliance
+
+quality_gates:
+  - Contact data verified (valid format)
+  - Strategic intelligence actionable
+  - Personalized message contextually relevant
+  - Lead qualification score ≥ 7/10

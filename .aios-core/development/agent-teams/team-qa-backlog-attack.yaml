@@ -1,0 +1,175 @@
+# QA Backlog Attack Squad - Parallel Execution
+# Assembled by @squad-creator - 2026-01-30
+# Mission: Eliminate all P0 + P1 issues from QA audit backlog
+
+name: team-qa-backlog-attack
+description: "Specialized squad for parallel attack on QA testing backlog"
+objective: "Resolve 7 P0/P1 issues from qa-testing-analysis.md in parallel"
+
+agents:
+  # Frontend Development Team
+  - name: dev-frontend
+    role: dev
+    focus: "Frontend testing (QA-4, QA-5, QA-6)"
+    tasks:
+      - "QA-4: Add missing component tests (LoadingProgress, RegionSelector, SavedSearchesDropdown, AnalyticsProvider)"
+      - "QA-5: Fix ThemeToggle async test failures"
+      - "QA-6: Add useAnalytics hook tests"
+    parallel_group: "frontend"
+    priority: P1
+    estimated_hours: 17
+
+  # Backend Development Team
+  - name: dev-backend
+    role: dev
+    focus: "Backend testing (QA-1)"
+    tasks:
+      - "QA-1: Increase main.py endpoint coverage from 70% to 90%"
+      - "Add 15 endpoint tests (invalid dates, PDF generation, LLM override, etc.)"
+    parallel_group: "backend"
+    priority: P1
+    estimated_hours: 6
+
+  # E2E Testing Team Lead
+  - name: qa-e2e-lead
+    role: qa
+    focus: "E2E test suite creation (QA-7)"
+    tasks:
+      - "QA-7: Create E2E test suite with Playwright"
+      - "Implement 5 critical user flows (search, theme, saved searches, empty state, error)"
+      - "Configure playwright.config.ts"
+    parallel_group: "e2e"
+    priority: P0
+    estimated_hours: 16
+
+  # E2E CI/CD Integration
+  - name: devops-e2e-ci
+    role: devops
+    focus: "E2E CI pipeline (QA-10)"
+    tasks:
+      - "QA-10: Add Playwright to CI pipeline"
+      - "Create .github/workflows/e2e.yml"
+      - "Configure artifact upload on failure"
+    parallel_group: "e2e"
+    priority: P0
+    estimated_hours: 3
+    depends_on: [qa-e2e-lead]
+
+  # QA Automation Engineer
+  - name: qa-automation
+    role: qa
+    focus: "CI/CD quality gates (QA-8)"
+    tasks:
+      - "QA-8: Enforce frontend coverage threshold on CI"
+      - "Update GitHub Actions to fail when coverage < 60%"
+      - "Verify jest --coverage --ci in workflow"
+    parallel_group: "ci-gates"
+    priority: P1
+    estimated_hours: 1
+
+  # Test Architect
+  - name: architect-testing
+    role: architect
+    focus: "Test strategy coordination and review"
+    tasks:
+      - "Review all test implementations for best practices"
+      - "Ensure consistent test patterns across frontend/backend/e2e"
+      - "Validate coverage thresholds and quality gates"
+    parallel_group: "oversight"
+    priority: P1
+    estimated_hours: 4
+
+workflow:
+  phases:
+    - name: "Phase 1: Setup & Planning (30 min)"
+      agents: [architect-testing]
+      tasks:
+        - "Review QA audit (docs/reviews/qa-testing-analysis.md)"
+        - "Create task distribution plan"
+        - "Brief all agents on objectives"
+
+    - name: "Phase 2: Parallel Execution (8-10 hours)"
+      parallel: true
+      groups:
+        - name: "Frontend Testing"
+          agents: [dev-frontend]
+          tasks:
+            - "QA-4: Component tests (12h)"
+            - "QA-5: ThemeToggle fix (2h)"
+            - "QA-6: Hook tests (3h)"
+
+        - name: "Backend Testing"
+          agents: [dev-backend]
+          tasks:
+            - "QA-1: Endpoint tests (6h)"
+
+        - name: "E2E Foundation"
+          agents: [qa-e2e-lead, devops-e2e-ci]
+          tasks:
+            - "QA-7: E2E suite (16h) - qa-e2e-lead"
+            - "QA-10: E2E CI (3h) - devops-e2e-ci (after QA-7)"
+
+        - name: "CI Quality Gates"
+          agents: [qa-automation]
+          tasks:
+            - "QA-8: Frontend coverage enforcement (1h)"
+
+    - name: "Phase 3: Integration & Review (2 hours)"
+      sequential: true
+      agents: [architect-testing, qa-automation]
+      tasks:
+        - "Run full test suite (backend + frontend + e2e)"
+        - "Verify all coverage thresholds met"
+        - "Create test report summary"
+        - "Update qa-testing-analysis.md with completion status"
+
+success_criteria:
+  - "All P0 issues resolved (QA-7, QA-10)"
+  - "All P1 issues resolved (QA-1, QA-4, QA-5, QA-8)"
+  - "Backend coverage ≥ 90%"
+  - "Frontend coverage ≥ 60%"
+  - "E2E test suite operational with 5 critical flows"
+  - "CI gates enforced and passing"
+  - "Zero flaky tests"
+
+estimated_total_hours: 42
+estimated_parallel_hours: 12
+speedup_factor: 3.5x
+
+deliverables:
+  - "15+ new backend endpoint tests"
+  - "4 new component test suites"
+  - "1 hook test suite"
+  - "5 E2E test flows"
+  - "Updated CI/CD workflows"
+  - "Test coverage reports showing targets met"
+  - "Updated documentation"
+
+communication:
+  - "Daily standups at 9 AM (async via task list)"
+  - "Blockers escalated to architect-testing immediately"
+  - "Progress tracked in task list"
+  - "Final report in docs/reports/qa-backlog-attack-report.md"
+
+tools_required:
+  - pytest, pytest-cov (backend)
+  - jest, @testing-library/react (frontend)
+  - playwright (e2e)
+  - GitHub Actions (ci/cd)
+
+priority_order:
+  1. QA-7 (E2E suite) - CRITICAL PATH
+  2. QA-10 (E2E CI) - depends on QA-7
+  3. QA-8 (CI enforcement) - QUICK WIN
+  4. QA-1 (backend coverage) - HIGH ROI
+  5. QA-5 (ThemeToggle fix) - BLOCKS FRONTEND CI
+  6. QA-4 (component tests) - LONGEST TASK
+  7. QA-6 (hook tests) - COMPLETES FRONTEND
+
+notes: |
+  - QA-4 is the longest task (12h) - start immediately
+  - QA-7 is critical path for E2E - parallel with frontend work
+  - QA-10 depends on QA-7 completion
+  - QA-8 is quick win (1h) - do early for immediate CI benefit
+  - All work tracked in task list with status updates
+  - Final integration test ensures all pieces work together

@@ -1,0 +1,184 @@
+# Squad: GTM-FIX Story Review
+# Purpose: Technical review of 11 GTM-FIX stories (001-011) for GTM readiness
+# Created: 2026-02-16
+# Context: Stories revised to include dual-source PNCP + PCP API integration
+
+name: "GTM-FIX Story Review Squad"
+emoji: "🔍"
+description: >
+  Squad de revisão técnica para validar as 11 stories GTM-FIX antes da execução.
+  Foco em: acceptance criteria completeness, dependency graph accuracy,
+  architectural soundness (especialmente GTM-FIX-011 PCP integration),
+  e viabilidade de effort estimates.
+
+# ═══════════════════════════════════════════
+# SQUAD COMPOSITION (6 agents)
+# ═══════════════════════════════════════════
+
+agents:
+  # TRACK A — Architecture & Data Integration Review
+  - role: architect
+    name: "Aria"
+    focus: >
+      Revisar arquitetura de GTM-FIX-011 (PCPClient + DataSourceAggregator),
+      GTM-FIX-005 (per-source circuit breakers), GTM-FIX-010 (dual-source SWR cache).
+      Validar: Open/Closed Principle, isolation de falhas entre fontes,
+      deduplication strategy, schema normalization PNCP↔PCP.
+    stories:
+      - GTM-FIX-005  # Circuit breaker per-source
+      - GTM-FIX-011  # PCP API integration (primary reviewer)
+      - GTM-FIX-010  # SWR cache dual-source
+      - GTM-FIX-004  # Truncation per-source
+
+  # TRACK B — Backend Implementation & API Review
+  - role: dev
+    name: "Dex"
+    focus: >
+      Revisar viabilidade de implementação de TODOS os ACs backend.
+      Validar: PCP API endpoint signatures vs ACs, data normalization logic,
+      retry/timeout patterns, rate limiting strategy, filter.py extensions.
+      Cross-check com código existente (pncp_client.py, schemas.py, config.py).
+    stories:
+      - GTM-FIX-001  # Stripe checkout chain
+      - GTM-FIX-006  # Subscription cancellation
+      - GTM-FIX-007  # Payment dunning
+      - GTM-FIX-009  # Email confirmation
+      - GTM-FIX-011  # PCP client implementation details
+
+  # TRACK C — Data Engineering & Schema Review
+  - role: data-engineer
+    name: "Dara"
+    focus: >
+      Revisar schemas, migrations, e data models.
+      Validar: search_cache table schema (GTM-FIX-010), source field additions
+      em LicitacaoItem/BuscaResponse, PCP value calculation (per-item sum),
+      date format handling (DD/MM/AAAA vs YYYY-MM-DD), search_hash computation
+      com dual-source, CNAE mapping data from PCP.
+    stories:
+      - GTM-FIX-010  # Cache schema + migration
+      - GTM-FIX-011  # PCP data normalization + schema extensions
+      - GTM-FIX-004  # Truncation schema additions
+
+  # TRACK D — QA & Test Strategy Review
+  - role: qa
+    name: "Quinn"
+    focus: >
+      Revisar test strategy de TODAS as 11 stories.
+      Validar: test coverage adequacy, mock patterns consistency,
+      edge cases coverage (PCP down + PNCP up, ambos down, ambos up com dedup),
+      integration test strategy for dual-source, baseline test impact
+      (29 backend + 7 frontend pre-existing failures).
+    stories:
+      - ALL  # Cross-cutting QA review
+
+  # TRACK E — Frontend & UX Review
+  - role: ux-design-expert
+    name: "Olivia"
+    focus: >
+      Revisar componentes frontend: source badges (PNCP/PCP chips),
+      truncation banners per-source, stale cache banner com sources,
+      partial failure banners, mobile navigation (GTM-FIX-008),
+      email confirmation UX (GTM-FIX-009), copy accuracy (GTM-FIX-003).
+    stories:
+      - GTM-FIX-003  # Copy rewrite
+      - GTM-FIX-008  # Mobile UX
+      - GTM-FIX-009  # Email confirmation UX
+      - GTM-FIX-004  # Truncation banner per-source
+      - GTM-FIX-010  # Stale cache banner
+      - GTM-FIX-011  # Source badges + stats display
+
+  # TRACK F — PM & Dependency Orchestration
+  - role: pm
+    name: "Morgan"
+    focus: >
+      Validar dependency graph, effort estimates, sprint planning,
+      execution order, e GTM-OK score projections. Garantir que
+      os 11 stories + dependencies resultam em weighted score >= 7.0.
+      Cross-check: nenhuma story orphan, nenhum AC sem test coverage,
+      nenhuma dependência circular.
+    stories:
+      - ALL  # Cross-cutting PM oversight
+
+# ═══════════════════════════════════════════
+# REVIEW WORKFLOW
+# ═══════════════════════════════════════════
+
+workflow:
+  phase_1_parallel_review:
+    description: "Each agent reviews assigned stories independently"
+    duration: "1-2 hours"
+    tracks:
+      - agent: architect
+        deliverable: "Architecture review report (GTM-FIX-005, 011, 010, 004)"
+      - agent: dev
+        deliverable: "Implementation feasibility report (GTM-FIX-001, 006, 007, 009, 011)"
+      - agent: data-engineer
+        deliverable: "Schema & data model review (GTM-FIX-010, 011, 004)"
+      - agent: qa
+        deliverable: "Test strategy completeness audit (all 11 stories)"
+      - agent: ux-design-expert
+        deliverable: "Frontend/UX component review (GTM-FIX-003, 008, 009, 004, 010, 011)"
+      - agent: pm
+        deliverable: "Dependency graph + effort estimate validation"
+
+  phase_2_cross_review:
+    description: "Agents cross-validate findings, resolve conflicts"
+    duration: "30 min"
+    focus:
+      - "architect + dev: Validate PCP client architecture is implementable"
+      - "data-engineer + architect: Validate dual-source schema design"
+      - "qa + dev: Validate test mocking strategy for dual-source"
+      - "ux + pm: Validate frontend effort estimates"
+
+  phase_3_consolidated_report:
+    description: "PM consolidates all findings into actionable report"
+    duration: "30 min"
+    deliverable: "Final review report with GO/REVISE/BLOCK per story"
+
+# ═══════════════════════════════════════════
+# REVIEW CRITERIA
+# ═══════════════════════════════════════════
+
+review_criteria:
+  per_story:
+    - "ACs are MECE (Mutually Exclusive, Collectively Exhaustive)"
+    - "Each AC has corresponding test in Testing Strategy"
+    - "Effort estimate is realistic given code complexity"
+    - "Files to Modify list is complete (no hidden dependencies)"
+    - "Dependencies are correctly declared"
+    - "No AC conflicts with existing codebase patterns"
+    - "Security implications addressed (API keys, PII, injection)"
+
+  pcp_specific:
+    - "PCP API key is NEVER hardcoded (env var only)"
+    - "PCP date format handling is correct (DD/MM/AAAA)"
+    - "PCP value calculation (per-item sum) is correctly specified"
+    - "PCP pagination logic accounts for no temProximaPagina flag"
+    - "Circuit breaker isolation between PNCP and PCP"
+    - "Feature flag PCP_ENABLED allows complete disable"
+    - "Deduplication heuristic is well-defined and testable"
+    - "Fallback cascade: live dual → live partial → cache → error"
+
+  cross_story:
+    - "Dependency graph has no cycles"
+    - "Execution order respects all hard dependencies"
+    - "No conflicting schema changes between stories"
+    - "Aggregate effort is realistic for 2-sprint timeline"
+    - "GTM-OK score projection is mathematically sound"
+
+# ═══════════════════════════════════════════
+# QUALITY GATES
+# ═══════════════════════════════════════════
+
+quality_gates:
+  story_approval:
+    - status: "GO"
+      criteria: "All ACs well-defined, tests planned, effort realistic"
+    - status: "REVISE"
+      criteria: "Minor gaps in ACs or tests, fixable in <30min"
+    - status: "BLOCK"
+      criteria: "Architectural issue, missing dependency, or infeasible AC"
+
+  squad_approval:
+    threshold: "All 11 stories must be GO or REVISE (zero BLOCKs)"
+    escalation: "Any BLOCK requires architect + dev joint resolution"

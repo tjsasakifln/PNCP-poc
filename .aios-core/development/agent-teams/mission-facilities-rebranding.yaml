@@ -1,0 +1,331 @@
+bundle:
+  name: Mission - Facilities & Rebranding
+  icon: 🏢
+  description: Add Facilities sector + rebrand from Descomplicita to white label (Smart PNCP)
+  mission_date: 2026-02-02
+
+mission_objectives:
+  primary:
+    - Add "Facilities" sector with comprehensive keyword set
+    - Remove all "Descomplicita" branding
+    - Implement white label solution (proposed: "Smart PNCP")
+    - Update all frontend references (logo, name, meta tags)
+    - Update documentation and environment examples
+
+  success_criteria:
+    - Facilities sector fully operational with proper filtering
+    - Zero references to "Descomplicita" in codebase
+    - New branding applied consistently across UI
+    - Tests updated and passing (≥70% backend, ≥60% frontend)
+    - Documentation reflects new brand identity
+
+agents:
+  - analyst         # Requirements elicitation for Facilities keywords
+  - architect       # Impact analysis on filter.py, sectors.py, frontend
+  - dev             # Implementation (backend + frontend)
+  - qa              # Test creation and validation
+  - devops          # PR automation and deployment
+
+workflows:
+  - brownfield-fullstack.yaml
+
+tasks:
+  - create-next-story.md
+  - architect-analyze-impact.md
+  - dev-develop-story.md
+  - apply-qa-fixes.md
+  - github-devops-github-pr-automation.md
+
+execution_sequence:
+  1_requirements_analysis:
+    agent: analyst
+    action: "*analyze Facilities sector requirements"
+    deliverable: Comprehensive keyword list for Facilities sector
+    questions:
+      - What procurement categories fall under "Facilities"?
+      - Common terms: facilities management, predial maintenance, FM?
+      - Exclusions: avoid false positives from infrastructure/construction?
+      - Typical value range for facilities contracts?
+
+  2_architecture_review:
+    agent: architect
+    action: "*analyze-impact for Facilities sector + rebranding"
+    deliverable: Impact analysis document
+    review_areas:
+      - backend/sectors.py - new SectorConfig
+      - backend/filter.py - keyword matching logic (unchanged)
+      - backend/tests/test_sectors.py - new test cases
+      - frontend/app/page.tsx - LOGO_URL constant (line 21)
+      - frontend/app/layout.tsx - meta tags, title, og:image
+      - frontend/public/ - favicon, og-image assets
+      - .env.example - APP_NAME variable
+      - docs/ - README, PRD, architecture docs
+      - CLAUDE.md - project overview section
+
+  3_backend_implementation:
+    agent: dev
+    action: "*develop backend"
+    tasks:
+      - task: Add Facilities sector to SECTORS dict in backend/sectors.py
+        location: backend/sectors.py:610-644
+        schema: |
+          "facilities": SectorConfig(
+              id="facilities",
+              name="Facilities e Manutenção Predial",
+              description="Facilities management, manutenção predial, serviços prediais, FM",
+              keywords={...},
+              exclusions={...}
+          )
+        keywords_to_include:
+          - facilities, facilities management, fm
+          - manutenção predial, conservação predial
+          - serviços prediais, serviços de facilities
+          - limpeza predial, jardinagem predial
+          - recepção, portaria, segurança patrimonial
+          - copa e cozinha, alimentação corporativa
+          - gestão de utilidades (água, luz, gás)
+          - manutenção de ar condicionado
+          - manutenção elétrica predial, manutenção hidráulica predial
+          - controle de acesso, monitoramento predial
+          - manutenção preventiva, manutenção corretiva
+        exclusions_to_add:
+          - manutenção de equipamentos (avoid IT/industrial equipment)
+          - manutenção de veículos (avoid automotive)
+          - construção civil, reforma (keep in "engenharia" sector)
+          - software de facilities (keep in "software" sector)
+
+      - task: Add test cases for Facilities sector
+        location: backend/tests/test_sectors.py
+        test_cases:
+          - test_facilities_keyword_match_success
+          - test_facilities_keyword_exclusion
+          - test_facilities_sector_available_in_list
+          - test_facilities_normalization (accents, case)
+
+      - task: Update API documentation
+        location: backend/main.py
+        update: Add "facilities" to /api/setores endpoint response
+
+  4_frontend_rebranding:
+    agent: dev
+    action: "*develop frontend"
+    tasks:
+      - task: Remove Descomplicita logo reference
+        location: frontend/app/page.tsx:21
+        before: |
+          const LOGO_URL = "https://static.wixstatic.com/media/d47bcc_9fc901ffe70149ae93fad0f461ff9565~mv2.png/v1/crop/x_0,y_301,w_5000,h_2398/fill/w_198,h_95,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Descomplicita%20-%20Azul.png";
+        after: |
+          const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Smart PNCP";
+          const LOGO_URL = process.env.NEXT_PUBLIC_LOGO_URL || "/logo.svg";
+
+      - task: Update layout.tsx metadata
+        location: frontend/app/layout.tsx
+        updates:
+          - title: "Smart PNCP - Busca Inteligente de Licitações"
+          - description: "Ferramenta de busca avançada no PNCP com filtros por setor"
+          - og:title: "Smart PNCP"
+          - og:site_name: "Smart PNCP"
+          - Remove any "Descomplicita" references
+
+      - task: Add default logo asset
+        location: frontend/public/logo.svg
+        action: Create simple SVG logo with "Smart PNCP" text
+        fallback: Use text-only logo initially
+
+      - task: Update favicon
+        location: frontend/public/favicon.ico
+        action: Generate from new logo
+
+      - task: Add Facilities to sector dropdown
+        location: frontend/app/page.tsx
+        context: Sector list is fetched from /api/setores
+        validation: Ensure "Facilities e Manutenção Predial" appears in dropdown
+
+      - task: Search for remaining "Descomplicita" references
+        command: |
+          grep -r "descomplicita\|Descomplicita" frontend/ backend/ docs/ --exclude-dir=node_modules --exclude-dir=htmlcov --exclude-dir=.git
+        action: Remove or replace all occurrences
+
+  5_documentation_updates:
+    agent: dev
+    action: "*update documentation"
+    files_to_update:
+      - CLAUDE.md:
+          - Project Overview section (line 9): "BidIQ Uniformes" → "Smart PNCP"
+          - Remove "Descomplicita" branding references
+      - README.md:
+          - Update project name and description
+          - Update screenshots if they show old branding
+      - PRD.md:
+          - Update project name in header
+          - Update branding guidelines section
+      - .env.example:
+          - Add NEXT_PUBLIC_APP_NAME=Smart PNCP
+          - Add NEXT_PUBLIC_LOGO_URL=/logo.svg
+      - docs/sessions/:
+          - Create handoff documenting this mission
+
+  6_quality_assurance:
+    agent: qa
+    action: "*run-tests"
+    test_suites:
+      backend:
+        - pytest backend/tests/test_sectors.py -v -k facilities
+        - pytest --cov --cov-fail-under=70
+        - Validate Facilities sector filtering accuracy
+      frontend:
+        - npm test -- --coverage --testPathPattern=page.test
+        - Visual regression: logo, branding, sector dropdown
+        - E2E: Search with Facilities sector
+      integration:
+        - End-to-end flow: Select Facilities → Search → Results → Download
+        - Verify no "Descomplicita" appears anywhere in UI
+      manual_qa:
+        - Check all meta tags in browser inspector
+        - Verify og:image preview in social media validators
+        - Test mobile responsive logo display
+
+  7_deployment:
+    agent: devops
+    action: "*create-pr"
+    pr_details:
+      title: "feat: Add Facilities sector + Rebrand to Smart PNCP"
+      body: |
+        ## Mission Summary
+        - ✅ Added "Facilities e Manutenção Predial" sector with comprehensive keywords
+        - ✅ Removed all "Descomplicita" branding references
+        - ✅ Implemented white label solution: **Smart PNCP**
+        - ✅ Updated logo, meta tags, documentation
+
+        ## Changes
+        ### Backend
+        - Added Facilities sector to `backend/sectors.py`
+        - Added test cases in `backend/tests/test_sectors.py`
+        - Updated API endpoint `/api/setores`
+
+        ### Frontend
+        - Removed hardcoded Descomplicita logo URL
+        - Added environment variables for branding (APP_NAME, LOGO_URL)
+        - Updated metadata in `layout.tsx`
+        - Added Facilities to sector dropdown
+
+        ### Documentation
+        - Updated CLAUDE.md, README.md, PRD.md
+        - Added .env variables for white label configuration
+
+        ## Testing
+        - Backend: 96.69% coverage (82 tests) ✅
+        - Frontend: 60%+ coverage ✅
+        - E2E: Facilities search flow verified ✅
+        - No "Descomplicita" references found ✅
+
+        ## Deployment Notes
+        - Set `NEXT_PUBLIC_APP_NAME` and `NEXT_PUBLIC_LOGO_URL` in production .env
+        - Replace `/logo.svg` with final brand asset
+        - Update favicon.ico if needed
+
+facilities_sector_keywords:
+  reference: |
+    Facilities management typically includes:
+    - Building maintenance (HVAC, electrical, plumbing)
+    - Cleaning services (janitorial, waste management)
+    - Security services (guards, access control, monitoring)
+    - Reception/concierge services
+    - Landscaping/grounds maintenance
+    - Utilities management (water, electricity, gas)
+    - Cafeteria/food services (corporate dining)
+    - Space management
+    - Preventive/corrective maintenance
+
+  brazilian_context:
+    - "Facilities" is used in Brazil but often called "Manutenção Predial"
+    - Public sector procurement: "Serviços Prediais", "Conservação e Limpeza"
+    - Avoid overlap with "limpeza" sector (focus on management, not just cleaning)
+    - Avoid overlap with "engenharia" sector (maintenance, not construction)
+
+rebranding_rationale:
+  why_white_label:
+    - Remove client-specific branding (Descomplicita)
+    - Enable multi-tenant deployment
+    - Professional generic naming
+    - Environment-based configuration
+
+  name_suggestion: "Smart PNCP"
+  rationale:
+    - Descriptive: Smart = intelligent filtering
+    - Contextual: PNCP = clear target platform
+    - Searchable: Matches user mental model
+    - Professional: Suitable for B2G/B2B
+    - Alternative options: "PNCP Finder", "BidIQ", "LicitaSmart"
+
+  implementation_approach:
+    - Environment variables for app name/logo (NEXT_PUBLIC_*)
+    - Default values for development
+    - Production override via .env
+    - No hardcoded branding in code
+
+quality_gates:
+  pre_commit:
+    - Backend tests pass with ≥70% coverage
+    - No "Descomplicita" in git diff (except CHANGELOG)
+    - Facilities sector has ≥20 keywords, ≥5 exclusions
+
+  pre_merge:
+    - All tests passing (backend + frontend + e2e)
+    - Visual QA: Logo displays correctly
+    - Code review: No hardcoded branding
+    - Documentation updated
+
+  pre_deployment:
+    - Production .env configured
+    - Logo asset uploaded
+    - Smoke test on staging
+    - Rollback plan documented
+
+timeline:
+  - Requirements Analysis: 0.5 days
+  - Architecture Review: 0.5 days
+  - Backend Implementation: 1 day
+  - Frontend Rebranding: 1 day
+  - Documentation: 0.5 days
+  - QA: 1 day
+  - Deployment: 0.5 days
+  - Total: 5 days
+
+activation_instructions: |
+  To activate this mission squad:
+
+  1. Type: `/squad-creator`
+  2. Select: "Load existing squad"
+  3. Choose: "mission-facilities-rebranding"
+  4. Start with: `*create-story --title "Add Facilities sector + Rebrand to Smart PNCP"`
+
+  Or let AIOS auto-detect and suggest this squad when you mention:
+  - "facilities"
+  - "rebrand"
+  - "remove descomplicita"
+  - "white label"
+
+notes:
+  - YOLO mode: Move fast but maintain test coverage
+  - Facilities keywords should be validated with domain expert if possible
+  - Logo design can be iterated post-MVP (use simple SVG initially)
+  - Consider adding sector icons in future enhancement
+  - Document any Portuguese translation choices (e.g., "Facilities" vs "FM")
+
+risks:
+  - Facilities keyword overlap with "limpeza" and "engenharia" sectors
+  - Logo asset may not be ready (use fallback SVG)
+  - Production .env might be missing new variables (document clearly)
+  - Social media og:image cache (may need cache invalidation)
+
+rollback_plan:
+  if_facilities_has_false_positives:
+    - Adjust exclusion list in sectors.py
+    - Re-run audit script: `python backend/scripts/audit_all_sectors.py`
+    - Commit incremental fix
+
+  if_rebranding_issues:
+    - Revert to "BidIQ" as neutral fallback name
+    - Keep environment variables (good architecture)
+    - Can update branding later without code changes

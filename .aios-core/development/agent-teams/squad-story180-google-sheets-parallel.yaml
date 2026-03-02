@@ -1,0 +1,369 @@
+bundle:
+  name: Squad STORY-180 - Google Sheets Parallel Attack
+  icon: 🚀📊
+  description: Multi-front parallel implementation for Google Sheets export with maximum velocity and zero quality compromise
+  story: STORY-180
+  priority: P1
+  estimated_days: 13 story points (~2 sprints, accelerated to 1 sprint with parallelization)
+
+# PARALLEL EXECUTION STRATEGY
+# 4 squads working simultaneously on independent workstreams
+
+squads:
+  # ALPHA SQUAD: Backend OAuth & Infrastructure
+  alpha:
+    name: Backend OAuth Infrastructure
+    icon: 🔐
+    agents:
+      - architect      # Design OAuth flow and token management
+      - data-engineer  # Database schema for tokens and export history
+      - dev            # Implement OAuth endpoints and token encryption
+      - qa             # Test OAuth flow and security
+
+    workstream:
+      phase: 1-3 (parallel with other squads)
+      deliverables:
+        - Google Cloud OAuth setup
+        - backend/oauth.py (OAuth 2.0 handler)
+        - backend/migrations/012_google_oauth_tokens.sql
+        - backend/migrations/013_google_sheets_exports.sql
+        - GET /api/auth/google endpoint
+        - GET /api/auth/google/callback endpoint
+        - backend/tests/test_oauth.py
+
+      acceptance_criteria:
+        - AC1: OAuth Configuration ✅
+        - AC2: Token Storage and Encryption ✅
+        - AC6: OAuth Flow (Frontend) ✅ (backend part)
+
+      timeline:
+        - Day 1-2: Google Cloud setup + OAuth implementation
+        - Day 3: Database schema + migrations
+        - Day 4: Testing and security validation
+
+      dependencies: None (can start immediately)
+
+  # BRAVO SQUAD: Google Sheets Exporter Core
+  bravo:
+    name: Google Sheets Export Engine
+    icon: 📊
+    agents:
+      - architect      # Design export architecture and formatting strategy
+      - dev            # Implement GoogleSheetsExporter class
+      - qa             # Test export functionality and formatting
+
+    workstream:
+      phase: 2-4 (parallel with alpha, starts after API contract design)
+      deliverables:
+        - backend/google_sheets.py (GoogleSheetsExporter)
+        - POST /api/export/google-sheets endpoint
+        - backend/schemas.py updates (GoogleSheetsExportRequest)
+        - backend/export_history.py
+        - GET /api/export/google-sheets/history endpoint
+        - backend/tests/test_google_sheets.py
+        - backend/tests/test_export_history.py
+
+      acceptance_criteria:
+        - AC3: Google Sheets Creation ✅
+        - AC4: Update Existing Spreadsheet ✅
+        - AC8: Export History Tracking ✅
+        - AC9: Performance and Quotas ✅
+
+      timeline:
+        - Day 2-3: GoogleSheetsExporter implementation
+        - Day 4: Export history tracking
+        - Day 5: Testing and performance validation
+
+      dependencies:
+        - Requires alpha squad's OAuth token management (but can mock for development)
+
+  # CHARLIE SQUAD: Frontend Integration
+  charlie:
+    name: Frontend UI & Integration
+    icon: 🎨
+    agents:
+      - ux-design-expert  # Design button placement and user flow
+      - dev               # Implement React components
+      - qa                # Test frontend interactions and E2E flow
+
+    workstream:
+      phase: 4-6 (parallel with bravo, starts after API contract design)
+      deliverables:
+        - frontend/components/GoogleSheetsExportButton.tsx
+        - frontend/app/buscar/page.tsx updates
+        - frontend/app/api/auth/google/route.ts
+        - frontend/app/api/auth/google/callback/route.ts
+        - frontend/app/api/export/google-sheets/route.ts
+        - frontend/__tests__/GoogleSheetsExportButton.test.tsx
+        - frontend/e2e-tests/google-sheets-export.spec.ts
+
+      acceptance_criteria:
+        - AC5: Frontend Button Integration ✅
+        - AC6: OAuth Flow (Frontend) ✅ (frontend part)
+        - AC7: Error Handling ✅
+
+      timeline:
+        - Day 3: Component development
+        - Day 4: OAuth flow integration
+        - Day 5: Testing (unit + E2E)
+
+      dependencies:
+        - Requires alpha squad's OAuth endpoints
+        - Requires bravo squad's export API (but can mock for development)
+
+  # DELTA SQUAD: Documentation & Deployment
+  delta:
+    name: Documentation & Production Readiness
+    icon: 📚
+    agents:
+      - analyst   # Create user guides and troubleshooting docs
+      - devops    # Production deployment and monitoring setup
+
+    workstream:
+      phase: 7-10 (starts Day 4, continues through completion)
+      deliverables:
+        - docs/guides/google-sheets-integration.md
+        - README.md updates
+        - backend/openapi.yaml updates
+        - Production environment variable setup
+        - Railway deployment validation
+        - Smoke tests in production
+
+      acceptance_criteria:
+        - AC10: Documentation ✅
+
+      timeline:
+        - Day 4-5: Documentation creation
+        - Day 6: Production deployment
+        - Day 7: Post-deployment validation
+
+      dependencies:
+        - Requires all other squads' deliverables
+
+# COORDINATION & INTEGRATION POINTS
+
+integration_checkpoints:
+  checkpoint_1:
+    day: 2
+    meeting: Alpha + Bravo sync
+    topic: OAuth token flow integration
+    outcome: Confirm token retrieval interface matches exporter expectations
+
+  checkpoint_2:
+    day: 3
+    meeting: Bravo + Charlie sync
+    topic: API contract validation
+    outcome: Confirm frontend can consume backend export endpoint
+
+  checkpoint_3:
+    day: 4
+    meeting: All squads standup
+    topic: Integration testing coordination
+    outcome: Plan E2E test scenarios and identify blockers
+
+  checkpoint_4:
+    day: 6
+    meeting: Delta + All squads
+    topic: Production readiness review
+    outcome: Sign-off for deployment
+
+# QUALITY GATES (enforced across all squads)
+
+quality_gates:
+  pre_commit:
+    trigger: Before any commit
+    checks:
+      - Backend: pytest --cov (≥70%)
+      - Frontend: npm run lint + npm run typecheck
+    threshold: No failures allowed
+
+  pre_merge:
+    trigger: Before PR merge (each squad's PR)
+    checks:
+      - Backend: pytest --cov --cov-report=html (≥70%)
+      - Frontend: npm test --coverage (≥60%)
+      - All tests passing
+      - No security vulnerabilities
+    threshold: 100% tests passing, coverage thresholds met
+
+  pre_deployment:
+    trigger: Before production deployment
+    checks:
+      - All squads' PRs merged
+      - Integration tests passing
+      - E2E tests passing
+      - Security scan clean
+      - Rollback plan documented
+    threshold: 0 CRITICAL issues
+
+# RISK MITIGATION
+
+risks:
+  google_api_quota:
+    probability: Medium
+    impact: High
+    mitigation: Implement rate limiting early (alpha squad), monitor usage (delta squad)
+    owner: bravo + delta
+
+  oauth_complexity:
+    probability: Medium
+    impact: Medium
+    mitigation: Dedicate entire alpha squad to OAuth, test exhaustively
+    owner: alpha
+
+  integration_delays:
+    probability: Low
+    impact: High
+    mitigation: Daily integration checkpoints, mock interfaces early
+    owner: All squads (pm coordinates)
+
+  performance_issues:
+    probability: Low
+    impact: Medium
+    mitigation: Load test with 5000+ rows early (Day 4)
+    owner: bravo + qa
+
+# DAILY SCHEDULE (7-day accelerated sprint)
+
+daily_plan:
+  day_1:
+    focus: Foundation
+    alpha: Google Cloud setup + OAuth design
+    bravo: API contract design (with architect)
+    charlie: UX design for button placement
+    delta: Documentation structure planning
+
+  day_2:
+    focus: Core Implementation
+    alpha: OAuth endpoint implementation
+    bravo: GoogleSheetsExporter class (core methods)
+    charlie: Mock API for frontend development
+    delta: Start writing integration guide
+
+  day_3:
+    focus: Integration Layer
+    alpha: Database migrations + token encryption
+    bravo: Export endpoint + history tracking
+    charlie: GoogleSheetsExportButton component
+    delta: Documentation updates
+
+  day_4:
+    focus: Testing & Validation
+    alpha: OAuth flow testing
+    bravo: Performance testing (5000 rows)
+    charlie: Frontend unit tests
+    delta: Production environment setup
+
+  day_5:
+    focus: E2E Integration
+    alpha: Security audit
+    bravo: Edge case testing
+    charlie: E2E tests (Playwright)
+    delta: OpenAPI spec updates
+
+  day_6:
+    focus: Deployment Prep
+    alpha: Final security review
+    bravo: Final performance validation
+    charlie: Frontend polish + error handling
+    delta: Production deployment + smoke tests
+
+  day_7:
+    focus: Validation & Handoff
+    all_squads: Final integration testing
+    delta: Post-deployment monitoring
+    pm: Acceptance criteria validation
+
+# COMMUNICATION PROTOCOL
+
+communication:
+  daily_standup:
+    time: 9:00 AM (30 min)
+    participants: All squads
+    format: |
+      - What we completed yesterday
+      - What we're working on today
+      - Blockers and dependencies
+      - Integration needs
+
+  integration_sync:
+    frequency: As needed (see checkpoints)
+    purpose: Coordinate cross-squad dependencies
+
+  issue_escalation:
+    critical: Immediate Slack ping + emergency meeting
+    blocking: Report in standup + squad sync within 2 hours
+    non_blocking: Document in story, discuss in next standup
+
+# ACCEPTANCE CRITERIA OWNERSHIP
+
+ac_ownership:
+  AC1: alpha
+  AC2: alpha
+  AC3: bravo
+  AC4: bravo
+  AC5: charlie
+  AC6: alpha + charlie
+  AC7: charlie
+  AC8: bravo
+  AC9: bravo
+  AC10: delta
+
+# SUCCESS METRICS
+
+success_criteria:
+  velocity: Complete 13 story points in 7 days (vs. 14 days sequential)
+  quality: All quality gates passing (70% backend, 60% frontend)
+  integration: Zero critical integration bugs
+  deployment: Clean production deployment, no rollback needed
+  documentation: Complete user guide and troubleshooting docs
+
+# SQUAD ACTIVATION
+
+activation_command: |
+  # To activate all squads in parallel:
+
+  ## Squad Alpha (Backend OAuth)
+  @architect @data-engineer @dev @qa
+  Task: Implement OAuth 2.0 flow + token management
+  Start: Immediately
+
+  ## Squad Bravo (Google Sheets Exporter)
+  @architect @dev @qa
+  Task: Implement export engine + formatting
+  Start: Day 2 (after API contract design)
+
+  ## Squad Charlie (Frontend)
+  @ux-design-expert @dev @qa
+  Task: Implement UI + integration
+  Start: Day 3 (after OAuth endpoints ready)
+
+  ## Squad Delta (Docs & Deployment)
+  @analyst @devops
+  Task: Documentation + production deployment
+  Start: Day 4 (continuous through completion)
+
+usage_example: |
+  # Activate all squads for STORY-180:
+
+  /squad-creator
+  → Load squad: squad-story180-google-sheets-parallel
+
+  # Squads work in parallel:
+  - Alpha handles OAuth while Bravo mocks tokens
+  - Charlie mocks API while Bravo implements real export
+  - Delta documents as features are completed
+
+  # Integration happens at checkpoints (Day 2, 3, 4, 6)
+
+  # Final validation on Day 7, deploy immediately
+
+notes: |
+  - This is a PARALLEL attack strategy to maximize velocity
+  - Squads MUST mock dependencies to work independently
+  - Daily standups and checkpoints are MANDATORY
+  - Quality gates are NON-NEGOTIABLE even with speed focus
+  - Alpha squad unblocks Charlie (OAuth), Bravo unblocks Charlie (API)
+  - Delta squad coordinates final deployment
+  - PM (@pm or @po) coordinates across all squads
+  - Scrum Master (@sm) facilitates standups and removes blockers

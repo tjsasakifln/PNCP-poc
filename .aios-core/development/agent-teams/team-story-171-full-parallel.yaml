@@ -1,0 +1,401 @@
+bundle:
+  name: Story 171 Full Parallel Squad
+  icon: 🚀💰
+  description: >
+    Squad completo otimizado para paralelismo total na implementação da
+    STORY-171: Annual Subscription Toggle with Premium Benefits.
+    13 SP | 4 workstreams paralelos | Zero bloqueios.
+
+metadata:
+  story: STORY-171
+  priority: High
+  points: 13
+  created: 2026-02-07
+  strategy: Maximum Parallelism (YOLO Mode)
+
+# ============================================================================
+# WORKSTREAM ARCHITECTURE (4 PARALLEL TRACKS)
+# ============================================================================
+#
+# Track 1: Frontend UI (4 SP) → UX Designer + Dev + QA
+# Track 2: Backend API (5 SP) → Architect + Data Engineer + Dev + QA
+# Track 3: Stripe Integration (1 SP) → DevOps + Dev
+# Track 4: Docs + Legal (1 SP) → Analyst + PM
+#
+# Track 5: E2E Testing (2 SP) → QA (runs after Tracks 1-3 complete)
+#
+# ============================================================================
+
+agents:
+  # -------------------------------------------------------------------------
+  # ORCHESTRATION LAYER
+  # -------------------------------------------------------------------------
+  - aios-master           # Coordination, task delegation, status tracking
+
+  # -------------------------------------------------------------------------
+  # TRACK 1: FRONTEND UI (4 SP)
+  # -------------------------------------------------------------------------
+  - ux-design-expert     # Component design (PlanToggle, TrustSignals, etc.)
+  - dev                  # Frontend implementation (React, TypeScript)
+  - qa                   # Unit tests (Jest, React Testing Library)
+
+  # -------------------------------------------------------------------------
+  # TRACK 2: BACKEND API (5 SP)
+  # -------------------------------------------------------------------------
+  - architect            # API contracts, Redis cache strategy, pro-rata logic
+  - data-engineer        # Migrations (006, 007, 008), seed data, indexes
+  - dev                  # Backend implementation (FastAPI, Pydantic, Stripe SDK)
+  - qa                   # Backend unit tests (pytest, mocks)
+
+  # -------------------------------------------------------------------------
+  # TRACK 3: STRIPE INTEGRATION (1 SP)
+  # -------------------------------------------------------------------------
+  - devops               # Create annual prices in Stripe Dashboard, webhook setup
+  - dev                  # Webhook handler implementation (idempotency)
+
+  # -------------------------------------------------------------------------
+  # TRACK 4: DOCS + LEGAL (1 SP)
+  # -------------------------------------------------------------------------
+  - analyst              # Research: CDC compliance, competitor refund policies
+  - pm                   # Terms of Service update, FAQs, support docs
+
+  # -------------------------------------------------------------------------
+  # TRACK 5: E2E TESTING (2 SP) - Runs after Tracks 1-3
+  # -------------------------------------------------------------------------
+  - qa                   # Playwright E2E tests (full flow: toggle → upgrade → downgrade)
+
+  # -------------------------------------------------------------------------
+  # PRODUCT OVERSIGHT (Non-blocking advisors)
+  # -------------------------------------------------------------------------
+  - po                   # Success metrics tracking, rollout plan validation
+
+workflows:
+  # Main workflow (orchestrated by @aios-master)
+  - bidiq-feature-e2e.yaml
+
+# ============================================================================
+# PARALLEL EXECUTION PLAN (ZERO DEPENDENCIES)
+# ============================================================================
+
+parallel_tasks:
+  # TRACK 1: Frontend UI Components
+  track_1_frontend:
+    description: "UI components for annual subscription toggle"
+    agents: [ux-design-expert, dev, qa]
+    points: 4
+    tasks:
+      - name: "Design PlanToggle component (Figma → React)"
+        owner: ux-design-expert
+        duration: 2h
+        outputs: [Component spec, accessibility checklist]
+
+      - name: "Implement PlanToggle.tsx"
+        owner: dev
+        duration: 3h
+        inputs: [Component spec from UX]
+        outputs: [components/subscriptions/PlanToggle.tsx]
+
+      - name: "Implement PlanCard.tsx (9.6x calculation)"
+        owner: dev
+        duration: 2h
+        outputs: [components/subscriptions/PlanCard.tsx]
+
+      - name: "Implement AnnualBenefits.tsx + FeatureBadge.tsx"
+        owner: dev
+        duration: 3h
+        outputs: [AnnualBenefits.tsx, FeatureBadge.tsx]
+
+      - name: "Implement TrustSignals.tsx (social proof, guarantees)"
+        owner: dev
+        duration: 2h
+        outputs: [TrustSignals.tsx]
+
+      - name: "Implement DowngradeModal.tsx"
+        owner: dev
+        duration: 2h
+        outputs: [DowngradeModal.tsx]
+
+      - name: "Integrate useFeatureFlags hook (SWR)"
+        owner: dev
+        duration: 2h
+        outputs: [hooks/useFeatureFlags.ts]
+
+      - name: "Unit tests (6 components)"
+        owner: qa
+        duration: 4h
+        inputs: [All frontend components]
+        outputs: [6 test files, coverage report]
+
+  # TRACK 2: Backend API + Database
+  track_2_backend:
+    description: "Backend API endpoints, migrations, feature flags"
+    agents: [architect, data-engineer, dev, qa]
+    points: 5
+    tasks:
+      - name: "Design API contracts (OpenAPI specs)"
+        owner: architect
+        duration: 2h
+        outputs: [API spec for /update-billing-period, /features/me]
+
+      - name: "Design Redis cache strategy"
+        owner: architect
+        duration: 1h
+        outputs: [Cache TTL, invalidation strategy, keys]
+
+      - name: "Design pro-rata edge cases (timezone, defer logic)"
+        owner: architect
+        duration: 2h
+        outputs: [Pro-rata calculation spec, test cases]
+
+      - name: "Migration 006: Add billing_period column"
+        owner: data-engineer
+        duration: 2h
+        outputs: [006_add_billing_period.sql, rollback script]
+
+      - name: "Migration 007: Create plan_features table"
+        owner: data-engineer
+        duration: 2h
+        outputs: [007_create_plan_features.sql, seed data]
+
+      - name: "Migration 008: Create stripe_webhook_events table"
+        owner: data-engineer
+        duration: 1h
+        outputs: [008_stripe_webhook_events.sql]
+
+      - name: "Implement POST /subscriptions/update-billing-period"
+        owner: dev
+        duration: 5h
+        inputs: [API spec, pro-rata spec]
+        outputs: [backend/routes/subscriptions.py]
+
+      - name: "Implement GET /features/me (Redis cache)"
+        owner: dev
+        duration: 3h
+        inputs: [Cache strategy]
+        outputs: [backend/routes/features.py]
+
+      - name: "Backend unit tests (4 test files)"
+        owner: qa
+        duration: 4h
+        inputs: [Backend code]
+        outputs: [test_prorata, test_cache, test_billing_period, test_features]
+
+  # TRACK 3: Stripe Integration
+  track_3_stripe:
+    description: "Stripe annual prices + webhook handler"
+    agents: [devops, dev]
+    points: 1
+    tasks:
+      - name: "Create 3 annual prices in Stripe Dashboard"
+        owner: devops
+        duration: 1h
+        outputs: [Price IDs added to .env]
+
+      - name: "Implement idempotent webhook handler"
+        owner: dev
+        duration: 3h
+        inputs: [Price IDs]
+        outputs: [backend/webhooks/stripe.py]
+
+      - name: "Test webhooks with Stripe CLI"
+        owner: devops
+        duration: 1h
+        inputs: [Webhook handler]
+        outputs: [Test results, signature validation proof]
+
+  # TRACK 4: Documentation + Legal
+  track_4_docs:
+    description: "Terms of Service, FAQs, feature documentation"
+    agents: [analyst, pm]
+    points: 1
+    tasks:
+      - name: "Research CDC compliance (7-day refund requirement)"
+        owner: analyst
+        duration: 2h
+        outputs: [Legal research doc, competitor analysis]
+
+      - name: "Draft Terms of Service update (refund policy)"
+        owner: pm
+        duration: 2h
+        inputs: [Legal research]
+        outputs: [docs/legal/downgrade-policy.md]
+
+      - name: "Create docs/features/annual-subscription.md"
+        owner: pm
+        duration: 3h
+        outputs: [Architecture diagrams, troubleshooting guide]
+
+      - name: "Create support FAQs"
+        owner: pm
+        duration: 1h
+        outputs: [docs/support/faq-annual-plans.md]
+
+  # TRACK 5: E2E Testing (Runs AFTER Tracks 1-3 complete)
+  track_5_e2e:
+    description: "End-to-end Playwright tests"
+    agents: [qa]
+    points: 2
+    depends_on: [track_1_frontend, track_2_backend, track_3_stripe]
+    tasks:
+      - name: "E2E: Toggle → Upgrade → Downgrade flow"
+        owner: qa
+        duration: 4h
+        outputs: [e2e-tests/annual-subscription.spec.ts]
+
+      - name: "E2E: Pro-rata edge cases (defer logic, timezone)"
+        owner: qa
+        duration: 2h
+        outputs: [Additional test scenarios]
+
+      - name: "E2E: Feature flag cache invalidation"
+        owner: qa
+        duration: 2h
+        outputs: [Cache invalidation test]
+
+# ============================================================================
+# CRITICAL SUCCESS FACTORS
+# ============================================================================
+
+success_criteria:
+  - All 17 ACs marked complete (STORY-171)
+  - Frontend coverage ≥ 60%
+  - Backend coverage ≥ 70%
+  - All E2E tests passing (Playwright)
+  - Zero merge conflicts (atomic commits per track)
+  - Stripe webhook idempotency validated
+  - Legal review approved (Terms of Service)
+
+# ============================================================================
+# RISK MITIGATION
+# ============================================================================
+
+risks:
+  - name: "Migration conflicts (Supabase)"
+    mitigation: "Data Engineer runs migrations on staging FIRST, validates with prod data clone"
+    owner: data-engineer
+
+  - name: "Stripe webhook failures"
+    mitigation: "Signature validation + idempotency table + retry logic"
+    owner: dev
+
+  - name: "Frontend/Backend API contract mismatch"
+    mitigation: "Architect defines OpenAPI spec FIRST, both teams work from it"
+    owner: architect
+
+  - name: "E2E tests flaky (timing issues)"
+    mitigation: "Increase Playwright expect timeout, use explicit waits"
+    owner: qa
+
+# ============================================================================
+# HANDOFF & MERGE STRATEGY
+# ============================================================================
+
+merge_strategy:
+  - Track 1 (Frontend) → Merge to `feature/story-171-ui`
+  - Track 2 (Backend) → Merge to `feature/story-171-backend`
+  - Track 3 (Stripe) → Merge to `feature/story-171-stripe`
+  - Track 4 (Docs) → Merge to `feature/story-171-docs`
+  - Track 5 (E2E) → Merge to `feature/story-171-e2e`
+  - Final: Merge all 5 branches → `develop` (via PR with full review)
+
+git_workflow:
+  - Each track gets its own feature branch (no merge conflicts)
+  - Atomic commits per task (clear rollback points)
+  - Final PR review by @po + @architect before merge
+
+# ============================================================================
+# ESTIMATED TIMELINE (MAXIMUM PARALLELISM)
+# ============================================================================
+
+timeline:
+  day_1:
+    - Track 1: UX design → Component implementation starts
+    - Track 2: API contracts → Migrations → Backend implementation starts
+    - Track 3: Stripe setup → Webhook implementation
+    - Track 4: Legal research → Docs drafting
+
+  day_2:
+    - Track 1: Component implementation continues → Unit tests
+    - Track 2: Backend implementation continues → Unit tests
+    - Track 3: Webhook testing complete
+    - Track 4: Docs finalized
+
+  day_3:
+    - Track 1: Complete
+    - Track 2: Complete
+    - Track 3: Complete
+    - Track 4: Complete
+    - Track 5: E2E tests start
+
+  day_4:
+    - Track 5: E2E tests complete
+    - Final PR created
+    - Review + merge
+
+total_duration: 4 days (vs 2 weeks sequential)
+
+# ============================================================================
+# COMMUNICATION PROTOCOL
+# ============================================================================
+
+communication:
+  - Daily standup (async): Each track posts status in Slack
+  - Blocker escalation: Immediate ping to @aios-master
+  - API contract freeze: After day 1 (no changes without full squad approval)
+  - Demo: End of day 3 (before E2E tests)
+
+# ============================================================================
+# TOOLS & INFRASTRUCTURE
+# ============================================================================
+
+tools:
+  frontend:
+    - React 18+, TypeScript 5.3+, Tailwind CSS
+    - Jest + React Testing Library
+    - SWR for feature flags caching
+
+  backend:
+    - FastAPI 0.110+, Pydantic 2.6+
+    - Redis (for cache)
+    - Stripe SDK
+    - pytest + coverage
+
+  database:
+    - Supabase (Postgres)
+    - Migrations via Supabase CLI
+
+  e2e:
+    - Playwright 1.58+
+    - Chromium + WebKit (Mobile Safari)
+
+  devops:
+    - Railway (backend deployment)
+    - Stripe CLI (webhook testing)
+    - GitHub Actions (CI/CD)
+
+# ============================================================================
+# DEPENDENCIES (EXTERNAL)
+# ============================================================================
+
+dependencies:
+  - Finance approval for 20% discount (BLOCKER - AC before start)
+  - Legal review of refund policy (BLOCKER - AC before Production)
+  - Redis provisioning on Railway (BLOCKER - AC before Backend Track 2)
+  - Stripe annual prices created (BLOCKER - AC before Track 3)
+
+# ============================================================================
+# ACTIVATION COMMAND
+# ============================================================================
+
+activation:
+  command: "/squad-creator full squad para paralelismo total na implementação do story 171. yolo"
+  usage: |
+    1. Activate squad: @aios-master
+    2. Assign tracks to agents:
+       - Track 1: @ux-design-expert → @dev → @qa
+       - Track 2: @architect → @data-engineer → @dev → @qa
+       - Track 3: @devops → @dev
+       - Track 4: @analyst → @pm
+       - Track 5: @qa (after Tracks 1-3 complete)
+    3. Monitor progress: *squad-status
+    4. Merge branches: @devops *merge-all

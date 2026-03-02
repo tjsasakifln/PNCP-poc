@@ -1,0 +1,161 @@
+workflow:
+  id: bidiq-hotfix
+  name: BidIQ Hotfix - Diagnóstico e Correção Rápida
+  description: >-
+    Workflow rápido para diagnóstico e correção de bugs em produção.
+    Ciclo curto: reproduzir → diagnosticar → corrigir → testar → deploy.
+    Otimizado para execução mínima com máxima segurança.
+  type: brownfield
+  project_types:
+    - bug-fix
+    - hotfix
+    - production-issue
+
+  startup:
+    mode: single_option
+    default_action: yolo
+    options:
+      - id: yolo
+        label: "Iniciar Hotfix (Fast Mode)"
+        description: "Executa diagnóstico e correção com mínima interação"
+        sets_yolo: true
+    show_phases_table: false
+    show_detailed_menu: false
+
+  sequence:
+    - step: diagnose_issue
+      phase: 1
+      phase_name: "Diagnóstico"
+      agent: dev
+      action: reproduce_and_diagnose
+      creates: docs/hotfix-diagnosis.md
+      notes: |
+        @dev reproduz e diagnostica o problema:
+
+        PASSOS:
+        1. Reproduzir o bug (logs, stack trace, steps to reproduce)
+        2. Identificar root cause (não apenas sintoma)
+        3. Mapear arquivos afetados
+        4. Avaliar impacto e blast radius
+        5. Documentar diagnóstico
+
+        INVESTIGAÇÃO:
+        - Verificar logs de erro
+        - Analisar stack trace completo
+        - Checar mudanças recentes (git log)
+        - Testar cenário de reprodução
+
+        OUTPUT: Diagnóstico com root cause identificado
+
+    - step: implement_fix
+      phase: 2
+      phase_name: "Correção"
+      agent: dev
+      action: implement_minimal_fix
+      requires: docs/hotfix-diagnosis.md
+      notes: |
+        @dev implementa correção com mudança mínima:
+
+        PRINCÍPIOS:
+        1. Menor mudança possível que resolve o problema
+        2. Não refatorar código adjacente
+        3. Não adicionar features junto com o fix
+        4. Manter backward compatibility
+        5. Adicionar comentário explicativo se necessário
+
+        ATENÇÃO: Não mudar o que já está funcionando.
+
+        OUTPUT: Fix implementado com mudança mínima
+
+    - step: regression_test
+      phase: 3
+      phase_name: "Teste de Regressão"
+      agent: qa
+      action: write_regression_test
+      requires: docs/hotfix-diagnosis.md
+      creates: backend/tests/test_regression_fix.py
+      notes: |
+        @qa cria teste de regressão cobrindo o bug:
+
+        TESTES:
+        1. Teste que FALHA sem o fix (reproduz o bug)
+        2. Teste que PASSA com o fix
+        3. Teste de edge cases relacionados
+        4. Verificar que o teste é determinístico
+
+        PADRÃO: pytest com assertions claras
+        - Nome descritivo: test_<descricao_do_bug>
+        - Docstring explicando o cenário
+
+        OUTPUT: Teste de regressão
+
+    - step: full_test_suite
+      phase: 4
+      phase_name: "Suite Completa"
+      agent: qa
+      action: run_full_test_suite
+      notes: |
+        @qa executa suite completa para verificar zero regressões:
+
+        COMANDOS:
+        - Backend: pytest --cov (threshold 70%)
+        - Frontend: npm run test:ci (threshold 60%)
+
+        CRITÉRIO: TODOS os testes devem passar.
+        Se algum teste falhar, investigar se o fix causou regressão.
+
+        OUTPUT: Relatório de testes (all green)
+
+    - step: pr_and_deploy
+      phase: 5
+      phase_name: "PR e Deploy"
+      agent: devops
+      action: create_pr_deploy
+      notes: |
+        @devops cria PR e valida deploy:
+
+        PASSOS:
+        1. git branch fix/<descricao-curta>
+        2. Commit: fix(<modulo>): <descricao>
+        3. gh pr create com:
+           - Descrição do bug
+           - Root cause
+           - Fix aplicado
+           - Testes adicionados
+        4. Verificar CI passes
+        5. Deploy após aprovação
+
+        OUTPUT: PR criado, CI verde, pronto para merge
+
+  decision_guidance:
+    when_to_use:
+      - Bug reportado em produção
+      - Erro crítico que afeta usuários
+      - Regressão após deploy recente
+      - Falha intermitente que precisa de investigação
+      - Correção urgente com ciclo curto
+
+  handoff_prompts:
+    diagnosis_complete: |
+      Diagnóstico concluído. Root cause identificado.
+
+      Próximo: @dev para implementar fix mínimo (FASE 2)
+
+    fix_complete: |
+      Fix implementado com mudança mínima.
+
+      Próximo: @qa para teste de regressão (FASE 3)
+
+    tests_complete: |
+      Teste de regressão criado. Suite completa executada.
+      Todos os testes passando.
+
+      Próximo: @devops para PR e deploy (FASE 5)
+
+    workflow_complete: |
+      Hotfix completo!
+      - Bug diagnosticado e root cause documentado
+      - Fix implementado (mudança mínima)
+      - Teste de regressão adicionado
+      - Suite completa verde
+      - PR criado e CI validado
