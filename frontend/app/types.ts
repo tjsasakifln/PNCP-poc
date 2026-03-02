@@ -169,6 +169,8 @@ export interface BuscaResult {
   paywall_applied?: boolean;
   /** STORY-320 AC3: Total results before paywall truncation */
   total_before_paywall?: number | null;
+  /** STORY-354 AC2: Number of bids awaiting AI reclassification */
+  pending_review_count?: number;
 }
 
 /** STORY-259: Per-bid analysis from batch LLM call */

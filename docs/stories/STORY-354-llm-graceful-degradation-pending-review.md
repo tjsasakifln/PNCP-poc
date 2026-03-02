@@ -27,16 +27,16 @@ LLM fallback = REJECT (`llm_arbiter.py:789-800`) significa que durante outage Op
 
 ## Critérios de Aceite
 
-- [ ] AC1: Quando LLM falhar (timeout, rate limit, outage), classificar bids zero-match como `PENDING_REVIEW` (novo status) em vez de REJECT
-- [ ] AC2: Adicionar campo `pending_review_count` ao response schema (`BuscaResponse` em `schemas.py`)
-- [ ] AC3: No frontend, exibir banner informativo: "{X} oportunidades aguardam reclassificação (IA temporariamente indisponível)" — cor azul (info), não vermelho (erro)
-- [ ] AC4: Criar ARQ job `reclassify_pending_bids(search_id)` que re-processa bids pendentes quando LLM voltar
-- [ ] AC5: Prometheus counter `smartlic_llm_fallback_pending_total` (labels: sector, reason) para medir frequência de fallback
-- [ ] AC6: SSE event `pending_review` para atualizar frontend em tempo real quando reclassificação completar
-- [ ] AC7: Limite de retenção: bids PENDING_REVIEW expiram em 24h (não poluir resultados indefinidamente)
-- [ ] AC8: Feature flag `LLM_FALLBACK_PENDING_ENABLED` (default: true) para rollback seguro
-- [ ] AC9: Testes unitários: mock OpenAI down → bids não são perdidas, contagem de pending correta
-- [ ] AC10: Teste de integração: OpenAI volta → ARQ job reclassifica → SSE notifica frontend
+- [x] AC1: Quando LLM falhar (timeout, rate limit, outage), classificar bids zero-match como `PENDING_REVIEW` (novo status) em vez de REJECT
+- [x] AC2: Adicionar campo `pending_review_count` ao response schema (`BuscaResponse` em `schemas.py`)
+- [x] AC3: No frontend, exibir banner informativo: "{X} oportunidades aguardam reclassificação (IA temporariamente indisponível)" — cor azul (info), não vermelho (erro)
+- [x] AC4: Criar ARQ job `reclassify_pending_bids(search_id)` que re-processa bids pendentes quando LLM voltar
+- [x] AC5: Prometheus counter `smartlic_llm_fallback_pending_total` (labels: sector, reason) para medir frequência de fallback
+- [x] AC6: SSE event `pending_review` para atualizar frontend em tempo real quando reclassificação completar
+- [x] AC7: Limite de retenção: bids PENDING_REVIEW expiram em 24h (não poluir resultados indefinidamente)
+- [x] AC8: Feature flag `LLM_FALLBACK_PENDING_ENABLED` (default: true) para rollback seguro
+- [x] AC9: Testes unitários: mock OpenAI down → bids não são perdidas, contagem de pending correta
+- [x] AC10: Teste de integração: OpenAI volta → ARQ job reclassifica → SSE notifica frontend
 
 ## Arquivos Afetados
 

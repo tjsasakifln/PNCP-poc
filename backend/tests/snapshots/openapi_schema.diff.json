@@ -1237,6 +1237,13 @@
               "title": "Paywall Applied",
               "type": "boolean"
             },
+            "pending_review_count": {
+              "default": 0,
+              "description": "STORY-354 AC2: Number of bids awaiting AI reclassification (LLM was temporarily unavailable)",
+              "minimum": 0.0,
+              "title": "Pending Review Count",
+              "type": "integer"
+            },
             "quota_remaining": {
               "description": "Monthly searches remaining",
               "minimum": 0.0,
@@ -4934,6 +4941,14 @@
               "title": "Sector Name",
               "type": "string"
             },
+            "top_modalidades": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/TopEntry"
+              },
+              "title": "Top Modalidades",
+              "type": "array"
+            },
             "top_oportunidades": {
               "items": {
                 "$ref": "#/components/schemas/SampleItem"
@@ -4945,9 +4960,27 @@
               "title": "Total Editais",
               "type": "integer"
             },
+            "trend_90d": {
+              "default": [],
+              "items": {
+                "$ref": "#/components/schemas/TrendPoint"
+              },
+              "title": "Trend 90D",
+              "type": "array"
+            },
             "uf": {
               "title": "Uf",
               "type": "string"
+            },
+            "value_range_max": {
+              "default": 0.0,
+              "title": "Value Range Max",
+              "type": "number"
+            },
+            "value_range_min": {
+              "default": 0.0,
+              "title": "Value Range Min",
+              "type": "number"
             }
           },
           "required": [
@@ -9163,6 +9196,50 @@
           "summary": "Export User Data",
           "tags": [
             "user"
+          ]
+        }
+      },
+      "/metrics/discard-rate": {
+        "get": {
+          "description": "Return the moving-average filter discard rate.\n\nPublic endpoint (no authentication required). Used by the landing page\nto display a verified discard rate instead of a hardcoded number.",
+          "operationId": "get_discard_rate_metrics_discard_rate_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "days",
+              "required": false,
+              "schema": {
+                "default": 30,
+                "maximum": 90,
+                "minimum": 1,
+                "title": "Days",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Discard Rate",
+          "tags": [
+            "metrics"
           ]
         }
       },
@@ -14124,6 +14201,50 @@
           "summary": "Export User Data",
           "tags": [
             "user"
+          ]
+        }
+      },
+      "/v1/metrics/discard-rate": {
+        "get": {
+          "description": "Return the moving-average filter discard rate.\n\nPublic endpoint (no authentication required). Used by the landing page\nto display a verified discard rate instead of a hardcoded number.",
+          "operationId": "get_discard_rate_v1_metrics_discard_rate_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "days",
+              "required": false,
+              "schema": {
+                "default": 30,
+                "maximum": 90,
+                "minimum": 1,
+                "title": "Days",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Discard Rate",
+          "tags": [
+            "metrics"
           ]
         }
       },

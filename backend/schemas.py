@@ -1108,6 +1108,12 @@ class BuscaResponse(BaseModel):
         default=None,
         description="ISO timestamp of when search results were generated"
     )
+    # STORY-354 AC2: Pending review bids awaiting LLM reclassification
+    pending_review_count: int = Field(
+        default=0,
+        ge=0,
+        description="STORY-354 AC2: Number of bids awaiting AI reclassification (LLM was temporarily unavailable)"
+    )
     # GTM-RESILIENCE-F01: Background job status fields
     llm_status: Optional[str] = Field(
         default=None,

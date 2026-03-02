@@ -162,6 +162,11 @@ export interface SearchResultsProps {
 
   // SAB-005 AC1: Skeleton timeout
   skeletonTimeoutReached?: boolean;
+
+  // STORY-354 AC3: Pending review bids count
+  pendingReviewCount?: number;
+  /** STORY-354 AC6: Pending review reclassification update from SSE */
+  pendingReviewUpdate?: { reclassifiedCount: number; acceptedCount: number; rejectedCount: number } | null;
 }
 
 export default function SearchResults({
@@ -200,6 +205,8 @@ export default function SearchResults({
   onGeneratePdf, pdfLoading,
   // SAB-005 AC1: Skeleton timeout
   skeletonTimeoutReached,
+  // STORY-354
+  pendingReviewCount = 0, pendingReviewUpdate,
 }: SearchResultsProps) {
   // STORY-333: Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -657,6 +664,38 @@ export default function SearchResults({
               onRetry={onSearch}
               loading={loading}
             />
+          )}
+
+          {/* STORY-354 AC3: Pending review banner */}
+          {(pendingReviewCount > 0 || (pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0)) && (
+            <div
+              className={`flex items-start gap-3 p-3 rounded-lg border ${
+                pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0
+                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+              }`}
+              data-testid="pending-review-banner"
+            >
+              <svg className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0
+                  ? "text-emerald-500"
+                  : "text-blue-500"
+              }`} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div className="text-sm">
+                {pendingReviewUpdate && pendingReviewUpdate.reclassifiedCount > 0 ? (
+                  <p className="text-emerald-800 dark:text-emerald-300">
+                    Reclassificação concluída: {pendingReviewUpdate.acceptedCount} oportunidades confirmadas
+                    {pendingReviewUpdate.rejectedCount > 0 && `, ${pendingReviewUpdate.rejectedCount} descartadas`}.
+                  </p>
+                ) : (
+                  <p className="text-blue-800 dark:text-blue-300">
+                    {pendingReviewCount} {pendingReviewCount === 1 ? 'oportunidade aguarda' : 'oportunidades aguardam'} reclassificação (IA temporariamente indisponível)
+                  </p>
+                )}
+              </div>
+            </div>
           )}
 
           {/* UX-348 AC7-AC8: Results header with positive framing */}

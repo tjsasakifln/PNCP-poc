@@ -355,6 +355,22 @@ LLM_ZERO_MATCH_ENABLED: bool = str_to_bool(
     os.getenv("LLM_ZERO_MATCH_ENABLED", "true")
 )
 
+# STORY-354 AC8: LLM fallback to PENDING_REVIEW instead of REJECT for zero-match bids
+# When enabled, bids with 0% keyword density that fail LLM classification are marked
+# PENDING_REVIEW instead of silently discarded. Allows reclassification when LLM returns.
+LLM_FALLBACK_PENDING_ENABLED: bool = str_to_bool(
+    os.getenv("LLM_FALLBACK_PENDING_ENABLED", "true")
+)
+
+# STORY-354 AC7: Pending review bids expire after 24h
+PENDING_REVIEW_TTL_SECONDS: int = int(os.getenv("PENDING_REVIEW_TTL_SECONDS", "86400"))
+
+# STORY-354 AC4: Max retries for reclassification ARQ job
+PENDING_REVIEW_MAX_RETRIES: int = int(os.getenv("PENDING_REVIEW_MAX_RETRIES", "3"))
+
+# STORY-354 AC4: Delay between reclassification attempts (seconds)
+PENDING_REVIEW_RETRY_DELAY: int = int(os.getenv("PENDING_REVIEW_RETRY_DELAY", "300"))
+
 # ============================================
 # D-02: LLM Structured Output with Evidence
 # ============================================
@@ -477,6 +493,8 @@ _FEATURE_FLAG_REGISTRY: dict[str, tuple[str, str]] = {
     "HEALTH_CANARY_ENABLED": ("HEALTH_CANARY_ENABLED", "true"),
     # CRIT-047 AC6: PCP v2 disable flag (reads PCP_ENABLED env var, default true)
     "PCP_V2_ENABLED": ("PCP_ENABLED", "true"),
+    # STORY-354 AC8: LLM fallback to PENDING_REVIEW instead of REJECT
+    "LLM_FALLBACK_PENDING_ENABLED": ("LLM_FALLBACK_PENDING_ENABLED", "true"),
 }
 
 # ============================================

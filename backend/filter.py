@@ -2918,10 +2918,12 @@ def aplicar_todos_filtros(
     from config import LLM_ZERO_MATCH_ENABLED
 
     resultado_llm_zero: List[dict] = []
+    resultado_pending_review: List[dict] = []  # STORY-354 AC1: bids awaiting reclassification
     stats["llm_zero_match_calls"] = 0
     stats["llm_zero_match_aprovadas"] = 0
     stats["llm_zero_match_rejeitadas"] = 0
     stats["llm_zero_match_skipped_short"] = 0
+    stats["pending_review_count"] = 0  # STORY-354 AC2
 
     # STORY-267 AC2: When custom_terms present + TERM_SEARCH_LLM_AWARE, use term-aware prompt
     _use_term_prompt_zm = False
@@ -3029,28 +3031,57 @@ def aplicar_todos_filtros(
                                 f"objeto={lic_item.get('objetoCompra', '')[:80]}"
                             )
                         else:
-                            stats["llm_zero_match_rejeitadas"] += 1
-                            # STORY-267 AC16: Track term search metrics
-                            if custom_terms:
-                                from metrics import TERM_SEARCH_LLM_REJECTS
-                                TERM_SEARCH_LLM_REJECTS.labels(zone="zero_match").inc()
-                            # D-02 AC6: Store rejection reason for audit
-                            if isinstance(llm_result, dict):
-                                lic_item["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
-                            logger.debug(
-                                f"LLM zero_match: REJECT objeto={lic_item.get('objetoCompra', '')[:80]}"
-                            )
+                            # STORY-354 AC1: Check if LLM returned PENDING_REVIEW
+                            _is_pending = isinstance(llm_result, dict) and llm_result.get("pending_review", False)
+                            if _is_pending:
+                                stats["pending_review_count"] += 1
+                                lic_item["_relevance_source"] = "pending_review"
+                                lic_item["_term_density"] = 0.0
+                                lic_item["_matched_terms"] = []
+                                lic_item["_confidence_score"] = 0
+                                lic_item["_llm_evidence"] = []
+                                lic_item["_pending_review"] = True
+                                resultado_pending_review.append(lic_item)
+                                logger.info(
+                                    f"LLM zero_match: PENDING_REVIEW (LLM unavailable) "
+                                    f"objeto={lic_item.get('objetoCompra', '')[:80]}"
+                                )
+                            else:
+                                stats["llm_zero_match_rejeitadas"] += 1
+                                # STORY-267 AC16: Track term search metrics
+                                if custom_terms:
+                                    from metrics import TERM_SEARCH_LLM_REJECTS
+                                    TERM_SEARCH_LLM_REJECTS.labels(zone="zero_match").inc()
+                                # D-02 AC6: Store rejection reason for audit
+                                if isinstance(llm_result, dict):
+                                    lic_item["_llm_rejection_reason"] = llm_result.get("rejection_reason", "")
+                                logger.debug(
+                                    f"LLM zero_match: REJECT objeto={lic_item.get('objetoCompra', '')[:80]}"
+                                )
                     except Exception as e:
-                        # AC9: Fallback on LLM failure = REJECT
-                        stats["llm_zero_match_rejeitadas"] += 1
-                        logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
+                        # STORY-354 AC1: On executor failure, use PENDING_REVIEW if flag enabled
+                        from config import LLM_FALLBACK_PENDING_ENABLED
+                        if LLM_FALLBACK_PENDING_ENABLED:
+                            stats["pending_review_count"] += 1
+                            lic_ref = futures[future]
+                            lic_ref["_relevance_source"] = "pending_review"
+                            lic_ref["_term_density"] = 0.0
+                            lic_ref["_matched_terms"] = []
+                            lic_ref["_confidence_score"] = 0
+                            lic_ref["_pending_review"] = True
+                            resultado_pending_review.append(lic_ref)
+                            logger.warning(f"LLM zero_match: FAILED → PENDING_REVIEW: {e}")
+                        else:
+                            stats["llm_zero_match_rejeitadas"] += 1
+                            logger.error(f"LLM zero_match: FAILED (REJECT fallback): {e}")
 
             logger.info(
                 f"GTM-FIX-028 LLM Zero Match: "
                 f"{stats['llm_zero_match_calls']} calls, "
                 f"{stats['llm_zero_match_aprovadas']} approved, "
                 f"{stats['llm_zero_match_rejeitadas']} rejected, "
-                f"{stats['llm_zero_match_skipped_short']} skipped (short)"
+                f"{stats['llm_zero_match_skipped_short']} skipped (short), "
+                f"{stats['pending_review_count']} pending_review"
             )
 
     # ========================================================================
@@ -3430,6 +3461,14 @@ def aplicar_todos_filtros(
         resultado_keyword.extend(resultado_llm_zero)
         logger.info(
             f"GTM-FIX-028: Merged {len(resultado_llm_zero)} LLM zero-match bids "
+            f"into resultado_keyword (total now: {len(resultado_keyword)})"
+        )
+
+    # STORY-354 AC1: Merge PENDING_REVIEW bids into results (not hidden from user)
+    if resultado_pending_review:
+        resultado_keyword.extend(resultado_pending_review)
+        logger.info(
+            f"STORY-354: Merged {len(resultado_pending_review)} PENDING_REVIEW bids "
             f"into resultado_keyword (total now: {len(resultado_keyword)})"
         )
 

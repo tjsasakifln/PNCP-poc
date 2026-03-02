@@ -849,6 +849,9 @@ function HomePageContent() {
                 pdfLoading={pdfLoading}
                 // SAB-005 AC1: Skeleton timeout
                 skeletonTimeoutReached={search.skeletonTimeoutReached}
+                // STORY-354: Pending review
+                pendingReviewCount={search.result?.pending_review_count ?? 0}
+                pendingReviewUpdate={search.pendingReviewUpdate}
               />
             </SearchErrorBoundary>
           </div>

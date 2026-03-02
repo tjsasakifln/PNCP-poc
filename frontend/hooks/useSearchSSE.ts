@@ -122,6 +122,13 @@ export interface FilterSummary {
   rejectedLlm: number;
 }
 
+/** STORY-354 AC6: Pending review reclassification update from SSE */
+export interface PendingReviewUpdate {
+  reclassifiedCount: number;
+  acceptedCount: number;
+  rejectedCount: number;
+}
+
 /** STORY-295 AC10: Per-source status for progressive results */
 export type SourceStatusType = 'pending' | 'fetching' | 'success' | 'partial' | 'error' | 'timeout';
 
@@ -168,6 +175,8 @@ interface UseSearchSSEReturn {
   sourceStatuses: Map<string, SourceStatus>;
   /** STORY-327 AC5: Filter summary with raw vs filtered counts */
   filterSummary: FilterSummary | null;
+  /** STORY-354 AC6: Pending review reclassification update */
+  pendingReviewUpdate: PendingReviewUpdate | null;
 }
 
 export function useSearchSSE({
@@ -198,6 +207,8 @@ export function useSearchSSE({
   const [sourceStatuses, setSourceStatuses] = useState<Map<string, SourceStatus>>(new Map());
   // STORY-327 AC5: Filter summary from backend
   const [filterSummary, setFilterSummary] = useState<FilterSummary | null>(null);
+  // STORY-354 AC6: Pending review reclassification update
+  const [pendingReviewUpdate, setPendingReviewUpdate] = useState<PendingReviewUpdate | null>(null);
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryAttemptRef = useRef(0);
@@ -306,6 +317,16 @@ export function useSearchSSE({
           rejectedLlm: (detail.rejected_llm as number) || 0,
         });
         return; // Don't set as current event — this is metadata
+      }
+
+      // STORY-354 AC6: Handle pending_review reclassification event
+      if (event.stage === 'pending_review') {
+        const detail = event.detail as Record<string, unknown>;
+        setPendingReviewUpdate({
+          reclassifiedCount: (detail.reclassified_count as number) || 0,
+          acceptedCount: (detail.accepted_count as number) || 0,
+          rejectedCount: (detail.rejected_count as number) || 0,
+        });
       }
 
       // Handle terminal and special events
@@ -422,6 +443,7 @@ export function useSearchSSE({
     setRefreshAvailable(null);
     setSourceStatuses(new Map());
     setFilterSummary(null);
+    setPendingReviewUpdate(null);
     setSseDisconnected(false);
     setIsReconnecting(false);
     setSseAvailable(true);
@@ -528,6 +550,6 @@ export function useSearchSSE({
     isReconnecting,
     isDegraded, degradedDetail, partialProgress, refreshAvailable,
     ufStatuses, ufTotalFound, ufAllComplete, batchProgress,
-    sourceStatuses, filterSummary,
+    sourceStatuses, filterSummary, pendingReviewUpdate,
   };
 }

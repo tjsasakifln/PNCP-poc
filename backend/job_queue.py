@@ -1387,6 +1387,187 @@ async def _worker_on_startup(ctx: dict) -> None:
         logger.warning("CRIT-038: Could not access worker Redis connection pool for hardening")
 
 
+# ==========================================================================
+# STORY-354 AC4+AC7: Pending review bid storage + reclassification job
+# ==========================================================================
+
+_PENDING_REVIEW_KEY_PREFIX = "smartlic:pending_review:"
+
+
+async def store_pending_review_bids(search_id: str, bids: list[dict], sector_name: str = "") -> bool:
+    """Store pending review bids in Redis for later reclassification (AC4+AC7).
+
+    Args:
+        search_id: The search ID that produced these pending bids.
+        bids: List of bid dicts with _pending_review=True.
+        sector_name: Sector name for reclassification context.
+
+    Returns:
+        True if stored successfully, False otherwise.
+    """
+    from redis_pool import get_redis_pool
+    redis = await get_redis_pool()
+    if redis is None:
+        logger.warning(f"STORY-354: Cannot store pending bids — Redis unavailable (search_id={search_id})")
+        return False
+
+    from config import PENDING_REVIEW_TTL_SECONDS
+    key = f"{_PENDING_REVIEW_KEY_PREFIX}{search_id}"
+    try:
+        import json as _json
+        payload = _json.dumps({
+            "bids": bids,
+            "sector_name": sector_name,
+            "stored_at": time.time(),
+        })
+        await redis.setex(key, PENDING_REVIEW_TTL_SECONDS, payload)
+        logger.info(f"STORY-354: Stored {len(bids)} pending review bids for search_id={search_id}")
+        return True
+    except Exception as e:
+        logger.error(f"STORY-354: Failed to store pending bids: {e}")
+        return False
+
+
+async def reclassify_pending_bids_job(ctx: dict, search_id: str, sector_name: str = "", sector_id: str = "", attempt: int = 1, **kwargs) -> dict:
+    """ARQ job: Reclassify pending review bids when LLM becomes available (AC4).
+
+    Loads pending bids from Redis, attempts LLM classification, emits SSE event.
+    Retries with backoff if LLM is still unavailable (max 3 attempts over 24h).
+
+    Returns:
+        dict with reclassification results.
+    """
+    from config import PENDING_REVIEW_MAX_RETRIES, PENDING_REVIEW_RETRY_DELAY
+    from redis_pool import get_redis_pool
+
+    logger.info(f"STORY-354: reclassify_pending_bids_job start (search_id={search_id}, attempt={attempt})")
+
+    redis = await get_redis_pool()
+    if redis is None:
+        logger.error("STORY-354: Redis unavailable for reclassify job")
+        return {"status": "error", "reason": "redis_unavailable"}
+
+    # Load pending bids from Redis
+    key = f"{_PENDING_REVIEW_KEY_PREFIX}{search_id}"
+    try:
+        import json as _json
+        raw = await redis.get(key)
+        if not raw:
+            logger.info(f"STORY-354: No pending bids found (expired or already reclassified) search_id={search_id}")
+            return {"status": "skipped", "reason": "no_pending_bids"}
+        data = _json.loads(raw)
+        bids = data["bids"]
+    except Exception as e:
+        logger.error(f"STORY-354: Failed to load pending bids: {e}")
+        return {"status": "error", "reason": str(e)}
+
+    if not bids:
+        return {"status": "skipped", "reason": "empty_bids"}
+
+    # Attempt LLM reclassification
+    from llm_arbiter import classify_contract_primary_match
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    accepted = 0
+    rejected = 0
+    still_pending = 0
+
+    def _classify_one(bid: dict) -> tuple[dict, dict]:
+        objeto = bid.get("objetoCompra", "")
+        valor = float(bid.get("valorTotalEstimado") or bid.get("valorTotalHomologado") or 0)
+        result = classify_contract_primary_match(
+            objeto=objeto,
+            valor=valor,
+            setor_name=sector_name or None,
+            prompt_level="zero_match",
+            setor_id=sector_id or None,
+            search_id=search_id,
+        )
+        return bid, result
+
+    try:
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(_classify_one, bid): bid for bid in bids}
+            for future in as_completed(futures):
+                try:
+                    bid, result = future.result()
+                    # Check if it's still pending (LLM failed again)
+                    if isinstance(result, dict) and result.get("pending_review"):
+                        still_pending += 1
+                    elif isinstance(result, dict) and result.get("is_primary"):
+                        accepted += 1
+                    else:
+                        rejected += 1
+                except Exception:
+                    still_pending += 1
+    except Exception as e:
+        logger.error(f"STORY-354: Reclassification failed entirely: {e}")
+        # All bids still pending — retry if attempts remain
+        if attempt < PENDING_REVIEW_MAX_RETRIES:
+            try:
+                pool = await get_arq_pool()
+                if pool:
+                    await pool.enqueue_job(
+                        "reclassify_pending_bids_job",
+                        search_id=search_id,
+                        sector_name=sector_name,
+                        sector_id=sector_id,
+                        attempt=attempt + 1,
+                        _defer_by=PENDING_REVIEW_RETRY_DELAY,
+                    )
+                    logger.info(f"STORY-354: Retry #{attempt + 1} scheduled in {PENDING_REVIEW_RETRY_DELAY}s")
+            except Exception as enq_err:
+                logger.error(f"STORY-354: Failed to enqueue retry: {enq_err}")
+        return {"status": "error", "reason": str(e)}
+
+    total = accepted + rejected + still_pending
+    logger.info(
+        f"STORY-354: Reclassification complete: {accepted} accepted, {rejected} rejected, "
+        f"{still_pending} still pending (search_id={search_id})"
+    )
+
+    # Emit SSE event (AC6) if any were successfully classified
+    if accepted + rejected > 0:
+        from progress import get_tracker
+        tracker = await get_tracker(search_id)
+        if tracker:
+            await tracker.emit_pending_review_complete(
+                reclassified_count=accepted + rejected,
+                accepted_count=accepted,
+                rejected_count=rejected,
+            )
+
+    # Clean up Redis if all reclassified; otherwise retry if still pending
+    if still_pending == 0:
+        try:
+            await redis.delete(key)
+        except Exception:
+            pass
+    elif attempt < PENDING_REVIEW_MAX_RETRIES:
+        try:
+            pool = await get_arq_pool()
+            if pool:
+                await pool.enqueue_job(
+                    "reclassify_pending_bids_job",
+                    search_id=search_id,
+                    sector_name=sector_name,
+                    sector_id=sector_id,
+                    attempt=attempt + 1,
+                    _defer_by=PENDING_REVIEW_RETRY_DELAY,
+                )
+                logger.info(f"STORY-354: Retry #{attempt + 1} scheduled for {still_pending} remaining bids")
+        except Exception as enq_err:
+            logger.error(f"STORY-354: Failed to enqueue retry: {enq_err}")
+
+    return {
+        "status": "completed",
+        "total": total,
+        "accepted": accepted,
+        "rejected": rejected,
+        "still_pending": still_pending,
+    }
+
+
 class WorkerSettings:
     """ARQ worker configuration.
 
@@ -1397,7 +1578,7 @@ class WorkerSettings:
         cd backend && arq job_queue.WorkerSettings
     """
 
-    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job]
+    functions = [llm_summary_job, excel_generation_job, cache_refresh_job, search_job, bid_analysis_job, cache_warming_job, daily_digest_job, email_alerts_job, reclassify_pending_bids_job]
     cron_jobs = _worker_cron_jobs  # CRIT-032 AC2: periodic cache refresh
     on_startup = _worker_on_startup  # CRIT-038: Inject socket_timeout into Redis pool
     redis_settings = _worker_redis_settings

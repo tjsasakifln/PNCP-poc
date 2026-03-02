@@ -496,6 +496,29 @@ class ProgressTracker:
         )
         await self._emit_event(event)
 
+    async def emit_pending_review_complete(
+        self,
+        reclassified_count: int,
+        accepted_count: int,
+        rejected_count: int,
+    ) -> None:
+        """STORY-354 AC6: Signal that pending review bids have been reclassified.
+
+        Non-terminal event — emitted when ARQ reclassify job completes.
+        Frontend updates the pending review banner and optionally refreshes results.
+        """
+        event = ProgressEvent(
+            stage="pending_review",
+            progress=-1,
+            message=f"Reclassificação concluída: {accepted_count} aprovadas, {rejected_count} rejeitadas",
+            detail={
+                "reclassified_count": reclassified_count,
+                "accepted_count": accepted_count,
+                "rejected_count": rejected_count,
+            },
+        )
+        await self._emit_event(event)
+
     async def emit_error(self, error_message: str) -> None:
         """Signal search error."""
         self._is_complete = True

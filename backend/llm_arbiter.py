@@ -785,6 +785,29 @@ Os termos buscados descrevem o OBJETO PRINCIPAL deste contrato (não itens secun
 
     except Exception as e:
         LLM_CALLS.labels(model=LLM_MODEL, decision="ERROR", zone=prompt_level).inc()
+
+        # STORY-354 AC1+AC8: When LLM fails for zero-match bids, return PENDING_REVIEW
+        # instead of REJECT — prevents silent loss of potentially relevant opportunities.
+        from config import LLM_FALLBACK_PENDING_ENABLED
+        if LLM_FALLBACK_PENDING_ENABLED and prompt_level == "zero_match":
+            logger.warning(
+                f"LLM arbiter FAILED (PENDING_REVIEW fallback): {e} | "
+                f"search={_search_id} mode={mode} context={context[:50]}... valor={valor:,.2f}"
+            )
+            from metrics import LLM_FALLBACK_PENDING
+            _sector_label = context[:50] if mode == "setor" else "termos"
+            _reason = type(e).__name__
+            LLM_FALLBACK_PENDING.labels(sector=_sector_label, reason=_reason).inc()
+            result = {
+                "is_primary": False,
+                "confidence": 0,
+                "evidence": [],
+                "rejection_reason": "LLM unavailable",
+                "needs_more_data": False,
+                "pending_review": True,
+            }
+            return result
+
         logger.error(
             f"LLM arbiter FAILED (defaulting to REJECT): {e} | "
             f"search={_search_id} mode={mode} context={context[:50]}... valor={valor:,.2f}"
