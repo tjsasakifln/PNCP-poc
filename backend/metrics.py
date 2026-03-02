@@ -202,6 +202,12 @@ SSE_CONNECTION_ERRORS = _create_counter(
     labelnames=["error_type", "phase"],
 )
 
+# STORY-359 AC4: Frontend SSE fallback to simulated progress
+SSE_FALLBACK_SIMULATED_TOTAL = _create_counter(
+    "smartlic_sse_fallback_simulated_total",
+    "Times frontend fell back to simulated progress after SSE failure",
+)
+
 # CRIT-026 AC3: Worker timeout tracking
 WORKER_TIMEOUT = _create_counter(
     "smartlic_worker_timeout_total",
@@ -580,6 +586,18 @@ REDIS_AVAILABLE = _create_gauge(
 REDIS_FALLBACK_DURATION = _create_gauge(
     "smartlic_redis_fallback_duration_seconds",
     "Seconds since Redis entered fallback mode (0 when connected)",
+)
+
+# STORY-353 AC5: Support SLA metrics
+SUPPORT_PENDING_MESSAGES = _create_gauge(
+    "smartlic_support_pending_messages",
+    "Number of support conversations awaiting admin response",
+)
+
+SUPPORT_RESPONSE_TIME_HOURS = _create_histogram(
+    "smartlic_support_response_time_hours",
+    "Admin response time in business hours",
+    buckets=[1, 2, 4, 8, 12, 16, 20, 24, 36, 48],
 )
 
 

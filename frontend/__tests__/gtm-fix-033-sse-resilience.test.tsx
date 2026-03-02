@@ -309,8 +309,8 @@ describe('GTM-FIX-033: SSE Resilience', () => {
         })
       );
 
-      // Should show the SSE disconnect message
-      expect(screen.getByText(/progresso em tempo real foi interrompido/i)).toBeTruthy();
+      // STORY-359: Replaced banner with discrete indicator
+      expect(screen.getByText(/Progresso estimado \(conexão em tempo real indisponível\)/i)).toBeTruthy();
     });
 
     test('EnhancedLoadingProgress does not show disconnect message when connected', () => {
@@ -328,7 +328,8 @@ describe('GTM-FIX-033: SSE Resilience', () => {
         })
       );
 
-      expect(screen.queryByText(/progresso em tempo real foi interrompido/i)).toBeNull();
+      // STORY-359: Replaced banner with discrete indicator
+      expect(screen.queryByText(/Progresso estimado \(conexão em tempo real indisponível\)/i)).toBeNull();
     });
   });
 

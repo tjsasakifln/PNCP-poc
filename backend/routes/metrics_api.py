@@ -1,12 +1,12 @@
-"""STORY-351 AC3: Public discard rate metrics endpoint.
+"""Metrics API endpoints.
 
 GET /v1/metrics/discard-rate — Returns 30-day moving average of filter discard rate.
-Public (no auth required) — used by landing page StatsSection.
+POST /v1/metrics/sse-fallback — Increment SSE fallback counter (STORY-359 AC4).
 """
 
 import logging
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Response
 
 logger = logging.getLogger(__name__)
 
@@ -28,3 +28,16 @@ async def get_discard_rate(days: int = Query(30, ge=1, le=90)):
         f"({data['sample_size']} searches, {data['period_days']}d window)"
     )
     return data
+
+
+@router.post("/sse-fallback", status_code=204)
+async def report_sse_fallback():
+    """STORY-359 AC4: Frontend reports SSE fallback to simulated progress.
+
+    Lightweight fire-and-forget endpoint — no auth, no body, just increments counter.
+    """
+    from metrics import SSE_FALLBACK_SIMULATED_TOTAL
+
+    SSE_FALLBACK_SIMULATED_TOTAL.inc()
+    logger.info("sse_fallback_simulated: frontend reported SSE fallback to simulation")
+    return Response(status_code=204)

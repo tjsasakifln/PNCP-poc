@@ -480,7 +480,8 @@ describe('EnhancedLoadingProgress Component', () => {
         />
       );
 
-      expect(screen.getByText(/progresso em tempo real foi interrompido/)).toBeInTheDocument();
+      // STORY-359: Replaced banner with discrete indicator
+      expect(screen.getByText(/Progresso estimado \(conexão em tempo real indisponível\)/)).toBeInTheDocument();
     });
   });
 

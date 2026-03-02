@@ -483,21 +483,22 @@ export function EnhancedLoadingProgress({
         </div>
       </div>
 
-      {/* CRIT-006 AC13-14: SSE disconnect message — informative, not misleading */}
-      {sseDisconnected && (
-        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/40 rounded-lg text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-          O progresso em tempo real foi interrompido. A busca continua no servidor e os resultados serão exibidos quando prontos.
+      {/* STORY-359 AC1+AC2+AC3: SSE status indicator — discrete, informative, not alarming */}
+      {sseDisconnected ? (
+        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-muted" data-testid="sse-fallback-indicator">
+          <svg className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span title="A conexão em tempo real não está disponível. O progresso exibido é uma estimativa baseada no tempo. A busca continua no servidor.">
+            Progresso estimado (conexão em tempo real indisponível)
+          </span>
         </div>
-      )}
-
-      {/* SSE indicator (subtle) — show whenever SSE is actively providing data */}
-      {sseEvent && !sseDisconnected && (
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-muted">
+      ) : sseEvent ? (
+        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-muted" data-testid="sse-realtime-indicator">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
           Progresso em tempo real
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

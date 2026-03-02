@@ -26,17 +26,23 @@ SSE fallback simulado é silencioso. `EnhancedLoadingProgress.tsx` usa time-base
 
 ## Critérios de Aceite
 
-- [ ] AC1: Quando SSE cai para fallback simulado, exibir indicador discreto: ícone de info + tooltip "Progresso estimado (conexão em tempo real indisponível)"
-- [ ] AC2: Se SSE reconectar com sucesso, remover indicador e mostrar progresso real
-- [ ] AC3: Não bloquear UX — indicador é informativo, não alarme (cor cinza/azul, não vermelho)
-- [ ] AC4: Prometheus counter `smartlic_sse_fallback_simulated_total` no frontend (via telemetry endpoint)
-- [ ] AC5: Testes: SSE fail → indicador aparece → SSE reconnect → indicador some
+- [x] AC1: Quando SSE cai para fallback simulado, exibir indicador discreto: ícone de info + tooltip "Progresso estimado (conexão em tempo real indisponível)"
+- [x] AC2: Se SSE reconectar com sucesso, remover indicador e mostrar progresso real
+- [x] AC3: Não bloquear UX — indicador é informativo, não alarme (cor cinza/azul, não vermelho)
+- [x] AC4: Prometheus counter `smartlic_sse_fallback_simulated_total` no frontend (via telemetry endpoint)
+- [x] AC5: Testes: SSE fail → indicador aparece → SSE reconnect → indicador some
 
 ## Arquivos Afetados
 
-- `frontend/components/EnhancedLoadingProgress.tsx`
-- `frontend/hooks/useSearchSSE.ts` (ou equivalente)
-- `frontend/hooks/useSearchProgress.ts` (ou equivalente)
+- `frontend/components/EnhancedLoadingProgress.tsx` — replaced banner with discrete indicator (AC1-3)
+- `frontend/hooks/useSearchSSE.ts` — fire-and-forget POST on fallback (AC4)
+- `backend/metrics.py` — `SSE_FALLBACK_SIMULATED_TOTAL` counter (AC4)
+- `backend/routes/metrics_api.py` — `POST /v1/metrics/sse-fallback` endpoint (AC4)
+- `frontend/app/api/metrics/sse-fallback/route.ts` — Next.js proxy (AC4)
+- `frontend/__tests__/sse-fallback-indicator.test.tsx` — 10 tests (AC5)
+- `backend/tests/test_sse_fallback_telemetry.py` — 4 tests (AC4)
+- `frontend/__tests__/EnhancedLoadingProgress.test.tsx` — updated assertions (AC1)
+- `frontend/__tests__/gtm-fix-033-sse-resilience.test.tsx` — updated assertions (AC1)
 
 ## Validação
 

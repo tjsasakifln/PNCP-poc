@@ -493,6 +493,10 @@ export function useSearchSSE({
         setSseAvailable(false);
         setSseDisconnected(true);
         setIsReconnecting(false);
+        // STORY-359 AC4: Report fallback to simulated progress (fire-and-forget)
+        if (typeof fetch !== 'undefined') {
+          fetch('/api/metrics/sse-fallback', { method: 'POST' }).catch(() => {});
+        }
         onErrorRef.current?.();
         return;
       }
