@@ -78,9 +78,10 @@ const PRIMARY_NAV: NavItem[] = [
   { href: "/buscar", label: "Buscar", icon: icons.search },
   { href: "/dashboard", label: "Dashboard", icon: icons.dashboard },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
-  { href: "/alertas", label: "Alertas", icon: icons.alerts },
+  // SHIP-002 AC9: Alertas and Mensagens hidden — feature-gated (backend returns 404)
+  // { href: "/alertas", label: "Alertas", icon: icons.alerts },
   { href: "/historico", label: "Histórico", icon: icons.history },
-  { href: "/mensagens", label: "Suporte", icon: icons.messages },
+  // { href: "/mensagens", label: "Suporte", icon: icons.messages },
 ];
 
 const SECONDARY_NAV: NavItem[] = [

@@ -68,16 +68,17 @@ const icons = {
 };
 
 // SAB-012 AC8: Abbreviated labels for 375px viewport fit
+// SHIP-002 AC9: Mensagens hidden — feature-gated
 const MAIN_ITEMS: BottomNavItem[] = [
   { href: "/buscar", label: "Busca", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
   { href: "/historico", label: "Hist.", ariaLabel: "Histórico", icon: icons.history },
-  { href: "/mensagens", label: "Msgs", ariaLabel: "Mensagens", icon: icons.messages },
+  { href: "/dashboard", label: "Dash", ariaLabel: "Dashboard", icon: icons.search },
 ];
 
+// SHIP-002 AC9: Alertas hidden — feature-gated
 const DRAWER_ITEMS: { href: string; label: string; icon: React.ReactNode }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: icons.search },
-  { href: "/alertas", label: "Alertas", icon: icons.alerts },
+  // { href: "/alertas", label: "Alertas", icon: icons.alerts },
   { href: "/conta", label: "Minha Conta", icon: icons.account },
   { href: "/ajuda", label: "Ajuda", icon: icons.help },
 ];

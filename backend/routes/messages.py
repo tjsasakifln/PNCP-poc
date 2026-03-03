@@ -5,6 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from auth import require_auth
+from config import MESSAGES_ENABLED
 from admin import require_admin, _is_admin_from_supabase
 from supabase_client import sb_execute
 from schemas import (
@@ -48,6 +49,8 @@ async def create_conversation(
     req: CreateConversationRequest,
     user: dict = Depends(require_auth),
 ):
+    if not MESSAGES_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     sb = _get_sb()
     user_id = user["id"]
 
@@ -91,6 +94,8 @@ async def list_conversations(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ):
+    if not MESSAGES_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     sb = _get_sb()
     user_id = user["id"]
     admin = _is_admin(user_id)
@@ -147,6 +152,8 @@ async def get_conversation(
     conversation_id: str,
     user: dict = Depends(require_auth),
 ):
+    if not MESSAGES_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     try:
         conversation_id = validate_uuid(conversation_id, "conversation_id")
     except ValueError:
@@ -233,6 +240,8 @@ async def reply_to_conversation(
     req: ReplyRequest,
     user: dict = Depends(require_auth),
 ):
+    if not MESSAGES_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     try:
         conversation_id = validate_uuid(conversation_id, "conversation_id")
     except ValueError:
@@ -318,6 +327,8 @@ async def update_conversation_status(
     req: UpdateConversationStatusRequest,
     admin: dict = Depends(require_admin),
 ):
+    if not MESSAGES_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     try:
         conversation_id = validate_uuid(conversation_id, "conversation_id")
     except ValueError:
@@ -347,6 +358,8 @@ async def update_conversation_status(
 async def get_unread_count(
     user: dict = Depends(require_auth),
 ):
+    if not MESSAGES_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     sb = _get_sb()
     user_id = user["id"]
     admin = _is_admin(user_id)

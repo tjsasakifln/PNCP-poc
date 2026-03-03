@@ -648,6 +648,7 @@ async def save_health_check(overall_status: str, sources: Dict, components: Dict
     """STORY-316 AC6: Save a health check result to DB.
 
     CRIT-042 AC2: Uses sb_execute_direct() to bypass circuit breaker.
+    SHIP-003 AC4: Graceful skip when CB OPEN or Supabase unreachable.
     """
     try:
         from supabase_client import get_supabase, sb_execute_direct
@@ -662,11 +663,16 @@ async def save_health_check(overall_status: str, sources: Dict, components: Dict
             })
         )
     except Exception as e:
+        err_name = type(e).__name__
+        err_str = str(e)
         # CRIT-042 AC7: PGRST205 → WARNING with specific migration message
-        if "PGRST205" in str(e):
+        if "PGRST205" in err_str:
             logger.warning("save_health_check: health_checks table not found — migration pending: %s", e)
+        # SHIP-003 AC4: CircuitBreaker / connection errors → WARNING (not ERROR)
+        elif "CircuitBreaker" in err_name or "ConnectionError" in err_name or "ConnectError" in err_str:
+            logger.warning("save_health_check: Supabase unavailable, skipping health persistence: %s", e)
         else:
-            logger.error("Failed to save health check: %s", e)
+            logger.warning("save_health_check: failed (non-critical): %s", e)
 
 
 async def detect_incident(current_status: str, sources: Dict) -> None:
@@ -779,11 +785,16 @@ async def detect_incident(current_status: str, sources: Dict) -> None:
                 logger.info("Incident auto-resolved: %s", ongoing.get("id"))
 
     except Exception as e:
+        err_name = type(e).__name__
+        err_str = str(e)
         # CRIT-042 AC8: PGRST205 → WARNING with specific migration message
-        if "PGRST205" in str(e):
+        if "PGRST205" in err_str:
             logger.warning("detect_incident: incidents table not found — migration pending: %s", e)
+        # SHIP-003 AC4: CircuitBreaker / connection errors → WARNING (not ERROR)
+        elif "CircuitBreaker" in err_name or "ConnectionError" in err_name or "ConnectError" in err_str:
+            logger.warning("detect_incident: Supabase unavailable, skipping incident detection: %s", e)
         else:
-            logger.error("Incident detection failed: %s", e)
+            logger.warning("detect_incident: failed (non-critical): %s", e)
 
 
 async def cleanup_old_health_checks() -> int:

@@ -920,6 +920,16 @@ HEALTH_CANARY_INTERVAL_SECONDS: int = int(os.getenv("HEALTH_CANARY_INTERVAL_SECO
 HEALTH_CHECKS_RETENTION_DAYS: int = int(os.getenv("HEALTH_CHECKS_RETENTION_DAYS", "30"))
 
 # ============================================================================
+# SHIP-002: Feature gates for incomplete features (organizations, messages, alerts, partners)
+# All False by default — these features have no frontend and generate Sentry noise.
+# Set env var to "true" to re-enable when ready for users.
+# ============================================================================
+ORGANIZATIONS_ENABLED: bool = str_to_bool(os.getenv("ORGANIZATIONS_ENABLED", "false"))
+MESSAGES_ENABLED: bool = str_to_bool(os.getenv("MESSAGES_ENABLED", "false"))
+ALERTS_SYSTEM_ENABLED: bool = str_to_bool(os.getenv("ALERTS_SYSTEM_ENABLED", "false"))
+PARTNERS_ENABLED: bool = str_to_bool(os.getenv("PARTNERS_ENABLED", "false"))
+
+# ============================================================================
 # STORY-353: Support SLA Business Hours
 # ============================================================================
 BUSINESS_HOURS_START: int = int(os.getenv("BUSINESS_HOURS_START", "8"))   # 08:00 BRT

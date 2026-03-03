@@ -387,7 +387,8 @@ _sync_redis = None
 _sync_redis_initialized = False
 
 # Small pool — arbiter cache hits are mostly served from L1 in-memory
-_SYNC_POOL_MAX_CONNECTIONS = 5
+# SHIP-003 AC1: Increased from 5→12 to accommodate ThreadPoolExecutor(max_workers=10)
+_SYNC_POOL_MAX_CONNECTIONS = 12
 
 
 def get_sync_redis():

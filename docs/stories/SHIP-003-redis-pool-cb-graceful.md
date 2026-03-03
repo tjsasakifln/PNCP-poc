@@ -1,6 +1,6 @@
 # SHIP-003: Redis Pool Fix + Circuit Breaker Graceful Degradation
 
-**Status:** 🔴 Pendente
+**Status:** 🟢 Concluído
 **Prioridade:** P0
 **Sprint:** SHIP (Go-to-Market)
 **Criado:** 2026-03-03
@@ -38,20 +38,20 @@ gerando cascade de 28+ events no Sentry que mascaram erros reais.
 
 ### Redis Pool
 
-- [ ] AC1: `redis_pool.py` — `_SYNC_POOL_MAX_CONNECTIONS` de `5` para `12`
-- [ ] AC2: Sem outras mudanças no pool (async pool 50 e SSE pool 10 estão OK)
+- [x] AC1: `redis_pool.py` — `_SYNC_POOL_MAX_CONNECTIONS` de `5` para `12`
+- [x] AC2: Sem outras mudanças no pool (async pool 50 e SSE pool 10 estão OK)
 
 ### CB Graceful Degradation
 
-- [ ] AC3: `cron_jobs.py` — todo cron task que acessa Supabase faz `try/except (CircuitBreakerOpenError, Exception)` → `logger.warning(...)` + skip (não `logger.error`)
-- [ ] AC4: `health.py` — `save_health_check()` e `detect_incidents()` fazem graceful skip quando CB OPEN → `logger.warning("Supabase CB open, skipping health persistence")`
-- [ ] AC5: `health.py` — health endpoint GET /health continua retornando status mesmo com CB OPEN (usa cache ou último valor conhecido)
-- [ ] AC6: Trial email jobs (`process_trial_emails`, `process_trial_milestones`) fazem skip individual por usuário quando DB inacessível (não aborta batch inteiro)
+- [x] AC3: `cron_jobs.py` — todo cron task que acessa Supabase faz `try/except (CircuitBreakerOpenError, Exception)` → `logger.warning(...)` + skip (não `logger.error`)
+- [x] AC4: `health.py` — `save_health_check()` e `detect_incidents()` fazem graceful skip quando CB OPEN → `logger.warning("Supabase CB open, skipping health persistence")`
+- [x] AC5: `health.py` — health endpoint GET /health continua retornando status mesmo com CB OPEN (usa cache ou último valor conhecido)
+- [x] AC6: Trial email jobs (`process_trial_emails`, `process_trial_milestones`) fazem skip individual por usuário quando DB inacessível (não aborta batch inteiro)
 
 ### Validação
 
-- [ ] AC7: Rodar `pytest -k "test_circuit_breaker"` — todos passam
-- [ ] AC8: Rodar `pytest -k "test_cron"` — todos passam
+- [x] AC7: Rodar `pytest -k "test_circuit_breaker"` — todos passam (55 passed)
+- [x] AC8: Rodar `pytest -k "test_cron"` — todos passam (full suite 6989+ passed)
 - [ ] AC9: Após deploy, Sentry confirma redução de events nas categorias listadas
 
 ## Notas

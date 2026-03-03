@@ -1,6 +1,6 @@
 # SHIP-002: Feature-Gate Features Incompletas
 
-**Status:** 🔴 Pendente
+**Status:** 🟢 Concluído
 **Prioridade:** P0
 **Sprint:** SHIP (Go-to-Market)
 **Criado:** 2026-03-03
@@ -23,16 +23,16 @@ toda vez que cron jobs ou health checks tentam acessá-las.
 
 ## Acceptance Criteria
 
-- [ ] AC1: `config.py` — adicionar flags: `ORGANIZATIONS_ENABLED = bool(os.getenv("ORGANIZATIONS_ENABLED", "false").lower() == "true")`
-- [ ] AC2: `config.py` — adicionar flags: `MESSAGES_ENABLED`, `ALERTS_SYSTEM_ENABLED`, `PARTNERS_ENABLED` (todas `False` por padrão)
-- [ ] AC3: `routes/organizations.py` — early return 404 `{"detail": "Feature not available"}` quando `ORGANIZATIONS_ENABLED=False`
-- [ ] AC4: `routes/messages.py` — early return 404 quando `MESSAGES_ENABLED=False`
-- [ ] AC5: `routes/alerts.py` — early return 404 quando `ALERTS_SYSTEM_ENABLED=False`
-- [ ] AC6: `routes/partners.py` — early return 404 quando `PARTNERS_ENABLED=False`
-- [ ] AC7: `cron_jobs.py` — SLA check (`start_trial_sequence_task` e qualquer job que query `conversations.first_response_at`) faz early-return quando flag=False
-- [ ] AC8: `cron_jobs.py` — alert_runs job faz early-return quando `ALERTS_SYSTEM_ENABLED=False`
-- [ ] AC9: Frontend — remover/ocultar links para mensagens, alertas, organizações nos menus de navegação (se existirem)
-- [ ] AC10: Testes existentes continuam passando (flags não quebram nada)
+- [x] AC1: `config.py` — adicionar flags: `ORGANIZATIONS_ENABLED = bool(os.getenv("ORGANIZATIONS_ENABLED", "false").lower() == "true")`
+- [x] AC2: `config.py` — adicionar flags: `MESSAGES_ENABLED`, `ALERTS_SYSTEM_ENABLED`, `PARTNERS_ENABLED` (todas `False` por padrão)
+- [x] AC3: `routes/organizations.py` — early return 404 `{"detail": "Feature not available"}` quando `ORGANIZATIONS_ENABLED=False`
+- [x] AC4: `routes/messages.py` — early return 404 quando `MESSAGES_ENABLED=False`
+- [x] AC5: `routes/alerts.py` — early return 404 quando `ALERTS_SYSTEM_ENABLED=False`
+- [x] AC6: `routes/partners.py` — early return 404 quando `PARTNERS_ENABLED=False`
+- [x] AC7: `cron_jobs.py` — SLA check (`start_trial_sequence_task` e qualquer job que query `conversations.first_response_at`) faz early-return quando flag=False
+- [x] AC8: `cron_jobs.py` — alert_runs job faz early-return quando `ALERTS_SYSTEM_ENABLED=False`
+- [x] AC9: Frontend — remover/ocultar links para mensagens, alertas, organizações nos menus de navegação (se existirem)
+- [x] AC10: Testes existentes continuam passando (flags não quebram nada)
 
 ## Implementação
 

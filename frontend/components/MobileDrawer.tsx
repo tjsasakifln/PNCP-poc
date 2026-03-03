@@ -82,12 +82,13 @@ const icons = {
 };
 
 /* -- Navigation items -- */
+// SHIP-002 AC9: Alertas and Mensagens hidden — feature-gated
 const PRIMARY_NAV = [
   { href: "/buscar", label: "Buscar", icon: icons.search },
   { href: "/pipeline", label: "Pipeline", icon: icons.pipeline },
-  { href: "/alertas", label: "Alertas", icon: icons.alerts },
+  // { href: "/alertas", label: "Alertas", icon: icons.alerts },
   { href: "/historico", label: "Historico", icon: icons.history },
-  { href: "/mensagens", label: "Mensagens", icon: icons.messages },
+  // { href: "/mensagens", label: "Mensagens", icon: icons.messages },
   { href: "/dashboard", label: "Dashboard", icon: icons.dashboard },
 ];
 

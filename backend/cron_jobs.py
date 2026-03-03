@@ -9,6 +9,22 @@ from datetime import datetime, timezone, timedelta, date
 
 logger = logging.getLogger(__name__)
 
+
+def _is_cb_or_connection_error(e: Exception) -> bool:
+    """SHIP-003 AC3: Check if an exception is a circuit breaker or connection error.
+
+    Used by cron tasks to log WARNING instead of ERROR for transient infra issues.
+    """
+    err_name = type(e).__name__
+    err_str = str(e)
+    return (
+        "CircuitBreaker" in err_name
+        or "ConnectionError" in err_name
+        or "ConnectError" in err_str
+        or "PGRST205" in err_str
+    )
+
+
 # Cleanup interval: every 6 hours
 CLEANUP_INTERVAL_SECONDS = 6 * 60 * 60
 
@@ -369,7 +385,10 @@ async def _session_cleanup_loop() -> None:
             f"at {datetime.now(timezone.utc).isoformat()}"
         )
     except Exception as e:
-        logger.error(f"Session cleanup error on startup: {e}", exc_info=True)
+        if _is_cb_or_connection_error(e):
+            logger.warning("Session cleanup skipped on startup (Supabase unavailable): %s", e)
+        else:
+            logger.error(f"Session cleanup error on startup: {e}", exc_info=True)
 
     # Then every 6 hours
     while True:
@@ -385,7 +404,10 @@ async def _session_cleanup_loop() -> None:
             logger.info("Session cleanup task cancelled")
             break
         except Exception as e:
-            logger.error(f"Session cleanup error: {e}", exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("Session cleanup skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error(f"Session cleanup error: {e}", exc_info=True)
             await asyncio.sleep(60)
 
 
@@ -523,7 +545,10 @@ async def run_health_canary() -> dict:
         }
 
     except Exception as e:
-        logger.error("STORY-316 canary error: %s", e, exc_info=True)
+        if _is_cb_or_connection_error(e):
+            logger.warning("STORY-316 canary: Supabase unavailable, skipping: %s", e)
+        else:
+            logger.error("STORY-316 canary error: %s", e, exc_info=True)
         return {"status": "error", "error": str(e)}
 
 
@@ -546,7 +571,10 @@ async def _health_canary_loop() -> None:
             logger.info("STORY-316: Health canary task cancelled")
             break
         except Exception as e:
-            logger.error("STORY-316 canary loop error: %s", e, exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("STORY-316 canary loop: Supabase unavailable, skipping: %s", e)
+            else:
+                logger.error("STORY-316 canary loop error: %s", e, exc_info=True)
             await asyncio.sleep(60)
 
 
@@ -680,7 +708,10 @@ async def check_pre_dunning_cards() -> dict:
         return {"sent": sent, "skipped": skipped, "errors": errors}
 
     except Exception as e:
-        logger.error(f"Pre-dunning check failed: {e}", exc_info=True)
+        if _is_cb_or_connection_error(e):
+            logger.warning("Pre-dunning check skipped (Supabase unavailable): %s", e)
+        else:
+            logger.error(f"Pre-dunning check failed: {e}", exc_info=True)
         return {"sent": 0, "skipped": 0, "errors": 1, "error": str(e)}
 
 
@@ -701,7 +732,10 @@ async def _pre_dunning_loop() -> None:
             logger.info("Pre-dunning task cancelled")
             break
         except Exception as e:
-            logger.error(f"Pre-dunning loop error: {e}", exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("Pre-dunning loop skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error(f"Pre-dunning loop error: {e}", exc_info=True)
             await asyncio.sleep(60)
 
 
@@ -738,7 +772,10 @@ async def run_search_alerts() -> dict:
     """
     import time as _time
 
-    from config import ALERTS_ENABLED
+    from config import ALERTS_ENABLED, ALERTS_SYSTEM_ENABLED
+
+    if not ALERTS_SYSTEM_ENABLED:
+        return {"status": "disabled", "reason": "ALERTS_SYSTEM_ENABLED=false"}
 
     if not ALERTS_ENABLED:
         logger.info("STORY-315: Alerts disabled (ALERTS_ENABLED=false)")
@@ -872,7 +909,11 @@ async def run_search_alerts() -> dict:
 
 async def _alerts_loop() -> None:
     """STORY-315 AC8: Run search alerts daily at configured hour."""
-    from config import ALERTS_ENABLED, ALERTS_HOUR_UTC
+    from config import ALERTS_ENABLED, ALERTS_SYSTEM_ENABLED, ALERTS_HOUR_UTC
+
+    if not ALERTS_SYSTEM_ENABLED:
+        logger.info("SHIP-002: Alert system disabled (ALERTS_SYSTEM_ENABLED=false)")
+        return
 
     if not ALERTS_ENABLED:
         logger.info("STORY-315: Alerts disabled (ALERTS_ENABLED=false)")
@@ -1018,7 +1059,10 @@ async def _reconciliation_loop() -> None:
             logger.info("Reconciliation task cancelled")
             break
         except Exception as e:
-            logger.error(f"Reconciliation loop error: {e}", exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("Reconciliation skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error(f"Reconciliation loop error: {e}", exc_info=True)
             await asyncio.sleep(300)  # Retry in 5min on error
 
 
@@ -1131,7 +1175,10 @@ async def _revenue_share_loop() -> None:
             logger.info("STORY-323: Revenue share report task cancelled")
             break
         except Exception as e:
-            logger.error(f"STORY-323: Revenue share loop error: {e}", exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("STORY-323: Revenue share skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error(f"STORY-323: Revenue share loop error: {e}", exc_info=True)
             await asyncio.sleep(3600)  # Retry in 1h on error
 
 
@@ -1179,7 +1226,10 @@ async def _trial_sequence_loop() -> None:
             logger.info("Trial email sequence task cancelled")
             break
         except Exception as e:
-            logger.error(f"Trial email sequence loop error: {e}", exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("Trial email sequence skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error(f"Trial email sequence loop error: {e}", exc_info=True)
             await asyncio.sleep(300)  # Retry in 5min on error
 
 
@@ -1262,10 +1312,16 @@ async def check_unanswered_messages() -> dict:
     calculates elapsed business hours since created_at, and sends email alerts
     for those exceeding 20 business hours.
 
+    SHIP-002 AC7: Early return when MESSAGES_ENABLED=False.
+
     Returns:
         dict with counts: {"checked": N, "breached": M, "alerted": A}
     """
     import os
+
+    from config import MESSAGES_ENABLED
+    if not MESSAGES_ENABLED:
+        return {"checked": 0, "breached": 0, "alerted": 0, "disabled": True}
 
     try:
         from supabase_client import get_supabase, sb_execute
@@ -1355,7 +1411,10 @@ async def check_unanswered_messages() -> dict:
         return {"checked": len(conversations), "breached": len(breached), "alerted": alerted}
 
     except Exception as e:
-        logger.error("STORY-353: Support SLA check error: %s", e, exc_info=True)
+        if _is_cb_or_connection_error(e):
+            logger.warning("STORY-353: Support SLA check skipped (Supabase unavailable): %s", e)
+        else:
+            logger.error("STORY-353: Support SLA check error: %s", e, exc_info=True)
         return {"checked": 0, "breached": 0, "alerted": 0, "error": str(e)}
 
 
@@ -1378,7 +1437,10 @@ async def _support_sla_loop() -> None:
             logger.info("STORY-353: Support SLA task cancelled")
             break
         except Exception as e:
-            logger.error("STORY-353 SLA loop error: %s", e, exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("STORY-353 SLA loop skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error("STORY-353 SLA loop error: %s", e, exc_info=True)
             await asyncio.sleep(300)
 
 
@@ -1442,7 +1504,10 @@ async def record_daily_volume() -> dict:
         }
 
     except Exception as e:
-        logger.error("STORY-358: Daily volume recording error: %s", e, exc_info=True)
+        if _is_cb_or_connection_error(e):
+            logger.warning("STORY-358: Daily volume recording skipped (Supabase unavailable): %s", e)
+        else:
+            logger.error("STORY-358: Daily volume recording error: %s", e, exc_info=True)
         return {"total_bids_24h": 0, "session_count": 0, "error": str(e)}
 
 
@@ -1472,5 +1537,8 @@ async def _daily_volume_loop() -> None:
             logger.info("STORY-358: Daily volume task cancelled")
             break
         except Exception as e:
-            logger.error("STORY-358 daily volume loop error: %s", e, exc_info=True)
+            if _is_cb_or_connection_error(e):
+                logger.warning("STORY-358 daily volume loop skipped (Supabase unavailable): %s", e)
+            else:
+                logger.error("STORY-358 daily volume loop error: %s", e, exc_info=True)
             await asyncio.sleep(600)

@@ -329,7 +329,13 @@ async def process_trial_emails(batch_size: int = 50) -> dict:
         }
 
     except Exception as e:
-        logger.error(f"Trial email sequence failed: {e}", exc_info=True)
+        # SHIP-003 AC6: Downgrade to warning for connection/CB errors (don't abort batch)
+        err_name = type(e).__name__
+        err_str = str(e)
+        if "CircuitBreaker" in err_name or "ConnectionError" in err_name or "ConnectError" in err_str:
+            logger.warning("Trial email sequence skipped (DB unavailable): %s", e)
+        else:
+            logger.error(f"Trial email sequence failed: {e}", exc_info=True)
         return {"sent": 0, "skipped": 0, "errors": 1, "error": str(e)}
 
 

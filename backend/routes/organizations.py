@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import require_auth
+from config import ORGANIZATIONS_ENABLED
 from log_sanitizer import mask_user_id
 from services.organization_service import (
     accept_invite,
@@ -56,6 +57,8 @@ async def get_my_org(
     user: dict = Depends(require_auth),
 ):
     """Get the organization the current user belongs to."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.debug("get_my_org user=%s", mask_user_id(user_id))
     try:
@@ -76,6 +79,8 @@ async def create_org(
     user: dict = Depends(require_auth),
 ):
     """Create organization (owner = current user)."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.info("create_org user=%s name=%r", mask_user_id(user_id), body.name)
     try:
@@ -97,6 +102,8 @@ async def get_org(
     user: dict = Depends(require_auth),
 ):
     """Get organization details (must be a member)."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.debug("get_org org_id=%s user=%s", org_id, mask_user_id(user_id))
     try:
@@ -118,6 +125,8 @@ async def invite_org_member(
     user: dict = Depends(require_auth),
 ):
     """Invite a member to the organization (owner/admin only)."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.info(
         "invite_org_member org_id=%s inviter=%s email=%r",
@@ -151,6 +160,8 @@ async def accept_org_invite(
     user: dict = Depends(require_auth),
 ):
     """Accept a pending organization invite."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.info("accept_org_invite org_id=%s user=%s", org_id, mask_user_id(user_id))
     try:
@@ -178,6 +189,8 @@ async def remove_org_member(
     user: dict = Depends(require_auth),
 ):
     """Remove a member from the organization (owner/admin only)."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.info(
         "remove_org_member org_id=%s remover=%s target=%s",
@@ -216,6 +229,8 @@ async def get_org_dashboard_endpoint(
     user: dict = Depends(require_auth),
 ):
     """Get consolidated dashboard for organization (owner/admin only)."""
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.debug("get_org_dashboard org_id=%s user=%s", org_id, mask_user_id(user_id))
     try:
@@ -247,6 +262,8 @@ async def upload_org_logo(
     Note: Actual file upload to Supabase Storage is handled client-side.
     This endpoint receives the public storage URL after the client-side upload.
     """
+    if not ORGANIZATIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     user_id = user["id"]
     logger.info("upload_org_logo org_id=%s user=%s", org_id, mask_user_id(user_id))
     try:

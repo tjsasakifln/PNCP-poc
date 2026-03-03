@@ -20,6 +20,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from auth import require_auth
+from config import ALERTS_SYSTEM_ENABLED
 from log_sanitizer import mask_user_id
 
 logger = logging.getLogger(__name__)
@@ -160,6 +161,8 @@ async def create_alert(
     AC1: Persists alert definition with filter criteria.
     Enforces a per-user limit to prevent abuse.
     """
+    if not ALERTS_SYSTEM_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
@@ -227,6 +230,8 @@ async def list_alerts(
 
     AC2: Includes sent_count (number of items sent for each alert).
     """
+    if not ALERTS_SYSTEM_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
@@ -290,6 +295,8 @@ async def update_alert(
     AC3: Only name, filters, and active status can be updated.
     Validates that the alert belongs to the authenticated user.
     """
+    if not ALERTS_SYSTEM_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
@@ -353,6 +360,8 @@ async def delete_alert(
     AC4: Cascading delete removes associated alert_sent_items.
     Validates that the alert belongs to the authenticated user.
     """
+    if not ALERTS_SYSTEM_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
@@ -493,6 +502,8 @@ async def preview_alert(
     STORY-315 AC12: Executes matching without sending email.
     Returns opportunities that would be sent, useful for validating filters.
     """
+    if not ALERTS_SYSTEM_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]
@@ -579,6 +590,8 @@ async def alert_history(
     AC13: Returns alert_sent_items ordered by sent_at desc.
     Only accessible if the alert belongs to the authenticated user.
     """
+    if not ALERTS_SYSTEM_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     from supabase_client import get_supabase, sb_execute
 
     user_id = user["id"]

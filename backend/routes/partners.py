@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from auth import require_auth
 from authorization import check_user_roles
+from config import PARTNERS_ENABLED
 from log_sanitizer import mask_user_id
 from services.partner_service import (
     calculate_partner_revenue,
@@ -55,6 +56,8 @@ async def partner_dashboard(user: dict = Depends(require_auth)):
 
     Partner is identified by matching their auth email to partners.contact_email.
     """
+    if not PARTNERS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     email = user.get("email")
     if not email:
         raise HTTPException(status_code=400, detail="Email não disponível")
@@ -76,6 +79,8 @@ async def list_partners_endpoint(
     user: dict = Depends(require_auth),
 ):
     """AC10: List all partners. Admin only."""
+    if not PARTNERS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     await _require_admin(user)
     partners = await list_partners(status_filter=status)
 
@@ -105,6 +110,8 @@ async def create_partner_endpoint(
     user: dict = Depends(require_auth),
 ):
     """AC11: Create a new partner. Admin only."""
+    if not PARTNERS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     await _require_admin(user)
     logger.info(
         "Creating partner: slug=%s by admin=%s",
@@ -135,6 +142,8 @@ async def get_partner_referrals_endpoint(
     user: dict = Depends(require_auth),
 ):
     """AC12: Get referrals for a specific partner. Admin only."""
+    if not PARTNERS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     await _require_admin(user)
     referrals = await get_partner_referrals(partner_id)
     return {"referrals": referrals}
@@ -150,6 +159,8 @@ async def get_partner_revenue_endpoint(
     user: dict = Depends(require_auth),
 ):
     """AC13: Get revenue share for a partner in a given month. Admin only."""
+    if not PARTNERS_ENABLED:
+        raise HTTPException(status_code=404, detail="Feature not available")
     await _require_admin(user)
 
     now = datetime.now(timezone.utc)
