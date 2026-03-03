@@ -16,6 +16,10 @@
 | 001 | Pentágono Serviços | 47.026.679/0001-51 | AT-001-PEN | — | 03/03 | — | — | — | — | — | — | R$1.500 | 10 editais SP. E2: 06/03, LI: 08/03, E3: 10/03, E4: 17/03 |
 | 001 | Solovia Engenharia | 08.806.914/0001-56 | AT-001-SOL | — | 03/03 | — | — | — | — | — | — | R$2.500 | 26 editais SP/MG/PR/ES. E2: 06/03, LI: 08/03, E3: 10/03, E4: 17/03 |
 | 001 | Barra Nova Engenharia | 05.338.129/0001-28 | AT-001-BAR | — | 03/03 | — | — | — | — | — | — | R$1.500 | 12 editais MG/ES. E2: 06/03, LI: 08/03, E3: 10/03, E4: 17/03 |
+| 002 | Renovar Engenharia | 07.474.287/0001-30 | AT-002-REN | — | — | — | — | — | — | — | — | R$2.500 | 25 editais BA/MG/SE/AL. Odonel Castro. financeiro@renovarengenharia.com.br |
+| 002 | Markfer Engenharia | 05.762.393/0001-94 | AT-002-MAR | — | — | — | — | — | — | — | — | R$1.500 | 9 editais RS/SC/PR. Mario Klemm. markfer.engenharia@markfer.com.br |
+| 002 | Fox Engenharia | 01.693.698/0001-30 | AT-002-FOX | — | — | — | — | — | — | — | — | R$2.000 | 27 editais GO/MG/SP/DF. Paulo Cesar. fox@foxengenharia.com.br |
+| 002 | Araujo Abreu Engenharia | 33.373.325/0001-79 | AT-002-AAB | — | — | — | — | — | — | — | — | R$3.000 | 56 editais 14 UFs. Francisco Abreu. joaocarlos@araujoabreu.com.br |
 
 ## Status Legend
 - `—` = Pendente
@@ -38,8 +42,8 @@
 ## Métricas Agregadas (atualizar após cada run)
 | Métrica | Run 001 | Run 002 | Run 003 | Total |
 |---------|---------|---------|---------|-------|
-| Leads abordados | 3 | — | — | 3 |
-| Emails enviados (E1) | 3 | — | — | 3 |
+| Leads abordados | 3 | 4 | — | 7 |
+| Emails enviados (E1) | 3 | 0 | — | 3 |
 | Respostas | 0 | — | — | 0 |
 | Reply rate | — | — | — | — |
 | Conversões | 0 | — | — | 0 |
