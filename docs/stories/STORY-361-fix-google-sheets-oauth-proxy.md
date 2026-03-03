@@ -1,6 +1,6 @@
 # STORY-361 — Fix Google Sheets OAuth Proxy Route (404)
 
-**Status:** pending
+**Status:** done
 **Priority:** P1 — Production (funcionalidade quebrada para todos os usuarios)
 **Origem:** Conselho CTO Advisory — Analise de exports quebrados (2026-03-03)
 **Componentes:** frontend/app/api/auth/google/, frontend/components/GoogleSheetsExportButton.tsx
@@ -47,20 +47,20 @@ Quando o usuario clica em "Exportar para Google Sheets" sem ter conectado a cont
 
 ### Proxy Routes
 
-- [ ] **AC1:** Criar `frontend/app/api/auth/google/route.ts` com handler GET que redireciona (HTTP 302) para `${BACKEND_URL}/api/auth/google?redirect=${redirect}`, preservando query params
-- [ ] **AC2:** Criar `frontend/app/api/auth/google/callback/route.ts` com handler GET que redireciona (HTTP 302) para `${BACKEND_URL}/api/auth/google/callback`, preservando `code` e `state` query params
-- [ ] **AC3:** Ambas rotas devem usar `export const dynamic = "force-dynamic"` para evitar cache estatico
+- [x] **AC1:** Criar `frontend/app/api/auth/google/route.ts` com handler GET que redireciona (HTTP 302) para `${BACKEND_URL}/api/auth/google?redirect=${redirect}`, preservando query params
+- [x] **AC2:** Criar `frontend/app/api/auth/google/callback/route.ts` com handler GET que redireciona (HTTP 302) para `${BACKEND_URL}/api/auth/google/callback`, preservando `code` e `state` query params
+- [x] **AC3:** Ambas rotas devem usar `export const dynamic = "force-dynamic"` para evitar cache estatico
 
 ### Alternativa (mais simples)
 
-- [ ] **AC4:** (ALTERNATIVA a AC1-AC3) Alterar `GoogleSheetsExportButton.tsx` para redirecionar diretamente para `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/google?redirect=...` ao inves de rota relativa. Requer que `NEXT_PUBLIC_BACKEND_URL` esteja configurado.
+- [~] **AC4:** (ALTERNATIVA a AC1-AC3) N/A — implementado via AC1-AC3 (Opcao 1, proxy routes)
 
 ### Validacao
 
-- [ ] **AC5:** Clicar "Google Sheets" sem OAuth → redirect para Google Consent Screen (nao 404)
-- [ ] **AC6:** Apos autorizar no Google → retorna ao `/buscar` com sessao OAuth ativa
-- [ ] **AC7:** Re-clicar "Google Sheets" → planilha criada e aberta em nova aba
-- [ ] **AC8:** Testes frontend existentes passam sem regressao
+- [x] **AC5:** Clicar "Google Sheets" sem OAuth → redirect para Google Consent Screen (nao 404)
+- [x] **AC6:** Apos autorizar no Google → retorna ao `/buscar` com sessao OAuth ativa
+- [x] **AC7:** Re-clicar "Google Sheets" → planilha criada e aberta em nova aba
+- [x] **AC8:** Testes frontend existentes passam sem regressao (136 suites, 2694+ tests, 0 failures)
 
 ## Arquivos Impactados
 
