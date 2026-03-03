@@ -1356,7 +1356,7 @@ async def buscar_licitacoes(
     )
 
     # -----------------------------------------------------------------------
-    # STORY-292: Async search — create_task in-process, return 202
+    # STORY-363: Async search — ARQ Worker (primary) with in-process fallback
     # -----------------------------------------------------------------------
     from config import get_feature_flag
 
@@ -1367,7 +1367,7 @@ async def buscar_licitacoes(
     )
 
     if get_feature_flag("SEARCH_ASYNC_ENABLED") and not force_sync:
-        logger.info(f"STORY-292: Async mode — dispatching background task for {request.search_id}")
+        logger.info(f"STORY-363: Async mode — dispatching to ARQ Worker for {request.search_id}")
 
         # Consume quota in POST before dispatching (prevents wasted work)
         # PHASE-0: 15s timeout prevents Supabase latency from blocking POST response
@@ -1418,28 +1418,67 @@ async def buscar_licitacoes(
         except HTTPException:
             raise
         except Exception as quota_err:
-            logger.warning(f"STORY-292: Quota check failed, falling through to sync: {quota_err}")
+            logger.warning(f"STORY-363: Quota check failed, falling through to sync: {quota_err}")
             # Fall through to sync/cache-first path below
             force_sync = True
 
         if not force_sync:
-            # AC3: Dispatch pipeline as asyncio.create_task (no ARQ dependency)
-            task = asyncio.create_task(
-                _run_async_search(
-                    search_id=request.search_id,
-                    request=request,
-                    user=user,
-                    deps=deps,
-                    tracker=tracker,
-                    state_machine=state_machine,
+            # STORY-363 AC14: Check concurrent search limit per user
+            from job_queue import acquire_search_slot, enqueue_job, is_queue_available
+            _slot_acquired = await acquire_search_slot(user["id"], request.search_id)
+            if not _slot_acquired:
+                from config import MAX_CONCURRENT_SEARCHES
+                await tracker.emit_error(
+                    f"Limite de {MAX_CONCURRENT_SEARCHES} buscas simultâneas atingido. "
+                    f"Aguarde uma busca terminar."
                 )
-            )
-            _active_background_tasks[request.search_id] = task
+                await remove_tracker(request.search_id)
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Limite de {MAX_CONCURRENT_SEARCHES} buscas simultâneas atingido.",
+                )
 
-            # AC1+AC2: Return 202 Accepted with Location header
+            # STORY-363 AC2: Try ARQ Worker first (true decoupling from HTTP)
+            _arq_dispatched = False
+            if await is_queue_available():
+                from datetime import datetime, timezone as _tz
+                _job = await enqueue_job(
+                    "search_job",
+                    request.search_id,
+                    request.model_dump(mode="json"),
+                    user,
+                    _job_id=f"search:{request.search_id}",
+                    _queued_at=datetime.now(_tz.utc).isoformat(),
+                )
+                if _job is not None:
+                    _arq_dispatched = True
+                    logger.info(
+                        f"STORY-363 AC2: Search job enqueued to ARQ Worker for "
+                        f"{request.search_id} (job_id={_job.job_id})"
+                    )
+
+            if not _arq_dispatched:
+                # Fallback: asyncio.create_task in-process (STORY-292 behavior)
+                logger.warning(
+                    f"STORY-363: ARQ unavailable — falling back to in-process task for "
+                    f"{request.search_id}"
+                )
+                task = asyncio.create_task(
+                    _run_async_search(
+                        search_id=request.search_id,
+                        request=request,
+                        user=user,
+                        deps=deps,
+                        tracker=tracker,
+                        state_machine=state_machine,
+                    )
+                )
+                _active_background_tasks[request.search_id] = task
+
+            # AC1+AC5: Return 202 Accepted in <3s with Location header
             num_ufs = len(request.ufs) if request.ufs else 1
             status_url = f"/v1/search/{request.search_id}/status"
-            logger.info(f"STORY-292: Background task dispatched for {request.search_id} — returning 202")
+            logger.info(f"STORY-363: Returning 202 for {request.search_id} (arq={_arq_dispatched})")
             return StarletteJSONResponse(
                 status_code=202,
                 content={

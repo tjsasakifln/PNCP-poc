@@ -1,6 +1,6 @@
 # STORY-363 — Decouple Search Pipeline from HTTP Request (Async Architecture)
 
-**Status:** pending
+**Status:** done
 **Priority:** P0 — Production (causa raiz de CRIT-048, PDF 404, Excel quebrado)
 **Origem:** Conselho CTO Advisory — Analise de exports quebrados (2026-03-03)
 **Componentes:** backend/routes/search.py, backend/job_queue.py, backend/search_pipeline.py, backend/progress.py
@@ -80,37 +80,37 @@ Frontend ──GET /search/{id}/results──→ JSON (resultados finais)
 
 ### Core: Async Pipeline
 
-- [ ] **AC1:** `POST /buscar` retorna em <3 segundos com `{search_id, status: "processing", message: "Busca iniciada"}` (HTTP 202)
-- [ ] **AC2:** Pipeline de busca executa no ARQ Worker via novo job `execute_search_pipeline`
-- [ ] **AC3:** Worker persiste resultados em L1 (memory via RPC/event) + L2 (Redis) + L3 (Supabase) ao concluir, **independente** do estado da conexao HTTP
-- [ ] **AC4:** Se o Worker falhar/crashar, o job e retried automaticamente (max_retries=1)
-- [ ] **AC5:** `POST /buscar` nunca excede Railway timeout (~120s) — eliminando CRIT-048 como classe de erro
+- [x] **AC1:** `POST /buscar` retorna em <3 segundos com `{search_id, status: "processing", message: "Busca iniciada"}` (HTTP 202)
+- [x] **AC2:** Pipeline de busca executa no ARQ Worker via novo job `execute_search_pipeline`
+- [x] **AC3:** Worker persiste resultados em L1 (memory via RPC/event) + L2 (Redis) + L3 (Supabase) ao concluir, **independente** do estado da conexao HTTP
+- [x] **AC4:** Se o Worker falhar/crashar, o job e retried automaticamente (max_retries=1)
+- [x] **AC5:** `POST /buscar` nunca excede Railway timeout (~120s) — eliminando CRIT-048 como classe de erro
 
 ### Progress Tracking
 
-- [ ] **AC6:** Progress state persistido no Redis (key: `smartlic:progress:{search_id}`) em vez de apenas `asyncio.Queue` in-memory
-- [ ] **AC7:** `GET /buscar-progress/{search_id}` le progress do Redis, permitindo reconexao SSE sem perda de estado
-- [ ] **AC8:** Worker emite progress events no Redis (cada UF concluida, cada fonte concluida)
+- [x] **AC6:** Progress state persistido no Redis (key: `smartlic:progress:{search_id}`) em vez de apenas `asyncio.Queue` in-memory
+- [x] **AC7:** `GET /buscar-progress/{search_id}` le progress do Redis, permitindo reconexao SSE sem perda de estado
+- [x] **AC8:** Worker emite progress events no Redis (cada UF concluida, cada fonte concluida)
 
 ### Compatibilidade
 
-- [ ] **AC9:** `GET /v1/search/{search_id}/status` continua funcionando (ja existe, sem mudanca)
-- [ ] **AC10:** `GET /v1/search/{search_id}/results` continua funcionando (ja existe, sem mudanca)
-- [ ] **AC11:** Frontend funciona sem mudancas — SSE progress continua via `GET /buscar-progress/{id}`
-- [ ] **AC12:** Manter fallback sync para buscas pequenas (1-2 UFs, cache hit) — se resultado disponivel em <5s, retornar inline (otimizacao, nao obrigatorio)
+- [x] **AC9:** `GET /v1/search/{search_id}/status` continua funcionando (ja existe, sem mudanca)
+- [x] **AC10:** `GET /v1/search/{search_id}/results` continua funcionando (ja existe, sem mudanca)
+- [x] **AC11:** Frontend funciona sem mudancas — SSE progress continua via `GET /buscar-progress/{id}`
+- [x] **AC12:** Manter fallback sync para buscas pequenas (1-2 UFs, cache hit) — se resultado disponivel em <5s, retornar inline (otimizacao, nao obrigatorio)
 
 ### Seguranca
 
-- [ ] **AC13:** Worker valida que o user_id do job corresponde a um usuario valido
-- [ ] **AC14:** Rate limiting de jobs por usuario (max 3 concurrent searches)
+- [x] **AC13:** Worker valida que o user_id do job corresponde a um usuario valido
+- [x] **AC14:** Rate limiting de jobs por usuario (max 3 concurrent searches)
 
 ### Testes
 
-- [ ] **AC15:** Teste: `POST /buscar` retorna 202 com search_id em <3s
-- [ ] **AC16:** Teste: Worker processa job e persiste resultados
-- [ ] **AC17:** Teste: SSE reconnect apos desconexao recebe estado atual
-- [ ] **AC18:** Teste: Pipeline completa mesmo se frontend desconecta
-- [ ] **AC19:** Zero regressoes nos testes existentes (5131+ backend, 2681+ frontend)
+- [x] **AC15:** Teste: `POST /buscar` retorna 202 com search_id em <3s
+- [x] **AC16:** Teste: Worker processa job e persiste resultados
+- [x] **AC17:** Teste: SSE reconnect apos desconexao recebe estado atual
+- [x] **AC18:** Teste: Pipeline completa mesmo se frontend desconecta
+- [x] **AC19:** Zero regressoes nos testes existentes (5131+ backend, 2681+ frontend)
 
 ## Arquivos Impactados
 

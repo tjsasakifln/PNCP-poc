@@ -602,6 +602,10 @@ CACHE_WARMING_POST_DEPLOY_DELAY_S: int = int(os.getenv("CACHE_WARMING_POST_DEPLO
 # ============================================
 SEARCH_ASYNC_ENABLED: bool = str_to_bool(os.getenv("SEARCH_ASYNC_ENABLED", "false"))
 
+# STORY-363: Async search pipeline via ARQ Worker
+SEARCH_JOB_TIMEOUT: int = int(os.getenv("SEARCH_JOB_TIMEOUT", "300"))  # AC5: max pipeline duration in worker
+MAX_CONCURRENT_SEARCHES: int = int(os.getenv("MAX_CONCURRENT_SEARCHES", "3"))  # AC14: per-user concurrent limit
+
 # ============================================
 # D-05: User Feedback Loop
 # ============================================

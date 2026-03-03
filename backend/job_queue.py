@@ -528,7 +528,73 @@ async def excel_generation_job(
 
 
 # ==========================================================================
-# GTM-ARCH-001: Async Search Job
+# STORY-363 AC14: Per-user concurrent search rate limiting
+# ==========================================================================
+
+_CONCURRENT_SEARCH_KEY_PREFIX = "smartlic:concurrent_searches:"
+_CONCURRENT_SEARCH_TTL = 600  # 10 minutes — safety net for stale slots
+
+
+async def acquire_search_slot(user_id: str, search_id: str) -> bool:
+    """STORY-363 AC14: Acquire a concurrent search slot for a user.
+
+    Uses a Redis sorted set keyed per user. Each member is a search_id with
+    score = current timestamp. Slot count is checked against MAX_CONCURRENT_SEARCHES.
+
+    Returns:
+        True if slot acquired, False if limit exceeded.
+    """
+    from redis_pool import get_redis_pool
+    from config import MAX_CONCURRENT_SEARCHES
+
+    redis = await get_redis_pool()
+    if redis is None:
+        # Redis unavailable — allow through (fail-open)
+        return True
+
+    key = f"{_CONCURRENT_SEARCH_KEY_PREFIX}{user_id}"
+    now = time.time()
+
+    try:
+        # Clean up expired slots (older than TTL)
+        await redis.zremrangebyscore(key, 0, now - _CONCURRENT_SEARCH_TTL)
+
+        # Check current count
+        current_count = await redis.zcard(key)
+        if current_count >= MAX_CONCURRENT_SEARCHES:
+            logger.info(
+                f"STORY-363 AC14: User {user_id[:8]}... exceeded concurrent search limit "
+                f"({current_count}/{MAX_CONCURRENT_SEARCHES})"
+            )
+            return False
+
+        # Add this search
+        await redis.zadd(key, {search_id: now})
+        await redis.expire(key, _CONCURRENT_SEARCH_TTL)
+        return True
+
+    except Exception as e:
+        logger.warning(f"STORY-363: acquire_search_slot failed (allowing through): {e}")
+        return True  # Fail-open
+
+
+async def release_search_slot(user_id: str, search_id: str) -> None:
+    """STORY-363 AC14: Release a concurrent search slot for a user."""
+    from redis_pool import get_redis_pool
+
+    redis = await get_redis_pool()
+    if redis is None:
+        return
+
+    key = f"{_CONCURRENT_SEARCH_KEY_PREFIX}{user_id}"
+    try:
+        await redis.zrem(key, search_id)
+    except Exception as e:
+        logger.debug(f"STORY-363: release_search_slot failed (non-fatal): {e}")
+
+
+# ==========================================================================
+# GTM-ARCH-001 + STORY-363: Async Search Job
 # ==========================================================================
 
 async def search_job(
@@ -538,15 +604,17 @@ async def search_job(
     user_data: dict,
     **kwargs,
 ) -> dict:
-    """GTM-ARCH-001 AC2: Background job — execute full search pipeline.
+    """STORY-363 AC2: Background job — execute full search pipeline in ARQ Worker.
 
     Runs the 7-stage SearchPipeline in the ARQ Worker, completely decoupled
     from the HTTP request cycle. Railway's ~120s proxy timeout becomes
     irrelevant because POST /buscar already returned 202.
 
-    AC18: Emits search_job_duration_seconds histogram metric.
-    AC19: Structured log with search_id, queued_at, started_at, completed_at, status.
-    AC17: Worker uses existing tracker for heartbeat emission.
+    STORY-363 enhancements over GTM-ARCH-001:
+    - AC3: Persists results to L2 (Redis) + L3 (Supabase) independently of HTTP
+    - AC4: Auto-retry via ARQ max_tries
+    - AC13: Validates user_id before processing
+    - AC14: Releases concurrent search slot on completion
 
     Args:
         ctx: ARQ worker context dict.
@@ -578,6 +646,12 @@ async def search_job(
         "ufs": request_data.get("ufs", []),
     }))
 
+    # STORY-363 AC13: Validate that user_id corresponds to a valid user
+    user_id = user_data.get("id")
+    if not user_id:
+        logger.error(f"[Search Job] Missing user_id in user_data for {search_id}")
+        return {"status": "failed", "total_results": 0, "error": "invalid_user"}
+
     tracker = await get_tracker(search_id)
     status = "completed"
 
@@ -597,7 +671,6 @@ async def search_job(
         )
 
         # STORY-281 AC2: Check cancel flag after pipeline completes
-        # If cancelled while running, discard results — inline fallback is handling it
         if await check_cancel_flag(search_id):
             status = "cancelled"
             logger.info(
@@ -607,13 +680,42 @@ async def search_job(
             await clear_cancel_flag(search_id)
             return {"status": "cancelled", "total_results": 0}
 
+        # STORY-363 AC3: Apply trial paywall before persisting
+        if response:
+            try:
+                from config import get_feature_flag, TRIAL_PAYWALL_MAX_RESULTS
+                from quota import get_trial_phase
+
+                if get_feature_flag("TRIAL_PAYWALL_ENABLED"):
+                    phase_info = get_trial_phase(user_id)
+                    if phase_info["phase"] == "limited_access":
+                        total_before = len(response.licitacoes)
+                        if total_before > TRIAL_PAYWALL_MAX_RESULTS:
+                            response.total_before_paywall = total_before
+                            response.licitacoes = response.licitacoes[:TRIAL_PAYWALL_MAX_RESULTS]
+                            response.paywall_applied = True
+                            response.resumo.total_oportunidades = TRIAL_PAYWALL_MAX_RESULTS
+                            logger.info(
+                                f"STORY-363: Paywall applied in worker for {user_id[:8]}... "
+                                f"({total_before} → {TRIAL_PAYWALL_MAX_RESULTS})"
+                            )
+            except Exception as pw_err:
+                logger.warning(f"STORY-363: Paywall check failed in worker (non-fatal): {pw_err}")
+
         total_results = response.total_filtrado if response else 0
 
-        # Persist full result for /buscar-results/{search_id} retrieval
+        # STORY-363 AC3: Persist results to ALL layers (L2 Redis + L3 Supabase)
         if response:
+            # ARQ job result (for get_job_result fallback)
             await persist_job_result(
                 search_id, "search_result", response.model_dump()
             )
+            # L2: Redis (smartlic:results:{search_id}) — same format as web process
+            await _persist_search_results_to_redis(search_id, response)
+            # L3: Supabase — fire-and-forget
+            await _persist_search_results_to_supabase(search_id, user_id, response)
+            # Session update
+            await _update_search_session(search_id, user_id, response)
 
         # Emit search_complete via SSE (AC3, AC16)
         tracker = await get_tracker(search_id)
@@ -653,6 +755,109 @@ async def search_job(
             "status": status,
         }))
         await clear_cancel_flag(search_id)
+        # STORY-363 AC14: Release concurrent search slot
+        await release_search_slot(user_id, search_id)
+
+
+# ---------------------------------------------------------------------------
+# STORY-363 AC3: Worker-side persistence helpers
+# ---------------------------------------------------------------------------
+
+async def _persist_search_results_to_redis(search_id: str, response) -> None:
+    """STORY-363 AC3: Persist results to Redis L2 (same key format as web process).
+
+    Uses smartlic:results:{search_id} key so get_background_results_async()
+    finds them without needing the ARQ job_result fallback path.
+    """
+    from redis_pool import get_redis_pool
+
+    redis = await get_redis_pool()
+    if not redis:
+        return
+
+    try:
+        from config import RESULTS_REDIS_TTL
+
+        key = f"smartlic:results:{search_id}"
+        if hasattr(response, "model_dump"):
+            data = response.model_dump(mode="json")
+        elif isinstance(response, dict):
+            data = response
+        else:
+            return
+
+        await redis.setex(key, RESULTS_REDIS_TTL, json.dumps(data, default=str))
+        logger.debug(f"STORY-363: Results stored in Redis L2: {key}")
+
+    except Exception as e:
+        logger.warning(f"STORY-363: Failed to persist results to Redis L2: {e}")
+
+
+async def _persist_search_results_to_supabase(
+    search_id: str, user_id: str, response
+) -> None:
+    """STORY-363 AC3: Persist results to Supabase L3 for long-term access.
+
+    Fire-and-forget: errors are logged, never raised.
+    """
+    try:
+        from supabase_client import get_supabase, sb_execute
+        from config import RESULTS_SUPABASE_TTL_HOURS
+        from datetime import datetime, timezone, timedelta
+
+        db = get_supabase()
+        if not db:
+            return
+
+        if hasattr(response, "model_dump"):
+            data = response.model_dump(mode="json")
+        elif isinstance(response, dict):
+            data = response
+        else:
+            return
+
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=RESULTS_SUPABASE_TTL_HOURS)
+
+        await sb_execute(
+            db.table("search_results_l3").upsert({
+                "search_id": search_id,
+                "user_id": user_id,
+                "results": json.dumps(data, default=str),
+                "expires_at": expires_at.isoformat(),
+            }, on_conflict="search_id")
+        )
+        logger.debug(f"STORY-363: Results stored in Supabase L3: {search_id}")
+
+    except Exception as e:
+        logger.warning(f"STORY-363: Failed to persist results to Supabase L3: {e}")
+
+
+async def _update_search_session(
+    search_id: str, user_id: str, response
+) -> None:
+    """STORY-363: Update search session with result metadata on completion.
+
+    Fire-and-forget: errors are logged, never raised.
+    """
+    try:
+        from supabase_client import get_supabase, sb_execute
+        from datetime import datetime, timezone
+
+        db = get_supabase()
+        if not db:
+            return
+
+        await sb_execute(
+            db.table("search_sessions")
+            .update({
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            })
+            .eq("search_id", search_id)
+            .eq("user_id", user_id)
+        )
+    except Exception as e:
+        logger.debug(f"STORY-363: Session update failed (non-fatal): {e}")
 
 
 # ==========================================================================

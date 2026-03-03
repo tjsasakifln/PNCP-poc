@@ -263,14 +263,16 @@ class TestAC3CreateTask:
             mock_tracker.emit_search_complete.assert_called_once_with("test-292-003", 42)
 
     @pytest.mark.asyncio
-    async def test_no_arq_dependency(self):
-        """The async path does NOT import or call ARQ functions."""
+    async def test_arq_with_fallback(self):
+        """STORY-363: The async path uses ARQ enqueue_job with in-process fallback."""
         import inspect
         from routes.search import buscar_licitacoes
 
         source = inspect.getsource(buscar_licitacoes)
-        # The async section should NOT reference ARQ
-        assert "enqueue_job" not in source.split("# A-04 AC1")[0]  # Only check async section
+        # STORY-363: Async section now uses ARQ enqueue_job (with create_task fallback)
+        async_section = source.split("# A-04 AC1")[0]
+        assert "enqueue_job" in async_section
+        assert "_run_async_search" in async_section  # Fallback still present
 
 
 # ============================================================================
