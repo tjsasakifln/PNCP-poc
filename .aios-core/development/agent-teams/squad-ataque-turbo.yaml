@@ -1,34 +1,30 @@
 bundle:
-  name: Ataque Turbo — Prospecção Cirúrgica com Licitações Reais
+  name: Ataque Turbo RELÂMPAGO — Receita Instantânea com Licitações Reais
   icon: "\U0001F4A5"
-  version: "4.0"
+  version: "5.0"
   description: |
-    Squad de prospecção ativa que cruza dados reais de MÚLTIPLAS fontes
-    públicas de licitações (PNCP, ComprasGov, Portal da Transparência,
-    Compras.dados.gov.br) com perfis de empresas vencedoras frequentes
-    para gerar cadências multi-touch com oportunidades irresistíveis.
+    Squad de prospecção ativa MODO RELÂMPAGO — projetado para máxima
+    conversão instantânea e geração de caixa imediato. Cruza dados reais
+    de MÚLTIPLAS fontes públicas (PNCP, Portal da Transparência, TCU,
+    OpenCNPJ) com perfis de empresas vencedoras para gerar cadências
+    comprimidas com oferta tripwire irresistível.
 
-    CADÊNCIA 4-TOUCH + LINKEDIN: Cada lead recebe sequência de 4 emails
-    em 14 dias (D0, D3, D7, D14) + conexão LinkedIn (D5). CTA progressivo:
-    Email 1 = soft (interesse), Email 2 = valor + preço, Email 3 = urgência,
-    Email 4 = breakup. NUNCA preço no primeiro contato.
+    ESTRATÉGIA TRIPWIRE: Oferta de entrada R$297 via PIX (diagnóstico de
+    oportunidades + 7 dias SmartLic Pro). Converte em 48-72h. Upsell
+    natural para assinatura R$1.999/mês após os 7 dias de acesso.
 
-    INFRAESTRUTURA DE DELIVERABILITY: Domínio dedicado para outreach
-    (outreach.confenge.com.br) com SPF+DKIM+DMARC p=reject. Warmup de
-    14-21 dias. Max 20 emails/inbox/dia. Sem isso, emails vão para spam.
+    CADÊNCIA COMPRIMIDA 5 DIAS: LinkedIn D-1 (conexão) → Email D+0
+    (tripwire R$297 com amostra generosa) → Email D+2 (urgência prazos)
+    → LinkedIn DM D+3 → Email D+5 (breakup + oferta final). Preço
+    direto no E1 — R$297 é abaixo do threshold de decisão individual.
 
-    PRINCÍPIO FUNDAMENTAL: Qualidade > Quantidade. Cada lead recebe
-    investigação nível CSI — cruzamento profundo entre histórico de
-    vitórias, perfil empresarial e editais abertos no momento.
+    VOLUME QUALIFICADO > PERFECCIONISMO: 12-15 leads por run com
+    investigação rápida (20-30 min/lead), não 3-4 leads com CSI de horas.
+    Estatisticamente, 5-6% reply rate exige volume para gerar conversões.
 
-    CRITÉRIO DE IMPACTO: Ao receber o email, o lead deve pensar
-    "CARALHO, como não conheci esse cara antes?!" — se o email não
-    causa esse efeito visceral, a investigação e o texto são inadequados.
-
-    ESTÁGIO DO PRODUTO: SmartLic.tech está em preparativos finais antes
-    do lançamento oficial. O algoritmo de busca e classificação está
-    validado e operacional. Assinaturas NÃO devem ser incentivadas.
-    O valor entregue é o relatório de oportunidades (produto-serviço).
+    INFRAESTRUTURA DE DELIVERABILITY: Até warmup completo do domínio
+    outreach.confenge.com.br, enviar de tiago.sasaki@confenge.com.br
+    (max 5 cold/dia). Warmup paralelo: 5-10 emails/dia para conhecidos.
 
     COMPLIANCE LGPD: Dados de portais públicos de contratações (PNCP,
     Lei 14.133/2021) = base jurídica forte (legítimo interesse, Art. 10).
@@ -60,45 +56,42 @@ references:
 
 sender:
   name: "Tiago Sasaki"
-  title: "Engenheiro de Software"
+  title: ""  # NÃO usar título técnico — leads B2G não respondem a "engenheiro de software"
   company: "CONFENGE Avaliações e Inteligência Artificial"
   product: "SmartLic.tech"
-  role_description: "Engenheiro de software da CONFENGE e criador do SmartLic.tech"
-  email_domain: "@confenge.com.br"
-  outreach_domain: "outreach.confenge.com.br"  # Domínio dedicado para cold outreach (SPF+DKIM+DMARC)
-  pix_key: "tiago.sasaki@confenge.com.br"      # Chave PIX para link copia-e-cola nos emails
-  linkedin_profile: "https://linkedin.com/in/tiagosasaki"  # Para conexões D+5
+  role_description: "Trabalho com inteligência em licitações"  # Genérico-relevante, não técnico
+  email_domain: "@confenge.com.br"  # TEMPORÁRIO: usar domínio principal até warmup do outreach
+  outreach_domain: "outreach.confenge.com.br"  # Em warmup — NÃO USAR para cold até warmup completo
+  pix_key: "tiago.sasaki@confenge.com.br"
+  linkedin_profile: "https://linkedin.com/in/tiagosasaki"  # Para conexões D-1
   signature: |
-    Tiago Sasaki
-    Engenheiro de Software — CONFENGE
+    Tiago
     smartlic.tech
   signature_short: |
     Tiago
     smartlic.tech
 
 product_stage:
-  status: "Preparativos finais antes do lançamento oficial"
+  status: "Operacional — gerando receita via diagnósticos + acesso Pro"
   algorithm_status: "Validado e operacional"
-  what_is_ready: "Algoritmo de busca multi-fonte, classificação setorial por IA, análise de viabilidade 4 fatores"
-  what_is_NOT_ready: "Assinaturas e planos de acesso contínuo"
+  what_is_ready: "Algoritmo multi-fonte, classificação setorial, viabilidade, plataforma SmartLic Pro"
+  what_is_NOT_ready: "Warmup do domínio de outreach (usando confenge.com.br temporariamente)"
   positioning: |
-    O SmartLic.tech é uma plataforma de inteligência de decisão para licitações
-    públicas, criada pela CONFENGE. O algoritmo de busca já está validado —
-    consolida fontes oficiais, classifica por relevância setorial e avalia
-    viabilidade com critérios objetivos. Estamos nos preparativos finais antes
-    do lançamento oficial. Por ora, oferecemos relatórios personalizados de
-    oportunidades como serviço.
+    O SmartLic.tech cruza fontes oficiais de licitações e avalia viabilidade
+    com critérios objetivos. Diagnóstico de oportunidades: R$297 via PIX
+    (lista completa com análise + 7 dias de acesso à plataforma).
   NEVER_say:
-    - "Assine o SmartLic"
-    - "Plano Pro"
-    - "Trial grátis"
-    - "Assinatura"
     - "Plataforma SaaS"
+    - "Inteligência artificial"
+    - "Algoritmo inovador"
+    - "Engenheiro de software"
+    - "Criador do SmartLic"
   ALWAYS_say:
-    - "Algoritmo validado"
-    - "Fontes oficiais"
-    - "Critérios objetivos de viabilidade"
-    - "Relatório personalizado de oportunidades"
+    - "Diagnóstico de oportunidades"
+    - "R$297 via PIX"
+    - "7 dias de acesso incluso"
+    - "Lista completa com análise de viabilidade"
+    - "Trabalho com inteligência em licitações"
 
 # ═══════════════════════════════════════════════════════════════════
 # PÚBLICO-ALVO (EXPANDIDO)
@@ -112,20 +105,21 @@ target_audience:
     source: "turbocash.md pipeline de leads"
 
   tier_1_empresas_b2g:
-    description: "Empresas B2G com faturamento relevante e histórico de vitórias em licitações"
+    description: "Empresas B2G ativas com histórico recente de vitórias em licitações"
     qualification: |
-      TODOS os critérios abaixo devem ser satisfeitos:
-      1. Vencedora frequente de licitações (≥3 contratos homologados nos últimos 12 meses)
-      2. Porte relevante (capital_social ≥ R$100.000 OU porte "DEMAIS"/"EPP")
+      CRITÉRIOS RELAXADOS (v5.0 — volume qualificado):
+      1. ≥1 contrato recente nos últimos 6 meses (sinal de atividade)
+      2. Porte mínimo: capital_social ≥ R$50.000 OU porte "EPP"/"DEMAIS"
       3. CNAE compatível com setor que tenha editais abertos no momento
-      4. Compra do PDF deve ser no-brainer (valor do relatório << valor das oportunidades)
-    approach: "Relatório de oportunidades direto para o decisor"
-    discovery: "Via PNCP + ComprasGov + Portal da Transparência contratos homologados → Receita Federal → cruzamento com editais abertos"
+      4. Email de contato encontrado (sem email = sem abordagem)
+      5. Sem sanções CEIS/CNEP (1 API call Portal da Transparência)
+    approach: "Tripwire R$297 (diagnóstico + 7 dias Pro) direto no E1"
+    discovery: "PNCP contratos + Portal da Transparência → OpenCNPJ → cruzamento com editais abertos"
 
   tier_2_empresas_b2g:
-    description: "Empresas B2G menores mas com padrão consistente de participação"
-    qualification: "≥5 participações nos últimos 6 meses, win rate < 30% (sinal de gargalo)"
-    approach: "Relatório focado em eficiência de triagem"
+    description: "Empresas B2G menores mas com participação recente"
+    qualification: "≥1 participação nos últimos 6 meses, email de contato disponível"
+    approach: "Mesmo tripwire R$297 — preço é universal"
 
 # ═══════════════════════════════════════════════════════════════════
 # APIs E CURL COMMANDS (REFERÊNCIA TÉCNICA)
@@ -545,10 +539,12 @@ api_reference:
 coordination:
   lead_agent: analyst
   quality_philosophy: |
-    QUALIDADE > QUANTIDADE. Cada lead é investigado em profundidade.
-    Melhor 3 leads com emails irresistíveis do que 10 leads genéricos.
-    Investigação nível CSI: cruzar todas as fontes disponíveis para
-    cada lead antes de redigir o email.
+    VOLUME QUALIFICADO > PERFECCIONISMO. Cada lead recebe investigação
+    suficiente para personalizar o email de forma crível (20-30 min/lead).
+    Melhor 15 leads com emails bons do que 3 leads com emails perfeitos
+    que ninguém responde. Estatisticamente, com 5-6% reply rate, precisamos
+    de volume para gerar a primeira conversão. Cruzar PNCP + Portal da
+    Transparência + OpenCNPJ é suficiente (sem CSI de 4 horas por lead).
 
   execution_sequence:
     - phase: 1_discovery
@@ -638,13 +634,13 @@ coordination:
         Para cada lead com oportunidades encontradas, o @analyst decide:
 
         A) FRAÇÃO GRÁTIS (quantas licitações mostrar no email):
-           Diretriz geral (ajustável caso a caso):
+           Diretriz RELÂMPAGO v5.0 (mais generosa — impressionar no E1):
            | Total (N) | Mostrar grátis (K) | Ratio  |
            |:---------:|:------------------:|:------:|
-           | 1-5       | 1                  | ~20%   |
-           | 6-15      | 2                  | ~15%   |
-           | 16-30     | 3                  | ~10%   |
-           | 31+       | 3-4                | <10%   |
+           | 1-5       | 2                  | ~40%   |
+           | 6-15      | 3                  | ~25%   |
+           | 16-30     | 4                  | ~15%   |
+           | 31+       | 4-5                | ~12%   |
 
            Fatores que influenciam:
            - Valor agregado (alto valor = menos amostra)
@@ -658,10 +654,11 @@ coordination:
            - Prazo razoável (não muito próximo do vencimento)
            - Diversidade de órgãos (mostra amplitude da cobertura)
 
-        C) PREÇO do relatório completo:
-           Base: R$1.500 (micro/pequena) a R$3.000 (média empresa)
-           Critérios: valor total das oportunidades, porte do lead, complexidade
-           Regra: preço ≤ 1% do valor total de oportunidades encontradas
+        C) PREÇO (TRIPWIRE UNIVERSAL v5.0):
+           Preço fixo: R$297 para TODOS os leads (não varia por porte)
+           Inclui: relatório completo + 7 dias SmartLic Pro
+           Ancoragem: "R$297 para R${valor_total} em oportunidades"
+           Upsell após 7 dias: SmartLic Pro R$1.999/mês
 
         D) ANÁLISE DE RELEVÂNCIA para cada licitação de amostra:
            Para cada oportunidade mostrada no email, redigir justificativa:
@@ -787,92 +784,112 @@ deliverability:
 # ═══════════════════════════════════════════════════════════════════
 
 cadence:
-  name: "Cadência Ataque Turbo — 4-Touch + LinkedIn"
+  name: "Cadência RELÂMPAGO — 4-Touch em 5 Dias"
   description: |
-    Sequência de 5 pontos de contato em 14 dias. Cada touch tem objetivo
-    específico e CTA progressivo. NUNCA enviar preço no Email 1.
+    Sequência COMPRIMIDA de 4 pontos de contato em 5 dias. Preço tripwire
+    R$297 direto no Email 1. LinkedIn ANTES do email (cria reconhecimento).
+    Se não converteu em 5 dias, mover para nurturing mensal.
+
+    Mudança fundamental vs v4.0:
+    - 14 dias → 5 dias (momentum do sinal temporal — editais expiram)
+    - Soft CTA → Tripwire R$297 direto (abaixo do threshold de decisão)
+    - LinkedIn D+5 → LinkedIn D-1 (pré-aquecimento antes do email)
+    - Amostra 10-20% → 30-40% (mais generosa para impressionar)
+    - Email 250 palavras → 80 palavras max (12% reply rate benchmark)
 
     Benchmarks 2026:
-    - 58% das respostas vêm do Email 1; 42% dos follow-ups
-    - Multi-channel (email+LinkedIn) = 287% melhor que single-channel
-    - CTAs soft (interesse) = 30% de sucesso (2x hard ask)
+    - Multi-channel (email+LinkedIn) = 11.2% reply vs 3.1% email-only
+    - Emails 50-75 palavras = 12% reply rate (vs 6% para >150 palavras)
+    - Subject 21-40 chars = 49.1% open rate (vs <30% para >60 chars)
+    - Tripwire buyers: 60-70% repeat purchase rate
+
+  pricing:
+    tripwire:
+      price: 297
+      currency: "BRL"
+      payment: "PIX (liquidação instantânea)"
+      includes: "Relatório completo + 7 dias SmartLic Pro"
+      delivery_time: "< 30 minutos após pagamento"
+      psychology: "Abaixo do threshold de decisão individual — não precisa de aprovação de diretoria"
+    upsell:
+      price: 1999
+      trigger: "Após 7 dias de acesso Pro"
+      message: "Quer continuar recebendo automaticamente? R$1.999/mês."
+    premium_fallback:
+      price: 1500
+      trigger: "Lead responde mas recusa tripwire"
+      description: "Relatório premium mensal curado"
 
   sequence:
+    - touch: 0
+      channel: linkedin
+      day: "D-1"
+      name: "Pré-aquecimento LinkedIn"
+      objective: "Criar reconhecimento antes do email. Visita ao perfil + conexão."
+      cta_type: "connection_request"
+      max_chars: 150  # Nota curta
+      template: |
+        {Nome}, trabalho com inteligência em licitações.
+        Vi o perfil da {Empresa}. Aceita a conexão?
+      notes: "Enviar ANTES do email. Cria familiaridade subconsciente."
+
     - touch: 1
       channel: email
       day: "D+0"
-      name: "Abertura — Soft CTA"
-      objective: "Gerar curiosidade. Demonstrar conhecimento profundo do lead."
-      cta_type: "interest_based"
-      cta_example: "Faz sentido para a {Empresa} receber a análise completa?"
-      subject_strategy: "Curto (3-6 palavras). Variante A: '{N} licitações para a {Empresa}'. Variante B: '{empresa} — oportunidades até {mês}'"
-      includes_price: false
-      includes_sample: true  # K editais de amostra com análise de relevância
-      signature: full  # Assinatura completa com título
+      name: "Tripwire — Valor + Preço R$297"
+      objective: "Entregar valor massivo (amostra 30-40%) + oferta tripwire irresistível."
+      cta_type: "direct_tripwire"
+      cta_example: "Envio a lista completa com análise de viabilidade por R$297 via PIX. Inclui 7 dias de acesso à plataforma."
+      subject_strategy: "Curto (4-5 palavras): '{N} editais para a {Empresa}'"
+      includes_price: true  # SIM — R$297 é tripwire, não premium
+      includes_sample: true  # 3-4 editais em formato compacto (1 linha cada)
+      max_words: 80
+      signature: short
 
     - touch: 2
       channel: email
-      day: "D+3"
-      name: "Valor + Prova Social + Preço"
-      objective: "Adicionar credibilidade. Primeira menção ao preço."
-      cta_type: "value_plus_ask"
-      cta_example: "Envio a lista completa com análise de viabilidade por R${preço}."
-      subject_strategy: "'re: {subject do Email 1}' (thread)"
-      includes_price: true
-      includes_sample: false
-      social_proof: "Nosso algoritmo já mapeou R$X milhões em oportunidades para empresas de {setor} no último mês."
-      signature: short  # Só nome + smartlic.tech
+      day: "D+2"
+      name: "Urgência Real — Reply Thread"
+      objective: "Criar urgência com prazos reais expirando. Reply-thread do E1."
+      cta_type: "urgency_ask"
+      cta_example: "Mando a lista completa com os prazos?"
+      subject_strategy: "'re: {subject do Email 1}' (reply-thread)"
+      includes_price: false
+      max_words: 50
+      signature: short
 
     - touch: 3
-      channel: linkedin
-      day: "D+5"
-      name: "Conexão LinkedIn"
-      objective: "Canal alternativo. Referência ao email enviado."
-      cta_type: "connection_request"
-      max_chars: 300  # Limite do LinkedIn para nota de conexão
+      channel: linkedin_dm
+      day: "D+3"
+      name: "LinkedIn DM (se aceitou conexão)"
+      objective: "Referência ao email. Canal alternativo."
+      max_chars: 100
       template: |
-        {Nome}, sou o Tiago da CONFENGE. Enviei um email com {N}
-        oportunidades de licitação em {UFs} compatíveis com o perfil
-        da {Empresa}. Vi que vocês atuam em {setor} — achei que
-        poderia ser útil. Aceita a conexão?
-      notes: |
-        Máximo 20 conexões/dia no LinkedIn. Usar perfil pessoal do Tiago.
-        Se lead aceitar, NÃO enviar pitch imediato — esperar Email 3.
+        {Nome}, enviei um email com {N} editais de {setor}
+        compatíveis com o perfil da {Empresa}. {X} têm prazo
+        esta semana. Viu?
+      notes: "Só enviar se aceitou conexão D-1. Se não aceitou, enviar novo pedido."
 
     - touch: 4
       channel: email
-      day: "D+7"
-      name: "Urgência Específica"
-      objective: "Criar urgência real com prazos próximos."
-      cta_type: "specific_ask"
-      cta_example: "Posso enviar a lista completa ainda hoje. Quer que eu mande?"
-      subject_strategy: "'prazo {DD/MM} — {empresa}' (urgência real, não fabricada)"
+      day: "D+5"
+      name: "Breakup + Oferta Final"
+      objective: "Encerrar. Loss aversion: mencionar editais que já venceram desde E1."
+      cta_type: "breakup_with_loss"
+      cta_example: "Se fizer sentido em outro momento, me responda. Mantenho o perfil de vocês no radar."
+      subject_strategy: "'última vez, {nome}'"
       includes_price: false
-      includes_sample: false
-      urgency_data: "Mencionar editais com prazo ≤10 dias restantes"
-      signature: short
-
-    - touch: 5
-      channel: email
-      day: "D+14"
-      name: "Breakup"
-      objective: "Encerrar com elegância. Deixar porta aberta."
-      cta_type: "permission_close"
-      cta_example: "Se em algum momento quiserem receber um mapeamento atualizado, é só responder este email."
-      subject_strategy: "'encerro por aqui, {nome}'"
-      includes_price: false
-      includes_sample: false
+      max_words: 60
       signature: short
       notes: |
-        Breakup emails têm reply rate surpreendentemente alto (3-5%).
-        Tom: respeitoso, sem culpa, porta aberta. Psicologia de perda.
+        Mencionar quantos editais VENCERAM desde o E1. Ativa loss aversion.
+        Breakup emails têm 3-5% reply rate. Tom respeitoso, porta aberta.
 
-  urgency_threshold_days: 5  # Editais com ≤5 dias recebem tag [URGENTE]
+  urgency_threshold_days: 7  # Editais com ≤7 dias recebem destaque
   urgency_rules: |
-    Se lead tem editais com prazo ≤5 dias:
-    - Email 1: incluir alerta "⚠ {N} editais com prazo nos próximos 5 dias"
-    - Email 3 (urgência): priorizar esses editais no corpo
-    - Subject do Email 3: usar data real do prazo mais urgente
+    - Email 1: incluir editais urgentes na amostra
+    - Email 2 (D+2): foco exclusivo em prazos expirando esta semana
+    - Email 4 (breakup): mencionar editais que JÁ VENCERAM desde E1
 
 # ═══════════════════════════════════════════════════════════════════
 # SUBJECT LINE STRATEGY (CURTO = MELHOR)
@@ -911,23 +928,23 @@ subject_line_strategy:
 
 cta_progression:
   description: |
-    CTA evolui ao longo da cadência. Email 1 NUNCA menciona preço.
-    Single CTA por email (aumenta cliques em 371%).
-    Interest-based CTAs têm 30% de sucesso (2x outros tipos).
+    Modo RELÂMPAGO: preço tripwire R$297 direto no E1.
+    R$297 está abaixo do threshold de decisão individual — não precisa
+    de aquecimento progressivo como R$1.500-3.000. Single CTA por email.
 
   rules:
     - "UM único CTA por email (nunca múltiplos pedidos)"
-    - "Email 1: NUNCA preço, NUNCA link de pagamento, NUNCA calendly"
-    - "Email 2: primeira menção ao preço, sempre com âncora de valor"
-    - "Email 3: sem preço, foco em urgência e ação imediata"
-    - "Email 4: sem preço, sem pressão, permissão para encerrar"
-    - "Preço sempre ancorado: 'R$1.500 para R$11.7M em oportunidades'"
+    - "Email 1: preço R$297 DIRETO — tripwire não precisa de warm-up"
+    - "Email 2: sem preço, foco em urgência e prazos reais"
+    - "Email 3 (LinkedIn DM): referência ao email, sem preço"
+    - "Email 4 (breakup): sem preço, loss aversion com editais vencidos"
+    - "Ancoragem sempre presente: 'R$297 para R${valor_total} em oportunidades'"
 
   progression:
-    email_1: "Faz sentido para a {Empresa} receber a análise completa?"
-    email_2: "Envio a lista completa com análise de viabilidade por R${preço}."
-    email_3: "Posso enviar a lista completa ainda hoje. Quer que eu mande?"
-    email_4: "Se em algum momento quiserem um mapeamento atualizado, é só responder."
+    email_1: "Envio a lista completa com análise de viabilidade por R$297 via PIX. Inclui 7 dias de acesso à plataforma."
+    email_2: "{X} daqueles editais têm prazo nos próximos 7 dias. Mando a lista completa com os prazos?"
+    linkedin_dm: "{Nome}, enviei um email com {N} editais. {X} têm prazo esta semana. Viu?"
+    email_4: "Se fizer sentido em outro momento, me responda. Mantenho o perfil de vocês no radar."
 
 # ═══════════════════════════════════════════════════════════════════
 # LGPD COMPLIANCE
@@ -1039,112 +1056,108 @@ email_sequence:
     referência — personalizar com dados reais de cada lead.
 
   # ─────────────────────────────────────────────────────
-  # EMAIL 1 — ABERTURA (D+0) — SOFT CTA, SEM PREÇO
+  # EMAIL 1 — TRIPWIRE R$297 (D+0) — MAX 80 PALAVRAS
   # ─────────────────────────────────────────────────────
-  email_1_opening: |
-    Assunto (variante A): {N} licitações para a {Empresa}
-    Assunto (variante B): {empresa} — oportunidades até {mês}
+  email_1_tripwire: |
+    Assunto: {N} editais para a {Empresa}
 
-    Olá {Nome do decisor},
+    {Nome},
 
-    {HOOK TEMPORAL — abrir com "por que agora":
-     "Vi que a {Empresa} venceu contratos de {tipo} para {órgão} nos
-     últimos meses. Neste momento existem {N} editais abertos com perfil
-     idêntico — {Y} com prazo nos próximos 10 dias."}
+    A {Empresa} venceu {tipo_contrato} para {orgao_principal} recentemente.
 
-    {PARÁGRAFO CSI — demonstrar conhecimento:
-     Mencionar CNAE, setor, padrão de contratos, órgãos frequentes.
-     Frase que mostre investigação profunda, não template genérico.}
+    Rodei nosso algoritmo contra o perfil de vocês e encontrei {N} editais
+    abertos com prazo hábil — R${valor_total} em oportunidades.
 
-    Nosso algoritmo de classificação — já validado e operacional —
-    consolida fontes oficiais e avalia cada edital contra critérios
-    objetivos de viabilidade: compatibilidade setorial, faixa de valor,
-    prazo e geografia.
+    {K} deles:
 
-    Rodei uma análise para o perfil da {Empresa} e o filtro identificou
-    **{N} licitações abertas com prazo hábil**. Separei as {K} com
-    maior match com o histórico de vocês:
+    1. {Objeto} — {Órgão}, {UF} — R${valor} — prazo {DD/MM}
+    2. {Objeto} — {Órgão}, {UF} — R${valor} — prazo {DD/MM}
+    3. {Objeto} — {Órgão}, {UF} — R${valor} — prazo {DD/MM}
 
-    **1. {Objeto resumido} ({Município/UF})**
-    • Órgão: {razaoSocial}
-    • Valor estimado: R$ {valor}
-    • Modalidade: {modalidade}
-    • Prazo para proposta: {DD/MM/AAAA} ({X} dias restantes)
-    • Link: {URL oficial}
-    • **Relevância para a {Empresa}:** {análise cirúrgica}
+    Envio a lista completa com análise de viabilidade por R$297 via PIX.
+    Inclui 7 dias de acesso à plataforma de monitoramento.
 
-    {Repetir para K amostras}
-
-    As outras {N-K} incluem {resumo dos setores/valores}, todas
-    filtradas pelo mesmo critério de compatibilidade.
-
-    Faz sentido para a {Empresa} receber a análise completa?
-
-    Abraço,
-    Tiago Sasaki
-    Engenheiro de Software — CONFENGE
+    Tiago
     smartlic.tech
 
     Ref: {TRACKING_CODE}
     Dados de contratações públicas (PNCP, Lei 14.133/2021).
     Descadastrar: responda "remover".
 
+    REGRAS DO EMAIL 1 (RELÂMPAGO):
+    - MAX 80 palavras no corpo (benchmark: 50-75 = 12% reply)
+    - Preço R$297 DIRETO (tripwire, não premium)
+    - 3-4 amostras em formato COMPACTO (1 linha cada, não blocos de 5 linhas)
+    - Sem auto-apresentação ("engenheiro de software", "criador do SmartLic")
+    - Sem parágrafo sobre o algoritmo (ninguém se importa)
+    - Hook: contrato recente + editais agora
+    - SEM "Olá" ou "Abraço" (direto ao ponto)
+
   # ─────────────────────────────────────────────────────
-  # EMAIL 2 — VALOR + PROVA SOCIAL + PREÇO (D+3)
+  # EMAIL 2 — URGÊNCIA REAL (D+2) — REPLY THREAD, MAX 50 PALAVRAS
   # ─────────────────────────────────────────────────────
-  email_2_value: |
+  email_2_urgency: |
     Assunto: re: {subject do Email 1}
 
-    {Nome}, voltando aqui.
+    {Nome},
 
-    {PROVA SOCIAL: "Desde que montamos o algoritmo, já mapeamos mais de
-    R${total_mapeado} em oportunidades para empresas de {setor} só em {UF}.
-    Boa parte dessas empresas não sabia que esses editais existiam — a
-    informação é pública, mas está espalhada em dezenas de portais."}
+    {X} daqueles editais têm prazo nos próximos 7 dias.
 
-    Das {N} oportunidades que encontrei para a {Empresa}, {Y} têm prazo
-    de proposta nos próximos 15 dias. Se vocês já participam de licitações
-    ativamente, isso pode representar contratos que passariam despercebidos.
+    Se a {Empresa} quiser avaliar, precisa ser esta semana.
 
-    Envio a lista completa com análise de viabilidade por R$ {preço}.
-    Cada oportunidade vem com avaliação objetiva e link direto do edital.
-    Se nenhuma se aplicar ao perfil de vocês, me avise — feedback me
-    ajuda a calibrar o filtro.
+    Mando a lista completa com os prazos?
 
-    Abraço,
     Tiago
-    smartlic.tech
 
     Ref: {TRACKING_CODE}
     Descadastrar: responda "remover".
 
+    REGRAS DO EMAIL 2:
+    - REPLY THREAD do E1 (mesmo subject com "re:")
+    - MAX 50 palavras
+    - Sem preço (já foi no E1)
+    - Foco exclusivo em PRAZOS expirando
+    - Sem prova social ou filler
+
   # ─────────────────────────────────────────────────────
-  # LINKEDIN — CONEXÃO (D+5)
+  # LINKEDIN D-1 — CONEXÃO PRÉ-EMAIL (CURTA)
   # ─────────────────────────────────────────────────────
   linkedin_connection: |
-    {Nome}, sou o Tiago da CONFENGE. Enviei um email com {N}
-    oportunidades de licitação em {UFs} compatíveis com o perfil
-    da {Empresa}. Vi que vocês atuam em {setor} — achei que
-    poderia ser útil. Aceita a conexão?
+    {Nome}, trabalho com inteligência em licitações.
+    Vi o perfil da {Empresa}. Aceita a conexão?
 
     REGRAS:
-    - Máximo 300 caracteres (limite LinkedIn)
-    - NUNCA mencionar preço no LinkedIn
-    - Se aceitar, esperar Email 3 antes de mandar mensagem
+    - Máximo 150 caracteres (mais curto = maior aceitação)
+    - Enviar ANTES do Email 1 (D-1)
+    - NUNCA mencionar preço ou produto
+    - Criar reconhecimento, não vender
 
   # ─────────────────────────────────────────────────────
-  # EMAIL 3 — URGÊNCIA ESPECÍFICA (D+7)
+  # LINKEDIN DM (D+3) — REFERÊNCIA AO EMAIL
   # ─────────────────────────────────────────────────────
-  email_3_urgency: |
-    Assunto: prazo {DD/MM} — {empresa}
+  linkedin_dm: |
+    {Nome}, enviei um email com {N} editais de {setor} compatíveis
+    com o perfil da {Empresa}. {X} têm prazo esta semana. Viu?
+
+    REGRAS:
+    - Máximo 100 caracteres
+    - Só enviar se aceitou conexão D-1
+    - Sem preço, sem pitch
+    - Se NÃO aceitou conexão, enviar novo pedido de conexão
+
+  # ─────────────────────────────────────────────────────
+  # EMAIL 3 — BREAKUP + LOSS AVERSION (D+5) — MAX 60 PALAVRAS
+  # ─────────────────────────────────────────────────────
+  email_3_breakup: |
+    Assunto: última vez, {nome}
 
     {Nome},
 
-    {Y} dos editais que identifiquei para a {Empresa} têm prazo de
-    proposta nos próximos {X} dias. {Se participam de concorrências
-    em {UF}, esse é o tipo de janela que não volta.}
+    Encontrei {N} oportunidades para a {Empresa}, totalizando
+    R${valor_total}. {Y} já venceram o prazo desde meu primeiro email.
 
-    Posso enviar a lista completa ainda hoje. Quer que eu mande?
+    Se fizer sentido em outro momento, me responda. Mantenho o
+    perfil de vocês no radar.
 
     Tiago
     smartlic.tech
@@ -1152,27 +1165,12 @@ email_sequence:
     Ref: {TRACKING_CODE}
     Descadastrar: responda "remover".
 
-  # ─────────────────────────────────────────────────────
-  # EMAIL 4 — BREAKUP (D+14)
-  # ─────────────────────────────────────────────────────
-  email_4_breakup: |
-    Assunto: encerro por aqui, {nome}
-
-    {Nome},
-
-    Compartilhei {N} oportunidades de licitação compatíveis com o
-    perfil da {Empresa} nas últimas semanas. Entendo que o timing
-    pode não ter sido ideal.
-
-    Vou parar de enviar atualizações, mas se em algum momento
-    quiserem receber um mapeamento atualizado, é só responder
-    este email.
-
-    Abraço,
-    Tiago
-
-    Ref: {TRACKING_CODE}
-    Descadastrar: responda "remover".
+    REGRAS DO EMAIL 3 (BREAKUP):
+    - MAX 60 palavras
+    - Mencionar editais que JÁ VENCERAM desde E1 (loss aversion)
+    - Tom respeitoso, porta aberta
+    - Sem preço, sem pressão
+    - Breakup emails têm 3-5% reply rate (psicologia de perda)
 
   # ─────────────────────────────────────────────────────
   # REGRAS GLOBAIS DA SEQUÊNCIA
@@ -1421,34 +1419,28 @@ auto_save:
     Confirmar salvamento com lista completa de paths no output final.
 
 constraints:
+  # ── Constraints RELÂMPAGO v5.0 ──
   - "SALVAR AUTOMATICAMENTE ao final — nunca esperar pedido do usuário"
   - "Zero chamadas OpenAI API — emails redigidos manualmente pelo squad"
   - "Dados exclusivamente reais de APIs públicas — NUNCA fabricar"
   - "Acentuação correta em todo texto PT-BR"
-  - "Cada oportunidade DEVE incluir link oficial do edital (preferencialmente PNCP)"
+  - "Cada oportunidade DEVE incluir link oficial do edital"
   - "Leads inéditos a cada execução (dedup contra runs anteriores)"
-  - "DEDUP cross-source OBRIGATÓRIO antes de contar ou listar oportunidades"
+  - "DEDUP cross-source OBRIGATÓRIO antes de contar oportunidades"
   - "tamanhoPagina: 50 para PNCP /contratacoes, 500 para PNCP /contratos"
-  - "Rate limiting: respeitar Retry-After do PNCP, 90 req/min Portal da Transparência"
-  - "OpenCNPJ: até 50 req/s (respeitar, não abusar)"
-  - "Identidade: SEMPRE Tiago Sasaki, Eng. Software CONFENGE"
-  - "NUNCA incentivar assinaturas ou mencionar planos"
-  - "Qualidade > Quantidade — menos leads, mais profundidade"
-  - "TESTE DE IMPACTO obrigatório: email deve causar reação 'CARALHO' (ver quality_gates.impact_test)"
-  - "Consultar TODAS as fontes ativas (PNCP + Portal Transparência + TCU + OpenCNPJ) antes de concluir busca"
-  # ── Novas constraints v4.0 (Conselho de Outreach) ──
-  - "CADÊNCIA OBRIGATÓRIA: gerar 4 emails + 1 LinkedIn por lead (nunca email único)"
-  - "EMAIL 1 SEM PREÇO: CTA soft only. Preço apenas a partir do Email 2"
-  - "SUBJECT CURTO: máximo 6 palavras, 40 caracteres. 2 variantes A/B por lead"
-  - "LGPD FOOTER em TODOS os emails: Ref + fonte dos dados + opt-out"
+  - "Identidade: Tiago, smartlic.tech (SEM título técnico, SEM 'criador do')"
+  - "TRIPWIRE R$297: preço no E1. Inclui 7 dias SmartLic Pro."
+  - "EMAIL 1 MAX 80 PALAVRAS. EMAIL 2 MAX 50. EMAIL 3 MAX 60."
+  - "AMOSTRAS COMPACTAS: 1 linha por edital (Objeto — Órgão, UF — R$valor — prazo DD/MM)"
+  - "CADÊNCIA 5 DIAS: LinkedIn D-1 → E1 D+0 → E2 D+2 → LinkedIn DM D+3 → E3 D+5"
+  - "SUBJECT CURTO: ≤5 palavras, ≤40 chars"
+  - "LGPD FOOTER em TODOS os emails"
   - "TRACKING CODE em TODOS os emails: formato AT-{NNN}-{SLUG}"
-  - "DECISOR REAL: buscar LinkedIn/site antes de usar QSA como fallback"
-  - "URGÊNCIA REAL: editais ≤5 dias recebem destaque. Nunca fabricar urgência"
-  - "PROVA SOCIAL no Email 2: citar volume real mapeado pelo algoritmo"
-  - "HOOK TEMPORAL no Email 1: abrir com 'por que agora' (contrato recente + editais abertos)"
-  - "LINGUAGEM DE AMOSTRA: 'Separei as {K} com maior match' (nunca 'Aqui estão {K} delas')"
   - "OPT-OUT IMEDIATO: se lead responder 'remover', parar TODA cadência"
   - "TRACKING SHEET: registrar cada lead em docs/ataque-turbo-tracking.md"
+  - "RELATÓRIO GERADO APÓS PAGAMENTO (just-in-time, não antes)"
+  - "12-15 LEADS POR RUN (não 3-4). 20-30 min/lead (não 2-4 horas)"
+  - "ENVIAR DE tiago.sasaki@confenge.com.br ATÉ WARMUP COMPLETO (max 5 cold/dia)"
 
 quality_gates:
   impact_test: |
@@ -1479,28 +1471,21 @@ quality_gates:
     ╚══════════════════════════════════════════════════════════════╝
 
   pre_email:
-    - "Portal da Transparência /pessoa-juridica verificado (sancionadoCEIS/CNEP/CEPIM/CEAF = false)?"
-    - "Sócios do QSA verificados contra lista TCU inabilitados?"
-    - "Lead tem ≥3 contratos homologados nos últimos 12 meses (cross-source)?"
-    - "Porte justifica compra do relatório (no-brainer test)?"
+    # 5 GATES ESSENCIAIS (v5.0 — reduzido de 11 para 5)
+    - "Portal da Transparência /pessoa-juridica verificado (sanções CEIS/CNEP = false)?"
+    - "≥1 contrato recente (últimos 6 meses) confirmado?"
+    - "Situação cadastral = ATIVA?"
     - "Existem editais abertos que matcham o perfil?"
-    - "Link oficial de cada edital foi verificado/construído?"
-    - "Análise de relevância é personalizada (não genérica)?"
-    - "Dedup cross-source aplicado (sem duplicatas entre PNCP/ComprasGov/TCU/etc.)?"
-    - "TESTE DE IMPACTO: email causa reação 'CARALHO'? (ver impact_test)"
-    - "Decisor identificado (LinkedIn > site > QSA)? Não enviar para sócio passivo."
-    - "Editais urgentes (≤5 dias) sinalizados com destaque no corpo?"
+    - "Email de contato encontrado?"
   pre_cadence:
-    - "TODOS os 4 emails + LinkedIn gerados para cada lead?"
-    - "Email 1 NÃO contém preço?"
-    - "Subject line do Email 1 tem ≤6 palavras?"
-    - "2 variantes A/B de subject geradas para Email 1?"
-    - "CTA é progressivo (soft → valor → urgência → breakup)?"
+    - "3 emails + LinkedIn conexão + LinkedIn DM gerados para cada lead?"
+    - "Email 1 contém preço R$297 + PIX?"
+    - "Subject line ≤5 palavras, ≤40 chars?"
+    - "Email 1 tem ≤80 palavras?"
+    - "3-4 amostras em formato compacto (1 linha cada)?"
     - "LGPD footer presente em TODOS os emails?"
     - "Tracking code (AT-NNN-SLUG) presente em TODOS os emails?"
-    - "Linguagem de amostra usa 'maior match' (não 'aqui estão')?"
-    - "Hook temporal no Email 1 (por que agora)?"
-    - "Prova social no Email 2 (R$X mapeados no setor)?"
+    - "Sem auto-apresentação técnica no E1?"
   pre_output:
     - "Acentuação revisada em todos os emails?"
     - "Todos os links de editais estão no formato correto e funcionais?"
@@ -1513,32 +1498,26 @@ quality_gates:
     - "Cadência completa (4 emails + LinkedIn) pronta para cada lead?"
 
 success_criteria:
-  - "minimum_qualified_leads: 3 (qualidade > quantidade)"
-  - "real_multi_source_data: true (verificável — PNCP + ComprasGov + outros)"
-  - "cross_source_dedup_applied: true (sem duplicatas entre fontes)"
+  # ── Critérios RELÂMPAGO v5.0 ──
+  - "minimum_qualified_leads: 12 (volume qualificado > perfeccionismo)"
+  - "real_multi_source_data: true (PNCP + Portal Transparência + OpenCNPJ)"
+  - "cross_source_dedup_applied: true"
   - "zero_openai_calls: true"
-  - "emails_ready_to_send: true (copy/paste)"
-  - "lead_reports_generated: true (um .md por lead com TODAS as oportunidades)"
-  - "lead_reports_ready_for_pdf: true (pronto para envio sem edição)"
+  - "emails_ready_to_send: true (copy/paste, max 80 palavras E1)"
   - "all_links_verified: true"
   - "proper_pt_br_accents: true"
-  - "personalized_relevance_analysis: true (não genérico)"
-  - "impact_test_passed: true (reação 'CARALHO' em cada email)"
-  - "no_brainer_test_passed: true (todos os leads)"
   - "dedup_against_previous_runs: true"
-  - "sender_identity_correct: true (CONFENGE, não SmartLic)"
-  # ── Novos critérios v4.0 ──
-  - "full_cadence_generated: true (4 emails + LinkedIn por lead)"
-  - "email_1_no_price: true (soft CTA only)"
-  - "subject_line_short: true (≤6 palavras, ≤40 chars)"
-  - "ab_variants_generated: true (2 subjects por lead)"
+  - "sender_identity_correct: true (Tiago, smartlic.tech — sem título técnico)"
+  - "full_cadence_generated: true (3 emails + LinkedIn conexão + LinkedIn DM)"
+  - "email_1_has_tripwire: true (R$297 via PIX no E1)"
+  - "email_1_max_80_words: true"
+  - "samples_compact_format: true (1 linha por edital)"
+  - "subject_line_short: true (≤5 palavras, ≤40 chars)"
   - "lgpd_footer_all_emails: true"
   - "tracking_code_all_emails: true"
-  - "tracking_sheet_updated: true (docs/ataque-turbo-tracking.md)"
-  - "decision_maker_identified: true (LinkedIn > site > QSA)"
-  - "temporal_hook_email_1: true ('por que agora')"
-  - "social_proof_email_2: true (volume real mapeado)"
-  - "urgency_flagged: true (editais ≤5 dias destacados)"
+  - "tracking_sheet_updated: true"
+  - "time_per_lead: ≤30 min (investigação rápida, não CSI)"
+  - "first_revenue_target: 7-14 dias"
 
 # ═══════════════════════════════════════════════════════════════════
 # ATIVAÇÃO E NOTAS
@@ -1558,21 +1537,21 @@ activation: |
   3. Output: docs/ataque-turbo-NNN.md
 
 notes:
-  - "Modelo inspirado no TurboCash playbook (Ação 1 + Ação 2)"
-  - "Preço referência: R$1.500 a R$3.000 — ajustável pelo @analyst"
-  - "Cadência 4-touch + LinkedIn: D0 (email soft), D3 (email valor+preço), D5 (LinkedIn), D7 (email urgência), D14 (email breakup)"
-  - "Meta: investigação CSI multi-fonte → cadência irresistível → reação 'CARALHO' → conversão"
-  - "Após 3 runs com >=15% response rate, graduar para Scale mode"
-  - "Público expandido: consultorias (turbocash) + empresas B2G diretas"
-  - "Fontes: PNCP (primária), TCU (qualificação+contratos, sem auth), ComprasGov v3 (⚠️ 404, investigar), Portal da Transparência (API key), Compras.dados.gov.br (legacy)"
-  - "Faturamento inferido via: porte + capital_social + volume TOTAL de contratos (cross-source)"
-  - "Dedup cross-source baseado no padrão já implementado em backend/consolidation.py"
-  # ── Novas notas v4.0 ──
-  - "Deliverability: domínio dedicado outreach.confenge.com.br + SPF+DKIM+DMARC p=reject + warmup 14-21 dias"
-  - "Subject lines: máx 6 palavras. A/B testing obrigatório. Lowercase casual."
-  - "LGPD: dados de PNCP = legítimo interesse (Art. 10). Footer com opt-out em TODOS os emails."
-  - "Tracking: código AT-{NNN}-{SLUG} + planilha em docs/ataque-turbo-tracking.md"
-  - "Decisor: buscar LinkedIn > site > QSA. Sócio do QSA é FALLBACK, não primeira opção."
-  - "Benchmarks-alvo: 45-55% open, 12-18% reply (signal-based), 10-20% conversão"
-  - "Envio: Ter-Qui, 08-10h BRT. Máx 20 emails/inbox/dia. Nunca seg/sex."
-  - "Após 20+ leads: analisar A/B de subjects, calibrar cadência, avaliar ferramenta de automação"
+  # ── Notas RELÂMPAGO v5.0 ──
+  - "MODO RELÂMPAGO: projetado para receita instantânea, não otimização de longo prazo"
+  - "Preço fixo: R$297 via PIX — universal para todos os leads"
+  - "Cadência comprimida 5 dias: LinkedIn D-1 → E1 D+0 → E2 D+2 → LinkedIn DM D+3 → E3 D+5"
+  - "Meta: volume qualificado → tripwire R$297 → upsell Pro R$1.999/mês"
+  - "Após 30+ leads abordados: avaliar métricas e decidir se volta para v4.0 (steady revenue)"
+  - "Fontes: PNCP (primária), Portal da Transparência (sanções + contratos), OpenCNPJ"
+  - "ComprasGov v3: DESATIVADO. TCU: opcional (reduzir se tempo de pesquisa > 30 min)"
+  - "Deliverability CRÍTICA: usar confenge.com.br (max 5 cold/dia) até warmup completar"
+  - "Warmup paralelo: outreach.confenge.com.br — 5-10 emails/dia para conhecidos — 14-21 dias"
+  - "Subject lines: máx 5 palavras. Formato: '{N} editais para a {Empresa}'"
+  - "LGPD: legítimo interesse (Art. 10). Footer obrigatório."
+  - "Envio: Ter-Qui, 08-10h BRT. Max 5 cold/dia do domínio principal."
+  - "Relatórios gerados APÓS pagamento (just-in-time, não antes)"
+  - "Expandir setores: Engenharia + Limpeza/Conservação + TI (maior addressable market)"
+  - "Benchmark-alvo: 45% open, 5-8% reply, 3-5% tripwire conversion, 20-30% upsell"
+  - "First revenue esperada: 7-14 dias após implementação"
+  - "RETORNO A v4.0: quando atingir 10+ clientes Pro recorrentes, voltar para steady revenue model"

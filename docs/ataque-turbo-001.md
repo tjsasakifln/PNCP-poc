@@ -68,7 +68,9 @@
 
 ### Oportunidades (prazo hábil): 10 editais em SP | ~R$11,7M
 ### Preço do relatório: R$1.500
-### Email
+### Cadência de Emails (4 toques + LinkedIn)
+
+#### Email 1 — Abertura (D+0 = 03/03) — ENVIADO
 
 ```
 Assunto: Pentágono Engenharia — identificamos 10 licitações abertas no perfil de vocês
@@ -113,6 +115,89 @@ Criador do SmartLic.tech
 smartlic.tech
 ```
 
+#### Email 2 — Valor + Preço (D+3 = 06/03)
+
+```
+Assunto: re: Pentágono Engenharia — identificamos 10 licitações abertas no perfil de vocês
+
+José Eduardo,
+
+Passando aqui para reforçar: das 10 oportunidades que identifiquei para
+a Pentágono, pelo menos 4 têm prazo de proposta até final de março.
+
+A busca que fizemos cruza dados oficiais do PNCP com o perfil de
+atuação de vocês — engenharia civil, consultoria, fiscalização. Não
+é uma lista genérica. Cada oportunidade vem com análise de viabilidade
+(compatibilidade, valor, prazo, geografia) e link direto para o edital.
+
+Para contextualizar: o valor total das 10 oportunidades soma
+~R$11,7 milhões. O relatório completo custa R$1.500 via PIX.
+
+Faz sentido para o momento de vocês?
+
+Abraço,
+Tiago Sasaki
+CONFENGE | smartlic.tech
+
+Ref: AT-001-PEN
+Dados de contratações públicas (PNCP, Lei 14.133/2021).
+Descadastrar: responda "remover".
+```
+
+#### LinkedIn — Conexão (D+5 = 08/03)
+
+```
+José Eduardo, sou o Tiago da CONFENGE. Enviei um email com 10
+oportunidades de licitação em SP compatíveis com o perfil da
+Pentágono — engenharia civil e consultoria. Achei que poderia
+ser útil. Aceita a conexão?
+```
+
+#### Email 3 — Urgência (D+7 = 10/03)
+
+```
+Assunto: prazos 16/03 e 08/04 — Pentágono Engenharia
+
+José Eduardo,
+
+Rápido update: entre as 10 oportunidades que mapeei para a
+Pentágono, há uma concorrência de R$2,9M em Santa Clara d'Oeste
+com prazo em 08/04 e recapeamentos em SP com prazo em 16/03.
+
+Depois que o prazo passa, não tem como recuperar. Posso enviar
+a lista completa ainda hoje.
+
+Quer que eu mande?
+
+Tiago
+smartlic.tech
+
+Ref: AT-001-PEN
+Descadastrar: responda "remover".
+```
+
+#### Email 4 — Breakup (D+14 = 17/03)
+
+```
+Assunto: encerro por aqui, José Eduardo
+
+José Eduardo,
+
+Compartilhei 10 oportunidades de licitação em SP compatíveis
+com o perfil da Pentágono nos últimos dias. Imagino que o
+timing pode não ter sido o melhor.
+
+Vou parar de enviar sobre essa rodada. Fazemos uma nova
+varredura a cada 2-3 semanas — se em algum momento quiser
+receber, é só responder este email.
+
+Abraço,
+Tiago
+
+Ref: AT-001-PEN
+Descadastrar: responda "remover".
+```
+
 ---
 
 ## Lead 2 — SOLOVIA ENGENHARIA E CONSTRUÇÕES LTDA
@@ -128,7 +213,9 @@ smartlic.tech
 
 ### Oportunidades (prazo hábil): 26 editais em SP, MG, PR, ES | ~R$42M
 ### Preço do relatório: R$2.500
-### Email
+### Cadência de Emails (4 toques + LinkedIn)
+
+#### Email 1 — Abertura (D+0 = 03/03) — ENVIADO
 
 ```
 Assunto: Solovia Engenharia — identificamos 26 licitações abertas no perfil de vocês
@@ -181,6 +268,93 @@ Criador do SmartLic.tech
 smartlic.tech
 ```
 
+#### Email 2 — Valor + Preço (D+3 = 06/03)
+
+```
+Assunto: re: Solovia Engenharia — identificamos 26 licitações abertas no perfil de vocês
+
+Antonio Carlos,
+
+Passando aqui para reforçar: das 26 oportunidades que identifiquei
+para a Solovia, pelo menos 8 têm prazo de proposta nos próximos
+15 dias — incluindo pavimentação de R$8,2M no PR e construção de
+UBS de R$4,7M no ES.
+
+A análise não é genérica. Cruzamos o CNAE de vocês (edifícios,
+rodovias, saneamento, urbanização) com cada edital e avaliamos
+viabilidade por 4 critérios. Vocês cobrem praticamente toda a
+cadeia de engenharia civil — o filtro identificou oportunidades
+em 4 estados.
+
+Valor total das 26 oportunidades: ~R$42 milhões. Relatório
+completo com análise de viabilidade: R$2.500 via PIX.
+
+Faz sentido para o momento de vocês?
+
+Abraço,
+Tiago Sasaki
+CONFENGE | smartlic.tech
+
+Ref: AT-001-SOL
+Dados de contratações públicas (PNCP, Lei 14.133/2021).
+Descadastrar: responda "remover".
+```
+
+#### LinkedIn — Conexão (D+5 = 08/03)
+
+```
+Antonio Carlos, sou o Tiago da CONFENGE. Enviei um email com 26
+oportunidades de licitação em SP, MG, PR e ES compatíveis com
+o perfil da Solovia — construção, rodovias, saneamento. Achei
+que poderia ser útil. Aceita a conexão?
+```
+
+#### Email 3 — Urgência (D+7 = 10/03)
+
+```
+Assunto: prazos 16/03 — Solovia Engenharia
+
+Antonio Carlos,
+
+Dos 26 editais que mapeei para a Solovia, há 2 concorrências
+de pavimentação — R$8,2M em Cruzeiro do Iguaçu/PR e R$6,5M em
+Martins Soares/MG — ambas com prazo em 16/03. Mais a UBS de
+R$4,7M em Fundão/ES que vence esta semana.
+
+São 3 oportunidades acima de R$4M que não vão reabrir. Posso
+enviar a lista completa ainda hoje.
+
+Quer que eu mande?
+
+Tiago
+smartlic.tech
+
+Ref: AT-001-SOL
+Descadastrar: responda "remover".
+```
+
+#### Email 4 — Breakup (D+14 = 17/03)
+
+```
+Assunto: encerro por aqui, Antonio Carlos
+
+Antonio Carlos,
+
+Compartilhei 26 oportunidades de licitação em 4 estados
+compatíveis com o perfil da Solovia nos últimos dias.
+Imagino que o timing pode não ter sido o melhor.
+
+Vou parar de enviar sobre essa rodada. Fazemos uma nova
+varredura a cada 2-3 semanas — se em algum momento quiser
+receber, é só responder este email.
+
+Abraço,
+Tiago
+
+Ref: AT-001-SOL
+Descadastrar: responda "remover".
+```
+
 ---
 
 ## Lead 3 — BARRA NOVA ENGENHARIA LTDA
@@ -197,7 +371,9 @@ smartlic.tech
 ### Oportunidades (prazo hábil): 12 editais em MG e ES | ~R$18,7M
 ### Nota: 0 editais com prazo futuro em RJ. Expandido para estados adjacentes (MG + ES).
 ### Preço do relatório: R$1.500
-### Email
+### Cadência de Emails (4 toques + LinkedIn)
+
+#### Email 1 — Abertura (D+0 = 03/03) — ENVIADO
 
 ```
 Assunto: Barra Nova Engenharia — identificamos 12 licitações abertas compatíveis com o perfil de vocês
@@ -240,6 +416,92 @@ Tiago Sasaki
 Engenheiro de Software — CONFENGE
 Criador do SmartLic.tech
 smartlic.tech
+```
+
+#### Email 2 — Valor + Preço (D+3 = 06/03)
+
+```
+Assunto: re: Barra Nova Engenharia — identificamos 12 licitações abertas compatíveis com o perfil de vocês
+
+Wagner,
+
+Passando aqui para reforçar: das 12 oportunidades que identifiquei
+para a Barra Nova, pelo menos 5 têm prazo de proposta nos
+próximos 15 dias. As maiores são pavimentação em MG (R$6,5M)
+e reforma escolar no ES (R$4,5M).
+
+O filtro identificou editais em MG e ES — estados vizinhos ao RJ
+onde construtoras cariocas frequentemente competem. Cada
+oportunidade vem com análise de viabilidade e link direto para
+o edital oficial.
+
+Valor total das 12 oportunidades: ~R$18,7 milhões. Relatório
+completo: R$1.500 via PIX.
+
+Faz sentido para o momento de vocês?
+
+Abraço,
+Tiago Sasaki
+CONFENGE | smartlic.tech
+
+Ref: AT-001-BAR
+Dados de contratações públicas (PNCP, Lei 14.133/2021).
+Descadastrar: responda "remover".
+```
+
+#### LinkedIn — Conexão (D+5 = 08/03)
+
+```
+Wagner, sou o Tiago da CONFENGE. Enviei um email com 12
+oportunidades de licitação em MG e ES compatíveis com o perfil
+da Barra Nova — engenharia civil, terraplanagem, construção.
+Achei que poderia ser útil. Aceita a conexão?
+```
+
+#### Email 3 — Urgência (D+7 = 10/03)
+
+```
+Assunto: prazo 16/03 — Barra Nova Engenharia
+
+Wagner,
+
+Dos 12 editais que mapeei para a Barra Nova, a concorrência de
+pavimentação em Martins Soares/MG (R$6,5M) tem prazo em 16/03.
+São 6 dias. Reforma escolar em Mantenópolis/ES (R$4,5M)
+também está com prazo próximo.
+
+Essas janelas não reabrem. Posso enviar a lista completa
+ainda hoje.
+
+Quer que eu mande?
+
+Tiago
+smartlic.tech
+
+Ref: AT-001-BAR
+Descadastrar: responda "remover".
+```
+
+#### Email 4 — Breakup (D+14 = 17/03)
+
+```
+Assunto: encerro por aqui, Wagner
+
+Wagner,
+
+Compartilhei 12 oportunidades de licitação em MG e ES
+compatíveis com o perfil da Barra Nova nos últimos dias.
+Imagino que o timing pode não ter sido o melhor.
+
+Vou parar de enviar sobre essa rodada. Fazemos uma nova
+varredura a cada 2-3 semanas — se em algum momento quiser
+receber, é só responder este email.
+
+Abraço,
+Tiago
+
+Ref: AT-001-BAR
+Descadastrar: responda "remover".
 ```
 
 ---

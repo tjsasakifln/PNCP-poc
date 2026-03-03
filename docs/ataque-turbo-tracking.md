@@ -1,13 +1,21 @@
 # Ataque Turbo — Tracking de Leads
 
-## Cadência Padrão
+## Cadências
+
+### Run 001 — 4 toques + LinkedIn
 | Touch | Canal | Dia | Objetivo |
 |-------|-------|-----|----------|
-| 1 | Email | D+0 | Abertura — soft CTA, sem preço |
-| 2 | Email | D+3 | Valor + prova social + preço |
+| 1 | Email | D+0 | Abertura — soft CTA + preço |
+| 2 | Email | D+3 | Valor reframe + confirma preço |
 | 3 | LinkedIn | D+5 | Conexão com nota referenciando email |
 | 4 | Email | D+7 | Urgência específica (prazos reais) |
-| 5 | Email | D+14 | Breakup — encerramento respeitoso |
+| 5 | Email | D+14 | Breakup — porta aberta (próxima varredura) |
+
+### Run 002 — 2 toques (máx. conversão)
+| Touch | Canal | Dia | Objetivo |
+|-------|-------|-----|----------|
+| 1 | Email | D+0 | Pitch completo — social proof + opps + preço |
+| 2 | Email | D+4 | Urgência (deadlines reais) + breakup combo |
 
 ## Leads
 

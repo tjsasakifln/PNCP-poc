@@ -17,7 +17,7 @@
 - **Leads qualificados com oportunidades:** 4
 - **Total de editais com prazo hábil (pós-dedup):** 68
 - **Valor total estimado das oportunidades:** ~R$324M
-- **Emails gerados:** 4 cadências completas (4 emails + LinkedIn cada)
+- **Emails gerados:** 4 cadências de 2 toques (pitch completo + urgência/breakup)
 - **Relatórios individuais:** 4
 
 ## Distribuição por UF (editais com prazo hábil)
@@ -41,21 +41,21 @@
 
 ## Decisões do @analyst
 
-### Matching por Lead
+### Matching por Lead (v5.0 RELÂMPAGO — Tripwire R$297)
 | Lead | UF Base | UFs Matching | Total Editais | Valor Total | Preço |
 |------|---------|-------------|--------------|-------------|-------|
-| Renovar Engenharia | BA | BA, SE, PE, AL, MG, DF | 25 | R$236M | R$2.500 |
-| Markfer Engenharia | RS | RS, SC, PR | 9 | R$20,6M | R$1.500 |
-| Fox Engenharia | DF | DF, GO, MG, SP, RJ | 27 | R$29,7M | R$2.000 |
-| Araujo Abreu Engenharia | RJ | Nacional (14 UFs) | 56 | R$285M | R$3.000 |
+| Renovar Engenharia | BA | BA, SE, PE, AL, MG, DF | 25 | R$236M | R$297 |
+| Markfer Engenharia | RS | RS, SC, PR | 9 | R$20,6M | R$297 |
+| Fox Engenharia | DF | DF, GO, MG, SP, RJ | 27 | R$29,7M | R$297 |
+| Araujo Abreu Engenharia | RJ | Nacional (14 UFs) | 56 | R$285M | R$297 |
 
-### Fração Grátis
+### Fração Grátis (v5.0 — mais generosa)
 | Lead | Total (N) | Amostra grátis (K) | Ratio |
 |------|-----------|---------------------|-------|
-| Renovar Engenharia | 25 | 3 | 12% |
-| Markfer Engenharia | 9 | 2 | 22% |
-| Fox Engenharia | 27 | 3 | 11% |
-| Araujo Abreu Engenharia | 56 | 3 | 5% |
+| Renovar Engenharia | 25 | 4 | 16% |
+| Markfer Engenharia | 9 | 3 | 33% |
+| Fox Engenharia | 27 | 4 | 15% |
+| Araujo Abreu Engenharia | 56 | 4 | 7% |
 
 ### Notas de Matching
 - **Renovar Engenharia:** Sede em Lauro de Freitas/BA, capital R$5,5M, CNAE 4120-4 (construção de edifícios). Contratos federais com IFBa, Receita Federal e ANATEL — R$59M no Portal da Transparência. Matching BA + estados adjacentes (SE, MG) + DF (presença federal).
@@ -85,78 +85,37 @@
 - **Órgãos frequentes:** IFBa, Receita Federal, ANATEL
 - **Perfil de atuação:** Construção civil, obras federais em Bahia
 
-### Oportunidades: 25 editais | R$236M | Preço: R$2.500
+### Oportunidades: 25 editais | R$236M | Preço: R$297 (tripwire)
 
-### Cadência de Emails (4 toques + LinkedIn)
+### Cadência RELÂMPAGO (3 emails + LinkedIn em 5 dias)
 
-#### Email 1 — Abertura (D+0) — Soft CTA
+#### LinkedIn — Conexão (D-1)
 ```
-Assunto A: 25 licitações para a Renovar Engenharia
-Assunto B: Renovar Engenharia — oportunidades até abril
+Odonel, trabalho com inteligência em licitações.
+Vi o perfil da Renovar Engenharia. Aceita a conexão?
+```
 
-Olá Odonel,
+#### Email 1 — Tripwire R$297 (D+0)
+```
+Assunto: 25 editais para a Renovar
 
-Vi que a Renovar Engenharia fechou mais de R$59 milhões em contratos
-federais nos últimos anos — IFBa, Receita Federal, ANATEL. Vocês
-têm um perfil consistente em obras de construção civil para órgãos
-federais na Bahia e região.
+Odonel,
 
-Neste momento existem 25 editais abertos com perfil compatível, 8
-deles com prazo nos próximos 15 dias. O volume concentrado na Bahia
-é particularmente relevante para o porte de vocês.
+A Renovar fechou R$59M em contratos federais — IFBa, Receita Federal,
+ANATEL. Rodei nosso algoritmo contra o perfil de vocês e encontrei
+25 editais abertos com prazo hábil — R$236M em oportunidades.
 
-Nosso algoritmo de classificação — já validado e operacional —
-consolida fontes oficiais e avalia cada edital contra critérios
-objetivos de viabilidade: compatibilidade setorial, faixa de valor,
-prazo e geografia.
+4 deles:
 
-Rodei uma análise para o perfil da Renovar e o filtro identificou
-**25 licitações abertas com prazo hábil**. Separei as 3 com maior
-match com o histórico de vocês:
+1. UCT Brumado — SESAB/BA — R$5,4M — prazo 19/03
+2. Pavimentação CBUQ — Martins Soares/MG — R$6,5M — prazo 16/03
+3. Pavimentação — DER/SE — R$1,8M — prazo 18/03
+4. Habitação CONDER — Salvador/BA — R$7,2M — prazo 24/03
 
-**1. Construção de UCT (Unidade de Coleta e Transfusão) — Brumado/BA**
-• Órgão: Estado da Bahia (SESAB)
-• Valor estimado: R$5.391.772
-• Modalidade: Concorrência Eletrônica
-• Prazo para proposta: 19/03/2026 (15 dias restantes)
-• Link: https://licitacoes-e2.bb.com.br/aop-inter-estatico/visualizar-processo-publico/1086137
-• **Relevância para a Renovar:** Obra de construção de unidade
-  hospitalar no interior da Bahia — perfil de execução similar
-  às obras que vocês realizaram para instituições federais. Valor
-  compatível com o histórico de contratos da empresa.
+Envio a lista completa com análise de viabilidade por R$297 via PIX.
+Inclui 7 dias de acesso à plataforma de monitoramento.
 
-**2. Pavimentação em CBUQ + drenagem + sinalização — Martins Soares/MG**
-• Órgão: Município de Martins Soares
-• Valor estimado: R$6.520.965 (Registro de Preços)
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 16/03/2026 (12 dias restantes)
-• Link: https://pncp.gov.br/app/editais/01615420000145/2026/7
-• **Relevância para a Renovar:** Serviços de regularização do
-  subleito, drenagem, base/sub-base, pavimentação e sinalização.
-  MG é estado adjacente onde construtoras baianas frequentemente
-  competem. Valor na faixa de contratos já executados.
-
-**3. Pavimentação em paralelepípedo — Canindé do São Francisco/SE**
-• Órgão: DER/SE (Departamento de Infraestrutura Rodoviária de Sergipe)
-• Valor estimado: R$1.760.729
-• Modalidade: Concorrência Eletrônica
-• Prazo para proposta: 18/03/2026 (14 dias restantes)
-• Link: https://sistema.comprasnet.se.gov.br/publico/WKF.aspx?code=DER-CE0002/2026&validation=50536
-• **Relevância para a Renovar:** Obra rodoviária no Nordeste,
-  região natural de atuação. Convênio federal (MIDR/CAIXA) — o
-  mesmo tipo de fonte de recursos dos contratos que vocês já
-  executaram via instituições federais.
-
-As outras 22 incluem obras de habitação popular (CONDER/BA),
-pavimentação asfáltica, recapeamento e infraestrutura urbana em
-BA, MG, SE, AL, PE e DF — todas filtradas pelo mesmo critério
-de compatibilidade.
-
-Faz sentido para a Renovar receber a análise completa?
-
-Abraço,
-Tiago Sasaki
-Engenheiro de Software — CONFENGE
+Tiago
 smartlic.tech
 
 Ref: AT-002-REN
@@ -164,80 +123,44 @@ Dados de contratações públicas (PNCP, Lei 14.133/2021).
 Descadastrar: responda "remover".
 ```
 
-#### Email 2 — Valor + Preço (D+3)
+#### Email 2 — Urgência (D+2)
 ```
-Assunto: re: 25 licitações para a Renovar Engenharia
+Assunto: re: 25 editais para a Renovar
 
-Odonel, voltando aqui.
+Odonel,
 
-Desde que montamos o algoritmo, já mapeamos mais de R$300 milhões
-em oportunidades para empresas de engenharia e construção só na
-Bahia e estados vizinhos. Boa parte dessas empresas não sabia
-que esses editais existiam — a informação é pública, mas está
-espalhada em dezenas de portais.
+8 daqueles editais têm prazo nos próximos 7 dias.
 
-Das 25 oportunidades que encontrei para a Renovar, 8 têm prazo
-de proposta nos próximos 15 dias. Se vocês já participam de
-concorrências na Bahia e região, isso pode representar contratos
-que passariam despercebidos.
+Se a Renovar quiser avaliar, precisa ser esta semana.
 
-Envio a lista completa com análise de viabilidade por R$2.500.
-Cada oportunidade vem com avaliação objetiva e link direto do
-edital. Se nenhuma se aplicar ao perfil de vocês, me avise —
-feedback me ajuda a calibrar o filtro.
+Mando a lista completa com os prazos?
 
-Abraço,
 Tiago
-smartlic.tech
 
 Ref: AT-002-REN
 Descadastrar: responda "remover".
 ```
 
-#### LinkedIn — Conexão (D+5)
+#### LinkedIn DM (D+3)
 ```
-Odonel, sou o Tiago da CONFENGE. Enviei um email com 25
-oportunidades de licitação em BA, MG e SE compatíveis com o
-perfil da Renovar Engenharia. Vi que vocês atuam em construção
-civil federal — achei que poderia ser útil. Aceita a conexão?
+Odonel, enviei um email com 25 editais de engenharia
+compatíveis com a Renovar. 8 têm prazo esta semana. Viu?
 ```
 
-#### Email 3 — Urgência (D+7)
+#### Email 3 — Breakup (D+5)
 ```
-Assunto: prazo 16/03 — Renovar Engenharia
+Assunto: última vez, Odonel
 
 Odonel,
 
-8 dos editais que identifiquei para a Renovar têm prazo de
-proposta nos próximos 10 dias. Se vocês participam de
-concorrências na Bahia e Minas, esse é o tipo de janela que
-não volta.
+Encontrei 25 oportunidades para a Renovar, totalizando R$236M.
+Algumas já venceram o prazo desde meu primeiro email.
 
-Posso enviar a lista completa ainda hoje. Quer que eu mande?
+Se fizer sentido em outro momento, me responda. Mantenho o
+perfil de vocês no radar.
 
 Tiago
 smartlic.tech
-
-Ref: AT-002-REN
-Descadastrar: responda "remover".
-```
-
-#### Email 4 — Breakup (D+14)
-```
-Assunto: encerro por aqui, Odonel
-
-Odonel,
-
-Compartilhei 25 oportunidades de licitação compatíveis com o
-perfil da Renovar Engenharia nas últimas semanas. Entendo que
-o timing pode não ter sido ideal.
-
-Vou parar de enviar atualizações, mas se em algum momento
-quiserem receber um mapeamento atualizado, é só responder
-este email.
-
-Abraço,
-Tiago
 
 Ref: AT-002-REN
 Descadastrar: responda "remover".
@@ -265,67 +188,36 @@ Descadastrar: responda "remover".
 - **Órgãos frequentes:** IFRS, UFRGS
 - **Perfil de atuação:** Construção civil, reformas em instituições federais no RS
 
-### Oportunidades: 9 editais | R$20,6M | Preço: R$1.500
+### Oportunidades: 9 editais | R$20,6M | Preço: R$297 (tripwire)
 
-### Cadência de Emails (4 toques + LinkedIn)
+### Cadência RELÂMPAGO (3 emails + LinkedIn em 5 dias)
 
-#### Email 1 — Abertura (D+0) — Soft CTA
+#### LinkedIn — Conexão (D-1)
 ```
-Assunto A: 9 licitações para a Markfer Engenharia
-Assunto B: Markfer — obras no Sul até abril
+Mario, trabalho com inteligência em licitações.
+Vi o perfil da Markfer. Aceita a conexão?
+```
 
-Olá Mario,
+#### Email 1 — Tripwire R$297 (D+0)
+```
+Assunto: 9 editais para a Markfer
 
-Vi que a Markfer opera em Porto Alegre com foco em construção
-civil para instituições federais — IFRS, UFRGS. Nos últimos
-anos, vocês acumularam mais de R$5,4 milhões em contratos
-federais de obras e reformas no Rio Grande do Sul.
+Mario,
 
-Neste momento existem 9 editais de construção civil abertos
-no Sul (RS, SC, PR) com perfil compatível, somando mais de
-R$20 milhões em valor estimado. 5 deles têm prazo nos
-próximos 15 dias.
+A Markfer fechou R$5,4M em contratos federais — IFRS, UFRGS.
+Rodei nosso algoritmo contra o perfil de vocês e encontrei
+9 editais abertos no Sul — R$20,6M em oportunidades.
 
-Nosso algoritmo de classificação — já validado e operacional
-— consolida fontes oficiais e avalia cada edital contra
-critérios objetivos de viabilidade.
+3 deles:
 
-Rodei uma análise para o perfil da Markfer e o filtro
-identificou **9 licitações abertas com prazo hábil**.
-Separei as 2 com maior match:
+1. Pavimentação estradas rurais — Cruzeiro do Iguaçu/PR — R$8,2M — prazo 16/03
+2. Pavimentação asfáltica — Sapiranga/RS — R$3,4M — prazo 20/03
+3. Reforma institucional — IFRS/RS — R$2,1M — prazo 21/03
 
-**1. Pavimentação de estradas rurais em CBUQ — Cruzeiro do Iguaçu/PR**
-• Órgão: Município de Cruzeiro do Iguaçu
-• Valor estimado: R$8.224.904
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 16/03/2026 (12 dias restantes)
-• Link: https://pncp.gov.br/app/editais/95589230000144/2026/30
-• **Relevância para a Markfer:** Pavimentação em CBUQ de
-  55.440 m², incluindo serviços preliminares, terraplenagem,
-  drenagem, base/sub-base, revestimento e sinalização. Obra
-  de grande porte no Paraná — estado vizinho ao RS onde
-  construtoras gaúchas frequentemente competem. Convênio SEAB.
+Envio a lista completa com análise de viabilidade por R$297 via PIX.
+Inclui 7 dias de acesso à plataforma de monitoramento.
 
-**2. Pavimentação asfáltica — Sapiranga/RS**
-• Órgão: Município de Sapiranga
-• Valor estimado: R$3.411.148
-• Modalidade: Concorrência Eletrônica
-• Prazo para proposta: 20/03/2026 (16 dias restantes)
-• Link: https://pncp.gov.br/app/editais/87366159000102/2026/21
-• **Relevância para a Markfer:** Pavimentação asfáltica com
-  fornecimento de materiais em Sapiranga — município da região
-  metropolitana de Porto Alegre, na área de atuação natural
-  da Markfer. Empreitada por preço unitário.
-
-As outras 7 incluem obras de habitação, pavimentação e
-projetos de engenharia em RS, SC e PR — todas compatíveis
-com o CNAE e histórico de vocês.
-
-Faz sentido para a Markfer receber a análise completa?
-
-Abraço,
-Tiago Sasaki
-Engenheiro de Software — CONFENGE
+Tiago
 smartlic.tech
 
 Ref: AT-002-MAR
@@ -333,80 +225,45 @@ Dados de contratações públicas (PNCP, Lei 14.133/2021).
 Descadastrar: responda "remover".
 ```
 
-#### Email 2 — Valor + Preço (D+3)
+#### Email 2 — Urgência (D+2)
 ```
-Assunto: re: 9 licitações para a Markfer Engenharia
+Assunto: re: 9 editais para a Markfer
 
-Mario, voltando aqui.
+Mario,
 
-Desde que montamos o algoritmo, já mapeamos mais de R$20 milhões
-em oportunidades de construção civil no Sul do Brasil só no último
-mês. Boa parte dessas empresas não sabia que esses editais
-existiam — a informação é pública, mas está espalhada em dezenas
-de portais.
+5 daqueles editais têm prazo nos próximos 7 dias. A pavimentação
+de R$8,2M no PR fecha dia 16/03.
 
-Das 9 oportunidades que encontrei para a Markfer, 5 têm prazo
-de proposta nos próximos 15 dias. Se vocês já participam de
-concorrências no RS e região, isso pode representar contratos
-que passariam despercebidos.
+Se a Markfer quiser avaliar, precisa ser esta semana.
 
-Envio a lista completa com análise de viabilidade por R$1.500.
-Cada oportunidade vem com avaliação objetiva e link direto do
-edital. Se nenhuma se aplicar ao perfil de vocês, me avise —
-feedback me ajuda a calibrar o filtro.
+Mando a lista completa com os prazos?
 
-Abraço,
 Tiago
-smartlic.tech
 
 Ref: AT-002-MAR
 Descadastrar: responda "remover".
 ```
 
-#### LinkedIn — Conexão (D+5)
+#### LinkedIn DM (D+3)
 ```
-Mario, sou o Tiago da CONFENGE. Enviei um email com 9
-oportunidades de licitação no RS, SC e PR compatíveis com o
-perfil da Markfer. Vi que vocês atuam em construção civil para
-instituições federais — achei que poderia ser útil.
+Mario, enviei um email com 9 editais de construção
+compatíveis com a Markfer. 5 têm prazo esta semana. Viu?
 ```
 
-#### Email 3 — Urgência (D+7)
+#### Email 3 — Breakup (D+5)
 ```
-Assunto: prazo 16/03 — Markfer
+Assunto: última vez, Mario
 
 Mario,
 
-5 dos editais que identifiquei para a Markfer têm prazo de
-proposta nos próximos 10 dias — incluindo uma pavimentação
-de R$8,2 milhões no Paraná. Se vocês participam de
-concorrências no Sul, esse é o tipo de janela que não volta.
+Encontrei 9 oportunidades para a Markfer, totalizando R$20,6M.
+Algumas já venceram o prazo desde meu primeiro email.
 
-Posso enviar a lista completa ainda hoje. Quer que eu mande?
+Se fizer sentido em outro momento, me responda. Mantenho o
+perfil de vocês no radar.
 
 Tiago
 smartlic.tech
-
-Ref: AT-002-MAR
-Descadastrar: responda "remover".
-```
-
-#### Email 4 — Breakup (D+14)
-```
-Assunto: encerro por aqui, Mario
-
-Mario,
-
-Compartilhei 9 oportunidades de licitação compatíveis com o
-perfil da Markfer Engenharia nas últimas semanas. Entendo que
-o timing pode não ter sido ideal.
-
-Vou parar de enviar atualizações, mas se em algum momento
-quiserem receber um mapeamento atualizado, é só responder
-este email.
-
-Abraço,
-Tiago
 
 Ref: AT-002-MAR
 Descadastrar: responda "remover".
@@ -433,78 +290,37 @@ Descadastrar: responda "remover".
 - **Órgãos frequentes:** ANCINE, Aeronáutica, Receita Federal
 - **Perfil de atuação:** Consultoria de engenharia, fiscalização de obras, projetos
 
-### Oportunidades: 27 editais | R$29,7M | Preço: R$2.000
+### Oportunidades: 27 editais | R$29,7M | Preço: R$297 (tripwire)
 
-### Cadência de Emails (4 toques + LinkedIn)
+### Cadência RELÂMPAGO (3 emails + LinkedIn em 5 dias)
 
-#### Email 1 — Abertura (D+0) — Soft CTA
+#### LinkedIn — Conexão (D-1)
 ```
-Assunto A: 27 licitações para a Fox Engenharia
-Assunto B: Fox Engenharia — oportunidades até abril
+Paulo Cesar, trabalho com inteligência em licitações.
+Vi o perfil da Fox Engenharia. Aceita a conexão?
+```
 
-Olá Paulo Cesar,
+#### Email 1 — Tripwire R$297 (D+0)
+```
+Assunto: 27 editais para a Fox
 
-Vi que a Fox Engenharia atua em Brasília com foco em
-consultoria e serviços de engenharia para órgãos federais —
-ANCINE, Aeronáutica, Receita Federal. Nos últimos anos,
-vocês acumularam mais de R$18 milhões em contratos entre
-PNCP e Portal da Transparência.
+Paulo Cesar,
 
-Neste momento existem 27 editais de engenharia abertos com
-perfil compatível, somando quase R$30 milhões em valor
-estimado — espalhados por GO, MG, SP e DF. 10 deles têm
-prazo nos próximos 15 dias.
+A Fox fechou R$18M em contratos federais — ANCINE, Aeronáutica,
+Receita Federal. Rodei nosso algoritmo contra o perfil de vocês
+e encontrei 27 editais abertos — R$29,7M em oportunidades.
 
-Nosso algoritmo de classificação — já validado e operacional —
-consolida fontes oficiais e avalia cada edital contra critérios
-objetivos de viabilidade.
+4 deles:
 
-Rodei uma análise para o perfil da Fox e o filtro identificou
-**27 licitações abertas com prazo hábil**. Separei as 3 com
-maior match:
+1. Pavimentação urbana — Crixás/GO — R$2,3M — prazo 18/03
+2. Habitação Moradia Digna — Santa Clara d'Oeste/SP — R$2,9M — prazo 08/04
+3. Cozinha piloto — Oriente/SP — R$728K — prazo 23/03
+4. Infraestrutura rodoviária — Goianésia/GO — R$1,5M — prazo 25/03
 
-**1. Pavimentação asfáltica urbana — Crixás/GO**
-• Órgão: Município de Crixás
-• Valor estimado: R$2.294.195
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 18/03/2026 (14 dias restantes)
-• Link: https://pncp.gov.br/app/editais/02382067000163/2026/85
-• **Relevância para a Fox:** Execução de pavimentação asfáltica
-  urbana em Goiás, vinculada a convênio com Ministério das
-  Cidades. A Fox já tem histórico em contratos federais e Goiás
-  é estado adjacente ao DF. Valor compatível com o perfil.
+Envio a lista completa com análise de viabilidade por R$297 via PIX.
+Inclui 7 dias de acesso à plataforma de monitoramento.
 
-**2. Construção de 20 unidades habitacionais — Santa Clara d'Oeste/SP**
-• Órgão: Município de Santa Clara d'Oeste
-• Valor estimado: R$2.928.865
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 08/04/2026 (35 dias restantes)
-• Link: https://santaclaradoeste.sp.gov.br/?pag=T0RZPU9EYz1PR009T1RrPU9EWT1PVEE9T1dFPQ==&view=LIST-LICIT&mod
-• **Relevância para a Fox:** Programa Moradia Digna do Ministério
-  das Cidades — o mesmo tipo de fonte de recursos federal que a
-  Fox já gerencia em contratos de consultoria e fiscalização.
-  Prazo confortável de 35 dias.
-
-**3. Construção de cozinha piloto — Oriente/SP**
-• Órgão: Município de Oriente
-• Valor estimado: R$728.177
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 23/03/2026 (19 dias restantes)
-• Link: https://pncp.gov.br/app/editais/44482552000159/2026/9
-• **Relevância para a Fox:** Construção de equipamento público
-  com convênio da Secretaria de Educação do Estado de SP.
-  Engenharia civil de menor porte — ideal para consultoria de
-  projeto e acompanhamento.
-
-As outras 24 incluem infraestrutura rodoviária, calçamento,
-reformas escolares e obras públicas em GO, MG, SP e DF — todas
-compatíveis com o perfil de consultoria de engenharia da Fox.
-
-Faz sentido para a Fox receber a análise completa?
-
-Abraço,
-Tiago Sasaki
-Engenheiro de Software — CONFENGE
+Tiago
 smartlic.tech
 
 Ref: AT-002-FOX
@@ -512,80 +328,45 @@ Dados de contratações públicas (PNCP, Lei 14.133/2021).
 Descadastrar: responda "remover".
 ```
 
-#### Email 2 — Valor + Preço (D+3)
+#### Email 2 — Urgência (D+2)
 ```
-Assunto: re: 27 licitações para a Fox Engenharia
+Assunto: re: 27 editais para a Fox
 
-Paulo Cesar, voltando aqui.
+Paulo Cesar,
 
-Desde que montamos o algoritmo, já mapeamos mais de R$30 milhões
-em oportunidades de engenharia no Centro-Oeste e Sudeste. Boa
-parte dessas empresas não sabia que esses editais existiam — a
-informação é pública, mas está espalhada em dezenas de portais
-e em modalidades diferentes.
+10 daqueles editais têm prazo nos próximos 7 dias. Crixás/GO
+fecha dia 18/03.
 
-Das 27 oportunidades que encontrei para a Fox, 10 têm prazo
-de proposta nos próximos 15 dias. Se vocês já participam de
-concorrências em GO, MG e SP, isso pode representar contratos
-que passariam despercebidos.
+Se a Fox quiser avaliar, precisa ser esta semana.
 
-Envio a lista completa com análise de viabilidade por R$2.000.
-Cada oportunidade vem com avaliação objetiva e link direto do
-edital. Se nenhuma se aplicar ao perfil de vocês, me avise —
-feedback me ajuda a calibrar o filtro.
+Mando a lista completa com os prazos?
 
-Abraço,
 Tiago
-smartlic.tech
 
 Ref: AT-002-FOX
 Descadastrar: responda "remover".
 ```
 
-#### LinkedIn — Conexão (D+5)
+#### LinkedIn DM (D+3)
 ```
-Paulo Cesar, sou o Tiago da CONFENGE. Enviei um email com 27
-oportunidades de engenharia em GO, MG, SP e DF compatíveis
-com o perfil da Fox. Vi que vocês atuam em consultoria para
-órgãos federais — achei que poderia ser útil.
+Paulo Cesar, enviei um email com 27 editais de engenharia
+compatíveis com a Fox. 10 têm prazo esta semana. Viu?
 ```
 
-#### Email 3 — Urgência (D+7)
+#### Email 3 — Breakup (D+5)
 ```
-Assunto: prazo 18/03 — Fox Engenharia
+Assunto: última vez, Paulo Cesar
 
 Paulo Cesar,
 
-10 dos editais que identifiquei para a Fox têm prazo de
-proposta nos próximos 10 dias. Se vocês participam de
-concorrências em Goiás e Minas, esse é o tipo de janela
-que não volta.
+Encontrei 27 oportunidades para a Fox, totalizando R$29,7M.
+Algumas já venceram o prazo desde meu primeiro email.
 
-Posso enviar a lista completa ainda hoje. Quer que eu mande?
+Se fizer sentido em outro momento, me responda. Mantenho o
+perfil de vocês no radar.
 
 Tiago
 smartlic.tech
-
-Ref: AT-002-FOX
-Descadastrar: responda "remover".
-```
-
-#### Email 4 — Breakup (D+14)
-```
-Assunto: encerro por aqui, Paulo Cesar
-
-Paulo Cesar,
-
-Compartilhei 27 oportunidades de engenharia compatíveis com
-o perfil da Fox nas últimas semanas. Entendo que o timing
-pode não ter sido ideal.
-
-Vou parar de enviar atualizações, mas se em algum momento
-quiserem receber um mapeamento atualizado, é só responder
-este email.
-
-Abraço,
-Tiago
 
 Ref: AT-002-FOX
 Descadastrar: responda "remover".
@@ -614,75 +395,53 @@ Descadastrar: responda "remover".
 
 ### Oportunidades: 56 editais | R$285M | Preço: R$3.000
 
-### Cadência de Emails (4 toques + LinkedIn)
+### Cadência de Emails (2 toques — máx. conversão)
 
-#### Email 1 — Abertura (D+0) — Soft CTA
+#### Touch 1 (D+0) — Pitch Completo
+
 ```
-Assunto A: 56 licitações para a Araujo Abreu
-Assunto B: Araujo Abreu — oportunidades até maio
+Assunto A: 56 licitações para a Araujo Abreu — 18 com prazo em 15 dias
+Assunto B: Araujo Abreu — R$285M em oportunidades abertas
 
 Olá Francisco,
 
-Vi que a Araujo Abreu acumulou mais de R$127 milhões em
-contratos federais — EBSERH, Ministério da Saúde, Ministério
-do Trabalho. O perfil de vocês em engenharia predial e
-instalações para grandes órgãos é um dos mais consistentes
+A Araujo Abreu acumulou mais de R$127 milhões em contratos
+federais — EBSERH, Ministério da Saúde, Ministério do
+Trabalho. Com capital de R$22 milhões e atuação nacional em
+engenharia predial e instalações, é um dos perfis mais robustos
 que já mapeamos.
 
-Neste momento existem 56 editais de engenharia e obras
-abertos no Brasil com perfil compatível, somando mais de
-R$285 milhões em valor estimado. São oportunidades em 14
-estados, com 18 deles com prazo nos próximos 15 dias.
+Nosso algoritmo cruza dados públicos do PNCP e Portal da
+Transparência com o perfil de cada empresa. Rodei uma análise
+para a Araujo Abreu e identifiquei **56 licitações abertas** em
+14 estados. Valor total: R$285 milhões. 18 vencem nos próximos
+15 dias.
 
-Nosso algoritmo de classificação — já validado e operacional
-— consolida fontes oficiais e avalia cada edital contra
-critérios objetivos de viabilidade.
+Três com maior match:
 
-Rodei uma análise para o perfil da Araujo Abreu e o filtro
-identificou **56 licitações abertas com prazo hábil**. Separei
-as 3 com maior match:
-
-**1. Pavimentação de estradas rurais em CBUQ — Cruzeiro do Iguaçu/PR**
-• Órgão: Município de Cruzeiro do Iguaçu
-• Valor estimado: R$8.224.904
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 16/03/2026 (12 dias restantes)
+**1. Pavimentação de estradas rurais — Cruzeiro do Iguaçu/PR**
+• R$8.224.904 | Concorrência Presencial | Convênio SEAB
+• Prazo: 16/03/2026
 • Link: https://pncp.gov.br/app/editais/95589230000144/2026/30
-• **Relevância para a Araujo Abreu:** Obra de pavimentação em
-  CBUQ de 55.440 m² — serviços preliminares, terraplenagem,
-  drenagem, base/sub-base, revestimento e sinalização.
-  Convênio SEAB. Valor na faixa dos contratos que a Araujo
-  Abreu já executou com recursos federais.
 
 **2. Projeto executivo + complementares — Balneário Camboriú/SC**
-• Órgão: Município de Balneário Camboriú
-• Valor estimado: R$859.743
-• Modalidade: Concorrência Eletrônica
-• Prazo para proposta: 30/03/2026 (26 dias restantes)
+• R$859.743 | Concorrência Eletrônica
+• Prazo: 30/03/2026
 • Link: https://pncp.gov.br/app/editais/83102285000107/2026/22
-• **Relevância para a Araujo Abreu:** Serviços técnicos de
-  arquitetura e engenharia — elaboração de projetos executivos
-  e complementares. Perfil de consultoria compatível com as
-  capacidades técnicas da empresa. Prazo confortável.
 
 **3. Construção de 20 unidades habitacionais — Santa Clara d'Oeste/SP**
-• Órgão: Município de Santa Clara d'Oeste
-• Valor estimado: R$2.928.865
-• Modalidade: Concorrência Presencial
-• Prazo para proposta: 08/04/2026 (35 dias restantes)
+• Programa Moradia Digna | R$2.928.865 | Concorrência Presencial
+• Prazo: 08/04/2026
 • Link: https://santaclaradoeste.sp.gov.br/?pag=T0RZPU9EYz1PR009T1RrPU9EWT1PVEE9T1dFPQ==&view=LIST-LICIT&mod
-• **Relevância para a Araujo Abreu:** Programa Moradia Digna
-  do Ministério das Cidades — fonte de recursos federal, mesmo
-  tipo de convênio que a Araujo Abreu já gerencia em hospitais.
-  Inclui instalações hidráulicas e elétricas compatíveis com o
-  CNAE principal da empresa.
 
-As outras 53 incluem obras de infraestrutura, pavimentação,
-habitação popular e serviços de engenharia em 14 estados —
-todas filtradas pelo critério de compatibilidade com o perfil
-e histórico da Araujo Abreu.
+As outras 53 incluem infraestrutura, pavimentação, habitação
+e serviços de engenharia em 14 estados — todas filtradas por
+compatibilidade com o perfil e histórico da Araujo Abreu.
 
-Faz sentido para a Araujo Abreu receber a análise completa?
+Envio o relatório completo com análise de viabilidade das 56
+oportunidades por R$3.000 via PIX.
+
+Faz sentido para a Araujo Abreu?
 
 Abraço,
 Tiago Sasaki
@@ -690,85 +449,30 @@ Engenheiro de Software — CONFENGE
 smartlic.tech
 
 Ref: AT-002-AAB
-Dados de contratações públicas (PNCP, Lei 14.133/2021).
+Dados de contratações públicas (PNCP, Portal da Transparência, Lei 14.133/2021).
 Descadastrar: responda "remover".
 ```
 
-#### Email 2 — Valor + Preço (D+3)
+#### Touch 2 (D+4) — Urgência + Breakup
+
 ```
-Assunto: re: 56 licitações para a Araujo Abreu
-
-Francisco, voltando aqui.
-
-Desde que montamos o algoritmo, já mapeamos mais de R$300 milhões
-em oportunidades de engenharia e construção no Brasil no último
-mês. A maioria dessas oportunidades estava espalhada em portais
-de diferentes estados e modalidades — difícil de consolidar
-manualmente.
-
-Das 56 oportunidades que encontrei para a Araujo Abreu, 18 têm
-prazo de proposta nos próximos 15 dias. Se vocês já participam
-de concorrências em múltiplos estados, isso pode representar
-contratos relevantes que passariam despercebidos.
-
-Envio a lista completa com análise de viabilidade por R$3.000.
-Cada oportunidade vem com avaliação objetiva e link direto do
-edital. Se nenhuma se aplicar ao perfil de vocês, me avise —
-feedback me ajuda a calibrar o filtro.
-
-Abraço,
-Tiago
-smartlic.tech
-
-Ref: AT-002-AAB
-Descadastrar: responda "remover".
-```
-
-#### LinkedIn — Conexão (D+5)
-```
-Francisco, sou o Tiago da CONFENGE. Enviei um email com 56
-oportunidades de licitação em 14 estados compatíveis com o
-perfil da Araujo Abreu. Vi que vocês atuam em engenharia
-predial e instalações — achei que poderia ser útil.
-```
-
-#### Email 3 — Urgência (D+7)
-```
-Assunto: prazo 16/03 — Araujo Abreu
+Assunto: 18 editais com prazo próximo — Araujo Abreu
 
 Francisco,
 
-18 dos editais que identifiquei para a Araujo Abreu têm prazo
-de proposta nos próximos 10 dias. São oportunidades em 8
-estados diferentes. Se vocês participam de concorrências em
-múltiplas regiões, esse é o tipo de pipeline que não aparece
-duas vezes.
+18 dos 56 editais que identifiquei para a Araujo Abreu vencem
+nos próximos dias. São oportunidades em 8 estados — incluindo
+pavimentação de R$8,2M no PR (prazo 16/03) e projetos em SC
+(prazo 30/03).
 
-Posso enviar a lista completa ainda hoje. Quer que eu mande?
+Depois do prazo, essas janelas não reabrem.
+
+Se não fizer sentido agora, sem problema — fazemos novas
+varreduras regularmente. Se quiser receber um mapeamento
+atualizado no futuro, é só responder este email.
 
 Tiago
 smartlic.tech
-
-Ref: AT-002-AAB
-Descadastrar: responda "remover".
-```
-
-#### Email 4 — Breakup (D+14)
-```
-Assunto: encerro por aqui, Francisco
-
-Francisco,
-
-Compartilhei 56 oportunidades de licitação compatíveis com
-o perfil da Araujo Abreu Engenharia nas últimas semanas.
-Entendo que o timing pode não ter sido ideal.
-
-Vou parar de enviar atualizações, mas se em algum momento
-quiserem receber um mapeamento atualizado, é só responder
-este email.
-
-Abraço,
-Tiago
 
 Ref: AT-002-AAB
 Descadastrar: responda "remover".
