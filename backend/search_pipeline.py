@@ -565,6 +565,26 @@ class SearchPipeline:
             root_span.set_attribute("search.total_raw", len(ctx.licitacoes_raw))
             root_span.set_attribute("search.total_filtered", len(ctx.licitacoes_filtradas))
 
+    @staticmethod
+    def _validate_stage_outputs(stage_name: str, ctx: SearchContext) -> None:
+        """CRIT-050 AC10-AC12: Validate outputs are correctly typed after each stage.
+
+        Ensures pipeline contracts are met so downstream stages never get None
+        where a list or dict is expected.
+        """
+        if stage_name == "pipeline.fetch":
+            # AC12: data_sources must be list (can be empty) after Stage 3
+            if ctx.data_sources is None:
+                ctx.data_sources = []
+            if not isinstance(ctx.licitacoes_raw, list):
+                ctx.licitacoes_raw = []
+        elif stage_name == "pipeline.filter":
+            # AC11: filter_stats must be dict (never None) after Stage 4
+            if ctx.filter_stats is None:
+                ctx.filter_stats = {}
+            if not isinstance(ctx.licitacoes_filtradas, list):
+                ctx.licitacoes_filtradas = []
+
     async def _traced_stage(self, ctx: SearchContext, span_name: str, stage_fn):
         """AC11-AC12: Run a pipeline stage wrapped in a child span with timing and counts."""
         stage_start = sync_time_module.time()
@@ -573,6 +593,8 @@ class SearchPipeline:
         with optional_span(_tracer, span_name) as span:
             try:
                 result = await stage_fn(ctx)
+                # CRIT-050 AC10: Validate stage outputs after each stage
+                self._validate_stage_outputs(span_name, ctx)
                 duration_ms = int((sync_time_module.time() - stage_start) * 1000)
                 span.set_attribute("duration_ms", duration_ms)
                 span.set_attribute("status", "ok")
@@ -721,17 +743,19 @@ class SearchPipeline:
                 if not ctx.quota_info.allowed:
                     raise HTTPException(status_code=403, detail=ctx.quota_info.error_message)
 
+                # CRIT-050 AC7: Safe .get() access on capabilities dict
+                _max_monthly = ctx.quota_info.capabilities.get("max_requests_per_month", 1000)
                 allowed, new_quota_used, quota_remaining_after = await asyncio.to_thread(
                     quota.check_and_increment_quota_atomic,
                     ctx.user["id"],
-                    ctx.quota_info.capabilities["max_requests_per_month"]
+                    _max_monthly,
                 )
 
                 if not allowed:
                     raise HTTPException(
                         status_code=429,
                         detail=(
-                            f"Limite de {ctx.quota_info.capabilities['max_requests_per_month']} "
+                            f"Limite de {_max_monthly} "
                             f"buscas mensais atingido. Renova em "
                             f"{ctx.quota_info.quota_reset_date.strftime('%d/%m/%Y')}."
                         )
@@ -1963,7 +1987,7 @@ class SearchPipeline:
             )
             ctx.hidden_by_min_match = 0
 
-        # E-01 AC1: Consolidated filter stats in 1 JSON log (was 11 separate lines)
+        # E-01 AC1 + CRIT-050 AC14: Consolidated filter stats covering ALL reason codes
         stats = ctx.filter_stats
         logger.info(json.dumps({
             "event": "filter_complete",
@@ -1975,9 +1999,17 @@ class SearchPipeline:
                 "esfera": stats.get("rejeitadas_esfera", 0),
                 "modalidade": stats.get("rejeitadas_modalidade", 0),
                 "municipio": stats.get("rejeitadas_municipio", 0),
+                "orgao": stats.get("rejeitadas_orgao", 0),
                 "valor": stats.get("rejeitadas_valor", 0),
+                "valor_alto": stats.get("rejeitadas_valor_alto", 0),
                 "keyword": stats.get("rejeitadas_keyword", 0),
                 "min_match": stats.get("rejeitadas_min_match", 0),
+                "prazo": stats.get("rejeitadas_prazo", 0),
+                "prazo_aberto": stats.get("rejeitadas_prazo_aberto", 0),
+                "baixa_densidade": stats.get("rejeitadas_baixa_densidade", 0),
+                "red_flags": stats.get("rejeitadas_red_flags", 0),
+                "red_flags_setorial": stats.get("rejeitadas_red_flags_setorial", 0),
+                "llm_arbiter": stats.get("rejeitadas_llm_arbiter", 0),
                 "outros": stats.get("rejeitadas_outros", 0),
             },
         }) if stats else f"Filtering complete: {len(ctx.licitacoes_filtradas)}/{len(ctx.licitacoes_raw)} bids passed")

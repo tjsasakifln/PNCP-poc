@@ -2042,6 +2042,39 @@
           "title": "CreateUserRequest",
           "type": "object"
         },
+        "DailyVolumeResponse": {
+          "properties": {
+            "avg_bids_per_day": {
+              "title": "Avg Bids Per Day",
+              "type": "number"
+            },
+            "days_with_data": {
+              "title": "Days With Data",
+              "type": "integer"
+            },
+            "display_value": {
+              "title": "Display Value",
+              "type": "string"
+            },
+            "total_bids_30d": {
+              "title": "Total Bids 30D",
+              "type": "integer"
+            },
+            "total_sessions_30d": {
+              "title": "Total Sessions 30D",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "avg_bids_per_day",
+            "total_bids_30d",
+            "total_sessions_30d",
+            "days_with_data",
+            "display_value"
+          ],
+          "title": "DailyVolumeResponse",
+          "type": "object"
+        },
         "DataSourceStatus": {
           "description": "Status information for a single data source in multi-source fetching.\n\nUsed to provide transparency about which sources contributed to results\nand which failed/timed out during the search operation.",
           "properties": {
@@ -9224,6 +9257,52 @@
           ]
         }
       },
+      "/metrics/daily-volume": {
+        "get": {
+          "description": "STORY-358 AC3: Return average bids processed per day.\n\nPublic endpoint (no authentication required). Used by InstitutionalSidebar\nto display a verified bids/day count instead of a hardcoded number.\n\nQueries search_sessions for the specified window and computes daily average\nfrom total_raw (bids fetched before filtering).",
+          "operationId": "get_daily_volume_metrics_daily_volume_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "days",
+              "required": false,
+              "schema": {
+                "default": 30,
+                "maximum": 90,
+                "minimum": 1,
+                "title": "Days",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DailyVolumeResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Daily Volume",
+          "tags": [
+            "metrics"
+          ]
+        }
+      },
       "/metrics/discard-rate": {
         "get": {
           "description": "Return the moving-average filter discard rate.\n\nPublic endpoint (no authentication required). Used by the landing page\nto display a verified discard rate instead of a hardcoded number.",
@@ -14266,6 +14345,52 @@
           "summary": "Export User Data",
           "tags": [
             "user"
+          ]
+        }
+      },
+      "/v1/metrics/daily-volume": {
+        "get": {
+          "description": "STORY-358 AC3: Return average bids processed per day.\n\nPublic endpoint (no authentication required). Used by InstitutionalSidebar\nto display a verified bids/day count instead of a hardcoded number.\n\nQueries search_sessions for the specified window and computes daily average\nfrom total_raw (bids fetched before filtering).",
+          "operationId": "get_daily_volume_v1_metrics_daily_volume_get",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "days",
+              "required": false,
+              "schema": {
+                "default": 30,
+                "maximum": 90,
+                "minimum": 1,
+                "title": "Days",
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DailyVolumeResponse"
+                  }
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "summary": "Get Daily Volume",
+          "tags": [
+            "metrics"
           ]
         }
       },

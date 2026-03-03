@@ -78,6 +78,20 @@ _SSE_POLL_INTERVAL = 1.0   # seconds between non-blocking polls
 _SSE_POLLS_PER_HEARTBEAT = 15  # heartbeat every ~15s (15 polls * 1s)
 
 
+def get_correlation_id() -> str | None:
+    """CRIT-050 AC9: Extract correlation ID from middleware ContextVar.
+
+    Eliminates repeated try/except + import pattern across error handlers.
+    Returns None if unavailable (middleware not loaded, outside request context).
+    """
+    try:
+        from middleware import correlation_id_var
+        corr_id = correlation_id_var.get("-")
+        return None if corr_id == "-" else corr_id
+    except Exception:
+        return None
+
+
 def _build_error_detail(
     message: str,
     error_code: SearchErrorCode,
@@ -1284,10 +1298,12 @@ async def buscar_licitacoes(
                             await remove_tracker(request.search_id)
                         raise HTTPException(status_code=403, detail=_quota_info.error_message)
 
+                    # CRIT-050 AC7: Safe .get() access on capabilities dict
+                    _max_monthly = _quota_info.capabilities.get("max_requests_per_month", 1000)
                     _allowed, _new_used, _remaining = await asyncio.to_thread(
                         _quota.check_and_increment_quota_atomic,
                         user["id"],
-                        _quota_info.capabilities["max_requests_per_month"],
+                        _max_monthly,
                     )
                     if not _allowed:
                         if tracker:
@@ -1296,7 +1312,7 @@ async def buscar_licitacoes(
                         raise HTTPException(
                             status_code=403,
                             detail=(
-                                f"Limite de {_quota_info.capabilities['max_requests_per_month']} "
+                                f"Limite de {_max_monthly} "
                                 f"buscas mensais atingido."
                             ),
                         )
@@ -1520,13 +1536,7 @@ async def buscar_licitacoes(
             await remove_tracker(request.search_id)
         logger.warning(f"PNCP rate limit exceeded: {type(e).__name__}: {e}")
         retry_after = getattr(e, "retry_after", 60)
-        # CRIT-009 AC3: Structured error response
-        corr_id = getattr(getattr(http_response, '_request', None), 'state', SimpleNamespace()).correlation_id if hasattr(http_response, '_request') else None
-        try:
-            from middleware import correlation_id_var
-            corr_id = correlation_id_var.get("-")
-        except Exception as e:
-            logger.debug(f"Correlation ID unavailable: {e}")
+        # CRIT-009 AC3 + CRIT-050 AC9: Structured error response
         raise HTTPException(
             status_code=503,
             detail=_build_error_detail(
@@ -1534,7 +1544,7 @@ async def buscar_licitacoes(
                 f"Aguarde {retry_after} segundos e tente novamente.",
                 SearchErrorCode.RATE_LIMIT,
                 search_id=request.search_id,
-                correlation_id=corr_id if corr_id != "-" else None,
+                correlation_id=get_correlation_id(),
             ),
             headers={"Retry-After": str(retry_after)},
         )
@@ -1561,15 +1571,7 @@ async def buscar_licitacoes(
             await tracker.emit_error(f"PNCP API error: {e}")
             await remove_tracker(request.search_id)
         logger.error(f"PNCP API error: {e}", exc_info=True)
-        # CRIT-009 AC3: Structured error response
-        corr_id = None
-        try:
-            from middleware import correlation_id_var
-            corr_id = correlation_id_var.get("-")
-            if corr_id == "-":
-                corr_id = None
-        except Exception as e:
-            logger.debug(f"Correlation ID unavailable: {e}")
+        # CRIT-009 AC3 + CRIT-050 AC9: Structured error response
         raise HTTPException(
             status_code=502,
             detail=_build_error_detail(
@@ -1578,7 +1580,7 @@ async def buscar_licitacoes(
                 "de estados selecionados.",
                 SearchErrorCode.SOURCE_UNAVAILABLE,
                 search_id=request.search_id,
-                correlation_id=corr_id,
+                correlation_id=get_correlation_id(),
             ),
         )
 
@@ -1607,16 +1609,8 @@ async def buscar_licitacoes(
         if tracker:
             await tracker.emit_error("Erro no processamento")
             await remove_tracker(request.search_id)
-        # CRIT-009 AC3: Enrich HTTPException with structured error if not already structured
+        # CRIT-009 AC3 + CRIT-050 AC9: Enrich HTTPException with structured error if not already structured
         if isinstance(exc.detail, str):
-            corr_id = None
-            try:
-                from middleware import correlation_id_var
-                corr_id = correlation_id_var.get("-")
-                if corr_id == "-":
-                    corr_id = None
-            except Exception as e:
-                logger.debug(f"Correlation ID unavailable: {e}")
             # Map HTTP status to error code
             if exc.status_code == 504:
                 err_code = SearchErrorCode.TIMEOUT
@@ -1632,7 +1626,7 @@ async def buscar_licitacoes(
                 exc.detail,
                 err_code,
                 search_id=request.search_id,
-                correlation_id=corr_id,
+                correlation_id=get_correlation_id(),
             )
         raise
 
@@ -1709,15 +1703,7 @@ async def buscar_licitacoes(
             await tracker.emit_error("Erro interno do servidor")
             await remove_tracker(request.search_id)
         logger.exception("Internal server error during procurement search")
-        # CRIT-009 AC3: Structured error response — never expose stack traces
-        corr_id = None
-        try:
-            from middleware import correlation_id_var
-            corr_id = correlation_id_var.get("-")
-            if corr_id == "-":
-                corr_id = None
-        except Exception as e:
-            logger.debug(f"Correlation ID unavailable: {e}")
+        # CRIT-009 AC3 + CRIT-050 AC9: Structured error response — never expose stack traces
         # Determine error_code based on exception type
         if isinstance(e, asyncio.TimeoutError):
             err_code = SearchErrorCode.TIMEOUT
@@ -1733,7 +1719,7 @@ async def buscar_licitacoes(
                 err_msg,
                 err_code,
                 search_id=request.search_id,
-                correlation_id=corr_id,
+                correlation_id=get_correlation_id(),
             ),
         )
 
