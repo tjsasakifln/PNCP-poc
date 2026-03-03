@@ -205,6 +205,45 @@ class TestWorkerSettings:
 
 
 # ============================================================================
+# CRIT-051 AC6: ARQ worker log config
+# ============================================================================
+
+class TestArqLogConfig:
+    """CRIT-051 AC6: arq_log_config uses ext://sys.stdout."""
+
+    def test_arq_log_config_exists(self):
+        from job_queue import arq_log_config
+        assert isinstance(arq_log_config, dict)
+
+    def test_handler_stream_is_stdout(self):
+        """AC6: The stdout handler must use ext://sys.stdout, not stderr."""
+        from job_queue import arq_log_config
+        handler = arq_log_config["handlers"]["stdout"]
+        assert handler["stream"] == "ext://sys.stdout"
+
+    def test_handler_class_is_stream_handler(self):
+        from job_queue import arq_log_config
+        handler = arq_log_config["handlers"]["stdout"]
+        assert handler["class"] == "logging.StreamHandler"
+
+    def test_root_logger_uses_stdout_handler(self):
+        from job_queue import arq_log_config
+        root = arq_log_config["root"]
+        assert "stdout" in root["handlers"]
+
+    def test_log_config_is_valid_dict_config(self):
+        """Verify the dict can be applied via logging.config.dictConfig without error."""
+        import logging.config
+        from job_queue import arq_log_config
+        # Should not raise — validates the dict is structurally valid
+        logging.config.dictConfig(arq_log_config)
+
+    def test_does_not_disable_existing_loggers(self):
+        from job_queue import arq_log_config
+        assert arq_log_config.get("disable_existing_loggers") is False
+
+
+# ============================================================================
 # AC6: Redis settings parsing
 # ============================================================================
 

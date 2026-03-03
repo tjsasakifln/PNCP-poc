@@ -73,7 +73,10 @@ case "$PROCESS_TYPE" in
     _WORKER_MAX_RESTARTS="${WORKER_MAX_RESTARTS:-10}"
     _restart_count=0
     while true; do
-      arq job_queue.WorkerSettings
+      # CRIT-051 AC3: --custom-log-dict redirects ARQ bootstrap logs to stdout.
+      # Without this, Python's default StreamHandler writes to stderr, which
+      # Railway classifies as error severity regardless of actual log level.
+      arq job_queue.WorkerSettings --custom-log-dict job_queue.arq_log_config
       _exit_code=$?
       if [ $_exit_code -eq 0 ]; then
         echo "ARQ worker exited cleanly (code 0). Stopping."

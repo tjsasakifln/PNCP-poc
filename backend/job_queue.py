@@ -26,6 +26,37 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# CRIT-051 AC2: ARQ worker log config — redirect stderr → stdout
+# ---------------------------------------------------------------------------
+# Python's logging.StreamHandler() defaults to sys.stderr. Railway classifies
+# ALL stderr output as severity=error (red), causing noise. This dict is
+# applied by ARQ CLI via --custom-log-dict BEFORE on_startup runs, ensuring
+# even bootstrap logs go to stdout. The on_startup callback later calls
+# setup_logging() for the full production config (JSON format, request IDs).
+# ---------------------------------------------------------------------------
+arq_log_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "arq_fmt": {
+            "format": "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "arq_fmt",
+        },
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["stdout"],
+    },
+}
+
 # Singleton pool
 _arq_pool = None
 _pool_lock = asyncio.Lock()
