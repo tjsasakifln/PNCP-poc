@@ -2294,7 +2294,7 @@ class SearchPipeline:
                 filter_stats=fs,
                 termos_utilizados=ctx.custom_terms if ctx.custom_terms else None,
                 stopwords_removidas=ctx.stopwords_removed if ctx.stopwords_removed else None,
-                upgrade_message="Exportar Excel disponível no plano Máquina (R$ 597/mês)." if ctx.quota_info and not (ctx.quota_info.capabilities or {}).get("allow_excel", False) else None,
+                upgrade_message="Assine o SmartLic Pro para exportar resultados em Excel." if ctx.quota_info and not (ctx.quota_info.capabilities or {}).get("allow_excel", False) else None,
                 sources_used=[ds.source for ds in ctx.data_sources if ds.records > 0] if ctx.data_sources else None,
                 source_stats=ctx.source_stats_data,
                 hidden_by_min_match=ctx.hidden_by_min_match if ctx.custom_terms else None,
@@ -2396,7 +2396,7 @@ class SearchPipeline:
                     ctx.excel_status = "failed"
             else:
                 ctx.excel_status = "skipped"
-                ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
+                ctx.upgrade_message = "Assine o SmartLic Pro para exportar resultados em Excel."
 
             # STORY-259 AC3: Dispatch bid analysis job (parallel to LLM + Excel)
             from config import get_feature_flag as _gff
@@ -2503,7 +2503,7 @@ class SearchPipeline:
             else:
                 logger.debug("Excel generation skipped (not allowed for user's plan)")
                 ctx.excel_status = "skipped"
-                ctx.upgrade_message = "Exportar Excel disponível no plano Máquina (R$ 597/mês)."
+                ctx.upgrade_message = "Assine o SmartLic Pro para exportar resultados em Excel."
 
         # Convert to LicitacaoItems
         ctx.licitacao_items = _convert_to_licitacao_items(ctx.licitacoes_filtradas)
