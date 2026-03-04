@@ -95,10 +95,7 @@ export function UserMenu({ statusSlot, onRestartTour }: UserMenuProps) {
             className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Histórico
           </Link>
-          <Link href="/mensagens" onClick={() => setOpen(false)}
-            className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
-            Mensagens
-          </Link>
+          {/* SHIP-002 AC9: mensagens hidden (feature incomplete) */}
           <Link href="/pipeline" onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-[var(--ink)] hover:bg-[var(--surface-1)]">
             Pipeline

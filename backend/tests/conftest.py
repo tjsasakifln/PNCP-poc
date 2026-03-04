@@ -154,6 +154,20 @@ def setup_test_env(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _enable_feature_gated_routes(monkeypatch):
+    """SHIP-002: Enable feature-gated routes in tests.
+
+    Production defaults these to False (features incomplete), but existing tests
+    exercise these routes and expect them to work normally.
+    """
+    import config
+    monkeypatch.setattr(config, "ORGANIZATIONS_ENABLED", True)
+    monkeypatch.setattr(config, "MESSAGES_ENABLED", True)
+    monkeypatch.setattr(config, "ALERTS_SYSTEM_ENABLED", True)
+    monkeypatch.setattr(config, "PARTNERS_ENABLED", True)
+
+
+@pytest.fixture(autouse=True)
 def _force_sync_search(monkeypatch):
     """STORY-292: Default tests to sync search mode.
 

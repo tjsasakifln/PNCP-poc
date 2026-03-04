@@ -3161,6 +3161,18 @@
               "description": "Whether the bid's estimated value was reported ('estimated') or missing ('missing')",
               "title": "Value Source"
             },
+            "cnpj_orgao": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "CNPJ of the issuing government agency. UX-400 AC6.",
+              "title": "Cnpj Orgao"
+            },
             "confidence": {
               "anyOf": [
                 {
@@ -3241,9 +3253,16 @@
               "title": "Dias Restantes"
             },
             "link": {
-              "description": "Direct link to bid source (priority: linkSistemaOrigem > constructed PNCP URL)",
-              "title": "Link",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Direct link to bid source (priority: linkSistemaOrigem > constructed PNCP URL). Null when no link available (UX-400 AC2).",
+              "title": "Link"
             },
             "llm_evidence": {
               "anyOf": [
@@ -3298,6 +3317,18 @@
               ],
               "description": "Municipality name",
               "title": "Municipio"
+            },
+            "numero_compra": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Procurement number (e.g., edital number). UX-400 AC5.",
+              "title": "Numero Compra"
             },
             "objeto": {
               "description": "Procurement object description",
@@ -3422,8 +3453,7 @@
             "objeto",
             "orgao",
             "uf",
-            "valor",
-            "link"
+            "valor"
           ],
           "title": "LicitacaoItem",
           "type": "object"
@@ -4690,7 +4720,7 @@
           "type": "object"
         },
         "SearchStatusResponse": {
-          "description": "GTM-STAB-009 AC3: Enriched status response for /v1/search/{id}/status.\n\nPopulated from in-memory progress tracker + state machine (lightweight, <50ms).\nNo database queries \u2014 reads only from in-memory state.",
+          "description": "GTM-STAB-009 AC3: Enriched status response for /v1/search/{id}/status.\n\nPopulated from in-memory progress tracker + state machine (lightweight, <50ms).\nNo database queries \u2014 reads only from in-memory state.\n\nSTORY-364 AC1: Includes excel_url and excel_status for polling fallback.",
           "properties": {
             "created_at": {
               "anyOf": [
@@ -4709,6 +4739,30 @@
               "description": "Seconds since search started",
               "title": "Elapsed S",
               "type": "number"
+            },
+            "excel_status": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Excel generation status: processing, ready, failed, skipped",
+              "title": "Excel Status"
+            },
+            "excel_url": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Signed URL for Excel download (set when ready)",
+              "title": "Excel Url"
             },
             "progress_pct": {
               "default": 0,
@@ -5853,6 +5907,13 @@
         },
         "ValidationError": {
           "properties": {
+            "ctx": {
+              "title": "Context",
+              "type": "object"
+            },
+            "input": {
+              "title": "Input"
+            },
             "loc": {
               "items": {
                 "anyOf": [
@@ -15552,6 +15613,52 @@
           ]
         }
       },
+      "/v1/search/{search_id}/regenerate-excel": {
+        "post": {
+          "description": "STORY-364 AC7-AC8: Regenerate Excel from stored results without re-running search.\n\n- 202: Excel generation job enqueued\n- 404: Results not found or expired",
+          "operationId": "regenerate_excel_endpoint_v1_search__search_id__regenerate_excel_post",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "search_id",
+              "required": true,
+              "schema": {
+                "title": "Search Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Regenerate Excel Endpoint",
+          "tags": [
+            "search"
+          ]
+        }
+      },
       "/v1/search/{search_id}/results": {
         "get": {
           "description": "GTM-STAB-009 AC4: Return results of async search.\n\n- 200 with BuscaResponse when results are ready\n- 202 with status when still processing\n- 404 when search_id not found or expired",
@@ -16115,6 +16222,52 @@
             }
           ],
           "summary": "Cancel Search",
+          "tags": [
+            "search"
+          ]
+        }
+      },
+      "/v1/v1/search/{search_id}/regenerate-excel": {
+        "post": {
+          "description": "STORY-364 AC7-AC8: Regenerate Excel from stored results without re-running search.\n\n- 202: Excel generation job enqueued\n- 404: Results not found or expired",
+          "operationId": "regenerate_excel_endpoint_v1_v1_search__search_id__regenerate_excel_post",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "search_id",
+              "required": true,
+              "schema": {
+                "title": "Search Id",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              },
+              "description": "Successful Response"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              },
+              "description": "Validation Error"
+            }
+          },
+          "security": [
+            {
+              "HTTPBearer": []
+            }
+          ],
+          "summary": "Regenerate Excel Endpoint",
           "tags": [
             "search"
           ]
