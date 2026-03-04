@@ -601,7 +601,7 @@ export function useSearchSSE({
           fetch('/api/metrics/sse-fallback', { method: 'POST' }).catch(() => {});
         }
         // STORY-367 AC1: Start polling fallback
-        startPollingFallback(currentSearchId, authToken);
+        if (currentSearchId) startPollingFallback(currentSearchId, authToken);
         onErrorRef.current?.();
         return;
       }
