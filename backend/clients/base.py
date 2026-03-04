@@ -133,8 +133,8 @@ class UnifiedProcurement:
     objeto: str = ""
     """Procurement object description."""
 
-    valor_estimado: float = 0.0
-    """Estimated total value in BRL. Use 0.0 if unknown."""
+    valor_estimado: Optional[float] = None
+    """Estimated total value in BRL. None if unknown (e.g., PCP v2)."""
 
     orgao: str = ""
     """Name of the contracting government agency."""
@@ -201,9 +201,9 @@ class UnifiedProcurement:
         # Normalize UF to uppercase
         self.uf = self.uf.upper().strip() if self.uf else ""
 
-        # Ensure valor_estimado is float
-        if self.valor_estimado is None:
-            self.valor_estimado = 0.0
+        # Ensure valor_estimado is float or None (UX-401: None = value not available)
+        if self.valor_estimado is not None:
+            self.valor_estimado = float(self.valor_estimado)
 
         # Generate dedup_key if not provided
         if not self.dedup_key:
@@ -223,7 +223,7 @@ class UnifiedProcurement:
         # instead to avoid false collisions between same-organ bids
         objeto_normalized = " ".join(self.objeto.lower().split()) if self.objeto else ""
         objeto_hash = hashlib.md5(objeto_normalized.encode()).hexdigest()[:12]
-        if self.valor_estimado > 0:
+        if self.valor_estimado and self.valor_estimado > 0:
             discriminator = str(int(self.valor_estimado))
         elif self.data_publicacao:
             discriminator = self.data_publicacao.strftime("%Y%m%d")

@@ -815,7 +815,7 @@ class LicitacaoItem(BaseModel):
     orgao: str = Field(..., description="Government agency name")
     uf: str = Field(..., description="State code (e.g., 'SP')")
     municipio: Optional[str] = Field(default=None, description="Municipality name")
-    valor: float = Field(..., ge=0, description="Estimated total value in BRL")
+    valor: Optional[float] = Field(default=None, ge=0, description="Estimated total value in BRL. Null when source does not provide value data (e.g., PCP v2).")
     modalidade: Optional[str] = Field(default=None, description="Procurement modality")
     data_publicacao: Optional[str] = Field(default=None, description="Publication date")
     data_abertura: Optional[str] = Field(default=None, description="Proposal opening date")

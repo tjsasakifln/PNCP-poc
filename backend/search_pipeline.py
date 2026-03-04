@@ -283,7 +283,7 @@ def _convert_to_licitacao_items(licitacoes: list[dict]) -> list[LicitacaoItem]:
                 orgao=lic.get("nomeOrgao", ""),
                 uf=lic.get("uf", ""),
                 municipio=lic.get("municipio"),
-                valor=lic.get("valorTotalEstimado") or 0.0,
+                valor=lic.get("valorTotalEstimado") or None,
                 modalidade=lic.get("modalidadeNome"),
                 data_publicacao=lic.get("dataPublicacaoPncp", "")[:10] if lic.get("dataPublicacaoPncp") else None,
                 data_abertura=lic.get("dataAberturaProposta", "")[:10] if lic.get("dataAberturaProposta") else None,

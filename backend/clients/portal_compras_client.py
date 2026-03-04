@@ -482,7 +482,7 @@ class PortalComprasAdapter(SourceAdapter):
         - dataHoraInicioPropostas → data_abertura
         - dataHoraFinalPropostas → data_encerramento
         - numero → numero_edital
-        - Value: NOT available in v2 listing → 0.0
+        - Value: NOT available in v2 listing → None
         """
         try:
             # Extract and prefix source ID
@@ -494,8 +494,8 @@ class PortalComprasAdapter(SourceAdapter):
             # Object description from resumo
             objeto = raw_record.get("resumo") or ""
 
-            # Value: v2 listing does not include value data
-            valor = 0.0
+            # Value: v2 listing does not include value data (UX-401 AC1)
+            valor = None
 
             # Extract buyer/agency info from unidadeCompradora
             unidade = raw_record.get("unidadeCompradora") or {}

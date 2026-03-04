@@ -2608,9 +2608,9 @@ export interface components {
             urgencia?: string | null;
             /**
              * Valor
-             * @description Estimated total value in BRL
+             * @description Estimated total value in BRL. Null when source does not provide value data (e.g., PCP v2).
              */
-            valor: number;
+            valor?: number | null;
         };
         /**
          * MessageResponse

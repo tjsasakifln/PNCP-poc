@@ -38,9 +38,11 @@ export interface SanctionsSummary {
 }
 
 /** Individual bid item for display in search results */
-export type LicitacaoItem = Omit<components["schemas"]["LicitacaoItem"], "link"> & {
+export type LicitacaoItem = Omit<components["schemas"]["LicitacaoItem"], "link" | "valor"> & {
   /** UX-400 AC2: Link may be null when no URL is available */
   link: string | null;
+  /** UX-401 AC3: Valor may be null when source doesn't provide value data (e.g., PCP v2) */
+  valor: number | null;
   /** UX-400 AC5: Procurement number (edital number or codigoCompra) */
   numero_compra?: string | null;
   /** UX-400 AC6: CNPJ of the issuing government agency */

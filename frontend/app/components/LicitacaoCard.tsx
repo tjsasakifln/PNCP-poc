@@ -5,6 +5,7 @@ import type { LicitacaoItem, SanctionsSummary } from "../types";
 import { StatusBadge, parseStatus, type LicitacaoStatus } from "./StatusBadge";
 import { CountdownStatic, daysUntil } from "./Countdown";
 import { differenceInDays, differenceInHours, isPast, parseISO, format } from "date-fns";
+import { formatCurrencyBR } from "../../lib/format-currency";
 
 /**
  * LicitacaoCard Component
@@ -320,13 +321,12 @@ function InfoTooltip({ content, children }: { content: string | React.ReactNode;
 }
 
 // Utility functions
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+/** UX-401 AC3: Display "Valor não informado" for null/undefined/0, otherwise use formatCurrencyBR */
+function displayValor(value: number | null | undefined): { text: string; isUnavailable: boolean } {
+  if (value === null || value === undefined || value === 0) {
+    return { text: "Valor não informado", isUnavailable: true };
+  }
+  return { text: formatCurrencyBR(value), isUnavailable: false };
 }
 
 function formatDate(dateStr: string | null): string {
@@ -438,7 +438,7 @@ export function LicitacaoCard({
       try {
         await navigator.share({
           title: `Licitação: ${truncateText(licitacao.objeto, 50)}`,
-          text: `${licitacao.orgao} - ${formatCurrency(licitacao.valor)}`,
+          text: `${licitacao.orgao} - ${displayValor(licitacao.valor).text}`,
           url: licitacao.link || undefined,
         });
       } catch (err) {
@@ -637,11 +637,22 @@ export function LicitacaoCard({
           )}
         </div>
 
-        {/* Value - Prominent Display */}
+        {/* Value - Prominent Display (UX-401 AC3) */}
         <div className="pt-2">
-          <span className="text-2xl font-bold font-data tabular-nums text-brand-navy">
-            {formatCurrency(licitacao.valor)}
-          </span>
+          {(() => {
+            const { text, isUnavailable } = displayValor(licitacao.valor);
+            return isUnavailable ? (
+              <InfoTooltip content="Fonte PCP v2 não disponibiliza valor estimado">
+                <span className="text-sm text-ink-muted" data-testid="valor-nao-informado">
+                  {text}
+                </span>
+              </InfoTooltip>
+            ) : (
+              <span className="text-2xl font-bold font-data tabular-nums text-brand-navy" data-testid="valor-display">
+                {text}
+              </span>
+            );
+          })()}
         </div>
 
         {/* Matched Keywords Tags */}

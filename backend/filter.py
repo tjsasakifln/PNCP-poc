@@ -1492,25 +1492,32 @@ def filtrar_por_valor(
     resultado: List[dict] = []
     for lic in licitacoes:
         # Tenta diferentes campos que podem conter o valor
-        valor = (
+        valor_raw = (
             lic.get("valorTotalEstimado")
             or lic.get("valorEstimado")
             or lic.get("valor")
-            or 0
         )
 
+        # UX-401: Bids with no value data (None/0) pass through value filters
+        # instead of being rejected — the value is simply unavailable, not zero
+        if valor_raw is None or valor_raw == 0:
+            resultado.append(lic)
+            continue
+
         # Converte string para float se necessário (formato brasileiro)
-        if isinstance(valor, str):
+        if isinstance(valor_raw, str):
             try:
                 # Remove pontos de milhar e troca vírgula por ponto
-                valor_limpo = valor.replace(".", "").replace(",", ".")
+                valor_limpo = valor_raw.replace(".", "").replace(",", ".")
                 valor = float(valor_limpo)
             except ValueError:
-                valor = 0.0
-        elif isinstance(valor, (int, float)):
-            valor = float(valor)
+                resultado.append(lic)
+                continue
+        elif isinstance(valor_raw, (int, float)):
+            valor = float(valor_raw)
         else:
-            valor = 0.0
+            resultado.append(lic)
+            continue
 
         # Aplica filtros de valor
         if valor_min is not None and valor < valor_min:

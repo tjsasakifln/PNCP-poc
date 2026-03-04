@@ -386,5 +386,6 @@ def assess_batch(
         bid["_viability_level"] = assessment.viability_level
         bid["_viability_factors"] = assessment.factors.model_dump()
         # CRIT-FLT-003 AC2: Mark value source for frontend display
-        valor = float(bid.get("valorTotalEstimado") or bid.get("valorEstimado") or 0)
-        bid["_value_source"] = "missing" if valor <= 0 else "estimated"
+        # UX-401: None means value unavailable from source (e.g., PCP v2)
+        raw_val = bid.get("valorTotalEstimado") or bid.get("valorEstimado")
+        bid["_value_source"] = "missing" if raw_val is None or raw_val <= 0 else "estimated"
