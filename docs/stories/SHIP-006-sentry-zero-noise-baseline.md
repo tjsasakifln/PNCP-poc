@@ -1,10 +1,11 @@
 # SHIP-006: Sentry Zero-Noise Baseline
 
-**Status:** 🔴 Pendente
+**Status:** 🔴 Bloqueado
 **Prioridade:** P1 (pós-deploy)
 **Sprint:** SHIP (Go-to-Market)
 **Criado:** 2026-03-03
 **Depende de:** SHIP-001, SHIP-002, SHIP-003
+**Tentativa de validação:** 2026-03-04
 
 ## Contexto
 
@@ -62,8 +63,18 @@ erros reais de usuários pagantes — qualquer novo issue após baseline será u
 - [ ] AC12: Screenshot da tela "0 issues" salvo como evidência
 - [ ] AC13: Qualquer novo issue pós-baseline é tratado como bug real (não noise)
 
+## Blocker
+
+**Cannot proceed:** This story requires Sentry Dashboard access via auth token. The `sentry-cli` is installed but no `SENTRY_AUTH_TOKEN` or org/project config is available locally. Additionally, this story explicitly depends on SHIP-001/002/003 being deployed first.
+
+**To unblock:**
+1. Set `SENTRY_AUTH_TOKEN` in `.env` or configure `.sentryclirc`
+2. Confirm SHIP-001/002/003 have been deployed
+3. Wait 30 minutes post-deploy before validating
+
 ## Notas
 
 - PNCP errors (F) são comportamento esperado da API externa — archive, não resolve
 - Se algum issue da Cat A/B/C persistir, criar novo CRIT story para investigar
 - CB issues (D) podem demorar para zerar se Supabase tiver instabilidade — OK arquivar
+- Frontend Sentry config has `beforeSend` filter for SSE pipe errors (GTM-STAB-006 AC6)
