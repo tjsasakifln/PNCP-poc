@@ -8,7 +8,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RefreshBanner from '../../app/buscar/components/RefreshBanner';
-import type { RefreshAvailableInfo } from '../../hooks/useSearchProgress';
+import type { RefreshAvailableInfo } from '../../hooks/useSearchSSE';
 
 // ---------------------------------------------------------------------------
 // AC17: RefreshBanner component

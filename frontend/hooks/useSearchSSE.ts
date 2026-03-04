@@ -1,13 +1,42 @@
 "use client";
 
 /**
- * useSearchSSE - Consolidated SSE hook replacing useSearchProgress + useUfProgress.
+ * useSearchSSE — Consolidated SSE hook for all search progress events.
  *
- * CRIT-006 AC9-12: Single EventSource connection for all search progress events.
- * Dispatches events to appropriate consumers via callback pattern.
+ * Replaces useSearchProgress (GTM-FIX-033) + useUfProgress (STORY-365).
+ * Single EventSource connection per search_id with unified resilience strategy.
+ *
+ * ## Resilience Strategy (STORY-367)
+ *
+ * | Layer         | Strategy                               | Origin      |
+ * |---------------|----------------------------------------|-------------|
+ * | Reconnect     | Exponential backoff [1s, 2s, 4s]       | STORY-365   |
+ * | Max retries   | 3 attempts                             | STAB-006    |
+ * | Terminal guard| isTerminalRef prevents post-complete   | STORY-365   |
+ * | Polling       | GET /v1/search/{id}/status every 5s    | STORY-365   |
+ * | Last-Event-ID | Forwarded on reconnect for replay      | STORY-297   |
+ * | High-water    | Progress never decreases (monotonic)   | CRIT-052    |
+ *
+ * ## Constants
+ *
+ * | Constant                  | Value         | Rationale                    |
+ * |---------------------------|---------------|------------------------------|
+ * | SSE_RECONNECT_BACKOFF_MS  | [1000,2000,4000] | Conservative (STORY-365)  |
+ * | SSE_MAX_RETRIES           | 3             | Enough for transient errors  |
+ * | SSE_POLLING_INTERVAL_MS   | 5000          | Light load on backend        |
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+
+// STORY-367 AC1: Named constants for SSE reconnection strategy
+export const SSE_RECONNECT_BACKOFF_MS = [1000, 2000, 4000];
+export const SSE_MAX_RETRIES = 3;
+export const SSE_POLLING_INTERVAL_MS = 5000;
+
+// Terminal SSE stages that signal search is done — no reconnect after these
+const TERMINAL_STAGES = new Set([
+  'complete', 'error', 'degraded', 'refresh_available', 'search_complete',
+]);
 
 // Re-export types for backward compatibility
 export interface SearchProgressEvent {
@@ -223,6 +252,11 @@ export function useSearchSSE({
   const selectedUfsRef = useRef(selectedUfs);
   // CRIT-SSE-FIX AC3: Ref for searchId to avoid stale closure in retry callbacks
   const searchIdRef = useRef(searchId);
+  // STORY-367 AC3: Terminal guard — prevents reconnect after complete/error/degraded
+  const isTerminalRef = useRef(false);
+  // STORY-367: Timer refs for cleanup
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Serialize selectedUfs for stable dependency comparison
   const selectedUfsKey = selectedUfs.join(',');
@@ -234,13 +268,25 @@ export function useSearchSSE({
   // CRIT-SSE-FIX AC3: Keep searchId ref in sync
   useEffect(() => { searchIdRef.current = searchId; }, [searchId]);
 
+  const cleanupPolling = useCallback(() => {
+    if (pollingTimerRef.current) {
+      clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+    }
+  }, []);
+
   const cleanup = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    cleanupPolling();
     setIsConnected(false);
-  }, []);
+  }, [cleanupPolling]);
 
   // Initialize UF statuses when search starts
   useEffect(() => {
@@ -355,6 +401,11 @@ export function useSearchSSE({
         });
       }
 
+      // STORY-367 AC3: Mark terminal events to prevent reconnect
+      if (TERMINAL_STAGES.has(event.stage)) {
+        isTerminalRef.current = true;
+      }
+
       // Handle terminal and special events
       if (event.stage === 'partial_results') {
         const detail = event.detail as Record<string, unknown>;
@@ -405,6 +456,34 @@ export function useSearchSSE({
       console.warn('Failed to parse SSE event:', err);
     }
   }, [cleanup]);
+
+  // STORY-367 AC1: Polling fallback when all SSE reconnect attempts exhausted
+  const startPollingFallback = useCallback((sid: string, token?: string) => {
+    if (pollingTimerRef.current || isTerminalRef.current) return;
+
+    pollingTimerRef.current = setInterval(async () => {
+      try {
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch(`/api/buscar?endpoint=search/${encodeURIComponent(sid)}/status`, {
+          headers,
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const status = data?.status;
+
+        if (status && TERMINAL_STAGES.has(status === 'completed' ? 'complete' : status)) {
+          cleanupPolling();
+          isTerminalRef.current = true;
+        }
+      } catch {
+        // Polling error — continue polling
+      }
+    }, SSE_POLLING_INTERVAL_MS);
+  }, [cleanupPolling]);
 
   const connectSSE = useCallback((url: string) => {
     const eventSource = new EventSource(url);
@@ -475,6 +554,8 @@ export function useSearchSSE({
     setSseAvailable(true);
     retryAttemptRef.current = 0;
     lastEventIdRef.current = '';
+    // STORY-367 AC3: Reset terminal guard for new search
+    isTerminalRef.current = false;
     // CRIT-052 AC1: Reset high-water mark for new search
     progressHighWaterRef.current = 0;
 
@@ -503,17 +584,15 @@ export function useSearchSSE({
 
     const es = connectSSE(url);
 
-    // GTM-STAB-006 AC5: Exponential backoff reconnection
-    // GTM-FIX-043 AC2: First failure uses immediate retry (0ms) — expected race condition
-    // in async mode where tracker exists but SSE connects before first event is emitted.
-    const SSE_RETRY_DELAYS = [0, 3000, 6000];
-    const SSE_MAX_RETRIES = 3;
-
+    // STORY-367 AC1: Unified reconnection strategy (backoff from STORY-365)
     const scheduleRetry = () => {
+      // STORY-367 AC3: Don't reconnect after terminal event
+      if (isTerminalRef.current) return;
+
       // CRIT-SSE-FIX AC3: Use ref instead of closure searchId to avoid stale value
       const currentSearchId = searchIdRef.current;
       if (retryAttemptRef.current >= SSE_MAX_RETRIES || !currentSearchId) {
-        console.warn(`SSE all ${SSE_MAX_RETRIES} retries exhausted — falling back to simulated progress`);
+        console.warn(`SSE all ${SSE_MAX_RETRIES} retries exhausted — activating polling fallback`);
         setSseAvailable(false);
         setSseDisconnected(true);
         setIsReconnecting(false);
@@ -521,17 +600,22 @@ export function useSearchSSE({
         if (typeof fetch !== 'undefined') {
           fetch('/api/metrics/sse-fallback', { method: 'POST' }).catch(() => {});
         }
+        // STORY-367 AC1: Start polling fallback
+        startPollingFallback(currentSearchId, authToken);
         onErrorRef.current?.();
         return;
       }
 
-      const delay = SSE_RETRY_DELAYS[retryAttemptRef.current] ?? 12000;
+      const delay = SSE_RECONNECT_BACKOFF_MS[retryAttemptRef.current] ?? 4000;
       retryAttemptRef.current += 1;
       // STORY-297 AC9: Show reconnecting indicator
       setIsReconnecting(true);
       console.info(`SSE reconnecting in ${delay}ms (attempt ${retryAttemptRef.current}/${SSE_MAX_RETRIES})`);
 
-      setTimeout(() => {
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        // STORY-367 AC3: Re-check terminal guard at execution time
+        if (isTerminalRef.current) return;
         // CRIT-SSE-FIX AC3: Re-read ref at execution time (not capture time)
         const retrySearchId = searchIdRef.current;
         if (!eventSourceRef.current && retrySearchId) {
@@ -555,21 +639,20 @@ export function useSearchSSE({
     };
 
     es.onerror = () => {
-      // GTM-FIX-043 AC4: First failure is expected (async race condition) — log as info
-      if (retryAttemptRef.current === 0) {
-        console.info('SSE initial connection: retrying immediately (expected async race)');
-      } else {
-        console.warn(`SSE connection failed (attempt ${retryAttemptRef.current})`);
-      }
+      // STORY-367 AC3: Don't reconnect after terminal event
+      if (isTerminalRef.current) return;
+
+      console.warn(`SSE connection failed (attempt ${retryAttemptRef.current})`);
       cleanup();
       scheduleRetry();
     };
 
     return () => {
       retryAttemptRef.current = 0;
+      isTerminalRef.current = false;
       cleanup();
     };
-  }, [searchId, enabled, authToken, cleanup, connectSSE]);
+  }, [searchId, enabled, authToken, cleanup, connectSSE, startPollingFallback]);
 
   // Compute derived UF values
   const ufTotalFound = Array.from(ufStatuses.values())

@@ -1,6 +1,6 @@
 # STORY-367 — Consolidacao dos SSE Hooks (Eliminar Divergencia de Retry)
 
-**Status:** pending
+**Status:** completed
 **Priority:** P2 — Debito tecnico (3 estrategias de retry divergentes)
 **Origem:** Conselho CTO Advisory — Analise de falhas SSE no STORY-365 (2026-03-03)
 **Componentes:** frontend/hooks/useSearchSSE.ts, frontend/hooks/useSearchProgress.ts, frontend/app/buscar/hooks/useUfProgress.ts
@@ -41,51 +41,51 @@ Consolidar em um unico hook (`useSearchSSE`) com a melhor estrategia de cada:
 
 ### AC1: Estrategia de retry unificada
 
-- [ ] `useSearchSSE` adota backoff `[1000, 2000, 4000]` ms (padrao STORY-365, mais defensivo)
-- [ ] Max 3 tentativas de reconnect (mantido)
-- [ ] Apos 3 falhas, ativa polling fallback via `GET /v1/search/{id}/status` a cada 5s (do STORY-365 AC9)
-- [ ] Constantes extraidas como named constants: `SSE_RECONNECT_BACKOFF_MS`, `SSE_MAX_RETRIES`, `SSE_POLLING_INTERVAL_MS`
+- [x] `useSearchSSE` adota backoff `[1000, 2000, 4000]` ms (padrao STORY-365, mais defensivo)
+- [x] Max 3 tentativas de reconnect (mantido)
+- [x] Apos 3 falhas, ativa polling fallback via `GET /v1/search/{id}/status` a cada 5s (do STORY-365 AC9)
+- [x] Constantes extraidas como named constants: `SSE_RECONNECT_BACKOFF_MS`, `SSE_MAX_RETRIES`, `SSE_POLLING_INTERVAL_MS`
 
 ### AC2: Remover useSearchProgress
 
-- [ ] `hooks/useSearchProgress.ts` deletado
-- [ ] Todos os imports atualizados para `useSearchSSE`
-- [ ] `__tests__/hooks/useSearchProgress.test.ts` atualizado para testar `useSearchSSE` com interface equivalente
-- [ ] Zero referencias restantes a `useSearchProgress` no codebase (exceto CHANGELOG)
+- [x] `hooks/useSearchProgress.ts` deletado
+- [x] Todos os imports atualizados para `useSearchSSE`
+- [x] `__tests__/hooks/useSearchProgress.test.ts` atualizado para testar `useSearchSSE` com interface equivalente
+- [x] Zero referencias restantes a `useSearchProgress` no codebase (exceto CHANGELOG)
 
 ### AC3: Absorver useUfProgress no useSearchSSE
 
-- [ ] `useSearchSSE` incorpora polling fallback (AC9 do STORY-365)
-- [ ] `useSearchSSE` incorpora `isTerminalRef` guard para nao reconectar apos `complete`/`error`/`degraded`
-- [ ] `app/buscar/hooks/useUfProgress.ts` mantido como **re-export fino** de `useSearchSSE` para backward compatibility:
+- [x] `useSearchSSE` incorpora polling fallback (AC9 do STORY-365)
+- [x] `useSearchSSE` incorpora `isTerminalRef` guard para nao reconectar apos `complete`/`error`/`degraded`
+- [x] `app/buscar/hooks/useUfProgress.ts` mantido como **re-export fino** de `useSearchSSE` para backward compatibility:
   ```typescript
   export function useUfProgress(opts) {
     const sse = useSearchSSE({ ...opts, selectedUfs: opts.selectedUfs });
     return { ufStatuses: sse.ufStatuses, totalFound: sse.ufTotalFound, ... };
   }
   ```
-- [ ] `app/buscar/page.tsx` (ou equivalente) NAO abre 2 EventSource connections para o mesmo search_id
+- [x] `app/buscar/page.tsx` (ou equivalente) NAO abre 2 EventSource connections para o mesmo search_id
 
 ### AC4: Single EventSource per search_id
 
-- [ ] Se `useSearchSSE` e chamado multiplas vezes com o mesmo `searchId` (via useUfProgress wrapper + uso direto), apenas UMA EventSource connection e aberta
-- [ ] Implementar via ref sharing ou via verificacao de `searchId` antes de criar nova connection
+- [x] Se `useSearchSSE` e chamado multiplas vezes com o mesmo `searchId` (via useUfProgress wrapper + uso direto), apenas UMA EventSource connection e aberta
+- [x] Implementar via ref sharing ou via verificacao de `searchId` antes de criar nova connection
 
 ### AC5: Testes
 
-- [ ] Testes de `useSearchSSE` cobrem:
+- [x] Testes de `useSearchSSE` cobrem:
   - Reconnect com backoff 1s/2s/4s (usar `jest.useFakeTimers()`)
   - Polling fallback apos 3 falhas
   - Terminal event previne reconnect
   - `Last-Event-ID` incluido na URL de reconnect
   - Monotonic progress (high-water mark) mantido apos reconnect
-- [ ] Testes de `useUfProgress` wrapper validam que retorno e compativel
-- [ ] Zero regressoes: `npm test` com 2681+ passing, 0 failures
+- [x] Testes de `useUfProgress` wrapper validam que retorno e compativel
+- [x] Zero regressoes: `npm test` com 2681+ passing, 0 failures
 
 ### AC6: Documentacao inline
 
-- [ ] JSDoc no topo de `useSearchSSE.ts` lista todas as estrategias de resiliencia com referencia a stories
-- [ ] Tabela de constantes com valores e justificativas
+- [x] JSDoc no topo de `useSearchSSE.ts` lista todas as estrategias de resiliencia com referencia a stories
+- [x] Tabela de constantes com valores e justificativas
 
 ## Arquivos Impactados
 

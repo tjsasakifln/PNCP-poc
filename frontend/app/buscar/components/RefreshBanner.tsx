@@ -7,7 +7,7 @@
  * Displays count of new opportunities and a button to refresh.
  */
 
-import type { RefreshAvailableInfo } from "../../../hooks/useSearchProgress";
+import type { RefreshAvailableInfo } from "../../../hooks/useSearchSSE";
 
 interface RefreshBannerProps {
   refreshInfo: RefreshAvailableInfo;

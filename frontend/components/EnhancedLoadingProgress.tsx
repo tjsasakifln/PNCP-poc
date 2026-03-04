@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { SearchProgressEvent } from '../hooks/useSearchProgress';
+import type { SearchProgressEvent } from '../hooks/useSearchSSE';
 
 export interface EnhancedLoadingProgressProps {
   currentStep: number;

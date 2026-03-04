@@ -78,8 +78,8 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       // Simulate SSE error and reconnection
       act(() => es.simulateError());
 
-      // First retry is immediate (0ms delay)
-      act(() => jest.advanceTimersByTime(0));
+      // First retry after 1000ms (STORY-367)
+      act(() => jest.advanceTimersByTime(1000));
 
       // New EventSource created
       expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(2);

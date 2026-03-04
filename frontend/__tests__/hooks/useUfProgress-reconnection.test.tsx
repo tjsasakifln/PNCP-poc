@@ -301,8 +301,10 @@ describe('AC9: Polling fallback after 3 failed reconnects', () => {
 
     // fetch should have been called (polling fallback)
     expect(mockFetch).toHaveBeenCalled();
-    const callUrl = mockFetch.mock.calls[0]?.[0];
-    expect(callUrl).toContain('search/search-365-poll-start/status');
+    const pollingCall = mockFetch.mock.calls.find(
+      (call: any[]) => typeof call[0] === 'string' && call[0].includes('search/search-365-poll-start/status')
+    );
+    expect(pollingCall).toBeTruthy();
   });
 });
 

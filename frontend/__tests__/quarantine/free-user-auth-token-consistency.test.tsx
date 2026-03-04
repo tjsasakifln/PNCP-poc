@@ -52,14 +52,7 @@ jest.mock('../hooks/usePlan', () => ({
   }),
 }));
 
-jest.mock('../hooks/useSearchProgress', () => ({
-  useSearchProgress: () => ({
-    progress: null,
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-    isConnected: false,
-  }),
-}));
+// STORY-367: useSearchProgress deleted — mock removed (useSearch imports useSearchSSE directly)
 
 jest.mock('../hooks/useAnalytics', () => ({
   useAnalytics: () => ({

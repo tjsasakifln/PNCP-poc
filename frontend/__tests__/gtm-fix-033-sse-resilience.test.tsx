@@ -53,7 +53,7 @@ jest.mock('../lib/utils/correlationId', () => ({
 }));
 
 import { MockEventSource } from './utils/mock-event-source';
-import { useSearchProgress } from '../hooks/useSearchProgress';
+import { useSearchSSE } from '../hooks/useSearchSSE';
 import { useUfProgress } from '../app/buscar/hooks/useUfProgress';
 
 // ---- Tests ----
@@ -139,12 +139,12 @@ describe('GTM-FIX-033: SSE Resilience', () => {
     });
   });
 
-  describe('useSearchProgress — AC2: SSE retry + sseDisconnected', () => {
-    test('retries once then marks sseDisconnected=true', () => {
+  describe('useSearchSSE — AC2: SSE retry + sseDisconnected (STORY-367)', () => {
+    test('retries 3x with backoff [1s,2s,4s] then marks sseDisconnected=true', () => {
       const onError = jest.fn();
 
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-002',
           enabled: true,
           authToken: 'test-token',
@@ -155,27 +155,28 @@ describe('GTM-FIX-033: SSE Resilience', () => {
       expect(result.current.sseDisconnected).toBe(false);
       expect(result.current.sseAvailable).toBe(true);
 
-      // First SSE error
-      act(() => {
-        MockEventSource.instances[0].onerror?.();
-      });
-
-      // Not yet disconnected — retrying
+      // Error #1 → reconnect after 1s
+      act(() => { MockEventSource.instances[0].onerror?.(); });
       expect(result.current.sseDisconnected).toBe(false);
       expect(onError).not.toHaveBeenCalled();
+      act(() => { jest.advanceTimersByTime(1100); });
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(2);
 
-      // Wait for retry
-      act(() => {
-        jest.advanceTimersByTime(2100);
-      });
+      // Error #2 → reconnect after 2s
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
+      expect(result.current.sseDisconnected).toBe(false);
+      act(() => { jest.advanceTimersByTime(2100); });
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(3);
 
-      // Retry SSE also fails
-      act(() => {
-        const retryEs = MockEventSource.instances[MockEventSource.instances.length - 1];
-        retryEs.onerror?.();
-      });
+      // Error #3 → reconnect after 4s
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
+      expect(result.current.sseDisconnected).toBe(false);
+      act(() => { jest.advanceTimersByTime(4100); });
+      expect(MockEventSource.instances.length).toBeGreaterThanOrEqual(4);
 
-      // Now disconnected
+      // Error #4 → all retries exhausted → sseDisconnected=true
+      act(() => { MockEventSource.instances[MockEventSource.instances.length - 1].onerror?.(); });
+
       expect(result.current.sseDisconnected).toBe(true);
       expect(result.current.sseAvailable).toBe(false);
       expect(onError).toHaveBeenCalledTimes(1);

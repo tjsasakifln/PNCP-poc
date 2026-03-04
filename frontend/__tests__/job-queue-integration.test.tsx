@@ -62,7 +62,7 @@ describe('BuscaResult types (AC18)', () => {
 
 describe('SearchProgressEvent detail types (AC19/AC20)', () => {
   it('supports resumo field for llm_ready events', () => {
-    const event: import('../hooks/useSearchProgress').SearchProgressEvent = {
+    const event: import('../hooks/useSearchSSE').SearchProgressEvent = {
       stage: 'llm_ready',
       progress: 85,
       message: 'Resumo pronto',
@@ -78,7 +78,7 @@ describe('SearchProgressEvent detail types (AC19/AC20)', () => {
   });
 
   it('supports download_url field for excel_ready events', () => {
-    const event: import('../hooks/useSearchProgress').SearchProgressEvent = {
+    const event: import('../hooks/useSearchSSE').SearchProgressEvent = {
       stage: 'excel_ready',
       progress: 98,
       message: 'Planilha pronta',
@@ -91,7 +91,7 @@ describe('SearchProgressEvent detail types (AC19/AC20)', () => {
   });
 
   it('supports excel_status failed for excel_ready events', () => {
-    const event: import('../hooks/useSearchProgress').SearchProgressEvent = {
+    const event: import('../hooks/useSearchSSE').SearchProgressEvent = {
       stage: 'excel_ready',
       progress: 98,
       message: 'Erro',
@@ -104,10 +104,10 @@ describe('SearchProgressEvent detail types (AC19/AC20)', () => {
 });
 
 // ============================================================================
-// useSearchProgress handles F-01 events (AC19/AC20)
+// useSearchSSE handles F-01 events (AC19/AC20) — STORY-367: migrated from useSearchSSE
 // ============================================================================
 
-describe('useSearchProgress F-01 event handling', () => {
+describe('useSearchSSE F-01 event handling', () => {
   // Mock EventSource
   let mockEventSource: any;
 
@@ -128,11 +128,11 @@ describe('useSearchProgress F-01 event handling', () => {
   });
 
   it('does not close SSE on llm_ready (non-terminal event)', async () => {
-    const { useSearchProgress } = require('../hooks/useSearchProgress');
+    const { useSearchSSE } = require('../hooks/useSearchSSE');
 
     const onEvent = jest.fn();
     const { result } = renderHook(() =>
-      useSearchProgress({
+      useSearchSSE({
         searchId: 'test-123',
         enabled: true,
         onEvent,
@@ -164,11 +164,11 @@ describe('useSearchProgress F-01 event handling', () => {
   });
 
   it('does not close SSE on excel_ready (non-terminal event)', async () => {
-    const { useSearchProgress } = require('../hooks/useSearchProgress');
+    const { useSearchSSE } = require('../hooks/useSearchSSE');
 
     const onEvent = jest.fn();
     renderHook(() =>
-      useSearchProgress({
+      useSearchSSE({
         searchId: 'test-123',
         enabled: true,
         onEvent,
@@ -193,10 +193,10 @@ describe('useSearchProgress F-01 event handling', () => {
   });
 
   it('closes SSE on complete event (terminal)', async () => {
-    const { useSearchProgress } = require('../hooks/useSearchProgress');
+    const { useSearchSSE } = require('../hooks/useSearchSSE');
 
     renderHook(() =>
-      useSearchProgress({
+      useSearchSSE({
         searchId: 'test-123',
         enabled: true,
       })

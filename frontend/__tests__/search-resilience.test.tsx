@@ -32,17 +32,7 @@ jest.mock("../hooks/useQuota", () => ({
   useQuota: () => ({ refresh: jest.fn() }),
 }));
 
-jest.mock("../hooks/useSearchProgress", () => ({
-  useSearchProgress: () => ({
-    currentEvent: null,
-    sseAvailable: false,
-    sseDisconnected: false,
-    isDegraded: false,
-    degradedDetail: null,
-    partialProgress: null,
-    refreshAvailable: null,
-  }),
-}));
+// STORY-367: useSearchProgress deleted — mock removed (useSearch imports useSearchSSE directly)
 
 jest.mock("../hooks/useSearchPolling", () => ({
   useSearchPolling: () => ({ asProgressEvent: null }),

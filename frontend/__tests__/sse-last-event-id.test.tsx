@@ -8,7 +8,7 @@
  * - AC9: "Reconectando..." banner shown during reconnection gap
  *
  * Retry flow in useSearchSSE.ts:
- *   SSE_RETRY_DELAYS = [0, 3000, 6000], SSE_MAX_RETRIES = 3
+ *   SSE_RETRY_DELAYS = [1000, 2000, 4000], SSE_MAX_RETRIES = 3
  *   1. Initial EventSource created.
  *   2. es.onerror fires -> cleanup() + scheduleRetry()
  *   3. scheduleRetry sets isReconnecting=true, schedules setTimeout
@@ -120,9 +120,9 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
         es.onerror?.();
       });
 
-      // First retry delay is 0ms (immediate)
+      // First retry delay is 1000ms
       act(() => {
-        jest.advanceTimersByTime(0);
+        jest.advanceTimersByTime(1000);
       });
 
       // A retry EventSource should have been created
@@ -163,9 +163,9 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
         es.onerror?.();
       });
 
-      // First retry at delay=0ms
+      // First retry at delay=1000ms
       act(() => {
-        jest.advanceTimersByTime(0);
+        jest.advanceTimersByTime(1000);
       });
 
       expect(mockInstances).toHaveLength(2);
@@ -204,9 +204,9 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       // After onerror, scheduleRetry sets isReconnecting=true
       expect(result.current.isReconnecting).toBe(true);
 
-      // Advance to trigger the first retry (0ms delay)
+      // Advance to trigger the first retry (1000ms delay)
       act(() => {
-        jest.advanceTimersByTime(0);
+        jest.advanceTimersByTime(1000);
       });
 
       // Retry ES created but not yet opened — still reconnecting
@@ -248,8 +248,8 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
 
       expect(result.current.isReconnecting).toBe(true);
 
-      // First retry (0ms)
-      act(() => { jest.advanceTimersByTime(0); });
+      // First retry (1000ms)
+      act(() => { jest.advanceTimersByTime(1000); });
       expect(mockInstances).toHaveLength(2);
 
       // Reconnect succeeds
@@ -275,28 +275,28 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       const es = mockInstances[0];
       act(() => { es.onopen?.(); });
 
-      // Error on initial ES -> scheduleRetry (attempt 0->1, delay=0ms)
+      // Error on initial ES -> scheduleRetry (attempt 0->1, delay=1000ms)
       act(() => { es.onerror?.(); });
       expect(result.current.isReconnecting).toBe(true);
 
-      // Retry 1 fires (0ms)
-      act(() => { jest.advanceTimersByTime(0); });
+      // Retry 1 fires (1000ms)
+      act(() => { jest.advanceTimersByTime(1000); });
       expect(mockInstances).toHaveLength(2);
 
-      // Retry 1 fails -> scheduleRetry (attempt 1->2, delay=3000ms)
+      // Retry 1 fails -> scheduleRetry (attempt 1->2, delay=2000ms)
       act(() => { mockInstances[1].onerror?.(); });
       expect(result.current.isReconnecting).toBe(true);
 
-      // Retry 2 fires (3000ms)
-      act(() => { jest.advanceTimersByTime(3000); });
+      // Retry 2 fires (2000ms)
+      act(() => { jest.advanceTimersByTime(2000); });
       expect(mockInstances).toHaveLength(3);
 
-      // Retry 2 fails -> scheduleRetry (attempt 2->3, delay=6000ms)
+      // Retry 2 fails -> scheduleRetry (attempt 2->3, delay=4000ms)
       act(() => { mockInstances[2].onerror?.(); });
       expect(result.current.isReconnecting).toBe(true);
 
-      // Retry 3 fires (6000ms)
-      act(() => { jest.advanceTimersByTime(6000); });
+      // Retry 3 fires (4000ms)
+      act(() => { jest.advanceTimersByTime(4000); });
       expect(mockInstances).toHaveLength(4);
 
       // Retry 3 fails -> attempt 3 >= MAX_RETRIES(3) -> exhaust
@@ -370,8 +370,8 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       expect(result.current.ufStatuses.get('SP')?.status).toBe('success');
       expect(result.current.ufStatuses.get('SP')?.count).toBe(25);
 
-      // Retry fires (0ms)
-      act(() => { jest.advanceTimersByTime(0); });
+      // Retry fires (1000ms)
+      act(() => { jest.advanceTimersByTime(1000); });
 
       // Even after retry ES is created, state still preserved
       expect(result.current.currentEvent?.stage).toBe('filtering');
@@ -418,8 +418,8 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       act(() => { newEs.onopen?.(); });
       act(() => { newEs.onerror?.(); });
 
-      // First retry (0ms)
-      act(() => { jest.advanceTimersByTime(0); });
+      // First retry (1000ms)
+      act(() => { jest.advanceTimersByTime(1000); });
 
       const retryEs = mockInstances[mockInstances.length - 1];
       // lastEventIdRef was reset to '' on searchId change, so no last_event_id param
@@ -443,8 +443,8 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       act(() => { es.onopen?.(); });
       act(() => { es.onerror?.(); });
 
-      // First retry (0ms)
-      act(() => { jest.advanceTimersByTime(0); });
+      // First retry (1000ms)
+      act(() => { jest.advanceTimersByTime(1000); });
 
       const retryEs = mockInstances[mockInstances.length - 1];
       // No lastEventId was captured, so URL should NOT include &last_event_id=
@@ -476,8 +476,8 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       // Disconnect
       act(() => { es.onerror?.(); });
 
-      // Retry 1 (0ms)
-      act(() => { jest.advanceTimersByTime(0); });
+      // Retry 1 (1000ms)
+      act(() => { jest.advanceTimersByTime(1000); });
       expect(mockInstances).toHaveLength(2);
 
       const retry1 = mockInstances[1];
@@ -495,8 +495,8 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       // Retry 1 disconnects again
       act(() => { retry1.onerror?.(); });
 
-      // Retry 2 (3000ms delay, since this is attempt 2)
-      act(() => { jest.advanceTimersByTime(3000); });
+      // Retry 2 (2000ms delay, since this is attempt 2)
+      act(() => { jest.advanceTimersByTime(2000); });
       expect(mockInstances).toHaveLength(3);
 
       const retry2 = mockInstances[2];

@@ -41,12 +41,7 @@ jest.mock('../../hooks/useSavedSearches', () => ({
   }),
 }));
 
-jest.mock('../../hooks/useSearchProgress', () => ({
-  useSearchProgress: () => ({
-    currentEvent: null,
-    sseAvailable: true,
-  }),
-}));
+// STORY-367: useSearchProgress deleted — mock removed (useSearch imports useSearchSSE directly)
 
 // Mock sonner toast
 jest.mock('sonner', () => ({

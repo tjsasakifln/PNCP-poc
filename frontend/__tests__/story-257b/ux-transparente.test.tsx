@@ -18,11 +18,11 @@ jest.mock("../../hooks/useAnalytics", () => ({
 jest.mock("../../hooks/useSavedSearches", () => ({
   useSavedSearches: () => ({ saveNewSearch: jest.fn(), isMaxCapacity: false }),
 }));
-jest.mock("../../hooks/useSearchProgress", () => ({
-  useSearchProgress: () => ({ currentEvent: null, sseAvailable: false }),
-}));
-jest.mock("../../hooks/useSearchSSE", () => ({
-  useSearchSSE: () => ({
+// STORY-367: useSearchProgress deleted — mock with mutable _override for T2 control
+// NOTE: resetMocks:true in jest.config resets jest.fn() between tests, so we use a plain
+// function with a mutable override object instead.
+jest.mock("../../hooks/useSearchSSE", () => {
+  const _default = {
     currentEvent: null,
     sseAvailable: false,
     sseDisconnected: false,
@@ -34,8 +34,12 @@ jest.mock("../../hooks/useSearchSSE", () => ({
     ufTotalFound: 0,
     ufAllComplete: false,
     batchProgress: null,
-  }),
-}));
+    isConnected: false,
+  };
+  return {
+    useSearchSSE: () => (globalThis as any).__useSearchSSE_override ?? { ..._default },
+  };
+});
 jest.mock("../../hooks/useSearchPolling", () => ({
   useSearchPolling: () => ({
     asProgressEvent: null,
@@ -136,29 +140,39 @@ describe("T1: UfProgressGrid rendering", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T2: Grid updates status on SSE uf_status event
+// T2: useUfProgress thin wrapper maps useSearchSSE return values (STORY-367)
+// Dynamic SSE behavior tested in useUfProgress-reconnection.test.tsx
 // ---------------------------------------------------------------------------
 import { useUfProgress } from "@/app/buscar/hooks/useUfProgress";
 
-describe("T2: useUfProgress SSE updates", () => {
-  let mockEventSource: any;
-
-  beforeEach(() => {
-    mockEventSource = {
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      close: jest.fn(),
-      onerror: null,
-    };
-    // @ts-ignore
-    globalThis.EventSource = jest.fn(() => mockEventSource);
-  });
+describe("T2: useUfProgress thin wrapper mapping", () => {
+  const defaultSSE = {
+    currentEvent: null,
+    sseAvailable: false,
+    sseDisconnected: false,
+    isDegraded: false,
+    degradedDetail: null,
+    partialProgress: null,
+    refreshAvailable: null,
+    ufStatuses: new Map(),
+    ufTotalFound: 0,
+    ufAllComplete: false,
+    batchProgress: null,
+    isConnected: false,
+  };
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    delete (globalThis as any).__useSearchSSE_override;
   });
 
-  it("initializes all UFs as pending when enabled", () => {
+  it("maps ufStatuses from useSearchSSE", () => {
+    const pendingMap = new Map([
+      ["SP", { status: "pending" as const }],
+      ["RJ", { status: "pending" as const }],
+      ["MG", { status: "pending" as const }],
+    ]);
+    (globalThis as any).__useSearchSSE_override = { ...defaultSSE, ufStatuses: pendingMap };
+
     const { result } = renderHook(() =>
       useUfProgress({ searchId: "test-1", enabled: true, selectedUfs: ["SP", "RJ", "MG"] })
     );
@@ -166,53 +180,52 @@ describe("T2: useUfProgress SSE updates", () => {
     expect(result.current.ufStatuses.get("SP")?.status).toBe("pending");
   });
 
-  it("updates UF status when uf_status event fires", () => {
+  it("maps totalFound from useSearchSSE ufTotalFound", () => {
+    const updatedMap = new Map([
+      ["SP", { status: "success" as const, count: 15 }],
+      ["RJ", { status: "pending" as const }],
+    ]);
+    (globalThis as any).__useSearchSSE_override = {
+      ...defaultSSE,
+      ufStatuses: updatedMap,
+      ufTotalFound: 15,
+    };
+
     const { result } = renderHook(() =>
       useUfProgress({ searchId: "test-2", enabled: true, selectedUfs: ["SP", "RJ"] })
     );
-
-    const ufStatusHandler = mockEventSource.addEventListener.mock.calls.find(
-      (call: any[]) => call[0] === "uf_status"
-    );
-    expect(ufStatusHandler).toBeTruthy();
-
-    hookAct(() => {
-      ufStatusHandler[1]({ data: JSON.stringify({ uf: "SP", status: "success", count: 15 }) });
-    });
-
     expect(result.current.ufStatuses.get("SP")?.status).toBe("success");
     expect(result.current.ufStatuses.get("SP")?.count).toBe(15);
     expect(result.current.totalFound).toBe(15);
   });
 
-  it("computes allComplete correctly", () => {
+  it("maps allComplete from useSearchSSE ufAllComplete", () => {
+    (globalThis as any).__useSearchSSE_override = {
+      ...defaultSSE,
+      ufStatuses: new Map([
+        ["SP", { status: "success" as const, count: 10 }],
+        ["RJ", { status: "failed" as const }],
+      ]),
+      ufTotalFound: 10,
+      ufAllComplete: true,
+    };
+
     const { result } = renderHook(() =>
       useUfProgress({ searchId: "test-3", enabled: true, selectedUfs: ["SP", "RJ"] })
     );
-
-    const handler = mockEventSource.addEventListener.mock.calls.find(
-      (call: any[]) => call[0] === "uf_status"
-    );
-
-    hookAct(() => {
-      handler[1]({ data: JSON.stringify({ uf: "SP", status: "success", count: 10 }) });
-    });
-    expect(result.current.allComplete).toBe(false);
-
-    hookAct(() => {
-      handler[1]({ data: JSON.stringify({ uf: "RJ", status: "failed" }) });
-    });
     expect(result.current.allComplete).toBe(true);
   });
 
-  it("resets statuses when disabled", () => {
-    const { result, rerender } = renderHook(
-      ({ enabled }) => useUfProgress({ searchId: "test-4", enabled, selectedUfs: ["SP"] }),
-      { initialProps: { enabled: true } }
+  it("maps sseDisconnected from useSearchSSE", () => {
+    (globalThis as any).__useSearchSSE_override = {
+      ...defaultSSE,
+      sseDisconnected: true,
+    };
+
+    const { result } = renderHook(() =>
+      useUfProgress({ searchId: "test-4", enabled: true, selectedUfs: ["SP"] })
     );
-    expect(result.current.ufStatuses.size).toBe(1);
-    rerender({ enabled: false });
-    expect(result.current.ufStatuses.size).toBe(0);
+    expect(result.current.sseDisconnected).toBe(true);
   });
 });
 

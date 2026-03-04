@@ -1,16 +1,18 @@
 /**
- * Tests for useSearchProgress hook — GTM-RESILIENCE-A02 AC13
+ * Tests for useSearchSSE hook — GTM-RESILIENCE-A02 AC13
  * Test degraded SSE event handling and state management
+ *
+ * STORY-367: Migrated from useSearchProgress tests.
  */
 
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useSearchProgress } from '../../hooks/useSearchProgress';
-import type { SearchProgressEvent } from '../../hooks/useSearchProgress';
+import { useSearchSSE } from '../../hooks/useSearchSSE';
+import type { SearchProgressEvent } from '../../hooks/useSearchSSE';
 
 // Use shared MockEventSource (installed globally via jest.setup.js, STORY-368)
 import { MockEventSource } from '../utils/mock-event-source';
 
-describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
+describe('useSearchSSE - GTM-RESILIENCE-A02 Degraded Handling', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -22,7 +24,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
   describe('AC13: isDegraded state transition', () => {
     it('should set isDegraded=true when SSE event stage="degraded"', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -69,7 +71,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
 
     it('should set isDegraded=false when SSE event stage="complete"', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -103,7 +105,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
 
     it('should preserve isDegraded=false for normal stages', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -135,7 +137,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
   describe('AC13: degradedDetail metadata', () => {
     it('should populate degradedDetail from degraded event detail', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -174,7 +176,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
 
     it('should set degradedDetail=null for non-degraded events', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -203,7 +205,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
     it('should reset degraded state when new search starts', async () => {
       const { result, rerender } = renderHook(
         ({ searchId }) =>
-          useSearchProgress({
+          useSearchSSE({
             searchId,
             enabled: true,
           }),
@@ -246,7 +248,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
   describe('AC13: SSE connection lifecycle with degraded', () => {
     it('should close SSE connection when degraded event received', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -279,7 +281,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
 
     it('should NOT set sseDisconnected when degraded closes SSE', async () => {
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
         })
@@ -316,7 +318,7 @@ describe('useSearchProgress - GTM-RESILIENCE-A02 Degraded Handling', () => {
     it('should call onEvent callback when degraded event received', async () => {
       const onEventMock = jest.fn();
       const { result } = renderHook(() =>
-        useSearchProgress({
+        useSearchSSE({
           searchId: 'test-search-123',
           enabled: true,
           onEvent: onEventMock,

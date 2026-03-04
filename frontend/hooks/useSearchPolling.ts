@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { SearchProgressEvent } from './useSearchProgress';
+import type { SearchProgressEvent } from './useSearchSSE';
 
 export interface SearchStatusResponse {
   search_id: string;
