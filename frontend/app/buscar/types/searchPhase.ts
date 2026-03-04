@@ -106,16 +106,16 @@ export function deriveSearchPhase(input: SearchPhaseInput): SearchPhase {
 
 /** Human-readable labels for each phase (used in tests + telemetry) */
 export const PHASE_LABELS: Record<SearchPhase, string> = {
-  idle: "Aguardando busca",
+  idle: "Aguardando análise",
   searching: "Analisando oportunidades",
   partial_available: "Resultados parciais disponíveis",
-  completed: "Busca concluída",
+  completed: "Análise concluída",
   empty_results: "Nenhum resultado encontrado",
   all_sources_failed: "Fontes indisponíveis",
-  source_timeout: "Busca parcial concluída",
+  source_timeout: "Análise parcial concluída",
   offline: "Serviço temporariamente indisponível",
-  failed: "Erro na busca",
-  quota_exceeded: "Limite de buscas atingido",
+  failed: "Erro na análise",
+  quota_exceeded: "Limite de análises atingido",
 };
 
 /** Action labels for each phase (AC1 table, "Ação" column) */

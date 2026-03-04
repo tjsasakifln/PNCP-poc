@@ -32,7 +32,7 @@ def _stats_block(stats: dict, show_pipeline: bool = False) -> str:
     rows = f"""
     <tr>
       <td style="padding: 8px 16px; color: #555; font-size: 15px; border-bottom: 1px solid #eee;">
-        Buscas realizadas
+        Análises realizadas
       </td>
       <td style="padding: 8px 16px; color: #333; font-size: 15px; font-weight: 600; text-align: right; border-bottom: 1px solid #eee;">
         {searches}
@@ -106,7 +106,7 @@ def render_trial_welcome_email(user_name: str, unsubscribe_url: str = "") -> str
         unsubscribe_url: URL for one-click unsubscribe.
     """
     body = f"""
-    {_preheader("Seu trial de 14 dias comecou. Faca sua primeira busca agora.")}
+    {_preheader("Seu trial de 14 dias comecou. Faca sua primeira análise agora.")}
     <h1 style="color: #333; font-size: 22px; margin: 0 0 16px;">
       Bem-vindo ao SmartLic, {user_name}!
     </h1>
@@ -131,7 +131,7 @@ def render_trial_welcome_email(user_name: str, unsubscribe_url: str = "") -> str
             <tr>
               <td style="padding: 6px 0; color: #555; font-size: 14px;">
                 <strong style="color: {SMARTLIC_GREEN}; font-size: 18px; margin-right: 8px;">2.</strong>
-                Faca sua primeira busca com IA
+                Faca sua primeira análise com IA
               </td>
             </tr>
             <tr>
@@ -148,7 +148,7 @@ def render_trial_welcome_email(user_name: str, unsubscribe_url: str = "") -> str
     <p style="text-align: center; margin: 24px 0 16px;">
       <a href="{FRONTEND_URL}/buscar" class="btn"
          style="display: inline-block; padding: 14px 32px; background-color: {SMARTLIC_GREEN}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        Fazer primeira busca
+        Fazer primeira análise
       </a>
     </p>
     <p style="color: #888; font-size: 13px; text-align: center; margin: 16px 0 0;">
@@ -200,7 +200,7 @@ def render_trial_engagement_email(user_name: str, stats: dict, unsubscribe_url: 
         headline = "Voce ainda tem 11 dias para descobrir oportunidades"
         intro = (
             f"Ola, {user_name}! Seu trial do SmartLic esta apenas comecando e "
-            f"ha oportunidades esperando por voce. Faca sua primeira busca agora!"
+            f"ha oportunidades esperando por voce. Faca sua primeira análise agora!"
         )
 
     body = f"""
@@ -275,7 +275,7 @@ def render_trial_paywall_alert_email(user_name: str, stats: dict, unsubscribe_ur
           <ul style="color: #555; font-size: 14px; margin: 8px 0 0; padding-left: 20px;">
             <li>Resultados limitados a 10 por busca (preview)</li>
             <li>Pipeline limitado a 5 itens</li>
-            <li>Buscas e IA continuam funcionando normalmente</li>
+            <li>Análises e IA continuam funcionando normalmente</li>
           </ul>
         </td>
       </tr>
@@ -368,7 +368,7 @@ def render_trial_value_email(user_name: str, stats: dict, unsubscribe_url: str =
     {_stats_block(stats, show_pipeline=True) if value == 0 and opps > 0 else ''}
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
       Nao perca esse progresso. Com o SmartLic Pro, voce mantem acesso a tudo:
-      buscas ilimitadas, IA de classificacao, pipeline e relatorios Excel.
+      análises ilimitadas, IA de classificacao, pipeline e relatorios Excel.
     </p>
     <p style="text-align: center; margin: 24px 0 16px;">
       <a href="{FRONTEND_URL}/planos" class="btn"
@@ -505,7 +505,7 @@ def render_trial_expired_email(
       <tr>
         <td style="background-color: #e8f5e9; border-radius: 8px; padding: 16px; border-left: 4px solid {SMARTLIC_GREEN};">
           <p style="color: #1b5e20; font-size: 14px; margin: 0;">
-            Seus dados ficam salvos por 30 dias — buscas, pipeline e historico.
+            Seus dados ficam salvos por 30 dias — análises, pipeline e historico.
           </p>
         </td>
       </tr>

@@ -87,7 +87,7 @@ describe('useSearchSSE - GTM-RESILIENCE-A02 Degraded Handling', () => {
       const completeEvent: SearchProgressEvent = {
         stage: 'complete',
         progress: 100,
-        message: 'Busca concluída',
+        message: 'Análise concluída',
         detail: {},
       };
 

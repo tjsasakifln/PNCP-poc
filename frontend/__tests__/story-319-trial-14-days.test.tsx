@@ -93,6 +93,14 @@ describe("STORY-319: InstitutionalSidebar copy", () => {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const InstitutionalSidebar = require("../app/components/InstitutionalSidebar").default;
 
+  beforeEach(() => {
+    // InstitutionalSidebar fetches /api/metrics/daily-volume on signup variant
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ total: 0 }),
+    });
+  });
+
   it("AC11: signup benefits say 14 dias", () => {
     render(<InstitutionalSidebar variant="signup" />);
     expect(screen.getByText("14 dias do produto completo — sem limites")).toBeInTheDocument();

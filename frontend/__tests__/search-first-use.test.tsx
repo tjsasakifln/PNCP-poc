@@ -3,8 +3,8 @@
  *
  * UX-346: First-Use Experience Tests
  *
- * - AC8: First access has "Personalizar busca" collapsed
- * - AC9: After search, "Personalizar busca" respects last state (localStorage)
+ * - AC8: First access has "Personalizar análise" collapsed
+ * - AC9: After search, "Personalizar análise" respects last state (localStorage)
  * - AC10: Compact summary shows correct count of UFs/modalidades/status/period
  * - AC11: Verified via running all existing tests (no breakage)
  */
@@ -203,7 +203,7 @@ describe("UX-346: First-Use Experience", () => {
   // ---------- AC8: Collapsed on first access ----------
 
   describe("AC8: First access — collapsed", () => {
-    it("Personalizar busca is collapsed on first access", () => {
+    it("Personalizar análise is collapsed on first access", () => {
       render(<HomePage />);
 
       // Compact summary should be visible (data-testid)

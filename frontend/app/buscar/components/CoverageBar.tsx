@@ -55,7 +55,7 @@ export function CoverageBar({ coverageMetadata, cacheBannerVisible }: CoverageBa
     };
   }, [expanded]);
 
-  const ariaLabel = `Cobertura da busca: ${ufs_processed.length} de ${ufs_requested.length} estados processados, ${Math.round(coverage_pct)} por cento`;
+  const ariaLabel = `Cobertura da análise: ${ufs_processed.length} de ${ufs_requested.length} estados processados, ${Math.round(coverage_pct)} por cento`;
 
   return (
     <div className="relative" data-testid="coverage-bar">

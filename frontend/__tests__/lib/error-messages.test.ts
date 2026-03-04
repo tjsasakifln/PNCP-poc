@@ -61,7 +61,7 @@ describe('getUserFriendlyError', () => {
     });
 
     it('should map 504 errors', () => {
-      expect(getUserFriendlyError('504')).toBe('A busca demorou demais. Tente com menos estados ou um período menor.');
+      expect(getUserFriendlyError('504')).toBe('A análise demorou demais. Tente com menos estados ou um período menor.');
     });
 
     it('should map 500 errors', () => {
@@ -115,15 +115,15 @@ describe('getUserFriendlyError', () => {
 
   describe('Backend specific errors', () => {
     it('should map "Backend indisponível"', () => {
-      expect(getUserFriendlyError('Backend indisponível')).toBe('Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.');
+      expect(getUserFriendlyError('Backend indisponível')).toBe('Não foi possível processar sua análise. A análise pode ter sido concluída. Verifique suas análises salvas ou tente novamente.');
     });
 
     it('should map "Erro ao buscar licitações"', () => {
-      expect(getUserFriendlyError('Erro ao buscar licitações')).toBe('Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.');
+      expect(getUserFriendlyError('Erro ao buscar licitações')).toBe('Não foi possível processar sua análise. A análise pode ter sido concluída. Verifique suas análises salvas ou tente novamente.');
     });
 
     it('should map "Quota excedida"', () => {
-      expect(getUserFriendlyError('Quota excedida')).toBe('Suas buscas do mês acabaram. Faça upgrade para continuar.');
+      expect(getUserFriendlyError('Quota excedida')).toBe('Suas análises do mês acabaram. Faça upgrade para continuar.');
     });
   });
 
@@ -149,7 +149,7 @@ describe('getUserFriendlyError', () => {
 
     it('should map "Pipeline failed" to PT-BR', () => {
       expect(getUserFriendlyError('Pipeline failed')).toBe(
-        'A busca não pôde ser concluída. Tente novamente.'
+        'A análise não pôde ser concluída. Tente novamente.'
       );
     });
 
@@ -180,7 +180,7 @@ describe('getUserFriendlyError', () => {
 
   describe('Timeout errors', () => {
     it('should map "excedeu o tempo limite"', () => {
-      expect(getUserFriendlyError('excedeu o tempo limite')).toBe('A busca demorou demais. Tente com menos estados ou um período menor.');
+      expect(getUserFriendlyError('excedeu o tempo limite')).toBe('A análise demorou demais. Tente com menos estados ou um período menor.');
     });
 
     it('should map "PNCP está temporariamente"', () => {
@@ -188,7 +188,7 @@ describe('getUserFriendlyError', () => {
     });
 
     it('should map "tempo limite de"', () => {
-      expect(getUserFriendlyError('tempo limite de')).toBe('A busca demorou demais. Tente com menos estados ou um período menor.');
+      expect(getUserFriendlyError('tempo limite de')).toBe('A análise demorou demais. Tente com menos estados ou um período menor.');
     });
   });
 
@@ -205,7 +205,7 @@ describe('getUserFriendlyError', () => {
       };
 
       const result = getUserFriendlyError(error);
-      expect(result).toBe('Suas buscas do mês acabaram. Faça upgrade para continuar.');
+      expect(result).toBe('Suas análises do mês acabaram. Faça upgrade para continuar.');
     });
 
     it('should extract message from FastAPI string detail', () => {
@@ -218,7 +218,7 @@ describe('getUserFriendlyError', () => {
       };
 
       const result = getUserFriendlyError(error);
-      expect(result).toBe('Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.');
+      expect(result).toBe('Não foi possível processar sua análise. A análise pode ter sido concluída. Verifique suas análises salvas ou tente novamente.');
     });
 
     it('should extract message from simple message field', () => {
@@ -274,7 +274,7 @@ describe('getUserFriendlyError', () => {
       };
 
       const result = getUserFriendlyError(error);
-      expect(result).toBe('Não foi possível processar sua busca. Tente novamente em instantes.');
+      expect(result).toBe('Não foi possível processar sua análise. Tente novamente em instantes.');
     });
 
     it('should handle completely unknown error format', () => {
@@ -287,7 +287,7 @@ describe('getUserFriendlyError', () => {
 
   describe('Plan limit errors (keep_original)', () => {
     it('should keep original message for date range limit errors', () => {
-      const msg = 'O período de busca não pode exceder 7 dias no plano consultor_agil';
+      const msg = 'O período da análise não pode exceder 7 dias no plano consultor_agil';
       expect(getUserFriendlyError(msg)).toBe(msg);
     });
 
@@ -342,7 +342,7 @@ describe('getUserFriendlyError', () => {
     });
 
     it('should allow user-friendly long messages', () => {
-      const msg = 'O período de busca não pode exceder 7 dias no plano consultor_agil. Para períodos maiores, faça upgrade para um plano superior.';
+      const msg = 'O período da análise não pode exceder 7 dias no plano consultor_agil. Para períodos maiores, faça upgrade para um plano superior.';
       const result = getUserFriendlyError(msg);
       expect(result).toBe(msg); // Should keep original (< 200 chars and user-friendly)
     });

@@ -117,10 +117,10 @@ export default function SobrePage() {
                 O SmartLic é desenvolvido pela <strong className="text-[var(--ink)]">CONFENGE Avaliações e Inteligência Artificial LTDA</strong>, empresa com experiência em avaliações técnicas e aplicação de inteligência artificial ao mercado B2G (Business-to-Government).
               </p>
               <p className="text-[var(--ink-secondary)] leading-relaxed">
-                Nosso propósito é <strong className="text-[var(--ink)]">transformar decisões em licitações de intuitivas para objetivas</strong>. Acreditamos que empresas que competem em licitações merecem ferramentas que substituam a busca manual e o palpite por análise estruturada e dados verificados.
+                Nosso propósito é <strong className="text-[var(--ink)]">transformar decisões em licitações de intuitivas para objetivas</strong>. Acreditamos que empresas que competem em licitações merecem ferramentas que substituam a análise manual e o palpite por análise estruturada e dados verificados.
               </p>
               <p className="text-[var(--ink-secondary)] leading-relaxed">
-                O SmartLic nasceu da observação direta do desperdício no mercado de licitações: empresas gastam horas buscando editais manualmente, analisam oportunidades irrelevantes e perdem as que realmente importam. Nossa plataforma resolve isso com tecnologia.
+                O SmartLic nasceu da observação direta do desperdício no mercado de licitações: empresas gastam horas analisando editais manualmente, analisam oportunidades irrelevantes e perdem as que realmente importam. Nossa plataforma resolve isso com tecnologia.
               </p>
             </div>
           </section>
@@ -187,7 +187,7 @@ export default function SobrePage() {
                 <strong className="text-[var(--ink)]">Democratizar o acesso inteligente a licitações públicas.</strong> Acreditamos que toda empresa que compete no mercado B2G merece ferramentas que transformem decisões de intuitivas para objetivas — independentemente do porte.
               </p>
               <p className="text-[var(--ink-secondary)] leading-relaxed">
-                Nossa visão é ser a plataforma de referência em inteligência de licitações no Brasil, eliminando o desperdício de tempo com buscas manuais e análises subjetivas.
+                Nossa visão é ser a plataforma de referência em inteligência de licitações no Brasil, eliminando o desperdício de tempo com análises manuais e avaliações subjetivas.
               </p>
             </div>
           </section>

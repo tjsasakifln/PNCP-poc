@@ -946,7 +946,7 @@ async def get_search_results(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Resultados não encontrados ou expirados. Execute uma nova busca.",
+            detail="Resultados não encontrados ou expirados. Execute uma nova análise.",
         )
     return result
 
@@ -997,7 +997,7 @@ async def get_search_results_v1(
 
     raise HTTPException(
         status_code=404,
-        detail="Resultados não encontrados ou expirados. Execute uma nova busca.",
+        detail="Resultados não encontrados ou expirados. Execute uma nova análise.",
     )
 
 
@@ -1019,7 +1019,7 @@ async def regenerate_excel_endpoint(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Resultados não encontrados ou expirados. Execute uma nova busca.",
+            detail="Resultados não encontrados ou expirados. Execute uma nova análise.",
         )
 
     # Extract licitacoes from stored result
@@ -1437,7 +1437,7 @@ async def buscar_licitacoes(
         sentry_sdk.set_tag("setor", request.setor_id)
 
     tracker = await create_tracker(request.search_id, len(request.ufs))
-    await tracker.emit("connecting", 3, "Iniciando busca...")
+    await tracker.emit("connecting", 3, "Iniciando análise...")
 
     # STORY-291 AC5: Block expired trials AFTER tracker creation so SSE
     # can emit an error event instead of leaving frontend in limbo.
@@ -1514,13 +1514,13 @@ async def buscar_licitacoes(
                     )
                     if not _allowed:
                         if tracker:
-                            await tracker.emit_error("Suas buscas acabaram.")
+                            await tracker.emit_error("Suas análises acabaram.")
                             await remove_tracker(request.search_id)
                         raise HTTPException(
                             status_code=403,
                             detail=(
                                 f"Limite de {_max_monthly} "
-                                f"buscas mensais atingido."
+                                f"análises mensais atingido."
                             ),
                         )
 
@@ -1544,13 +1544,13 @@ async def buscar_licitacoes(
             if not _slot_acquired:
                 from config import MAX_CONCURRENT_SEARCHES
                 await tracker.emit_error(
-                    f"Limite de {MAX_CONCURRENT_SEARCHES} buscas simultâneas atingido. "
-                    f"Aguarde uma busca terminar."
+                    f"Limite de {MAX_CONCURRENT_SEARCHES} análises simultâneas atingido. "
+                    f"Aguarde uma análise terminar."
                 )
                 await remove_tracker(request.search_id)
                 raise HTTPException(
                     status_code=429,
-                    detail=f"Limite de {MAX_CONCURRENT_SEARCHES} buscas simultâneas atingido.",
+                    detail=f"Limite de {MAX_CONCURRENT_SEARCHES} análises simultâneas atingido.",
                 )
 
             # STORY-363 AC2: Try ARQ Worker first (true decoupling from HTTP)
@@ -1953,7 +1953,7 @@ async def buscar_licitacoes(
         # Determine error_code based on exception type
         if isinstance(e, asyncio.TimeoutError):
             err_code = SearchErrorCode.TIMEOUT
-            err_msg = "A busca excedeu o tempo limite. Tente com menos estados ou um período menor."
+            err_msg = "A análise excedeu o tempo limite. Tente com menos estados ou um período menor."
             status_code = 504
         else:
             err_code = SearchErrorCode.INTERNAL_ERROR

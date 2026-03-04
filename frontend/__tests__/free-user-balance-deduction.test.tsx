@@ -282,7 +282,7 @@ describe('Balance Deduction Verification', () => {
       });
     });
 
-    it('should display "0 buscas" when exhausted', async () => {
+    it('should display "0 análises" when exhausted', async () => {
       useQuotaMockOverride = () => ({
         quota: {
           planId: 'free',
@@ -315,7 +315,7 @@ describe('Balance Deduction Verification', () => {
         status: 403,
         json: () => Promise.resolve({
           detail: {
-            message: 'Limite de buscas atingido. Faça upgrade para continuar.',
+            message: 'Limite de análises atingido. Faça upgrade para continuar.',
             code: 'QUOTA_EXCEEDED',
           },
         }),
@@ -397,7 +397,7 @@ describe('Balance Deduction Verification', () => {
         status: 409,
         json: () => Promise.resolve({
           detail: {
-            message: 'Busca em andamento. Aguarde a conclusão.',
+            message: 'Análise em andamento. Aguarde a conclusão.',
             code: 'SEARCH_IN_PROGRESS',
           },
         }),

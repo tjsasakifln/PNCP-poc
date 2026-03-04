@@ -394,7 +394,7 @@ describe("STAB-009/006/003: Async search, SSE error UX, timeout", () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: false,
       status: 524,
-      json: () => Promise.resolve({ message: "A busca demorou demais" }),
+      json: () => Promise.resolve({ message: "A análise demorou demais" }),
     } as unknown as Response);
 
     // No partial cache available

@@ -93,7 +93,7 @@ class TestWelcomeEmail:
     def test_welcome_cta_button(self):
         """AC6: Contains call-to-action button."""
         html = render_welcome_email(user_name="Test")
-        assert "Fazer minha primeira busca" in html
+        assert "Fazer minha primeira análise" in html
 
     def test_welcome_custom_login_url(self):
         html = render_welcome_email(user_name="Test", login_url="https://custom.com/login")

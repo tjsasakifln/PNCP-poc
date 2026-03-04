@@ -185,7 +185,7 @@ test.describe('Error Handling Scenarios', () => {
     await expect(loadingDiv).toBeVisible({ timeout: 1000 });
 
     // Verify search button shows loading state
-    await expect(page.getByRole('button', { name: 'Buscando...' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Analisando...' })).toBeVisible();
   });
 
   test('AC4.6: should handle network errors gracefully', async ({ page }) => {

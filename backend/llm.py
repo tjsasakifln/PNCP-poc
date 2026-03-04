@@ -90,7 +90,7 @@ def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes
             alerta_urgencia=None,
             recomendacoes=[],
             alertas_urgencia=[],
-            insight_setorial=f"Não foram encontradas oportunidades {_ctx_label} nos filtros selecionados. Considere ampliar o período ou os estados de busca.",
+            insight_setorial=f"Não foram encontradas oportunidades {_ctx_label} nos filtros selecionados. Considere ampliar o período ou os estados da análise.",
         )
 
     # Validate API key
@@ -134,7 +134,7 @@ def gerar_resumo(licitacoes: list[dict[str, Any]], sector_name: str = "uniformes
 
     # System prompt with strategic consultant persona (STORY-245)
     # GTM-FIX-041: Use search terms in prompt when available
-    _especialidade = f"buscas por '{termos_busca}'" if termos_busca else sector_name
+    _especialidade = f"análises de '{termos_busca}'" if termos_busca else sector_name
     system_prompt = f"""Você é um CONSULTOR ESTRATÉGICO de licitações especializado em {_especialidade}.
 Seu papel NÃO é apenas descrever — é RECOMENDAR AÇÕES CONCRETAS para o usuário.
 
@@ -371,7 +371,7 @@ def gerar_resumo_fallback(licitacoes: list[dict[str, Any]], sector_name: str = "
     # Generate insight setorial from data (GTM-FIX-041: use terms when available)
     ufs_str = ", ".join(sorted(dist_uf.keys()))
     if termos_busca:
-        insight = f"Busca por '{termos_busca}': {total} oportunidade(s) distribuída(s) em {len(dist_uf)} estado(s) ({ufs_str}), totalizando {_format_brl_full(valor_total)}."
+        insight = f"Análise de '{termos_busca}': {total} oportunidade(s) distribuída(s) em {len(dist_uf)} estado(s) ({ufs_str}), totalizando {_format_brl_full(valor_total)}."
     else:
         insight = f"Setor de {sector_name}: {total} oportunidades distribuídas em {len(dist_uf)} estado(s) ({ufs_str}), totalizando {_format_brl_full(valor_total)}."
 

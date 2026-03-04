@@ -610,7 +610,7 @@ class TestQuotaConsumedBeforeDispatch:
         """AC8: Quota exceeded → 403, background task never dispatched."""
         mock_info = Mock()
         mock_info.allowed = False
-        mock_info.error_message = "Limite de buscas atingido."
+        mock_info.error_message = "Limite de análises atingido."
         mock_info.capabilities = {"max_requests_per_month": 10}
 
         with patch("quota.check_quota", return_value=mock_info), \

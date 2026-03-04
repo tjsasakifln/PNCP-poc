@@ -405,7 +405,7 @@ class TestFallbackMessage:
         client._rate_limit = AsyncMock()
 
         with patch("pncp_client._circuit_breaker"):
-            with pytest.raises(PNCPAPIError, match="Reduza o período de busca"):
+            with pytest.raises(PNCPAPIError, match="Reduza o período da análise"):
                 await client._fetch_page_async(
                     "2026-02-08", "2026-02-18", 6, uf="SP"
                 )

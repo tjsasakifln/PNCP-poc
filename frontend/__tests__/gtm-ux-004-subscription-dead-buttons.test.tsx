@@ -168,7 +168,7 @@ describe("T3: Button 'Ver ultima busca' works when there's saved search", () => 
       />
     );
 
-    const btn = screen.getByRole("button", { name: /última busca salva/i });
+    const btn = screen.getByRole("button", { name: /última análise salva/i });
     expect(btn).toBeInTheDocument();
     expect(btn).not.toBeDisabled();
 
@@ -189,7 +189,7 @@ describe("T4: Button hidden when no saved search", () => {
     );
 
     expect(
-      screen.queryByRole("button", { name: /última busca salva/i })
+      screen.queryByRole("button", { name: /última análise salva/i })
     ).not.toBeInTheDocument();
   });
 });

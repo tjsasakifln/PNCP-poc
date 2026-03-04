@@ -302,7 +302,7 @@ export default function SearchForm({
                   </svg>
                   <div className="flex-1">
                     <p className="font-semibold text-sm text-warning mb-2">
-                      Atenção: {termValidation.ignored.length} termo{termValidation.ignored.length > 1 ? 's' : ''} não será{termValidation.ignored.length > 1 ? 'ão' : ''} utilizado{termValidation.ignored.length > 1 ? 's' : ''} na busca
+                      Atenção: {termValidation.ignored.length} termo{termValidation.ignored.length > 1 ? 's' : ''} não será{termValidation.ignored.length > 1 ? 'ão' : ''} utilizado{termValidation.ignored.length > 1 ? 's' : ''} na análise
                     </p>
                     <ul className="space-y-1.5 text-sm text-ink-secondary">
                       {termValidation.ignored.map(term => (
@@ -440,7 +440,7 @@ export default function SearchForm({
           type="button"
           aria-busy={loading}
           data-tour="search-button"
-          title={isGracePeriod ? "Buscas suspensas ate regularizacao do pagamento." : isTrialExpired ? "Seu trial expirou. Ative um plano para continuar buscando." : undefined}
+          title={isGracePeriod ? "Análises suspensas ate regularizacao do pagamento." : isTrialExpired ? "Seu trial expirou. Ative um plano para continuar buscando." : undefined}
           className="w-full bg-brand-navy text-white py-3.5 sm:py-4 rounded-button text-base sm:text-lg font-semibold
                      hover:bg-brand-blue-hover active:bg-brand-blue
                      disabled:bg-ink-faint disabled:text-ink-muted disabled:cursor-not-allowed
@@ -473,13 +473,13 @@ export default function SearchForm({
                        border border-brand-navy hover:bg-brand-blue-subtle
                        disabled:bg-surface-0 disabled:text-ink-muted disabled:border-ink-faint disabled:cursor-not-allowed
                        transition-all duration-200 flex items-center justify-center gap-2"
-            title={isMaxCapacity ? "Máximo de 10 buscas salvas atingido" : "Salvar esta busca"}
+            title={isMaxCapacity ? "Máximo de 10 análises salvas atingido" : "Salvar esta análise"}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
-            {isMaxCapacity ? "Limite de buscas atingido" : "Salvar Busca"}
+            {isMaxCapacity ? "Limite de análises atingido" : "Salvar Análise"}
           </button>
         )}
       </div>
@@ -496,7 +496,7 @@ export default function SearchForm({
           <svg className="w-5 h-5 text-ink-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
           </svg>
-          Personalizar busca
+          Personalizar análise
           <svg className={`w-4 h-4 ml-auto transition-transform ${customizeOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
@@ -655,7 +655,7 @@ export default function SearchForm({
                             Período muito longo para seu plano
                           </p>
                           <p className="text-sm text-ink-secondary">
-                            Seu plano {planInfo.plan_name} permite buscas de até {maxDays} dias.
+                            Seu plano {planInfo.plan_name} permite análises de até {maxDays} dias.
                             Você selecionou {days} dias. Ajuste as datas ou faça upgrade.
                           </p>
                           <button

@@ -31,7 +31,7 @@ describe("SearchErrorBoundary", () => {
     expect(screen.getByText("Algo deu errado ao exibir os resultados")).toBeInTheDocument();
     expect(screen.getByText(/Um erro inesperado ocorreu/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Tentar novamente/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Nova busca/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Nova análise/ })).toBeInTheDocument();
   });
 
   it("should show error message in details section", () => {
@@ -66,8 +66,8 @@ describe("SearchErrorBoundary", () => {
     expect(screen.getByText("Algo deu errado ao exibir os resultados")).toBeInTheDocument();
   });
 
-  // CRIT-002 AC9: Calls onReset when "Nova busca" button is clicked
-  it("should call onReset when 'Nova busca' button is clicked", () => {
+  // CRIT-002 AC9: Calls onReset when "Nova análise" button is clicked
+  it("should call onReset when 'Nova análise' button is clicked", () => {
     const mockOnReset = jest.fn();
 
     render(
@@ -77,7 +77,7 @@ describe("SearchErrorBoundary", () => {
     );
 
     // Click reset button
-    fireEvent.click(screen.getByRole("button", { name: /Nova busca/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Nova análise/ }));
 
     expect(mockOnReset).toHaveBeenCalledTimes(1);
   });

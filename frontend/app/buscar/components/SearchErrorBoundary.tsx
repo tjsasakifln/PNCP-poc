@@ -61,7 +61,7 @@ export class SearchErrorBoundary extends Component<Props, State> {
             Algo deu errado ao exibir os resultados
           </h3>
           <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-            Um erro inesperado ocorreu. Você pode tentar recarregar ou iniciar uma nova busca.
+            Um erro inesperado ocorreu. Você pode tentar recarregar ou iniciar uma nova análise.
           </p>
           <div className="flex justify-center gap-3">
             <button
@@ -74,7 +74,7 @@ export class SearchErrorBoundary extends Component<Props, State> {
               onClick={this.handleReset}
               className="rounded-md border border-red-300 dark:border-red-700 bg-white dark:bg-red-950/40 px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/40 transition-colors"
             >
-              Nova busca
+              Nova análise
             </button>
           </div>
           <details className="mt-4 text-left">

@@ -241,7 +241,7 @@ class TestTimeoutWithoutCacheRaises504:
                         status_code=504,
                         detail={
                             "error": "timeout",
-                            "message": "A busca excedeu o tempo limite de 360 segundos. Tente novamente reduzindo o número de estados ou o período de datas.",
+                            "message": "A análise excedeu o tempo limite de 360 segundos. Tente novamente reduzindo o número de estados ou o período de datas.",
                         }
                     )
 
@@ -353,7 +353,7 @@ class TestEmptyFailureState:
                     "Tente novamente em alguns minutos ou reduza o número de estados."
                 )
                 ctx.degradation_reason = (
-                    "PNCP ficou indisponível durante a busca (circuit breaker ativado). "
+                    "PNCP ficou indisponível durante a análise (circuit breaker ativado). "
                     "Tente novamente em alguns minutos."
                 )
 

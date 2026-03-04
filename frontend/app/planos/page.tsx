@@ -45,7 +45,7 @@ const CONSULTORIA_PRICING_FALLBACK: Record<BillingPeriod, { monthly: number; tot
 const CONSULTORIA_FEATURES = [
   { text: "Até 5 usuários", detail: "Sua equipe inteira em uma só conta" },
   { text: "5.000 análises por mês", detail: "Capacidade compartilhada entre membros" },
-  { text: "Dashboard consolidado", detail: "Veja buscas e resultados de toda a equipe" },
+  { text: "Dashboard consolidado", detail: "Veja análises e resultados de toda a equipe" },
   { text: "Logo da consultoria nos relatórios", detail: "Branding profissional em Excel/PDF" },
   { text: "Todas as funcionalidades Pro", detail: "Excel, pipeline, IA, 15 setores, 27 estados" },
   { text: "Suporte prioritário", detail: "Atendimento dedicado para sua consultoria" },

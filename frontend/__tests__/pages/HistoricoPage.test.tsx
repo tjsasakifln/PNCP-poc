@@ -58,6 +58,11 @@ jest.mock('../../components/MobileDrawer', () => ({
   MobileDrawer: () => null,
 }));
 
+// Mock AlertNotificationBell (fetches /api/alerts — would consume the sessions mock)
+jest.mock('../../components/AlertNotificationBell', () => ({
+  AlertNotificationBell: () => null,
+}));
+
 // Mock useQuota (used by QuotaBadge — already mocked above, but guard)
 jest.mock('../../hooks/useQuota', () => ({
   useQuota: () => ({ quota: null, loading: false, refresh: jest.fn() }),
@@ -204,7 +209,7 @@ describe('HistoricoPage Component', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        const searchLink = screen.getByRole('link', { name: /Fazer primeira busca/i });
+        const searchLink = screen.getByRole('link', { name: /Fazer primeira análise/i });
         expect(searchLink).toBeInTheDocument();
         expect(searchLink).toHaveAttribute('href', '/buscar');
       });
@@ -331,7 +336,7 @@ describe('HistoricoPage Component', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/5 buscas realizadas/)).toBeInTheDocument();
+        expect(screen.getByText(/5 análises realizadas/)).toBeInTheDocument();
       });
     });
 
@@ -344,11 +349,11 @@ describe('HistoricoPage Component', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/1 busca realizada$/)).toBeInTheDocument();
+        expect(screen.getByText(/1 análise realizada$/)).toBeInTheDocument();
       });
     });
 
-    it('should show Nova busca button', async () => {
+    it('should show Nova análise button', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ sessions: [], total: 0 }),
@@ -357,7 +362,7 @@ describe('HistoricoPage Component', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        const newSearchLink = screen.getByRole('link', { name: /Nova busca/i });
+        const newSearchLink = screen.getByRole('link', { name: /Nova análise/i });
         expect(newSearchLink).toBeInTheDocument();
         expect(newSearchLink).toHaveAttribute('href', '/buscar');
       });
@@ -409,7 +414,7 @@ describe('HistoricoPage Component', () => {
 
       await waitFor(() => {
         // Wait for data to load
-        expect(screen.getByText('5 buscas realizadas')).toBeInTheDocument();
+        expect(screen.getByText('5 análises realizadas')).toBeInTheDocument();
       });
 
       expect(screen.queryByRole('button', { name: /Anterior/i })).not.toBeInTheDocument();

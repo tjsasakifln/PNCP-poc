@@ -62,7 +62,7 @@ function getStatusLabel(status: SourceStatusType): string {
     case "success":
       return "Concluída";
     case "fetching":
-      return "Buscando...";
+      return "Analisando...";
     case "pending":
       return "Aguardando";
     case "error":

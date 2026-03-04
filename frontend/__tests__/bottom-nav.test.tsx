@@ -43,11 +43,11 @@ describe("BottomNav", () => {
     const nav = screen.getByTestId("bottom-nav");
     expect(nav).toBeInTheDocument();
 
-    // SAB-012 AC8: Abbreviated labels
+    // SAB-012 AC8: Abbreviated labels (SHIP-002: Mensagens removed, Dash added)
     expect(screen.getByText("Busca")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
     expect(screen.getByText("Hist.")).toBeInTheDocument();
-    expect(screen.getByText("Msgs")).toBeInTheDocument();
+    expect(screen.getByText("Dash")).toBeInTheDocument();
     expect(screen.getByText("Mais")).toBeInTheDocument();
   });
 
@@ -62,8 +62,8 @@ describe("BottomNav", () => {
   it("each item displays both icon and label text", () => {
     render(<BottomNav />);
     // All items should have visible text labels
-    // SAB-012 AC8: Abbreviated labels
-    const items = ["Busca", "Pipeline", "Hist.", "Msgs", "Mais"];
+    // SAB-012 AC8: Abbreviated labels (SHIP-002: Mensagens removed, Dash added)
+    const items = ["Busca", "Pipeline", "Hist.", "Dash", "Mais"];
     items.forEach((label) => {
       const el = screen.getByText(label);
       expect(el).toBeInTheDocument();
@@ -101,20 +101,12 @@ describe("BottomNav", () => {
     expect(screen.getByText("Sair")).toBeInTheDocument();
   });
 
-  it("drawer shows Dashboard and Alertas links", () => {
+  // SHIP-002: Alertas and Dashboard removed from drawer (feature-gated)
+  it("drawer does not show Alertas (feature-gated SHIP-002)", () => {
     render(<BottomNav />);
     fireEvent.click(screen.getByTestId("bottom-nav-more"));
 
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Alertas")).toBeInTheDocument();
-  });
-
-  // SAB-004 AC3: Alertas in drawer highlights on mobile
-  it("highlights Mais button when /alertas is active", () => {
-    mockPathname.mockReturnValue("/alertas");
-    render(<BottomNav />);
-    const mais = screen.getByTestId("bottom-nav-more");
-    expect(mais.className).toContain("brand-blue");
+    expect(screen.queryByText("Alertas")).not.toBeInTheDocument();
   });
 
   it("drawer closes when backdrop is clicked", () => {

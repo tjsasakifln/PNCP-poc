@@ -136,7 +136,7 @@ class TestQuotaExceededError:
         with patch("routes.search.SearchPipeline") as MockPipeline:
             mock_pipeline = MockPipeline.return_value
             mock_pipeline.run = AsyncMock(
-                side_effect=HTTPException(status_code=403, detail="Suas buscas acabaram.")
+                side_effect=HTTPException(status_code=403, detail="Suas análises acabaram.")
             )
             mock_pipeline.stage_validate = AsyncMock()
             mock_pipeline.stage_prepare = AsyncMock()

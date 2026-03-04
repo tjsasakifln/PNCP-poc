@@ -277,20 +277,20 @@ describe('SearchForm Component', () => {
       const result = { resumo: { total_oportunidades: 10 }, download_id: '123' };
       render(<SearchForm {...defaultProps} result={result} />);
 
-      expect(screen.getByRole('button', { name: /Salvar Busca/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Salvar Análise/i })).toBeInTheDocument();
     });
 
     it('should not show save button when no result', () => {
       render(<SearchForm {...defaultProps} result={null} />);
 
-      expect(screen.queryByRole('button', { name: /Salvar Busca/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Salvar Análise/i })).not.toBeInTheDocument();
     });
 
     it('should disable save button when max capacity', () => {
       const result = { resumo: { total_oportunidades: 10 }, download_id: '123' };
       render(<SearchForm {...defaultProps} result={result} isMaxCapacity={true} />);
 
-      const saveButton = screen.getByRole('button', { name: /Limite de buscas atingido/i });
+      const saveButton = screen.getByRole('button', { name: /Limite de análises atingido/i });
       expect(saveButton).toBeDisabled();
     });
   });
@@ -432,7 +432,7 @@ describe('SearchForm Component', () => {
     });
 
     // TODO: After Track 2 (UI Changes) is complete, add these AC tests:
-    // - AC5: Search button appears before "Personalizar busca" accordion
+    // - AC5: Search button appears before "Personalizar análise" accordion
     // - AC6: UF section visibility controlled by customizeOpen state
     // - AC8: Badge shows "Buscando em todo o Brasil" or state count when collapsed
     // - AC12: Custom filters work when accordion is open

@@ -132,7 +132,7 @@ class TestTimeoutNoCacheReturns200:
         partial_resp = _make_minimal_buca_response(
             is_partial=True,
             degradation_guidance=(
-                "A busca excedeu o tempo limite de 1 minuto "
+                "A análise excedeu o tempo limite de 1 minuto "
                 "e não há resultados em cache disponíveis. "
                 "Tente com menos estados ou um período menor."
             ),
@@ -170,7 +170,7 @@ class TestTimeoutNoCacheReturns200:
         partial_resp = _make_minimal_buca_response(
             is_partial=True,
             degradation_guidance=(
-                "A busca excedeu o tempo limite de 6 minutos "
+                "A análise excedeu o tempo limite de 6 minutos "
                 "e não há resultados em cache disponíveis. "
                 "Tente com menos estados ou um período menor."
             ),

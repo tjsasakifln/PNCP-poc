@@ -234,7 +234,7 @@ describe('History Save Validation', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Histórico de Buscas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Histórico de Análises/i)).toBeInTheDocument();
       });
 
       await waitFor(() => {

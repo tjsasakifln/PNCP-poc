@@ -22,8 +22,8 @@ describe("COPY-377: OnboardingEmptyState copy rewrite", () => {
   });
 
   // AC1: Headline change
-  it('AC1: headline should be "Sua busca foi concluída"', () => {
-    expect(source).toContain("Sua busca foi concluída");
+  it('AC1: headline should be "Sua análise foi concluída"', () => {
+    expect(source).toContain("Sua análise foi concluída");
     expect(source).not.toContain(
       "Nenhuma oportunidade encontrada para seu perfil"
     );
@@ -57,8 +57,8 @@ describe("COPY-377: OnboardingEmptyState copy rewrite", () => {
   });
 
   // AC4: CTA change
-  it('AC4: CTA should be "Refinar busca"', () => {
-    expect(source).toContain("Refinar busca");
+  it('AC4: CTA should be "Refinar análise"', () => {
+    expect(source).toContain("Refinar análise");
     expect(source).not.toContain("Ajustar Filtros");
   });
 });

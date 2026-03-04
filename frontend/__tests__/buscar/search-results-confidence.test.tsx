@@ -22,6 +22,16 @@ jest.mock("next/link", () => {
   return ({ children, href, ...props }: any) => <a href={href} {...props}>{children}</a>;
 });
 
+// Mock AuthProvider (required by AddToPipelineButton via usePipeline)
+jest.mock("../../app/components/AuthProvider", () => ({
+  useAuth: () => ({
+    user: { id: "u1", email: "test@test.com" },
+    session: { access_token: "test-token" },
+    loading: false,
+    signOut: jest.fn(),
+  }),
+}));
+
 function makeLicitacao(overrides: Partial<LicitacaoItem> = {}): LicitacaoItem {
   return {
     pncp_id: `test-${Math.random().toString(36).slice(2, 8)}`,

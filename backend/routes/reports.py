@@ -85,7 +85,7 @@ async def generate_diagnostico(
     if results is None:
         raise HTTPException(
             status_code=404,
-            detail="Busca não encontrada ou expirada. Refaça a busca.",
+            detail="Análise não encontrada ou expirada. Refaça a análise.",
         )
 
     # 3. Extract licitacoes, resumo, and metadata

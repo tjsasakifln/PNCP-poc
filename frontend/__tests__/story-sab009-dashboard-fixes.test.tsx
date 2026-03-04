@@ -186,7 +186,7 @@ describe("Dashboard Horas Economizadas Tooltip (SAB-009 AC8-AC9)", () => {
     const card = label.closest("[title]");
     expect(card).not.toBeNull();
     expect(card!.getAttribute("title")).toMatch(
-      /32 buscas × 2h por busca manual/
+      /32 análises × 2h por análise manual/
     );
   });
 
@@ -201,7 +201,7 @@ describe("Dashboard Horas Economizadas Tooltip (SAB-009 AC8-AC9)", () => {
     const card = label.closest("[title]");
     expect(card).not.toBeNull();
     expect(card!.getAttribute("title")).toContain("Estimativa");
-    expect(card!.getAttribute("title")).toContain("2h por busca manual");
+    expect(card!.getAttribute("title")).toContain("2h por análise manual");
   });
 });
 

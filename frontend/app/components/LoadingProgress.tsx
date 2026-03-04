@@ -220,7 +220,7 @@ export function LoadingProgress({
   const remainingMin = Math.floor(remaining / 60);
   const remainingSec = remaining % 60;
   const remainingDisplay = isTimeExceeded
-    ? "Quase la! A busca esta demorando mais que o esperado..."
+    ? "Quase la! A análise esta demorando mais que o esperado..."
     : remaining > 0
       ? remainingMin > 0
         ? `~${remainingMin}min ${remainingSec}s restantes`

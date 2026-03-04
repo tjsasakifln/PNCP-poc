@@ -20,7 +20,7 @@ export function Breadcrumbs() {
 
   // Map pathnames to readable labels
   const pathMap: Record<string, string> = {
-    "/buscar": "Busca",
+    "/buscar": "Análise",
     "/historico": "Histórico",
     "/conta": "Minha Conta",
     "/dashboard": "Dashboard",
@@ -61,10 +61,10 @@ export function Breadcrumbs() {
       <Link
         href="/buscar"
         className="flex items-center gap-1 hover:text-brand-blue transition-colors"
-        aria-label="Voltar para busca"
+        aria-label="Voltar para análise"
       >
         <Home className="w-4 h-4" />
-        <span className="sr-only">Busca</span>
+        <span className="sr-only">Análise</span>
       </Link>
 
       {/* Breadcrumb trail */}

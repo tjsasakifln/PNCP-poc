@@ -202,7 +202,7 @@ describe("DashboardPage — UX-338", () => {
           screen.getByText("Seu Painel de Inteligência")
         ).toBeInTheDocument();
         expect(
-          screen.getByText(/Após suas primeiras buscas/i)
+          screen.getByText(/Após suas primeiras análises/i)
         ).toBeInTheDocument();
       });
     });
@@ -226,7 +226,7 @@ describe("DashboardPage — UX-338", () => {
 
       await waitFor(() => {
         const link = screen.getByRole("link", {
-          name: /Fazer primeira busca/i,
+          name: /Fazer primeira análise/i,
         });
         expect(link).toHaveAttribute("href", "/buscar");
       });

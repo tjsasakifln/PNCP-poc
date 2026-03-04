@@ -63,7 +63,7 @@ const ORDENACAO_OPTIONS: OrdenacaoItem[] = [
   {
     value: "relevancia",
     label: "Relevancia",
-    description: "Score de matching com termos de busca",
+    description: "Score de matching com termos da análise",
   },
   {
     value: "confianca",

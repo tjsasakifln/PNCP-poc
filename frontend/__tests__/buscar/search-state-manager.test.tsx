@@ -212,7 +212,7 @@ describe("deriveSearchPhase()", () => {
     expect(
       deriveSearchPhase({
         ...baseInput,
-        quotaError: "Limite de buscas atingido",
+        quotaError: "Limite de análises atingido",
       })
     ).toBe("quota_exceeded");
   });
@@ -343,7 +343,7 @@ describe("SearchStateManager — AC9: visual test for each of 9 states", () => {
     );
     expect(screen.getByTestId("retry-exhausted")).toBeInTheDocument();
     expect(screen.getByTestId("retry-manual-button")).toBeInTheDocument();
-    expect(screen.getByText("Busca indisponível no momento.")).toBeInTheDocument();
+    expect(screen.getByText("Análise indisponível no momento.")).toBeInTheDocument();
   });
 
   it("renders error card for 'failed' phase", () => {
@@ -365,11 +365,11 @@ describe("SearchStateManager — AC9: visual test for each of 9 states", () => {
       <SearchStateManager
         {...baseManagerProps}
         phase="quota_exceeded"
-        quotaError="Limite de buscas atingido"
+        quotaError="Limite de análises atingido"
       />
     );
     expect(screen.getByTestId("search-state-quota")).toBeInTheDocument();
-    expect(screen.getByText("Limite de buscas atingido")).toBeInTheDocument();
+    expect(screen.getByText("Limite de análises atingido")).toBeInTheDocument();
     expect(screen.getByTestId("quota-plans-link")).toHaveAttribute("href", "/planos");
   });
 });
@@ -511,7 +511,7 @@ describe("SearchStateManager — AC3: toast notifications", () => {
 
     expect(toast.success).toHaveBeenCalledWith(
       "Conexão restabelecida",
-      expect.objectContaining({ description: "Retomando busca..." })
+      expect.objectContaining({ description: "Retomando análise..." })
     );
   });
 
@@ -545,7 +545,7 @@ describe("SearchStateManager — AC3: toast notifications", () => {
     );
 
     expect(toast.success).toHaveBeenCalledWith(
-      "Busca concluída",
+      "Análise concluída",
       expect.objectContaining({ description: "Todos os resultados carregados" })
     );
   });

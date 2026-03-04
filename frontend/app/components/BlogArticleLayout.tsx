@@ -197,7 +197,7 @@ export default function BlogArticleLayout({
     url: 'https://smartlic.tech',
     logo: 'https://smartlic.tech/logo.png',
     description:
-      'Plataforma de inteligência em licitações públicas. Automação de busca, classificação por IA e análise de viabilidade para empresas B2G e consultorias.',
+      'Plataforma de inteligência em licitações públicas. Automação de análise, classificação por IA e análise de viabilidade para empresas B2G e consultorias.',
     sameAs: ['https://www.linkedin.com/company/smartlic'],
   };
 

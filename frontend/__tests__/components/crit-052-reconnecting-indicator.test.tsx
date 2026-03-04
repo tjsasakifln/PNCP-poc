@@ -73,7 +73,7 @@ describe('CRIT-052 AC2: Reconnecting indicator', () => {
         currentStep={2}
         estimatedTime={60}
         stateCount={5}
-        sseEvent={{ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }}
+        sseEvent={{ stage: 'fetching', progress: 40, message: 'Analisando...', detail: {} }}
         isReconnecting={false}
         sseDisconnected={false}
       />
@@ -90,7 +90,7 @@ describe('CRIT-052 AC2: Reconnecting indicator', () => {
         estimatedTime={60}
         stateCount={5}
         statesProcessed={3}
-        sseEvent={{ stage: 'fetching', progress: 55, message: 'Buscando...', detail: { uf_index: 3 } }}
+        sseEvent={{ stage: 'fetching', progress: 55, message: 'Analisando...', detail: { uf_index: 3 } }}
         useRealProgress={true}
         isReconnecting={true}
       />

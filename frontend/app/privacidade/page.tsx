@@ -81,12 +81,12 @@ export default function PrivacidadePage() {
                     </tr>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <td className="px-4 py-3"><strong>Setores de interesse, UFs, filtros</strong></td>
-                      <td className="px-4 py-3">Personalizacao de busca e classificacao IA</td>
+                      <td className="px-4 py-3">Personalizacao de análise e classificação IA</td>
                       <td className="px-4 py-3">Execucao de contrato (Art. 7&#176;, V)</td>
                       <td className="px-4 py-3">Duracao da conta + 6 meses</td>
                     </tr>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <td className="px-4 py-3"><strong>Historico de buscas</strong></td>
+                      <td className="px-4 py-3"><strong>Historico de análises</strong></td>
                       <td className="px-4 py-3">Funcionalidade de historico e analytics</td>
                       <td className="px-4 py-3">Execucao de contrato (Art. 7&#176;, V)</td>
                       <td className="px-4 py-3">12 meses (rolling)</td>

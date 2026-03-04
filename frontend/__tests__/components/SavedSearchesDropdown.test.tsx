@@ -83,7 +83,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should render dropdown trigger button', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      expect(screen.getByRole('button', { name: /Buscas salvas/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Análises salvas/i })).toBeInTheDocument();
     });
 
     it('should display search count badge', () => {
@@ -95,14 +95,14 @@ describe('SavedSearchesDropdown Component', () => {
     it('should show "Buscas Salvas" text on desktop', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const text = screen.getByText('Buscas Salvas');
+      const text = screen.getByText('Análises Salvas');
       expect(text).toHaveClass('hidden', 'sm:inline');
     });
 
     it('should have proper ARIA attributes on trigger button', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       expect(button).toHaveAttribute('aria-expanded', 'false');
     });
 
@@ -118,16 +118,16 @@ describe('SavedSearchesDropdown Component', () => {
     it('should open dropdown when trigger button clicked', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      expect(screen.getByText(/Buscas Recentes/i)).toBeInTheDocument();
+      expect(screen.getByText(/Análises Recentes/i)).toBeInTheDocument();
     });
 
     it('should update aria-expanded when opened', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(button).toHaveAttribute('aria-expanded', 'true');
@@ -136,13 +136,13 @@ describe('SavedSearchesDropdown Component', () => {
     it('should close dropdown when backdrop clicked', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.getByText('Uniformes SC/PR/RS')).toBeInTheDocument();
 
       // Click backdrop
-      const backdrop = screen.getByRole('button', { name: /Buscas salvas/i })
+      const backdrop = screen.getByRole('button', { name: /Análises salvas/i })
         .parentElement?.querySelector('.fixed.inset-0');
       if (backdrop) {
         fireEvent.click(backdrop);
@@ -157,7 +157,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should rotate chevron icon when opened', () => {
       const { container } = render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const chevron = container.querySelector('.rotate-180');
@@ -169,7 +169,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should display all saved searches', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.getByText('Uniformes SC/PR/RS')).toBeInTheDocument();
@@ -179,16 +179,16 @@ describe('SavedSearchesDropdown Component', () => {
     it('should display search count in header', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      expect(screen.getByText('Buscas Recentes (2/10)')).toBeInTheDocument();
+      expect(screen.getByText('Análises Recentes (2/10)')).toBeInTheDocument();
     });
 
     it('should display UFs for each search', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.getByText(/SC, PR, RS/i)).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should display search mode label for "setor" mode', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.getByText('vestuario')).toBeInTheDocument();
@@ -207,7 +207,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should display search terms label for "termos" mode', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.getByText('"calçado sapato"')).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should format relative time correctly', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       // Check that dropdown is open and contains saved searches
@@ -230,7 +230,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should call loadSearch when search item clicked', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const searchItem = screen.getByText('Uniformes SC/PR/RS');
@@ -242,7 +242,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should call onLoadSearch callback with search data', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const searchItem = screen.getByText('Uniformes SC/PR/RS');
@@ -254,14 +254,14 @@ describe('SavedSearchesDropdown Component', () => {
     it('should close dropdown after loading search', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const searchItem = screen.getByText('Uniformes SC/PR/RS');
       fireEvent.click(searchItem);
 
       waitFor(() => {
-        expect(screen.queryByText('Buscas Recentes')).not.toBeInTheDocument();
+        expect(screen.queryByText('Análises Recentes')).not.toBeInTheDocument();
       });
     });
 
@@ -273,7 +273,7 @@ describe('SavedSearchesDropdown Component', () => {
         />
       );
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const searchItem = screen.getByText('Uniformes SC/PR/RS');
@@ -294,20 +294,20 @@ describe('SavedSearchesDropdown Component', () => {
     it('should show delete button for each search', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
       expect(deleteButtons).toHaveLength(2);
     });
 
     it('should show confirmation state on first delete click', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
       fireEvent.click(deleteButtons[0]);
 
       expect(screen.getByRole('button', { name: /Confirmar exclusão/i })).toBeInTheDocument();
@@ -316,10 +316,10 @@ describe('SavedSearchesDropdown Component', () => {
     it('should change button style in confirmation state', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
       fireEvent.click(deleteButtons[0]);
 
       const confirmButton = screen.getByRole('button', { name: /Confirmar exclusão/i });
@@ -331,10 +331,10 @@ describe('SavedSearchesDropdown Component', () => {
 
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
 
       // First click - show confirmation
       fireEvent.click(deleteButtons[0]);
@@ -351,10 +351,10 @@ describe('SavedSearchesDropdown Component', () => {
 
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
       fireEvent.click(deleteButtons[0]);
 
       expect(screen.getByRole('button', { name: /Confirmar exclusão/i })).toBeInTheDocument();
@@ -381,10 +381,10 @@ describe('SavedSearchesDropdown Component', () => {
         />
       );
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
       fireEvent.click(deleteButtons[0]);
 
       const confirmButton = screen.getByRole('button', { name: /Confirmar exclusão/i });
@@ -402,7 +402,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should show "Limpar todas" button when searches exist', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.getByText('Limpar todas')).toBeInTheDocument();
@@ -414,13 +414,13 @@ describe('SavedSearchesDropdown Component', () => {
 
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const clearButton = screen.getByText('Limpar todas');
       fireEvent.click(clearButton);
 
-      expect(confirmSpy).toHaveBeenCalledWith('Deseja excluir todas as buscas salvas?');
+      expect(confirmSpy).toHaveBeenCalledWith('Deseja excluir todas as análises salvas?');
 
       confirmSpy.mockRestore();
     });
@@ -430,7 +430,7 @@ describe('SavedSearchesDropdown Component', () => {
 
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const clearButton = screen.getByText('Limpar todas');
@@ -446,7 +446,7 @@ describe('SavedSearchesDropdown Component', () => {
 
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const clearButton = screen.getByText('Limpar todas');
@@ -462,14 +462,14 @@ describe('SavedSearchesDropdown Component', () => {
 
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const clearButton = screen.getByText('Limpar todas');
       fireEvent.click(clearButton);
 
       waitFor(() => {
-        expect(screen.queryByText('Buscas Recentes')).not.toBeInTheDocument();
+        expect(screen.queryByText('Análises Recentes')).not.toBeInTheDocument();
       });
 
       confirmSpy.mockRestore();
@@ -495,17 +495,17 @@ describe('SavedSearchesDropdown Component', () => {
     it('should display empty state when no searches saved', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      expect(screen.getAllByText('Nenhuma busca salva')[0]).toBeInTheDocument();
-      expect(screen.getByText(/Suas buscas aparecerão aqui/i)).toBeInTheDocument();
+      expect(screen.getAllByText('Nenhuma análise salva')[0]).toBeInTheDocument();
+      expect(screen.getByText(/Suas análises aparecerão aqui/i)).toBeInTheDocument();
     });
 
     it('should display empty state icon', () => {
       const { container } = render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const emptyIcon = container.querySelector('.w-12.h-12');
@@ -515,7 +515,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should not show "Limpar todas" button in empty state', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       expect(screen.queryByText('Limpar todas')).not.toBeInTheDocument();
@@ -547,7 +547,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should apply proper dropdown panel styling', () => {
       const { container } = render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const panel = container.querySelector('.absolute.right-0.mt-2');
@@ -559,7 +559,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should have max-height and scroll on dropdown', () => {
       const { container } = render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       // Dropdown panel should have overflow-y-auto for scrolling
@@ -572,7 +572,7 @@ describe('SavedSearchesDropdown Component', () => {
     it('should apply hover effects to search items', () => {
       const { container } = render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const searchItems = container.querySelectorAll('.hover\\:bg-surface-1');
@@ -584,15 +584,15 @@ describe('SavedSearchesDropdown Component', () => {
     it('should have proper ARIA attributes', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       expect(button).toHaveAttribute('type', 'button');
-      expect(button).toHaveAttribute('aria-label', 'Buscas salvas');
+      expect(button).toHaveAttribute('aria-label', 'Análises salvas');
     });
 
     it('should hide backdrop from screen readers', () => {
       const { container } = render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       const backdrop = container.querySelector('[aria-hidden="true"]');
@@ -602,10 +602,10 @@ describe('SavedSearchesDropdown Component', () => {
     it('should provide title attribute on delete button', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const deleteButtons = screen.getAllByRole('button', { name: /Excluir busca/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /Excluir análise/i });
       expect(deleteButtons[0]).toHaveAttribute('title', 'Excluir');
     });
   });
@@ -667,19 +667,19 @@ describe('SavedSearchesDropdown Component', () => {
     it('should display filter input when searches exist', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      expect(screen.getByPlaceholderText('Filtrar buscas...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Filtrar análises...')).toBeInTheDocument();
     });
 
     it('should filter searches by name', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...');
       fireEvent.change(filterInput, { target: { value: 'Calçados' } });
 
       expect(screen.getByText('Calçados RJ')).toBeInTheDocument();
@@ -691,10 +691,10 @@ describe('SavedSearchesDropdown Component', () => {
     it('should filter searches by UF', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...');
       fireEvent.change(filterInput, { target: { value: 'PR' } });
 
       expect(screen.getByText('Uniformes SP/PR')).toBeInTheDocument();
@@ -705,10 +705,10 @@ describe('SavedSearchesDropdown Component', () => {
     it('should filter searches by setor/termos', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...');
       fireEvent.change(filterInput, { target: { value: 'sapato' } });
 
       expect(screen.getByText('Calçados RJ')).toBeInTheDocument();
@@ -718,10 +718,10 @@ describe('SavedSearchesDropdown Component', () => {
     it('should show clear button when typing', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...');
       fireEvent.change(filterInput, { target: { value: 'test' } });
 
       const clearButton = screen.getByLabelText('Limpar filtro');
@@ -731,10 +731,10 @@ describe('SavedSearchesDropdown Component', () => {
     it('should clear filter when clicking clear button', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...') as HTMLInputElement;
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...') as HTMLInputElement;
       fireEvent.change(filterInput, { target: { value: 'test' } });
 
       const clearButton = screen.getByLabelText('Limpar filtro');
@@ -747,45 +747,45 @@ describe('SavedSearchesDropdown Component', () => {
     it('should close dropdown on Escape key (preventing global state loss)', async () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       // Verify dropdown is open
-      expect(screen.getByPlaceholderText('Filtrar buscas...')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Filtrar análises...')).toBeInTheDocument();
 
       // Press Escape - this should close the dropdown entirely
       fireEvent.keyDown(document, { key: 'Escape' });
 
       // Dropdown should be closed (filter input should no longer be visible)
       await waitFor(() => {
-        expect(screen.queryByPlaceholderText('Filtrar buscas...')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('Filtrar análises...')).not.toBeInTheDocument();
       });
     });
 
     it('should show empty state when no results match filter', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...');
       fireEvent.change(filterInput, { target: { value: 'NOMATCH123' } });
 
-      expect(screen.getByText('Nenhuma busca encontrada')).toBeInTheDocument();
-      expect(screen.getByText(/Tente outro termo de busca/i)).toBeInTheDocument();
+      expect(screen.getByText('Nenhuma análise encontrada')).toBeInTheDocument();
+      expect(screen.getByText(/Tente outro termo de análise/i)).toBeInTheDocument();
     });
 
     it('should update counter dynamically when filtering', () => {
       render(<SavedSearchesDropdown onLoadSearch={mockOnLoadSearch} />);
 
-      const button = screen.getByRole('button', { name: /Buscas salvas/i });
+      const button = screen.getByRole('button', { name: /Análises salvas/i });
       fireEvent.click(button);
 
       // Counter always shows total saved searches out of max 10
       expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
 
       // Filter to 2 results - counter stays the same (shows total/max)
-      const filterInput = screen.getByPlaceholderText('Filtrar buscas...');
+      const filterInput = screen.getByPlaceholderText('Filtrar análises...');
       fireEvent.change(filterInput, { target: { value: 'Uniformes' } });
       expect(screen.getByText(/\(3\/10\)/i)).toBeInTheDocument();
 

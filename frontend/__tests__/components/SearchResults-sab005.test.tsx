@@ -4,7 +4,7 @@
  * Component-level tests:
  * - AC1: Timeout banner renders after 30s with correct message
  * - AC2: Banner includes "Tentar novamente" button
- * - AC3: Banner includes "Ver buscas anteriores" link → /historico
+ * - AC3: Banner includes "Ver análises anteriores" link → /historico
  * - AC5: Zero results shows contextual message with sector and UFs
  */
 
@@ -136,7 +136,7 @@ describe("SAB-005 AC1-AC3: Skeleton timeout banner", () => {
         data-testid="skeleton-timeout-banner"
       >
         <p className="text-sm font-medium text-amber-800">
-          A busca está demorando mais que o esperado
+          A análise está demorando mais que o esperado
         </p>
         <p className="text-xs text-amber-600 mt-1">
           O servidor pode estar processando um volume alto de dados.
@@ -149,7 +149,7 @@ describe("SAB-005 AC1-AC3: Skeleton timeout banner", () => {
           Tentar novamente
         </button>
         <a href="/historico" data-testid="skeleton-timeout-historico">
-          Ver buscas anteriores
+          Ver análises anteriores
         </a>
       </div>
     );
@@ -166,7 +166,7 @@ describe("SAB-005 AC1-AC3: Skeleton timeout banner", () => {
 
     expect(screen.getByTestId("skeleton-timeout-banner")).toBeInTheDocument();
     expect(
-      screen.getByText("A busca está demorando mais que o esperado")
+      screen.getByText("A análise está demorando mais que o esperado")
     ).toBeInTheDocument();
   });
 
@@ -203,7 +203,7 @@ describe("SAB-005 AC1-AC3: Skeleton timeout banner", () => {
     expect(onSearch).toHaveBeenCalledTimes(1);
   });
 
-  it('AC3: banner includes "Ver buscas anteriores" link to /historico', () => {
+  it('AC3: banner includes "Ver análises anteriores" link to /historico', () => {
     render(
       <TimeoutBanner
         skeletonTimeoutReached={true}
@@ -214,7 +214,7 @@ describe("SAB-005 AC1-AC3: Skeleton timeout banner", () => {
 
     const link = screen.getByTestId("skeleton-timeout-historico");
     expect(link).toBeInTheDocument();
-    expect(link).toHaveTextContent("Ver buscas anteriores");
+    expect(link).toHaveTextContent("Ver análises anteriores");
     expect(link).toHaveAttribute("href", "/historico");
   });
 });

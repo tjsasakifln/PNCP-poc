@@ -280,7 +280,7 @@ describe("STORY-265 AC20: useSearch 403 trial_expired detection", () => {
       ok: false,
       status: 403,
       json: async () => ({
-        detail: "Limite de buscas atingido",
+        detail: "Limite de análises atingido",
       }),
     };
 

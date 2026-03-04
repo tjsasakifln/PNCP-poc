@@ -57,7 +57,7 @@ describe('OrdenacaoSelect', () => {
 
     expect(screen.getByText('Data de publicacao decrescente')).toBeInTheDocument();
     expect(screen.getByText('Valor estimado decrescente')).toBeInTheDocument();
-    expect(screen.getByText('Score de matching com termos de busca')).toBeInTheDocument();
+    expect(screen.getByText('Score de matching com termos da análise')).toBeInTheDocument();
   });
 
   it('calls onChange when option is selected', () => {

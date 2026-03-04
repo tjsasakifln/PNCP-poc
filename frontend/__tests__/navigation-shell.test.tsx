@@ -51,13 +51,12 @@ describe("NavigationShell", () => {
     jest.clearAllMocks();
   });
 
+  // SHIP-002: /alertas and /mensagens removed from PROTECTED_ROUTES (feature-gated)
   const protectedRoutes = [
     "/buscar",
     "/dashboard",
     "/pipeline",
-    "/alertas",
     "/historico",
-    "/mensagens",
     "/conta",
     "/admin",
   ];
@@ -92,38 +91,25 @@ describe("NavigationShell", () => {
     });
   });
 
-  // SAB-004 AC1: /alertas specifically renders with sidebar
-  it("renders sidebar on /alertas (SAB-004 AC1)", () => {
+  // SHIP-002: /alertas removed from PROTECTED_ROUTES — no sidebar on these routes
+  it("does NOT render sidebar on /alertas (SHIP-002 feature-gated)", () => {
     mockPathname.mockReturnValue("/alertas");
     render(
       <NavigationShell>
         <div>Alertas page</div>
       </NavigationShell>
     );
-    expect(screen.getByTestId("sidebar")).toBeInTheDocument();
-    expect(screen.getByTestId("bottom-nav")).toBeInTheDocument();
+    expect(screen.queryByTestId("sidebar")).not.toBeInTheDocument();
   });
 
-  // SAB-004 AC4: /mensagens also has sidebar
-  it("renders sidebar on /mensagens (SAB-004 AC4)", () => {
+  // SHIP-002: /mensagens removed from PROTECTED_ROUTES — no sidebar on these routes
+  it("does NOT render sidebar on /mensagens (SHIP-002 feature-gated)", () => {
     mockPathname.mockReturnValue("/mensagens");
     render(
       <NavigationShell>
         <div>Mensagens page</div>
       </NavigationShell>
     );
-    expect(screen.getByTestId("sidebar")).toBeInTheDocument();
-    expect(screen.getByTestId("bottom-nav")).toBeInTheDocument();
-  });
-
-  // Nested routes
-  it("renders sidebar on nested protected route /alertas/settings", () => {
-    mockPathname.mockReturnValue("/alertas/settings");
-    render(
-      <NavigationShell>
-        <div>Nested alertas</div>
-      </NavigationShell>
-    );
-    expect(screen.getByTestId("sidebar")).toBeInTheDocument();
+    expect(screen.queryByTestId("sidebar")).not.toBeInTheDocument();
   });
 });

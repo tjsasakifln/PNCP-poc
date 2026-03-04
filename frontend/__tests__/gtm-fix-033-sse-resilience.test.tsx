@@ -261,7 +261,7 @@ describe('GTM-FIX-033: SSE Resilience', () => {
   });
 
   describe('AC3: Progress bar does not reset from 80%+ to 0%', () => {
-    test('EnhancedLoadingProgress shows "Finalizando busca..." on sseDisconnected', () => {
+    test('EnhancedLoadingProgress shows "Finalizando análise..." on sseDisconnected', () => {
       const React = require('react');
       const { render, screen } = require('@testing-library/react');
       const { EnhancedLoadingProgress } = require('../components/EnhancedLoadingProgress');
@@ -306,11 +306,11 @@ describe('GTM-FIX-033: SSE Resilience', () => {
       const { getUserFriendlyError } = require('../lib/error-messages');
 
       const msg1 = getUserFriendlyError('Backend indisponível');
-      expect(msg1).toContain('buscas salvas');
+      expect(msg1).toContain('análises salvas');
       expect(msg1).toContain('tente novamente');
 
       const msg2 = getUserFriendlyError('Erro ao buscar licitações');
-      expect(msg2).toContain('buscas salvas');
+      expect(msg2).toContain('análises salvas');
       expect(msg2).toContain('tente novamente');
     });
   });

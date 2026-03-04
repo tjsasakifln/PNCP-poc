@@ -171,7 +171,7 @@ describe("savedSearches library", () => {
           searchMode: "setor",
           setorId: "alimentos",
         });
-      }).toThrow("Máximo de 10 buscas salvas atingido");
+      }).toThrow("Máximo de 10 análises salvas atingido");
 
       const searches = loadSavedSearches();
       expect(searches).toHaveLength(10);
@@ -186,7 +186,7 @@ describe("savedSearches library", () => {
           searchMode: "setor",
           setorId: "vestuario",
         });
-      }).toThrow("Nome da busca é obrigatório");
+      }).toThrow("Nome da análise é obrigatório");
     });
 
     it("should handle duplicate names", () => {

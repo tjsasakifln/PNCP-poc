@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     // If backend doesn't have this endpoint yet, return 404
     if (response.status === 404) {
       return NextResponse.json(
-        { message: "Nenhuma busca anterior encontrada" },
+        { message: "Nenhuma análise anterior encontrada" },
         { status: 404 }
       );
     }

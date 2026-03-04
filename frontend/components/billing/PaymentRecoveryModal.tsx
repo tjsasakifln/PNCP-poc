@@ -109,7 +109,7 @@ export function PaymentRecoveryModal({ daysRemaining, trialValue, onClose }: Pay
 
         {/* Message */}
         <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
-          Novas buscas estao suspensas ate a regularizacao do pagamento.
+          Novas análises estao suspensas ate a regularizacao do pagamento.
           Seu historico e pipeline continuam acessiveis.
         </p>
 

@@ -56,17 +56,19 @@ describe("Sidebar", () => {
     expect(screen.getByTestId("sidebar")).toBeInTheDocument();
   });
 
-  // AC2: Shows 8 items (Buscar, Dashboard, Pipeline, Alertas, Historico, Mensagens, Minha Conta, Ajuda)
-  it("shows all 8 navigation items", () => {
+  // AC2: Shows 6 items (SHIP-002: Alertas and Suporte/Mensagens removed — feature-gated)
+  // Remaining: Buscar, Dashboard, Pipeline, Histórico, Minha Conta, Ajuda
+  it("shows all navigation items", () => {
     render(<Sidebar />);
     expect(screen.getByText("Buscar")).toBeInTheDocument();
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
-    expect(screen.getByText("Alertas")).toBeInTheDocument();
     expect(screen.getByText("Histórico")).toBeInTheDocument();
-    expect(screen.getByText("Suporte")).toBeInTheDocument();
     expect(screen.getByText("Minha Conta")).toBeInTheDocument();
     expect(screen.getByText("Ajuda")).toBeInTheDocument();
+    // SHIP-002: removed
+    expect(screen.queryByText("Alertas")).not.toBeInTheDocument();
+    expect(screen.queryByText("Suporte")).not.toBeInTheDocument();
   });
 
   // AC2: Plus Sair button
@@ -97,12 +99,11 @@ describe("Sidebar", () => {
     expect(dashboardLink).toHaveAttribute("aria-current", "page");
   });
 
-  // SAB-004 AC2: Alertas highlighted when active
-  it("highlights Alertas when on /alertas", () => {
+  // SAB-004 AC2: Alertas removed (SHIP-002 feature-gated) — verify it's absent
+  it("does not show Alertas link (SHIP-002 feature-gated)", () => {
     mockPathname.mockReturnValue("/alertas");
     render(<Sidebar />);
-    const alertasLink = screen.getByText("Alertas").closest("a");
-    expect(alertasLink).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByText("Alertas")).not.toBeInTheDocument();
   });
 
   // AC4: Collapse toggle

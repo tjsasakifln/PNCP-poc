@@ -127,7 +127,7 @@ export function PartialResultsPrompt({
               onClick={onWaitComplete}
               className="px-5 py-2.5 bg-[var(--surface-0)] hover:bg-[var(--surface-1)] text-ink border border-[var(--border-strong)] font-medium rounded-lg transition-colors duration-200"
             >
-              Aguardar busca completa
+              Aguardar análise completa
             </button>
           </div>
         </div>
@@ -169,7 +169,7 @@ export function PartialResultsBanner({
           .{" "}
           {searching && (
             <span className="inline-flex items-center gap-1.5">
-              Busca em andamento
+              Análise em andamento
               <span className="inline-flex gap-0.5">
                 <span className="w-1 h-1 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" />
                 <span className="w-1 h-1 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse animation-delay-200" />

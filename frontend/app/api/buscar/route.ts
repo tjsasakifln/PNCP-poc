@@ -15,7 +15,7 @@ function getContextualErrorMessage(status: number, detail?: string): string {
     case 500: return "Ocorreu um erro interno. Tente novamente em alguns segundos.";
     case 502: return "Nossos servidores estão se atualizando. Tente novamente em 30 segundos.";
     case 503: return "Nossos servidores estão se atualizando. Tente novamente em 30 segundos.";
-    case 524: return "A busca demorou mais que o esperado. Tente com menos estados ou um período menor.";
+    case 524: return "A análise demorou mais que o esperado. Tente com menos estados ou um período menor.";
     default: return "Erro inesperado. Tente novamente ou reduza o número de UFs selecionadas.";
   }
 }
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
           // Timeout: keep specific message; Network error: use sanitizer
           if (isTimeout) {
             return NextResponse.json(
-              { message: "A busca demorou mais que o esperado. Tente com menos estados ou um período menor." },
+              { message: "A análise demorou mais que o esperado. Tente com menos estados ou um período menor." },
               { status: 524 }
             );
           }

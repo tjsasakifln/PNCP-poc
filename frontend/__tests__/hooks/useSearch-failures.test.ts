@@ -227,7 +227,7 @@ describe("useSearch failure scenarios (AC17)", () => {
     // Second: simulate a network error (non-AbortError)
     global.fetch = jest
       .fn()
-      .mockRejectedValue(new Error("A busca demorou demais"));
+      .mockRejectedValue(new Error("A análise demorou demais"));
 
     await act(async () => {
       await result.current.buscar();
@@ -304,7 +304,7 @@ describe("useSearch failure scenarios (AC17)", () => {
     const { result } = renderHook(() => useSearch(filters as any));
 
     expect(
-      result.current.getRetryCooldown("A busca demorou demais", undefined)
+      result.current.getRetryCooldown("A análise demorou demais", undefined)
     ).toBe(15);
   });
 

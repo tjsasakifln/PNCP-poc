@@ -54,10 +54,10 @@ export function TruncationWarningBanner({
     }
   } else if (ufsText) {
     // Legacy: no truncation_details but UFs provided
-    description = `Sua busca retornou mais registros do que o limite para ${ufsText}. `;
+    description = `Sua análise retornou mais registros do que o limite para ${ufsText}. `;
   } else {
     // Generic fallback
-    description = "Sua busca retornou mais de 250.000 registros do PNCP. ";
+    description = "Sua análise retornou mais de 250.000 registros do PNCP. ";
   }
 
   return (

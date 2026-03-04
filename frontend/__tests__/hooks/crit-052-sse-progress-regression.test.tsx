@@ -44,15 +44,15 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Send progress at 30%
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 30, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 30, message: 'Analisando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(30);
 
       // Send progress at 60%
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 60, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 60, message: 'Analisando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(60);
 
       // Send progress at 40% (lower!) — should be clamped to 60%
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Analisando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(60);
 
       // Send progress at 80% — should pass through
@@ -72,7 +72,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Get progress to 55%
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 55, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 55, message: 'Analisando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(55);
 
       // Simulate SSE error and reconnection
@@ -210,7 +210,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Get progress to 55%
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 55, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 55, message: 'Analisando...', detail: {} }));
       const progressBefore = result.current.currentEvent?.progress;
 
       // Trigger reconnection
@@ -238,7 +238,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Analisando...', detail: {} }));
       expect(result.current.currentEvent?.progress).toBe(40);
       expect(result.current.currentEvent?.stage).toBe('fetching');
 
@@ -270,7 +270,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 50, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 50, message: 'Analisando...', detail: {} }));
 
       // Send source_error with progress=-1
       act(() => es.simulateMessage({
@@ -359,7 +359,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 20, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 20, message: 'Analisando...', detail: {} }));
 
       // Send uf_status with progress=-1
       act(() => es.simulateMessage({
@@ -388,13 +388,13 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => es.simulateOpen());
 
       // Send normal progress event
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 40, message: 'Analisando...', detail: {} }));
 
       // Send error event (progress=-1 but should still be set as currentEvent)
       act(() => es.simulateMessage({
         stage: 'error',
         progress: -1,
-        message: 'Erro na busca',
+        message: 'Erro na análise',
         detail: { error: 'timeout' },
       }));
 
@@ -458,7 +458,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       const es = MockEventSource.instances[0];
       act(() => es.simulateOpen());
 
-      act(() => es.simulateMessage({ stage: 'fetching', progress: 50, message: 'Buscando...', detail: {} }));
+      act(() => es.simulateMessage({ stage: 'fetching', progress: 50, message: 'Analisando...', detail: {} }));
 
       // Disconnect and reconnect
       act(() => es.simulateError());
@@ -471,7 +471,7 @@ describe('CRIT-052: SSE Progress Bar Regression', () => {
       act(() => retryEs.simulateMessage({
         stage: 'search_complete',
         progress: 100,
-        message: 'Busca concluída — 42 resultados',
+        message: 'Análise concluída — 42 resultados',
         detail: { search_id: 'complete-002', total_results: 42, has_results: true },
       }));
 

@@ -4,7 +4,7 @@
  * AC9: Results appear in table as partial_results SSE events arrive
  * AC10: Visual indicator per source (SourceStatusGrid)
  * AC11: Counter updates in real-time
- * AC14: Banner "Busca em andamento — resultados parciais disponíveis"
+ * AC14: Banner "Análise em andamento — resultados parciais disponíveis"
  */
 import React from "react";
 import { render, screen } from "@testing-library/react";
@@ -171,7 +171,7 @@ describe("SearchResults with progressive results", () => {
       />
     );
 
-    expect(screen.getByText(/25 oportunidades encontradas até agora/)).toBeInTheDocument();
+    expect(screen.getByText(/Analisando 25 licitações encontradas/)).toBeInTheDocument();
   });
 
   it("shows singular when only 1 result (AC11)", () => {
@@ -189,10 +189,10 @@ describe("SearchResults with progressive results", () => {
       />
     );
 
-    expect(screen.getByText(/1 oportunidade encontrada até agora/)).toBeInTheDocument();
+    expect(screen.getByText(/Analisando 1 licitações encontradas/)).toBeInTheDocument();
   });
 
-  it('shows "Busca em andamento" label in progressive banner (AC14)', () => {
+  it('shows "Análise em andamento" label in progressive banner (AC14)', () => {
     render(
       <SearchResults
         {...createMockProps({
@@ -207,7 +207,7 @@ describe("SearchResults with progressive results", () => {
       />
     );
 
-    expect(screen.getByText("Busca em andamento")).toBeInTheDocument();
+    expect(screen.getByText("Análise em andamento")).toBeInTheDocument();
   });
 
   it("does not show progressive banner when no partial results", () => {
@@ -221,7 +221,7 @@ describe("SearchResults with progressive results", () => {
     );
 
     expect(screen.queryByText(/oportunidades encontradas até agora/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Busca em andamento")).not.toBeInTheDocument();
+    expect(screen.queryByText("Análise em andamento")).not.toBeInTheDocument();
   });
 
   it("does not show progressive banner when totalSoFar is 0", () => {
@@ -263,6 +263,6 @@ describe("SearchResults with progressive results", () => {
     );
 
     // Not in loading state — should not show progressive UI
-    expect(screen.queryByText("Busca em andamento")).not.toBeInTheDocument();
+    expect(screen.queryByText("Análise em andamento")).not.toBeInTheDocument();
   });
 });

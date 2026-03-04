@@ -22,6 +22,16 @@ jest.mock("next/link", () => {
   );
 });
 
+// Mock AuthProvider (required by AddToPipelineButton via usePipeline)
+jest.mock("../app/components/AuthProvider", () => ({
+  useAuth: () => ({
+    user: { id: "u1", email: "test@test.com" },
+    session: { access_token: "test-token" },
+    loading: false,
+    signOut: jest.fn(),
+  }),
+}));
+
 function makeBid(overrides: Partial<LicitacaoItem> = {}): LicitacaoItem {
   return {
     pncp_id: `bid-${Math.random().toString(36).slice(2, 8)}`,

@@ -37,14 +37,14 @@ const FAQ_DATA: FAQCategory[] = [
     ),
     items: [
       {
-        question: "Como faço uma busca por oportunidades de licitação?",
+        question: "Como faço uma análise por oportunidades de licitação?",
         answer:
-          "Acesse a página de Busca, selecione os estados (UFs) de interesse e clique em \"Buscar\". O sistema consultará automaticamente as fontes oficiais de contratações públicas e retornará as oportunidades filtradas para o seu setor.",
+          "Acesse a página de Análise, selecione os estados (UFs) de interesse e clique em \"Buscar\". O sistema consultará automaticamente as fontes oficiais de contratações públicas e retornará as oportunidades filtradas para o seu setor.",
       },
       {
         question: "Posso buscar em mais de um estado ao mesmo tempo?",
         answer:
-          "Sim. Na página de busca, você pode selecionar múltiplos estados simultaneamente. O sistema buscará oportunidades em todos os estados selecionados de forma paralela.",
+          "Sim. Na página de análise, você pode selecionar múltiplos estados simultaneamente. O sistema buscará oportunidades em todos os estados selecionados de forma paralela.",
       },
       {
         question: "O que significam os filtros de setor?",
@@ -52,19 +52,19 @@ const FAQ_DATA: FAQCategory[] = [
           "Os setores representam as áreas de atuação (ex.: TI, Engenharia, Saúde). Ao selecionar um setor, o sistema aplica filtros inteligentes de palavras-chave para encontrar licitações relevantes àquela área específica.",
       },
       {
-        question: "Quanto tempo leva uma busca?",
+        question: "Quanto tempo leva uma análise?",
         answer:
-          "A duração varia conforme o número de estados selecionados. Normalmente, uma busca leva entre 10 segundos e 2 minutos. Você acompanha o progresso em tempo real na tela.",
+          "A duração varia conforme o número de estados selecionados. Normalmente, uma análise leva entre 10 segundos e 2 minutos. Você acompanha o progresso em tempo real na tela.",
       },
       {
         question: "Como faço download dos resultados em Excel?",
         answer:
-          "Após a busca ser concluída, clique no botão \"Download Excel\" que aparece junto aos resultados. O arquivo será gerado e baixado automaticamente com todas as oportunidades encontradas. Este recurso está disponível em planos pagos.",
+          "Após a análise ser concluída, clique no botão \"Download Excel\" que aparece junto aos resultados. O arquivo será gerado e baixado automaticamente com todas as oportunidades encontradas. Este recurso está disponível em planos pagos.",
       },
       {
         question: "Como funciona a avaliação por IA?",
         answer:
-          "Após cada busca, nosso sistema avalia automaticamente cada oportunidade usando IA, indicando adequação ao seu perfil, critérios de elegibilidade, competitividade e pontos de atenção. Você decide em segundos se vale a pena investir tempo.",
+          "Após cada análise, nosso sistema avalia automaticamente cada oportunidade usando IA, indicando adequação ao seu perfil, critérios de elegibilidade, competitividade e pontos de atenção. Você decide em segundos se vale a pena investir tempo.",
       },
     ],
   },
@@ -157,7 +157,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Com que frequência os dados são atualizados?",
         answer:
-          "Os dados são consultados em tempo real a cada busca. Quando você realiza uma busca, o sistema consulta as fontes oficiais naquele momento, garantindo que os resultados estejam sempre atualizados.",
+          "Os dados são consultados em tempo real a cada análise. Quando você realiza uma análise, o sistema consulta as fontes oficiais naquele momento, garantindo que os resultados estejam sempre atualizados.",
       },
       {
         question: "O SmartLic cobre todas as licitações do Brasil?",
@@ -214,7 +214,7 @@ const FAQ_DATA: FAQCategory[] = [
       {
         question: "Como excluo minha conta?",
         answer:
-          "Acesse Minha Conta, na seção \"Dados e Privacidade\", clique em \"Excluir Minha Conta\". Esta ação é irreversível e apaga permanentemente todos os seus dados, incluindo histórico de buscas e assinaturas.",
+          "Acesse Minha Conta, na seção \"Dados e Privacidade\", clique em \"Excluir Minha Conta\". Esta ação é irreversível e apaga permanentemente todos os seus dados, incluindo histórico de análises e assinaturas.",
       },
       {
         question: "Posso exportar meus dados?",

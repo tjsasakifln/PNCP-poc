@@ -25,6 +25,16 @@ jest.mock("next/link", () => {
   };
 });
 
+// Mock AuthProvider (required by AddToPipelineButton via usePipeline)
+jest.mock("../app/components/AuthProvider", () => ({
+  useAuth: () => ({
+    user: { id: "u1", email: "test@test.com" },
+    session: { access_token: "test-token" },
+    loading: false,
+    signOut: jest.fn(),
+  }),
+}));
+
 describe("GTM-FIX-028: LLM Zero-Match Frontend Tests", () => {
   describe("LicitacoesPreview - Relevance Source Badges (AC12)", () => {
     const createMockBid = (overrides?: Partial<LicitacaoItem>): LicitacaoItem => ({

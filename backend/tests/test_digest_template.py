@@ -61,7 +61,7 @@ class TestRenderDailyDigestEmail:
 
         assert "Bom dia, Maria!" in html
         assert "Nenhuma nova oportunidade" in html
-        assert "Fazer busca manual" in html
+        assert "Fazer análise manual" in html
 
     def test_renders_with_low_viability(self):
         from templates.emails.digest import render_daily_digest_email

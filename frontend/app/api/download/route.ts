@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error(`❌ Download failed for ${id}:`, error);
     return NextResponse.json(
-      { message: "Download expirado ou inválido. Faça uma nova busca para gerar o Excel." },
+      { message: "Download expirado ou inválido. Faça uma nova análise para gerar o Excel." },
       { status: 404 }
     );
   }

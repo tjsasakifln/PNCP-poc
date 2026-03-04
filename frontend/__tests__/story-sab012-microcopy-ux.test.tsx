@@ -276,13 +276,14 @@ describe("SAB-012 AC7-AC9: Mobile bottom nav abbreviations", () => {
     };
   });
 
+  // SHIP-002: Mensagens removed, Dash added in place of Msgs
   it("AC8: uses abbreviated labels consistently", () => {
     render(<BottomNav />);
 
     expect(screen.getByText("Busca")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
     expect(screen.getByText("Hist.")).toBeInTheDocument();
-    expect(screen.getByText("Msgs")).toBeInTheDocument();
+    expect(screen.getByText("Dash")).toBeInTheDocument();
     expect(screen.getByText("Mais")).toBeInTheDocument();
   });
 
@@ -299,8 +300,8 @@ describe("SAB-012 AC7-AC9: Mobile bottom nav abbreviations", () => {
     const histLink = screen.getByText("Hist.").closest("a");
     expect(histLink).toHaveAttribute("aria-label", "Histórico");
 
-    const msgsLink = screen.getByText("Msgs").closest("a");
-    expect(msgsLink).toHaveAttribute("aria-label", "Mensagens");
+    const dashLink = screen.getByText("Dash").closest("a");
+    expect(dashLink).toHaveAttribute("aria-label", "Dashboard");
   });
 
   it("AC9: labels have truncate class to prevent overflow", () => {

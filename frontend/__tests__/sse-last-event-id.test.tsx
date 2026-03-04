@@ -153,7 +153,7 @@ describe('STORY-297: SSE Last-Event-ID Resumption', () => {
       });
       act(() => {
         es.onmessage?.({
-          data: JSON.stringify({ stage: 'fetching', progress: 20, message: 'Buscando...', detail: {} }),
+          data: JSON.stringify({ stage: 'fetching', progress: 20, message: 'Analisando...', detail: {} }),
           lastEventId: 'evt-100',
         });
       });

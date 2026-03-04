@@ -19,7 +19,7 @@ const ERROR_MAP: Record<string, string> = {
   "400": "Requisição inválida. Verifique os dados e tente novamente.",
   "503": "Serviço temporariamente indisponível. Tente em alguns minutos.",
   "502": "O servidor está temporariamente indisponível. Tente novamente em instantes.",
-  "504": "A busca demorou demais. Tente com menos estados ou um período menor.",
+  "504": "A análise demorou demais. Tente com menos estados ou um período menor.",
   "500": "Erro interno do servidor. Tente novamente.",
   "429": "Muitas requisições. Aguarde um momento e tente novamente.",
   "401": "Sessão expirada. Faça login novamente.",
@@ -46,22 +46,22 @@ const ERROR_MAP: Record<string, string> = {
   "Connection reset": "A conexão foi interrompida. Tente novamente.",
   "connection refused": "Servidor temporariamente indisponível. Tente novamente em instantes.",
   "Internal server error": "Erro interno do servidor. Tente novamente.",
-  "Pipeline failed": "A busca não pôde ser concluída. Tente novamente.",
+  "Pipeline failed": "A análise não pôde ser concluída. Tente novamente.",
   "All sources failed": "Nenhuma fonte de dados respondeu. Tente novamente em alguns minutos.",
   "No results found": "Nenhum resultado encontrado para os filtros selecionados.",
 
   // Backend specific — GTM-FIX-033 AC5: actionable message
-  "Backend indisponível": "Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.",
-  "Erro ao buscar licitações": "Não foi possível processar sua busca. A busca pode ter sido concluída. Verifique suas buscas salvas ou tente novamente.",
-  "Quota excedida": "Suas buscas do mês acabaram. Faça upgrade para continuar.",
+  "Backend indisponível": "Não foi possível processar sua análise. A análise pode ter sido concluída. Verifique suas análises salvas ou tente novamente.",
+  "Erro ao buscar licitações": "Não foi possível processar sua análise. A análise pode ter sido concluída. Verifique suas análises salvas ou tente novamente.",
+  "Quota excedida": "Suas análises do mês acabaram. Faça upgrade para continuar.",
 
   // Timeout / PNCP specific (from backend detail messages)
-  "excedeu o tempo limite": "A busca demorou demais. Tente com menos estados ou um período menor.",
+  "excedeu o tempo limite": "A análise demorou demais. Tente com menos estados ou um período menor.",
   "PNCP está temporariamente": "O portal PNCP está temporariamente fora do ar. Tente novamente em instantes.",
-  "tempo limite de": "A busca demorou demais. Tente com menos estados ou um período menor.",
+  "tempo limite de": "A análise demorou demais. Tente com menos estados ou um período menor.",
 
   // UX FIX: Plan limit errors (date range)
-  "período de busca não pode exceder": "keep_original", // Let the full message through
+  "período da análise não pode exceder": "keep_original", // Let the full message through
   "excede o limite de": "keep_original", // Let the full message through
   "Período de": "keep_original", // Let the full message through
 
@@ -107,7 +107,7 @@ export function getUserFriendlyError(error: any): string {
     } else {
       // Fallback: couldn't extract message from object
       console.error('Could not extract error message from:', data);
-      message = "Não foi possível processar sua busca. Tente novamente em instantes.";
+      message = "Não foi possível processar sua análise. Tente novamente em instantes.";
     }
   } else if (error?.request && !error?.response) {
     // Network error (request sent but no response)
@@ -158,7 +158,7 @@ export function getUserFriendlyError(error: any): string {
   }
 
   // If message is user-friendly (even if long), keep it
-  // Example: "O período de busca não pode exceder 7 dias..." (>100 chars but clear)
+  // Example: "O período da análise não pode exceder 7 dias..." (>100 chars but clear)
   if (stripped.length <= 200) {
     return stripped;
   }
@@ -332,7 +332,7 @@ export function getHumanizedError(
   // Timeout / 524
   if (httpStatus === 524 || httpStatus === 504 || msg.includes("timeout") || msg.includes("demorou")) {
     return {
-      message: "A busca demorou mais que o esperado. Tente reduzir o número de estados.",
+      message: "A análise demorou mais que o esperado. Tente reduzir o número de estados.",
       actionLabel: "Tentar novamente",
       secondaryActionLabel: "Reduzir escopo",
       tone: "yellow",

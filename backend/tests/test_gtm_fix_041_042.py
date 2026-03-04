@@ -28,11 +28,11 @@ def test_fallback_with_termos_busca_in_resumo_executivo():
 
 
 def test_fallback_with_termos_busca_in_insight_setorial():
-    """AC1: insight_setorial uses 'Busca por' format when termos_busca present."""
+    """AC1: insight_setorial uses 'Análise de' format when termos_busca present."""
     licitacoes = [{"nomeOrgao": "Órgão A", "uf": "SP", "valorTotalEstimado": 100_000.0}]
     resumo = gerar_resumo_fallback(licitacoes, sector_name="vestuário", termos_busca="calibração de equipamentos")
 
-    assert "Busca por 'calibração de equipamentos'" in resumo.insight_setorial
+    assert "Análise de 'calibração de equipamentos'" in resumo.insight_setorial
     assert "Setor de" not in resumo.insight_setorial
 
 

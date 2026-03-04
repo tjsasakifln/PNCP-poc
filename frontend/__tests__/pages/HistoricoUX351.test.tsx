@@ -56,6 +56,11 @@ jest.mock('../../components/MobileDrawer', () => ({
   MobileDrawer: () => null,
 }));
 
+// Mock AlertNotificationBell (fetches /api/alerts — would consume the sessions mock)
+jest.mock('../../components/AlertNotificationBell', () => ({
+  AlertNotificationBell: () => null,
+}));
+
 jest.mock('../../hooks/useQuota', () => ({
   useQuota: () => ({ quota: null, loading: false, refresh: jest.fn() }),
 }));
@@ -449,7 +454,7 @@ describe('UX-351: Historico Funcional', () => {
       // UX-357: timed_out always shows the canonical timeout message regardless of error_message
       await waitFor(() => {
         const errorEl = screen.getByTestId('error-message');
-        expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
+        expect(errorEl).toHaveTextContent('A análise excedeu o tempo limite. Recomendamos tentar novamente.');
       });
     });
   });

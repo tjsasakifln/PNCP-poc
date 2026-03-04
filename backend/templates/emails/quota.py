@@ -32,10 +32,10 @@ def render_quota_warning_email(
 
     body = f"""
     <h1 style="color: #333; font-size: 22px; margin: 0 0 16px;">
-      Aviso de cota de buscas
+      Aviso de cota de análises
     </h1>
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
-      Olá, {user_name}! Você utilizou <strong>{pct}%</strong> da sua cota mensal de buscas.
+      Olá, {user_name}! Você utilizou <strong>{pct}%</strong> da sua cota mensal de análises.
     </p>
 
     <!-- Progress bar -->
@@ -52,8 +52,8 @@ def render_quota_warning_email(
     </table>
 
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 8px;">
-      <strong>{quota_used}</strong> de <strong>{quota_limit}</strong> buscas utilizadas
-      &mdash; restam <strong>{quota_remaining}</strong> buscas.
+      <strong>{quota_used}</strong> de <strong>{quota_limit}</strong> análises utilizadas
+      &mdash; restam <strong>{quota_remaining}</strong> análises.
     </p>
     <p style="color: #888; font-size: 14px; margin: 0 0 24px;">
       Plano atual: <strong>{plan_name}</strong> &middot; Renovação em {reset_date}
@@ -94,10 +94,10 @@ def render_quota_exhausted_email(
     """
     body = f"""
     <h1 style="color: #333; font-size: 22px; margin: 0 0 16px;">
-      Limite de buscas atingido
+      Limite de análises atingido
     </h1>
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
-      Olá, {user_name}! Você atingiu o limite de <strong>{quota_limit} buscas</strong>
+      Olá, {user_name}! Você atingiu o limite de <strong>{quota_limit} análises</strong>
       mensais do plano <strong>{plan_name}</strong>.
     </p>
 
@@ -116,7 +116,7 @@ def render_quota_exhausted_email(
 
     <p style="color: #555; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
       Sua cota será renovada em <strong>{reset_date}</strong>, ou você pode
-      fazer upgrade para um plano com mais buscas.
+      fazer upgrade para um plano com mais análises.
     </p>
 
     <p style="text-align: center; margin: 24px 0 16px;">
@@ -129,7 +129,7 @@ def render_quota_exhausted_email(
     """
 
     return email_base(
-        title="Limite de buscas atingido — SmartLic",
+        title="Limite de análises atingido — SmartLic",
         body_html=body,
         is_transactional=True,
     )

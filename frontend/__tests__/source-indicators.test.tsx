@@ -13,6 +13,16 @@ import SearchResults from "../app/buscar/components/SearchResults";
 import type { SearchResultsProps } from "../app/buscar/components/SearchResults";
 import type { BuscaResult } from "../app/types";
 
+// Mock AuthProvider (required by AddToPipelineButton via usePipeline)
+jest.mock("../app/components/AuthProvider", () => ({
+  useAuth: () => ({
+    user: { id: "u1", email: "test@test.com" },
+    session: { access_token: "test-token" },
+    loading: false,
+    signOut: jest.fn(),
+  }),
+}));
+
 // Minimal mock for SearchResultsProps
 const createMockProps = (overrides?: Partial<SearchResultsProps>): SearchResultsProps => ({
   // Loading state
@@ -257,7 +267,7 @@ describe("SearchResults - Source Indicators (GTM-FIX-011 AC32)", () => {
 
       // Check for partial failure message
       expect(
-        screen.getByText(/Busca concluída \| Fonte temporariamente indisponível/i)
+        screen.getByText(/Análise concluída \| Fonte temporariamente indisponível/i)
       ).toBeInTheDocument();
       expect(
         screen.getByText(/dados podem estar incompletos/i)

@@ -99,7 +99,7 @@ describe('Navigation Persistence', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Histórico de Buscas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Histórico de Análises/i)).toBeInTheDocument();
       });
 
       // Verify quota hook was called (state is accessible)
@@ -545,7 +545,7 @@ describe('Navigation Persistence', () => {
 
       await waitFor(() => {
         // Should show quota exhausted message
-        expect(screen.queryByText(/limite.*buscas.*atingido/i)).toBeInTheDocument();
+        expect(screen.queryByText(/limite.*análises.*atingido/i)).toBeInTheDocument();
       });
     });
 
@@ -589,7 +589,7 @@ describe('Navigation Persistence', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Histórico de Buscas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Histórico de Análises/i)).toBeInTheDocument();
       });
 
       // Quota state should still indicate exhaustion

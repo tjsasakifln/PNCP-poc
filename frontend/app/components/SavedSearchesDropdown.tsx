@@ -98,7 +98,7 @@ export function SavedSearchesDropdown({
     if (searchMode === 'termos' && termosBusca) {
       return `"${termosBusca}"`;
     }
-    return setorId || 'Busca personalizada';
+    return setorId || 'Análise personalizada';
   };
 
   // Filter searches based on search term (debounced via useMemo)
@@ -170,18 +170,18 @@ export function SavedSearchesDropdown({
         className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-ink-secondary
                    hover:text-ink hover:bg-surface-1 rounded-button transition-colors
                    border border-strong"
-        aria-label="Buscas salvas"
+        aria-label="Análises salvas"
         aria-expanded={isOpen}
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span className="hidden sm:inline">Buscas Salvas</span>
+        <span className="hidden sm:inline">Análises Salvas</span>
         {searches.length > 0 && (
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
                          text-xs font-semibold text-white bg-brand-navy rounded-full"
-                aria-label={`${searches.length} busca${searches.length > 1 ? 's' : ''} salva${searches.length > 1 ? 's' : ''}`}>
+                aria-label={`${searches.length} análise${searches.length > 1 ? 's' : ''} salva${searches.length > 1 ? 's' : ''}`}>
             {searches.length}
           </span>
         )}
@@ -210,14 +210,14 @@ export function SavedSearchesDropdown({
               <div className="p-6 text-center">
                 <svg
               className="mx-auto w-12 h-12 text-ink-faint mb-3" fill="none"
-                     viewBox="0 0 24 24" stroke="currentColor" role="img" aria-label="Nenhuma busca salva">
-                  <title>Nenhuma busca salva</title>
+                     viewBox="0 0 24 24" stroke="currentColor" role="img" aria-label="Nenhuma análise salva">
+                  <title>Nenhuma análise salva</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <p className="text-sm text-ink-muted">Nenhuma busca salva</p>
+                <p className="text-sm text-ink-muted">Nenhuma análise salva</p>
                 <p className="text-xs text-ink-faint mt-1">
-                  Suas buscas aparecerão aqui após realizar uma pesquisa
+                  Suas análises aparecerão aqui após realizar uma pesquisa
                 </p>
               </div>
             ) : (
@@ -230,11 +230,11 @@ export function SavedSearchesDropdown({
                       value={filterTerm}
                       onChange={(e) => setFilterTerm(e.target.value)}
                       onKeyDown={handleFilterKeyDown}
-                      placeholder="Filtrar buscas..."
+                      placeholder="Filtrar análises..."
                       className="w-full pl-9 pr-8 py-2 text-sm bg-surface-1 border border-strong rounded-button
                                  text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-brand-blue
                                  focus:border-transparent transition-all"
-                      aria-label="Filtrar buscas salvas"
+                      aria-label="Filtrar análises salvas"
                     />
                     {/* Search Icon */}
                     <svg
@@ -266,13 +266,13 @@ export function SavedSearchesDropdown({
                   <div className="flex items-center gap-2">
                     {/* AC14: Simple, neutral counter without colors */}
                     <span className="text-sm text-ink-muted">
-                      Buscas Recentes ({searches.length}/10)
+                      Análises Recentes ({searches.length}/10)
                     </span>
                     {/* AC14: Gentle suggestion when limit reached */}
                     {searches.length === 10 && (
                       <button
                         onClick={() => {
-                          if (window.confirm('Você tem 10 buscas salvas. Deseja gerenciar para liberar espaço?')) {
+                          if (window.confirm('Você tem 10 análises salvas. Deseja gerenciar para liberar espaço?')) {
                             clearAll();
                             setIsOpen(false);
                             setFilterTerm('');
@@ -280,7 +280,7 @@ export function SavedSearchesDropdown({
                         }}
                         className="text-xs text-brand-blue hover:underline"
                         type="button"
-                        aria-label="Gerenciar buscas salvas"
+                        aria-label="Gerenciar análises salvas"
                       >
                         Gerenciar
                       </button>
@@ -289,7 +289,7 @@ export function SavedSearchesDropdown({
                   {searches.length > 0 && (
                     <button
                       onClick={() => {
-                        if (window.confirm('Deseja excluir todas as buscas salvas?')) {
+                        if (window.confirm('Deseja excluir todas as análises salvas?')) {
                           clearAll();
                           setIsOpen(false);
                           setFilterTerm('');
@@ -297,7 +297,7 @@ export function SavedSearchesDropdown({
                       }}
                       className="text-xs text-ink-muted hover:text-ink transition-colors"
                       type="button"
-                      aria-label="Limpar todas as buscas"
+                      aria-label="Limpar todas as análises"
                     >
                       Limpar todas
                     </button>
@@ -309,9 +309,9 @@ export function SavedSearchesDropdown({
                   {filteredSearches.length === 0 ? (
                     // No results for filter
                     <div className="px-4 py-6 text-center">
-                      <p className="text-sm text-ink-muted">Nenhuma busca encontrada</p>
+                      <p className="text-sm text-ink-muted">Nenhuma análise encontrada</p>
                       <p className="text-xs text-ink-faint mt-1">
-                        Tente outro termo de busca
+                        Tente outro termo de análise
                       </p>
                     </div>
                   ) : (
@@ -364,7 +364,7 @@ export function SavedSearchesDropdown({
                               : 'text-ink-muted hover:text-error hover:bg-error-subtle'
                           }`}
                           type="button"
-                          aria-label={deleteConfirmId === search.id ? 'Confirmar exclusão' : 'Excluir busca'}
+                          aria-label={deleteConfirmId === search.id ? 'Confirmar exclusão' : 'Excluir análise'}
                           title={deleteConfirmId === search.id ? 'Clique novamente para confirmar' : 'Excluir'}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

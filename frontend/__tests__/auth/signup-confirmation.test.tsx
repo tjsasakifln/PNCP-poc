@@ -102,7 +102,11 @@ describe("GTM-FIX-009: Email Confirmation Screen", () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     mockSignUpWithEmail.mockResolvedValue(undefined);
-    global.fetch = jest.fn();
+    // Mock fetch for InstitutionalSidebar (fetches /api/metrics/daily-volume on signup variant)
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ display_value: null, total: 0 }),
+    });
   });
 
   afterEach(() => {

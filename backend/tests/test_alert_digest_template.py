@@ -86,7 +86,7 @@ class TestRenderAlertDigestEmail:
 
         assert "Maria" in html
         assert "não encontrou novas oportunidades" in html
-        assert "Fazer busca manual" in html
+        assert "Fazer análise manual" in html
 
     def test_renders_single_opportunity(self):
         from templates.emails.alert_digest import render_alert_digest_email

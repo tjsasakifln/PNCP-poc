@@ -424,7 +424,7 @@ describe("Search degradation during grace period (AC16/AC17)", () => {
     expect(modal).toBeInTheDocument();
 
     expect(
-      screen.getByText(/Novas buscas estao suspensas/)
+      screen.getByText(/Novas análises estao suspensas/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/historico e pipeline continuam acessiveis/)

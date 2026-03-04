@@ -49,7 +49,7 @@ def render_welcome_email(
                 <span style="color: {SMARTLIC_GREEN}; font-size: 18px;">&#10003;</span>
               </td>
               <td style="color: #555; font-size: 15px; line-height: 1.5;">
-                <strong>Busca inteligente</strong> — Encontre licitações por estado, valor e palavras-chave
+                <strong>Análise inteligente</strong> — Encontre licitações por estado, valor e palavras-chave
               </td>
             </tr>
           </table>
@@ -88,7 +88,7 @@ def render_welcome_email(
     <p style="text-align: center; margin: 32px 0 16px;">
       <a href="{login_url}" class="btn"
          style="display: inline-block; padding: 14px 32px; background-color: {SMARTLIC_GREEN}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        Fazer minha primeira busca
+        Fazer minha primeira análise
       </a>
     </p>
 

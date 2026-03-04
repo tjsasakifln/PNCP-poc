@@ -42,7 +42,7 @@ export default function TermosPage() {
                 <li>Geração de relatórios em Excel com dados estruturados</li>
                 <li>Avaliação estratégica de oportunidades por inteligência artificial</li>
                 <li>Notificações por e-mail sobre novas oportunidades relevantes</li>
-                <li>Histórico de buscas e análises personalizadas</li>
+                <li>Histórico de análises e consultas personalizadas</li>
               </ul>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed mt-4">
                 <strong>IMPORTANTE:</strong> A SmartLic é uma ferramenta de descoberta e análise de informações públicas.
@@ -70,7 +70,7 @@ export default function TermosPage() {
               </h3>
               <ul className="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
                 <li><strong>Período de Avaliação:</strong> 14 dias de acesso completo a todas as funcionalidades da plataforma, sem compromisso e sem necessidade de cartão de crédito</li>
-                <li><strong>SmartLic Pro:</strong> Acesso completo à plataforma, incluindo busca multi-fonte, classificação por IA, relatórios em Excel, pipeline de oportunidades e suporte prioritário — R$&nbsp;397/mês (mensal), R$&nbsp;357/mês (semestral) ou R$&nbsp;297/mês (anual)</li>
+                <li><strong>SmartLic Pro:</strong> Acesso completo à plataforma, incluindo análise multi-fonte, classificação por IA, relatórios em Excel, pipeline de oportunidades e suporte prioritário — R$&nbsp;397/mês (mensal), R$&nbsp;357/mês (semestral) ou R$&nbsp;297/mês (anual)</li>
               </ul>
 
               <h3 className="text-xl font-semibold mb-3 mt-6 text-gray-800 dark:text-gray-200">

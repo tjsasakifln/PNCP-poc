@@ -3,7 +3,7 @@
  *
  * AC1: Max 2 restart variants: "failure" and "timeout"
  * AC2: Failure → "O servidor reiniciou. Recomendamos tentar novamente."
- * AC3: Timeout → "A busca excedeu o tempo limite. Recomendamos tentar novamente."
+ * AC3: Timeout → "A análise excedeu o tempo limite. Recomendamos tentar novamente."
  * AC4: No duplicate restart messages in error-messages.ts (tested in error-messages.test.ts)
  * AC5: All restart error codes → max 2 distinct messages (tested in error-messages.test.ts)
  */
@@ -42,7 +42,7 @@ jest.mock('../../lib/error-messages', () => ({
     if (msg.includes('reiniciou') || msg.includes('Server restart') || msg.includes('retry recommended')) {
       return 'O servidor reiniciou. Recomendamos tentar novamente.';
     }
-    if (msg.includes('Pipeline failed')) return 'A busca não pôde ser concluída. Tente novamente.';
+    if (msg.includes('Pipeline failed')) return 'A análise não pôde ser concluída. Tente novamente.';
     return msg;
   },
   isTransientError: () => false,
@@ -167,7 +167,7 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
+      expect(errorEl).toHaveTextContent('A análise excedeu o tempo limite. Recomendamos tentar novamente.');
     });
   });
 
@@ -187,7 +187,7 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
+      expect(errorEl).toHaveTextContent('A análise excedeu o tempo limite. Recomendamos tentar novamente.');
     });
   });
 
@@ -207,7 +207,7 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
+      expect(errorEl).toHaveTextContent('A análise excedeu o tempo limite. Recomendamos tentar novamente.');
     });
   });
 
@@ -217,7 +217,7 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
   test('AC1: max 2 distinct messages across all restart scenarios', async () => {
     // We test the two canonical messages exist and are the only ones
     const CANONICAL_FAILURE = 'O servidor reiniciou. Recomendamos tentar novamente.';
-    const CANONICAL_TIMEOUT = 'A busca excedeu o tempo limite. Recomendamos tentar novamente.';
+    const CANONICAL_TIMEOUT = 'A análise excedeu o tempo limite. Recomendamos tentar novamente.';
 
     // Both are distinct
     expect(CANONICAL_FAILURE).not.toBe(CANONICAL_TIMEOUT);
@@ -246,7 +246,7 @@ describe('UX-357: Restart Error Message Consistency in Histórico', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent('A busca não pôde ser concluída. Tente novamente.');
+      expect(errorEl).toHaveTextContent('A análise não pôde ser concluída. Tente novamente.');
     });
   });
 

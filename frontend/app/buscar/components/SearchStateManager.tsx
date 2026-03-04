@@ -84,7 +84,7 @@ export function SearchStateManager({
     // Transient toasts on phase transitions
     if (prevPhase === "offline" && phase === "searching") {
       toast.success("Conexão restabelecida", {
-        description: "Retomando busca...",
+        description: "Retomando análise...",
         duration: 3000,
       });
     }
@@ -95,7 +95,7 @@ export function SearchStateManager({
       });
     }
     if (prevPhase === "partial_available" && phase === "completed") {
-      toast.success("Busca concluída", {
+      toast.success("Análise concluída", {
         description: "Todos os resultados carregados",
         duration: 3000,
       });
@@ -163,7 +163,7 @@ export function SearchStateManager({
           data-testid="retry-exhausted"
         >
           <p className="text-sm sm:text-base font-medium text-amber-700 dark:text-amber-300 mb-3 break-words">
-            Busca indisponível no momento.
+            Análise indisponível no momento.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button

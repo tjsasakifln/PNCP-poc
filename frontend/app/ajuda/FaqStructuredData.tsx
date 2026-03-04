@@ -9,28 +9,28 @@ import Script from 'next/script';
 
 const FAQ_ITEMS = [
   {
-    q: "Como faço uma busca por oportunidades de licitação?",
-    a: "Acesse a página de Busca, selecione os estados (UFs) de interesse e clique em Buscar. O sistema consultará automaticamente as fontes oficiais e retornará as oportunidades filtradas para o seu setor.",
+    q: "Como faço uma análise por oportunidades de licitação?",
+    a: "Acesse a página de Análise, selecione os estados (UFs) de interesse e clique em Buscar. O sistema consultará automaticamente as fontes oficiais e retornará as oportunidades filtradas para o seu setor.",
   },
   {
     q: "Posso buscar em mais de um estado ao mesmo tempo?",
-    a: "Sim. Na página de busca, você pode selecionar múltiplos estados simultaneamente. O sistema buscará oportunidades em todos os estados selecionados de forma paralela.",
+    a: "Sim. Na página de análise, você pode selecionar múltiplos estados simultaneamente. O sistema buscará oportunidades em todos os estados selecionados de forma paralela.",
   },
   {
     q: "O que significam os filtros de setor?",
     a: "Os setores representam as áreas de atuação (ex.: TI, Engenharia, Saúde). Ao selecionar um setor, o sistema aplica filtros inteligentes de palavras-chave para encontrar licitações relevantes àquela área específica.",
   },
   {
-    q: "Quanto tempo leva uma busca?",
-    a: "A duração varia conforme o número de estados selecionados. Normalmente, uma busca leva entre 10 segundos e 2 minutos. Você acompanha o progresso em tempo real na tela.",
+    q: "Quanto tempo leva uma análise?",
+    a: "A duração varia conforme o número de estados selecionados. Normalmente, uma análise leva entre 10 segundos e 2 minutos. Você acompanha o progresso em tempo real na tela.",
   },
   {
     q: "Como faço download dos resultados em Excel?",
-    a: "Após a busca ser concluída, clique no botão Download Excel que aparece junto aos resultados. O arquivo será gerado e baixado automaticamente com todas as oportunidades encontradas.",
+    a: "Após a análise ser concluída, clique no botão Download Excel que aparece junto aos resultados. O arquivo será gerado e baixado automaticamente com todas as oportunidades encontradas.",
   },
   {
     q: "Como funciona a avaliação por IA?",
-    a: "Após cada busca, nosso sistema avalia automaticamente cada oportunidade usando IA, indicando adequação ao seu perfil, critérios de elegibilidade, competitividade e pontos de atenção.",
+    a: "Após cada análise, nosso sistema avalia automaticamente cada oportunidade usando IA, indicando adequação ao seu perfil, critérios de elegibilidade, competitividade e pontos de atenção.",
   },
   {
     q: "Qual a diferença entre o período de avaliação e o SmartLic Pro?",
@@ -62,7 +62,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Com que frequência os dados são atualizados?",
-    a: "Os dados são consultados em tempo real a cada busca. Quando você realiza uma busca, o sistema consulta as fontes oficiais naquele momento.",
+    a: "Os dados são consultados em tempo real a cada análise. Quando você realiza uma análise, o sistema consulta as fontes oficiais naquele momento.",
   },
   {
     q: "O SmartLic cobre todas as licitações do Brasil?",

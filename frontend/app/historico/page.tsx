@@ -285,12 +285,12 @@ export default function HistoricoPage() {
             className="hidden sm:inline-flex px-3 py-1.5 bg-[var(--brand-navy)] text-white rounded-button
                        hover:bg-[var(--brand-blue)] transition-colors text-sm"
           >
-            Nova busca
+            Nova análise
           </Link>
         }
       />
       <div className="max-w-4xl mx-auto py-8 px-4">
-        <p className="text-[var(--ink-secondary)] mb-6">{total} busca{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
+        <p className="text-[var(--ink-secondary)] mb-6">{total} análise{total !== 1 ? "s" : ""} realizada{total !== 1 ? "s" : ""}</p>
 
         {loading ? (
           <div className="space-y-4">
@@ -311,9 +311,9 @@ export default function HistoricoPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
               </svg>
             }
-            title="Histórico de Buscas"
-            description="Cada busca que você faz fica salva aqui. Você pode revisitar resultados anteriores sem gastar uma nova análise."
-            ctaLabel="Fazer primeira busca"
+            title="Histórico de Análises"
+            description="Cada análise que você faz fica salva aqui. Você pode revisitar resultados anteriores sem gastar uma nova análise."
+            ctaLabel="Fazer primeira análise"
             ctaHref="/buscar"
           />
         ) : (
@@ -350,7 +350,7 @@ export default function HistoricoPage() {
                       {isRetryable(s.status) && (s.error_message || s.status === 'timed_out') && (
                         <p className="text-xs text-red-600 dark:text-red-400 mt-1 line-clamp-2" data-testid="error-message">
                           {s.status === 'timed_out'
-                            ? "A busca excedeu o tempo limite. Recomendamos tentar novamente."
+                            ? "A análise excedeu o tempo limite. Recomendamos tentar novamente."
                             : getLocalizedError(s.error_message)}
                         </p>
                       )}
@@ -412,12 +412,12 @@ export default function HistoricoPage() {
                                      border border-[var(--brand-blue)] rounded-button
                                      hover:bg-[var(--brand-blue-subtle)] transition-colors
                                      flex items-center gap-1.5"
-                          title="Repetir esta busca com os mesmos parâmetros"
+                          title="Repetir esta análise com os mesmos parâmetros"
                         >
                           <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
-                          Repetir busca
+                          Repetir análise
                         </button>
                       ) : null}
                     </div>

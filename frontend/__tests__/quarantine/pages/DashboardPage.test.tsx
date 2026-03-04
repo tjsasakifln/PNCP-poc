@@ -210,7 +210,7 @@ describe('DashboardPage', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Seu dashboard está vazio/i)).toBeInTheDocument();
-        expect(screen.getByText(/Fazer primeira busca/i)).toBeInTheDocument();
+        expect(screen.getByText(/Fazer primeira análise/i)).toBeInTheDocument();
       });
     });
 
@@ -231,7 +231,7 @@ describe('DashboardPage', () => {
       render(<DashboardPage />);
 
       await waitFor(() => {
-        const link = screen.getByRole('link', { name: /Fazer primeira busca/i });
+        const link = screen.getByRole('link', { name: /Fazer primeira análise/i });
         expect(link).toHaveAttribute('href', '/buscar');
       });
     });

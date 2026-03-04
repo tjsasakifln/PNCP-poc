@@ -111,7 +111,7 @@ export function ErrorDetail({ error, searchId, errorMessage, timestamp }: ErrorD
       {isOpen && (
         /* GTM-POLISH-002 AC3: Scrollable error detail on mobile (no truncation) */
         <div className="mt-2 p-3 bg-surface-1 rounded-md text-xs text-ink-muted font-mono space-y-1 max-h-48 overflow-y-auto overflow-x-hidden break-all">
-          {effectiveSearchId && <p>ID da busca: {effectiveSearchId}</p>}
+          {effectiveSearchId && <p>ID da análise: {effectiveSearchId}</p>}
           {requestId && <p>ID da requisição: {requestId}</p>}
           {correlationId && <p>ID de correlação: {correlationId}</p>}
           {errorCode && <p>Código do erro: {errorCode}</p>}

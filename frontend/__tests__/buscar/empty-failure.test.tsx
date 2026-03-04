@@ -64,20 +64,20 @@ describe("GTM-RESILIENCE-A01 AC12: empty_failure rendering", () => {
     expect(retryButton).toBeDisabled();
   });
 
-  it("renders 'Ver última busca salva' button", () => {
+  it("renders 'Ver última análise salva' button", () => {
     render(<SourcesUnavailable {...defaultProps} hasLastSearch={true} />);
 
     expect(
-      screen.getByRole("button", { name: /última busca salva/i })
+      screen.getByRole("button", { name: /última análise salva/i })
     ).toBeInTheDocument();
   });
 
   // GTM-UX-004 AC6: Button hidden (not disabled) when no saved search
-  it("hides 'Ver última busca salva' button when no saved search", () => {
+  it("hides 'Ver última análise salva' button when no saved search", () => {
     render(<SourcesUnavailable {...defaultProps} hasLastSearch={false} />);
 
     expect(
-      screen.queryByRole("button", { name: /última busca salva/i })
+      screen.queryByRole("button", { name: /última análise salva/i })
     ).not.toBeInTheDocument();
   });
 });

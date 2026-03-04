@@ -41,7 +41,7 @@ jest.mock('../../lib/error-messages', () => ({
   getUserFriendlyError: (msg: unknown) => {
     if (typeof msg !== 'string') return 'Erro desconhecido';
     if (msg.includes('Server restart')) return 'O servidor reiniciou. Recomendamos tentar novamente.';
-    if (msg.includes('Pipeline failed')) return 'A busca não pôde ser concluída. Tente novamente.';
+    if (msg.includes('Pipeline failed')) return 'A análise não pôde ser concluída. Tente novamente.';
     if (msg.includes('Connection reset')) return 'A conexão foi interrompida. Tente novamente.';
     if (msg.includes('All sources failed')) return 'Nenhuma fonte de dados respondeu. Tente novamente em alguns minutos.';
     return msg;
@@ -294,7 +294,7 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent('A busca não pôde ser concluída. Tente novamente.');
+      expect(errorEl).toHaveTextContent('A análise não pôde ser concluída. Tente novamente.');
     });
   });
 
@@ -335,7 +335,7 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
 
     await waitFor(() => {
       const errorEl = screen.getByTestId('error-message');
-      expect(errorEl).toHaveTextContent('A busca excedeu o tempo limite. Recomendamos tentar novamente.');
+      expect(errorEl).toHaveTextContent('A análise excedeu o tempo limite. Recomendamos tentar novamente.');
     });
   });
 
@@ -374,7 +374,7 @@ describe('UX-354: Histórico Unicode, Sector Slugs, English Errors', () => {
     });
     // Verify the CTA link text is rendered (data-testid="empty-state-cta" is on a Link
     // which is mocked as plain <a> without prop forwarding — use text content instead)
-    expect(screen.getByText(/Fazer primeira busca/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fazer primeira análise/i)).toBeInTheDocument();
   });
 
   test('AC8: UF display works correctly', async () => {

@@ -314,8 +314,11 @@ describe('RelatedPages (AC5)', () => {
 
     const links = screen.getAllByRole('link');
     // Should include neighboring UFs (RJ, MG, PR, MS)
+    // Some UFs use /blog/licitacoes/ path when available (LICITACOES_SECTORS × LICITACOES_UFS)
     const hrefs = links.map((l) => l.getAttribute('href'));
-    const ufLinks = hrefs.filter((h) => h?.includes('/blog/programmatic/informatica/'));
+    const ufLinks = hrefs.filter(
+      (h) => h?.includes('/blog/programmatic/informatica/') || h?.includes('/blog/licitacoes/informatica/')
+    );
     expect(ufLinks.length).toBeGreaterThanOrEqual(1);
   });
 

@@ -82,7 +82,7 @@ describe("STORY-359: SSE Fallback Indicator", () => {
           estimatedTime={60}
           stateCount={3}
           sseDisconnected={false}
-          sseEvent={{ stage: "fetching", progress: 30, message: "Buscando...", detail: {} }}
+          sseEvent={{ stage: "fetching", progress: 30, message: "Analisando...", detail: {} }}
         />
       );
 
@@ -112,7 +112,7 @@ describe("STORY-359: SSE Fallback Indicator", () => {
           estimatedTime={60}
           stateCount={3}
           sseDisconnected={false}
-          sseEvent={{ stage: "fetching", progress: 45, message: "Buscando...", detail: {} }}
+          sseEvent={{ stage: "fetching", progress: 45, message: "Analisando...", detail: {} }}
         />
       );
 

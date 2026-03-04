@@ -137,7 +137,7 @@ describe("T9: ErrorDetail renders all available fields", () => {
     fireEvent.click(toggle);
 
     // All fields should be visible
-    expect(screen.getByText(/ID da busca: search-abc/)).toBeInTheDocument();
+    expect(screen.getByText(/ID da análise: search-abc/)).toBeInTheDocument();
     expect(screen.getByText(/ID da requisição: req-ghi/)).toBeInTheDocument();
     expect(screen.getByText(/ID de correlação: corr-def/)).toBeInTheDocument();
     expect(screen.getByText(/Código do erro: SOURCE_UNAVAILABLE/)).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("T10: ErrorDetail hides null/undefined fields", () => {
     fireEvent.click(screen.getByText("Detalhes técnicos"));
 
     // Present fields
-    expect(screen.getByText(/ID da busca: search-only/)).toBeInTheDocument();
+    expect(screen.getByText(/ID da análise: search-only/)).toBeInTheDocument();
     expect(screen.getByText(/2026-02-20T11:00:00Z/)).toBeInTheDocument();
 
     // Absent fields (null) — should NOT be rendered

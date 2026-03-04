@@ -94,7 +94,7 @@ describe('Free User Complete Flow', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/3/i)).toBeInTheDocument();
-        expect(screen.getByText(/buscas.*restantes/i)).toBeInTheDocument();
+        expect(screen.getByText(/análises.*restantes/i)).toBeInTheDocument();
       });
     });
 
@@ -268,7 +268,7 @@ describe('Free User Complete Flow', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/2/i)).toBeInTheDocument();
-        expect(screen.getByText(/buscas.*restantes/i)).toBeInTheDocument();
+        expect(screen.getByText(/análises.*restantes/i)).toBeInTheDocument();
       });
     });
 
@@ -314,7 +314,7 @@ describe('Free User Complete Flow', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/0/i)).toBeInTheDocument();
-        expect(screen.getByText(/buscas.*restantes/i)).toBeInTheDocument();
+        expect(screen.getByText(/análises.*restantes/i)).toBeInTheDocument();
       });
     });
   });
@@ -369,7 +369,7 @@ describe('Free User Complete Flow', () => {
       render(<UpgradeModal isOpen={true} onClose={jest.fn()} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/suas buscas.*acabaram/i)).toBeInTheDocument();
+        expect(screen.getByText(/suas análises.*acabaram/i)).toBeInTheDocument();
         expect(screen.getByText(/upgrade.*plano/i)).toBeInTheDocument();
       });
     });
@@ -401,7 +401,7 @@ describe('Free User Complete Flow', () => {
 
       await waitFor(() => {
         // Should show quota exhausted message
-        expect(screen.queryByText(/limite.*buscas.*atingido/i)).toBeInTheDocument();
+        expect(screen.queryByText(/limite.*análises.*atingido/i)).toBeInTheDocument();
       });
     });
   });
@@ -445,7 +445,7 @@ describe('Free User Complete Flow', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Histórico de Buscas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Histórico de Análises/i)).toBeInTheDocument();
       });
 
       // Verify quota is still accessible

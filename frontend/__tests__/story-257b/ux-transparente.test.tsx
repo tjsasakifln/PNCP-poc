@@ -246,7 +246,7 @@ describe("T3: PartialResultsPrompt", () => {
     expect(screen.getByText(/25/)).toBeInTheDocument();
     expect(screen.getByText(/5 estados/)).toBeInTheDocument();
     expect(screen.getByText("Ver resultados parciais")).toBeInTheDocument();
-    expect(screen.getByText("Aguardar busca completa")).toBeInTheDocument();
+    expect(screen.getByText("Aguardar análise completa")).toBeInTheDocument();
   });
 
   it("returns null when dismissed", () => {
@@ -279,7 +279,7 @@ describe("T3: PartialResultsPrompt", () => {
         onViewPartial={jest.fn()} onWaitComplete={onWaitComplete} dismissed={false}
       />
     );
-    fireEvent.click(screen.getByText("Aguardar busca completa"));
+    fireEvent.click(screen.getByText("Aguardar análise completa"));
     expect(onWaitComplete).toHaveBeenCalledTimes(1);
   });
 
@@ -412,18 +412,18 @@ describe("T6: SourcesUnavailable no technical names", () => {
   });
 
   // GTM-UX-004 AC6: Button hidden (not disabled) when no last search
-  it("hides 'Ver última busca salva' when no last search", () => {
+  it("hides 'Ver última análise salva' when no last search", () => {
     render(
       <SourcesUnavailable onRetry={jest.fn()} onLoadLastSearch={jest.fn()} hasLastSearch={false} retrying={false} />
     );
-    expect(screen.queryByText("Ver última busca salva")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ver última análise salva")).not.toBeInTheDocument();
   });
 
-  it("enables 'Ver última busca salva' when last search exists", () => {
+  it("enables 'Ver última análise salva' when last search exists", () => {
     render(
       <SourcesUnavailable onRetry={jest.fn()} onLoadLastSearch={jest.fn()} hasLastSearch={true} retrying={false} />
     );
-    const btn = screen.getByText("Ver última busca salva");
+    const btn = screen.getByText("Ver última análise salva");
     expect(btn.closest("button")).not.toBeDisabled();
   });
 });
@@ -536,7 +536,7 @@ describe("T8: pt-BR accents and i18n", () => {
     const text = container.textContent || "";
     expect(text).toContain("Mostrando");
     expect(text).toContain("5 de 10 estados");
-    expect(text).toContain("Busca em andamento");
+    expect(text).toContain("Análise em andamento");
   });
 
   it("SourcesUnavailable uses correct Portuguese with accents", () => {

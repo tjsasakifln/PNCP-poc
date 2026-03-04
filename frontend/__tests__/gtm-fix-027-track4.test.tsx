@@ -115,7 +115,7 @@ describe('GTM-FIX-027 Track 4: Search time estimation', () => {
             ? 'Ainda processando. Buscas com muitos estados demoram mais.'
             : 'A busca pode demorar em horários de pico.';
         }
-        return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar novamente.';
+        return 'A análise está demorando mais que o esperado. Você pode cancelar e tentar novamente.';
       };
 
       // Test with <=10 states
@@ -136,7 +136,7 @@ describe('GTM-FIX-027 Track 4: Search time estimation', () => {
             ? 'Ainda processando. Buscas com muitos estados demoram mais.'
             : 'A busca pode demorar em horários de pico.';
         }
-        return 'A busca está demorando mais que o esperado. Você pode cancelar e tentar novamente.';
+        return 'A análise está demorando mais que o esperado. Você pode cancelar e tentar novamente.';
       };
 
       expect(mockOvertimeMessage(10, 5)).toBe('Quase pronto, finalizando...');

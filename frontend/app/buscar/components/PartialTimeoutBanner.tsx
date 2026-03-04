@@ -32,7 +32,7 @@ export function PartialTimeoutBanner({
         </svg>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-            Busca incompleta — tempo limite excedido
+            Análise incompleta — tempo limite excedido
           </p>
           <div className="mt-2 text-sm text-amber-700 dark:text-amber-300">
             {succeededUfs.length > 0 && (

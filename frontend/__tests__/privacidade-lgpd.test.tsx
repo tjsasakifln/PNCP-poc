@@ -50,7 +50,7 @@ describe("STORY-300 AC9: LGPD Privacy Page", () => {
     });
 
     it("should list search history as collected data", () => {
-      expect(screen.getByText(/Historico de buscas/)).toBeInTheDocument();
+      expect(screen.getByText(/Historico de análises/)).toBeInTheDocument();
     });
 
     it("should list payment data", () => {

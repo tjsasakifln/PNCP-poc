@@ -63,7 +63,7 @@ export function saveSearch(
 ): SavedSearch {
   // Validate name is not empty
   if (!name || !name.trim()) {
-    throw new Error('Nome da busca é obrigatório');
+    throw new Error('Nome da análise é obrigatório');
   }
 
   const newSearch: SavedSearch = {
@@ -78,7 +78,7 @@ export function saveSearch(
 
   // Check if we're at max capacity
   if (existingSearches.length >= MAX_SAVED_SEARCHES) {
-    throw new Error(`Máximo de ${MAX_SAVED_SEARCHES} buscas salvas atingido. Exclua uma busca para adicionar outra.`);
+    throw new Error(`Máximo de ${MAX_SAVED_SEARCHES} análises salvas atingido. Exclua uma análise para adicionar outra.`);
   }
 
   const updatedSearches = [newSearch, ...existingSearches];
@@ -88,7 +88,7 @@ export function saveSearch(
     return newSearch;
   } catch (e) {
     if (e instanceof Error && e.name === 'QuotaExceededError') {
-      throw new Error('Limite de armazenamento excedido. Exclua algumas buscas salvas.');
+      throw new Error('Limite de armazenamento excedido. Exclua algumas análises salvas.');
     }
     throw e;
   }

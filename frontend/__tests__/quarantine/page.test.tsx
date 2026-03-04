@@ -313,7 +313,7 @@ describe('HomePage - UF Selection and Date Range', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Buscando...')).toBeInTheDocument();
+        expect(screen.getByText('Analisando...')).toBeInTheDocument();
       });
     });
   });
@@ -337,7 +337,7 @@ describe('HomePage - UF Selection and Date Range', () => {
     it('should have page title "Busca de Licitações"', () => {
       render(<HomePage />);
 
-      expect(screen.getByRole('heading', { name: 'Busca de Licitações' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Análise de Licitações' })).toBeInTheDocument();
     });
   });
 

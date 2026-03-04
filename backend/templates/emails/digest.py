@@ -152,7 +152,7 @@ def render_daily_digest_email(
         <p style="text-align: center; margin: 24px 0 16px;">
           <a href="{FRONTEND_URL}/buscar" class="btn"
              style="display: inline-block; padding: 14px 32px; background-color: {SMARTLIC_GREEN}; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-            Fazer busca manual
+            Fazer análise manual
           </a>
         </p>
         """

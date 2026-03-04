@@ -551,7 +551,7 @@ describe('Auth Token Consistency', () => {
 
       // Page renders (no crash) but without authenticated state
       await waitFor(() => {
-        expect(screen.getByText(/Busca de Licitações/i)).toBeInTheDocument();
+        expect(screen.getByText(/Análise de Licitações/i)).toBeInTheDocument();
       });
 
       // Session is null after logout
@@ -627,7 +627,7 @@ describe('Auth Token Consistency', () => {
       render(<HistoricoPage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Histórico de Buscas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Histórico de Análises/i)).toBeInTheDocument();
       });
 
       expect(mockUseAuth).toHaveBeenCalled();

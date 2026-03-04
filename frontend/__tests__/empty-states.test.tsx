@@ -257,9 +257,9 @@ describe("Historico empty state (AC4-AC6)", () => {
     await waitFor(() => {
       expect(screen.getByTestId("empty-state")).toBeInTheDocument();
     }, { timeout: 3000 });
-    // EmptyState renders the Histórico de Buscas title
+    // EmptyState renders the Histórico de Análises title
     const emptyStateEl = screen.getByTestId("empty-state");
-    expect(emptyStateEl.textContent).toMatch(/Hist.*rico de Buscas/);
+    expect(emptyStateEl.textContent).toMatch(/Hist.*rico de An.*lises/);
   });
 
   it("AC5: mentions revisiting doesn't cost a new analysis", async () => {
@@ -273,7 +273,7 @@ describe("Historico empty state (AC4-AC6)", () => {
     expect(emptyStateEl.textContent).toMatch(/nova an.*lise/);
   });
 
-  it("AC6: CTA 'Fazer primeira busca' links to /buscar", async () => {
+  it("AC6: CTA 'Fazer primeira análise' links to /buscar", async () => {
     render(<HistoricoPage />);
 
     await waitFor(() => {
@@ -339,7 +339,7 @@ describe("Dashboard empty state (AC7-AC8)", () => {
     expect(screen.getByText(/Valor total de oportunidades analisadas/)).toBeInTheDocument();
   });
 
-  it("AC8: CTA 'Fazer primeira busca' links to /buscar", async () => {
+  it("AC8: CTA 'Fazer primeira análise' links to /buscar", async () => {
     render(<DashboardPage />);
 
     await waitFor(() => {

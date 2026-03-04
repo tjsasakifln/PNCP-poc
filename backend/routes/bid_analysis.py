@@ -83,7 +83,7 @@ async def analyze_bid(
         # AC12: Bid not found
         raise HTTPException(
             status_code=404,
-            detail="Edital não encontrado. Execute uma nova busca.",
+            detail="Edital não encontrado. Execute uma nova análise.",
         )
 
     # Load user profile

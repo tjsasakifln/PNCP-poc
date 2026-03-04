@@ -101,17 +101,17 @@ describe("MobileDrawer", () => {
     expect(screen.getByTestId("drawer-user-email")).toHaveTextContent("carlos@empresa.com");
   });
 
-  // AC4: All navigation items present
+  // AC4: All navigation items present (SHIP-002: Mensagens and Alertas removed)
   it("includes all primary navigation items", () => {
     render(<MobileDrawer open={true} onClose={onClose} />);
     expect(screen.getByText("Buscar")).toBeInTheDocument();
     expect(screen.getByText("Pipeline")).toBeInTheDocument();
     expect(screen.getByText("Historico")).toBeInTheDocument();
-    expect(screen.getByText("Mensagens")).toBeInTheDocument();
+    expect(screen.queryByText("Mensagens")).not.toBeInTheDocument();
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 
-  // AC3: Buscas Salvas moved to drawer
+  // AC3: Buscas Salvas moved to drawer (secondary nav)
   it("includes Buscas Salvas in secondary nav", () => {
     render(<MobileDrawer open={true} onClose={onClose} />);
     expect(screen.getByText("Buscas Salvas")).toBeInTheDocument();

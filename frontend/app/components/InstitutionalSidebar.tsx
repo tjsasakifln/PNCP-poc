@@ -149,7 +149,7 @@ const SIDEBAR_CONTENT: SidebarContentMap = {
       { icon: "filter", text: "Filtros por estado, valor e setor" },
       { icon: "brain", text: "Avaliação estratégica por IA" },
       { icon: "download", text: "Exportação de relatórios em Excel" },
-      { icon: "history", text: "Histórico completo de buscas" },
+      { icon: "history", text: "Histórico completo de análises" },
     ],
     stats: [
       { value: "27", label: "estados cobertos" },

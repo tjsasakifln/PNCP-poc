@@ -120,7 +120,7 @@ export function SourcesUnavailable({
             disabled={retrying}
             className="px-5 py-2.5 rounded-button text-sm font-medium transition-all border border-border bg-transparent hover:bg-surface-1 text-ink disabled:text-ink-muted disabled:cursor-not-allowed"
           >
-            Ver última busca salva
+            Ver última análise salva
           </button>
         )}
       </div>
