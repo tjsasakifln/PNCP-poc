@@ -5,7 +5,7 @@
  * (like `0`) as filled fields, while still treating `null`/`undefined` as empty.
  */
 
-import { completenessCount, TOTAL_PROFILE_FIELDS, ProfileContext } from "../app/conta/page";
+import { completenessCount, TOTAL_PROFILE_FIELDS, ProfileContext } from "../app/conta/profile-utils";
 
 describe("UX-409: completenessCount treats 0 as valid", () => {
   const FULL_CONTEXT: ProfileContext = {

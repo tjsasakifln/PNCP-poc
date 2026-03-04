@@ -47,33 +47,7 @@ const ALL_UFS = [
   "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
 ];
 
-// ─── Profile context type ─────────────────────────────────────────────────────
-export interface ProfileContext {
-  ufs_atuacao?: string[];
-  setor_principal?: string;
-  faixa_valor_min?: number | null;
-  faixa_valor_max?: number | null;
-  porte_empresa?: string;
-  experiencia_licitacoes?: string;
-  capacidade_funcionarios?: number | null;
-  faturamento_anual?: number | null;
-  atestados?: string[];
-}
-
-export function completenessCount(ctx: ProfileContext): number {
-  const fields = [
-    ctx.ufs_atuacao?.length ? ctx.ufs_atuacao : null,
-    ctx.porte_empresa || null,
-    ctx.experiencia_licitacoes || null,
-    ctx.faixa_valor_min != null ? ctx.faixa_valor_min : null,
-    ctx.capacidade_funcionarios != null ? ctx.capacidade_funcionarios : null,
-    ctx.faturamento_anual != null ? ctx.faturamento_anual : null,
-    ctx.atestados?.length ? ctx.atestados : null,
-  ];
-  return fields.filter(f => f !== null && f !== undefined).length;
-}
-
-export const TOTAL_PROFILE_FIELDS = 7;
+import { completenessCount, TOTAL_PROFILE_FIELDS, type ProfileContext } from "./profile-utils";
 
 export default function ContaPage() {
   const { user, session, loading: authLoading, signOut } = useAuth();
