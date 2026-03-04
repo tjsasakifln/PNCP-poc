@@ -19,7 +19,7 @@ export const GUARD_GRACE_MS = 30_000;
 
 export function useNavigationGuard({ isLoading }: UseNavigationGuardOptions) {
   const [shouldGuard, setShouldGuard] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const wasLoadingRef = useRef(false);
 
   useEffect(() => {
