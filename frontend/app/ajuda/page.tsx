@@ -88,9 +88,9 @@ const FAQ_DATA: FAQCategory[] = [
           "Sim! Ao criar sua conta, você experimenta o produto completo por 14 dias gratuitamente, sem limites. Não é necessário informar dados de pagamento.",
       },
       {
-        question: "Como faço upgrade do meu plano?",
+        question: "Como amplio meu acesso?",
         answer:
-          "Acesse a página de Planos e Preços, escolha o plano desejado e clique em \"Fazer upgrade\". Você será redirecionado para o checkout seguro. A mudança de plano é imediata após a confirmação do pagamento.",
+          "Acesse a página de Opções, escolha a modalidade desejada e clique em \"Continuar\". Você será redirecionado para o checkout seguro. A mudança é imediata após a confirmação do pagamento.",
       },
       {
         question: "O que acontece se eu cancelar meu acesso?",

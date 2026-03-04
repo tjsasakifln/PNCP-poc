@@ -295,7 +295,7 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
   ALL_SOURCES_FAILED: "Nenhuma fonte de dados respondeu. Tente novamente em alguns minutos.",
   TIMEOUT: "A busca demorou mais que o esperado. Tente reduzir o número de estados.",
   RATE_LIMIT: "Limite de requisições atingido. Aguarde alguns minutos.",
-  QUOTA_EXCEEDED: "Você atingiu o limite de buscas do seu plano.",
+  QUOTA_EXCEEDED: "Você atingiu o limite de análises deste mês.",
   VALIDATION_ERROR: "Parâmetros de busca inválidos. Verifique os filtros.",
   INTERNAL_ERROR: "Erro interno. Nossa equipe foi notificada.",
 };

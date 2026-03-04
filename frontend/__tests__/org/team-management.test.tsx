@@ -515,7 +515,7 @@ describe("EquipePage — /conta/equipe", () => {
         expect(screen.getByText("Gestão de Equipe")).toBeInTheDocument();
       });
       expect(
-        screen.getByText(/gerenciamento de equipes está disponível no plano Consultoria/i)
+        screen.getByText(/gerenciamento de equipes está disponível no SmartLic Consultoria/i)
       ).toBeInTheDocument();
     });
 
@@ -529,12 +529,12 @@ describe("EquipePage — /conta/equipe", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/gerenciamento de equipes está disponível no plano Consultoria/i)
+          screen.getByText(/gerenciamento de equipes está disponível no SmartLic Consultoria/i)
         ).toBeInTheDocument();
       });
     });
 
-    it("renders Ver planos link to /planos for non-consultoria users", async () => {
+    it("renders Ver opções link to /planos for non-consultoria users", async () => {
       mockUsePlan.mockReturnValue({
         planInfo: { plan_id: "free_trial" },
         loading: false,
@@ -543,7 +543,7 @@ describe("EquipePage — /conta/equipe", () => {
       render(<EquipePage />);
 
       await waitFor(() => {
-        const link = screen.getByRole("link", { name: /Ver planos/i });
+        const link = screen.getByRole("link", { name: /Ver opções/i });
         expect(link).toHaveAttribute("href", "/planos");
       });
     });

@@ -15,17 +15,17 @@ CLAUDE.md proíbe "plano", "assinatura", "faça upgrade", "Assine agora" em text
 
 ## Critérios de Aceitação
 
-- [ ] AC1: `quota.py:973` — "Limite de {N} buscas mensais atingido. Renovação em {data} ou faça upgrade." → "Você atingiu {N} análises este mês. Seu limite renova em {data}."
-- [ ] AC2: `quota.py:930` — mantido (já está bom: "Veja o valor que você analisou e continue tendo vantagem.")
-- [ ] AC3: `quota.py:1183` — "Seu acesso expirou. Ative um plano para continuar." → "Seu acesso expirou. Reative para continuar analisando oportunidades."
-- [ ] AC4: `excel.py:251` — "Assine agora: https://smartlic.tech/planos" → "Acesse todos os resultados: https://smartlic.tech/planos"
-- [ ] AC5: `excel.py:249-250` — Corrigir acentos: "contem" → "contém", "voce" → "você", "tera" → "terá"
-- [ ] AC6: `error-messages.ts:298` — "Você atingiu o limite de buscas do seu plano." → "Você atingiu o limite de análises deste mês."
-- [ ] AC7: `searchPhase.ts:132` — "Ver planos" → "Ver opções"
-- [ ] AC8: `useSearch.ts:901` — "seu plano: {plan_name}" → "seu acesso atual"
-- [ ] AC9: `ajuda/page.tsx:91-93` — Remover "plano" das perguntas e respostas da FAQ (reescrever para "Como amplio meu acesso?" / "Acesse a página de Opções e escolha...")
-- [ ] AC10: `conta/equipe/page.tsx:189-198` — "disponível no plano Consultoria" → "disponível no SmartLic Consultoria"; "Ver planos" → "Ver opções"
-- [ ] AC11: Testes que verificam strings antigas atualizados
+- [x] AC1: `quota.py:973` — "Limite de {N} buscas mensais atingido. Renovação em {data} ou faça upgrade." → "Você atingiu {N} análises este mês. Seu limite renova em {data}."
+- [x] AC2: `quota.py:930` — mantido (já está bom: "Veja o valor que você analisou e continue tendo vantagem.")
+- [x] AC3: `quota.py:1183` — "Seu acesso expirou. Ative um plano para continuar." → "Seu acesso expirou. Reative para continuar analisando oportunidades."
+- [x] AC4: `excel.py:251` — "Assine agora: https://smartlic.tech/planos" → "Acesse todos os resultados: https://smartlic.tech/planos"
+- [x] AC5: `excel.py:249-250` — Corrigir acentos: "contem" → "contém", "voce" → "você", "tera" → "terá"
+- [x] AC6: `error-messages.ts:298` — "Você atingiu o limite de buscas do seu plano." → "Você atingiu o limite de análises deste mês."
+- [x] AC7: `searchPhase.ts:132` — "Ver planos" → "Ver opções"
+- [x] AC8: `useSearch.ts:901` — "seu plano: {plan_name}" → "seu acesso atual"
+- [x] AC9: `ajuda/page.tsx:91-93` — Remover "plano" das perguntas e respostas da FAQ (reescrever para "Como amplio meu acesso?" / "Acesse a página de Opções e escolha...")
+- [x] AC10: `conta/equipe/page.tsx:189-198` — "disponível no plano Consultoria" → "disponível no SmartLic Consultoria"; "Ver planos" → "Ver opções"
+- [x] AC11: Testes que verificam strings antigas atualizados
 
 ## Copy Recomendada
 

@@ -190,7 +190,7 @@ class TestStageValidate:
         """ENABLE_NEW_PRICING=True, quota.check_quota returns allowed=False -> HTTP 403."""
         mock_check_quota.return_value = _make_quota_info(
             allowed=False,
-            error_message="Limite de buscas mensais atingido",
+            error_message="Você atingiu o limite de análises este mês",
         )
         rate_limiter = _make_async_rate_limiter(return_value=(True, 0))
 

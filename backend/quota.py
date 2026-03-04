@@ -970,7 +970,7 @@ def check_quota(user_id: str) -> QuotaInfo:
             quota_remaining=0,
             quota_reset_date=reset_date,
             trial_expires_at=expires_at_dt,
-            error_message=f"Limite de {quota_limit} buscas mensais atingido. Renovação em {reset_date.strftime('%d/%m/%Y')} ou faça upgrade.",
+            error_message=f"Você atingiu {quota_limit} análises este mês. Seu limite renova em {reset_date.strftime('%d/%m/%Y')}.",
         )
 
     # STORY-309 AC5: Dunning degradation — restrict access based on days since first failure
@@ -1180,7 +1180,7 @@ async def require_active_plan(user: dict) -> dict:
             status_code=403,
             detail={
                 "error": error_type,
-                "message": quota_info.error_message or "Seu acesso expirou. Ative um plano para continuar.",
+                "message": quota_info.error_message or "Seu acesso expirou. Reative para continuar analisando oportunidades.",
                 "upgrade_url": "/planos",
             },
         )

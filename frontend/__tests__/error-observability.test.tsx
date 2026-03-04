@@ -237,7 +237,7 @@ describe("T12: Error code to friendly message mapping", () => {
       "A busca demorou mais que o esperado. Tente reduzir o número de estados."
     );
     expect(getMessageFromErrorCode("QUOTA_EXCEEDED")).toBe(
-      "Você atingiu o limite de buscas do seu plano."
+      "Você atingiu o limite de análises deste mês."
     );
     expect(getMessageFromErrorCode("RATE_LIMIT")).toBe(
       "Limite de requisições atingido. Aguarde alguns minutos."

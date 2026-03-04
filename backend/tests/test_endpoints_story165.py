@@ -206,7 +206,7 @@ class TestBuscarEndpointQuotaValidation:
                 quota_used=50,
                 quota_remaining=0,
                 quota_reset_date=datetime.now(timezone.utc),
-                error_message="Limite de 50 buscas mensais atingido.",
+                error_message="Você atingiu 50 análises este mês.",
             )
 
             response = client.post(
@@ -223,7 +223,7 @@ class TestBuscarEndpointQuotaValidation:
             # STORY-265 AC8: require_active_plan returns {"error": ..., "message": ..., "upgrade_url": ...}
             detail = response.json()["detail"]
             detail_msg = detail.get("message", "") if isinstance(detail, dict) else detail
-            assert "Limite" in detail_msg or "expirou" in detail_msg or "quota" in detail_msg.lower()
+            assert "atingiu" in detail_msg or "expirou" in detail_msg or "quota" in detail_msg.lower()
         finally:
             cleanup()
 
@@ -247,7 +247,7 @@ class TestBuscarEndpointQuotaValidation:
                 quota_remaining=0,
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=datetime.now(timezone.utc) - timedelta(days=1),
-                error_message="Trial expirado. Faça upgrade para continuar.",
+                error_message="Seu trial expirou. Veja o valor que você analisou e continue tendo vantagem.",
             )
 
             response = client.post(

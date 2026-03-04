@@ -80,7 +80,7 @@ class TestQuotaLimitReached:
                 quota_used=1000,
                 quota_remaining=0,
                 quota_reset_date=datetime.now(timezone.utc) + timedelta(days=15),
-                error_message="Limite de 1000 buscas mensais atingido. Renova em 15 dias.",
+                error_message="Você atingiu 1000 análises este mês. Seu limite renova em 15 dias.",
             )
 
             response = client.post(
@@ -99,11 +99,11 @@ class TestQuotaLimitReached:
             # {"error": "plan_expired", "message": ..., "upgrade_url": "/planos"}
             if isinstance(detail, dict):
                 assert detail.get("error") == "plan_expired"
-                assert "1000 buscas" in detail["message"]
+                assert "1000 análises" in detail["message"]
                 assert "15 dias" in detail["message"]
             else:
                 # Fallback for non-structured (should not happen, but defensive)
-                assert "1000 buscas" in detail
+                assert "1000 análises" in detail
                 assert "15 dias" in detail
         finally:
             cleanup()

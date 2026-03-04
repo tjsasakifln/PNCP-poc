@@ -898,7 +898,7 @@ export function useSearch(filters: UseSearchParams): UseSearchReturn {
           if (err.error_code === 'DATE_RANGE_EXCEEDED') {
             const { requested_days, max_allowed_days, plan_name } = err.data || {};
             throw attachMeta(new Error(
-              `O periodo de busca nao pode exceder ${max_allowed_days} dias (seu plano: ${plan_name}). Voce tentou buscar ${requested_days} dias. Reduza o periodo e tente novamente.`
+              `O período de busca não pode exceder ${max_allowed_days} dias (seu acesso atual). Você tentou buscar ${requested_days} dias. Reduza o período e tente novamente.`
             ));
           }
 

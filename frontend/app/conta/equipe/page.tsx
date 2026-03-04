@@ -186,7 +186,7 @@ export default function EquipePage() {
               Gestão de Equipe
             </h2>
             <p className="text-sm text-[var(--ink-secondary)] mb-6">
-              O gerenciamento de equipes está disponível no plano Consultoria. Convide colaboradores,
+              O gerenciamento de equipes está disponível no SmartLic Consultoria. Convide colaboradores,
               gerencie permissões e compartilhe análises em um só lugar.
             </p>
             <Link
@@ -195,7 +195,7 @@ export default function EquipePage() {
                          bg-[var(--brand-blue)] text-white text-sm font-medium
                          hover:opacity-90 transition-opacity"
             >
-              Ver planos
+              Ver opções
             </Link>
           </div>
         </main>

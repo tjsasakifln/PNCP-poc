@@ -357,7 +357,7 @@ class TestCheckQuota:
         result = check_quota("user-123")
 
         assert result.allowed is False
-        assert "Limite de 50 buscas mensais atingido" in result.error_message
+        assert "50 análises este mês" in result.error_message
         assert result.quota_remaining == 0
 
     @patch("quota.get_plan_capabilities", return_value=PLAN_CAPABILITIES)

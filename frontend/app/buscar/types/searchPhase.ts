@@ -129,5 +129,5 @@ export const PHASE_ACTIONS: Record<SearchPhase, string> = {
   source_timeout: "Ver resultado parcial",
   offline: "Tentando novamente...",
   failed: "Tentar novamente",
-  quota_exceeded: "Ver planos",
+  quota_exceeded: "Ver opções",
 };

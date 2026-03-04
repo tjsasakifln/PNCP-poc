@@ -92,7 +92,7 @@ class TestBuscarFeatureFlagEnabled:
                 quota_used=50,
                 quota_remaining=0,
                 quota_reset_date=datetime.now(timezone.utc),
-                error_message="Limite de 50 buscas mensais atingido.",
+                error_message="Você atingiu 50 análises este mês.",
             )
 
             response = client.post(
@@ -109,9 +109,9 @@ class TestBuscarFeatureFlagEnabled:
             detail = response.json()["detail"]
             if isinstance(detail, dict):
                 assert detail.get("error_code") == "QUOTA_EXCEEDED"
-                assert "Limite de 50 buscas mensais atingido" in detail["detail"]
+                assert "50 análises este mês" in detail["detail"]
             else:
-                assert "Limite de 50 buscas mensais atingido" in detail
+                assert "50 análises este mês" in detail
         finally:
             cleanup()
 
@@ -868,7 +868,7 @@ class TestBuscarErrorHandling:
                 quota_remaining=0,
                 quota_reset_date=datetime.now(timezone.utc),
                 trial_expires_at=datetime.now(timezone.utc) - timedelta(days=1),
-                error_message="Trial expirado. Faça upgrade para continuar.",
+                error_message="Seu trial expirou. Veja o valor que você analisou e continue tendo vantagem.",
             )
 
             response = client.post(

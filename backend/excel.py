@@ -246,9 +246,9 @@ def create_excel(licitacoes: list[dict], paywall_preview: bool = False, total_be
         ws_upsell = wb.create_sheet("Desbloqueie Mais")
         ws_upsell["A1"] = f"Desbloqueie {remaining} resultados adicionais com SmartLic Pro"
         ws_upsell["A1"].font = Font(bold=True, size=14, color="1A237E")
-        ws_upsell["A3"] = "Este arquivo contem uma preview com os primeiros 10 resultados."
-        ws_upsell["A4"] = f"Com o SmartLic Pro, voce tera acesso a todos os {total_before_paywall} resultados."
-        ws_upsell["A6"] = "Assine agora: https://smartlic.tech/planos"
+        ws_upsell["A3"] = "Este arquivo contém uma prévia com os primeiros 10 resultados."
+        ws_upsell["A4"] = f"Com o SmartLic Pro, você terá acesso a todos os {total_before_paywall} resultados."
+        ws_upsell["A6"] = "Acesse todos os resultados: https://smartlic.tech/planos"
         ws_upsell["A6"].font = Font(color="0563C1", underline="single")
         ws_upsell["A6"].hyperlink = "https://smartlic.tech/planos"
         ws_upsell.column_dimensions["A"].width = 80

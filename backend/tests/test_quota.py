@@ -142,11 +142,11 @@ class TestQuotaInfo:
             quota_used=50,
             quota_remaining=0,
             quota_reset_date=datetime(2026, 3, 1, tzinfo=timezone.utc),
-            error_message="Limite de 50 buscas mensais atingido.",
+            error_message="Você atingiu 50 análises este mês.",
         )
 
         assert info.allowed is False
-        assert "50 buscas" in info.error_message
+        assert "50 análises" in info.error_message
 
 
 class TestCheckQuotaFreeTrial:
@@ -443,8 +443,7 @@ class TestCheckQuotaExhausted:
 
         assert result.allowed is False
         assert result.quota_remaining == 0
-        assert "50 buscas mensais" in result.error_message
-        assert "upgrade" in result.error_message.lower()
+        assert "50 análises este mês" in result.error_message
 
     def test_quota_exhausted_includes_reset_date(self):
         """Exhausted quota error should include reset date."""
@@ -475,7 +474,7 @@ class TestCheckQuotaExhausted:
 
         assert result.allowed is False
         assert result.quota_reset_date is not None
-        assert "Renovação em" in result.error_message
+        assert "renova em" in result.error_message
 
 
 class TestCheckQuotaExpiredSubscriptions:
