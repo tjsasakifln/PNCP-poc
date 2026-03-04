@@ -87,6 +87,8 @@ describe("AuthCallbackPage — UX-336", () => {
     jest.useFakeTimers();
     authStateCallback = null;
     mockLocation("?code=auth-code-123");
+    // UX-408: Set code_verifier in localStorage so PKCE check passes
+    localStorage.setItem("sb-test-auth-code-verifier", "test-verifier");
     // Re-set onAuthStateChange implementation (clearAllMocks wipes mockImplementation)
     mockOnAuthStateChange.mockImplementation((cb: any) => {
       authStateCallback = cb;
@@ -97,6 +99,7 @@ describe("AuthCallbackPage — UX-336", () => {
   afterEach(() => {
     jest.useRealTimers();
     window.location = originalLocation;
+    localStorage.clear();
   });
 
   test("AC6-1: code exchange fails with PKCE error -> getUser fallback succeeds -> no error flash", async () => {

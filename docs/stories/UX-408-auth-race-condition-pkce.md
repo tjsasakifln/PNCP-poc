@@ -18,21 +18,21 @@ Dois problemas de autenticação que causam fricção no login:
 - `frontend/app/auth/callback/page.tsx:86-134`: `supabase.auth.exchangeCodeForSession(code)` depende de `code_verifier` armazenado no localStorage pela página de login. Se localStorage for limpo, o verifier desaparece e o exchange falha com erro opaco.
 
 ## Critérios de Aceitação
-- [ ] AC1: AuthProvider: Usar `isMounted` ref que é setado `false` no cleanup do useEffect. Nenhum `setState` deve ocorrer após desmontagem.
-- [ ] AC2: AuthProvider: Quando `getUser()` retorna `AuthApiError`, não logar como `console.error` — usar `console.warn` com mensagem amigável "Sessão expirada, redirecionando para login."
-- [ ] AC3: OAuth callback: Antes de chamar `exchangeCodeForSession`, verificar se `code_verifier` existe no localStorage. Se não existir, mostrar mensagem específica: "Sessão de login expirada. Por favor, tente fazer login novamente." com botão "Voltar ao login".
-- [ ] AC4: OAuth callback: Adicionar telemetria para taxa de falha PKCE (`oauth_pkce_missing` event).
-- [ ] AC5: Nenhum `AuthApiError` deve aparecer no console em fluxo normal (página pública sem usuário logado).
+- [x] AC1: AuthProvider: Usar `isMounted` ref que é setado `false` no cleanup do useEffect. Nenhum `setState` deve ocorrer após desmontagem.
+- [x] AC2: AuthProvider: Quando `getUser()` retorna `AuthApiError`, não logar como `console.error` — usar `console.warn` com mensagem amigável "Sessão expirada, redirecionando para login."
+- [x] AC3: OAuth callback: Antes de chamar `exchangeCodeForSession`, verificar se `code_verifier` existe no localStorage. Se não existir, mostrar mensagem específica: "Sessão de login expirada. Por favor, tente fazer login novamente." com botão "Voltar ao login".
+- [x] AC4: OAuth callback: Adicionar telemetria para taxa de falha PKCE (`oauth_pkce_missing` event).
+- [x] AC5: Nenhum `AuthApiError` deve aparecer no console em fluxo normal (página pública sem usuário logado).
 
 ## Arquivos Impactados
 - `frontend/app/components/AuthProvider.tsx` — Race condition fix com isMounted + cleanup.
 - `frontend/app/auth/callback/page.tsx` — Validar `code_verifier` antes de exchange.
 
 ## Testes Necessários
-- [ ] Teste que AuthProvider não faz setState após unmount.
-- [ ] Teste que página pública (landing) não gera AuthApiError no console.
-- [ ] Teste que callback sem code_verifier mostra mensagem amigável.
-- [ ] Teste que callback com code_verifier funciona normalmente.
+- [x] Teste que AuthProvider não faz setState após unmount.
+- [x] Teste que página pública (landing) não gera AuthApiError no console.
+- [x] Teste que callback sem code_verifier mostra mensagem amigável.
+- [x] Teste que callback com code_verifier funciona normalmente.
 
 ## Notas Técnicas
 - Supabase JS v2 armazena PKCE no localStorage sob chave `sb-...-auth-token`.

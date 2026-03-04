@@ -19,11 +19,13 @@ import { useAnalytics } from "../../../hooks/useAnalytics";
 export default function AuthCallbackPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { identifyUser } = useAnalytics();
+  const { identifyUser, trackEvent } = useAnalytics();
 
-  // Store identifyUser in a ref so useEffect can access it without re-running
+  // Store identifyUser/trackEvent in refs so useEffect can access without re-running
   const identifyUserRef = useRef(identifyUser);
   identifyUserRef.current = identifyUser;
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
 
   // UX-336 AC3: Run callback exactly once on mount (no [status] dependency)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,9 +55,9 @@ export default function AuthCallbackPage() {
             sessionStorage.removeItem(key);
           });
 
-          // Clear Supabase-specific keys (preserve code_verifier!)
+          // Clear Supabase-specific keys (preserve code_verifier / code-verifier!)
           Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('sb-') && !key.includes('code_verifier')) {
+            if (key.startsWith('sb-') && !key.includes('code_verifier') && !key.includes('code-verifier')) {
               localStorage.removeItem(key);
             }
           });
@@ -85,9 +87,27 @@ export default function AuthCallbackPage() {
 
         // --- Phase 1: Try code exchange (PKCE flow) ---
         const code = params.get("code");
-        let codeExchangeSucceeded = false;
 
         if (code) {
+          // UX-408 AC3: Verify PKCE code_verifier exists before attempting exchange
+          const hasCodeVerifier = Object.keys(localStorage).some(
+            key => key.includes('code-verifier') || key.includes('code_verifier')
+          );
+
+          if (!hasCodeVerifier) {
+            console.warn("[OAuth Callback] PKCE code_verifier missing from localStorage");
+            // UX-408 AC4: Track PKCE missing telemetry
+            trackEventRef.current("oauth_pkce_missing", {
+              has_code: true,
+              url_origin: window.location.origin,
+            });
+
+            clearTimeout(callbackTimeout);
+            setStatus("error");
+            setErrorMessage("Sessão de login expirada. Por favor, tente fazer login novamente.");
+            return;
+          }
+
           console.log("[OAuth Callback] Authorization code found, exchanging...");
 
           let session = null;

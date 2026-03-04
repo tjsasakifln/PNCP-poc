@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
@@ -28,13 +28,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
+  // UX-408 AC1: isMounted ref prevents setState after unmount
+  const isMountedRef = useRef(true);
+
   // Fetch admin status when session changes
   const fetchAdminStatus = useCallback(async (accessToken: string) => {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
     // Skip admin check if backend URL not configured (avoids localhost fallback in production)
     if (!backendUrl) {
-      setIsAdmin(false);
+      if (isMountedRef.current) setIsAdmin(false);
       return;
     }
 
@@ -42,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${backendUrl}/v1/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
+      if (!isMountedRef.current) return; // UX-408 AC1
       if (res.ok) {
         const data = await res.json();
         setIsAdmin(data.is_admin === true);
@@ -49,16 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsAdmin(false);
       }
     } catch {
-      setIsAdmin(false);
+      if (isMountedRef.current) setIsAdmin(false);
     }
   }, []);
 
   useEffect(() => {
     const authTimeout = setTimeout(async () => {
+      if (!isMountedRef.current) return; // UX-408 AC1
       console.warn("[AuthProvider] Auth check timeout — attempting session fallback");
       // AC5: On timeout, try getSession() which reads local cookies (fast, no network)
       try {
         const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+        if (!isMountedRef.current) return; // UX-408 AC1
         if (fallbackSession?.user) {
           console.info("[AuthProvider] Timeout fallback: using session data");
           setUser(fallbackSession.user);
@@ -69,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // getSession also failed — give up
       }
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }, 10000);
 
     const initAuth = async () => {
@@ -77,11 +83,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Primary: server-validated user
         const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
 
+        if (!isMountedRef.current) return; // UX-408 AC1
+
         if (validatedUser) {
           clearTimeout(authTimeout);
           setUser(validatedUser);
           setLoading(false);
           const { data: { session: sess } } = await supabase.auth.getSession();
+          if (!isMountedRef.current) return; // UX-408 AC1
           setSession(sess);
           if (sess?.access_token) {
             fetchAdminStatus(sess.access_token);
@@ -89,12 +98,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        // UX-408 AC2: AuthApiError from getUser() is expected on public pages — use warn, not error
+        if (userError) {
+          console.warn("[AuthProvider] Sessão expirada, redirecionando para login.", userError.message);
+        }
+
         // AC6: getUser returned null — try refreshing the session once
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!isMountedRef.current) return; // UX-408 AC1
         if (currentSession) {
           console.info("[AuthProvider] getUser returned null, attempting session refresh (AC6)");
           const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
 
+          if (!isMountedRef.current) return; // UX-408 AC1
           if (refreshedSession?.user) {
             clearTimeout(authTimeout);
             setUser(refreshedSession.user);
@@ -113,11 +129,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setLoading(false);
       } catch (error) {
-        console.error("[AuthProvider] Auth check failed:", error);
+        // UX-408 AC2+AC5: Use console.warn for auth errors (not console.error)
+        console.warn("[AuthProvider] Sessão expirada, redirecionando para login.", error);
+
+        if (!isMountedRef.current) return; // UX-408 AC1
 
         // AC5: getUser() threw an error — fall back to session data
         try {
           const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+          if (!isMountedRef.current) return; // UX-408 AC1
           if (fallbackSession?.user) {
             console.info("[AuthProvider] Falling back to session data (AC5)");
             clearTimeout(authTimeout);
@@ -128,9 +148,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
         } catch (sessionError) {
-          console.error("[AuthProvider] Session fallback also failed:", sessionError);
+          console.warn("[AuthProvider] Session fallback also failed:", sessionError);
         }
 
+        if (!isMountedRef.current) return; // UX-408 AC1
         clearTimeout(authTimeout);
         setUser(null);
         setSession(null);
@@ -143,6 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!isMountedRef.current) return; // UX-408 AC1
         setSession(session);
         if (session?.user) {
           // Set user from session IMMEDIATELY so header updates without waiting
@@ -154,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           // Background: validate user with server (non-blocking)
           supabase.auth.getUser().then(({ data: { user } }) => {
-            if (user) setUser(user); // Upgrade to validated user
+            if (user && isMountedRef.current) setUser(user); // Upgrade to validated user
           }).catch(() => { /* keep session user as fallback */ });
         } else {
           setUser(null);
@@ -167,13 +189,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // STORY-253 AC1: Proactive token refresh every 10 minutes
     const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
     const refreshInterval = setInterval(async () => {
+      if (!isMountedRef.current) return; // UX-408 AC1
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!currentSession) return; // No session to refresh
+        if (!currentSession || !isMountedRef.current) return;
 
         const { data: { session: refreshed }, error } =
           await supabase.auth.refreshSession();
 
+        if (!isMountedRef.current) return; // UX-408 AC1
         if (error || !refreshed) {
           // AC3: Refresh failed — mark session as expired
           if (process.env.NODE_ENV === "development") {
@@ -188,15 +212,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSessionExpired(false);
         }
       } catch (err) {
+        if (!isMountedRef.current) return; // UX-408 AC1
         if (process.env.NODE_ENV === "development") {
-          console.error("[AuthProvider] Proactive refresh error:", err);
+          console.warn("[AuthProvider] Proactive refresh error:", err);
         }
         setSessionExpired(true);
       }
     }, REFRESH_INTERVAL_MS);
 
     // AC2: Timer cleanup to prevent memory leaks
+    // UX-408 AC1: Mark as unmounted so no setState fires after cleanup
     return () => {
+      isMountedRef.current = false;
       clearTimeout(authTimeout);
       clearInterval(refreshInterval);
       subscription.unsubscribe();
